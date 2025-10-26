@@ -2,16 +2,17 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.43"
+  version: "3.44"
   last_updated: "2025-10-26"
-  current_sprint: "📊 Selecting Next Sprint (Bytecode VM + Performance Baseline Complete!)"
+  current_sprint: "📊 Selecting Next Sprint (Struct Field Mutation Fixed!)"
   latest_release: "v3.128.0"
-  latest_commit_message: "[OPT-021] Bytecode VM Performance Baseline Validation (19 tests, 12.82µs avg)"
+  latest_commit_message: "[DEFECT-STRUCT-001] Fix struct field mutation (5 tests, book examples ch19)"
   previous_release: "v3.127.0"
   phase_1_bytecode_vm: "✅ COMPLETE (OPT-001 through OPT-010) - 98-99% faster than AST!"
   phase_2_bytecode_vm: "✅ COMPLETE (OPT-011 through OPT-020) - Complex features (closures, collections, match)"
   bytecode_vm_validation: "✅ COMPLETE (OPT-021) - Baseline AST performance established (12.82µs avg)"
   cli_unify_complete: "✅ COMPLETE (CLI-UNIFY-001 through CLI-UNIFY-006)"
+  struct_field_mutation: "✅ FIXED (DEFECT-STRUCT-001) - Struct field mutation now works (c.count = 5)"
   release_notes_v3_128_0: "OPT-020 Non-Literal Collections (arrays/tuples/objects with variables/expressions)"
   release_notes_v3_127_0: "OPT-019 Closure Support + Critical opcode encoding bugfix + 174→0 lint errors (100% quality improvement)"
   release_notes_v3_126_0: "Phase 1 Bytecode VM Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated, published to crates.io"
@@ -1607,6 +1608,58 @@ tasks:
       - "Future: Integrate bytecode VM execution path for direct comparison"
       - "Future: Add property-based randomized performance testing"
       - "Future: Establish CI performance regression gates"
+
+  - id: "DEFECT-STRUCT-001"
+    title: "Fix Struct Field Mutation (P0 Bug)"
+    status: "COMPLETE"
+    completed: "2025-10-26"
+    priority: "🔴 CRITICAL"
+    defect_type: "P0 - Runtime error blocking real-world struct usage"
+    time_estimated: "1 hour"
+    time_actual: "45 minutes"
+    efficiency: "133%"
+    description: |
+      Fixed struct field mutation failing with "Cannot access field 'X' on non-object" error.
+      Book examples ch19-00-structs-oop.md (examples 3 & 7) were broken, blocking struct adoption.
+    root_cause: |
+      eval_assign() function in src/runtime/interpreter.rs handled field assignment for:
+      - Value::Object (immutable objects)
+      - Value::ObjectMut (mutable objects via Mutex)
+      - Value::Class (classes via RwLock)
+      But NOT Value::Struct (struct instances)
+    fix:
+      - "Added Value::Struct match arm to eval_assign() (lines 3144-3156)"
+      - "Follows value semantics: create new struct copy with updated field"
+      - "Similar to Value::Object pattern (immutable, clone-on-write)"
+    architecture:
+      - "Structs use value semantics (not reference semantics like classes)"
+      - "Field mutation creates new struct with Arc<HashMap<String, Value>>"
+      - "Variable is reassigned to the new struct via set_variable()"
+    tests:
+      unit: 5
+      passing: "5/5 (100%)"
+      coverage:
+        - "Simple field mutation: c.count = 5"
+        - "Field increment: c.count = c.count + 1"
+        - "Multiple mutations: c.count = 5; c.count = c.count + 1"
+        - "Field access still works: c.count"
+        - "Multiple fields: p.x = 15; p.y = 25"
+    quality:
+      complexity_actual: 3
+      complexity_max: 10
+      tdg_grade: "A"
+      satd: 0
+      clippy: "Clean (fixed redundant clone warning)"
+    impact:
+      - "Unblocks book examples ch19-00-structs-oop (examples 3 & 7)"
+      - "Enables real-world struct usage with field mutation"
+      - "130/134 book examples working → 132/134 (97% → 98.5%)"
+    files_modified:
+      - "src/runtime/interpreter.rs (+12 lines: Value::Struct case)"
+      - "tests/defect_struct_001_field_mutation.rs (new file: 5 TDD tests)"
+    book_impact:
+      - "ch19 example 3: Counter struct with field mutation - ✅ NOW WORKS"
+      - "ch19 example 7: BankAccount struct visibility - ✅ NOW WORKS"
 
   - id: "QUALITY-LINT-001"
     title: "Code Quality: Fix 174 Clippy Lint Errors"
