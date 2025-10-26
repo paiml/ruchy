@@ -8,6 +8,7 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 use tempfile::TempDir;
 
 // === RED PHASE: These tests MUST fail until implementation is complete ===
@@ -24,7 +25,7 @@ fn test_parser_060_01_file_resolution_simple_module() {
     fs::write(&utils_path, "fun helper() { 42 }").unwrap();
 
     let module_path = "utils";
-    let resolved = resolve_module_path(module_path, temp_dir.path());
+    let resolved = resolve_module_path(module_path, temp_dir.path()).unwrap();
 
     assert_eq!(resolved, utils_path);
 }
@@ -39,7 +40,7 @@ fn test_parser_060_01_file_resolution_nested_module() {
     fs::write(&bar_path, "fun baz() { 100 }").unwrap();
 
     let module_path = "foo::bar";
-    let resolved = resolve_module_path(module_path, temp_dir.path());
+    let resolved = resolve_module_path(module_path, temp_dir.path()).unwrap();
 
     assert_eq!(resolved, bar_path);
 }
@@ -55,7 +56,7 @@ fn test_parser_060_01_file_resolution_deeply_nested() {
     fs::write(&c_path, "fun deep() { 999 }").unwrap();
 
     let module_path = "a::b::c";
-    let resolved = resolve_module_path(module_path, temp_dir.path());
+    let resolved = resolve_module_path(module_path, temp_dir.path()).unwrap();
 
     assert_eq!(resolved, c_path);
 }
@@ -67,7 +68,7 @@ fn test_parser_060_01_file_resolution_missing_file() {
 
     let module_path = "nonexistent";
     let result = std::panic::catch_unwind(|| {
-        resolve_module_path(module_path, temp_dir.path())
+        resolve_module_path(module_path, temp_dir.path()).unwrap()
     });
 
     assert!(result.is_err(), "Should fail when module file doesn't exist");
@@ -83,7 +84,7 @@ fn test_parser_060_01_file_resolution_dot_notation() {
     fs::write(&bar_path, "fun test() { 1 }").unwrap();
 
     let module_path = "foo.bar"; // Dot notation
-    let resolved = resolve_module_path_dot_notation(module_path, temp_dir.path());
+    let resolved = resolve_module_path_dot_notation(module_path, temp_dir.path()).unwrap();
 
     assert_eq!(resolved, bar_path);
 }
@@ -228,7 +229,7 @@ fn test_parser_060_04_import_simple_function() {
     let code = "use utils::helper\nhelper()";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
 
-    assert_eq!(result, Value::Int(42));
+    assert_eq!(result, Value::Integer(42));
 }
 
 #[test]
@@ -244,7 +245,7 @@ fn test_parser_060_04_import_multiple_functions() {
     let code = "use utils::{add, sub}\nadd(10, 5) + sub(10, 5)";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
 
-    assert_eq!(result, Value::Int(20)); // 15 + 5
+    assert_eq!(result, Value::Integer(20)); // 15 + 5
 }
 
 #[test]
@@ -257,7 +258,7 @@ fn test_parser_060_04_import_struct_constructor() {
     let code = "use types::Point\nPoint { x: 10, y: 20 }.x";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
 
-    assert_eq!(result, Value::Int(10));
+    assert_eq!(result, Value::Integer(10));
 }
 
 #[test]
@@ -270,7 +271,7 @@ fn test_parser_060_04_import_const_value() {
     let code = "use config::VERSION\nVERSION";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
 
-    assert_eq!(result, Value::String("1.0".to_string()));
+    assert_eq!(result, Value::from_string("1.0".to_string()));
 }
 
 #[test]
@@ -285,7 +286,7 @@ fn test_parser_060_04_import_from_nested_module() {
     let code = "use foo::bar::baz\nbaz()";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
 
-    assert_eq!(result, Value::Int(100));
+    assert_eq!(result, Value::Integer(100));
 }
 
 #[test]
@@ -318,7 +319,7 @@ fn test_parser_060_05_cache_module_on_first_load() {
     let module1 = cache.load(&module_path).unwrap();
     let module2 = cache.load(&module_path).unwrap();
 
-    assert!(std::ptr::eq(module1.as_ptr(), module2.as_ptr()),
+    assert!(Rc::ptr_eq(&module1, &module2),
             "Should return same cached instance");
 }
 
@@ -337,7 +338,7 @@ fn test_parser_060_05_cache_multiple_modules() {
     let module1 = cache.load(&mod1_path).unwrap();
     let module2 = cache.load(&mod2_path).unwrap();
 
-    assert!(!std::ptr::eq(module1.as_ptr(), module2.as_ptr()),
+    assert!(!Rc::ptr_eq(&module1, &module2),
             "Different modules should be different instances");
 }
 
@@ -345,72 +346,17 @@ fn test_parser_060_05_cache_multiple_modules() {
 // Helper functions (will be implemented in GREEN phase)
 // -------------------------------------------------------------------
 
-// Placeholder stubs - these will cause compilation errors (RED phase)
-fn resolve_module_path(_module: &str, _base: &std::path::Path) -> PathBuf {
-    unimplemented!("PARSER-060: resolve_module_path not yet implemented")
-}
+// -------------------------------------------------------------------
+// Import actual implementations from module_loader
+// -------------------------------------------------------------------
 
-fn resolve_module_path_dot_notation(_module: &str, _base: &std::path::Path) -> PathBuf {
-    unimplemented!("PARSER-060: resolve_module_path_dot_notation not yet implemented")
-}
-
-struct LoadedModule;
-impl LoadedModule {
-    fn is_loaded(&self) -> bool { unimplemented!() }
-    fn path(&self) -> &PathBuf { unimplemented!() }
-    fn symbols(&self) -> std::collections::HashMap<String, Symbol> { unimplemented!() }
-}
-
-struct Symbol;
-
-fn load_module(_path: &std::path::Path) -> Result<LoadedModule, String> {
-    unimplemented!("PARSER-060: load_module not yet implemented")
-}
-
-struct FunctionSymbol {
-    name: String,
-}
-
-fn extract_functions(_module: &LoadedModule) -> Vec<FunctionSymbol> {
-    unimplemented!("PARSER-060: extract_functions not yet implemented")
-}
-
-struct StructSymbol {
-    name: String,
-}
-
-fn extract_structs(_module: &LoadedModule) -> Vec<StructSymbol> {
-    unimplemented!("PARSER-060: extract_structs not yet implemented")
-}
-
-struct ConstSymbol {
-    name: String,
-}
-
-fn extract_consts(_module: &LoadedModule) -> Vec<ConstSymbol> {
-    unimplemented!("PARSER-060: extract_consts not yet implemented")
-}
-
-struct AllSymbols {
-    functions: Vec<FunctionSymbol>,
-    structs: Vec<StructSymbol>,
-    consts: Vec<ConstSymbol>,
-}
-
-fn extract_all_symbols(_module: &LoadedModule) -> AllSymbols {
-    unimplemented!("PARSER-060: extract_all_symbols not yet implemented")
-}
-
-use ruchy::runtime::value::Value;
+use ruchy::runtime::module_loader::{
+    AllSymbols, ConstSymbol, FunctionSymbol, LoadedModule, ModuleCache, StructSymbol,
+    extract_all_symbols, extract_consts, extract_functions, extract_structs,
+    load_module, resolve_module_path, resolve_module_path_dot_notation,
+};
+use ruchy::runtime::Value;
 
 fn execute_with_imports(_code: &str, _base: &std::path::Path) -> Result<Value, String> {
     unimplemented!("PARSER-060: execute_with_imports not yet implemented")
-}
-
-struct ModuleCache;
-impl ModuleCache {
-    fn new() -> Self { unimplemented!() }
-    fn load(&self, _path: &PathBuf) -> Result<std::rc::Rc<LoadedModule>, String> {
-        unimplemented!("PARSER-060: ModuleCache::load not yet implemented")
-    }
 }
