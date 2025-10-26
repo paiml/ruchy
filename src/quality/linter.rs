@@ -45,6 +45,7 @@ struct VariableInfo {
 enum VarType {
     Local,
     Parameter,
+    Function,      // Function definitions (not checked for unused)
     LoopVariable,
     MatchBinding,
 }
@@ -345,8 +346,8 @@ impl Linter {
             ExprKind::Function {
                 name, params, body, ..
             } => {
-                // Define the function name in the current scope
-                scope.define(name.clone(), 1, 1, VarType::Local);
+                // Define the function name in the current scope (as Function, not Local)
+                scope.define(name.clone(), 1, 1, VarType::Function);
                 // Create new scope for function body
                 let mut func_scope = Scope::with_parent(scope.clone());
                 // Add parameters to scope with correct type
@@ -634,6 +635,11 @@ impl Linter {
                             continue;
                         }
                     }
+                    VarType::Function => {
+                        // Functions are not checked for unused status (QUALITY-015)
+                        // Future: implement separate "unused function" detection
+                        continue;
+                    }
                     VarType::LoopVariable => {
                         if self
                             .rules
@@ -674,6 +680,7 @@ impl Linter {
                         match info.var_type {
                             VarType::Local => "variable",
                             VarType::Parameter => "parameter",
+                            VarType::Function => "function", // Unreachable (functions skip check)
                             VarType::LoopVariable => "loop variable",
                             VarType::MatchBinding => "match binding",
                         }
