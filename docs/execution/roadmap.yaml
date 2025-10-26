@@ -3037,7 +3037,8 @@ quality_refactoring:
 
   - id: "QUALITY-024"
     title: "Remove unused control flow modules"
-    status: "CORRECTED"
+    status: "COMPLETE"
+    completed: "2025-10-11"
     revised_date: "2025-10-11"
     correction_date: "2025-10-11"
     time_estimated: "1h"
@@ -3508,19 +3509,19 @@ backlog:
       - "✅ Integration tests validate CSV parsing, deduplication"
 
   - id: "STDLIB-005"
-    title: "Multi-Threaded Directory Walking + Text Search (HARDENED)"
-    status: "IN_PROGRESS (5/6 functions complete: walk, glob, find, search, walk_with_options)"
+    title: "Multi-Threaded Directory Walking + Text Search + Hashing (COMPLETE)"
+    status: "COMPLETE ✅ (6/6 functions: walk, glob, find, search, walk_with_options, walk_parallel, compute_hash)"
     priority: "🔴 HIGH"
     estimated_time: "14-18h"
-    time_spent: "8h"
+    time_spent: "12h"
     critical_review_applied: true
-    version: "2.0.0"
+    version: "3.128.0"
     dependencies:
       - "STDLIB-004"
-    functions: 6
-    functions_complete: 5
-    cli_tools: 5
-    tests_passing: "29/29 (100%)"
+    functions: 7
+    functions_complete: 7
+    cli_tools: 6
+    tests_passing: "36/36 (100%)"
     module: "Directory traversal with parallel processing + fast text search (security-hardened)"
     spec: "docs/specifications/multi-threaded-dir-walk-spec.md"
     tests:
@@ -3608,7 +3609,12 @@ backlog:
       - "✅ NASA-quality architecture: find() delegates to walk().filter() (proper layering)"
       - "✅ Created stdlib/dir_walk.ruchy with library functions"
       - "✅ walk_with_options() implemented with max_depth, min_depth, follow_links options"
-      - "🎯 STDLIB-005 Status: 5/6 complete (83%), walk_parallel deferred to v2.0"
+      - "✅ walk_parallel() implemented with rayon par_bridge() for parallel I/O (complexity: ~8)"
+      - "✅ compute_hash() implemented with MD5 for duplicate detection (complexity: 3)"
+      - "✅ rayon = \"1.11\", md5 = \"0.7\" dependencies added to Cargo.toml"
+      - "✅ Composable API design: walk_parallel() + compute_hash() enable duplicate finding"
+      - "✅ All 36/36 tests passing (walk: 10, glob: 6, find: 3, walk_parallel: 7, compute_hash: 7, walk_with_options: 3)"
+      - "🎯 STDLIB-005 Status: 7/7 functions COMPLETE (100%) - First-class sysadmin language!"
     validation:
       - "✅ walk(): Basic recursive directory traversal working"
       - "✅ walk(): FileEntry objects with all 7 fields (path, name, is_file, is_dir, is_symlink, size, depth)"

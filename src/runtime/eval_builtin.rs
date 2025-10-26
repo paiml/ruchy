@@ -1704,6 +1704,110 @@ fn eval_walk_with_options(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `walk_parallel()` builtin function (STDLIB-005)
+/// Parallel directory walking using rayon for optimal I/O performance
+///
+/// **Perfect Architecture**:
+/// - Parallel I/O (directory walking is I/O-bound - biggest bottleneck)
+/// - Returns FileEntry array for composition with array methods
+/// - Users apply transformations via .map(), .filter(), etc (composable!)
+/// - No closure execution in builtin (keeps architecture clean)
+///
+/// Example:
+/// ```ruby
+/// walk_parallel("/data")
+///     .filter(fn(e) { e.is_file })
+///     .map(fn(e) { e.path })
+/// ```
+///
+/// Complexity: 8 (within Toyota Way limit of ≤10)
+fn eval_walk_parallel(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("walk_parallel", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => {
+            use rayon::prelude::*;
+            use walkdir::WalkDir;
+
+            // Step 1: Parallel I/O collection (the real bottleneck)
+            // Collect metadata while walking in parallel
+            let entries: Vec<_> = WalkDir::new(path.as_ref())
+                .into_iter()
+                .filter_map(std::result::Result::ok)
+                .par_bridge()  // Parallel directory walking
+                .map(|entry: walkdir::DirEntry| {
+                    // Extract all data we need (all thread-safe types)
+                    let path_str = entry.path().display().to_string();
+                    let name_str = entry.file_name().to_string_lossy().to_string();
+                    let file_type = entry.file_type();
+                    let is_file = file_type.is_file();
+                    let is_dir = file_type.is_dir();
+                    let is_symlink = file_type.is_symlink();
+                    let size = entry.metadata().ok().map_or(0, |m: std::fs::Metadata| m.len());
+                    let depth = entry.depth();
+
+                    (path_str, name_str, is_file, is_dir, is_symlink, size, depth)
+                })
+                .collect();
+
+            // Step 2: Serial Value conversion (fast - no I/O)
+            let results: Vec<Value> = entries
+                .into_iter()
+                .map(|(path_str, name_str, is_file, is_dir, is_symlink, size, depth)| {
+                    let mut fields = HashMap::new();
+                    fields.insert("path".to_string(), Value::String(path_str.into()));
+                    fields.insert("name".to_string(), Value::String(name_str.into()));
+                    fields.insert("is_file".to_string(), Value::Bool(is_file));
+                    fields.insert("is_dir".to_string(), Value::Bool(is_dir));
+                    fields.insert("is_symlink".to_string(), Value::Bool(is_symlink));
+                    fields.insert("size".to_string(), Value::Integer(size as i64));
+                    fields.insert("depth".to_string(), Value::Integer(depth as i64));
+                    Value::Object(Arc::new(fields))
+                })
+                .collect();
+
+            Ok(Value::Array(results.into()))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "walk_parallel() expects a string path argument".to_string(),
+        )),
+    }
+}
+
+/// Evaluate `compute_hash()` builtin function (STDLIB-005)
+/// Computes MD5 hash of a file for duplicate detection
+///
+/// **Perfect Composable Design**:
+/// - Single responsibility: Just computes MD5 hash
+/// - Users compose with walk_parallel() for duplicate finding:
+///   ```ruby
+///   walk_parallel("/data")
+///       .filter(fn(e) { e.is_file })
+///       .map(fn(e) { { path: e.path, hash: compute_hash(e.path) } })
+///   ```
+///
+/// Complexity: 3 (within Toyota Way limit of ≤10)
+fn eval_compute_hash(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("compute_hash", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => {
+            // Read file and compute MD5 hash
+            let content = std::fs::read(path.as_ref()).map_err(|e| {
+                InterpreterError::RuntimeError(format!("Failed to read file '{}': {}", path, e))
+            })?;
+
+            let digest = md5::compute(&content);
+            let hash_string = format!("{:x}", digest);
+
+            Ok(Value::String(hash_string.into()))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "compute_hash() expects a string path argument".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_copy()` builtin function
 /// Copies a file from source to destination
 /// Complexity: 3 (within Toyota Way limits)
@@ -1869,14 +1973,16 @@ fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
     }
 }
 
-/// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search
-/// Complexity: 5 (within Toyota Way limits of 10)
+/// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search + Hashing
+/// Complexity: 6 (within Toyota Way limits of 10)
 fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
         "__builtin_glob__" => Ok(Some(eval_glob(args)?)),
         "__builtin_search__" => Ok(Some(eval_search(args)?)),
         "__builtin_walk_with_options__" => Ok(Some(eval_walk_with_options(args)?)),
+        "__builtin_walk_parallel__" => Ok(Some(eval_walk_parallel(args)?)),
+        "__builtin_compute_hash__" => Ok(Some(eval_compute_hash(args)?)),
         _ => Ok(None),
     }
 }

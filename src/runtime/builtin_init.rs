@@ -357,14 +357,18 @@ fn add_stdlib003_functions(global_env: &mut HashMap<String, Value>) {
     );
 }
 
-/// Register STDLIB-005: Multi-Threaded Directory Walking + Text Search
-/// Provides directory traversal and text search functionality
+/// Register STDLIB-005: Multi-Threaded Directory Walking + Text Search + Hashing
+/// Provides directory traversal, text search, and file hashing for duplicate detection
 /// Complexity: 1 (simple registration)
 fn add_stdlib005_functions(global_env: &mut HashMap<String, Value>) {
     // STDLIB-005: Directory Walking Functions
     global_env.insert(
         "walk".to_string(),
         Value::from_string("__builtin_walk__".to_string()),
+    );
+    global_env.insert(
+        "walk_parallel".to_string(),
+        Value::from_string("__builtin_walk_parallel__".to_string()),
     );
     global_env.insert(
         "glob".to_string(),
@@ -377,6 +381,10 @@ fn add_stdlib005_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "walk_with_options".to_string(),
         Value::from_string("__builtin_walk_with_options__".to_string()),
+    );
+    global_env.insert(
+        "compute_hash".to_string(),
+        Value::from_string("__builtin_compute_hash__".to_string()),
     );
 }
 
@@ -529,10 +537,10 @@ mod tests {
         // math functions: log, log10, random (added in STDLIB-002: 3 new)
         // file I/O functions: append_file, delete_file (STDLIB-003: 2 new, others existed)
         // string/array functions: substring, slice, join, unique, zip, enumerate (STDLIB-004: 6 new)
-        // directory walking: walk, glob, search, walk_with_options (STDLIB-005: 4 new)
+        // directory walking: walk, glob, search, walk_with_options, walk_parallel, compute_hash (STDLIB-005: 6 new - 100% complete)
         // std namespace: std (contains std::time::now_millis) (STDLIB-006: 1 new - GitHub Issue #55)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 4 STDLIB-005 + 2 misc + 1 std + 1 other = 108
-        assert_eq!(env.len(), 108);
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other = 110
+        assert_eq!(env.len(), 110);
     }
 
     #[test]

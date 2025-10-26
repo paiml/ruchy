@@ -2875,6 +2875,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4731,6 +4737,7 @@ dependencies = [
  "logos",
  "markup5ever 0.13.0",
  "markup5ever_rcdom",
+ "md5",
  "mime_guess",
  "nix 0.29.0",
  "notify",
@@ -4749,6 +4756,7 @@ dependencies = [
  "quickcheck_macros",
  "quote",
  "rand 0.8.5",
+ "rayon",
  "regex",
  "reqwest",
  "rexpect",
