@@ -227,3 +227,131 @@ mod property_tests {
         }
     }
 }
+
+// Runtime execution tests
+// EXTREME TDD: Test that import statements execute without errors (even if no-op for now)
+
+#[test]
+fn test_issue059_runtime_01_use_statement_executes() {
+    use ruchy::runtime::interpreter::Interpreter;
+
+    let source = r#"
+use std::collections::HashMap
+
+let x = 42
+x
+"#;
+
+    let ast = Parser::new(source).parse().expect("Should parse");
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.eval_expr(&ast);
+
+    // Should NOT error with "Expression type not yet implemented"
+    assert!(
+        result.is_ok(),
+        "use statement should execute without error, got: {:?}",
+        result
+    );
+
+    // Result should be 42 (the last expression)
+    assert_eq!(result.unwrap().to_string(), "42");
+}
+
+#[test]
+fn test_issue059_runtime_02_import_statement_executes() {
+    use ruchy::runtime::interpreter::Interpreter;
+
+    let source = r#"
+import std.collections
+
+let x = 42
+x
+"#;
+
+    let ast = Parser::new(source).parse().expect("Should parse");
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.eval_expr(&ast);
+
+    assert!(
+        result.is_ok(),
+        "import statement should execute without error, got: {:?}",
+        result
+    );
+
+    assert_eq!(result.unwrap().to_string(), "42");
+}
+
+#[test]
+fn test_issue059_runtime_03_from_import_executes() {
+    use ruchy::runtime::interpreter::Interpreter;
+
+    let source = r#"
+from std import println
+
+let x = 42
+x
+"#;
+
+    let ast = Parser::new(source).parse().expect("Should parse");
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.eval_expr(&ast);
+
+    assert!(
+        result.is_ok(),
+        "from import statement should execute without error, got: {:?}",
+        result
+    );
+
+    assert_eq!(result.unwrap().to_string(), "42");
+}
+
+#[test]
+fn test_issue059_runtime_04_wildcard_import_executes() {
+    use ruchy::runtime::interpreter::Interpreter;
+
+    let source = r#"
+use std::*
+
+let x = 42
+x
+"#;
+
+    let ast = Parser::new(source).parse().expect("Should parse");
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.eval_expr(&ast);
+
+    assert!(
+        result.is_ok(),
+        "wildcard import should execute without error, got: {:?}",
+        result
+    );
+
+    assert_eq!(result.unwrap().to_string(), "42");
+}
+
+#[test]
+fn test_issue059_runtime_05_multiple_imports_execute() {
+    use ruchy::runtime::interpreter::Interpreter;
+
+    let source = r#"
+use std::collections::HashMap
+use std::io::Read
+import fs.readFile
+from utils import helper
+
+let x = 42
+x
+"#;
+
+    let ast = Parser::new(source).parse().expect("Should parse");
+    let mut interpreter = Interpreter::new();
+    let result = interpreter.eval_expr(&ast);
+
+    assert!(
+        result.is_ok(),
+        "multiple import statements should execute without error, got: {:?}",
+        result
+    );
+
+    assert_eq!(result.unwrap().to_string(), "42");
+}
