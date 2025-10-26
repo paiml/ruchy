@@ -64,6 +64,10 @@ impl LoadedModule {
     pub fn get_symbol(&self, name: &str) -> Option<&Symbol> {
         self.symbols.get(name)
     }
+
+    pub fn ast(&self) -> &Expr {
+        &self.ast
+    }
 }
 
 /// Symbol types that can be imported from modules
