@@ -331,7 +331,7 @@ impl Formatter {
                 body,
                 ..
             } => {
-                let mut result = format!("fn {name}");
+                let mut result = format!("fun {name}");
                 // Parameters
                 result.push('(');
                 for (i, param) in params.iter().enumerate() {
@@ -1179,7 +1179,7 @@ impl Formatter {
             .collect::<Vec<_>>()
             .join(", ");
         let return_str = method.return_type.as_ref().map_or(String::new(), |t| format!(" -> {}", self.format_type(&t.kind)));
-        format!("fn {}({}){}; ", method.name, params_str, return_str)
+        format!("fun {}({}){}; ", method.name, params_str, return_str)
     }
 
     /// Format an impl method (complexity: 3)
@@ -1190,7 +1190,7 @@ impl Formatter {
             .collect::<Vec<_>>()
             .join(", ");
         let return_str = method.return_type.as_ref().map_or(String::new(), |t| format!(" -> {}", self.format_type(&t.kind)));
-        format!("fn {}({}){}  {}", method.name, params_str, return_str, self.format_expr(&method.body, 0))
+        format!("fun {}({}){}  {}", method.name, params_str, return_str, self.format_expr(&method.body, 0))
     }
 }
 impl Default for Formatter {
