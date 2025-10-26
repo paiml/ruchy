@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[DEFECT-STRUCT-001] Struct Field Mutation Broken (P0 - COMPLETE)**
+  - **Problem**: Struct field mutation failed with "Cannot access field 'X' on non-object"
+  - **Root Cause**: `eval_assign()` handled `Value::Object`, `Value::ObjectMut`, and `Value::Class` but NOT `Value::Struct`
+  - **Impact**: Book examples ch19-00-structs-oop.md (examples 3 & 7) broken, real-world struct usage blocked
+  - **Fix**: Added `Value::Struct` case to field assignment handler (src/runtime/interpreter.rs:3144-3156)
+  - **Architecture**: Struct field mutation uses value semantics (create new copy with updated field)
+  - **Test Coverage**: 5/5 tests passing (100%)
+    - ✅ Simple field mutation: `c.count = 5`
+    - ✅ Field increment: `c.count = c.count + 1`
+    - ✅ Multiple mutations: `c.count = 5; c.count = c.count + 1`
+    - ✅ Field access still works: `c.count`
+    - ✅ Multiple fields: `p.x = 15; p.y = 25`
+  - **Quality**: Clippy clean (fixed redundant clone warning), complexity ≤10
+  - **Files Modified**:
+    - src/runtime/interpreter.rs (+12 lines: Value::Struct match arm)
+    - tests/defect_struct_001_field_mutation.rs (new file: 5 TDD tests)
+
 ### Changed
 
 - **[VERSION] v3.127.0 Release**

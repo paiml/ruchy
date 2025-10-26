@@ -3141,6 +3141,19 @@ impl Interpreter {
                                 fields_write.insert(field.clone(), val.clone());
                                 Ok(val)
                             }
+                            Value::Struct { ref name, ref fields } => {
+                                // Struct: create new copy with updated field (value semantics)
+                                let mut new_fields = (**fields).clone();
+                                new_fields.insert(field.clone(), val.clone());
+                                let new_struct = Value::Struct {
+                                    name: name.clone(),
+                                    fields: Arc::new(new_fields),
+                                };
+
+                                // Update the variable with the modified struct
+                                self.set_variable(obj_name, new_struct);
+                                Ok(val)
+                            }
                             _ => Err(InterpreterError::RuntimeError(format!(
                                 "Cannot access field '{}' on non-object",
                                 field
