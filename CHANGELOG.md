@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+
+- **[VERSION] v3.127.0 Release**
+  - Synchronized ruchy and ruchy-wasm to v3.127.0
+  - Prepares for OPT-019 release with closure support
+
+- **[QUALITY] Code Quality Improvements**
+  - Fixed 174 clippy lint errors → 0 errors (100% clean)
+  - Automated fixes: format strings, redundant closures, explicit iteration, cast conversions
+  - Manual fixes: redundant closure (compiler.rs), matches! macro (vm.rs), never-loop (handlers/mod.rs)
+  - Configured Arc lint for single-threaded runtime (Arc used for shared ownership, not thread-safety)
+  - make lint now passes with zero errors
+
 ### Added
 
 - **[OPT-019] Bytecode VM Closure Support (Hybrid Execution - COMPLETE)**
