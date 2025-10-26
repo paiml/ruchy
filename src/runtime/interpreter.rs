@@ -1149,6 +1149,23 @@ impl Interpreter {
                 // For now, import statements are valid but don't load anything
                 Ok(Value::Nil)
             }
+            // Handle vec! macro (GitHub Issue #62)
+            ExprKind::Macro { name, args } => {
+                if name == "vec" {
+                    // vec![...] expands to an array with evaluated arguments
+                    let mut elements = Vec::new();
+                    for arg in args {
+                        let value = self.eval_expr(arg)?;
+                        elements.push(value);
+                    }
+                    Ok(Value::Array(elements.into()))
+                } else {
+                    // Other macros not yet implemented
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Macro '{}!' not yet implemented", name
+                    )))
+                }
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(

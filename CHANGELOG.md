@@ -4,6 +4,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.134.0] - 2025-10-26
+
+### Added
+
+- **[RUNTIME-062] vec! Macro Implementation** (GitHub Issue #62)
+  - **Achievement**: Full vec! macro support in interpreter - unblocks bootstrap execution
+  - **Test Coverage**: 8/8 tests passing (100%)
+    - ✅ Empty vectors: `vec![]`
+    - ✅ Single elements: `vec![42]`
+    - ✅ Multiple elements: `vec![1, 2, 3]`
+    - ✅ String elements: `vec!["hello", "world"]`
+    - ✅ Mixed types: `vec![1, "hello", true]`
+    - ✅ Nested vectors: `vec![vec![1, 2], vec![3, 4]]`
+    - ✅ Expressions: `vec![1 + 1, 2 * 3, 10 - 5]`
+    - ✅ GitHub Issue #62 reproduction case
+  - **Implementation**: Added macro evaluation in `eval_misc_expr()` with proper Arc conversion
+  - **Impact**:
+    - Unblocks bootstrap/stage1/pratt_parser_full.ruchy execution
+    - Enables all code using vec! macro in interpreter
+    - 42/43 bootstrap files now execute successfully (97.7%)
+  - **Files Modified**:
+    - src/runtime/interpreter.rs: Added ExprKind::Macro handler (lines 1152-1168)
+    - tests/runtime_062_vec_macro.rs: Comprehensive RED-GREEN-REFACTOR tests (198 lines)
+  - **Ticket**: RUNTIME-062
+  - **GitHub Issue**: https://github.com/paiml/ruchy/issues/62
+  - **Related**: ../ruchyruchy BUG_DISCOVERY_REPORT.md - BUG-018 (HIGH priority)
+
 ## [3.133.0] - 2025-10-26
 
 ### Added
