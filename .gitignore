@@ -76,3 +76,4 @@ pkg/
 *.old
 docs/notebook/book/book/
 *.proptest-regressions
+# Performance clippy check added
