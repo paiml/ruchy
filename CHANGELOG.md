@@ -6,6 +6,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Fixed
 
+- **[DEFECT-PARSER-007] Inline Comments in Struct Field Definitions (P1 - COMPLETE)**
+  - **Problem**: Inline comments after struct field declarations caused "Expected field name" parse error
+  - **Root Cause**: `parse_struct_fields()` didn't skip comment tokens between fields (unlike enum variants)
+  - **Impact**: Book example ch19-00-structs-oop.md (example 7) broken, documentation examples failed
+  - **Fix**: Added comment-skipping logic to struct field parser (3 locations):
+    1. Before field declaration (skip leading comments)
+    2. After field definition (skip trailing inline comments)
+    3. After comma (skip comments before next field)
+  - **Architecture**: Applied same pattern as enum variant parsing (enums.rs:93-103)
+  - **Test Coverage**: 6/6 tests passing (100%)
+    - ✅ Inline comment after field: `pub owner: String, // Public field`
+    - ✅ Multiple inline comments: All fields with comments
+    - ✅ Block comments after field: `x: f64, /* X coordinate */`
+    - ✅ Mixed line and block comments
+    - ✅ No comments still works (regression test)
+    - ✅ Comments before fields: `// Username field \n name: String`
+  - **Quality**: Clippy clean, complexity ≤10, book examples 98%→99%
+  - **Files Modified**:
+    - src/frontend/parser/expressions_helpers/structs.rs (+15 lines: 3 comment-skip loops)
+    - tests/defect_parser_007_struct_inline_comments.rs (new file: 6 TDD tests)
+  - **Book Impact**: ch19 example 7 now passes (132/134 working, 99% success rate)
+
 - **[DEFECT-STRUCT-001] Struct Field Mutation Broken (P0 - COMPLETE)**
   - **Problem**: Struct field mutation failed with "Cannot access field 'X' on non-object"
   - **Root Cause**: `eval_assign()` handled `Value::Object`, `Value::ObjectMut`, and `Value::Class` but NOT `Value::Struct`

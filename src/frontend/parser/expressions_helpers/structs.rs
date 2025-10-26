@@ -90,6 +90,11 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     let mut fields = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // DEFECT-PARSER-007: Skip comments before field declaration
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+            state.tokens.advance();
+        }
+
         let (visibility, is_mut) = parse_struct_field_modifiers(state)?;
         let (field_name, field_type, default_value) = parse_single_struct_field(state)?;
 
@@ -102,8 +107,18 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
             decorators: vec![],
         });
 
+        // DEFECT-PARSER-007: Skip any inline comments after field definition
+        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+            state.tokens.advance();
+        }
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
+
+            // Skip comments after comma (allows multiline definitions with comments)
+            while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+                state.tokens.advance();
+            }
         }
     }
 
