@@ -2,12 +2,12 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.46"
+  version: "3.47"
   last_updated: "2025-10-26"
-  current_sprint: "🎯 100% Book Validation Achieved! (132/132 executable examples passing)"
-  latest_release: "v3.128.0"
-  latest_commit_message: "[BOOK-VALIDATION] Achieve 100% book validation (skip-test markers for 2 non-executable examples)"
-  previous_release: "v3.127.0"
+  current_sprint: "🧹 Quality Gates Enforcement (Clippy pre-commit hook + zero lint violations)"
+  latest_release: "v3.129.0"
+  latest_commit_message: "[QUALITY] Fix all make lint issues + Add cargo clippy to pre-commit hook (7 fixes, upstream for ruchyruchy)"
+  previous_release: "v3.128.0"
   phase_1_bytecode_vm: "✅ COMPLETE (OPT-001 through OPT-010) - 98-99% faster than AST!"
   phase_2_bytecode_vm: "✅ COMPLETE (OPT-011 through OPT-020) - Complex features (closures, collections, match)"
   bytecode_vm_validation: "✅ COMPLETE (OPT-021) - Baseline AST performance established (12.82µs avg)"
@@ -15,6 +15,7 @@ metadata:
   struct_field_mutation: "✅ FIXED (DEFECT-STRUCT-001) - Struct field mutation now works (c.count = 5)"
   struct_inline_comments: "✅ FIXED (DEFECT-PARSER-007) - Inline comments in struct fields now work (book 98%→99%)"
   book_validation: "🎯 100% ACHIEVED - 132/132 executable examples passing, 2 non-executable properly marked (skip-test)"
+  release_notes_v3_129_0: "Quality gates enforcement: Cargo clippy pre-commit hook + 7 lint fixes (needed for ruchyruchy integration)"
   release_notes_v3_128_0: "OPT-020 Non-Literal Collections (arrays/tuples/objects with variables/expressions)"
   release_notes_v3_127_0: "OPT-019 Closure Support + Critical opcode encoding bugfix + 174→0 lint errors (100% quality improvement)"
   release_notes_v3_126_0: "Phase 1 Bytecode VM Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated, published to crates.io"

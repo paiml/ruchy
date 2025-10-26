@@ -4,6 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+
+- **[QUALITY] Cargo Clippy Pre-commit Hook + Lint Compliance** 🧹
+  - **Achievement**: Zero lint violations enforced automatically on every commit
+  - **Pre-commit Hook**: Added cargo clippy validation to .git/hooks/pre-commit
+    - Runs same checks as `make lint` (with -D warnings flag)
+    - Blocks commits on clippy errors with helpful error messages
+    - Uses flags: -A clippy::arc-with-non-send-sync -A unsafe-code -D warnings
+  - **Lint Fixes**: Fixed 7 clippy violations across 2 files
+    - 5 doc_markdown errors (missing backticks in documentation)
+    - 2 uninlined_format_args errors (modernized format strings)
+  - **Files Modified**:
+    - .git/hooks/pre-commit (+16 lines: clippy validation section)
+    - src/runtime/eval_array.rs (1 doc fix: `Array.each()` → backticks)
+    - src/runtime/eval_builtin.rs (6 fixes: backticks + format strings)
+    - Makefile (-4 lines: removed duplicate coverage-frontend target)
+  - **Quality Gates**: All pre-commit checks passing (clippy, bashrs, CLI smoke tests, book validation, debugging tools)
+  - **Impact**: Prevents code quality regressions, enforces Toyota Way standards automatically
+  - **Rationale**: Needed for ../ruchyruchy integration (upstream dependency requires clean linting)
+
 ### Added
 
 - **[STDLIB-010] Array.each() Method - Missing Language Feature Protocol** 🛑
