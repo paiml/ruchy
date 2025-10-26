@@ -245,6 +245,8 @@ rand = "0.8"
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
+rayon = "1.11"  # STDLIB-005: Parallel directory walking
+md5 = "0.7"  # STDLIB-005: File hashing for duplicate detection
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

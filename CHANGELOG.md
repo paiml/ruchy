@@ -21,6 +21,39 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Impact**: Proves 100% language feature coverage - every executable example in documentation works
   - **Quality**: Professional documentation with clear distinction between runnable code and syntax examples
 
+- **[STDLIB-005] Multi-Threaded Directory Walking + Hashing COMPLETE (7/7 functions)** 🎯
+  - **Achievement**: STDLIB-005 now 100% complete - first-class systems administration language
+  - **Functions Added**:
+    - `walk_parallel(path)`: Parallel directory walking using rayon (complexity: ~8)
+    - `compute_hash(path)`: MD5 file hashing for duplicate detection (complexity: 3)
+  - **Architecture**: Perfect composable API design
+    - walk_parallel() does parallel I/O, returns FileEntry array
+    - Users compose: `.filter()`, `.map()`, array methods for transformations
+    - compute_hash() enables duplicate finding when chained with walk_parallel()
+  - **Example Usage**:
+    ```ruby
+    # Find duplicate files
+    let files = walk_parallel("/data")
+        .filter(fn(e) { e.is_file })
+        .map(fn(e) { { path: e.path, hash: compute_hash(e.path) } })
+    # Group by hash, filter groups with >1 file = duplicates
+    ```
+  - **Testing**: 36/36 tests passing (100%)
+    - walk: 10 tests, glob: 6 tests, find: 3 tests
+    - walk_parallel: 7 tests, compute_hash: 7 tests, walk_with_options: 3 tests
+  - **Dependencies Added**:
+    - rayon = "1.11" (parallel processing with work-stealing scheduler)
+    - md5 = "0.7" (fast MD5 hashing for duplicate detection)
+  - **Files Modified**:
+    - src/runtime/eval_builtin.rs: +eval_walk_parallel(), +eval_compute_hash()
+    - src/runtime/builtin_init.rs: +walk_parallel, +compute_hash registration
+    - tests/stdlib005_walk_parallel.rs: NEW (7 tests)
+    - tests/stdlib005_compute_hash.rs: NEW (7 tests)
+    - Cargo.toml: +rayon, +md5 dependencies
+  - **Complexity**: All functions ≤10 (Toyota Way compliance)
+  - **Method**: Extreme TDD (RED → GREEN → REFACTOR), tests written FIRST
+  - **Impact**: Ruchy now rivals rclean for systems administration tasks
+
 ### Fixed
 
 - **[DEFECT-PARSER-007] Inline Comments in Struct Field Definitions (P1 - COMPLETE)**
