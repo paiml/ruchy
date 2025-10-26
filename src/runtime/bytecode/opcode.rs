@@ -110,6 +110,8 @@ pub enum OpCode {
     Specialize = 0x2B,
     /// Deoptimize to baseline code
     Deoptimize = 0x2C,
+    /// Create new tuple
+    NewTuple = 0x2D,
 
     // Control Flow (0x30-0x3F)
     /// Unconditional jump
@@ -200,6 +202,7 @@ impl OpCode {
             0x2A => Some(Self::InlineCache),
             0x2B => Some(Self::Specialize),
             0x2C => Some(Self::Deoptimize),
+            0x2D => Some(Self::NewTuple),
 
             // Control Flow
             0x30 => Some(Self::Jump),
@@ -279,6 +282,7 @@ impl OpCode {
             Self::InlineCache => "InlineCache",
             Self::Specialize => "Specialize",
             Self::Deoptimize => "Deoptimize",
+            Self::NewTuple => "NewTuple",
         }
     }
 }

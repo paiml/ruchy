@@ -281,6 +281,90 @@ impl VM {
                 Ok(())
             }
 
+            OpCode::NewArray => {
+                // OPT-020: Runtime array construction from register values
+                // ABx format: A = dest_reg, Bx = index into chunk.array_element_regs
+                let dest = instruction.get_a() as usize;
+                let element_regs_idx = instruction.get_bx() as usize;
+
+                // Get current frame and element register list
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let element_regs = frame.chunk.array_element_regs.get(element_regs_idx)
+                    .ok_or_else(|| format!("Array element regs index out of bounds: {element_regs_idx}"))?;
+
+                // Collect elements from specified registers (may not be contiguous)
+                let mut elements = Vec::with_capacity(element_regs.len());
+                for &elem_reg in element_regs {
+                    let elem_reg = elem_reg as usize;
+                    if elem_reg >= self.registers.len() {
+                        return Err(format!("Element register {elem_reg} out of bounds"));
+                    }
+                    elements.push(self.registers[elem_reg].clone());
+                }
+
+                // Create array value
+                let array = Value::from_array(elements);
+                self.registers[dest] = array;
+                Ok(())
+            }
+
+            OpCode::NewTuple => {
+                // OPT-020: Runtime tuple construction from register values
+                // ABx format: A = dest_reg, Bx = index into chunk.array_element_regs
+                let dest = instruction.get_a() as usize;
+                let element_regs_idx = instruction.get_bx() as usize;
+
+                // Get current frame and element register list (reusing array_element_regs)
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let element_regs = frame.chunk.array_element_regs.get(element_regs_idx)
+                    .ok_or_else(|| format!("Tuple element regs index out of bounds: {element_regs_idx}"))?;
+
+                // Collect elements from specified registers (may not be contiguous)
+                let mut elements = Vec::with_capacity(element_regs.len());
+                for &elem_reg in element_regs {
+                    let elem_reg = elem_reg as usize;
+                    if elem_reg >= self.registers.len() {
+                        return Err(format!("Element register {elem_reg} out of bounds"));
+                    }
+                    elements.push(self.registers[elem_reg].clone());
+                }
+
+                // Create tuple value
+                let tuple = Value::Tuple(Arc::from(elements.as_slice()));
+                self.registers[dest] = tuple;
+                Ok(())
+            }
+
+            OpCode::NewObject => {
+                // OPT-020: Runtime object construction from register values
+                // ABx format: A = dest_reg, Bx = index into chunk.object_fields
+                let dest = instruction.get_a() as usize;
+                let field_data_idx = instruction.get_bx() as usize;
+
+                // Get current frame and field data
+                let frame = self.call_stack.last()
+                    .ok_or("No active call frame")?;
+                let field_data = frame.chunk.object_fields.get(field_data_idx)
+                    .ok_or_else(|| format!("Object field data index out of bounds: {field_data_idx}"))?;
+
+                // Build object from key-value pairs
+                let mut object_map = std::collections::HashMap::new();
+                for (key, value_reg) in field_data {
+                    let value_reg = *value_reg as usize;
+                    if value_reg >= self.registers.len() {
+                        return Err(format!("Value register {value_reg} out of bounds"));
+                    }
+                    object_map.insert(key.clone(), self.registers[value_reg].clone());
+                }
+
+                // Create object value
+                let object = Value::Object(Arc::new(object_map));
+                self.registers[dest] = object;
+                Ok(())
+            }
+
             // Arithmetic operations
             OpCode::Add => self.binary_op(instruction, super::super::interpreter::Value::add),
             OpCode::Sub => self.binary_op(instruction, super::super::interpreter::Value::subtract),

@@ -52,6 +52,12 @@ pub struct BytecodeChunk {
     /// Stores AST for closures to enable interpreter delegation
     /// Each entry: (params, body) - environment captured at runtime
     pub closures: Vec<(Vec<String>, Arc<Expr>)>,
+    /// Array element registers (for runtime array construction - OPT-020)
+    /// Stores register lists for `NewArray` opcodes (element registers may not be contiguous)
+    pub array_element_regs: Vec<Vec<u8>>,
+    /// Object field data (for runtime object construction - OPT-020)
+    /// Stores (`key`, `value_register`) pairs for `NewObject` opcodes
+    pub object_fields: Vec<Vec<(String, u8)>>,
     /// Local variable name to register mapping (for hybrid execution)
     /// Enables synchronization between bytecode registers and interpreter scope
     pub locals_map: HashMap<String, u8>,
@@ -72,6 +78,8 @@ impl BytecodeChunk {
             method_calls: Vec::new(),
             match_exprs: Vec::new(),
             closures: Vec::new(),
+            array_element_regs: Vec::new(),
+            object_fields: Vec::new(),
             locals_map: HashMap::new(),
         }
     }
@@ -607,15 +615,20 @@ impl Compiler {
 
     /// Compile a list/array literal
     ///
-    /// OPT-012: Compile elements and create `Value::Array` in constant pool
+    /// OPT-020: Support both literal and non-literal elements
+    /// - Literals: Compile to constant pool (optimization)
+    /// - Non-literals: Compile elements to registers, emit `NewArray` opcode
     fn compile_list(&mut self, elements: &[Expr]) -> Result<u8, String> {
-        // Compile each element
-        let mut element_values = Vec::new();
-        for elem in elements {
-            // For now, only support literal elements in lists
-            // Full expression support would require runtime array construction
-            match &elem.kind {
-                ExprKind::Literal(lit) => {
+        // Check if all elements are literals (can optimize)
+        let all_literals = elements.iter().all(|elem| {
+            matches!(&elem.kind, ExprKind::Literal(_))
+        });
+
+        if all_literals && !elements.is_empty() {
+            // Optimization: Create array at compile-time in constant pool
+            let mut element_values = Vec::new();
+            for elem in elements {
+                if let ExprKind::Literal(lit) = &elem.kind {
                     let value = match lit {
                         Literal::Integer(i, _) => Value::Integer(*i),
                         Literal::Float(f) => Value::Float(*f),
@@ -627,40 +640,60 @@ impl Compiler {
                     };
                     element_values.push(value);
                 }
-                _ => {
-                    // For non-literals, evaluate at runtime
-                    // TODO: Full expression support - for now return error
-                    return Err(format!("Array elements must be literals for now (found: {:?})", elem.kind));
-                }
             }
+
+            let array_value = Value::from_array(element_values);
+            let const_index = self.chunk.add_constant(array_value);
+
+            let result_reg = self.registers.allocate();
+            self.chunk.emit(
+                Instruction::abx(OpCode::Const, result_reg, const_index),
+                0,
+            );
+            Ok(result_reg)
+        } else {
+            // Runtime array construction: compile elements to registers
+            let mut element_regs = Vec::new();
+            for elem in elements {
+                let elem_reg = self.compile_expr(elem)?;
+                element_regs.push(elem_reg);
+            }
+
+            // Store element registers in chunk (element registers may not be contiguous)
+            let element_regs_idx = self.chunk.array_element_regs.len();
+            self.chunk.array_element_regs.push(element_regs);
+
+            // Allocate destination register
+            let result_reg = self.registers.allocate();
+
+            // Emit NewArray instruction: result = new Array(elements...)
+            // Format: NewArray result_reg, element_regs_idx (stored in chunk)
+            // B field holds the index into chunk.array_element_regs
+            self.chunk.emit(
+                Instruction::abx(OpCode::NewArray, result_reg, element_regs_idx as u16),
+                0,
+            );
+
+            Ok(result_reg)
         }
-
-        // Create array value
-        let array_value = Value::from_array(element_values);
-        let const_index = self.chunk.add_constant(array_value);
-
-        // Allocate register and load array
-        let result_reg = self.registers.allocate();
-        self.chunk.emit(
-            Instruction::abx(OpCode::Const, result_reg, const_index),
-            0,
-        );
-
-        Ok(result_reg)
     }
 
     /// Compile a tuple literal
     ///
-    /// OPT-017: Compile elements and create `Value::Tuple` in constant pool
-    /// Follows same pattern as `compile_list` - literal-only for now
+    /// OPT-020: Support both literal and non-literal elements
+    /// - Literals: Compile to constant pool (optimization)
+    /// - Non-literals: Compile elements to registers, emit `NewTuple` opcode
     fn compile_tuple(&mut self, elements: &[Expr]) -> Result<u8, String> {
-        // Compile each element
-        let mut element_values = Vec::new();
-        for elem in elements {
-            // For now, only support literal elements in tuples
-            // Full expression support would require runtime tuple construction
-            match &elem.kind {
-                ExprKind::Literal(lit) => {
+        // Check if all elements are literals (can optimize)
+        let all_literals = elements.iter().all(|elem| {
+            matches!(&elem.kind, ExprKind::Literal(_))
+        });
+
+        if all_literals && !elements.is_empty() {
+            // Optimization: Create tuple at compile-time in constant pool
+            let mut element_values = Vec::new();
+            for elem in elements {
+                if let ExprKind::Literal(lit) = &elem.kind {
                     let value = match lit {
                         Literal::Integer(i, _) => Value::Integer(*i),
                         Literal::Float(f) => Value::Float(*f),
@@ -672,81 +705,120 @@ impl Compiler {
                     };
                     element_values.push(value);
                 }
-                _ => {
-                    // For non-literals, evaluate at runtime
-                    // TODO: Full expression support - for now return error
-                    return Err(format!("Tuple elements must be literals for now (found: {:?})", elem.kind));
-                }
             }
+
+            let tuple_value = Value::Tuple(Arc::from(element_values.as_slice()));
+            let const_index = self.chunk.add_constant(tuple_value);
+
+            let result_reg = self.registers.allocate();
+            self.chunk.emit(
+                Instruction::abx(OpCode::Const, result_reg, const_index),
+                0,
+            );
+            Ok(result_reg)
+        } else {
+            // Runtime tuple construction: compile elements to registers
+            let mut element_regs = Vec::new();
+            for elem in elements {
+                let elem_reg = self.compile_expr(elem)?;
+                element_regs.push(elem_reg);
+            }
+
+            // Store element registers in chunk (reuse array_element_regs for tuples)
+            let element_regs_idx = self.chunk.array_element_regs.len();
+            self.chunk.array_element_regs.push(element_regs);
+
+            // Allocate destination register
+            let result_reg = self.registers.allocate();
+
+            // Emit NewTuple instruction: result = new Tuple(elements...)
+            // Format: NewTuple result_reg, element_regs_idx (stored in chunk)
+            self.chunk.emit(
+                Instruction::abx(OpCode::NewTuple, result_reg, element_regs_idx as u16),
+                0,
+            );
+
+            Ok(result_reg)
         }
-
-        // Create tuple value
-        let tuple_value = Value::Tuple(Arc::from(element_values.as_slice()));
-        let const_index = self.chunk.add_constant(tuple_value);
-
-        // Allocate register and load tuple
-        let result_reg = self.registers.allocate();
-        self.chunk.emit(
-            Instruction::abx(OpCode::Const, result_reg, const_index),
-            0,
-        );
-
-        Ok(result_reg)
     }
 
     /// Compile an object literal
     ///
-    /// OPT-016: Compile fields and create `Value::Object` in constant pool
-    /// Follows same pattern as `compile_list/compile_tuple` - literal-only for now
+    /// OPT-020: Support both literal and non-literal field values
+    /// - All literals: Compile to constant pool (optimization)
+    /// - Non-literals: Compile values to registers, emit `NewObject` opcode
     fn compile_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<u8, String> {
         use crate::frontend::ast::ObjectField;
         use std::collections::HashMap;
 
-        // Build object map from field key-value pairs
-        let mut object_map = HashMap::new();
-        for field in fields {
+        // Check if all field values are literals (can optimize)
+        let all_literals = fields.iter().all(|field| {
             match field {
-                ObjectField::KeyValue { key, value } => {
-                    // For now, only support literal values in object fields
-                    // Full expression support would require runtime object construction
-                    match &value.kind {
-                        ExprKind::Literal(lit) => {
-                            let val = match lit {
-                                Literal::Integer(i, _) => Value::Integer(*i),
-                                Literal::Float(f) => Value::Float(*f),
-                                Literal::String(s) => Value::from_string(s.clone()),
-                                Literal::Bool(b) => Value::Bool(*b),
-                                Literal::Unit | Literal::Null => Value::Nil,
-                                Literal::Char(c) => Value::from_string(c.to_string()),
-                                Literal::Byte(b) => Value::Integer(i64::from(*b)),
-                            };
-                            object_map.insert(key.clone(), val);
-                        }
-                        _ => {
-                            // For non-literals, evaluate at runtime
-                            // TODO: Full expression support - for now return error
-                            return Err(format!("Object field values must be literals for now (found: {:?})", value.kind));
-                        }
+                ObjectField::KeyValue { value, .. } => matches!(&value.kind, ExprKind::Literal(_)),
+                ObjectField::Spread { .. } => false, // Spread not supported yet
+            }
+        });
+
+        if all_literals && !fields.is_empty() {
+            // Optimization: Create object at compile-time in constant pool
+            let mut object_map = HashMap::new();
+            for field in fields {
+                if let ObjectField::KeyValue { key, value } = field {
+                    if let ExprKind::Literal(lit) = &value.kind {
+                        let val = match lit {
+                            Literal::Integer(i, _) => Value::Integer(*i),
+                            Literal::Float(f) => Value::Float(*f),
+                            Literal::String(s) => Value::from_string(s.clone()),
+                            Literal::Bool(b) => Value::Bool(*b),
+                            Literal::Unit | Literal::Null => Value::Nil,
+                            Literal::Char(c) => Value::from_string(c.to_string()),
+                            Literal::Byte(b) => Value::Integer(i64::from(*b)),
+                        };
+                        object_map.insert(key.clone(), val);
                     }
                 }
-                ObjectField::Spread { .. } => {
-                    return Err("Spread operator in object literals not yet supported in bytecode mode".to_string());
+            }
+
+            let object_value = Value::Object(Arc::new(object_map));
+            let const_index = self.chunk.add_constant(object_value);
+
+            let result_reg = self.registers.allocate();
+            self.chunk.emit(
+                Instruction::abx(OpCode::Const, result_reg, const_index),
+                0,
+            );
+            Ok(result_reg)
+        } else {
+            // Runtime object construction: compile field values to registers
+            let mut field_data = Vec::new();
+            for field in fields {
+                match field {
+                    ObjectField::KeyValue { key, value } => {
+                        let value_reg = self.compile_expr(value)?;
+                        field_data.push((key.clone(), value_reg));
+                    }
+                    ObjectField::Spread { .. } => {
+                        return Err("Spread operator in object literals not yet supported in bytecode mode".to_string());
+                    }
                 }
             }
+
+            // Store field data in chunk
+            let field_data_idx = self.chunk.object_fields.len();
+            self.chunk.object_fields.push(field_data);
+
+            // Allocate destination register
+            let result_reg = self.registers.allocate();
+
+            // Emit NewObject instruction: result = new Object(fields...)
+            // Format: NewObject result_reg, field_data_idx (stored in chunk)
+            self.chunk.emit(
+                Instruction::abx(OpCode::NewObject, result_reg, field_data_idx as u16),
+                0,
+            );
+
+            Ok(result_reg)
         }
-
-        // Create object value
-        let object_value = Value::Object(Arc::new(object_map));
-        let const_index = self.chunk.add_constant(object_value);
-
-        // Allocate register and load object
-        let result_reg = self.registers.allocate();
-        self.chunk.emit(
-            Instruction::abx(OpCode::Const, result_reg, const_index),
-            0,
-        );
-
-        Ok(result_reg)
     }
 
     /// Compile array indexing: arr[index]

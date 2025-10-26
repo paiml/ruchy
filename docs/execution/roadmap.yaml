@@ -1513,6 +1513,50 @@ tasks:
       - "Fully enables closures and functional programming in bytecode mode"
       - "Fixed fundamental bytecode infrastructure bug affecting 8 opcodes"
 
+  - id: "OPT-020"
+    title: "Bytecode VM Non-Literal Collections (Runtime Construction)"
+    status: "COMPLETE"
+    completed: "2025-10-26"
+    priority: "🟡 HIGH"
+    phase: "Phase 2: Complex Features"
+    time_estimated: "3 hours"
+    time_actual: "2.5 hours"
+    efficiency: "120%"
+    depends_on: ["OPT-012"]
+    description: |
+      Implemented runtime construction for arrays, tuples, and objects with variable/expression elements.
+      Previously only literal values worked in collections, blocking real-world usage patterns.
+    architecture:
+      - "Compiler: All-literal collections → constant pool (optimization)"
+      - "Compiler: Mixed collections → compile elements to registers, emit runtime construction opcodes"
+      - "VM: Runtime construction from register values via NewArray/NewTuple/NewObject opcodes"
+    components:
+      - "✅ OpCode::NewArray (0x1D) - Runtime array construction"
+      - "✅ OpCode::NewTuple (0x2D) - Runtime tuple construction"
+      - "✅ OpCode::NewObject (0x1C) - Runtime object construction"
+      - "✅ BytecodeChunk.array_element_regs - Stores element register lists"
+      - "✅ BytecodeChunk.object_fields - Stores (key, value_reg) pairs"
+      - "✅ compile_list() - Hybrid compilation for arrays"
+      - "✅ compile_tuple() - Hybrid compilation for tuples"
+      - "✅ compile_object_literal() - Hybrid compilation for objects"
+    tests:
+      arrays: 4
+      tuples: 2
+      objects: 2
+      passing: "8/8 (100%)"
+      total_tests: "110/110 semantic equivalence tests (102 → 110, +8 new, no regressions)"
+    quality:
+      complexity_actual: 8
+      tdg_grade: "A"
+      satd: 0
+    bugfix:
+      issue: "Register non-contiguity assumption"
+      fix: "Store actual register lists in chunk instead of assuming contiguous allocation"
+    impact:
+      - "Unblocks real-world collection usage: let x = 10; [x, x+1, x+2]"
+      - "Enables variable/expression elements in all collection types"
+      - "Maintains compile-time optimization for all-literal collections"
+
   - id: "QUALITY-LINT-001"
     title: "Code Quality: Fix 174 Clippy Lint Errors"
     status: "COMPLETE"
