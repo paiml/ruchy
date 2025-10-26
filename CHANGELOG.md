@@ -4,6 +4,52 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.131.0] - 2025-10-26
+
+### Documentation
+
+- **[PARSER-059] Mutation Testing Analysis - Deferred to Phase 2** 📊
+  - **Achievement**: Comprehensive analysis of mutation testing feasibility for import implementation
+  - **Finding**: Current import implementation is intentional no-op stub (1 line: `Ok(Value::Nil)`)
+  - **Estimated Mutation Coverage**: ~50% (acceptable for stub implementation)
+  - **Blocker Identified**: Pre-existing thread safety compilation error in `tests/repl_thread_safety.rs`
+    - Issue: `Rc<markup5ever_rcdom::Node>` cannot be shared between threads safely
+    - Recommendation: Separate ticket for thread safety fix
+  - **Decision**: Defer comprehensive mutation testing to PARSER-060 (Module Resolution implementation)
+  - **Rationale**: Full mutation testing appropriate when actual file loading/symbol resolution implemented
+  - **Files Created**:
+    - mutations_parser_059_analysis.md (128 lines): Detailed analysis with theoretical mutation scenarios
+    - mutations_parser_059.txt: cargo-mutants execution log
+  - **Next Steps**: Perform comprehensive mutation testing when PARSER-060 implements actual module resolution
+  - **Reference**: docs/design/module_resolution_mvp.md for Phase 2 implementation plan
+
+- **[PARSER-060] Module Resolution MVP Design Complete** 📐
+  - **Achievement**: Architecture design for multi-file Ruchy projects with function imports
+  - **Scope Defined**:
+    - ✅ IN SCOPE: File resolution, loading, symbol extraction, imports
+    - ❌ OUT OF SCOPE: Circular deps, namespaces, visibility, wildcards, absolute paths, packages
+  - **Estimated Implementation**: 2-4 hours for full MVP with 23 tests
+  - **Decision**: Design complete, implementation deferred to v3.132.0 for controlled release
+  - **Files Created**:
+    - docs/design/module_resolution_mvp.md (39 lines): MVP architecture and scope
+  - **Impact**: Clear roadmap for Phase 2 module system implementation
+  - **Ticket**: PARSER-060
+
+- **[DEPENDENCY-CLEANUP-001] Dependency Cleanup Analysis** 🧹
+  - **Achievement**: Identified 14 potentially unused dependencies via cargo-machete
+  - **Findings**:
+    - ruchy: 10 dependencies (arrow-array, arrow-buffer, im, markup5ever, mime_guess, once_cell, pest, pest_derive, quickcheck, web-sys)
+    - ruchy-wasm: 4 dependencies (js-sys, serde, serde-wasm-bindgen, wasm-bindgen-futures)
+  - **False Positive Candidates**: pest_derive (proc-macro), arrow-* (feature-gated), web-sys (WASM)
+  - **True Positive Candidates**: markup5ever (thread safety issue), once_cell (replaced by std::sync::OnceLock)
+  - **Build Time Baseline**: 0.247s (already fast, not a performance issue)
+  - **Decision**: Document findings, defer actual cleanup to v3.132.0 for safety
+  - **Priority Order**: markup5ever (HIGH), once_cell (HIGH), im/mime_guess (MEDIUM), others (LOW)
+  - **Files Created**:
+    - dependency_cleanup_analysis.md (180+ lines): Comprehensive analysis with verification plan
+  - **Rationale**: Avoid risky changes immediately before release, allow controlled testing in v3.132.0
+  - **Ticket**: DEPENDENCY-CLEANUP-001
+
 ## [3.130.0] - 2025-10-26
 
 ### Added
