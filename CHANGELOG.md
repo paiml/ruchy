@@ -4,6 +4,50 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.136.0] - 2025-10-27
+
+### Fixed
+
+- **[TRANSPILER-078] String Type Transpilation (str → &str)** (GitHub Issue #13)
+  - **Achievement**: Function parameters with `str` type now correctly transpile to sized `&str` type
+  - **Root Cause**: Line 83 of src/backend/transpiler/types.rs emitted unsized `str` instead of `&str`
+  - **Solution**: Changed `quote! { str }` to `quote! { &str }` for function parameters (idiomatic Rust)
+  - **Test Coverage**: 12/12 tests passing (100%)
+    - ✅ RED Phase Tests (8/8): All scenarios compile and execute successfully
+      * Simple string parameter: `fun greet(name: str)` → `fn greet(name: &str)` ✓
+      * Multiple parameters: `fun concat(a: str, b: str)` → all parameters `&str` ✓
+      * String return type: Functions returning String compile correctly ✓
+      * Transpile output verification: Contains `&str`, no unsized `: str)` pattern ✓
+      * Binary execution: Compiled binaries execute successfully ✓
+      * Empty string edge case: Handles empty strings correctly ✓
+      * Struct fields: Use `String` for owned data (avoids lifetimes) ✓
+      * Summary: Documents PRIMARY fix for function parameters ✓
+    - ✅ Property Tests (4/4): 18K random test cases (10K + 5K + 3K + summary)
+      * Property 1: 10K random function names with str parameters - all compile ✓
+      * Property 2: 5K random multi-parameter functions (2-4 params) - all compile ✓
+      * Property 3: 3K random function bodies (if/match/simple) - all compile ✓
+      * Summary: Documents 18K property test cases ✓
+  - **Mutation Tests**: Running on transpile_named_type function (≥75% coverage target)
+  - **Files Modified**:
+    - src/backend/transpiler/types.rs:
+      * Line 83: `"str" => quote! { str }` → `"str" => quote! { &str }`
+      * Comment updated to explain sized type for function parameters
+    - tests/transpiler_078_str_type_handling.rs: Comprehensive RED-GREEN test suite (435 lines)
+    - examples/19_string_parameters.ruchy: Demonstration of string parameter fix (53 lines)
+  - **Impact**:
+    - Unblocks ALL Ruchy code using string parameters
+    - Enables idiomatic Rust borrowing patterns (`&str` for parameters)
+    - PRIMARY fix: Function parameters work correctly
+    - Return types: Use `String` for owned data (format! returns String)
+    - Struct fields: Use `String` for owned data (avoids lifetime annotations)
+  - **Idiomatic Rust String Types**:
+    - Parameters: `&str` (borrowed, most flexible, fixed by this PR)
+    - Returns: `String` (owned) or `&str` with explicit lifetime
+    - Struct fields: `String` (owned, simpler) or `&str` with lifetime parameters
+  - **Ticket**: TRANSPILER-078
+  - **GitHub Issue**: https://github.com/paiml/ruchy/issues/13
+  - **Related**: EXTREME TDD protocol - RED-GREEN-REFACTOR with property and mutation tests
+
 ## [3.135.0] - 2025-10-26
 
 ### Added

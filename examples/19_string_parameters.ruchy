@@ -1,0 +1,49 @@
+// Example 19: String Parameters (TRANSPILER-078 fix demonstration)
+//
+// This example demonstrates that Ruchy string parameters now correctly
+// transpile to Rust's `&str` type, enabling compile-time correctness.
+//
+// GitHub Issue #13: Fixed in v3.136.0
+// Fix: src/backend/transpiler/types.rs:83 (str → &str)
+
+// Simple string parameter function
+fun greet(name: str) {
+    println("Hello, {}!", name)
+}
+
+// Multiple string parameters
+fun format_message(prefix: str, message: str, suffix: str) {
+    println("{} {} {}", prefix, message, suffix)
+}
+
+// String parameter with return value (use String for owned data)
+fun create_greeting(name: str) -> String {
+    format!("Welcome, {}!", name)
+}
+
+// Complex logic with string parameter
+fun analyze(text: str) {
+    let length = text.len();
+    let has_spaces = text.contains(' ');
+
+    println("Analysis of '{}':", text);
+    println("  Length: {}", length);
+    println("  Contains spaces: {}", has_spaces);
+}
+
+fun main() {
+    // Simple string parameter usage
+    greet("World");
+    greet("Ruchy");
+
+    // Multiple parameters
+    format_message(">>>", "Important message", "<<<");
+
+    // Return values
+    let greeting = create_greeting("Alice");
+    println("{}", greeting);
+
+    // Complex analysis
+    analyze("Hello Ruchy!");
+    analyze("SingleWord");
+}
