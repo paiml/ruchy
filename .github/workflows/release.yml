@@ -54,7 +54,7 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }} --package ruchy-cli
+        run: cargo build --release --target ${{ matrix.target }}
       - name: Package binary
         shell: bash
         run: |
@@ -90,8 +90,6 @@ jobs:
           key: wasm-release-${{ hashFiles('**/Cargo.lock') }}
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
-        env:
-          CARGO_INSTALL_ROOT: ~/.cargo
       - name: Build WASM package
         run: wasm-pack build --target web --no-default-features --features wasm-compile
         timeout-minutes: 10
