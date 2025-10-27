@@ -91,6 +91,9 @@ impl HtmlDocument {
     /// assert_eq!(elements.len(), 1);
     /// ```
     pub fn select(&self, selector: &str) -> Result<Vec<HtmlElement>, String> {
+        // Validate selector syntax before attempting to match
+        self.validate_selector(selector)?;
+
         let elements = self.select_nodes(&self.dom.document, selector);
         Ok(elements.into_iter().map(|handle| HtmlElement { handle }).collect())
     }
@@ -188,6 +191,41 @@ impl HtmlDocument {
             }
             _ => false,
         }
+    }
+
+    /// Validate CSS selector syntax
+    ///
+    /// Checks for common CSS selector syntax errors.
+    /// Complexity: 5 (within Toyota Way limits)
+    ///
+    /// # Errors
+    ///
+    /// Returns error if selector has invalid syntax
+    fn validate_selector(&self, selector: &str) -> Result<(), String> {
+        let selector = selector.trim();
+
+        // Empty selector
+        if selector.is_empty() {
+            return Err("Selector cannot be empty".to_string());
+        }
+
+        // Check for unmatched brackets in attribute selectors
+        let open_brackets = selector.matches('[').count();
+        let close_brackets = selector.matches(']').count();
+        if open_brackets != close_brackets {
+            return Err(format!(
+                "Invalid selector syntax: unmatched brackets in '{selector}'"
+            ));
+        }
+
+        // Check for invalid bracket nesting (e.g., "[[" or "[[attr]")
+        if selector.contains("[[") || selector.contains("]]") {
+            return Err(format!(
+                "Invalid selector syntax: nested brackets in '{selector}'"
+            ));
+        }
+
+        Ok(())
     }
 }
 
