@@ -26,7 +26,26 @@ metadata:
   release_notes_v3_126_0: "Phase 1 Bytecode VM Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated, published to crates.io"
   release_notes_v3_125_0: "Bytecode VM Phase 1 + CLI Unification + 73 comprehensive tests + eval consistency fix"
   github_issues:
-    active: []
+    active:
+      - id: 43
+        url: "https://github.com/paiml/ruchy/issues/43"
+        title: "HTML parsing support as alternative to deprecated scraper crate"
+        impact: "MEDIUM - Enables web scraping in Ruchy without deprecated dependencies"
+        ticket: "HTTP-002-D"
+        priority: "MEDIUM"
+        status: "🏗️ IN PROGRESS - Infrastructure exists, method calls need wiring"
+        current_state:
+          - "✅ HTML parsing infrastructure exists (src/stdlib/html.rs)"
+          - "✅ Html.parse() works and returns HtmlDocument"
+          - "❌ Method calls (.select(), .text()) not wired to dispatcher"
+          - "❌ Error: 'DataFrameOperation can only be applied to DataFrame values'"
+        solution: "Wire HtmlDocument/HtmlElement methods into eval_method_dispatch.rs"
+        next_steps:
+          - "RED: Write failing tests for HtmlDocument.select() method"
+          - "RED: Write failing tests for HtmlElement.text() method"
+          - "GREEN: Create eval_html_methods.rs module"
+          - "GREEN: Wire HTML methods into dispatch_method_call()"
+          - "REFACTOR: Add property tests for HTML parsing"
     completed:
       - id: 49
         url: "https://github.com/paiml/ruchy/issues/49"
