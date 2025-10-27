@@ -80,7 +80,7 @@ impl Transpiler {
             "int" => quote! { i64 },
             "float" => quote! { f64 },
             "bool" => quote! { bool },
-            "str" => quote! { str }, // Plain str type (will be used with & for references)
+            "str" => quote! { &str }, // String slice reference (sized type for function parameters)
             "string" | "String" => quote! { String },
             "char" => quote! { char },
             "()" => quote! { () },       // Unit type
