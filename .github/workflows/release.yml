@@ -73,6 +73,81 @@ jobs:
           asset_name: ruchy-${{ matrix.suffix }}
           asset_content_type: application/octet-stream
 
+  # Build and upload WASM artifacts
+  build-wasm:
+    name: Build WASM
+    needs: create-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: wasm-release-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+        env:
+          CARGO_INSTALL_ROOT: ~/.cargo
+      - name: Build WASM package
+        run: wasm-pack build --target web --no-default-features --features wasm-compile
+        timeout-minutes: 10
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Rename WASM artifacts with version
+        run: |
+          cd pkg
+          mv ruchy_bg.wasm ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+          mv ruchy.js ruchy-${{ steps.get_version.outputs.VERSION }}.js
+          mv ruchy_bg.wasm.d.ts ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+      - name: Generate SHA256 checksums
+        run: |
+          cd pkg
+          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}.wasm > checksums.txt
+          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}.js >> checksums.txt
+          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts >> checksums.txt
+          cat checksums.txt
+      - name: Upload WASM binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+          asset_content_type: application/wasm
+      - name: Upload JavaScript bindings
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}.js
+          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}.js
+          asset_content_type: application/javascript
+      - name: Upload TypeScript definitions
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+          asset_content_type: text/plain
+      - name: Upload checksums
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pkg/checksums.txt
+          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}-wasm-checksums.txt
+          asset_content_type: text/plain
+
   # Publish to crates.io
   publish-crates:
     name: Publish to crates.io

@@ -112,7 +112,67 @@ This ensures clean compilation for WASM targets without runtime errors.
 
 ## Deployment
 
-### Manual Deployment
+### GitHub Releases (Recommended)
+
+Starting with v3.137.0+, WASM artifacts are automatically built and published to GitHub releases.
+
+**Download versioned WASM from GitHub:**
+
+```bash
+VERSION="3.137.0"  # Replace with desired version
+
+# Download WASM binary
+wget https://github.com/paiml/ruchy/releases/download/v${VERSION}/ruchy-${VERSION}.wasm
+
+# Download JavaScript bindings
+wget https://github.com/paiml/ruchy/releases/download/v${VERSION}/ruchy-${VERSION}.js
+
+# Download TypeScript definitions
+wget https://github.com/paiml/ruchy/releases/download/v${VERSION}/ruchy-${VERSION}_bg.wasm.d.ts
+
+# Download checksums for verification
+wget https://github.com/paiml/ruchy/releases/download/v${VERSION}/ruchy-${VERSION}-wasm-checksums.txt
+```
+
+**Verify integrity:**
+
+```bash
+# Verify WASM binary checksum
+sha256sum ruchy-${VERSION}.wasm
+grep "ruchy-${VERSION}.wasm" ruchy-${VERSION}-wasm-checksums.txt
+```
+
+**Benefits:**
+- Deterministic builds (same version = identical binaries)
+- SHA256 checksums enable integrity verification
+- Versioned artifacts prevent deployment drift
+- No manual build required
+
+### Automated Release Process
+
+WASM artifacts are built automatically when a new Git tag is pushed:
+
+```bash
+# Tag release (triggers GitHub Actions)
+git tag v3.137.0
+git push origin v3.137.0
+```
+
+GitHub Actions will:
+1. Build WASM package with wasm-pack
+2. Rename artifacts with version number
+3. Generate SHA256 checksums
+4. Upload to GitHub release as assets
+
+**Artifacts uploaded:**
+- `ruchy-{version}.wasm` - WebAssembly binary
+- `ruchy-{version}.js` - JavaScript bindings
+- `ruchy-{version}_bg.wasm.d.ts` - TypeScript definitions
+- `ruchy-{version}-wasm-checksums.txt` - SHA256 checksums
+
+### Manual Deployment (Legacy)
+
+For development or custom deployments:
 
 ```bash
 # Build and deploy to interactive.paiml.com
@@ -121,21 +181,6 @@ make wasm-deploy
 # Or use the deployment script directly
 ./scripts/deploy-wasm.sh --all
 ```
-
-### Release Process
-
-The WASM build is integrated into the standard release process:
-
-```bash
-# Publish to crates.io + build WASM
-make crate-release
-```
-
-This will:
-1. Build WASM package with wasm-pack
-2. Prompt for confirmation
-3. Publish to crates.io
-4. Display WASM artifacts location
 
 ### Deployment Script Options
 
@@ -151,6 +196,34 @@ This will:
 ```
 
 ## Integration Examples
+
+### Using GitHub Release Artifacts in Web Projects
+
+**Version tracking file** (`.wasm-versions`):
+
+```json
+{
+  "ruchy": {
+    "version": "3.137.0",
+    "source": "github-releases",
+    "checksum": "sha256:a1b2c3d4...",
+    "url": "https://github.com/paiml/ruchy/releases/download/v3.137.0/ruchy-3.137.0.wasm"
+  }
+}
+```
+
+**Download and verify** (in Makefile or deployment script):
+
+```bash
+# Download WASM from GitHub release
+RUCHY_VERSION=3.137.0
+wget https://github.com/paiml/ruchy/releases/download/v${RUCHY_VERSION}/ruchy-${RUCHY_VERSION}.wasm -O dist/ruchy.wasm
+wget https://github.com/paiml/ruchy/releases/download/v${RUCHY_VERSION}/ruchy-${RUCHY_VERSION}.js -O dist/ruchy.js
+wget https://github.com/paiml/ruchy/releases/download/v${RUCHY_VERSION}/ruchy-${RUCHY_VERSION}-wasm-checksums.txt
+
+# Verify checksum
+sha256sum -c ruchy-${RUCHY_VERSION}-wasm-checksums.txt
+```
 
 ### React/Vue/Svelte
 
