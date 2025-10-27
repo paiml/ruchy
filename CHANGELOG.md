@@ -21,6 +21,21 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Investigation Time**: 3 hours (led to RuchyRuchy enhancement proposal)
   - **Test Results**: 4029 lib tests passing, all linting checks passing
 
+### Verified Working
+
+- **[EVALUATOR-002] Method chaining with array indexing - NO BUG EXISTS**
+  - **Investigation**: Created 7 comprehensive tests to verify function call + array indexing chains
+  - **Finding**: Functionality works correctly - reported issue was test setup problem
+  - **Root Cause**: Tests weren't calling `main()` function, just defining it; `Value::String` Display format adds quotes (intentional)
+  - **Verification**: All chaining patterns work correctly:
+    * `get_items()[0]` ✅
+    * `get_array()[1] * 2` ✅
+    * `create_nested()[1][0]` ✅
+    * Split vs chained behavior: identical ✅
+  - **Test Coverage**: 7 tests covering basic chains, nested arrays, arithmetic operations, split vs chained comparison
+  - **Files Created**: tests/evaluator_002_method_chaining_with_indexing.rs - 268 lines, 7 passing tests
+  - **Test Results**: 4031 lib tests passing (gained 2 tests), no regressions
+
 ### Development Tools
 
 - **[RUCHYRUCHY-002] Parser State Visualization Enhancement Proposal**
