@@ -6,6 +6,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [3.135.0] - 2025-10-26
 
+### Added
+
+- **[PARSER-077] Attribute Spacing Regression Tests** (GitHub Issue #58 Part 3/4)
+  - **Achievement**: Comprehensive regression test suite for attribute spacing (6/6 tests passing - 100%)
+  - **Status**: Bug already fixed by PARSER-076 (unary plus operator implementation)
+  - **Test Coverage**: All 6 tests passing - attribute spacing is correct
+    - ✅ Simple #[test] attribute transpiles without spaces
+    - ✅ Multiple #[test] attributes all correct
+    - ✅ #[derive(...)] attribute spacing correct
+    - ✅ Compile succeeds with #[test] attributes
+    - ✅ Edge case: attribute at file start
+    - ✅ Summary test documents fix status
+  - **Verified Behavior**: `#[test]` transpiles as `#[test]` (not `# [test]`)
+  - **Files Added**:
+    - tests/transpiler_parser_077_attribute_spacing.rs: Comprehensive regression tests (238 lines)
+  - **Impact**:
+    - Prevents regression of attribute spacing in future releases
+    - Documents that PARSER-076 fixed this HIGH severity bug as side effect
+    - Enables use of #[test], #[derive(...)] and other Rust attributes
+  - **Ticket**: PARSER-077
+  - **GitHub Issue**: https://github.com/paiml/ruchy/issues/58 (Part 3/4)
+  - **Related**: PARSER-076 (unary plus operator) - root cause fix
+
 ### Fixed
 
 - **[QUALITY-015] Linter Function False Positives** (GitHub Issue #15)
