@@ -421,6 +421,18 @@ mod tests {
     }
 
     #[test]
+    fn test_method_chaining_simulation() {
+        // Simulate the exact pattern from test_http002d_11
+        let html = HtmlDocument::parse("<div class='content'>Hello World</div>");
+        let elements = html.select(".content").unwrap();
+        assert_eq!(elements.len(), 1, "Should have 1 element");
+
+        let element = &elements[0];
+        let text = element.text();
+        assert_eq!(text.trim(), "Hello World", "Text extraction should work");
+    }
+
+    #[test]
     fn test_empty_html() {
         let html = HtmlDocument::parse("");
         let elements = html.select("*").unwrap();
