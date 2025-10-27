@@ -76,6 +76,14 @@ where
         Value::Float(f) => eval_float_method(*f, base_method, args_empty),
         Value::Integer(n) => eval_integer_method(*n, base_method, arg_values),
         Value::DataFrame { columns } => eval_dataframe_method(columns, base_method, arg_values),
+        #[cfg(not(target_arch = "wasm32"))]
+        Value::HtmlDocument(doc) => {
+            crate::runtime::eval_html_methods::eval_html_document_method(doc, base_method, arg_values)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        Value::HtmlElement(element) => {
+            crate::runtime::eval_html_methods::eval_html_element_method(element, base_method, arg_values)
+        }
         _ => eval_generic_method(receiver, base_method, args_empty),
     }
 }
