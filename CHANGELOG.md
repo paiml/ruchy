@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.139.0] - 2025-10-27
+
+### Fixed
+
+- **[CRITICAL-FMT-DATA-LOSS] ruchy fmt silently deletes code** (GitHub Issue #64)
+  - **Severity**: CRITICAL - Data loss bug that makes formatter unsafe to use
+  - **Root Cause**: Formatter handled `ExprKind::Let` statements with incomplete pattern matching - when body was `Let`, `Call`, or `MethodCall` (but NOT `Block` or `Unit`), the body was silently dropped
+  - **Example**: `let x = 1\nlet y = 2\nprintln("hi")` → formatted to `let x = 1` (deleted 2 lines)
+  - **Impact**: RuchyRuchy project reported 82 lines deleted from 138-line file (59% code loss)
+  - **Solution**: Added else clause (lines 317-328) to recursively format body for all `is_sequential_statement` cases
+  - **Methodology**: Extreme TDD with Five Whys root cause analysis
+  - **Test Coverage**: 8 new regression tests + 4 property tests (idempotence, AST node count, semantic equivalence, round-trip parse)
+  - **Files Modified**:
+    * src/quality/formatter.rs:317-328 - Added missing recursive body formatting
+    * tests/formatter_data_loss_regression.rs - 370 lines, 8 regression tests, 4 property tests
+  - **Verification**: RuchyRuchy dead_code_simple_test.ruchy now preserves all 138 lines (was deleting 82)
+  - **Test Results**: 4031 lib tests passing, 8/8 formatter regression tests passing
+  - **Fix Size**: Minimal (12 lines added)
+  - **Property Tests Verified**:
+    * ✅ Idempotence: `format(format(x)) == format(x)`
+    * ✅ AST Node Count: Formatter never decreases node count
+    * ✅ Semantic Equivalence: Formatted code evaluates to same result
+    * ✅ Round-trip Parse: `parse(format(parse(x)))` always succeeds
+
 ## [3.138.0] - 2025-10-27
 
 ### Fixed

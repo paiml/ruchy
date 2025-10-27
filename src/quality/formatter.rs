@@ -314,6 +314,18 @@ impl Formatter {
                             result.push_str(&indent_str);
                             result.push_str(&self.format_expr(expr, indent));
                         }
+                    } else if !matches!(body.kind, ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+                        // FIX: CRITICAL-FMT-DATA-LOSS (GitHub Issue #64)
+                        // Body is Let/Call/MethodCall but NOT Block or Unit
+                        // Must recursively format the body to avoid silent code deletion
+                        let indent_str = if self.config.use_tabs {
+                            "\t".repeat(indent)
+                        } else {
+                            " ".repeat(indent * self.config.indent_width)
+                        };
+                        result.push('\n');
+                        result.push_str(&indent_str);
+                        result.push_str(&self.format_expr(body, indent));
                     }
                     // If body is Unit, nothing more to add
 
