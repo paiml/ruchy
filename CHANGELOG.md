@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.137.0] - 2025-10-27
+
 ### Added
 
 - **[WASM-DIST] Automated WASM Distribution to GitHub Releases** (GitHub Issue #49 - PARTIAL)
@@ -25,7 +27,7 @@ All notable changes to the Ruchy programming language will be documented in this
     - .github/workflows/release.yml: Added `build-wasm` job (75 lines)
     - docs/WASM-DEPLOYMENT.md: Updated with GitHub Releases documentation
   - **Documentation**: Complete download, verification, and integration examples
-  - **Status**: Implementation complete, awaiting validation on next release
+  - **Status**: Implementation complete, this release validates the workflow
   - **Ticket**: WASM-DIST (partial completion of GitHub Issue #49)
   - **Related**: Closes GitHub Issue #59 (import support completed in v3.130.0)
 
