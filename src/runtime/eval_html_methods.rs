@@ -1,7 +1,7 @@
 //! HTML method evaluation module
 //!
 //! This module handles evaluation of HTML parsing methods.
-//! Provides method dispatching for HtmlDocument and HtmlElement types.
+//! Provides method dispatching for `HtmlDocument` and `HtmlElement` types.
 //! Following Toyota Way principles - complexity ≤10 per function.
 
 #[cfg(not(target_arch = "wasm32"))]

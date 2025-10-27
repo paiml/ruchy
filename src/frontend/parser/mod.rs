@@ -392,7 +392,15 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
                 Ok(Some(functions::parse_call(state, left)?))
             }
         }
-        Some(Token::LeftBracket) => Ok(Some(handle_array_indexing(state, left)?)),
+        Some(Token::LeftBracket) => {
+            // PARSER-081 FIX: Don't treat `[` as array indexing after literals or struct literals
+            // This prevents `let y = 2 [x, y]` and `let p = Point{...} [x]` from being parsed as indexing
+            if matches!(left.kind, ExprKind::Literal(_) | ExprKind::StructLiteral { .. }) {
+                Ok(None) // Not array indexing, `[...]` is a separate expression
+            } else {
+                Ok(Some(handle_array_indexing(state, left)?))
+            }
+        }
         Some(Token::LeftBrace) => try_parse_struct_literal(state, &left),
         Some(Token::Increment) => handle_increment_operator(state, left).map(Some),
         Some(Token::Decrement) => handle_decrement_operator(state, left).map(Some),

@@ -581,8 +581,8 @@ fn handle_argument_separator(state: &mut ParserState) -> bool {
 }
 /// Check if method is DataFrame-specific (complexity: 1)
 ///
-/// Note: "select" is NOT in this list because both DataFrames and HtmlDocuments
-/// have a select() method. The runtime dispatcher handles both cases.
+/// Note: "select" is NOT in this list because both `DataFrame`s and `HtmlDocument`s
+/// have a `select()` method. The runtime dispatcher handles both cases.
 fn is_dataframe_method(method: &str) -> bool {
     matches!(
         method,
@@ -602,7 +602,7 @@ fn is_dataframe_method(method: &str) -> bool {
 }
 /// Handle DataFrame-specific methods (complexity: 2)
 ///
-/// Note: "select" is handled at runtime via MethodCall dispatch
+/// Note: "select" is handled at runtime via `MethodCall` dispatch
 fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> Result<Expr> {
     let operation = match method.as_str() {
         "groupby" | "group_by" => DataFrameOp::GroupBy(extract_groupby_columns(args)),

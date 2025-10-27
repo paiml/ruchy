@@ -232,15 +232,18 @@ fn test_http002d_08_html_document_query_selector_no_match() {
 // ===========================
 
 #[test]
-#[ignore = "PARSER BUG: Array literals with identifiers not supported - needs parser fix (not HTML-specific)"]
+#[ignore = "PARSER-081: Array literals fail after multiple let statements (not HTML-specific)"]
 fn test_http002d_09_html_web_scraping_workflow() {
     // Real-world web scraping example
     //
     // ROOT CAUSE: This is a PARSER bug, not an HTML bug.
     // The issue is the array literal `[title, count]` at the end.
-    // The parser doesn't currently support array literals containing identifiers.
     //
-    // This requires a parser-level fix, not an HTML-specific fix.
+    // ACTUAL BUG: Parser fails on array literals after multiple `let` statements.
+    // Minimal reproduction: `let x = 1\nlet y = 2\n[x, y]` → "Expected RightBracket, found Comma"
+    // Workaround: Use let-in expressions: `let x = 1 in let y = 2 in [x, y]` works fine.
+    //
+    // This requires a parser-level fix for statement parsing, not an HTML-specific fix.
     let code = r#"
         let html = Html.parse("<html><body><h1>Title</h1><p class='content'>Paragraph 1</p><p class='content'>Paragraph 2</p></body></html>")
 
@@ -311,7 +314,6 @@ fn test_http002d_10_html_error_invalid_selector() {
 // ===========================
 
 #[test]
-#[ignore = "INTERPRETER BUG: Method chaining with array indexing returns empty string - needs interpreter fix (not HTML-specific)"]
 fn test_http002d_11_html_method_chaining() {
     // Test method chaining: parse → select → text
     //
