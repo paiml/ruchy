@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+
+- **[WASM-DIST] Automated WASM Distribution to GitHub Releases** (GitHub Issue #49 - PARTIAL)
+  - **Achievement**: WASM artifacts now automatically built and published to GitHub releases
+  - **Implementation**: Extended `.github/workflows/release.yml` with `build-wasm` job
+  - **Automation**: Triggered on git tag push (e.g., `v3.137.0`)
+  - **Artifacts Uploaded** (4 files per release):
+    * `ruchy-{version}.wasm` - WebAssembly binary
+    * `ruchy-{version}.js` - JavaScript bindings
+    * `ruchy-{version}_bg.wasm.d.ts` - TypeScript definitions
+    * `ruchy-{version}-wasm-checksums.txt` - SHA256 hashes for verification
+  - **Benefits**:
+    - Version tracking: Artifacts include version in filename
+    - Reproducibility: Deterministic builds via GitHub Actions
+    - Security: SHA256 checksums enable integrity verification
+    - Automation: No manual deployment needed
+    - Integration: Web projects can download verified artifacts from releases
+  - **Files Modified**:
+    - .github/workflows/release.yml: Added `build-wasm` job (75 lines)
+    - docs/WASM-DEPLOYMENT.md: Updated with GitHub Releases documentation
+  - **Documentation**: Complete download, verification, and integration examples
+  - **Status**: Implementation complete, awaiting validation on next release
+  - **Ticket**: WASM-DIST (partial completion of GitHub Issue #49)
+  - **Related**: Closes GitHub Issue #59 (import support completed in v3.130.0)
+
 ## [3.136.0] - 2025-10-27
 
 ### Fixed
