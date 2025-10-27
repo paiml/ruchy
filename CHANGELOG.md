@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[PARSER-081] Array literals after sequential let statements** (GitHub Issue #62)
+  - **Root Cause**: Parser incorrectly treated `[...]` as array indexing when following literals or struct literals in block contexts
+  - **Issue**: Code like `let y = 2\n[x, y]` was parsed as `2[x, y]` (array indexing with comma-separated indices)
+  - **Solution**: Modified postfix operator handling to skip array indexing after `ExprKind::Literal(_)` and `ExprKind::StructLiteral`
+  - **Impact**: Arrays with identifiers now work correctly after let statements without requiring semicolons
+  - **Test Coverage**: 10 comprehensive tests covering arrays with variables, nested arrays, method calls, and field access
+  - **Files Modified**:
+    * src/frontend/parser/mod.rs:395-403 - Added literal check in postfix operator handling
+    * src/frontend/parser/collections.rs:212 - Fixed parse_remaining_block_body documentation
+    * tests/parser_081_array_literals_with_identifiers.rs - Added 10 test cases (all passing)
+
 ## [3.137.0] - 2025-10-27
 
 ### Added
