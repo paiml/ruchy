@@ -209,10 +209,12 @@ fn create_let_statement_expression(
     ))
 }
 /// Parse remaining expressions as block body (complexity: 8)
+/// PARSER-081 FIX: Must use `parse_next_block_expression` to handle sequential let statements
 fn parse_remaining_block_body(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     let mut body_exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        body_exprs.push(super::parse_expr_recursive(state)?);
+        // Use parse_next_block_expression to properly handle let statements
+        body_exprs.push(parse_next_block_expression(state, start_span)?);
         consume_optional_semicolon(state);
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             break;
