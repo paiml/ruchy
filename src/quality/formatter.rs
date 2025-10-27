@@ -284,12 +284,43 @@ impl Formatter {
             ExprKind::Let {
                 name, value, body, ..
             } => {
-                // FIX: CRITICAL-FMT-CODE-DESTRUCTION - Use statement style for Unit body
-                if matches!(body.kind, ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+                // FIX: QUALITY-FORMATTER-002 (GitHub Issue #64)
+                // Detect if this is a sequential let statement or a true let-in expression
+                // Sequential statements: let followed by Block, Unit, Call, MethodCall, etc.
+                // True let-in expressions: let followed by value expression (Binary, If, etc.)
+                let is_sequential_statement = matches!(
+                    body.kind,
+                    ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+                        | ExprKind::Block(_)
+                        | ExprKind::Call { .. }
+                        | ExprKind::MethodCall { .. }
+                        | ExprKind::Let { .. } // Nested let is also a statement
+                );
+
+                if is_sequential_statement {
                     // Statement style: let x = 42
-                    format!("let {} = {}", name, self.format_expr(value, indent))
+                    let mut result = format!("let {} = {}", name, self.format_expr(value, indent));
+
+                    // If body is a Block, format its contents (without braces) at same level
+                    // This handles sequential statements: let x = 1; let y = 2; ...
+                    if let ExprKind::Block(body_exprs) = &body.kind {
+                        let indent_str = if self.config.use_tabs {
+                            "\t".repeat(indent)
+                        } else {
+                            " ".repeat(indent * self.config.indent_width)
+                        };
+                        for expr in body_exprs {
+                            result.push('\n');
+                            result.push_str(&indent_str);
+                            result.push_str(&self.format_expr(expr, indent));
+                        }
+                    }
+                    // If body is Unit, nothing more to add
+
+                    result
                 } else {
-                    // Functional style only when there's a real body
+                    // Functional style only when there's a true let-in expression
+                    // Example: let x = 10 in x + 1
                     format!(
                         "let {} = {} in {}",
                         name,
