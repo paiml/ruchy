@@ -4,9 +4,9 @@
 metadata:
   version: "3.50"
   last_updated: "2025-10-27"
-  current_sprint: "✅ String Type Transpilation Fixed: Function parameters with 'str' now correctly transpile to '&str' (12/12 tests, 18K property tests)"
-  latest_release: "v3.136.0"
-  latest_commit_message: "[TRANSPILER-078] Fix str type transpilation (str → &str) - GitHub Issue #13"
+  current_sprint: "✅ WASM Distribution Automation Complete: Automated WASM builds on GitHub releases (4 artifacts per release with SHA256 checksums)"
+  latest_release: "v3.137.0"
+  latest_commit_message: "[WASM-DIST] WASM distribution automation validated - GitHub Issue #49"
   previous_release: "v3.132.0"
   phase_1_bytecode_vm: "✅ COMPLETE (OPT-001 through OPT-010) - 98-99% faster than AST!"
   phase_2_bytecode_vm: "✅ COMPLETE (OPT-011 through OPT-020) - Complex features (closures, collections, match)"
@@ -15,6 +15,7 @@ metadata:
   struct_field_mutation: "✅ FIXED (DEFECT-STRUCT-001) - Struct field mutation now works (c.count = 5)"
   struct_inline_comments: "✅ FIXED (DEFECT-PARSER-007) - Inline comments in struct fields now work (book 98%→99%)"
   book_validation: "🎯 100% ACHIEVED - 132/132 executable examples passing, 2 non-executable properly marked (skip-test)"
+  release_notes_v3_137_0: "WASM Distribution Automation: Automated WASM builds on GitHub releases via GitHub Actions (4 artifacts per release with SHA256 checksums) - v3.137.0 validated successfully"
   release_notes_v3_136_0: "String Type Transpilation: Function parameters with 'str' now correctly transpile to '&str' (GitHub Issue #13 - TRANSPILER-078) - 12/12 tests passing, 18K property tests"
   release_notes_v3_132_0: "Module Resolution MVP: Complete infrastructure for file resolution, loading, symbol extraction, and caching (14/20 tests passing - 70%)"
   release_notes_v3_131_0: "Documentation release: Mutation testing analysis (deferred to Phase 2), Module resolution MVP design, Dependency cleanup analysis (14 candidates identified)"
@@ -27,6 +28,25 @@ metadata:
   github_issues:
     active: []
     completed:
+      - id: 49
+        url: "https://github.com/paiml/ruchy/issues/49"
+        title: "Add WASM Build Target and Distribution"
+        impact: "HIGH - Enables browser-based Ruchy execution, interactive documentation"
+        ticket: "WASM-DIST"
+        priority: "HIGH"
+        status: "✅ COMPLETE (v3.137.0 - 2025-10-27)"
+        solution: "Automated WASM builds via GitHub Actions on git tag push, 4 artifacts per release with SHA256 checksums"
+        progress:
+          - "✅ Workflow: Added build-wasm job to .github/workflows/release.yml"
+          - "✅ Artifacts: ruchy-{version}.wasm, .js, _bg.wasm.d.ts, -wasm-checksums.txt"
+          - "✅ Validation: v3.137.0 release successful with all 4 artifacts"
+          - "✅ Documentation: docs/WASM-DEPLOYMENT.md with download/verification examples"
+          - "✅ Bugfixes: Fixed wasm-pack PATH issue and removed incorrect --package flag"
+        benefits:
+          - "Version tracking via filename (deterministic builds)"
+          - "Security via SHA256 checksums"
+          - "Zero manual deployment steps"
+          - "GitHub Actions ensures reproducible builds"
       - id: 59
         url: "https://github.com/paiml/ruchy/issues/59"
         title: "Documentation Request: Clarify module/import syntax for multi-file projects"
