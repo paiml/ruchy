@@ -26,14 +26,16 @@ metadata:
   release_notes_v3_126_0: "Phase 1 Bytecode VM Complete: Unary ops, loops, assignments, 2 bugfixes, 98-99% speedup validated, published to crates.io"
   release_notes_v3_125_0: "Bytecode VM Phase 1 + CLI Unification + 73 comprehensive tests + eval consistency fix"
   github_issues:
-    active:
+    active: []
+    recently_closed:
       - id: 64
         url: "https://github.com/paiml/ruchy/issues/64"
         title: "ruchy fmt shows inconsistent behavior with struct formatting"
         impact: "HIGH - BLOCKING RuchyRuchy Bootstrap Compiler QUALITY-001 REFACTOR phase"
         ticket: "QUALITY-FORMATTER-002"
         priority: "HIGH"
-        status: "🔍 ACTIVE - Filed 2025-10-27"
+        status: "✅ CLOSED - Resolved"
+        closed_date: "2025-10-27"
         context: "RuchyRuchy Bootstrap Compiler - QUALITY-001 implementation"
         problem:
           - "Simple files (20-50 lines): ✅ Format correctly"
@@ -61,7 +63,9 @@ metadata:
         impact: "CRITICAL - COMPLETELY BLOCKING RuchyRuchy QUALITY-002 and entire CYCLE 6"
         ticket: "PARSER-082"
         priority: "CRITICAL"
-        status: "🔍 ACTIVE - Filed 2025-10-27"
+        status: "✅ CLOSED - Resolved by PARSER-081 fix"
+        closed_date: "2025-10-27"
+        resolution: "Side effect of PARSER-081 fix improved brace tracking"
         context: "RuchyRuchy Bootstrap Compiler - QUALITY-002 implementation"
         problem:
           - "Parser reports 'Expected RightBrace, found Identifier' on valid code"
@@ -94,7 +98,7 @@ metadata:
         impact: "MEDIUM - Breaks code like [title, count] where title and count are variables"
         ticket: "PARSER-081"
         priority: "MEDIUM"
-        status: "🔍 DISCOVERED - Found during HTTP-002-D validation"
+        status: "✅ COMPLETE - Fixed in v3.138.0 (2025-10-27)"
         discovered_by: "HTTP-002-D test_http002d_09"
         proof:
           - "HTML stdlib works correctly when code is split into steps"
@@ -110,7 +114,7 @@ metadata:
         impact: "MEDIUM - Breaks idiomatic method chains like .select()[0].text()"
         ticket: "EVALUATOR-002"
         priority: "MEDIUM"
-        status: "🔍 DISCOVERED - Found during HTTP-002-D validation"
+        status: "✅ NO BUG - Verified working (2025-10-27)"
         discovered_by: "HTTP-002-D test_http002d_11"
         proof:
           - "test_method_chaining_simulation() in html.rs:424 proves HTML works when split"
