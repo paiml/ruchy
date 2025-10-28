@@ -33,7 +33,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Run matrix tests with coverage tracking
-cargo llvm-cov --no-report test --test matrix_001_simple_arithmetic_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-output.txt
+echo "Running Matrix 001: Simple Arithmetic..."
+cargo llvm-cov --no-report test --test matrix_001_simple_arithmetic_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-001-output.txt
+
+echo ""
+echo "Running Matrix 002: CSV Processing Workflow..."
+cargo llvm-cov --no-report test --test matrix_002_csv_workflow_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-002-output.txt
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
