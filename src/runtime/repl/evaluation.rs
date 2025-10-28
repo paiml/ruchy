@@ -54,7 +54,14 @@ impl Evaluator {
         let mut parser = Parser::new(&self.multiline_buffer);
         match parser.parse() {
             Ok(expr) => {
-                match self.interpreter.eval_expr(&expr) {
+                // [RUNTIME-083] Catch InterpreterError::Return and extract value (early return support)
+                // This matches the pattern in interpreter.rs:2044-2046 for function calls
+                let result = match self.interpreter.eval_expr(&expr) {
+                    Err(crate::runtime::InterpreterError::Return(val)) => Ok(val),
+                    other => other,
+                };
+
+                match result {
                     Ok(value) => {
                         self.multiline_buffer.clear();
 
