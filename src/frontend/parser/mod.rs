@@ -1804,14 +1804,15 @@ mod tests {
     #[test]
     fn test_macro_call_returns_some() {
         // Test gap: Line 705 - verify try_parse_macro_call returns Some (not None stub)
+        // FORMATTER-088: Changed to MacroInvocation (macro CALL, not definition)
         let mut state = ParserState::new("vec![1, 2, 3]");
         let result = parse_expr_recursive(&mut state);
         assert!(result.is_ok(), "Macro call should parse successfully");
 
         if let Ok(expr) = result {
             assert!(
-                matches!(expr.kind, ExprKind::Macro { .. }),
-                "Should parse as Macro expression, not stub None"
+                matches!(expr.kind, ExprKind::MacroInvocation { .. }),
+                "Should parse as MacroInvocation expression (macro CALL, not definition)"
             );
         }
     }
