@@ -70,6 +70,7 @@ metadata:
   struct_inline_comments: "✅ FIXED (DEFECT-PARSER-007) - Inline comments in struct fields now work (book 98%→99%)"
   book_validation: "🎯 100% ACHIEVED - 132/132 executable examples passing, 2 non-executable properly marked (skip-test)"
   release_notes_v3_137_0: "WASM Distribution Automation: Automated WASM builds on GitHub releases via GitHub Actions (4 artifacts per release with SHA256 checksums) - v3.137.0 validated successfully"
+  release_notes_v3_141_0: "Function Pointer Type Syntax & Mutable References: fn() type syntax with optional arrow, &mut parsing in expression context, runtime evaluation with println!() support (GitHub Issues #70, #71 - PARSER-085) - 8/8 tests passing, EXTREME TDD protocol, published to crates.io"
   release_notes_v3_140_0: "Range Expression Parsing: Open-ended (2..) and open-start (..5) ranges now work in all contexts (GitHub Issue #67 - PARSER-084) - 110K property tests, 18 total tests passing"
   release_notes_v3_139_0: "Return statements in if/else blocks: Fixed control flow handling (GitHub Issue #66 - RUNTIME-083) - 10 regression tests passing"
   release_notes_v3_136_0: "String Type Transpilation: Function parameters with 'str' now correctly transpile to '&str' (GitHub Issue #13 - TRANSPILER-078) - 12/12 tests passing, 18K property tests"
@@ -84,6 +85,70 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 71
+        url: "https://github.com/paiml/ruchy/issues/71"
+        title: "&mut not parsed in expression context"
+        impact: "HIGH - Blocks mutable reference patterns like run_test(hello, &mut count)"
+        ticket: "PARSER-085"
+        priority: "HIGH"
+        status: "✅ CLOSED - Fixed in v3.141.0"
+        closed_date: "2025-10-28"
+        context: "Function pointer type syntax implementation discovered separate &mut parsing bug"
+        problem:
+          - "Parser recognized &mut in function signatures but not in expressions"
+          - "Code like 'run_test(hello, &mut count)' failed with 'Expected RightBrace, found Let'"
+          - "Minimal repro: any expression context with &mut operator"
+        root_cause:
+          - "parse_unary_reference didn't check for mut keyword after &"
+          - "UnaryOp enum only had Reference variant, not MutableReference"
+        solution:
+          - "Added UnaryOp::MutableReference variant to AST (ast.rs:927)"
+          - "Added mut keyword check in parse_unary_reference (unary_operators.rs:110-116)"
+          - "Updated 11 files for exhaustive pattern matching"
+        tests:
+          - "8/8 PARSER-085 tests passing (includes &mut test cases)"
+          - "All existing tests continue passing"
+        files_modified:
+          - "src/frontend/ast.rs (UnaryOp enum + Display impl)"
+          - "src/frontend/parser/expressions_helpers/unary_operators.rs (mut keyword check)"
+          - "src/backend/transpiler/codegen_minimal.rs (transpilation)"
+          - "src/runtime/interpreter.rs (evaluation)"
+          - "Plus 7 other files for pattern exhaustiveness"
+      - id: 70
+        url: "https://github.com/paiml/ruchy/issues/70"
+        title: "Parser doesn't support function pointer type syntax (fn() types)"
+        impact: "CRITICAL - Blocks RUCHY-005 (Deno Updater) implementation"
+        ticket: "PARSER-085"
+        priority: "CRITICAL"
+        status: "✅ CLOSED - Fixed in v3.141.0"
+        closed_date: "2025-10-28"
+        context: "RUCHY-005 requires function pointer types: fn apply_op(f: fn(i32) -> i32, value: i32)"
+        problem:
+          - "Parser failed on fn() with 'Expected Arrow, found RightParen'"
+          - "parse_fn_type() always expected arrow token even for parameterless functions"
+          - "Couldn't parse: fn(), fn(i32), or fn(i32) -> i32"
+        root_cause:
+          - "parse_fn_type unconditionally expected Token::Arrow"
+          - "Didn't make arrow and return type optional"
+        solution:
+          - "Made arrow token check conditional (parser/types.rs:231-242)"
+          - "Return type defaults to None if no arrow present"
+          - "Added full 15-tool validation tests"
+        tests:
+          - "8/8 PARSER-085 tests passing (all 15 tools validated)"
+          - "Runtime evaluation working with println!() support"
+          - "EXTREME TDD protocol: RED → GREEN → REFACTOR"
+        files_modified:
+          - "src/frontend/parser/types.rs (parse_fn_type arrow check)"
+          - "src/bin/handlers/mod.rs (fun main() detection)"
+          - "src/runtime/interpreter.rs (println!() macro)"
+          - "tests/parser_085_function_pointers.rs (8 comprehensive tests)"
+        working_features:
+          - "fn() types parse correctly"
+          - "fn(T) with parameters"
+          - "fn(T) -> R with return types"
+          - "Function pointers as parameters"
+          - "Runtime evaluation: 'ruchy -e' works"
       - id: 67
         url: "https://github.com/paiml/ruchy/issues/67"
         title: "Parser fails on open-ended range expressions in slicing contexts"
