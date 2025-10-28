@@ -255,11 +255,7 @@ where
     let mut last_val = Value::Nil;
 
     for stmt in statements {
-        match eval_expr(stmt) {
-            Ok(val) => last_val = val,
-            Err(InterpreterError::Return(val)) => return Ok(val),
-            Err(e) => return Err(e),
-        }
+        last_val = eval_expr(stmt)?;  // Propagate all errors including Return
     }
 
     Ok(last_val)
