@@ -58,6 +58,18 @@ else
 fi
 
 echo ""
+echo "Running Matrix Test 003: Statistical Analysis..."
+if cargo test --test matrix_003_statistical_analysis_native -- --test-threads=1 2>&1 | tee /tmp/matrix_003_output.txt; then
+    echo -e "${GREEN}✅ Matrix 003 PASSED${NC}"
+    TEST_003_PASSED=$(grep -o '[0-9]* passed' /tmp/matrix_003_output.txt | awk '{print $1}' || echo "0")
+    PASSED_TESTS=$((PASSED_TESTS + TEST_003_PASSED))
+    TOTAL_TESTS=$((TOTAL_TESTS + TEST_003_PASSED))
+else
+    echo -e "${RED}❌ Matrix 003 FAILED${NC}"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

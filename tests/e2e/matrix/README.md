@@ -87,7 +87,11 @@ Load WASM, wire up input/output, handle Enter key.
 - `tests/e2e/matrix/02-csv-workflow.spec.ts` - Playwright tests (DEFERRED)
 - `tests/matrix_002_csv_workflow_native.rs` - Native tests (✅ WORKING, 8/8 passing)
 
-**Total Native Tests**: 16/16 passing (100%)
+### Matrix Test 003: Statistical Analysis
+- `tests/e2e/matrix/03-statistical-analysis.spec.ts` - Playwright tests (DEFERRED)
+- `tests/matrix_003_statistical_analysis_native.rs` - Native tests (✅ WORKING, 12/12 passing)
+
+**Total Native Tests**: 28/28 passing (100%)
 
 ## References
 
