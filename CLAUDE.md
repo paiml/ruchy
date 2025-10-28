@@ -530,6 +530,65 @@ Closes: TICKET-ID
 
 **Make Lint Contract**: `cargo clippy --all-targets --all-features -- -D warnings` (EVERY warning = error)
 
+### 🚨 CRITICAL: Pre-commit Hook Management (PMAT-Generated)
+
+**ABSOLUTE PROHIBITION**: Quality gate checks MUST NEVER be "temporarily disabled"
+
+**Reference Issue**: `docs/issues/PMAT-HOOK-DISABLED-CHECKS.md` - Comprehensive Five Whys analysis
+
+**Problem**: PMAT-generated pre-commit hooks (`.git/hooks/pre-commit`) may contain commented-out checks with "⚠️ (temporarily disabled)" warnings. This violates Toyota Way "Stop the Line" principle.
+
+**Toyota Way Violation**:
+```bash
+# ❌ FORBIDDEN PATTERN (found in auto-generated hooks)
+# 1. Complexity analysis (TEMPORARILY DISABLED for PARSER-055 commit)
+# TODO: Re-enable after fixing cognitive complexity violations
+echo -n "  Complexity check... "
+echo "⚠️  (temporarily disabled)"
+```
+
+**Correct Approach (MANDATORY)**:
+1. 🛑 **STOP THE LINE**: If quality gate fails, halt work immediately
+2. 🔍 **FIVE WHYS**: Perform root cause analysis (documented in tracking issue)
+3. 🔧 **FIX VIOLATIONS**: Refactor code to meet quality standards (≤10 complexity, zero SATD)
+4. ✅ **RE-ENABLE CHECKS**: Use `pmat hooks refresh` to regenerate with checks enabled
+5. 📝 **VERIFY**: Test commit to confirm gates block violations
+
+**When Pre-commit Hook Shows Disabled Checks**:
+```bash
+# 1. Identify disabled checks
+grep "temporarily disabled" .git/hooks/pre-commit
+
+# 2. Document issue (if not already tracked)
+# Create docs/issues/PMAT-HOOK-DISABLED-CHECKS-<DATE>.md
+
+# 3. Fix underlying violations
+pmat analyze complexity --max-cyclomatic 10  # Find violations
+pmat analyze satd                             # Find SATD comments
+# Refactor files until all violations fixed
+
+# 4. Regenerate hooks (after PMAT upstream fix)
+pmat hooks refresh
+
+# 5. Verify gates work
+git commit  # Should block if violations exist
+```
+
+**If PMAT Not Yet Fixed** (Temporary Workaround):
+1. Create tracking issue in PMAT repository
+2. Manually uncomment checks in `.git/hooks/pre-commit`
+3. Add header comment: `# TEMPORARY FIX: Re-enabled until PMAT upstream fix`
+4. Fix all violations before committing
+5. Document in commit message why manual hook edit was necessary
+
+**FORBIDDEN RESPONSES**:
+- ❌ "Let's just disable the check for now"
+- ❌ "We'll fix it later"
+- ❌ "Use `--no-verify` to bypass"
+- ❌ "It's only temporary"
+
+**Toyota Way**: Temporary bypasses become permanent. Fix root causes, never mask symptoms.
+
 ### DUAL-RELEASE PUBLISHING PROTOCOL
 **After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
 **Checklist**: Tests pass, CHANGELOG updated, git commit/push, both crates build
