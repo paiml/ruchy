@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.52"
+  version: "3.53"
   last_updated: "2025-10-28"
   current_sprint: "🔄 IN_PROGRESS - Phase 4 Week 3: Performance Benchmarking (Infrastructure Complete)"
-  latest_release: "v3.139.0"
-  latest_commit_message: "[PHASE4-008] Performance benchmarking infrastructure - Week 3 (Part 1/2)"
+  latest_release: "v3.140.0"
+  latest_commit_message: "[PARSER-084] Fix range expression parsing (GitHub Issue #67)"
   session_summary_2025_10_27:
     accomplishments:
       - "PARSER-081: Verified working on files up to 573 LOC (10 tests passing)"
@@ -28,6 +28,8 @@ metadata:
   struct_inline_comments: "✅ FIXED (DEFECT-PARSER-007) - Inline comments in struct fields now work (book 98%→99%)"
   book_validation: "🎯 100% ACHIEVED - 132/132 executable examples passing, 2 non-executable properly marked (skip-test)"
   release_notes_v3_137_0: "WASM Distribution Automation: Automated WASM builds on GitHub releases via GitHub Actions (4 artifacts per release with SHA256 checksums) - v3.137.0 validated successfully"
+  release_notes_v3_140_0: "Range Expression Parsing: Open-ended (2..) and open-start (..5) ranges now work in all contexts (GitHub Issue #67 - PARSER-084) - 110K property tests, 18 total tests passing"
+  release_notes_v3_139_0: "Return statements in if/else blocks: Fixed control flow handling (GitHub Issue #66 - RUNTIME-083) - 10 regression tests passing"
   release_notes_v3_136_0: "String Type Transpilation: Function parameters with 'str' now correctly transpile to '&str' (GitHub Issue #13 - TRANSPILER-078) - 12/12 tests passing, 18K property tests"
   release_notes_v3_132_0: "Module Resolution MVP: Complete infrastructure for file resolution, loading, symbol extraction, and caching (14/20 tests passing - 70%)"
   release_notes_v3_131_0: "Documentation release: Mutation testing analysis (deferred to Phase 2), Module resolution MVP design, Dependency cleanup analysis (14 candidates identified)"
@@ -40,6 +42,48 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 67
+        url: "https://github.com/paiml/ruchy/issues/67"
+        title: "Parser fails on open-ended range expressions in slicing contexts"
+        impact: "HIGH - Blocks string/array slicing patterns like arg[2..], s[..5]"
+        ticket: "PARSER-084"
+        priority: "HIGH"
+        status: "✅ CLOSED - Fixed in v3.140.0"
+        closed_date: "2025-10-28"
+        context: "Range expression parsing in let statements and slicing operations"
+        problem:
+          - "Open-ended ranges (2..) fail to parse in let statements"
+          - "Open-start ranges (..5) fail to parse in slicing contexts"
+          - "Code like 'let key_part = &arg[2..];' produces parse errors"
+          - "Original failure in while loop with HashMap.insert() and string slicing"
+        root_cause:
+          - "try_range_operators unconditionally tried to parse expression after '..'"
+          - "Prefix range operator (..5) not registered in dispatch_prefix_token"
+          - "Parser didn't check for terminator tokens (semicolon, bracket, etc.)"
+        solution:
+          - "Added terminator token check in try_range_operators (mod.rs:1059-1099)"
+          - "Added parse_prefix_range for open-start ranges (expressions.rs:562-591)"
+          - "Used Unit literal as placeholder for missing range bounds"
+        tests:
+          - "Property tests: 11 tests × 10,000 iterations = 110,000 cases"
+          - "Regression tests: 7 tests covering original GitHub issue scenarios"
+          - "Integration tests: 4 tests in parser_084_while_hashmap_insert.rs"
+          - "Example: examples/parser_084_range_slicing.rs demonstrates all patterns"
+        files_modified:
+          - "src/frontend/parser/mod.rs (try_range_operators infix handler)"
+          - "src/frontend/parser/expressions.rs (parse_prefix_range prefix handler)"
+          - "tests/property_range_parsing.rs (447 lines, 18 tests total)"
+          - "tests/parser_084_while_hashmap_insert.rs (161 lines, 4 tests)"
+          - "examples/parser_084_range_slicing.rs (130 lines, 7 examples)"
+        working_features:
+          - "Closed ranges: 2..5"
+          - "Open-ended ranges: 2.. (start only)"
+          - "Open-start ranges: ..5 (end only)"
+          - "Full open range: .."
+          - "Inclusive ranges: 2..=5"
+          - "Array slicing: arr[2..]"
+          - "String slicing: &s[..5]"
+          - "Ranges in all contexts: let, if, while, function args"
       - id: 64
         url: "https://github.com/paiml/ruchy/issues/64"
         title: "ruchy fmt shows inconsistent behavior with struct formatting"
