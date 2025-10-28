@@ -263,6 +263,7 @@ impl MinimalCodeGen {
             UnaryOp::Negate => "-",
             UnaryOp::BitwiseNot => "~",
             UnaryOp::Reference => "&",
+            UnaryOp::MutableReference => "&mut ",  // PARSER-085: Issue #71
             UnaryOp::Deref => "*",
         }
     }

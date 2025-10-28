@@ -884,9 +884,11 @@ impl WasmEmitter {
                 instructions.push(Instruction::I32Const(-1));
                 instructions.push(Instruction::I32Xor);
             }
-            crate::frontend::ast::UnaryOp::Reference | crate::frontend::ast::UnaryOp::Deref => {
+            crate::frontend::ast::UnaryOp::Reference
+            | crate::frontend::ast::UnaryOp::MutableReference
+            | crate::frontend::ast::UnaryOp::Deref => {
                 // Reference/dereference operators not supported in WASM (needs memory)
-                // Keep operand value on stack
+                // Keep operand value on stack (PARSER-085: Issue #71)
             }
         }
         Ok(instructions)

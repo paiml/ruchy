@@ -175,10 +175,11 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
                 operand.type_name()
             ))),
         },
-        UnaryOp::Reference => {
-            // In interpreted mode, the reference operator (&) is a no-op
+        UnaryOp::Reference | UnaryOp::MutableReference => {
+            // In interpreted mode, reference operators (& and &mut) are no-ops
             // The interpreter already manages value ownership internally
-            // This allows Rust-like syntax (&value) to work in eval mode
+            // This allows Rust-like syntax (&value, &mut value) to work in eval mode
+            // PARSER-085: Issue #71 - Added MutableReference support
             Ok(operand.clone())
         }
         UnaryOp::Deref => {

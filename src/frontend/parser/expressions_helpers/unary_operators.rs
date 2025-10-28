@@ -101,11 +101,20 @@ fn parse_unary_deref(state: &mut ParserState, span: Span) -> Result<Expr> {
 
 /// Parse reference: `&expr`
 fn parse_unary_reference(state: &mut ParserState, span: Span) -> Result<Expr> {
-    state.tokens.advance();
+    state.tokens.advance(); // consume &
+
+    // PARSER-085: Issue #71 - Check for optional 'mut' keyword after '&'
+    let op = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance(); // consume mut
+        UnaryOp::MutableReference
+    } else {
+        UnaryOp::Reference
+    };
+
     let expr = parse_expr_with_precedence_recursive(state, 13)?;
     Ok(Expr::new(
         ExprKind::Unary {
-            op: UnaryOp::Reference,
+            op,
             operand: Box::new(expr),
         },
         span,
