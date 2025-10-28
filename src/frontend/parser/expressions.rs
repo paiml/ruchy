@@ -1,6 +1,6 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, Expr, ExprKind, ParserState, Pattern,
+    bail, Expr, ExprKind, Literal, ParserState, Pattern,
     Result, Span, Token,
 };
 
@@ -43,6 +43,9 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Await
         | Token::Tilde
         | Token::Spawn => expressions_helpers::unary_operators::parse_unary_prefix(state, token, span),
+
+        // Range operators (prefix for open-start ranges like ..5)
+        Token::DotDot | Token::DotDotEqual => parse_prefix_range(state, token, span),
 
         // Identifiers and special keywords
         Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super | Token::Default | Token::Result => {
@@ -554,5 +557,36 @@ fn parse_increment_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 
 fn parse_decrement_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     expressions_helpers::increment_decrement::parse_decrement_token(state, span)
+}
+
+/// Parse prefix range operators (..5, ..=5) - PARSER-084
+/// Handles open-start ranges where there's no left-hand side expression
+fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Result<Expr> {
+    let inclusive = matches!(token, Token::DotDotEqual);
+    state.tokens.advance(); // consume .. or ..=
+
+    // PARSER-084: Check if this is a full open range (..) with no end
+    let end = match state.tokens.peek() {
+        Some((Token::RightBracket | Token::Semicolon | Token::Comma | Token::RightParen | Token::RightBrace, _)) => {
+            // Full open range: .. with no start or end
+            Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
+        }
+        _ => {
+            // Open-start range: ..5 - parse the end expression
+            super::parse_expr_with_precedence_recursive(state, 6)? // precedence 6 (higher than range infix)
+        }
+    };
+
+    Ok(Expr {
+        kind: ExprKind::Range {
+            start: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })),
+            end: Box::new(end),
+            inclusive,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+        leading_comments: Vec::new(),
+        trailing_comment: None,
+    })
 }
 
