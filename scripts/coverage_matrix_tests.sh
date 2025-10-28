@@ -45,6 +45,10 @@ echo "Running Matrix 003: Statistical Analysis..."
 cargo llvm-cov --no-report test --test matrix_003_statistical_analysis_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-003-output.txt
 
 echo ""
+echo "Running Matrix 004: Time Series Analysis..."
+cargo llvm-cov --no-report test --test matrix_004_time_series_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-004-output.txt
+
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

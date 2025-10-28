@@ -3,7 +3,7 @@
 ## Status: DEFERRED (Pending WASM eval() Implementation)
 
 **Current State**:
-- ✅ Native platform tests WORKING (8/8 passing)
+- ✅ Native platform tests WORKING (42/42 passing)
 - ⏸️  WASM platform tests DEFERRED (missing infrastructure)
 
 ## Why WASM Tests Are Deferred
@@ -91,7 +91,11 @@ Load WASM, wire up input/output, handle Enter key.
 - `tests/e2e/matrix/03-statistical-analysis.spec.ts` - Playwright tests (DEFERRED)
 - `tests/matrix_003_statistical_analysis_native.rs` - Native tests (✅ WORKING, 12/12 passing)
 
-**Total Native Tests**: 28/28 passing (100%)
+### Matrix Test 004: Time Series Analysis
+- `tests/e2e/matrix/04-time-series.spec.ts` - Playwright tests (DEFERRED)
+- `tests/matrix_004_time_series_native.rs` - Native tests (✅ WORKING, 14/14 passing)
+
+**Total Native Tests**: 42/42 passing (100%)
 
 ## References
 
