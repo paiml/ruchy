@@ -396,6 +396,10 @@ harness = false
 name = "bytecode_vm_performance"
 harness = false
 
+[[bench]]
+name = "matrix_data_science_benchmarks"
+harness = false
+
 # Commented out due to compilation errors
 # [[bench]]
 # name = "shared_session_performance"
