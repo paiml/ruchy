@@ -195,10 +195,8 @@ fun main() {}
 }
 
 /// Test end-to-end evaluation works
-/// NOTE: Function pointer evaluation not yet supported in interpreter
-/// Parser and transpiler work correctly, but runtime eval needs implementation
+/// EXTREME TDD: RED phase - this test should FAIL until GREEN phase implementation
 #[test]
-#[ignore = "Runtime evaluation of function pointers not yet implemented"]
 fn test_parser_085_08_eval_function_pointer() {
     let code = r#"
 fun double(x: i32) -> i32 {

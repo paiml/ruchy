@@ -36,7 +36,8 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     let mut repl = create_repl()?;
 
     // If expression defines main(), call it automatically
-    let expr_to_eval = if expr.contains("fn main(") {
+    // PARSER-085: Fixed to check for "fun main(" (Ruchy keyword) not "fn main(" (Rust keyword)
+    let expr_to_eval = if expr.contains("fun main(") {
         format!("{expr}\nmain()")
     } else {
         expr.to_string()

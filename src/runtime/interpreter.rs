@@ -1159,6 +1159,24 @@ impl Interpreter {
                         elements.push(value);
                     }
                     Ok(Value::Array(elements.into()))
+                } else if name == "println" {
+                    // println!() macro: Evaluate arguments, print with newline
+                    // PARSER-085: Minimal implementation for eval mode (complexity: 6)
+                    if args.is_empty() {
+                        println!();
+                    } else if args.len() == 1 {
+                        // Single argument: print directly
+                        let value = self.eval_expr(&args[0])?;
+                        println!("{}", value);
+                    } else {
+                        // Multiple arguments: ignore first (format string), print remaining
+                        // This handles println!("{}", value) pattern
+                        for arg in &args[1..] {
+                            let value = self.eval_expr(arg)?;
+                            println!("{}", value);
+                        }
+                    }
+                    Ok(Value::Nil)
                 } else {
                     // Other macros not yet implemented
                     Err(InterpreterError::RuntimeError(format!(
