@@ -6,6 +6,61 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.143.0] - 2025-10-28
+
+### Fixed
+
+- **[PARSER-087] Allow "default" as Parameter Name (EXTREME TDD)**
+  - **GitHub Issue**: Closes #68 - Parser rejects "default" as parameter name with "Function parameters must be simple identifiers"
+  - **Status**: ✅ COMPLETE - All 6/6 tests passing, zero regressions
+  - **TDD Protocol**: RED → GREEN → REFACTOR (fully documented)
+
+  **Root Cause (FIVE WHYS)**:
+  1. Why did parser fail? - `parse_param_pattern()` didn't handle `Token::Default`
+  2. Why not handled? - Only checked for `Token::Identifier` for parameter names
+  3. Why was "default" a `Token::Default`? - Reserved keyword in lexer
+  4. Why treated as error? - Match statement fell through to catch-all error case
+  5. Why not caught earlier? - Reserved keyword as parameter name wasn't tested
+
+  **Solution**:
+  - Added `Token::Default` case to `parse_param_pattern()` (params.rs:118-122)
+  - Also reordered `Token::Identifier` before `Token::Ampersand` (params.rs:81-87)
+  - Allows common pattern: `fun get(key: &str, default: &str) -> String`
+
+  **Features Fixed**:
+  - ✅ Using "default" as parameter name (common pattern for default values)
+  - ✅ Multiple `&str` parameters with String return type
+  - ✅ Mixed parameter types with reserved keyword names
+
+  **Files Modified**: 2 files
+  - `src/frontend/parser/utils_helpers/params.rs` (+4 lines for Token::Default case)
+  - `tests/parser_087_method_params.rs` (6 comprehensive tests, 177 lines)
+
+  **Test Coverage**:
+  - test_01: Two &str params + bool return (control test) ✅
+  - test_02: Two &str params + String return (GitHub Issue #68 exact case) ✅
+  - test_03: One &str param + String return (control test) ✅
+  - test_04: Three &str params + String return ✅
+  - test_05: Mixed types (name: &str, age: i32, city: &str) ✅
+  - test_06: Regular functions (non-impl) with multiple &str params ✅
+
+  **Quality Metrics**:
+  - Complexity: 8 (original, well under ≤10 target)
+  - All PMAT quality gates passing
+  - Zero SATD in src/
+  - All clippy checks passing
+
+  **Impact**:
+  - **UNBLOCKS**: RUCHY-004 Config Manager, RUCHY-005 Deno Updater, RUCHY-006 Deps conversions
+  - All 3 existing RuchyRuchy conversions still work (RUCHY-001 Logger, RUCHY-002 Common, RUCHY-003 Schema)
+  - Standard API patterns now supported: `fun get_string(&self, key: &str, default: &str) -> String`
+
+  **Toyota Way Compliance**:
+  - Jidoka: Stopped the line for Issue #68, fixed with EXTREME TDD
+  - Genchi Genbutsu: Investigated actual token stream, discovered reserved keyword issue
+  - Kaizen: Bug became 6 comprehensive tests covering all parameter patterns
+  - Five Whys: Complete root cause analysis documented
+
 ## [3.142.0] - 2025-10-28
 
 ### Fixed
