@@ -6,6 +6,55 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.145.0] - 2025-10-28
+
+### Fixed
+
+- **[RUNTIME-001] Fix MacroInvocation Runtime Support (CRITICAL REGRESSION)**
+  - **GitHub Issue**: Closes #74 - `vec!` macro infinite loop in v3.144.0
+  - **Status**: ✅ COMPLETE - All 3/3 tests passing, zero regressions
+  - **Severity**: CRITICAL - Production regression from FORMATTER-088
+
+  **Bug Behavior**:
+  - Symptom: `vec![1, 2, 3]` hangs indefinitely in eval mode
+  - Error: "Expression type not yet implemented: MacroInvocation"
+  - Impact: ALL macro calls broken in runtime (`vec!`, `println!`, etc.)
+  - Discovered: During RuchyRuchy repository conversion testing
+
+  **Root Cause (INCOMPLETE REFACTORING)**:
+  - FORMATTER-088 changed parser: `ExprKind::Macro` → `ExprKind::MacroInvocation`
+  - Parser fix was CORRECT (better AST semantics for macro calls)
+  - Runtime interpreter NOT UPDATED to handle new variant
+  - Interpreter only had `ExprKind::Macro` match arm
+  - `MacroInvocation` fell through to wildcard → "not implemented" error
+
+  **Solution (30 LINES)**:
+  - Added `ExprKind::MacroInvocation` match arm in `src/runtime/interpreter.rs:1190-1216`
+  - Delegates to same logic as `ExprKind::Macro` (backward compat)
+  - Supports `vec!` and `println!` macros
+
+  **Files Modified**: 2 files
+  - `src/runtime/interpreter.rs` (30 lines: new match arm)
+  - `tests/runtime_001_macro_invocation.rs` (3 regression tests, NEW)
+
+  **Test Coverage**:
+  - test_vec_macro_invocation: `vec![1, 2, 3]` works ✅
+  - test_println_macro_invocation: `println!("Hello")` works ✅
+  - test_macro_backward_compat: `-e` mode works ✅
+
+  **Quality Metrics**:
+  - Full test suite: 4028/4028 tests passing (zero regressions)
+  - Execution time: <5s (no infinite loops)
+  - Backward compat: Both `Macro` and `MacroInvocation` supported
+
+  **Lesson Learned (COMPLETENESS CHECK)**:
+  - When refactoring AST variants, grep ALL consumers:
+    - Parser ✅ (updated in FORMATTER-088)
+    - Formatter ✅ (already correct)
+    - Interpreter ❌ (MISSED - caused regression)
+    - Linter, Transpiler, etc.
+  - Add grep validation to pre-commit hooks for AST changes
+
 ## [3.144.0] - 2025-10-28
 
 ### Fixed
