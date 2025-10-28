@@ -6,6 +6,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.141.0] - 2025-10-28
+
+### Added
+
+- **[PARSER-085] Function Pointer Runtime Evaluation (EXTREME TDD)**
+  - **Status**: ✅ COMPLETE - All 8/8 tests passing
+  - **TDD Protocol**: RED → GREEN → REFACTOR (fully documented)
+  - **Features**:
+    * Function pointer type syntax: `fn()`, `fn(T)`, `fn(T) -> R`
+    * Mutable reference parsing: `&mut` in expression context (Issue #71 fixed)
+    * Runtime evaluation: Function pointers work in eval mode
+    * println!() macro support in interpreter
+  - **Files Modified**: 14 total
+    * Parser: 11 files for &mut support (AST, parser, transpiler, runtime, MIR, WASM, testing)
+    * Runtime: 3 files for eval support (handlers, interpreter, tests)
+  - **Bugs Fixed**:
+    1. CLI checked "fn main(" instead of "fun main(" (Rust vs Ruchy keyword)
+    2. println!() macro not implemented in eval mode
+  - **Test Coverage**:
+    * test_01-07: Parsing, transpilation, type checking ✅
+    * test_08: End-to-end eval with function pointers ✅ (was failing, now GREEN)
+  - **Quality Metrics**:
+    * Complexity: ≤6 (target ≤10)
+    * All PMAT quality gates passing
+    * Zero SATD in src/
+  - **Published**: v3.141.0 to crates.io (ruchy + ruchy-wasm)
+  - **Issue Resolution**: Closes GitHub Issue #70, #71
+  - **RUCHY-005 Unblocked**: Deno Updater conversion can now proceed
+
+### Added (Previous)
+
 - **[PHASE4-008] Performance Benchmarking Infrastructure - Week 3 (COMPLETE)**
   - **Phase**: Phase 4 Notebook Excellence - Week 3: Performance Benchmarking
   - **Status**: ✅ Infrastructure complete + Baseline measurements documented
