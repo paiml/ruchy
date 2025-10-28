@@ -1,159 +1,155 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Matrix Test 03: Statistical Analysis (WASM Platform) - DEFERRED
+ * Matrix Test 03: Statistical Analysis (Notebook Platform)
  *
- * This test verifies statistical computation workflows in the WASM REPL.
+ * This test verifies statistical computation workflows in the Ruchy notebook interface.
  * Companion native test: tests/matrix_003_statistical_analysis_native.rs
  *
- * STATUS: DEFERRED pending WASM eval() implementation
- * See: tests/e2e/matrix/README.md for rationale
+ * Goal: Ensure identical behavior between notebook and native platforms
  *
- * Goal: Ensure identical behavior between WASM and native platforms
+ * FIXED: DEFECT-E2E-PHANTOM-UI - Rewritten to use actual notebook.html elements
+ * Previous: Tests expected phantom UI (#status, #repl-input) that never existed
+ * Current: Tests use real notebook UI (#notebook-cells, .CodeMirror, cell outputs)
  */
 
-test.describe('Matrix Test 03: Statistical Analysis (WASM Platform)', () => {
+test.describe('Matrix Test 03: Statistical Analysis (Notebook Platform)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // Wait for WASM to load
-    await expect(page.locator('#status')).toHaveClass(/status-ready/, { timeout: 10000 });
+    // Wait for actual notebook interface to load
+    await page.waitForSelector('#notebook-cells', { timeout: 10000 });
+
+    // Verify notebook UI components are ready
+    await expect(page.locator('#notebook-cells')).toBeVisible();
+    await expect(page.locator('.CodeMirror').first()).toBeVisible();
   });
 
   test('should calculate mean', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
-    // Create dataset
-    await input.fill('let data = [10, 20, 30, 40, 50]');
-    await input.press('Enter');
+    // Create dataset and calculate mean
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let data = [10, 20, 30, 40, 50]\ndata.reduce(|acc, x| acc + x, 0) / data.len()');
+    await page.keyboard.press('Shift+Enter');
 
-    // Calculate mean: sum / count
-    await input.fill('data.reduce(|acc, x| acc + x, 0) / data.len()');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     // Mean = 150 / 5 = 30
     await expect(output).toContainText('30');
   });
 
   test('should calculate sum', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
-    await input.fill('[1, 2, 3, 4, 5].reduce(|acc, x| acc + x, 0)');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('[1, 2, 3, 4, 5].reduce(|acc, x| acc + x, 0)');
+    await page.keyboard.press('Shift+Enter');
 
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('15');
   });
 
   test('should calculate sum of squares', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Sum of squares: [1, 2, 3, 4, 5] → [1, 4, 9, 16, 25] → 55
-    await input.fill('[1, 2, 3, 4, 5].map(|x| x * x).reduce(|acc, x| acc + x, 0)');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('[1, 2, 3, 4, 5].map(|x| x * x).reduce(|acc, x| acc + x, 0)');
+    await page.keyboard.press('Shift+Enter');
 
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('55');
   });
 
   test('should calculate weighted average components', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Weighted sum: (value * weight) summed
     // Values: [80, 90, 85], Weights: [2, 3, 1]
-    await input.fill('let data = [[80, 2], [90, 3], [85, 1]]');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let data = [[80, 2], [90, 3], [85, 1]]\ndata.map(|pair| pair[0] * pair[1]).reduce(|acc, x| acc + x, 0)');
+    await page.keyboard.press('Shift+Enter');
 
-    await input.fill('data.map(|pair| pair[0] * pair[1]).reduce(|acc, x| acc + x, 0)');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     // Weighted sum = 515
     await expect(output).toContainText('515');
   });
 
   test('should access percentile via indexing', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Sorted data, median is middle element
-    await input.fill('let sorted = [10, 20, 30, 40, 50]');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let sorted = [10, 20, 30, 40, 50]\nsorted[2]');
+    await page.keyboard.press('Shift+Enter');
 
-    // Median: index 2 for 5 elements
-    await input.fill('sorted[2]');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('30');
   });
 
   test('should calculate z-score components', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Z-score = (x - mean) / std_dev
     // Test deviation from mean
-    await input.fill('let value = 30');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let value = 30\nlet mean = 20\nvalue - mean');
+    await page.keyboard.press('Shift+Enter');
 
-    await input.fill('let mean = 20');
-    await input.press('Enter');
-
-    await input.fill('value - mean');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('10');
   });
 
   test('should calculate moving average', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Simple moving average (window size 3)
-    await input.fill('let window = [10, 20, 30]');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let window = [10, 20, 30]\nwindow.reduce(|acc, x| acc + x, 0) / window.len()');
+    await page.keyboard.press('Shift+Enter');
 
-    await input.fill('window.reduce(|acc, x| acc + x, 0) / window.len()');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('20');
   });
 
   test('should calculate data normalization', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Min-max normalization
-    await input.fill('let value = 50');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let value = 50\nlet min = 0\nlet max = 100\n((value - min) * 10) / (max - min)');
+    await page.keyboard.press('Shift+Enter');
 
-    await input.fill('let min = 0');
-    await input.press('Enter');
-
-    await input.fill('let max = 100');
-    await input.press('Enter');
-
-    // Normalized (scaled by 10 for integer representation)
-    await input.fill('((value - min) * 10) / (max - min)');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('5'); // 0.5 * 10
   });
 
   test('should detect outliers with threshold', async ({ page }) => {
-    const input = page.locator('#repl-input');
-    const output = page.locator('#output');
+    const codeMirror = page.locator('.CodeMirror').first();
+    await codeMirror.click();
 
     // Outlier detection: mean + 2*threshold
-    await input.fill('let mean = 28');
-    await input.press('Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('let mean = 28\nlet threshold = 20\nmean + (2 * threshold)');
+    await page.keyboard.press('Shift+Enter');
 
-    await input.fill('let threshold = 20');
-    await input.press('Enter');
-
-    await input.fill('mean + (2 * threshold)');
-    await input.press('Enter');
-
+    const output = page.locator('.cell-output').first();
+    await expect(output).toBeVisible({ timeout: 5000 });
     await expect(output).toContainText('68');
   });
 });
