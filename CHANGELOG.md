@@ -4,16 +4,6 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-### Fixed
-
-- **[PARSER-084] Open-ended range expressions now parse correctly**
-  - **Issue**: Parser failed with "Expected RightBrace, found Let" when encountering open-ended range expressions like `2..` or `..5`
-  - **Root Cause**: The `try_range_operators` function unconditionally tried to parse an expression after `..`, causing parse failures for open-ended ranges
-  - **Fix**: Modified `try_range_operators` in `src/frontend/parser/mod.rs:1059-1099` to check for terminator tokens (`]`, `;`, `,`, `)`, `}`) after `..` and treat them as open-ended ranges
-  - **Impact**: Fixes slicing operations like `&arg[2..]`, `x[..5]`, and standalone ranges like `let range = 2..;`
-  - **Complexity**: Cyclomatic: 5, Cognitive: 6 (well under ≤10 threshold)
-  - **Tests**: All 4 PARSER-084 tests pass, all existing parser tests pass (438 passed)
-
 ### Added
 
 - **[PHASE4-008] Performance Benchmarking Infrastructure - Week 3 (COMPLETE)**
@@ -37,6 +27,34 @@ All notable changes to the Ruchy programming language will be documented in this
     * ⚠️ Statistical: Mean at 1000 elements = 8.69ms (exceeds 5ms target, needs optimization)
     * 🔄 Time Series: Benchmarks in progress (results pending)
   - **Key Findings**: 95% of benchmarks meet or exceed targets. Identified optimization opportunity: statistical mean calculation at scale
+
+## [3.140.0] - 2025-10-28
+
+### Fixed
+
+- **[PARSER-084] Open-ended range expressions now parse correctly** (GitHub Issue #67)
+  - **Issue**: Parser failed with "Expected RightBrace, found Let" when encountering open-ended range expressions like `2..` or `..5`
+  - **Root Cause**: The `try_range_operators` function unconditionally tried to parse an expression after `..`, causing parse failures for open-ended ranges
+  - **Fix**:
+    - Modified `try_range_operators` in `src/frontend/parser/mod.rs:1059-1099` to check for terminator tokens (`]`, `;`, `,`, `)`, `}`) after `..` and treat them as open-ended ranges
+    - Added `parse_prefix_range` in `src/frontend/parser/expressions.rs:562-591` to handle open-start ranges (`..5`) as prefix operators
+    - Used `Unit` literal as placeholder for missing range bounds
+  - **Impact**: Fixes slicing operations like `&arg[2..]`, `x[..5]`, and standalone ranges like `let range = 2..;`
+  - **Complexity**: Cyclomatic: 5, Cognitive: 6 (well under ≤10 threshold)
+  - **Tests**:
+    - Property tests: 11 tests × 10,000 iterations = 110,000 cases
+    - Regression tests: 7 tests covering GitHub Issue #67 scenarios
+    - Integration tests: 4 tests in `tests/parser_084_while_hashmap_insert.rs`
+    - Example: `examples/parser_084_range_slicing.rs` demonstrates all patterns
+  - **Working Features**:
+    - Closed ranges: `2..5`
+    - Open-ended ranges: `2..` (start only)
+    - Open-start ranges: `..5` (end only)
+    - Full open range: `..`
+    - Inclusive ranges: `2..=5`
+    - Array slicing: `arr[2..]`
+    - String slicing: `&s[..5]`
+    - Ranges in all contexts: let, if, while, function args
 
 ## [3.139.0] - 2025-10-27
 
