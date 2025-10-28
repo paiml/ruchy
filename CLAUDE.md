@@ -35,6 +35,39 @@
 4. ✅ **Lint frontend**: `make lint-frontend` passes
 5. ✅ **Visual check**: Manually verify in browser (Genchi Genbutsu)
 
+### 🚨 CRITICAL: Phantom UI Prevention Protocol (DEFECT-E2E-PHANTOM-UI Response)
+
+**ROOT CAUSE LEARNED**: E2E tests were written for non-existent UI elements, causing 100% test failure rate.
+
+**Reference**: `docs/issues/DEFECT-E2E-PHANTOM-UI.md`
+
+**MANDATORY PROTOCOL** (Before Writing ANY E2E Test):
+
+1. 🔍 **GENCHI GENBUTSU**: Read actual HTML file BEFORE writing tests
+   - Example: Read `static/notebook.html` to see real element IDs
+   - NEVER assume UI elements exist based on planned/future designs
+
+2. ✅ **Selector Validation**: Verify EVERY selector exists in actual HTML
+   ```typescript
+   // ❌ FORBIDDEN: Writing tests for phantom UI
+   await page.locator('#status').toHaveClass(/status-ready/); // Element doesn't exist!
+
+   // ✅ CORRECT: Use actual notebook UI elements
+   await page.waitForSelector('#notebook-cells', { timeout: 10000 });
+   await expect(page.locator('.CodeMirror').first()).toBeVisible();
+   ```
+
+3. 🚫 **No Phantom UI**: NEVER write tests for planned/future UI elements
+   - Tests describe CURRENT reality, not future plans
+   - If UI doesn't exist yet, don't write E2E tests for it
+
+4. ✅ **Manual Verification**: View page in browser to confirm elements exist
+   - Open `static/notebook.html` in browser
+   - Use DevTools to inspect actual element IDs and classes
+   - Take screenshot if needed for reference
+
+**Toyota Way**: GENCHI GENBUTSU - Go and see what's actually there, don't test phantom UI
+
 ## 🚨 CRITICAL: A+ Code Standard (From paiml-mcp-agent-toolkit)
 
 **ABSOLUTE REQUIREMENT**: All NEW code MUST achieve A+ quality standards:
