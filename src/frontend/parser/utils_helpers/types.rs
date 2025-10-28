@@ -159,14 +159,27 @@ fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
         span,
     })
 }
-// Helper: Parse function type fn(T1, T2) -> T3 (complexity: 5)
+// Helper: Parse function type fn(T1, T2) -> T3 or fn() (complexity: 6)
+// PARSER-085: Fixed to support fn() without return type (GitHub Issue #70)
 fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume fn/fun
     state.tokens.expect(&Token::LeftParen)?;
     let param_types = parse_type_list(state)?;
     state.tokens.expect(&Token::RightParen)?;
-    state.tokens.expect(&Token::Arrow)?;
-    let ret_type = parse_type(state)?;
+
+    // PARSER-085: Make arrow and return type OPTIONAL
+    // If no arrow, default to unit type ()
+    let ret_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance(); // consume ->
+        parse_type(state)?
+    } else {
+        // Default: fn() returns unit type ()
+        Type {
+            kind: TypeKind::Named("()".to_string()),
+            span,
+        }
+    };
+
     Ok(Type {
         kind: TypeKind::Function {
             params: param_types,
