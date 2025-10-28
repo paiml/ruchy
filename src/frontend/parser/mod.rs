@@ -1071,7 +1071,20 @@ fn try_range_operators(
     }
     let inclusive = matches!(token, Token::DotDotEqual);
     state.tokens.advance();
-    let end = parse_expr_with_precedence_recursive(state, prec + 1)?;
+
+    // PARSER-084 FIX: Handle open-ended ranges (e.g., `2..` or `..5`)
+    // Check if the next token indicates no expression follows
+    let end = match state.tokens.peek() {
+        Some((Token::RightBracket | Token::Semicolon | Token::Comma | Token::RightParen | Token::RightBrace, _)) => {
+            // Open-ended range - no end expression
+            Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
+        }
+        _ => {
+            // Closed range - parse the end expression
+            parse_expr_with_precedence_recursive(state, prec + 1)?
+        }
+    };
+
     Ok(Some(Expr {
         kind: ExprKind::Range {
             start: Box::new(left),

@@ -4,6 +4,16 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[PARSER-084] Open-ended range expressions now parse correctly**
+  - **Issue**: Parser failed with "Expected RightBrace, found Let" when encountering open-ended range expressions like `2..` or `..5`
+  - **Root Cause**: The `try_range_operators` function unconditionally tried to parse an expression after `..`, causing parse failures for open-ended ranges
+  - **Fix**: Modified `try_range_operators` in `src/frontend/parser/mod.rs:1059-1099` to check for terminator tokens (`]`, `;`, `,`, `)`, `}`) after `..` and treat them as open-ended ranges
+  - **Impact**: Fixes slicing operations like `&arg[2..]`, `x[..5]`, and standalone ranges like `let range = 2..;`
+  - **Complexity**: Cyclomatic: 5, Cognitive: 6 (well under ≤10 threshold)
+  - **Tests**: All 4 PARSER-084 tests pass, all existing parser tests pass (438 passed)
+
 ### Added
 
 - **[PHASE4-008] Performance Benchmarking Infrastructure - Week 3 (COMPLETE)**
