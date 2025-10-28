@@ -223,8 +223,14 @@ impl Linter {
     pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
         let mut scope = Scope::new();
-        // Analyze the AST with variable tracking
+
+        // LINTER-086: Two-pass analysis for forward reference resolution (GitHub Issue #69)
+        // Pass 1: Build symbol table (collect all function definitions)
+        self.collect_definitions(ast, &mut scope);
+
+        // Pass 2: Analyze the AST with variable tracking (now with complete symbol table)
         self.analyze_expr(ast, &mut scope, &mut issues);
+
         // Check for unused variables
         self.check_unused_in_scope(&scope, &mut issues);
         // Check complexity
@@ -254,6 +260,30 @@ impl Linter {
             return Ok(vec![]);
         }
         Ok(issues)
+    }
+
+    /// LINTER-086: Pass 1 - Collect all function definitions for forward reference resolution
+    /// Complexity: 4 (≤10 target)
+    fn collect_definitions(&self, expr: &Expr, scope: &mut Scope) {
+        match &expr.kind {
+            ExprKind::Function { name, .. } => {
+                // Define function in symbol table (Pass 1)
+                scope.define(name.clone(), 1, 1, VarType::Function);
+            }
+            ExprKind::Block(exprs) => {
+                // Recursively collect definitions from block
+                for expr in exprs {
+                    self.collect_definitions(expr, scope);
+                }
+            }
+            ExprKind::Let { body, .. } => {
+                // Recursively collect from let body
+                self.collect_definitions(body, scope);
+            }
+            _ => {
+                // No definitions to collect for other expression types
+            }
+        }
     }
     fn analyze_expr(&self, expr: &Expr, scope: &mut Scope, issues: &mut Vec<LintIssue>) {
         match &expr.kind {
