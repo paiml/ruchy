@@ -152,9 +152,11 @@ pub fn parse_macro_arguments(state: &mut ParserState, closing_token: Token) -> R
     Ok(args)
 }
 
-/// Create a macro expression (complexity: 1)
+/// Create a macro invocation expression (complexity: 1)
+/// FORMATTER-088: Changed from `ExprKind::Macro` to `ExprKind::MacroInvocation`
+/// to correctly represent macro CALLS, not macro DEFINITIONS (GitHub Issue #72)
 pub fn create_macro_expr(name: String, args: Vec<Expr>) -> Expr {
-    Expr::new(ExprKind::Macro { name, args }, Span::default())
+    Expr::new(ExprKind::MacroInvocation { name, args }, Span::default())
 }
 
 #[cfg(test)]

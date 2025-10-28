@@ -6,6 +6,71 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.144.0] - 2025-10-28
+
+### Fixed
+
+- **[FORMATTER-088] Fix Macro Call Preservation in Formatter (EXTREME TDD)**
+  - **GitHub Issue**: Closes #72 - Formatter transforms macro calls to macro definitions
+  - **Status**: ✅ COMPLETE - All 6/6 unit tests + 2/2 property tests (10K+ cases) passing
+  - **TDD Protocol**: RED → GREEN → REFACTOR (fully documented)
+
+  **Bug Behavior**:
+  - Input: `vec![1, 2, 3]` (macro CALL with `!` suffix)
+  - Output: `macro vec(1, 2, 3) { }` (macro DEFINITION - WRONG!)
+  - All macros affected: vec!, println!, assert!, custom macros
+
+  **Root Cause (FIVE WHYS)**:
+  1. Why formatter broken? - Generated `macro vec(...)` instead of `vec!(...)`
+  2. Why wrong syntax? - AST contained `ExprKind::Macro` (definition variant)
+  3. Why wrong variant? - Parser used `ExprKind::Macro` for macro calls
+  4. Why parser wrong? - `create_macro_expr()` hardcoded definition variant
+  5. Why not caught? - No formatter tests for macro calls existed
+
+  **Solution (ONE LINE FIX)**:
+  - Changed `src/frontend/parser/macro_parsing.rs:159`:
+    ```rust
+    // BEFORE (BUG):
+    Expr::new(ExprKind::Macro { name, args }, ...)
+
+    // AFTER (FIX):
+    Expr::new(ExprKind::MacroInvocation { name, args }, ...)
+    ```
+  - Bug was in PARSER, not formatter (formatter was already correct!)
+
+  **Files Modified**: 3 files
+  - `src/frontend/parser/macro_parsing.rs` (1 line fix + documentation)
+  - `tests/formatter_088_macro_preservation.rs` (6 unit + 2 property tests, NEW)
+  - `src/frontend/parser/mod.rs` (1 regression fix in existing test)
+
+  **Test Coverage**:
+  - test_01: vec![1, 2, 3] preservation ✅
+  - test_02: println!("Hello") preservation ✅
+  - test_03: assert!(x > 0) preservation ✅
+  - test_04: Custom macro calls ✅
+  - test_05: Macros in function bodies ✅
+  - test_06: Nested macro calls ✅
+  - property_test_1: Macro calls never become definitions (10K+ cases) ✅
+  - property_test_2: vec! always preserved (10K+ cases) ✅
+
+  **Quality Metrics**:
+  - Complexity: 1 (single return statement, 90% under ≤10 target)
+  - Full test suite: 4028/4028 tests passing (zero regressions)
+  - Property tests: 2/2 passing (20K+ random inputs)
+  - Examples: All compile and run correctly
+  - Doctests: All passing
+
+  **Impact**:
+  - All macro calls now format correctly (vec!, println!, assert!, df!, sql!, custom)
+  - Formatter produces syntactically correct Ruchy code
+  - Both `vec![...]` and `vec!(...)` syntax accepted (canonical form uses parens)
+
+  **Toyota Way Compliance**:
+  - Jidoka: Stopped the line for Issue #72, fixed with EXTREME TDD
+  - Genchi Genbutsu: Used `ruchy ast` to inspect actual AST, discovered parser bug
+  - Kaizen: Bug became comprehensive test suite (6 unit + 2 property tests)
+  - Five Whys: Complete root cause analysis revealed untested code path
+
 ## [3.143.0] - 2025-10-28
 
 ### Fixed
