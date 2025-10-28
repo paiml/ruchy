@@ -1184,6 +1184,36 @@ impl Interpreter {
                     )))
                 }
             }
+            // RUNTIME-001: Handle MacroInvocation (FORMATTER-088 changed parser output)
+            // MacroInvocation is the correct AST variant for macro CALLS (not definitions)
+            // Delegate to same logic as Macro for backward compatibility (GitHub Issue #74)
+            ExprKind::MacroInvocation { name, args } => {
+                if name == "vec" {
+                    let mut elements = Vec::new();
+                    for arg in args {
+                        let value = self.eval_expr(arg)?;
+                        elements.push(value);
+                    }
+                    Ok(Value::Array(elements.into()))
+                } else if name == "println" {
+                    if args.is_empty() {
+                        println!();
+                    } else if args.len() == 1 {
+                        let value = self.eval_expr(&args[0])?;
+                        println!("{}", value);
+                    } else {
+                        for arg in &args[1..] {
+                            let value = self.eval_expr(arg)?;
+                            println!("{}", value);
+                        }
+                    }
+                    Ok(Value::Nil)
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Macro '{}!' not yet implemented", name
+                    )))
+                }
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
