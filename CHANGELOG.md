@@ -6,6 +6,59 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.142.0] - 2025-10-28
+
+### Fixed
+
+- **[LINTER-086] Two-Pass Linter Analysis for Forward Reference Resolution (EXTREME TDD)**
+  - **GitHub Issue**: Closes #69 - ruchy lint reports false positive "undefined variable" for forward-referenced functions
+  - **Status**: ✅ COMPLETE - All 4/4 tests passing, 100/100 existing tests passing (zero regressions)
+  - **TDD Protocol**: RED → GREEN → REFACTOR (fully documented)
+
+  **Root Cause**:
+  - Linter performed single-pass analysis (top-to-bottom)
+  - Could not resolve forward references to functions defined later
+  - Code passed `ruchy check` and `ruchy run` but failed `ruchy lint`
+
+  **Solution (Two-Pass Analysis)**:
+  - **Pass 1**: `collect_definitions()` - Build symbol table of all function names
+  - **Pass 2**: `analyze_expr()` - Analyze code with complete symbol table
+  - Now matches `ruchy check` behavior (consistency!)
+
+  **Features Fixed**:
+  - ✅ Forward function references (calling functions defined later)
+  - ✅ Mutual recursion (functions calling each other)
+  - ✅ Standard Ruchy pattern (main() first, helpers after)
+  - ✅ GitHub Issue #69 exact reproduction case
+
+  **Files Modified**: 2 files
+  - `src/quality/linter.rs` (added `collect_definitions()` method, 18 lines)
+  - `tests/linter_086_forward_references.rs` (4 comprehensive tests, 220 lines)
+
+  **Test Coverage**:
+  - test_01: Forward function reference (main calls helper defined later) ✅
+  - test_02: Mutual recursion (is_even ↔ is_odd) ✅
+  - test_03: Helpers after main (standard pattern) ✅
+  - test_04: GitHub Issue #69 exact reproduction ✅
+  - All 100 existing linter tests still passing (zero regressions) ✅
+
+  **Quality Metrics**:
+  - Complexity: 4 (target ≤10, 60% under limit)
+  - All PMAT quality gates passing
+  - Zero SATD in src/
+  - All clippy checks passing
+
+  **Impact**:
+  - **QUALITY-004 Unblocked**: Can now proceed with Tool phase
+  - Dogfooding RuchyRuchy Bootstrap Compiler unblocked
+  - Standard Ruchy code organization patterns now supported
+
+  **Toyota Way Compliance**:
+  - Jidoka: Stopped the line for Issue #69, fixed with EXTREME TDD
+  - Genchi Genbutsu: Investigated actual linter behavior, not assumptions
+  - Kaizen: Bug became 4 comprehensive tests
+  - Andon Cord: User corrected "MUST FIX root cause using extreme TDD and pmat"
+
 ## [3.141.0] - 2025-10-28
 
 ### Added
