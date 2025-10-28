@@ -926,6 +926,7 @@ pub enum UnaryOp {
     Negate,
     BitwiseNot,
     Reference,
+    MutableReference,  // PARSER-085: Added for &mut support (GitHub Issue #71)
     Deref,
 }
 /// A function or method parameter.
@@ -1475,6 +1476,7 @@ impl fmt::Display for UnaryOp {
             Self::Negate => write!(f, "-"),
             Self::BitwiseNot => write!(f, "~"),
             Self::Reference => write!(f, "&"),
+            Self::MutableReference => write!(f, "&mut "),  // PARSER-085: Issue #71
             Self::Deref => write!(f, "*"),
         }
     }

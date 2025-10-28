@@ -13,6 +13,7 @@ impl Transpiler {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
             UnaryOp::Reference => quote! { &#operand_tokens },
+            UnaryOp::MutableReference => quote! { &mut #operand_tokens },  // PARSER-085: Issue #71
             UnaryOp::Deref => quote! { *#operand_tokens },
         })
     }

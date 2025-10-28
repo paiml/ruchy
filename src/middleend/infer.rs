@@ -369,8 +369,10 @@ impl InferenceContext {
                 self.unifier.unify(&operand_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
             }
-            UnaryOp::Reference => {
-                // Reference operator &x: T -> &T
+            UnaryOp::Reference | UnaryOp::MutableReference => {
+                // Reference operators &x and &mut x: T -> &T
+                // For type inference, &T and &mut T are the same
+                // (PARSER-085: Issue #71)
                 Ok(MonoType::Reference(Box::new(operand_ty)))
             }
             UnaryOp::Deref => {

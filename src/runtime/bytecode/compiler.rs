@@ -312,7 +312,8 @@ impl Compiler {
             UnaryOp::Negate => OpCode::Neg,
             UnaryOp::Not => OpCode::Not,
             UnaryOp::BitwiseNot => OpCode::BitNot,
-            UnaryOp::Reference | UnaryOp::Deref => {
+            UnaryOp::Reference | UnaryOp::MutableReference | UnaryOp::Deref => {
+                // PARSER-085: Issue #71 - Added MutableReference
                 return Err(format!("Unsupported unary operator: {op:?}"));
             }
         };

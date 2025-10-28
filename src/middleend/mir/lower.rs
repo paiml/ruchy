@@ -286,7 +286,7 @@ impl LoweringContext {
             AstUnOp::Negate => UnOp::Neg,
             AstUnOp::Not => UnOp::Not,
             AstUnOp::BitwiseNot => UnOp::BitNot,
-            AstUnOp::Reference => UnOp::Ref,
+            AstUnOp::Reference | AstUnOp::MutableReference => UnOp::Ref,  // PARSER-085: Issue #71
             AstUnOp::Deref => UnOp::Deref,
         }
     }
@@ -389,7 +389,8 @@ impl LoweringContext {
         match op {
             AstUnOp::Negate | AstUnOp::BitwiseNot => Type::I32,
             AstUnOp::Not => Type::Bool,
-            AstUnOp::Reference => Type::Ref(Box::new(Type::I32), Mutability::Immutable), // Reference creates an immutable reference
+            AstUnOp::Reference => Type::Ref(Box::new(Type::I32), Mutability::Immutable), // & creates an immutable reference
+            AstUnOp::MutableReference => Type::Ref(Box::new(Type::I32), Mutability::Mutable), // &mut creates a mutable reference (PARSER-085: Issue #71)
             AstUnOp::Deref => Type::I32, // Dereference returns the inner type
         }
     }
