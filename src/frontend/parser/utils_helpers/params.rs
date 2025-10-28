@@ -78,15 +78,17 @@ fn check_and_consume_mut(state: &mut ParserState) -> bool {
 /// Returns (pattern, `reference_info`) where `reference_info` is (`is_reference`, `is_mut`)
 fn parse_param_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, bool))> {
     match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            // PARSER-087: Check if this is a typed parameter (name: Type)
+            // If so, parse as identifier pattern - the & is part of the type annotation, not the pattern
+            let name = name.clone();
+            state.tokens.advance();
+            Ok((Pattern::Identifier(name), (false, false)))
+        }
         Some((Token::Ampersand, _)) => {
             // This must be &self or &mut self
             // We don't support other reference patterns in function parameters
             parse_reference_pattern(state)
-        }
-        Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
-            state.tokens.advance();
-            Ok((Pattern::Identifier(name), (false, false)))
         }
         Some((Token::DataFrame, _)) => {
             // Handle "df" parameter name (tokenized as DataFrame)
@@ -112,6 +114,11 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<(Pattern, (bool, bool)
             // Parse struct destructuring: fun f({x, y}) {}
             let pattern = expressions::parse_struct_pattern(state)?;
             Ok((pattern, (false, false)))
+        }
+        Some((Token::Default, _)) => {
+            // PARSER-087: Allow 'default' as parameter name (common pattern: default values)
+            state.tokens.advance();
+            Ok((Pattern::Identifier("default".to_string()), (false, false)))
         }
         Some((Token::From, _)) => {
             bail!(
