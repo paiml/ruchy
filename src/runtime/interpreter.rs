@@ -2287,6 +2287,31 @@ impl Interpreter {
         expr: &Expr,
         target_type: &str,
     ) -> Result<Value, InterpreterError> {
+        // Special case: Enum variant to integer (Issue #79)
+        // Must extract enum name from AST BEFORE evaluating expression
+        if matches!(target_type, "i32" | "i64" | "isize") {
+            if let ExprKind::FieldAccess { object, field } = &expr.kind {
+                if let ExprKind::Identifier(enum_name) = &object.kind {
+                    // Direct enum literal: LogLevel::Info as i32
+                    let variant_name = field;
+
+                    // Lookup enum definition in environment
+                    if let Some(Value::Object(enum_def)) = self.get_variable(enum_name) {
+                        if let Some(Value::Object(variants)) = enum_def.get("__variants") {
+                            if let Some(Value::Object(variant_info)) = variants.get(variant_name) {
+                                if let Some(Value::Integer(disc)) =
+                                    variant_info.get("discriminant")
+                                {
+                                    return Ok(Value::Integer(*disc));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Standard case: Evaluate expression first, then cast
         let value = self.eval_expr(expr)?;
 
         match (value, target_type) {
@@ -2301,6 +2326,16 @@ impl Interpreter {
 
             // Float to Float (identity)
             (Value::Float(f), "f64" | "f32") => Ok(Value::Float(f)),
+
+            // Enum variant to Integer - variable case (e.g., variant as i32)
+            // This will fail because we don't store enum type info at runtime
+            (Value::EnumVariant { variant_name, .. }, "i32" | "i64" | "isize") => {
+                Err(InterpreterError::TypeError(format!(
+                    "Cannot cast enum variant {} to integer: enum type information lost at runtime. \
+                     Use direct enum literal casts instead (e.g., LogLevel::Info as i32)",
+                    variant_name
+                )))
+            }
 
             // Unsupported cast
             (val, target) => Err(InterpreterError::TypeError(format!(
