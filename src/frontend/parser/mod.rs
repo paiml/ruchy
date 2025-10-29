@@ -510,7 +510,7 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
                         // Standard library types (Vec, Box, HashMap, etc.) should remain FieldAccess
                         let is_builtin_module = matches!(
                             module.as_str(),
-                            "Command" | "DataFrame" | "Sql" | "Process"
+                            "Command" | "DataFrame" | "Sql" | "Process" | "String"
                         );
 
                         if is_builtin_module {

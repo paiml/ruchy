@@ -71,6 +71,11 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
         "Command".to_string(),
         Value::from_string("__builtin_command__".to_string()),
     );
+    // REGRESSION-077: String module for std::string methods
+    global_env.insert(
+        "String".to_string(),
+        Value::from_string("__builtin_string__".to_string()),
+    );
     global_env.insert(
         "DataFrame::new".to_string(),
         Value::from_string("__builtin_dataframe_new__".to_string()),

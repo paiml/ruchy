@@ -74,6 +74,10 @@ pub fn eval_builtin_function(
     if let Some(result) = try_eval_process_function(name, args)? {
         return Ok(Some(result));
     }
+    // String functions (REGRESSION-077, Issue #77)
+    if let Some(result) = try_eval_string_function(name, args)? {
+        return Ok(Some(result));
+    }
 
     Ok(None)
 }
@@ -2859,6 +2863,40 @@ fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError> {
             Ok(Value::Object(Arc::new(cmd_obj)))
         },
         _ => Err(InterpreterError::RuntimeError("Command::new() expects a string program name".to_string())),
+    }
+}
+
+// ============================================================================
+// String Functions (REGRESSION-077, Issue #77)
+// Native String type methods (String::new, String::from)
+// ============================================================================
+
+/// String function dispatcher (REGRESSION-077)
+/// Complexity: 2 (within Toyota Way limits)
+fn try_eval_string_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_String_new__" => Ok(Some(eval_string_new(args)?)),
+        "__builtin_String_from__" => Ok(Some(eval_string_from(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Eval: `String::new()`
+/// Creates an empty string
+/// Complexity: 1 (validation + return empty string)
+fn eval_string_new(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("String::new", args, 0)?;
+    Ok(Value::from_string(String::new()))
+}
+
+/// Eval: `String::from(value)`
+/// Converts a value to a string
+/// Complexity: 2 (validation + conversion)
+fn eval_string_from(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("String::from", args, 1)?;
+    match &args[0] {
+        Value::String(s) => Ok(Value::from_string(s.to_string())),
+        other => Ok(Value::from_string(format!("{other}"))),
     }
 }
 
