@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.10] - 2025-10-29
+
+### Added
+
+- **Complete chrono::Utc Support - Added .to_rfc3339() method**
+  - **Problem**: RFC3339 datetime strings lacked .to_rfc3339() method (17/17 → 100% functionality)
+  - **Solution**: Added to_rfc3339 to zero-arg string methods in eval_string_methods.rs:50
+  - **Test Status**: 4/4 chrono tests passing ✅ (was 3/4 in v3.147.9)
+    - test_regression_082_chrono_utc_basic_import
+    - test_regression_082_chrono_utc_with_formatting
+    - test_regression_082_multiple_chrono_imports
+    - test_regression_082_to_rfc3339_method (NEW)
+  - **Files Modified**:
+    - src/runtime/eval_string_methods.rs (to_rfc3339 method)
+    - tests/regression_082_chrono_utc.rs (4th test added)
+  - **Impact**: 100% chrono::Utc functionality - no limitations remaining
+  - **EXTREME TDD**: RED (1 failing test) → GREEN (minimal 1-line fix) → REFACTOR
+
 ## [3.147.9] - 2025-10-29
 
 ### Added
