@@ -43,10 +43,12 @@ fn fuzz_pattern_never_panics_basic() {
         Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1)])),
         Value::Array(std::sync::Arc::from(vec![])),
         Value::EnumVariant {
+            enum_name: "Result".to_string(),
             variant_name: "Success".to_string(),
             data: None,
         },
         Value::EnumVariant {
+            enum_name: "Result".to_string(),
             variant_name: "Error".to_string(),
             data: Some(vec![Value::from_string("msg".to_string())]),
         },
@@ -76,16 +78,19 @@ fn fuzz_nested_enum_robustness() {
     let test_values = vec![
         // Correct: matching variant with 1 element
         Value::EnumVariant {
+            enum_name: "Token".to_string(),
             variant_name: "Char".to_string(),
             data: Some(vec![Value::from_string("a".to_string())]),
         },
         // Wrong arity: 0 elements
         Value::EnumVariant {
+            enum_name: "Token".to_string(),
             variant_name: "Char".to_string(),
             data: Some(vec![]),
         },
         // Wrong arity: 2 elements
         Value::EnumVariant {
+            enum_name: "Token".to_string(),
             variant_name: "Char".to_string(),
             data: Some(vec![
                 Value::from_string("a".to_string()),
@@ -94,11 +99,13 @@ fn fuzz_nested_enum_robustness() {
         },
         // No data
         Value::EnumVariant {
+            enum_name: "Token".to_string(),
             variant_name: "Char".to_string(),
             data: None,
         },
         // Wrong variant name
         Value::EnumVariant {
+            enum_name: "Token".to_string(),
             variant_name: "EOF".to_string(),
             data: None,
         },

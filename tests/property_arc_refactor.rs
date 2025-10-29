@@ -51,11 +51,13 @@ fn arb_value() -> impl Strategy<Value = Value> {
                     .prop_map(|m| Value::Object(Arc::new(m))),
                 // EnumVariant
                 (
-                    "[A-Z][a-zA-Z0-9]{0,10}",
+                    "[A-Z][a-zA-Z0-9]{0,10}", // enum_name
+                    "[A-Z][a-zA-Z0-9]{0,10}", // variant_name
                     prop::option::of(prop::collection::vec(inner.clone(), 0..2))
                 )
-                    .prop_map(|(name, data)| Value::EnumVariant {
-                        variant_name: name,
+                    .prop_map(|(enum_name, variant_name, data)| Value::EnumVariant {
+                        enum_name,
+                        variant_name,
                         data,
                     }),
                 // Range
@@ -224,20 +226,23 @@ proptest! {
 
     /// Test that EnumVariant operations preserve semantics
     ///
-    /// Property: EnumVariant cloning preserves name and data
+    /// Property: EnumVariant cloning preserves enum_name, variant_name and data
     #[test]
     fn test_enum_variant_semantics(
-        name in "[A-Z][a-zA-Z0-9]{0,10}",
+        enum_name in "[A-Z][a-zA-Z0-9]{0,10}",
+        variant_name in "[A-Z][a-zA-Z0-9]{0,10}",
         data in prop::option::of(prop::collection::vec(arb_value(), 0..3))
     ) {
         let variant = Value::EnumVariant {
-            variant_name: name.clone(),
+            enum_name: enum_name.clone(),
+            variant_name: variant_name.clone(),
             data: data.clone(),
         };
         let cloned = variant.clone();
 
-        if let (Value::EnumVariant { variant_name: n1, data: d1 },
-                Value::EnumVariant { variant_name: n2, data: d2 }) = (&variant, &cloned) {
+        if let (Value::EnumVariant { enum_name: e1, variant_name: n1, data: d1 },
+                Value::EnumVariant { enum_name: e2, variant_name: n2, data: d2 }) = (&variant, &cloned) {
+            prop_assert_eq!(e1, e2);
             prop_assert_eq!(n1, n2);
             match (d1, d2) {
                 (None, None) => {},
@@ -284,15 +289,18 @@ fn value_eq(a: &Value, b: &Value) -> bool {
         (Value::BuiltinFunction(x), Value::BuiltinFunction(y)) => x == y,
         (
             Value::EnumVariant {
+                enum_name: e1,
                 variant_name: n1,
                 data: d1,
             },
             Value::EnumVariant {
+                enum_name: e2,
                 variant_name: n2,
                 data: d2,
             },
         ) => {
-            n1 == n2
+            e1 == e2
+                && n1 == n2
                 && match (d1, d2) {
                     (None, None) => true,
                     (Some(v1), Some(v2)) => {
