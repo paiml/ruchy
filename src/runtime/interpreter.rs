@@ -1775,6 +1775,9 @@ impl Interpreter {
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::from_string("__builtin_hashmap__".to_string()))
+        } else if module == "Command" && name == "new" {
+            // Handle Command::new() -> routes to try_eval_process_function("Command_new")
+            Ok(Value::from_string("__builtin_Command_new".to_string()))
         } else if name == "new" {
             // Check if this is a class constructor call
             if let Ok(class_value) = self.lookup_variable(module) {
