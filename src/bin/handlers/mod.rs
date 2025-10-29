@@ -115,8 +115,14 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
 
             // After evaluating the file, check if main() function exists and call it
             // (but also don't print main's return value - it's not a println)
-            let _ = repl.eval("main()");
-            Ok(())
+            // FIX Issue #81: Handle main() errors (panic!, undefined functions, etc.)
+            match repl.eval("main()") {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    Err(e)
+                }
+            }
         }
         Err(e) => {
             eprintln!("Error: {e}");
@@ -301,7 +307,15 @@ pub fn handle_run_command(file: &Path, verbose: bool, vm_mode: VmMode) -> Result
         println!("Execution mode: {:?}", vm_mode);
     }
 
-    let source = read_file_with_context(file)?;
+    // FIX Issue #80: Support stdin input with `-` argument (Unix convention)
+    let source = if file.to_str() == Some("-") {
+        use std::io::Read;
+        let mut input = String::new();
+        std::io::stdin().read_to_string(&mut input)?;
+        input
+    } else {
+        read_file_with_context(file)?
+    };
 
     // FIX CLI-CONTRACT-RUN-001: Parse the entire file FIRST to catch syntax errors
     let mut parser = RuchyParser::new(&source);
@@ -330,8 +344,14 @@ pub fn handle_run_command(file: &Path, verbose: bool, vm_mode: VmMode) -> Result
 
                     // After evaluating the file, check if main() function exists and call it
                     // (but also don't print main's return value - it's not a println)
-                    let _ = repl.eval("main()");
-                    Ok(())
+                    // FIX Issue #81: Handle main() errors (panic!, undefined functions, etc.)
+                    match repl.eval("main()") {
+                        Ok(_) => Ok(()),
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            std::process::exit(1);
+                        }
+                    }
                 }
                 Err(e) => {
                     eprintln!("Error: {e}");
