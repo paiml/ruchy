@@ -200,9 +200,9 @@ fn eval_integer_method(
     }
 }
 
-/// Evaluate methods on Object (HashMap) types
+/// Evaluate methods on `Object` (`HashMap`) types
 ///
-/// Dispatches based on __type marker to appropriate handler
+/// Dispatches based on `__type` marker to appropriate handler
 ///
 /// # Complexity
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
@@ -246,7 +246,7 @@ fn eval_command_method(
             }
             if let Value::String(arg_str) = &arg_values[0] {
                 let mut new_obj = obj.clone();
-                if let Some(Value::Array(mut args)) = new_obj.get("args").cloned() {
+                if let Some(Value::Array(args)) = new_obj.get("args").cloned() {
                     let mut new_args = args.to_vec(); new_args.push(Value::from_string(arg_str.to_string()));
                     new_obj.insert("args".to_string(), Value::Array(Arc::from(new_args)));
                 }
