@@ -718,6 +718,7 @@ mod tests {
     fn test_option_pattern_matching() {
         // Some pattern matching - should use EnumVariant representation
         let some_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
             variant_name: "Some".to_string(),
             data: Some(vec![Value::Integer(42)]),
         };
@@ -732,6 +733,7 @@ mod tests {
 
         // None pattern matching - should use EnumVariant representation
         let none_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
             variant_name: "None".to_string(),
             data: None,
         };
