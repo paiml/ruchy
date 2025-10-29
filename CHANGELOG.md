@@ -6,6 +6,50 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.147.0] - 2025-10-29
+
+### Fixed
+
+- **[PARSER-091] Fix :: Namespace Separator to Generate QualifiedName (Issue #75)**
+  - **GitHub Issue**: Closes #75 - Command::new() incorrectly parsed as FieldAccess
+  - **Status**: ✅ COMPLETE - All tests passing (4028/4028), zero regressions
+  - **Priority**: CRITICAL - Blocked Command module static methods
+
+  **Bug Behavior**:
+  - Symptom: `Command::new("echo")` fails with "Cannot access field new on type string"
+  - Root Cause: Parser treated `Module::function()` as `FieldAccess{object: Identifier("Module"), field: "function"}`
+  - Expected: Should parse as `QualifiedName{module: "Module", name: "function"}`
+  - Impact: Blocked all static method calls on builtin modules (Command, HashMap, etc.)
+
+  **Solution (ROOT CAUSE FIX - PARSER)**:
+  - Modified `handle_colon_colon_operator()` in `src/frontend/parser/mod.rs` (lines 501-516)
+  - Added lookahead after parsing identifier following `::`
+  - If pattern is `Module::identifier(`, creates `QualifiedName` (static method call)
+  - Otherwise keeps `FieldAccess` (for enum variants like `Option::Some`)
+  - Used `ref` in pattern match to avoid moving values
+
+  **Files Modified** (3 files):
+  - `src/frontend/parser/mod.rs`: Parser fix with lookahead logic (+15 lines)
+  - `src/runtime/interpreter.rs`: Removed redundant workaround (-3 lines)
+  - `src/runtime/builtin_init.rs`: Updated test count for Command module (+1 line)
+
+  **Test Results**:
+  - 4028/4028 full test suite passing (zero regressions)
+  - AST tool verified: `Command::new()` now generates `QualifiedName`
+  - Manual validation: `./target/debug/ruchy ast /tmp/test_command.ruchy` confirms correct AST
+  - All PMAT quality gates passing (complexity ≤10, TDG A-)
+
+  **Architecture Impact**:
+  - **Toyota Way**: Fixed root cause (parser), removed symptom workaround (interpreter)
+  - Maintains backward compatibility with enum variants (`Option::Some`, `Result::Ok`)
+  - Enables proper static method resolution at parse time
+  - Makes interpreter workarounds redundant (removed 12 lines from previous commits)
+
+  **Impact**:
+  - UNBLOCKS: Command module implementation (Issue #75)
+  - Enables: All static method calls on modules (`Module::function()`)
+  - Fixes: Parser generates correct AST for namespace-qualified calls
+
 ## [3.146.0] - 2025-10-29
 
 ### Fixed
