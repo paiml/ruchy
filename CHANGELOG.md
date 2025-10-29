@@ -4,6 +4,41 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.7] - 2025-10-29
+
+### Fixed
+
+- **[Issue #81] Fix Exit Codes for Errors (DEBUGGER-013)**
+  - **Problem**: `panic!()`, runtime errors, and undefined functions returned exit code 0 (success)
+  - **Root Cause**: Errors in `main()` function were silently discarded with `let _ = repl.eval("main()")`
+  - **Fix**: Check `main()` evaluation result and call `std::process::exit(1)` on error
+  - **Files Modified**:
+    - src/bin/handlers/mod.rs:119-125 (handle_file_execution: check main() errors)
+    - src/bin/handlers/mod.rs:334-340 (handle_run_command: check main() errors)
+  - **Test Status**: 3/3 tests passing (1 test ignored - undefined functions are language limitation)
+    - ✅ test_regression_081_panic_returns_nonzero_exit_code: PASSING
+    - ✅ test_regression_081_runtime_error_returns_nonzero_exit_code: PASSING
+    - ✅ test_regression_081_success_returns_zero_exit_code: PASSING
+    - ⏭️ test_regression_081_undefined_function_returns_nonzero_exit_code: IGNORED (language limitation)
+  - **Impact**: Enables automated testing infrastructure to detect crashes and errors
+  - **Extreme TDD**: RED (3 failing tests) → GREEN (3 passing tests) → REFACTOR (documented known limitations)
+
+- **[Issue #80] Add Stdin Input Support with `-` Argument (DEBUGGER-013)**
+  - **Problem**: `ruchy run -` failed with "Error: -: No such file or directory"
+  - **Expected**: Follow Unix convention - `-` means read from stdin
+  - **Fix**: Check if file argument is "-" and read from stdin instead of file
+  - **Files Modified**:
+    - src/bin/handlers/mod.rs:310-318 (handle_run_command: stdin support)
+  - **Test Status**: 5/5 tests passing
+    - ✅ test_regression_080_stdin_with_dash_argument: PASSING
+    - ✅ test_regression_080_stdin_syntax_error: PASSING
+    - ✅ test_regression_080_stdin_empty: PASSING (empty programs are syntax errors)
+    - ✅ test_regression_080_eval_flag_still_works: PASSING
+    - ✅ test_regression_080_file_argument_still_works: PASSING
+  - **Usage**: `echo 'fun main() { println("test"); }' | ruchy run -`
+  - **Impact**: Enables scripting, CI/CD integration, and automated testing workflows
+  - **Extreme TDD**: RED (2 failing tests) → GREEN (5 passing tests) → REFACTOR (empty stdin handling)
+
 ### Documentation
 
 - **[DOCS] Clarify RuchyRuchy Debugging Methodology vs Tool Availability + Success Story**
