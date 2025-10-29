@@ -4,6 +4,41 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.148.0] - 2025-10-29
+
+### Added
+
+- **[Issue #85] Complete std::process::Command Implementation**
+  - **Problem**: `use std::process::Command; Command::new("echo").output()` failed with "Unknown qualified name: Command::new"
+  - **Root Cause**: std::process::Command was never implemented
+    - No Command::new() handler in eval_qualified_name
+    - No Command methods (.arg, .output, .status) implemented
+    - No String::from_utf8() for byte array conversion
+    - Pattern matching didn't support EnumVariant for Ok/Err
+  - **Solution**: Comprehensive std::process::Command implementation with EXTREME TDD
+    - Added Command::new() to eval_qualified_name (interpreter.rs:2059)
+    - Implemented Command methods in eval_method_dispatch.rs:
+      - `.arg()` builds argument list (returns Command for chaining)
+      - `.output()` executes and returns Result<Output, Error> with stdout/stderr/status
+      - `.status()` executes and returns Result<ExitStatus, Error>
+    - Implemented String::from_utf8() in eval_builtin.rs (converts byte arrays to Result<String, Error>)
+    - Enhanced pattern matching for Ok/Err EnumVariant (eval_pattern_match.rs)
+    - Added ExitStatus.success() method for status checking
+  - **Test Status**: 4/4 regression tests passing ✅
+    - test_regression_085_command_basic_output (Command::new + .arg + .output + String::from_utf8)
+    - test_regression_085_command_status (Command::new + .arg + .status + .success())
+    - test_regression_085_command_multiple_args (Multiple .arg() calls)
+    - test_regression_085_command_error_handling (Non-existent command error handling)
+  - **Files Modified** (6 files):
+    - src/runtime/interpreter.rs (Command::new + String::from_utf8 routing)
+    - src/runtime/eval_builtin.rs (String::from_utf8 implementation)
+    - src/runtime/eval_method_dispatch.rs (Command + ExitStatus methods)
+    - src/runtime/eval_pattern_match.rs (Ok/Err EnumVariant support)
+    - tests/regression_085_command_execution.rs (4 comprehensive tests)
+    - Cargo.toml (version bump to 3.148.0)
+  - **Impact**: Full std::process::Command support - run external programs with stdout/stderr capture
+  - **EXTREME TDD**: RED (4 failing tests) → GREEN (minimal implementation) → REFACTOR (documentation)
+
 ## [3.147.10] - 2025-10-29
 
 ### Added
