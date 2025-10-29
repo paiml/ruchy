@@ -122,6 +122,48 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 78
+        url: "https://github.com/paiml/ruchy/issues/78"
+        title: "Integrate PMAT TDG Enforcement System v2.180.1 (Zero-Regression Quality Gates)"
+        impact: "QUALITY - Prevents quality regressions via Blake3 baseline tracking"
+        ticket: "QUALITY-TDG"
+        priority: "HIGH"
+        status: "✅ CLOSED - Integrated (quality infrastructure)"
+        closed_date: "2025-10-29"
+        context: "Zero-regression quality enforcement with phased rollout"
+        problem:
+          - "No automated quality regression detection at commit time"
+          - "Quality could degrade silently without baseline tracking"
+          - "Manual code review insufficient for catching all quality drops"
+        root_cause:
+          - "No automated TDG baseline tracking"
+          - "No pre-commit hooks for quality gates"
+          - "No systematic quality measurement across 299 src/ files"
+        solution:
+          - "Created TDG baseline (.pmat/tdg-baseline.json: 299 files, 90.7 avg score)"
+          - "Installed pre-commit hooks (blocks regressions >5 points)"
+          - "Configured quality thresholds (.pmat/tdg-rules.toml: B+ minimum, WARNING mode)"
+          - "Phased rollout: Learning (2 weeks) → Adjustment (2 weeks) → Enforcement (Week 5+)"
+        tests:
+          - "Baseline: 299 files analyzed, 528KB baseline file"
+          - "Average score: 90.7 (A- grade across all files)"
+          - "Pre-commit hooks: installed and functional"
+          - "Configuration: B+ minimum for new code (80+ points)"
+        files_modified:
+          - ".pmat/tdg-baseline.json: 528KB baseline (NEW)"
+          - ".pmat/tdg-rules.toml: Quality gate configuration (NEW, 130 lines)"
+          - ".git/hooks/pre-commit: TDG quality checks (UPDATED)"
+          - ".git/hooks/post-commit: Baseline auto-update (UPDATED)"
+          - "CHANGELOG.md: Comprehensive integration notes"
+        toyota_way:
+          - "Jidoka: Automate quality checks with human verification"
+          - "Kaizen: Continuous improvement via phased rollout"
+          - "Genchi Genbutsu: Blake3 baseline tracks actual code changes"
+          - "Stop the Line: Pre-commit hook blocks regressions (Phase 3)"
+        rollout_schedule:
+          - "Phase 1 Learning: 2025-10-29 to 2025-11-11 (WARNING mode)"
+          - "Phase 2 Adjustment: 2025-11-12 to 2025-11-25 (WARNING mode)"
+          - "Phase 3 Enforcement: Starting 2025-11-26 (ENFORCE mode, BLOCKING)"
       - id: 77
         url: "https://github.com/paiml/ruchy/issues/77"
         title: "Logger/Common/Schema runtime hangs with Option<String> fields (CRITICAL)"

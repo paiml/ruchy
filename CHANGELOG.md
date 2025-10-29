@@ -6,6 +6,62 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[QUALITY-TDG] PMAT TDG Enforcement System v2.180.1 (Issue #78)**
+  - **GitHub Issue**: Closes #78 - Zero-Regression Quality Gates
+  - **Status**: ✅ INTEGRATION COMPLETE - TDG enforcement active
+  - **Impact**: PREVENTS quality regressions via Blake3 content-hash baseline tracking
+
+  **What is TDG** (Technical Debt Grading):
+  - Zero-regression quality enforcement with baseline tracking
+  - Blake3 content-hash deduplication (fast, efficient)
+  - 6 orthogonal metrics: complexity, SATD, duplication, documentation
+  - 3-phase rollout: Learning (2 weeks) → Adjustment (2 weeks) → Enforcement (Week 5+)
+
+  **Integration Components**:
+  - Baseline: 299 files analyzed in `src/`, average score: 90.7 (A-)
+  - Pre-commit Hook: Blocks commits with quality regressions >5 points
+  - Post-commit Hook: Auto-updates baseline on successful commits
+  - Configuration: `.pmat/tdg-rules.toml` with B+ minimum for new code
+  - Mode: WARNING (learning phase, non-blocking for 2 weeks)
+
+  **Quality Thresholds** (Configured):
+  - `rust_min_grade = "B+"` - All new Rust code must be B+ or higher (80+ points)
+  - `max_score_drop = 5.0` - Maximum 5-point regression per commit
+  - `mode = "warning"` - Start in warning mode (Phase 1: Learning)
+  - Enforcement date: 2025-11-12 (Week 5)
+
+  **Files Created** (3 files):
+  - `.pmat/tdg-baseline.json`: 528KB, 299 files, 90.7 avg score
+  - `.pmat/tdg-rules.toml`: Quality gate configuration (NEW FILE, 130 lines)
+  - `.git/hooks/pre-commit`: TDG quality checks (UPDATED)
+  - `.git/hooks/post-commit`: Baseline auto-update (UPDATED)
+
+  **Phased Rollout Strategy**:
+  - **Phase 1: Learning (Weeks 1-2, 2025-10-29 to 2025-11-11)**
+    - Mode: WARNING (non-blocking)
+    - Gather baseline data, review reports
+    - Adjust thresholds based on findings
+  - **Phase 2: Adjustment (Weeks 3-4, 2025-11-12 to 2025-11-25)**
+    - Mode: WARNING (still non-blocking)
+    - Review violations, refactor problem areas
+    - Tighten thresholds if feasible
+  - **Phase 3: Enforcement (Week 5+, starting 2025-11-26)**
+    - Mode: ENFORCE (BLOCKING commits)
+    - Zero tolerance for quality drops
+    - All regressions prevented at commit time
+
+  **Toyota Way Principles Applied**:
+  - **Jidoka**: Automate quality checks with human verification (pre-commit hooks)
+  - **Kaizen**: Continuous improvement via phased rollout
+  - **Genchi Genbutsu**: Blake3 baseline tracks actual code changes
+  - **Stop the Line**: Pre-commit hook blocks regressions (Phase 3)
+
+  **Impact**:
+  - PREVENTS: Quality regressions in 299 src/ files
+  - ENFORCES: B+ minimum for all new Rust code (80+ points)
+  - TRACKS: 6 orthogonal quality metrics per file
+  - UNBLOCKS: Systematic quality improvement (Kaizen)
+
 ## [3.147.2] - 2025-10-29
 
 ### Fixed
