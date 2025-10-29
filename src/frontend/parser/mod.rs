@@ -499,19 +499,31 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
                 state.tokens.advance();
 
                 // PARSER-091: Fix for Issue #75 - Command::new() should parse as QualifiedName
-                // When we see `Module::function(`, this is a qualified function call, not field access
-                // Check if left is an Identifier and next token is `(` to detect call pattern
+                // REGRESSION-076: Fix for Issue #76 - Vec/Box/HashMap should remain FieldAccess
+                // When we see `Module::function(`, determine if this should be QualifiedName or FieldAccess
+                // - QualifiedName: Builtin modules (Command, etc.)
+                // - FieldAccess: Standard library types (Vec, Box, HashMap, etc.)
                 if let ExprKind::Identifier(ref module) = left.kind {
                     // Peek ahead to see if this is a function call
                     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                        // This is Module::function( pattern → create QualifiedName
-                        return Ok(Expr::new(
-                            ExprKind::QualifiedName {
-                                module: module.clone(),
-                                name: field,
-                            },
-                            field_span,
-                        ));
+                        // Check if this is a builtin module that should use QualifiedName
+                        // Standard library types (Vec, Box, HashMap, etc.) should remain FieldAccess
+                        let is_builtin_module = matches!(
+                            module.as_str(),
+                            "Command" | "DataFrame" | "Sql" | "Process"
+                        );
+
+                        if is_builtin_module {
+                            // This is a builtin module → create QualifiedName
+                            return Ok(Expr::new(
+                                ExprKind::QualifiedName {
+                                    module: module.clone(),
+                                    name: field,
+                                },
+                                field_span,
+                            ));
+                        }
+                        // Otherwise, fall through to FieldAccess for stdlib types (Vec, Box, HashMap)
                     }
                 }
 
