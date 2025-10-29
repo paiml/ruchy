@@ -129,6 +129,7 @@ fn eval_array_nth(arr: &Arc<[Value]>, index: &Value) -> Result<Value, Interprete
     if let Value::Integer(idx) = index {
         if *idx < 0 {
             return Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "None".to_string(),
                 data: None,
             });
@@ -137,11 +138,13 @@ fn eval_array_nth(arr: &Arc<[Value]>, index: &Value) -> Result<Value, Interprete
         let index = *idx as usize;
         if index < arr.len() {
             Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "Some".to_string(),
                 data: Some(vec![arr[index].clone()]),
             })
         } else {
             Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "None".to_string(),
                 data: None,
             })
@@ -730,7 +733,7 @@ mod tests {
 
         // Should return Option::Some(20)
         match result {
-            Value::EnumVariant { variant_name, data } if variant_name == "Some" => {
+            Value::EnumVariant { variant_name, data, .. } if variant_name == "Some" => {
                 assert_eq!(data.unwrap()[0], Value::Integer(20));
             }
             _ => panic!("Expected Some variant"),
@@ -744,7 +747,7 @@ mod tests {
 
         // Should return Option::None
         match result {
-            Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+            Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
                 assert!(data.is_none());
             }
             _ => panic!("Expected None variant"),
@@ -758,7 +761,7 @@ mod tests {
 
         // Should return Option::None for negative indices
         match result {
-            Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+            Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
                 assert!(data.is_none());
             }
             _ => panic!("Expected None variant for negative index"),
@@ -785,7 +788,7 @@ mod tests {
 
                 // Should return Some variant
                 match result {
-                    Value::EnumVariant { variant_name, data } if variant_name == "Some" => {
+                    Value::EnumVariant { variant_name, data, .. } if variant_name == "Some" => {
                         prop_assert!(data.is_some());
                         prop_assert_eq!(&data.unwrap()[0], &Value::Integer(values[idx]));
                     }
@@ -803,7 +806,7 @@ mod tests {
 
                 // Should return None variant
                 match result {
-                    Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                    Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
                         prop_assert!(data.is_none());
                     }
                     _ => prop_assert!(false, "Expected None variant"),
@@ -820,7 +823,7 @@ mod tests {
 
                 // Should return None variant
                 match result {
-                    Value::EnumVariant { variant_name, data } if variant_name == "None" => {
+                    Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
                         prop_assert!(data.is_none());
                     }
                     _ => prop_assert!(false, "Expected None variant for negative index"),

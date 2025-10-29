@@ -96,7 +96,8 @@ pub enum Value {
     },
     /// Enum variant value
     EnumVariant {
-        variant_name: String,
+        enum_name: String,       // The enum type (e.g., "LogLevel")
+        variant_name: String,    // The variant (e.g., "Debug", "Info")
         data: Option<Vec<Value>>,
     },
     /// Built-in function reference
@@ -1096,10 +1097,12 @@ impl Interpreter {
     fn eval_special_form(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::None => Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "None".to_string(),
                 data: None,
             }),
             ExprKind::Some { value } => Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "Some".to_string(),
                 data: Some(vec![self.eval_expr(value)?]),
             }),
@@ -1602,8 +1605,15 @@ impl Interpreter {
                 // Check if this is an enum type trying to construct a variant
                 if let Some(Value::String(type_str)) = object_map.get("__type") {
                     if type_str.as_ref() == "Enum" {
+                        // Extract enum name from the AST expression
+                        let enum_name = if let ExprKind::Identifier(name) = &object.kind {
+                            name.clone()
+                        } else {
+                            "UnknownEnum".to_string()
+                        };
                         // This is enum variant construction: EnumName::VariantName
                         return Ok(Value::EnumVariant {
+                            enum_name,
                             variant_name: field.to_string(),
                             data: None, // Unit variant (no data)
                         });
@@ -1862,6 +1872,7 @@ impl Interpreter {
         // REGRESSION-077: Handle Option enum variants (Option::None, Option::Some)
         if name == "Option::None" {
             return Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
                 variant_name: "None".to_string(),
                 data: None,
             });
@@ -2327,13 +2338,22 @@ impl Interpreter {
             // Float to Float (identity)
             (Value::Float(f), "f64" | "f32") => Ok(Value::Float(f)),
 
-            // Enum variant to Integer - variable case (e.g., variant as i32)
-            // This will fail because we don't store enum type info at runtime
-            (Value::EnumVariant { variant_name, .. }, "i32" | "i64" | "isize") => {
+            // Enum variant to Integer - variable case (e.g., level as i32)
+            // Now supported via discriminant lookup using stored enum_name
+            (Value::EnumVariant { enum_name, variant_name, .. }, "i32" | "i64" | "isize") => {
+                // Lookup enum definition in environment
+                if let Some(Value::Object(enum_def)) = self.get_variable(&enum_name) {
+                    if let Some(Value::Object(variants)) = enum_def.get("__variants") {
+                        if let Some(Value::Object(variant_info)) = variants.get(&variant_name) {
+                            if let Some(Value::Integer(disc)) = variant_info.get("discriminant") {
+                                return Ok(Value::Integer(*disc));
+                            }
+                        }
+                    }
+                }
                 Err(InterpreterError::TypeError(format!(
-                    "Cannot cast enum variant {} to integer: enum type information lost at runtime. \
-                     Use direct enum literal casts instead (e.g., LogLevel::Info as i32)",
-                    variant_name
+                    "Cannot cast enum variant {}::{} to integer: enum definition not found",
+                    enum_name, variant_name
                 )))
             }
 
@@ -6515,9 +6535,10 @@ impl Interpreter {
         let arg_vals = arg_vals?;
 
         // Special handling for enum variant construction with arguments (tuple variants)
-        if let Value::EnumVariant { variant_name, data: _ } = func_val {
+        if let Value::EnumVariant { enum_name, variant_name, data: _ } = func_val {
             // This is a tuple variant constructor: Response::Error("msg")
             return Ok(Value::EnumVariant {
+                enum_name,
                 variant_name,
                 data: Some(arg_vals),
             });

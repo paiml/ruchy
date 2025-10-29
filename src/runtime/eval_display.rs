@@ -36,7 +36,7 @@ impl fmt::Display for Value {
                 end,
                 inclusive,
             } => format_range(f, start, end, *inclusive),
-            Value::EnumVariant { variant_name, data } => {
+            Value::EnumVariant { variant_name, data, .. } => {
                 format_enum_variant(f, variant_name, data.as_ref())
             }
             Value::BuiltinFunction(name) => write!(f, "<builtin function: {name}>"),
