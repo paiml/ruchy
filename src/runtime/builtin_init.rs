@@ -550,8 +550,9 @@ mod tests {
         // directory walking: walk, glob, search, walk_with_options, walk_parallel, compute_hash (STDLIB-005: 6 new - 100% complete)
         // std namespace: std (contains std::time::now_millis) (STDLIB-006: 1 new - GitHub Issue #55)
         // Command module: Command (RUNTIME-090: 1 new - GitHub Issue #75)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command = 111
-        assert_eq!(env.len(), 111);
+        // Integer module: Integer (contains Integer.to_string - GitHub Issue #77)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer = 112
+        assert_eq!(env.len(), 112);
     }
 
     #[test]
