@@ -266,8 +266,7 @@ pub enum Token {
     Finally,
     #[token("return")]
     Return,
-    #[token("command")]
-    Command,
+    // PARSER-089: "command" removed as vestigial keyword - now lexed as normal identifier
     #[token("Ok")]
     Ok,
     #[token("Err")]

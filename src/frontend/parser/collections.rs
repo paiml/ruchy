@@ -448,7 +448,7 @@ fn token_to_object_key(token: &Token) -> Result<String> {
         Token::Identifier(name) => Ok(name.clone()),
         Token::String(s) | Token::RawString(s) => Ok(s.clone()),
         // Allow reserved words as object keys - delegated to helper functions
-        Token::Command => Ok("command".to_string()),
+        // Note: Token::Command removed (PARSER-089) - "command" now handled as Identifier
         // Note: Token::State removed (DEFECT-PARSER-001) - "state" now handled as Identifier
         _ => {
             // Try each category of keywords
