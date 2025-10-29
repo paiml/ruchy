@@ -2859,12 +2859,12 @@ fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 // Native process execution using std::process::Command
 // ============================================================================
 
-/// Process function dispatcher (RUNTIME-090)
+/// Process function dispatcher (RUNTIME-090, Issue #85)
 /// Complexity: 2 (within Toyota Way limits)
 #[cfg(not(target_arch = "wasm32"))]
 fn try_eval_process_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
-        "Command_new" => Ok(Some(eval_command_new(args)?)),
+        "__builtin_command_new__" => Ok(Some(eval_command_new(args)?)),
         _ => Ok(None),
     }
 }
@@ -2899,12 +2899,13 @@ fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError> {
 // Native String type methods (String::new, String::from)
 // ============================================================================
 
-/// String function dispatcher (REGRESSION-077)
-/// Complexity: 2 (within Toyota Way limits)
+/// String function dispatcher (REGRESSION-077, Issue #85)
+/// Complexity: 3 (within Toyota Way limits)
 fn try_eval_string_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_String_new__" => Ok(Some(eval_string_new(args)?)),
         "__builtin_String_from__" => Ok(Some(eval_string_from(args)?)),
+        "__builtin_String_from_utf8__" => Ok(Some(eval_string_from_utf8(args)?)),
         _ => Ok(None),
     }
 }
@@ -2925,6 +2926,52 @@ fn eval_string_from(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(s) => Ok(Value::from_string(s.to_string())),
         other => Ok(Value::from_string(format!("{other}"))),
+    }
+}
+
+/// Eval: `String::from_utf8(bytes)`
+/// Converts a byte array to a String (Issue #85)
+/// Returns Result<String, Error>
+/// Complexity: 4 (validation + byte extraction + utf8 conversion + result wrapping)
+fn eval_string_from_utf8(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("String::from_utf8", args, 1)?;
+    match &args[0] {
+        Value::Array(arr) => {
+            // Extract bytes from Value::Byte array
+            let mut bytes = Vec::with_capacity(arr.len());
+            for val in arr.iter() {
+                if let Value::Byte(b) = val {
+                    bytes.push(*b);
+                } else {
+                    return Err(InterpreterError::TypeError(
+                        "String::from_utf8() requires an array of bytes".to_string(),
+                    ));
+                }
+            }
+
+            // Convert bytes to String
+            match String::from_utf8(bytes) {
+                Ok(s) => {
+                    // Return Result::Ok(string)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::from_string(s)]),
+                    })
+                }
+                Err(e) => {
+                    // Return Result::Err(error_string)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Err".to_string(),
+                        data: Some(vec![Value::from_string(e.to_string())]),
+                    })
+                }
+            }
+        }
+        _ => Err(InterpreterError::TypeError(
+            "String::from_utf8() requires an array argument".to_string(),
+        )),
     }
 }
 

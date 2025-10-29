@@ -440,8 +440,9 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
 }
 
-/// Add std namespace with time module
+/// Add std namespace with time and process modules
 /// STDLIB-003: GitHub Issue #55 - `std::time` module for timing measurements
+/// Issue #85: `std::process::Command` for process execution
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
@@ -455,9 +456,22 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_timestamp__".to_string()),
     );
 
+    // Create process module object (Issue #85)
+    let mut process_module = HashMap::new();
+
+    // Command is a special marker that gets handled as a qualified name
+    // The actual Command building is done in the interpreter
+    let mut command_module = HashMap::new();
+    command_module.insert(
+        "new".to_string(),
+        Value::from_string("__builtin_command_new__".to_string()),
+    );
+    process_module.insert("Command".to_string(), Value::Object(Arc::new(command_module)));
+
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
+    std_namespace.insert("process".to_string(), Value::Object(Arc::new(process_module)));
 
     // Add std to global environment
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));

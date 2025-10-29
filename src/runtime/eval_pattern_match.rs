@@ -188,14 +188,27 @@ fn try_match_none_pattern(value: &Value) -> Result<Option<Vec<(String, Value)>>,
 
 /// Try to match an Ok pattern
 ///
+/// Supports both EnumVariant (Issue #85) and legacy Object representations
+///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
 fn try_match_ok_pattern(
     inner_pattern: &Pattern,
     value: &Value,
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
+    // NEW: EnumVariant representation (Issue #85)
+    if let Value::EnumVariant { variant_name, data, .. } = value {
+        if variant_name == "Ok" {
+            if let Some(values) = data {
+                if !values.is_empty() {
+                    return try_pattern_match(inner_pattern, &values[0], eval_literal);
+                }
+            }
+        }
+    }
+
+    // LEGACY: Object representation {data: [x], __type: "Message", type: "Ok"}
     if let Value::Object(fields) = value {
         if let Some(Value::String(type_str)) = fields.get("type") {
             if &**type_str == "Ok" {
@@ -212,14 +225,27 @@ fn try_match_ok_pattern(
 
 /// Try to match an Err pattern
 ///
+/// Supports both EnumVariant (Issue #85) and legacy Object representations
+///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 7 (within Toyota Way limits)
 fn try_match_err_pattern(
     inner_pattern: &Pattern,
     value: &Value,
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
+    // NEW: EnumVariant representation (Issue #85)
+    if let Value::EnumVariant { variant_name, data, .. } = value {
+        if variant_name == "Err" {
+            if let Some(values) = data {
+                if !values.is_empty() {
+                    return try_pattern_match(inner_pattern, &values[0], eval_literal);
+                }
+            }
+        }
+    }
+
+    // LEGACY: Object representation {data: [x], __type: "Message", type: "Err"}
     if let Value::Object(fields) = value {
         if let Some(Value::String(type_str)) = fields.get("type") {
             if &**type_str == "Err" {

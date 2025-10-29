@@ -205,7 +205,7 @@ fn eval_integer_method(
 /// Dispatches based on `__type` marker to appropriate handler
 ///
 /// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
 fn eval_object_method(
     obj: &std::collections::HashMap<String, Value>,
     method: &str,
@@ -215,6 +215,7 @@ fn eval_object_method(
     if let Some(Value::String(type_name)) = obj.get("__type") {
         match &**type_name {
             "Command" => eval_command_method(obj, method, arg_values),
+            "ExitStatus" => eval_exit_status_method(obj, method, arg_values),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unknown object type: {type_name}"
             ))),
@@ -257,8 +258,54 @@ fn eval_command_method(
                 ))
             }
         }
+        "status" => {
+            // Execute the command and return Result<ExitStatus, Error> (Issue #85)
+            let program = match obj.get("program") {
+                Some(Value::String(p)) => &**p,
+                _ => return Err(InterpreterError::RuntimeError(
+                    "Command object missing 'program' field".to_string(),
+                )),
+            };
+
+            let args = match obj.get("args") {
+                Some(Value::Array(arr)) => arr.clone(),
+                _ => Arc::new([]),
+            };
+
+            let mut command = std::process::Command::new(program);
+            for arg in args.iter() {
+                if let Value::String(arg_str) = arg {
+                    command.arg(&**arg_str);
+                }
+            }
+
+            match command.status() {
+                Ok(status) => {
+                    // Create ExitStatus object with success() method
+                    let mut status_obj = std::collections::HashMap::new();
+                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+                    status_obj.insert("success".to_string(), Value::from_bool(status.success()));
+                    status_obj.insert("code".to_string(), Value::Integer(status.code().unwrap_or(-1) as i64));
+
+                    // Return Result::Ok(status_obj)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::Object(Arc::new(status_obj))]),
+                    })
+                }
+                Err(e) => {
+                    // Return Result::Err(error_string)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Err".to_string(),
+                        data: Some(vec![Value::from_string(e.to_string())]),
+                    })
+                }
+            }
+        }
         "output" => {
-            // Execute the command and return output as string
+            // Execute the command and return Result<Output, Error> (Issue #85)
             let program = match obj.get("program") {
                 Some(Value::String(p)) => &**p,
                 _ => return Err(InterpreterError::RuntimeError(
@@ -280,12 +327,40 @@ fn eval_command_method(
 
             match command.output() {
                 Ok(output) => {
-                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                    Ok(Value::from_string(stdout))
+                    // Create Output object with stdout, stderr, status fields
+                    let mut output_obj = std::collections::HashMap::new();
+                    output_obj.insert("__type".to_string(), Value::from_string("Output".to_string()));
+
+                    // Store stdout as byte array
+                    let stdout_bytes: Vec<Value> = output.stdout.iter().map(|b| Value::Byte(*b)).collect();
+                    output_obj.insert("stdout".to_string(), Value::Array(Arc::from(stdout_bytes)));
+
+                    // Store stderr as byte array
+                    let stderr_bytes: Vec<Value> = output.stderr.iter().map(|b| Value::Byte(*b)).collect();
+                    output_obj.insert("stderr".to_string(), Value::Array(Arc::from(stderr_bytes)));
+
+                    // Store exit status (success/code)
+                    let mut status_obj = std::collections::HashMap::new();
+                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+                    status_obj.insert("success".to_string(), Value::from_bool(output.status.success()));
+                    status_obj.insert("code".to_string(), Value::Integer(output.status.code().unwrap_or(-1) as i64));
+                    output_obj.insert("status".to_string(), Value::Object(Arc::new(status_obj)));
+
+                    // Return Result::Ok(output_obj)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::Object(Arc::new(output_obj))]),
+                    })
                 }
-                Err(e) => Err(InterpreterError::RuntimeError(format!(
-                    "Failed to execute command: {e}"
-                ))),
+                Err(e) => {
+                    // Return Result::Err(error_string)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Err".to_string(),
+                        data: Some(vec![Value::from_string(e.to_string())]),
+                    })
+                }
             }
         }
         _ => Err(InterpreterError::RuntimeError(format!(
@@ -304,6 +379,36 @@ fn eval_command_method(
     Err(InterpreterError::RuntimeError(format!(
         "Command method '{method}' not available in WASM"
     )))
+}
+
+/// Evaluate methods on ExitStatus objects (Issue #85)
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_exit_status_method(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    match method {
+        "success" => {
+            if !arg_values.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "ExitStatus.success() takes no arguments".to_string(),
+                ));
+            }
+            // Return the success boolean field
+            match obj.get("success") {
+                Some(value) => Ok(value.clone()),
+                None => Err(InterpreterError::RuntimeError(
+                    "ExitStatus object missing 'success' field".to_string(),
+                )),
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown ExitStatus method: {method}"
+        ))),
+    }
 }
 
 /// Evaluate generic methods available on all types

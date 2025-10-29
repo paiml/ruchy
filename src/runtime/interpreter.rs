@@ -2053,9 +2053,12 @@ impl Interpreter {
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::from_string("__builtin_hashmap__".to_string()))
-        } else if module == "String" && (name == "new" || name == "from") {
-            // REGRESSION-077: Route String::new() and String::from() to builtin handlers
+        } else if module == "String" && (name == "new" || name == "from" || name == "from_utf8") {
+            // REGRESSION-077, Issue #85: Route String methods to builtin handlers
             Ok(Value::from_string(format!("__builtin_String_{}__", name)))
+        } else if module == "Command" && name == "new" {
+            // Issue #85: Route Command::new() to builtin handler
+            Ok(Value::from_string("__builtin_command_new__".to_string()))
         } else if name == "new" {
             // Check if this is a class constructor call
             if let Ok(class_value) = self.lookup_variable(module) {
