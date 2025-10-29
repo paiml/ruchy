@@ -207,7 +207,7 @@ impl Lexer {
             "finally" => Token::Finally,
             "throw" => Token::Throw,
             "return" => Token::Return,
-            "command" => Token::Command,
+            // PARSER-089: "command" removed as vestigial keyword - now lexed as Identifier
             "Ok" => Token::Ok,
             "Err" => Token::Err,
             "Some" => Token::Some,

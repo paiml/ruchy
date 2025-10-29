@@ -6,7 +6,44 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
-## [3.145.0] - 2025-10-28
+## [3.146.0] - 2025-10-29
+
+### Fixed
+
+- **[PARSER-089] Remove Vestigial Token::Command Keyword (Issue #73)**
+  - **GitHub Issue**: Closes #73 - "command" as parameter name/identifier fails parsing
+  - **Status**: ✅ COMPLETE - All 8/8 tests passing, zero regressions (4028/4028 tests)
+  - **Priority**: HIGH - Blocked ~50% of utility library conversions
+
+  **Bug Behavior**:
+  - Symptom: `pub fun test(command: &str)` fails with "Function parameters must be simple identifiers"
+  - Symptom 2: `.arg(command)` fails with "Expected RightBrace, found Let"
+  - Impact: Cannot use "command" as identifier anywhere (parameters, variables, expressions)
+  - Root Cause: "command" incorrectly defined as reserved keyword `Token::Command` at `src/frontend/lexer.rs:269`
+
+  **Solution (REMOVE VESTIGIAL KEYWORD)**:
+  - Removed `Token::Command` enum variant from lexer (src/frontend/lexer.rs:269-270)
+  - Removed `Token::Command` cases from parser (collections.rs:451, self-hosted lexer)
+  - "command" now lexes as normal `Token::Identifier` in ALL contexts
+  - Keyword was vestigial - NEVER used in grammar, purely lexer artifact
+
+  **Files Modified** (4 files, net -6 lines):
+  - `src/frontend/lexer.rs`: Removed `#[token("command")]` Command variant
+  - `src/frontend/parser/collections.rs`: Removed Token::Command → "command" mapping
+  - `src/self_hosting/lexer.ruchy`: Removed "command" => Token::Command mapping
+  - `tests/parser_089_ref_param_match.rs`: Added 8 comprehensive tests (NEW FILE, 172 lines)
+
+  **Test Results**:
+  - 8/8 PARSER-089 tests passing (parameters, expressions, match, &mut combinations)
+  - 4028/4028 full test suite passing (zero regressions)
+  - All minimal reproduction cases now pass
+
+  **Impact**:
+  - UNBLOCKS: RuchyRuchy utility library conversions (~50% of files)
+  - Enables: std::process::Command wrapper functions
+  - Enables: All functions with `command` parameter names
+
+##  [3.145.0] - 2025-10-28
 
 ### Fixed
 
