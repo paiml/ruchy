@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.8] - 2025-10-29
+
 ### Fixed
 
 - **[REGRESSION-082] Fix 16 Compilation Errors - Missing enum_name Field**
