@@ -1,0 +1,104 @@
+# PMAT TDG Enforcement Rules
+# Issue #78: Zero-Regression Quality Gates
+# Documentation: https://github.com/paiml/ruchy/issues/78
+
+[quality_gates]
+# PHASE 1: Learning Mode (WARNING only - gather data)
+# PHASE 2: Adjustment Mode (WARNING + failure review)
+# PHASE 3: Enforcement Mode (BLOCKING - prevent regressions)
+mode = "warning"  # Start in warning mode for 2-week learning phase
+
+# Minimum quality grade for NEW code (Rust files only)
+# Grades: A+ (95-100), A (90-94), A- (85-89), B+ (80-84), B (70-79), C (60-69), D (50-59), F (<50)
+rust_min_grade = "B+"  # All new Rust code must be B+ or higher (80+ points)
+
+# Maximum allowed TDG score drop per commit
+# Prevents quality regressions across modified files
+max_score_drop = 5.0  # No more than 5-point regression per commit
+
+# Exclude patterns (files/dirs to skip TDG checks)
+exclude_patterns = [
+    "target/",        # Build artifacts
+    "tests/",         # Test files (quality standards relaxed)
+    "examples/",      # Example code (different quality bar)
+    "benches/",       # Benchmark code
+    "*.md",           # Documentation
+    "*.toml",         # Config files
+    "*.json",         # Data files
+]
+
+[baseline]
+# TDG baseline file location
+baseline_file = ".pmat/tdg-baseline.json"
+
+# Auto-update baseline on successful commits
+auto_update = true
+
+# Baseline update frequency
+update_on_merge = true  # Update baseline when merging to main
+
+[metrics]
+# TDG score components (all weighted equally)
+# Each metric contributes to final 0-100 score
+
+# Cyclomatic complexity (≤10 = A+)
+cyclomatic_weight = 1.0
+
+# Cognitive complexity (≤10 = A+)
+cognitive_weight = 1.0
+
+# Function length (≤50 lines = A+)
+function_length_weight = 1.0
+
+# Self-assessed Technical Debt (SATD: TODO, FIXME, HACK)
+satd_weight = 1.0
+
+# Code duplication (≤5% = A+)
+duplication_weight = 1.0
+
+# Documentation coverage (≥70% = A+)
+documentation_weight = 1.0
+
+[enforcement]
+# Phased rollout strategy (Issue #78)
+
+# Phase 1: Learning (Weeks 1-2)
+# - mode = "warning"
+# - Gather baseline data, no blocking
+# - Review reports, adjust thresholds
+
+# Phase 2: Adjustment (Weeks 3-4)
+# - mode = "warning"
+# - Review violations, refactor problem areas
+# - Tighten thresholds if feasible
+
+# Phase 3: Enforcement (Week 5+)
+# - mode = "enforce"
+# - BLOCKING commits with regressions
+# - Zero tolerance for quality drops
+
+# Current phase: 1 (Learning)
+# Date started: 2025-10-29
+# Expected enforcement: 2025-11-12 (Week 5)
+
+[reporting]
+# Dashboard and reports
+dashboard_port = 8080
+dashboard_auto_open = false
+
+# Report formats
+json_report = true
+html_report = true
+markdown_report = false
+
+[performance]
+# Blake3 content-hash deduplication
+# Fast, efficient baseline tracking
+hash_algorithm = "blake3"
+
+# Parallel file analysis
+parallel_jobs = 0  # 0 = auto-detect CPU cores
+
+# Cache results for unchanged files
+cache_enabled = true
+cache_dir = ".pmat/cache"
