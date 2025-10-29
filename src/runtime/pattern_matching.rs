@@ -187,10 +187,12 @@ pub fn values_equal(v1: &Value, v2: &Value) -> bool {
             Value::EnumVariant {
                 variant_name: n1,
                 data: d1,
+                ..
             },
             Value::EnumVariant {
                 variant_name: n2,
                 data: d2,
+                ..
             },
         ) => {
             n1 == n2

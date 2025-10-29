@@ -483,7 +483,7 @@ Enter expressions to evaluate them.
                     + Self::estimate_value_memory(start)
                     + Self::estimate_value_memory(end)
             }
-            Value::EnumVariant { variant_name, data } => {
+            Value::EnumVariant { variant_name, data, .. } => {
                 variant_name.len()
                     + data
                         .as_ref()

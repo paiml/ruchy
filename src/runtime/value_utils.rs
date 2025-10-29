@@ -72,8 +72,8 @@ impl Value {
     }
 
     /// Create enum variant value
-    pub fn from_enum_variant(variant_name: String, data: Option<Vec<Value>>) -> Self {
-        Value::EnumVariant { variant_name, data }
+    pub fn from_enum_variant(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Self {
+        Value::EnumVariant { enum_name, variant_name, data }
     }
 
     /// Check if value is nil
