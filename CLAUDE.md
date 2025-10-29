@@ -152,12 +152,36 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 ### 🚀 DEBUGGER INTEGRATION (RuchyRuchy Tools - MANDATORY)
 
 **Repository**: `../ruchyruchy` - Source maps, time-travel debugging, performance validation
-**Pre-commit**: Auto-validates debugging tools (<6s). See `../ruchyruchy/README.md`
+**Quick Start**: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (10 minutes to validate one bug)
 
-**Time-Travel Debugging** (instead of println):
-- Drop `debug!()` breakpoint + commands: `n` (next), `rn` (reverse-next), `p <var>` (print), `replay`
-- Use `ruchy test --debug` for test failures + DAP protocol (VS Code/vim/emacs)
-- **Documentation**: `book/src/phase4_debugger/interactive-debugging-guide.md`
+**Bug Detection Workflow** (per QUICK_START guide):
+1. **Create Test File**: Property-based test with expected behavior (2 minutes)
+   ```ruchy
+   // test_issue.ruchy - Property: Must NOT hang
+   struct Logger { level: LogLevel }
+   impl Logger { fun test(&self) { self.level as i32; } }
+   ```
+
+2. **Run with Timeout**: Detect hangs/infinite loops (1 minute)
+   ```bash
+   timeout 1 ruchy run test_issue.ruchy
+   # Exit 0 = pass, Exit 124 = TIMEOUT (bug detected!)
+   ```
+
+3. **Validate Tools**: Use Ruchy's 15 native tools for comprehensive validation
+   ```bash
+   ruchy check test.ruchy     # Syntax validation
+   ruchy transpile test.ruchy # Code generation
+   ruchy run test.ruchy       # Runtime execution
+   ruchy ast test.ruchy       # AST visualization
+   ```
+
+**Time Savings**: Manual testing (30+ min) → RuchyRuchy methodology (2 min) = **15x faster**
+
+**Documentation**:
+- Full guide: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md`
+- Time-travel debugging: `../ruchyruchy/book/src/phase4_debugger/interactive-debugging-guide.md`
+- DAP integration: VS Code/vim/emacs support
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 

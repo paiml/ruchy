@@ -4997,3 +4997,40 @@ next_sprint:
     - commit1: "[PARSER-081] Fix array literals with identifiers (GitHub Issue TBD)"
     - commit2: "[EVALUATOR-002] Fix method chaining with array indexing (GitHub Issue TBD)"
     - commit3: "[VERSION] Update to v3.138.0: Language bug fixes release"
+
+# RUNTIME-093: Struct Method Dispatch - Completes Issue #79 (2025-10-29)
+- id: RUNTIME-093
+  title: "Fix Struct Method Dispatch - Complete Issue #79"
+  status: completed
+  priority: critical
+  sprint: current
+  github_issue: 79
+  completion_date: 2025-10-29
+  version: v3.147.5
+  
+  description: |
+    Root cause: Value::Struct variant missing from dispatch_method_call() match arms
+    Impact: Struct instance methods now work correctly
+    
+  files_modified:
+    - src/runtime/interpreter.rs:3652-3655 (Added Value::Struct dispatch)
+    - tests/regression_079_enum_cast.rs:177-178 (Removed #[ignore])
+    - Cargo.toml (Version 3.147.4 → 3.147.5)
+    - CHANGELOG.md (Documented fix)
+    - CLAUDE.md (Added RuchyRuchy debugging workflow)
+  
+  test_results:
+    regression_tests: "8/8 passing (was 7/8 with 1 ignored)"
+    unit_tests: "test_regression_079_enum_field_cast: UN-IGNORED and PASSING"
+    validation: "15-tool validation passing (check, transpile, run, lint, ast)"
+    performance: "< 1 second execution (no hang)"
+  
+  toyota_way:
+    genchi_genbutsu: "Investigated actual error instead of assuming enum cast bug"
+    jidoka: "4-line fix with zero complexity increase"
+    kaizen: "Automated quality gates prevent regression"
+    
+  documentation:
+    - CHANGELOG.md: Complete fix documentation
+    - CLAUDE.md: Updated with RuchyRuchy debugging workflow
+    - GitHub Issue #79: Closed with commit 2634b19d
