@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.5] - 2025-10-29
+
+### Fixed
+
+- **[RUNTIME-093] Struct Method Dispatch - COMPLETES Issue #79**
+  - **GitHub Issue**: Closes #79 - Enum cast runtime hang
+  - **Root Cause**: `Value::Struct` variant was missing from `dispatch_method_call()` match arms
+  - **Fix**: Added `Value::Struct { name, fields }` match arm at src/runtime/interpreter.rs:3652-3655
+  - **Impact**: Struct instance methods now work correctly
+    - `logger.test()` now dispatches to impl methods via `eval_struct_instance_method()`
+    - `self.level as i32` now works (enum field access through self + cast)
+  - **Test Status**: All 8 regression tests passing (previously 1 ignored, now 8/8 pass)
+    - test_regression_079_enum_field_cast: ✅ UN-IGNORED and PASSING
+    - Previous enum cast tests (variable, literal, arithmetic): ✅ All still passing
+  - **Files Modified**:
+    - src/runtime/interpreter.rs:3652-3655 (Added Value::Struct dispatch)
+    - tests/regression_079_enum_cast.rs:177-178 (Removed #[ignore] attribute)
+  - **Quality Gates**: TDG A- maintained, complexity ≤10, zero regressions
+
+### Notes
+
+- This fix was the FINAL piece needed to close Issue #79
+- RUNTIME-092 (v3.147.4) fixed enum VARIABLE casts
+- RUNTIME-093 (v3.147.5) fixed enum FIELD casts via struct method dispatch
+- Complete fix verified: `self.level as i32` in struct methods now works
+
 ## [3.147.4] - 2025-10-29
 
 ### Added
