@@ -237,6 +237,7 @@ fn try_eval_time_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
     match name {
         "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
         "__builtin_timestamp__" => Ok(Some(eval_timestamp(args)?)),
+        "__builtin_chrono_utc_now__" => Ok(Some(eval_chrono_utc_now(args)?)),
         _ => Ok(None),
     }
 }
@@ -835,6 +836,33 @@ fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
         .map_err(|e| InterpreterError::RuntimeError(format!("System time error: {e}")))?;
 
     Ok(Value::Integer(now.as_millis() as i64))
+}
+
+/// `chrono::Utc::now()` - Get current UTC time
+///
+/// Returns a string representation of the current UTC timestamp in RFC3339 format.
+/// This implements the chrono::Utc::now() functionality for Issue #82.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```ignore
+/// let now = Utc::now();
+/// println!("Current UTC time: {}", now);
+/// ```
+fn eval_chrono_utc_now(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "Utc::now() expects no arguments".to_string(),
+        ));
+    }
+
+    // Get current UTC time using chrono
+    let now = chrono::Utc::now();
+    let timestamp_str = now.to_rfc3339();
+
+    Ok(Value::from_string(timestamp_str))
 }
 
 /// `DataFrame::new()` - Create a new `DataFrame` builder

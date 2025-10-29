@@ -1145,11 +1145,62 @@ impl Interpreter {
         }
 
         // Handle import statements (GitHub Issue #59)
-        // Currently no-op until full module resolution is implemented
+        // Issue #82: Implement basic module resolution for use statements
         match expr_kind {
-            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::ImportDefault { .. } => {
-                // TODO: Implement module resolution and symbol imports
-                // For now, import statements are valid but don't load anything
+            ExprKind::ImportAll { module, alias } => {
+                // Extract symbol from global environment using module path
+                // Example: "chrono::Utc" → ["chrono", "Utc"]
+                let parts: Vec<&str> = module.split("::").collect();
+
+                // Navigate through nested objects to find the symbol
+                let mut current_value: Option<Value> = None;
+                if let Some(first_part) = parts.first() {
+                    // Access global environment (first element of env_stack)
+                    if let Some(global_env) = self.env_stack.first() {
+                        if let Some(root) = global_env.get(*first_part) {
+                            current_value = Some(root.clone());
+
+                            // Navigate through remaining parts
+                            for &part in parts.iter().skip(1) {
+                                if let Some(Value::Object(obj)) = current_value {
+                                    if let Some(next_val) = obj.get(part) {
+                                        current_value = Some(next_val.clone());
+                                    } else {
+                                        current_value = None;
+                                        break;
+                                    }
+                                } else {
+                                    current_value = None;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Import the symbol into current environment with the appropriate name
+                if let Some(value) = current_value {
+                    // Determine the name to use: alias if provided, otherwise last part of path
+                    let import_name = if alias == "*" {
+                        // Wildcard import - not yet implemented
+                        return Ok(Value::Nil);
+                    } else if !alias.is_empty() && alias != "*" {
+                        alias.clone()
+                    } else {
+                        parts.last().unwrap_or(&"").to_string()
+                    };
+
+                    // Add to global environment (first element of env_stack)
+                    // This makes imports available across all scopes
+                    if let Some(global_env) = self.env_stack.first_mut() {
+                        global_env.insert(import_name, value);
+                    }
+                }
+
+                Ok(Value::Nil)
+            }
+            ExprKind::Import { .. } | ExprKind::ImportDefault { .. } => {
+                // TODO: Implement other import variants
                 Ok(Value::Nil)
             }
             // Handle vec! macro (GitHub Issue #62)
@@ -1164,7 +1215,7 @@ impl Interpreter {
                     Ok(Value::Array(elements.into()))
                 } else if name == "println" {
                     // println!() macro: Evaluate arguments, print with newline
-                    // PARSER-085: Minimal implementation for eval mode (complexity: 6)
+                    // PARSER-085: Supports format strings like println!("x: {}", value)
                     if args.is_empty() {
                         println!();
                     } else if args.len() == 1 {
@@ -1172,14 +1223,120 @@ impl Interpreter {
                         let value = self.eval_expr(&args[0])?;
                         println!("{}", value);
                     } else {
-                        // Multiple arguments: ignore first (format string), print remaining
-                        // This handles println!("{}", value) pattern
+                        // Multiple arguments: use format! logic (Issue #82, #83)
+                        let format_val = self.eval_expr(&args[0])?;
+                        let format_str = format_val.to_string();
+
+                        let mut values = Vec::new();
                         for arg in &args[1..] {
-                            let value = self.eval_expr(arg)?;
-                            println!("{}", value);
+                            values.push(self.eval_expr(arg)?);
                         }
+
+                        // Apply same format logic as format! macro
+                        let mut result = String::new();
+                        let mut chars = format_str.chars().peekable();
+                        let mut value_index = 0;
+
+                        while let Some(ch) = chars.next() {
+                            if ch == '{' {
+                                if chars.peek() == Some(&':') {
+                                    chars.next();
+                                    if chars.peek() == Some(&'?') {
+                                        chars.next();
+                                        if chars.peek() == Some(&'}') {
+                                            chars.next();
+                                            if value_index < values.len() {
+                                                result.push_str(&format!("{:?}", values[value_index]));
+                                                value_index += 1;
+                                            } else {
+                                                result.push_str("{:?}");
+                                            }
+                                        } else {
+                                            result.push_str("{:?");
+                                        }
+                                    } else {
+                                        result.push_str("{:");
+                                    }
+                                } else if chars.peek() == Some(&'}') {
+                                    chars.next();
+                                    if value_index < values.len() {
+                                        result.push_str(&values[value_index].to_string());
+                                        value_index += 1;
+                                    } else {
+                                        result.push_str("{}");
+                                    }
+                                } else {
+                                    result.push(ch);
+                                }
+                            } else {
+                                result.push(ch);
+                            }
+                        }
+
+                        println!("{}", result);
                     }
                     Ok(Value::Nil)
+                } else if name == "format" {
+                    // format!() macro: Format string with placeholders (Issue #83)
+                    if args.is_empty() {
+                        return Err(InterpreterError::RuntimeError(
+                            "format!() requires at least one argument".to_string()
+                        ));
+                    }
+
+                    // Evaluate format string
+                    let format_val = self.eval_expr(&args[0])?;
+                    let format_str = format_val.to_string();
+
+                    // Evaluate remaining arguments
+                    let mut values = Vec::new();
+                    for arg in &args[1..] {
+                        values.push(self.eval_expr(arg)?);
+                    }
+
+                    // Replace {} and {:?} placeholders with values
+                    let mut result = String::new();
+                    let mut chars = format_str.chars().peekable();
+                    let mut value_index = 0;
+
+                    while let Some(ch) = chars.next() {
+                        if ch == '{' {
+                            // Check for {:?} debug format
+                            if chars.peek() == Some(&':') {
+                                chars.next(); // consume ':'
+                                if chars.peek() == Some(&'?') {
+                                    chars.next(); // consume '?'
+                                    if chars.peek() == Some(&'}') {
+                                        chars.next(); // consume '}'
+                                        if value_index < values.len() {
+                                            result.push_str(&format!("{:?}", values[value_index]));
+                                            value_index += 1;
+                                        } else {
+                                            result.push_str("{:?}"); // preserve placeholder
+                                        }
+                                    } else {
+                                        result.push_str("{:?"); // not a complete placeholder
+                                    }
+                                } else {
+                                    result.push_str("{:"); // not {:?}
+                                }
+                            } else if chars.peek() == Some(&'}') {
+                                chars.next(); // consume '}'
+                                if value_index < values.len() {
+                                    result.push_str(&values[value_index].to_string());
+                                    value_index += 1;
+                                } else {
+                                    result.push_str("{}"); // preserve placeholder if no value
+                                }
+                            } else {
+                                result.push(ch);
+                            }
+                        } else {
+                            result.push(ch);
+                        }
+                    }
+
+                    Ok(Value::from_string(result))
                 } else {
                     // Other macros not yet implemented
                     Err(InterpreterError::RuntimeError(format!(
@@ -1199,18 +1356,129 @@ impl Interpreter {
                     }
                     Ok(Value::Array(elements.into()))
                 } else if name == "println" {
+                    // println!() macro: Evaluate arguments, print with newline
+                    // PARSER-085: Supports format strings like println!("x: {}", value)
                     if args.is_empty() {
                         println!();
                     } else if args.len() == 1 {
+                        // Single argument: print directly
                         let value = self.eval_expr(&args[0])?;
                         println!("{}", value);
                     } else {
+                        // Multiple arguments: use format! logic (Issue #82, #83)
+                        let format_val = self.eval_expr(&args[0])?;
+                        let format_str = format_val.to_string();
+
+                        let mut values = Vec::new();
                         for arg in &args[1..] {
-                            let value = self.eval_expr(arg)?;
-                            println!("{}", value);
+                            values.push(self.eval_expr(arg)?);
                         }
+
+                        // Apply same format logic as format! macro
+                        let mut result = String::new();
+                        let mut chars = format_str.chars().peekable();
+                        let mut value_index = 0;
+
+                        while let Some(ch) = chars.next() {
+                            if ch == '{' {
+                                if chars.peek() == Some(&':') {
+                                    chars.next();
+                                    if chars.peek() == Some(&'?') {
+                                        chars.next();
+                                        if chars.peek() == Some(&'}') {
+                                            chars.next();
+                                            if value_index < values.len() {
+                                                result.push_str(&format!("{:?}", values[value_index]));
+                                                value_index += 1;
+                                            } else {
+                                                result.push_str("{:?}");
+                                            }
+                                        } else {
+                                            result.push_str("{:?");
+                                        }
+                                    } else {
+                                        result.push_str("{:");
+                                    }
+                                } else if chars.peek() == Some(&'}') {
+                                    chars.next();
+                                    if value_index < values.len() {
+                                        result.push_str(&values[value_index].to_string());
+                                        value_index += 1;
+                                    } else {
+                                        result.push_str("{}");
+                                    }
+                                } else {
+                                    result.push(ch);
+                                }
+                            } else {
+                                result.push(ch);
+                            }
+                        }
+
+                        println!("{}", result);
                     }
                     Ok(Value::Nil)
+                } else if name == "format" {
+                    // format!() macro: Format string with placeholders (Issue #83)
+                    if args.is_empty() {
+                        return Err(InterpreterError::RuntimeError(
+                            "format!() requires at least one argument".to_string()
+                        ));
+                    }
+
+                    // Evaluate format string
+                    let format_val = self.eval_expr(&args[0])?;
+                    let format_str = format_val.to_string();
+
+                    // Evaluate remaining arguments
+                    let mut values = Vec::new();
+                    for arg in &args[1..] {
+                        values.push(self.eval_expr(arg)?);
+                    }
+
+                    // Replace {} and {:?} placeholders with values
+                    let mut result = String::new();
+                    let mut chars = format_str.chars().peekable();
+                    let mut value_index = 0;
+
+                    while let Some(ch) = chars.next() {
+                        if ch == '{' {
+                            // Check for {:?} debug format
+                            if chars.peek() == Some(&':') {
+                                chars.next(); // consume ':'
+                                if chars.peek() == Some(&'?') {
+                                    chars.next(); // consume '?'
+                                    if chars.peek() == Some(&'}') {
+                                        chars.next(); // consume '}'
+                                        if value_index < values.len() {
+                                            result.push_str(&format!("{:?}", values[value_index]));
+                                            value_index += 1;
+                                        } else {
+                                            result.push_str("{:?}"); // preserve placeholder
+                                        }
+                                    } else {
+                                        result.push_str("{:?"); // not a complete placeholder
+                                    }
+                                } else {
+                                    result.push_str("{:"); // not {:?}
+                                }
+                            } else if chars.peek() == Some(&'}') {
+                                chars.next(); // consume '}'
+                                if value_index < values.len() {
+                                    result.push_str(&values[value_index].to_string());
+                                    value_index += 1;
+                                } else {
+                                    result.push_str("{}"); // preserve placeholder if no value
+                                }
+                            } else {
+                                result.push(ch);
+                            }
+                        } else {
+                            result.push(ch);
+                        }
+                    }
+
+                    Ok(Value::from_string(result))
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
                         "Macro '{}!' not yet implemented", name

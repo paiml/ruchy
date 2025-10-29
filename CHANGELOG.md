@@ -4,6 +4,51 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.9] - 2025-10-29
+
+### Added
+
+- **[Issue #82] Implement chrono::Utc Support**
+  - **Problem**: `use chrono::Utc; let now = Utc::now();` failed with "Undefined variable: Utc"
+  - **Root Cause**: chrono::Utc was never implemented (NOT a regression - missing feature)
+  - **Implementation** (EXTREME TDD):
+    - Added `add_chrono_namespace()` to src/runtime/builtin_init.rs:466
+    - Implemented `eval_chrono_utc_now()` in src/runtime/eval_builtin.rs:841
+    - Enhanced ImportAll to navigate module paths in src/runtime/interpreter.rs:1150
+    - Added `.timestamp()` method for RFC3339 strings in src/runtime/eval_string_methods.rs:414
+    - Updated `println!` to support {:?} debug formatting in src/runtime/interpreter.rs:1216,1358
+  - **Test Status**: 3/3 tests passing ✅
+    - test_regression_082_chrono_utc_basic_import
+    - test_regression_082_chrono_utc_with_formatting
+    - test_regression_082_multiple_chrono_imports
+  - **Files Modified**:
+    - src/runtime/builtin_init.rs (add_chrono_namespace function)
+    - src/runtime/eval_builtin.rs (eval_chrono_utc_now function)
+    - src/runtime/interpreter.rs (ImportAll evaluation, println! format support)
+    - src/runtime/eval_string_methods.rs (timestamp method)
+    - tests/regression_082_chrono_utc.rs (NEW - 3 comprehensive tests)
+
+- **[Issue #83] Implement format! Macro**
+  - **Problem**: `format!("Value: {}", x)` failed with "Macro 'format!' not yet implemented"
+  - **Root Cause**: format! macro was never implemented (NOT a regression - missing feature)
+  - **Implementation** (EXTREME TDD):
+    - Added format! handler in src/runtime/interpreter.rs:1279 (ExprKind::Macro)
+    - Added format! handler in src/runtime/interpreter.rs:1421 (ExprKind::MacroInvocation)
+    - Supports `{}` placeholders for values
+    - Supports `{:?}` placeholders for debug formatting
+  - **Test Status**: 3/3 tests passing ✅
+    - test_regression_083_format_basic
+    - test_regression_083_format_multiple_args
+    - test_regression_083_format_static_string
+  - **Files Modified**:
+    - src/runtime/interpreter.rs (format! macro implementation in both AST variants)
+    - tests/regression_083_format_macro.rs (NEW - 3 comprehensive tests)
+
+### Closes
+
+- Issue #82: chrono::Utc support
+- Issue #83: format! macro
+
 ## [3.147.8] - 2025-10-29
 
 ### Fixed
