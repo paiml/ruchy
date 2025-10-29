@@ -4541,10 +4541,14 @@ impl Interpreter {
                 let mut new_env = (*env).clone();
 
                 // Bind self parameter (first parameter)
+                // RUNTIME-094: Bind as Value::Struct to preserve struct type for nested method calls
                 if let Some(self_param) = params.first() {
                     new_env.insert(
                         self_param.clone(),
-                        Value::Object(std::sync::Arc::new(instance.clone())),
+                        Value::Struct {
+                            name: struct_name.to_string(),
+                            fields: std::sync::Arc::new(instance.clone()),
+                        },
                     );
                 }
 
