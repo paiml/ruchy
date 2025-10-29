@@ -47,6 +47,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "lines" => eval_string_lines(s),
         "parse" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
+        "to_rfc3339" => Ok(Value::from_string(s.to_string())),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),

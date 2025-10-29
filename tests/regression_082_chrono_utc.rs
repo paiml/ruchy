@@ -13,14 +13,18 @@
 //   - ImportAll didn't navigate nested objects for module paths
 //   - println! macro didn't support format strings with {:?}
 //   - String values lacked .timestamp() method for datetime conversion
+//   - String values lacked .to_rfc3339() method (added in v3.147.10)
 //
 // SOLUTION: Implemented chrono support with EXTREME TDD
-//   - Added add_chrono_namespace() to builtin_init.rs (line 466)
-//   - Implemented eval_chrono_utc_now() in eval_builtin.rs (line 841)
-//   - Enhanced ImportAll in interpreter.rs to navigate module paths (line 1150)
-//   - Added .timestamp() method for RFC3339 strings in eval_string_methods.rs (line 414)
-//   - Updated println! to support {:?} debug formatting in interpreter.rs (lines 1216, 1358)
-//   - All 3 regression tests now pass ✅
+//   - v3.147.9: Core chrono::Utc implementation (3/4 tests)
+//     - Added add_chrono_namespace() to builtin_init.rs (line 466)
+//     - Implemented eval_chrono_utc_now() in eval_builtin.rs (line 841)
+//     - Enhanced ImportAll in interpreter.rs to navigate module paths (line 1150)
+//     - Added .timestamp() method for RFC3339 strings in eval_string_methods.rs (line 414)
+//     - Updated println! to support {:?} debug formatting in interpreter.rs (lines 1216, 1358)
+//   - v3.147.10: Complete chrono::Utc support (4/4 tests) - 100% FUNCTIONALITY ✅
+//     - Added .to_rfc3339() method in eval_string_methods.rs (line 50)
+//   - All 4 regression tests now pass ✅
 //
 // Test naming convention: test_regression_082_<scenario>
 
@@ -96,4 +100,29 @@ fun main() {
         .assert()
         .success()
         .stdout(predicate::str::contains("DateTime:"));
+}
+
+/// Test #4: .to_rfc3339() method on datetime strings
+/// Verifies that RFC3339 datetime strings have .to_rfc3339() method
+#[test]
+fn test_regression_082_to_rfc3339_method() {
+    let code = r#"
+use chrono::Utc;
+
+fun main() {
+    let now = Utc::now();
+    let rfc3339 = now.to_rfc3339();
+    println!("RFC3339: {}", rfc3339);
+}
+"#;
+
+    Command::cargo_bin("ruchy")
+        .unwrap()
+        .arg("-e")
+        .arg(code)
+        .timeout(std::time::Duration::from_secs(5))
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("RFC3339:"))
+        .stdout(predicate::str::contains("202")); // Check for year 202x
 }
