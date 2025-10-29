@@ -49,7 +49,7 @@ fn add_builtin_constants(global_env: &mut HashMap<String, Value>) {
     global_env.insert("nil".to_string(), Value::Nil);
 }
 
-/// Add basic builtin functions (format, `HashMap`, `DataFrame`)
+/// Add basic builtin functions (format, `HashMap`, `DataFrame`, `Command`)
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
@@ -65,6 +65,11 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "DataFrame".to_string(),
         Value::from_string("__builtin_dataframe__".to_string()),
+    );
+    // RUNTIME-090: Command module for std::process::Command wrapper
+    global_env.insert(
+        "Command".to_string(),
+        Value::from_string("__builtin_command__".to_string()),
     );
     global_env.insert(
         "DataFrame::new".to_string(),
