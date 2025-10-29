@@ -6,6 +6,55 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+## [3.147.1] - 2025-10-29
+
+### Fixed
+
+- **[REGRESSION-076] Fix Vec::new() Infinite Hang (Issue #76)**
+  - **GitHub Issue**: Closes #76 - CRITICAL REGRESSION from v3.147.0
+  - **Status**: ✅ HOTFIX COMPLETE - All 6/6 regression tests passing
+  - **Severity**: CRITICAL - v3.147.0 broke ALL Vec operations (infinite loops)
+
+  **Bug Behavior (v3.147.0 REGRESSION)**:
+  - Symptom: `Vec::new()` causes infinite hang in all contexts
+  - Symptom 2: All Vec operations with while loops hang (vector-search, logger, array-utils)
+  - Symptom 3: Box::new(), HashMap::new() also affected
+  - Root Cause: PARSER-091 fix was TOO BROAD - generated QualifiedName for ALL Module::identifier( patterns
+  - Impact: Runtime interpreter doesn't handle QualifiedName for stdlib types (Vec, Box, HashMap)
+
+  **Solution (SELECTIVE QUALIFIEDNAME GENERATION)**:
+  - Modified `handle_colon_colon_operator()` in `src/frontend/parser/mod.rs` (lines 501-528)
+  - Added builtin module whitelist: Command, DataFrame, Sql, Process
+  - **QualifiedName**: ONLY for builtin modules (parser routes to runtime modules)
+  - **FieldAccess**: For stdlib types (Vec, Box, HashMap) - preserves v3.146.0 behavior
+  - Preserves Issue #75 fix while preventing Issue #76 regression
+
+  **Files Modified** (2 files):
+  - `src/frontend/parser/mod.rs`: Selective QualifiedName generation with whitelist (+27 lines)
+  - `tests/regression_076_vec_new_hang.rs`: 6 comprehensive regression tests (NEW FILE, 144 lines)
+
+  **Test Results**:
+  - 6/6 REGRESSION-076 tests passing (Vec::new(), Vec::push loops, large Vec, Box::new(), HashMap::new())
+  - All Vec operations complete in <1s (no infinite loops)
+  - Test output verified: "10", "100", "5" (operations working correctly)
+  - All PMAT quality gates passing (complexity: 8, 20% under ≤10 target)
+
+  **Architecture Impact**:
+  - **Toyota Way**: STOP THE LINE - Fixed critical regression immediately
+  - PRESERVES: Issue #75 fix (Command::new() → QualifiedName)
+  - FIXES: Issue #76 regression (Vec::new() → FieldAccess, no hang)
+  - UNBLOCKS: All stdlib type static methods (Vec, Box, HashMap, etc.)
+
+  **Extreme TDD Process**:
+  - 🔴 RED: Created failing regression tests with 5s timeouts
+  - 🟢 GREEN: Fixed parser with selective whitelist (complexity: 8)
+  - 🔵 REFACTOR: Applied PMAT quality gates, all passing
+
+  **Impact**:
+  - FIXES: Vec::new() infinite hangs (Issue #76)
+  - PRESERVES: Command::new() QualifiedName (Issue #75)
+  - UNBLOCKS: All vector operations, logger, vector-search, array-utils tests
+
 ## [3.147.0] - 2025-10-29
 
 ### Fixed

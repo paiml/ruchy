@@ -85,6 +85,42 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 76
+        url: "https://github.com/paiml/ruchy/issues/76"
+        title: "Vec::new() causes infinite hang in v3.147.0 (CRITICAL REGRESSION)"
+        impact: "CRITICAL - v3.147.0 broke ALL Vec operations (infinite loops)"
+        ticket: "REGRESSION-076"
+        priority: "CRITICAL"
+        status: "✅ CLOSED - Fixed in v3.147.1 (hotfix)"
+        closed_date: "2025-10-29"
+        context: "PARSER-091 fix was TOO BROAD - generated QualifiedName for stdlib types"
+        problem:
+          - "Vec::new() causes infinite hang in all contexts with while loops"
+          - "All Vec operations (vector-search, logger, array-utils tests) hang"
+          - "Box::new() and HashMap::new() also affected"
+          - "Root cause: PARSER-091 generated QualifiedName for ALL Module::identifier( patterns"
+        root_cause:
+          - "PARSER-091 fix in v3.147.0 was TOO BROAD"
+          - "Generated QualifiedName for stdlib types (Vec, Box, HashMap)"
+          - "Runtime interpreter doesn't handle QualifiedName for stdlib types"
+          - "Should only generate QualifiedName for builtin modules (Command, DataFrame, etc.)"
+        solution:
+          - "Added builtin module whitelist in handle_colon_colon_operator() (parser/mod.rs:501-528)"
+          - "QualifiedName: ONLY for builtin modules (Command, DataFrame, Sql, Process)"
+          - "FieldAccess: For stdlib types (Vec, Box, HashMap) - preserves v3.146.0 behavior"
+          - "Selective generation based on module name whitelist"
+        tests:
+          - "6/6 REGRESSION-076 tests passing (Vec::new(), Vec::push, large Vec, Box, HashMap)"
+          - "All Vec operations complete in <1s (no infinite loops)"
+          - "Test output verified: 10, 100, 5 (operations working)"
+          - "Complexity: 8 (20% under ≤10 Toyota Way target)"
+        files_modified:
+          - "src/frontend/parser/mod.rs: Selective QualifiedName generation (+27 lines)"
+          - "tests/regression_076_vec_new_hang.rs: 6 comprehensive tests (NEW, 144 lines)"
+        extreme_tdd:
+          - "RED: Created failing regression tests with 5s timeouts"
+          - "GREEN: Fixed parser with selective whitelist (complexity: 8)"
+          - "REFACTOR: Applied PMAT quality gates, all passing"
       - id: 71
         url: "https://github.com/paiml/ruchy/issues/71"
         title: "&mut not parsed in expression context"
