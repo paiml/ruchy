@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.6] - 2025-10-29
+
+### Fixed
+
+- **[RUNTIME-094] Nested Struct Method Calls**
+  - **Issue**: Nested method calls failed with "Object is missing __type marker"
+  - **Root Cause**: `self` parameter in struct methods was bound as `Value::Object` instead of `Value::Struct`
+  - **Fix**: Updated `eval_struct_instance_method()` to bind self as `Value::Struct` with struct name
+  - **Impact**: Nested method calls now work correctly
+    - Pattern: `logger.test()` calls `self.get_level()` ✅ Works
+    - Before: "Object is missing __type marker" error
+    - After: All methods execute correctly with proper struct type preservation
+  - **Files Modified**:
+    - src/runtime/interpreter.rs:4543-4553 (Changed self binding from Value::Object to Value::Struct)
+  - **Test Status**: All 8/8 regression tests still passing, nested calls validated
+  - **Quality Gates**: Zero regressions, complexity maintained
+
+### Notes
+
+- This completes the struct method dispatch implementation started in v3.147.5
+- RUNTIME-093 (v3.147.5) enabled basic struct methods
+- RUNTIME-094 (v3.147.6) enables nested struct method calls
+- Issue #79 now FULLY resolved with both direct and nested method calls working
+
 ## [3.147.5] - 2025-10-29
 
 ### Fixed
