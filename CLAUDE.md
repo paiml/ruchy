@@ -206,6 +206,13 @@ ruchydbg run test.ruchy --timeout 1000
 - Repository: https://github.com/paiml/ruchyruchy (research/validation infrastructure)
 - Current Tool: `ruchydbg validate` (validates infrastructure, not for bug hunting)
 
+**Success Story - Issue #79 (2025-10-29)**:
+- ✅ Used `ruchydbg validate` to verify debugging infrastructure
+- ✅ Applied timeout methodology: `timeout 5 ruchy test.ruchy` to detect hangs
+- ✅ Used GENCHI GENBUTSU to find root causes (dispatch_method_call, eval_struct_instance_method)
+- ✅ Fixed 2 bugs (RUNTIME-093, RUNTIME-094) with 8/8 tests passing
+- ⏱️ **Time**: ~2 hours for complete fix (vs estimated 4-6 hours manual debugging)
+
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
 **CRITICAL**: Mutation testing is the GOLD STANDARD for test quality validation.
