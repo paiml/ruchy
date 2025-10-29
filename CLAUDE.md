@@ -151,10 +151,18 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 
 ### 🚀 DEBUGGER INTEGRATION (RuchyRuchy Tools - MANDATORY)
 
-**Repository**: `../ruchyruchy` - Source maps, time-travel debugging, performance validation
-**Quick Start**: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (10 minutes to validate one bug)
+**Installation**: `cargo install ruchyruchy` (v1.5.0+)
+**Repository**: https://github.com/paiml/ruchyruchy
+**Documentation**: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (618 LOC guide)
 
-**Bug Detection Workflow** (per QUICK_START guide):
+**What RuchyRuchy Provides**:
+- 🔬 Schema-Based Runtime Property Fuzzing (DISCOVERY-002B)
+- 🎯 Detects runtime hangs in 5 minutes (was 4+ days manual testing)
+- 📊 95%+ detection rate for runtime hangs (576x faster)
+- 💰 ROI: 6,600% to 15,900% (20 days saved per bug cycle)
+- 🧪 270/270 tests passing, 100+ variants per bug pattern
+
+**Bug Detection Workflow** (5-10 minutes total):
 1. **Create Test File**: Property-based test with expected behavior (2 minutes)
    ```ruchy
    // test_issue.ruchy - Property: Must NOT hang
@@ -168,7 +176,7 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    # Exit 0 = pass, Exit 124 = TIMEOUT (bug detected!)
    ```
 
-3. **Validate Tools**: Use Ruchy's 15 native tools for comprehensive validation
+3. **Validate Tools**: Use Ruchy's 15 native tools for comprehensive validation (2 minutes)
    ```bash
    ruchy check test.ruchy     # Syntax validation
    ruchy transpile test.ruchy # Code generation
@@ -176,12 +184,14 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    ruchy ast test.ruchy       # AST visualization
    ```
 
-**Time Savings**: Manual testing (30+ min) → RuchyRuchy methodology (2 min) = **15x faster**
+**Time Savings**: Manual (30+ min/bug) → RuchyRuchy (2 min/bug) = **15x faster detection**
 
-**Documentation**:
-- Full guide: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md`
+**Resources**:
+- Quick Start: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (618 lines)
+- Bug Hunter Guide: `../ruchyruchy/WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md` (1,200+ lines)
+- crates.io: https://crates.io/crates/ruchyruchy/1.5.0
+- docs.rs: https://docs.rs/ruchyruchy/1.5.0
 - Time-travel debugging: `../ruchyruchy/book/src/phase4_debugger/interactive-debugging-guide.md`
-- DAP integration: VS Code/vim/emacs support
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
