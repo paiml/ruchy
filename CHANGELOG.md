@@ -4,6 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[REGRESSION-082] Fix 16 Compilation Errors - Missing enum_name Field**
+  - **Problem**: `Value::EnumVariant` instantiations missing `enum_name` field → codebase wouldn't compile
+  - **Root Cause**: Struct definition changed (Issue #79 enum cast work) but 16 test instantiations not updated
+  - **Impact**: CRITICAL - Blocked ALL development, tests couldn't compile
+  - **Files Fixed** (16 errors total):
+    - src/runtime/eval_pattern_match.rs: 14 fixes (Option/Status/Response/Point/Message/Type/Enum)
+    - src/runtime/pattern_matching.rs: 2 fixes (Option)
+    - tests/fuzz_pattern_match.rs: 7 fixes (Result/Token)
+    - tests/property_arc_refactor.rs: 3 fixes (arbitrary generation + equality)
+  - **Toyota Way**: Applied "Stop the Line" principle - fixed immediately
+  - **Result**: ✅ Main codebase compiles successfully, development unblocked
+
 ## [3.147.7] - 2025-10-29
 
 ### Fixed
