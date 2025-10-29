@@ -4,6 +4,41 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.147.4] - 2025-10-29
+
+### Added
+
+- **[RUNTIME-092] Comprehensive Testing for Enum Variable Cast (Issue #79)**
+  - **Property Tests**: 5 tests using proptest (10K+ random inputs per test)
+    - `test_property_runtime_092_enum_to_i32`: Enum discriminants convert correctly to i32
+    - `test_property_runtime_092_enum_arithmetic`: Enum casts in arithmetic expressions
+    - `test_property_runtime_092_multiple_variables`: Multiple enum variables with different discriminants
+    - `test_property_runtime_092_multiple_int_types`: Cast to i32, i64, isize
+    - `test_property_runtime_092_discriminant_preservation`: Values preserved through operations
+  - **Cargo Run Example**: `examples/runtime_092_enum_cast.rs` (147 lines)
+    - 5 working examples demonstrating all enum cast scenarios
+    - Basic variable cast, multiple variables, arithmetic, multiple types, direct literals
+  - **Test Status**: 5/5 property tests passing in <1s, example works correctly
+  - **Files Created**:
+    - `tests/property_enum_cast.rs` (164 lines, NEW)
+    - `examples/runtime_092_enum_cast.rs` (147 lines, NEW)
+
+### Changed
+
+- **Test Coverage Matrix**: Enum variable cast now has comprehensive testing
+  - Unit tests: 7 passing, 1 ignored (regression_079_enum_cast.rs)
+  - Property tests: 5 passing (property_enum_cast.rs)
+  - Example: 5 scenarios working (runtime_092_enum_cast.rs)
+  - Total coverage: Direct casts, variable casts, arithmetic, multiple types, multiple variables
+
+### Notes
+
+- **Quality Gates**: All PMAT quality gates passed
+- **Zero Regressions**: All tests complete in <1s with 5s timeouts
+- **Ignored Test**: test_regression_079_enum_field_cast remains ignored - blocked by separate struct method dispatch bug, NOT enum cast bug
+
+## [3.147.3] - 2025-10-29
+
 ### Added
 
 - **[QUALITY-TDG] PMAT TDG Enforcement System v2.180.1 (Issue #78)**
