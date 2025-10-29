@@ -12,7 +12,7 @@ enum Token {
     // Keywords
     Fun, Fn, Let, Mod, If, Else, Match, For, In, While, Loop,
     Async, Await, Try, Catch, Finally, Throw, Return,
-    Command, Ok, Err, Some, None, Result, Option,
+    Ok, Err, Some, None, Result, Option,
     Break, Continue, Struct, Enum, Impl, Trait, Extend,
     Actor, State, Receive, Send, Ask, Type, Const, Static,
     Mut, Pub, Import, Use, As, Module, Export, DataFrame,
