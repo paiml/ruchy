@@ -84,6 +84,7 @@ where
         Value::HtmlElement(element) => {
             crate::runtime::eval_html_methods::eval_html_element_method(element, base_method, arg_values)
         }
+        Value::Object(obj) => eval_object_method(obj, base_method, arg_values),
         _ => eval_generic_method(receiver, base_method, args_empty),
     }
 }
@@ -197,6 +198,112 @@ fn eval_integer_method(
             "Unknown integer method: {method}"
         ))),
     }
+}
+
+/// Evaluate methods on Object (HashMap) types
+///
+/// Dispatches based on __type marker to appropriate handler
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+fn eval_object_method(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    // Check __type marker to route to appropriate handler
+    if let Some(Value::String(type_name)) = obj.get("__type") {
+        match &**type_name {
+            "Command" => eval_command_method(obj, method, arg_values),
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown object type: {type_name}"
+            ))),
+        }
+    } else {
+        Err(InterpreterError::RuntimeError(
+            "Object is missing __type marker".to_string()
+        ))
+    }
+}
+
+/// Evaluate methods on Command objects (RUNTIME-090, Issue #75)
+///
+/// # Complexity
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
+#[cfg(not(target_arch = "wasm32"))]
+fn eval_command_method(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    match method {
+        "arg" => {
+            // Mutate the command object by adding an argument
+            if arg_values.len() != 1 {
+                return Err(InterpreterError::RuntimeError(
+                    "Command.arg() requires exactly 1 argument".to_string(),
+                ));
+            }
+            if let Value::String(arg_str) = &arg_values[0] {
+                let mut new_obj = obj.clone();
+                if let Some(Value::Array(mut args)) = new_obj.get("args").cloned() {
+                    let mut new_args = args.to_vec(); new_args.push(Value::from_string(arg_str.to_string()));
+                    new_obj.insert("args".to_string(), Value::Array(Arc::from(new_args)));
+                }
+                Ok(Value::Object(Arc::new(new_obj)))
+            } else {
+                Err(InterpreterError::RuntimeError(
+                    "Command.arg() expects a string argument".to_string(),
+                ))
+            }
+        }
+        "output" => {
+            // Execute the command and return output as string
+            let program = match obj.get("program") {
+                Some(Value::String(p)) => &**p,
+                _ => return Err(InterpreterError::RuntimeError(
+                    "Command object missing 'program' field".to_string(),
+                )),
+            };
+
+            let args = match obj.get("args") {
+                Some(Value::Array(arr)) => arr.clone(),
+                _ => Arc::new([]),
+            };
+
+            let mut command = std::process::Command::new(program);
+            for arg in args.iter() {
+                if let Value::String(arg_str) = arg {
+                    command.arg(&**arg_str);
+                }
+            }
+
+            match command.output() {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                    Ok(Value::from_string(stdout))
+                }
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to execute command: {e}"
+                ))),
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown Command method: {method}"
+        ))),
+    }
+}
+
+/// Stub for WASM - Command methods not available
+#[cfg(target_arch = "wasm32")]
+fn eval_command_method(
+    _obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    _arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    Err(InterpreterError::RuntimeError(format!(
+        "Command method '{method}' not available in WASM"
+    )))
 }
 
 /// Evaluate generic methods available on all types

@@ -69,6 +69,12 @@ pub fn eval_builtin_function(
         return Ok(Some(result));
     }
 
+    // Process functions - not available in WASM (RUNTIME-090)
+    #[cfg(not(target_arch = "wasm32"))]
+    if let Some(result) = try_eval_process_function(name, args)? {
+        return Ok(Some(result));
+    }
+
     Ok(None)
 }
 
@@ -2813,6 +2819,46 @@ fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
             Ok(Value::HtmlDocument(doc))
         },
         _ => Err(InterpreterError::RuntimeError("Html.parse() expects a string".to_string())),
+    }
+}
+
+// ============================================================================
+// Process Functions (RUNTIME-090, Issue #75)
+// Native process execution using std::process::Command
+// ============================================================================
+
+/// Process function dispatcher (RUNTIME-090)
+/// Complexity: 2 (within Toyota Way limits)
+#[cfg(not(target_arch = "wasm32"))]
+fn try_eval_process_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "Command_new" => Ok(Some(eval_command_new(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Stub for WASM - process execution not available
+#[cfg(target_arch = "wasm32")]
+fn try_eval_process_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    Ok(None)
+}
+
+/// Eval: `Command::new(program)`
+/// Creates a Command object for executing external processes
+/// Complexity: 3 (validation + object creation + field setup)
+#[cfg(not(target_arch = "wasm32"))]
+fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("Command::new", args, 1)?;
+    match &args[0] {
+        Value::String(program) => {
+            // Create Command object as HashMap with __type marker
+            let mut cmd_obj = HashMap::new();
+            cmd_obj.insert("__type".to_string(), Value::from_string("Command".to_string()));
+            cmd_obj.insert("program".to_string(), Value::from_string(program.to_string()));
+            cmd_obj.insert("args".to_string(), Value::Array(Arc::new([])));
+            Ok(Value::Object(Arc::new(cmd_obj)))
+        },
+        _ => Err(InterpreterError::RuntimeError("Command::new() expects a string program name".to_string())),
     }
 }
 
