@@ -1775,6 +1775,9 @@ impl Interpreter {
     fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::from_string("__builtin_hashmap__".to_string()))
+        } else if module == "String" && (name == "new" || name == "from") {
+            // REGRESSION-077: Route String::new() and String::from() to builtin handlers
+            Ok(Value::from_string(format!("__builtin_String_{}__", name)))
         } else if name == "new" {
             // Check if this is a class constructor call
             if let Ok(class_value) = self.lookup_variable(module) {
@@ -1826,10 +1829,17 @@ impl Interpreter {
                 module, name
             )))
         } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "Unknown qualified name: {}::{}",
-                module, name
-            )))
+            // REGRESSION-077: Check if this is an impl method (stored with qualified name)
+            // Example: Logger::new_with_options stored as "Logger::new_with_options"
+            let qualified_method_name = format!("{}::{}", module, name);
+            if let Ok(method_value) = self.lookup_variable(&qualified_method_name) {
+                Ok(method_value)
+            } else {
+                Err(InterpreterError::RuntimeError(format!(
+                    "Unknown qualified name: {}::{}",
+                    module, name
+                )))
+            }
         }
     }
 
@@ -1849,6 +1859,14 @@ impl Interpreter {
 
     /// Look up a variable in the environment (searches from innermost to outermost)
     fn lookup_variable(&self, name: &str) -> Result<Value, InterpreterError> {
+        // REGRESSION-077: Handle Option enum variants (Option::None, Option::Some)
+        if name == "Option::None" {
+            return Ok(Value::EnumVariant {
+                variant_name: "None".to_string(),
+                data: None,
+            });
+        }
+
         // Check if this is a qualified name (e.g., "Point::new" or "Rectangle::square")
         if name.contains("::") {
             let parts: Vec<&str> = name.split("::").collect();
@@ -6413,6 +6431,17 @@ impl Interpreter {
                     }
                     // Vec::new() → empty array
                     return Ok(Value::Array(Arc::from([])));
+                }
+
+                // REGRESSION-077: Check for user-defined struct impl methods
+                // impl methods are stored with qualified names like "Logger::new_with_options"
+                let qualified_method = format!("{}::{}", type_name, field);
+                if let Ok(method_value) = self.lookup_variable(&qualified_method) {
+                    // Found impl method - evaluate args and call it
+                    let arg_vals: Result<Vec<Value>, InterpreterError> =
+                        args.iter().map(|arg| self.eval_expr(arg)).collect();
+                    let arg_vals = arg_vals?;
+                    return self.call_function(method_value, &arg_vals);
                 }
             }
         }
