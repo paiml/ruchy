@@ -46,6 +46,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "chars" => eval_string_chars(s),
         "lines" => eval_string_lines(s),
         "parse" => eval_string_parse(s),
+        "timestamp" => eval_string_timestamp(s),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),
@@ -406,6 +407,23 @@ fn eval_string_parse(s: &str) -> Result<Value, InterpreterError> {
         .map_err(|_| {
             InterpreterError::RuntimeError(format!(
                 "Failed to parse '{s}' as integer"
+            ))
+        })
+}
+
+/// Get Unix timestamp from RFC3339 datetime string (Issue #82)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_string_timestamp(s: &str) -> Result<Value, InterpreterError> {
+    use chrono::DateTime;
+
+    // Parse RFC3339 datetime string
+    s.parse::<DateTime<chrono::Utc>>()
+        .map(|dt| Value::Integer(dt.timestamp()))
+        .map_err(|_| {
+            InterpreterError::RuntimeError(format!(
+                "Failed to parse '{s}' as RFC3339 datetime"
             ))
         })
 }

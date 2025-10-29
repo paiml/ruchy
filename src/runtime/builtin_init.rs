@@ -37,6 +37,7 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_json_functions(&mut global_env);
     add_http_functions(&mut global_env);
     add_std_namespace(&mut global_env);  // STDLIB-003: std::time module
+    add_chrono_namespace(&mut global_env);  // Issue #82: chrono support
 
     global_env
 }
@@ -462,6 +463,35 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));
 }
 
+/// Add chrono namespace with Utc, DateTime, Local types
+/// Issue #82: chrono support for date/time operations
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (within Toyota Way limits)
+fn add_chrono_namespace(global_env: &mut HashMap<String, Value>) {
+    use std::sync::Arc;
+
+    // Create Utc module object with now() method
+    let mut utc_module = HashMap::new();
+    utc_module.insert(
+        "now".to_string(),
+        Value::from_string("__builtin_chrono_utc_now__".to_string()),
+    );
+
+    // Create chrono namespace object
+    let mut chrono_namespace = HashMap::new();
+    chrono_namespace.insert("Utc".to_string(), Value::Object(Arc::new(utc_module)));
+
+    // Add chrono to global environment
+    global_env.insert("chrono".to_string(), Value::Object(Arc::new(chrono_namespace.clone())));
+
+    // Also add Utc directly to global environment for convenience (Issue #82)
+    // This allows both `chrono::Utc` and `Utc` (after use statement) to work
+    if let Some(Value::Object(chrono_obj)) = chrono_namespace.get("Utc") {
+        global_env.insert("Utc".to_string(), Value::Object(Arc::clone(chrono_obj)));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -551,8 +581,10 @@ mod tests {
         // std namespace: std (contains std::time::now_millis) (STDLIB-006: 1 new - GitHub Issue #55)
         // Command module: Command (RUNTIME-090: 1 new - GitHub Issue #75)
         // Integer module: Integer (contains Integer.to_string - GitHub Issue #77)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer = 112
-        assert_eq!(env.len(), 112);
+        // chrono namespace: chrono (contains chrono::Utc - Issue #82)
+        // Utc direct: Utc (convenience import - Issue #82)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer + 1 chrono + 1 Utc = 114
+        assert_eq!(env.len(), 114);
     }
 
     #[test]
