@@ -62,6 +62,52 @@ All notable changes to the Ruchy programming language will be documented in this
   - TRACKS: 6 orthogonal quality metrics per file
   - UNBLOCKS: Systematic quality improvement (Kaizen)
 
+## [3.147.3] - 2025-10-29
+
+### Fixed
+
+- **[REGRESSION-079] Fix Enum-to-Integer Cast Hang (Issue #79)**
+  - **GitHub Issue**: Closes #79 - Runtime hang when casting enum variants to integers
+  - **Status**: ✅ HOTFIX COMPLETE - All 6/6 regression tests passing
+  - **Severity**: HIGH - Blocked all enum discriminant access patterns
+
+  **Bug Behavior**:
+  - Symptom: `LogLevel::Info as i32` causes infinite hang (never completes)
+  - Symptom 2: All enum-to-integer casts affected (i32, i64, isize)
+  - Root Cause: `eval_type_cast()` evaluated expression BEFORE extracting discriminant
+  - Impact: Expression evaluation returned EnumVariant, which has no integer cast path
+
+  **Solution (EXTRACT DISCRIMINANT FIRST)**:
+  - Modified `eval_type_cast()` in `src/runtime/interpreter.rs` (lines 2290-2312)
+  - Added special case handling for FieldAccess patterns (EnumName::Variant)
+  - Extracts discriminant from environment BEFORE evaluating expression
+  - Prevents EnumVariant evaluation that blocks cast
+
+  **Files Modified** (1 file):
+  - `src/runtime/interpreter.rs`: Enum-to-integer cast handling (+23 lines)
+
+  **Test Results**:
+  - 6/6 REGRESSION-079 tests passing (i32/i64/isize casts, arithmetic, multiple variants)
+  - All tests complete in <5s (no infinite loops)
+  - Test output verified: "1", "10", "200", "11" (casts working correctly)
+  - Complexity: 11 (acceptable - function already complex, minimal increase)
+
+  **EXTREME TDD Process**:
+  - 🔴 RED: Created 6 failing regression tests with 5s timeouts
+  - 🟢 GREEN: Fixed eval_type_cast with discriminant extraction (complexity: 11)
+  - 🔵 REFACTOR: Applied PMAT quality gates, complexity acceptable
+
+  **Architecture Impact**:
+  - **Toyota Way**: GENCHI GENBUTSU - Examined enum storage to understand discriminant location
+  - FIXES: All enum-to-integer casts (as i32, as i64, as isize)
+  - UNBLOCKS: Enum discriminant access in arithmetic expressions
+  - PRESERVES: All previous fixes (Option::None, Vec::new, Command::new)
+
+  **Impact**:
+  - FIXES: Enum-to-integer casts now work correctly
+  - ENABLES: Arithmetic with enum discriminants
+  - UNBLOCKS: Logger severity levels, status codes, priority enums
+
 ## [3.147.2] - 2025-10-29
 
 ### Fixed
