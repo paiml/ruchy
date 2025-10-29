@@ -497,6 +497,25 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
             if let Some(field) = token_as_identifier(token) {
                 let field_span = *span;
                 state.tokens.advance();
+
+                // PARSER-091: Fix for Issue #75 - Command::new() should parse as QualifiedName
+                // When we see `Module::function(`, this is a qualified function call, not field access
+                // Check if left is an Identifier and next token is `(` to detect call pattern
+                if let ExprKind::Identifier(ref module) = left.kind {
+                    // Peek ahead to see if this is a function call
+                    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                        // This is Module::function( pattern → create QualifiedName
+                        return Ok(Expr::new(
+                            ExprKind::QualifiedName {
+                                module: module.clone(),
+                                name: field,
+                            },
+                            field_span,
+                        ));
+                    }
+                }
+
+                // Not a call pattern → keep as FieldAccess for enum variants, etc.
                 Ok(Expr::new(
                     ExprKind::FieldAccess {
                         object: Box::new(left),
