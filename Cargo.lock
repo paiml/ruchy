@@ -4707,7 +4707,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "3.147.4"
+version = "3.147.5"
 dependencies = [
  "anyhow",
  "arbitrary",

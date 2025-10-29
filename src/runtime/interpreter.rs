@@ -3649,6 +3649,10 @@ impl Interpreter {
                     self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
                 }
             }
+            Value::Struct { name, fields } => {
+                // Dispatch struct instance method call
+                self.eval_struct_instance_method(fields, name, base_method, arg_values)
+            }
             Value::Class {
                 class_name,
                 fields,

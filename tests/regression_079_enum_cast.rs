@@ -175,7 +175,6 @@ fun main() {
 /// This is NOT an enum cast bug - it's a struct method lookup issue.
 /// Once the method dispatch bug is fixed, this test should pass.
 #[test]
-#[ignore = "Blocked by separate runtime bug: custom struct method dispatch"]
 fn test_regression_079_enum_field_cast() {
     let code = r#"
 enum LogLevel {
