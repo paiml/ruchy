@@ -6,18 +6,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Documentation
 
-- **[DOCS] Clarify RuchyRuchy Debugging Methodology vs Tool Availability**
+- **[DOCS] Clarify RuchyRuchy Debugging Methodology vs Tool Availability + Success Story**
   - **Issue**: CLAUDE.md implied `ruchydbg run` command was available when it's only PROPOSED
   - **Root Cause**: Documentation confused debugging METHODOLOGY (timeout-based testing, GENCHI GENBUTSU) with automated tools
   - **Fix**: Updated CLAUDE.md to clearly distinguish what EXISTS vs what's PROPOSED
     - ✅ EXISTS: Methodology guides, `ruchydbg validate`, manual timeout testing
     - ❌ PROPOSED: `ruchydbg run` automated command (not yet implemented)
+  - **RuchyRuchy Tools Validation**:
+    - ✅ Installed RuchyRuchy v1.5.0: `cargo install ruchyruchy`
+    - ✅ Ran `ruchydbg validate` successfully (source maps, time-travel, performance checks)
+    - ✅ Applied timeout methodology for Issue #79 debugging
+    - ✅ All 8/8 regression tests passing with nested method call support
   - **Files Modified**:
-    - CLAUDE.md:152-207 (Changed "DEBUGGER INTEGRATION" to "DEBUGGING METHODOLOGY")
+    - CLAUDE.md:152-214 (Changed "DEBUGGER INTEGRATION" to "DEBUGGING METHODOLOGY")
     - Added prominent ⚠️ warnings about tool vs methodology distinction
     - Updated time savings claim from "15x" to "2-6x" to reflect manual methodology
+    - Added "Success Story - Issue #79" section documenting actual tool usage
     - Added "Future Enhancement (Proposed)" section for automation roadmap
-  - **Impact**: Prevents future confusion about available vs planned debugging capabilities
+  - **Impact**: Prevents future confusion + demonstrates RuchyRuchy tool adoption
   - **Toyota Way**: Accurate documentation prevents mistakes - GENCHI GENBUTSU documentation to match reality
 
 ## [3.147.6] - 2025-10-29
