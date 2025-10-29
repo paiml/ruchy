@@ -77,3 +77,4 @@ pkg/
 docs/notebook/book/book/
 *.proptest-regressions
 # Performance clippy check added
+.pmat/baseline.json
