@@ -149,20 +149,19 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 - **Mutation Tests**: ≥75% coverage via cargo-mutants (prove tests catch real bugs)
 - **Regression Tests**: Every GitHub issue gets specific test case
 
-### 🚀 DEBUGGER INTEGRATION (RuchyRuchy Tools - MANDATORY)
+### 🚀 DEBUGGING METHODOLOGY (RuchyRuchy-Inspired - MANDATORY)
 
-**Installation**: `cargo install ruchyruchy` (v1.5.0+)
-**Repository**: https://github.com/paiml/ruchyruchy
-**Documentation**: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (618 LOC guide)
+**⚠️ IMPORTANT**: This documents the debugging **METHODOLOGY**, not automated tools.
+The `ruchydbg run` command mentioned in guides is PROPOSED, not yet implemented.
 
-**What RuchyRuchy Provides**:
-- 🔬 Schema-Based Runtime Property Fuzzing (DISCOVERY-002B)
-- 🎯 Detects runtime hangs in 5 minutes (was 4+ days manual testing)
-- 📊 95%+ detection rate for runtime hangs (576x faster)
-- 💰 ROI: 6,600% to 15,900% (20 days saved per bug cycle)
-- 🧪 270/270 tests passing, 100+ variants per bug pattern
+**What EXISTS Now (v1.5.0)**:
+- ✅ RuchyRuchy repository: https://github.com/paiml/ruchyruchy
+- ✅ Methodology guides: QUICK_START_FOR_RUCHY_DEVS.md, WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md
+- ✅ Schema-Based Runtime Property Fuzzing (DISCOVERY-002B) - research/validation tool
+- ✅ `ruchydbg validate` - Validates debugging infrastructure (requires full repo)
+- ❌ `ruchydbg run` - NOT YET IMPLEMENTED (proposed for future)
 
-**Bug Detection Workflow** (5-10 minutes total):
+**Bug Detection Workflow** (Manual, 5-30 minutes):
 1. **Create Test File**: Property-based test with expected behavior (2 minutes)
    ```ruchy
    // test_issue.ruchy - Property: Must NOT hang
@@ -170,13 +169,20 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    impl Logger { fun test(&self) { self.level as i32; } }
    ```
 
-2. **Run with Timeout**: Detect hangs/infinite loops (1 minute)
+2. **Run with Timeout**: Detect hangs/infinite loops using shell timeout (1 minute)
    ```bash
+   # CURRENT APPROACH: Manual timeout testing
    timeout 1 ruchy run test_issue.ruchy
    # Exit 0 = pass, Exit 124 = TIMEOUT (bug detected!)
    ```
 
-3. **Validate Tools**: Use Ruchy's 15 native tools for comprehensive validation (2 minutes)
+3. **GENCHI GENBUTSU**: Read actual code to find root cause (5-20 minutes)
+   ```bash
+   # Manual code investigation - read interpreter.rs, search for error patterns
+   # Use grep, ripgrep, or IDE to locate bug
+   ```
+
+4. **Validate Fix**: Use Ruchy's 15 native tools (2 minutes)
    ```bash
    ruchy check test.ruchy     # Syntax validation
    ruchy transpile test.ruchy # Code generation
@@ -184,14 +190,21 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    ruchy ast test.ruchy       # AST visualization
    ```
 
-**Time Savings**: Manual (30+ min/bug) → RuchyRuchy (2 min/bug) = **15x faster detection**
+**Time Savings**: Manual (30+ min/bug) → Timeout methodology (5-30 min/bug) = **2-6x faster**
+
+**Future Enhancement (Proposed)**:
+```bash
+# PROPOSED (not yet implemented):
+ruchydbg run test.ruchy --timeout 1000
+# Would show EXACTLY where code hung, eliminating manual investigation
+# Expected speedup: 15x faster (2 min vs 30 min)
+```
 
 **Resources**:
-- Quick Start: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (618 lines)
-- Bug Hunter Guide: `../ruchyruchy/WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md` (1,200+ lines)
-- crates.io: https://crates.io/crates/ruchyruchy/1.5.0
-- docs.rs: https://docs.rs/ruchyruchy/1.5.0
-- Time-travel debugging: `../ruchyruchy/book/src/phase4_debugger/interactive-debugging-guide.md`
+- Methodology Guide: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (describes PROPOSED workflow)
+- Bug Patterns: `../ruchyruchy/WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md` (1,200+ lines)
+- Repository: https://github.com/paiml/ruchyruchy (research/validation infrastructure)
+- Current Tool: `ruchydbg validate` (validates infrastructure, not for bug hunting)
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
