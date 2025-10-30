@@ -19,17 +19,25 @@ use std::path::{Path, PathBuf};
 /// * `expr` - The expression to evaluate
 /// * `verbose` - Enable verbose output
 /// * `format` - Output format ("json" or default text)
+/// * `trace` - Enable function call tracing (DEBUGGER-014)
 ///
 /// # Examples
 /// ```
 /// // This function is typically called by the CLI with parsed arguments
-/// // handle_eval_command("2 + 2", false, "text");
+/// // handle_eval_command("2 + 2", false, "text", false);
 /// ```
 ///
 /// # Errors
 /// Returns error if expression cannot be parsed or evaluated
 /// Handle eval command (complexity: 5 - reduced from 11)
-pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()> {
+pub fn handle_eval_command(expr: &str, verbose: bool, format: &str, trace: bool) -> Result<()> {
+    // DEBUGGER-014 Phase 1.3: Set trace flag via environment variable
+    if trace {
+        std::env::set_var("RUCHY_TRACE", "1");
+    } else {
+        std::env::remove_var("RUCHY_TRACE");
+    }
+
     if verbose {
         eprintln!("Parsing expression: {expr}");
     }

@@ -6823,14 +6823,27 @@ impl Interpreter {
             });
         }
 
-        let result = self.call_function(func_val, &arg_vals)?;
-
-        // Collect type feedback for function call
-        let site_id = func.span.start; // Use func span start as site ID
+        // DEBUGGER-014 Phase 1.3: Extract function name for tracing
         let func_name = match &func.kind {
             ExprKind::Identifier(name) => name.clone(),
             _ => "anonymous".to_string(),
         };
+
+        // DEBUGGER-014 Phase 1.3: Trace function entry
+        let trace_enabled = std::env::var("RUCHY_TRACE").is_ok();
+        if trace_enabled {
+            println!("TRACE: → {}", func_name);
+        }
+
+        let result = self.call_function(func_val, &arg_vals)?;
+
+        // DEBUGGER-014 Phase 1.3: Trace function exit
+        if trace_enabled {
+            println!("TRACE: ← {}", func_name);
+        }
+
+        // Collect type feedback for function call
+        let site_id = func.span.start; // Use func span start as site ID
         self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
         Ok(result)
     }
