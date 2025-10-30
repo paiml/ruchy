@@ -725,6 +725,48 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 91
+        url: "https://github.com/paiml/ruchy/issues/91"
+        title: "Improve .powf() error message to suggest ** operator"
+        impact: "UX - Misleading error message confuses Rust developers"
+        ticket: "ISSUE-091"
+        priority: "ENHANCEMENT"
+        status: "✅ CLOSED - Implemented (helpful error message)"
+        closed_date: "2025-10-30"
+        context: "User calls (2.0).powf(3.0) expecting Rust method, gets misleading error 'Float method powf takes no arguments'"
+        problem:
+          - "Error message 'Float method powf takes no arguments' is misleading"
+          - "Suggests powf exists but has wrong signature, when actually powf doesn't exist at all"
+          - "Doesn't tell user the correct Ruchy way: ** operator"
+          - "Confusing for Rust developers porting code"
+        root_cause:
+          - "Generic error handling in eval_float_method() doesn't special-case common Rust methods"
+          - "args_empty check happens before method name validation"
+          - "No suggestion for alternative syntax"
+        solution:
+          - "Added special case for 'powf' method name BEFORE args_empty check"
+          - "New error: 'Float method powf not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)'"
+          - "Applied fix to all 3 eval_float_method() locations for consistency"
+        test_results:
+          total: 5
+          passing: 5
+          tests:
+            - "test_issue_091_powf_with_args_helpful_error (helpful error, not misleading)"
+            - "test_issue_091_powf_no_args_helpful_error (helpful even without args)"
+            - "test_issue_091_pow_operator_works (document ** works correctly)"
+            - "test_issue_091_no_misleading_takes_no_arguments (no misleading phrase)"
+            - "test_issue_091_other_float_methods_unchanged (other methods still work)"
+        files_modified:
+          - "src/runtime/eval_method.rs (+6 lines, powf special case)"
+          - "src/runtime/eval_method_dispatch.rs (+6 lines, powf special case)"
+          - "src/runtime/eval_string_methods.rs (+6 lines, powf special case)"
+          - "tests/issue_091_powf_error_message.rs (NEW - 115 lines, 5 E2E tests)"
+        impact_metrics:
+          - "Improves developer experience for Rust developers"
+          - "Error message now actionable (tells user what to do)"
+          - "Helps discoverability of ** operator"
+        version_fixed: "v3.151.0"
+        extreme_tdd: "RED (3 failing tests) → GREEN (5/5 passing) → REFACTOR (documented)"
       - id: 92
         url: "https://github.com/paiml/ruchy/issues/92"
         title: "std::env namespace for CLI argument access"
