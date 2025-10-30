@@ -7,6 +7,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.151.0] - 2025-10-30
 
 ### Added
+- **[ISSUE-090] std::fs namespace for file I/O operations**
+  - Ruchy code can now use `std::fs::write()`, `std::fs::read_to_string()`, `std::fs::exists()` etc. with Rust-compatible API
+  - Added fs module to std namespace in global environment (12 functions accessible via namespace syntax)
+  - Functions: write, read_to_string, read, exists, create_dir, create_dir_all, remove_file, remove_dir, copy, rename, metadata, read_dir
+  - Previous flat builtins (fs_read, fs_write) still work for backward compatibility
+  - 5 comprehensive E2E tests: write/read, directory operations, copy/rename, metadata, read_dir
+  - Fixes GitHub Issue #90 (CRITICAL priority - blocked logger module and production applications)
+  - Files: src/runtime/builtin_init.rs (+17 lines, fs module registration), tests/issue_090_std_fs_namespace.rs (NEW, 241 lines, 5 tests)
+  - All existing 16 fs tests still pass (no regression)
+
 - **[ISSUE-089] Support stdlib 'use' statements in imported modules**
   - Modules can now contain `use std::*` statements without "Failed to load module" errors
   - Added namespace check: stdlib imports (`std::*`) skip file loading (already in global env)

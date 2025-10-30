@@ -440,9 +440,10 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
 }
 
-/// Add std namespace with time and process modules
+/// Add std namespace with time, process, and fs modules
 /// STDLIB-003: GitHub Issue #55 - `std::time` module for timing measurements
 /// Issue #85: `std::process::Command` for process execution
+/// Issue #90: `std::fs` module for file I/O operations
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
@@ -468,10 +469,27 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     );
     process_module.insert("Command".to_string(), Value::Object(Arc::new(command_module)));
 
+    // Create fs module object (Issue #90)
+    // File system operations with Rust std::fs API compatibility
+    let mut fs_module = HashMap::new();
+    fs_module.insert("write".to_string(), Value::from_string("__builtin_fs_write__".to_string()));
+    fs_module.insert("read_to_string".to_string(), Value::from_string("__builtin_fs_read__".to_string()));
+    fs_module.insert("read".to_string(), Value::from_string("__builtin_fs_read__".to_string()));
+    fs_module.insert("exists".to_string(), Value::from_string("__builtin_fs_exists__".to_string()));
+    fs_module.insert("create_dir".to_string(), Value::from_string("__builtin_fs_create_dir__".to_string()));
+    fs_module.insert("create_dir_all".to_string(), Value::from_string("__builtin_fs_create_dir__".to_string()));
+    fs_module.insert("remove_file".to_string(), Value::from_string("__builtin_fs_remove_file__".to_string()));
+    fs_module.insert("remove_dir".to_string(), Value::from_string("__builtin_fs_remove_dir__".to_string()));
+    fs_module.insert("copy".to_string(), Value::from_string("__builtin_fs_copy__".to_string()));
+    fs_module.insert("rename".to_string(), Value::from_string("__builtin_fs_rename__".to_string()));
+    fs_module.insert("metadata".to_string(), Value::from_string("__builtin_fs_metadata__".to_string()));
+    fs_module.insert("read_dir".to_string(), Value::from_string("__builtin_fs_read_dir__".to_string()));
+
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
     std_namespace.insert("process".to_string(), Value::Object(Arc::new(process_module)));
+    std_namespace.insert("fs".to_string(), Value::Object(Arc::new(fs_module)));
 
     // Add std to global environment
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));

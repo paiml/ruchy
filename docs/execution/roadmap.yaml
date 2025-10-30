@@ -725,6 +725,54 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 90
+        url: "https://github.com/paiml/ruchy/issues/90"
+        title: "std::fs namespace for file I/O operations"
+        impact: "STDLIB - Blocked logger module and production applications"
+        ticket: "ISSUE-090"
+        priority: "CRITICAL"
+        status: "✅ CLOSED - Implemented (std::fs namespace)"
+        closed_date: "2025-10-30"
+        context: "Flat builtins (fs_read, fs_write) work but std::fs::write() fails with 'Object has no field named fs'"
+        problem:
+          - "std::fs::write() fails with 'Runtime error: Object has no field named fs'"
+          - "Flat builtins registered (fs_read, fs_write) but not in std namespace"
+          - "User expects Rust-compatible API: std::fs::write(), std::fs::read_to_string()"
+          - "Blocks all file-dependent modules (logger, config management, persistence)"
+        root_cause:
+          - "Flat builtins registered in global environment (fs_read, fs_write)"
+          - "std namespace exists (std::time, std::process) but missing std::fs module"
+          - "No fs Object added to std namespace in add_std_namespace() function"
+        solution:
+          - "Created fs module Object in add_std_namespace() (builtin_init.rs:472-486)"
+          - "Added 12 fs functions to fs module: write, read_to_string, read, exists, create_dir, create_dir_all, remove_file, remove_dir, copy, rename, metadata, read_dir"
+          - "Added fs module to std namespace (line 492)"
+          - "All functions point to existing builtins (__builtin_fs_write__, etc.)"
+          - "Backward compatibility: flat builtins (fs_read, fs_write) still work"
+        test_results:
+          total: 5
+          passing: 5
+          tests:
+            - "test_issue_090_std_fs_write_and_read (write → read → verify content)"
+            - "test_issue_090_std_fs_directory_operations (create_dir → exists → remove_dir)"
+            - "test_issue_090_std_fs_copy_and_rename (copy source → rename copied)"
+            - "test_issue_090_std_fs_metadata (metadata access with field .is_file)"
+            - "test_issue_090_std_fs_read_dir (list directory entries)"
+          regression_check:
+            existing_tests: 16
+            passing: 16
+            result: "✅ No regression - all existing fs tests still pass"
+        files_modified:
+          - "src/runtime/builtin_init.rs (+17 lines, fs module in std namespace)"
+          - "tests/issue_090_std_fs_namespace.rs (NEW - 241 lines, 5 E2E tests)"
+        impact_metrics:
+          - "Enables std::fs::* API matching Rust's API surface"
+          - "Unblocks logger module development (RUC-005)"
+          - "Enables config file management, persistent state, caching"
+          - "Production-ready applications now possible with file I/O"
+          - "12 functions accessible via namespace syntax"
+        version_fixed: "v3.151.0"
+        extreme_tdd: "RED (5 failing tests, 'Object has no field named fs') → GREEN (5/5 passing) → REFACTOR (backward compat verified)"
       - id: 88
         url: "https://github.com/paiml/ruchy/issues/88"
         title: "Module system (use imports) not working"
