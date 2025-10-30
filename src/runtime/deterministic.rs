@@ -238,10 +238,15 @@ impl Repl {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
+
     #[test]
     fn test_deterministic_execution() {
-        let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
-        let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
+        // Each test gets isolated temp directory for idempotence
+        let temp_dir1 = TempDir::new().unwrap();
+        let temp_dir2 = TempDir::new().unwrap();
+        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
+        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
         // Execute same commands with same seed
         let result1 = repl1.execute_with_seed("let x = 42", 12345);
         let result2 = repl2.execute_with_seed("let x = 42", 12345);
@@ -252,7 +257,8 @@ mod tests {
     }
     #[test]
     fn test_checkpoint_restore() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
         // Create some state
         repl.eval("let x = 10").unwrap();
         repl.eval("let y = 20").unwrap();
@@ -272,8 +278,10 @@ mod tests {
     }
     #[test]
     fn test_determinism_validation() {
-        let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
-        let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir1 = TempDir::new().unwrap();
+        let temp_dir2 = TempDir::new().unwrap();
+        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
+        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
         // Same operations
         repl1.eval("let x = 1").unwrap();
         repl2.eval("let x = 1").unwrap();
@@ -295,7 +303,8 @@ mod tests {
         // MISSED: replace * with + in estimate_heap_usage (lines 210, 211)
         // MISSED: replace * with / in estimate_heap_usage (line 211)
 
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
 
         // Empty state should have 0 heap usage
         let empty_heap = repl.estimate_heap_usage();
@@ -332,7 +341,8 @@ mod tests {
         // MISSED: replace estimate_stack_depth -> usize with 0
         // MISSED: replace / with % in estimate_stack_depth (line 221)
 
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
 
         // Get initial depth (may not be 1 due to internal bindings)
         let initial_depth = repl.estimate_stack_depth();
@@ -383,7 +393,8 @@ mod tests {
         // MISSED: replace - with + in execute_with_seed (lines 87, 80)
         // MISSED: replace - with / in execute_with_seed (line 80)
 
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
 
         // First execution - should increase heap
         let result1 = repl.execute_with_seed("let x = 10", 12345);
@@ -435,8 +446,10 @@ mod tests {
         // These mutations reveal that the string parsing logic is not being used.
         // The real functionality we can test is deterministic state hashing.
 
-        let mut repl1 = Repl::new(std::env::temp_dir()).unwrap();
-        let mut repl2 = Repl::new(std::env::temp_dir()).unwrap();
+        let temp_dir1 = TempDir::new().unwrap();
+        let temp_dir2 = TempDir::new().unwrap();
+        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
+        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
 
         // Same input should produce same state hash (the actual working code)
         let result1 = repl1.execute_with_seed("let x = 42", 12345);
