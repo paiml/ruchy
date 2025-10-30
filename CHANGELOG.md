@@ -78,6 +78,33 @@ This session focused on EXTREME TDD bug fixing and test isolation improvements:
 
 ### Added
 
+- **[DEBUGGER-014] Phase 2: Enhanced tracing with argument and return values (Issue #84)**
+  - **Feature**: Enhanced --trace flag to display function argument values and return values
+  - **Before (Phase 1)**: `TRACE: → fibonacci` / `TRACE: ← fibonacci`
+  - **After (Phase 2)**: `TRACE: → fibonacci(3)` / `TRACE: ← fibonacci = 2`
+  - **Implementation**:
+    - Format argument values when entering function (src/runtime/interpreter.rs:6836-6847)
+    - Format return values when exiting function (src/runtime/interpreter.rs:6854-6858)
+    - String values quoted: `greet("Alice")` outputs `"Alice"` with quotes
+    - Zero-argument functions: `get_answer()` shows empty parentheses
+  - **Test Status**: 6/6 new tests passing ✅
+    - test_debugger_014_phase_2_trace_single_argument ✅
+    - test_debugger_014_phase_2_trace_multiple_arguments ✅
+    - test_debugger_014_phase_2_trace_recursive_arguments ✅
+    - test_debugger_014_phase_2_trace_string_arguments ✅
+    - test_debugger_014_phase_2_trace_no_arguments ✅
+    - test_debugger_014_phase_2_backward_compatible ✅
+  - **Backward Compatibility**: Phase 1 tests (3/3) still passing ✅
+  - **Total Debugger Tests**: 11/12 passing (1 ignored - stderr output)
+  - **Files Modified**:
+    - tests/debugger_014_phase_2_values.rs (NEW - 6 comprehensive tests)
+    - src/runtime/interpreter.rs (enhanced trace output with values)
+  - **EXTREME TDD**: RED (5/6 failing) → GREEN (6/6 passing) → REFACTOR
+  - **Future Enhancements** (deferred):
+    - Type annotations in trace output (e.g., `fibonacci(n: Integer = 3)`)
+    - Variable state snapshots for time-travel debugging
+    - Integration with ruchyruchy library for advanced profiling
+
 - **[DEBUGGER-014] Phase 1.4 assessment - Core requirements met (Issue #84)**
   - **Discovery**: Phase 1.3 implementation already handles core Phase 1.4 requirements
   - **Test Status**: 2/2 tests passing, 1 enhancement ignored ✅
