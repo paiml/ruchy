@@ -128,6 +128,10 @@ fn test_graceful_shutdown_on_sigterm() {
 
     let pid_path = temp_dir.path().join("server.pid");
 
+    // Import signal handling at function start
+    use nix::sys::signal::{kill, Signal};
+    use nix::unistd::Pid;
+
     // Find ruchy binary path
     let binary_path = assert_cmd::cargo::cargo_bin("ruchy");
 
@@ -149,8 +153,6 @@ fn test_graceful_shutdown_on_sigterm() {
     assert!(pid_path.exists(), "PID file should be created");
 
     // Send SIGTERM for graceful shutdown
-    use nix::sys::signal::{kill, Signal};
-    use nix::unistd::Pid;
 
     let server_pid = child.id() as i32;
     kill(Pid::from_raw(server_pid), Signal::SIGTERM).expect("Failed to send SIGTERM");

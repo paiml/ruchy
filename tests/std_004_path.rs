@@ -5,6 +5,9 @@
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
+#![allow(clippy::case_sensitive_file_extension_comparisons)] // Path tests intentionally test exact strings
+#![allow(clippy::collapsible_if)] // Test readability over compactness
+
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -105,7 +108,7 @@ fn test_std_004_file_name_no_name() {
     let result = ruchy::stdlib::path::file_name("/home/user/");
 
     assert!(result.is_ok(), "file_name should succeed");
-    let name = result.unwrap();
+    let _name = result.unwrap();
     // Trailing slash may or may not have file name depending on implementation
     // This is OK - either "user" or None is acceptable
 }
