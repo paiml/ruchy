@@ -725,6 +725,46 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 92
+        url: "https://github.com/paiml/ruchy/issues/92"
+        title: "std::env namespace for CLI argument access"
+        impact: "STDLIB - User request for CLI argument API"
+        ticket: "ISSUE-092"
+        priority: "ENHANCEMENT"
+        status: "✅ CLOSED - Implemented (std::env namespace)"
+        closed_date: "2025-10-30"
+        context: "User wants std::env::args() to access command-line arguments, but gets 'Object has no field named env'"
+        problem:
+          - "std::env::args() fails with 'Runtime error: Object has no field named env'"
+          - "Flat builtin env_args() works but namespace syntax doesn't"
+          - "User expects Rust-compatible API: std::env::args()"
+        root_cause:
+          - "Flat builtin env_args registered in global environment"
+          - "std namespace exists (std::time, std::process, std::fs) but missing std::env module"
+          - "No env Object added to std namespace in add_std_namespace() function"
+        solution:
+          - "Created env module Object in add_std_namespace() (builtin_init.rs:489-492)"
+          - "Added args function to env module pointing to __builtin_env_args__"
+          - "Added env module to std namespace (line 499)"
+          - "Backward compatibility: flat builtin env_args() still works"
+        test_results:
+          total: 5
+          passing: 5
+          tests:
+            - "test_issue_092_std_env_args_basic (args access + backward compat check)"
+            - "test_issue_092_std_env_args_indexing (array indexing + iteration)"
+            - "test_issue_092_backward_compatibility_flat_builtin (env_args() still works)"
+            - "test_issue_092_std_env_coexists_with_other_modules (env + time + fs)"
+            - "test_issue_092_real_world_argument_parsing (CLI tool pattern)"
+        files_modified:
+          - "src/runtime/builtin_init.rs (+6 lines, env module in std namespace)"
+          - "tests/issue_092_std_env_namespace.rs (NEW - 168 lines, 5 E2E tests)"
+        impact_metrics:
+          - "Enables std::env::args() API matching Rust's API surface"
+          - "CLI tools can access command-line arguments with idiomatic syntax"
+          - "Coexists with std::time, std::process, std::fs modules"
+        version_fixed: "v3.151.0"
+        extreme_tdd: "RED (4 failing tests, 'Object has no field named env') → GREEN (5/5 passing) → REFACTOR (documented)"
       - id: 90
         url: "https://github.com/paiml/ruchy/issues/90"
         title: "std::fs namespace for file I/O operations"
