@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[ISSUE-094] String slicing with range syntax (text[0..5])**
+  - Implemented range-based string slicing: `text[start..end]`, `text[..end]`, `text[start..]`, `text[..]`
+  - Supports negative indices for slicing from end: `text[-5..]`
+  - Proper bounds checking with clear error messages for out-of-bounds access
+  - Handles UTF-8 character boundaries correctly
+  - 12 comprehensive tests covering all slice patterns and edge cases
+  - Cyclomatic complexity: 9 (A+ standard: ≤10)
+  - Fixes GitHub Issue #94 (language feature - user-requested string manipulation)
+  - Files: src/runtime/interpreter.rs (`slice_string` helper + index_access match arm), tests/issue_094_string_slicing.rs (NEW, 191 lines, 12 tests)
+
 ### Fixed
 - **[ISSUE-093] Refactor eval_command_method to reduce cyclomatic complexity (15→9)**
   - Applied Extract Function refactoring following EXTREME TDD methodology
