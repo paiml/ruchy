@@ -181,6 +181,11 @@ impl Repl {
                 // Add result to history for tracking
                 self.add_result_to_history(value.clone());
 
+                // REPL-005: Return empty string for Nil values (don't print)
+                if matches!(value, Value::Nil) {
+                    return Ok(String::new());
+                }
+
                 // Format output based on current mode
                 let formatted = match self.state.get_mode() {
                     ReplMode::Debug => self.format_debug_output(line, &value)?,
@@ -308,6 +313,12 @@ impl Repl {
     fn process_evaluation(&mut self, line: &str) -> Result<()> {
         match self.evaluator.evaluate_line(line, &mut self.state)? {
             EvalResult::Value(value) => {
+                // REPL-005: Don't print Nil values (for loops, let bindings, etc.)
+                // Scripts don't print Nil, REPL shouldn't either
+                if matches!(value, Value::Nil) {
+                    return Ok(());
+                }
+
                 // Format output based on current mode (respects debug/ast/transpile modes)
                 let formatted = match self.state.get_mode() {
                     ReplMode::Debug => self.format_debug_output(line, &value)?,

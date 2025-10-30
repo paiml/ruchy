@@ -6,6 +6,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Fixed
 
+- **[REPL-005] Fix for loop () output in REPL (Issue #5)**
+  - **Problem**: for/while loops and let bindings print "nil" in REPL (but not in scripts)
+  - **Root Cause**: `process_evaluation()` always called `value.to_string()` for Normal mode, which prints "nil" for `Value::Nil`
+  - **Solution**: Check if value is `Value::Nil` and return early without printing (src/runtime/repl/mod.rs:318-320, 185-187)
+  - **Test Status**: 6/6 tests passing ✅
+    - test_repl_005_for_loop_no_unit_output ✅
+    - test_repl_005_while_loop_no_unit_output ✅
+    - test_repl_005_if_statement_no_unit_output ✅
+    - test_repl_005_let_binding_no_unit_output ✅
+    - test_repl_005_value_expressions_do_print ✅
+    - test_repl_005_script_no_loop_output_baseline ✅
+  - **Impact**: REPL now behaves consistently with script execution (no Unit/Nil output)
+  - **Files Modified**:
+    - tests/repl_005_loop_output.rs (NEW - 6 comprehensive tests)
+    - src/runtime/repl/mod.rs (Nil check in process_evaluation + eval methods)
+  - **Toyota Way**: EXTREME TDD (RED→GREEN→REFACTOR)
+
 - **[LINT-008] Fix format! macro variable false positive (Issue #8)**
   - **Problem**: Variables used in `format!()` macro arguments incorrectly marked as unused
   - **Root Cause #1**: Linter had no handler for `ExprKind::MacroInvocation` - never visited macro arguments
