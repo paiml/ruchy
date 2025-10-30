@@ -12,7 +12,7 @@ fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-fn fixture_path(name: &str) -> String {
+fn _fixture_path(name: &str) -> String {
     format!("tests/fixtures/{name}")
 }
 

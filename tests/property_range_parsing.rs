@@ -12,6 +12,7 @@
 //! 4. **Slicing Works**: Array/string slicing like `arr[2..]`, `s[..5]` parse successfully
 //! 5. **Context Preservation**: Ranges in different contexts (statements, let bindings, slicing) all work
 
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
 

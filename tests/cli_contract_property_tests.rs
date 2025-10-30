@@ -15,6 +15,8 @@
 //!
 //! **Note**: Most tests are lightweight and don't run full property test suites
 
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;

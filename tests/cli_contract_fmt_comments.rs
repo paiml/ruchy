@@ -12,7 +12,6 @@
 // - REFACTOR: Apply quality standards (≤10 complexity)
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 

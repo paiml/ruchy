@@ -1,4 +1,6 @@
 // FORMATTER-088: Issue #72 - Macro Call Preservation Tests
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 // GitHub: https://github.com/paiml/ruchy/issues/72
 //
 // BUG: Formatter transforms macro CALLS to macro DEFINITIONS

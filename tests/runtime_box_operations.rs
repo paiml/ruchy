@@ -1,4 +1,6 @@
 // RUNTIME-BOX: Box<T> Runtime Operations
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 // EXTREME TDD: RED → GREEN → REFACTOR → FAST
 
 use assert_cmd::Command;
