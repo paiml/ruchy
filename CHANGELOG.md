@@ -4,7 +4,45 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-### Session Summary - 2025-10-30 (Continued)
+### Session Summary - 2025-10-30 (Continued Session 2)
+
+**✅ 2 Critical Issues Closed | DEBUGGER-014 Phase 1+2 Complete | 100% Quality Gates**
+
+**GitHub Issues Closed (2 total)**:
+- **Issue #86**: Non-deterministic state hashing (CRITICAL BUG - 70% failure rate)
+- **Issue #84**: --trace flag implementation (FEATURE - Phase 1 + Phase 2 complete)
+
+**Test Status**: 4028/4028 passing (100%, zero flaky tests, zero ignored blocking tests)
+
+**Quality Gates**: ✅ ALL PASSING (make lint, PMAT TDG, clippy, full test suite)
+
+**Commits**: 2 atomic commits (860b04cc Issue #86 fix, 3c67eeac quality gate fixes)
+
+**Files Modified**:
+- src/runtime/deterministic.rs (1-line fix + un-ignored 2 tests)
+- src/runtime/builtin_init.rs (doc backticks)
+- src/runtime/eval_builtin.rs (doc backticks)
+- src/runtime/eval_method_dispatch.rs (doc backticks + i64::from())
+- src/runtime/eval_pattern_match.rs (doc backticks)
+- tests/issue_086_determinism_investigation.rs (NEW - diagnostic)
+- tests/issue_086_verify_fix.rs (NEW - 100-iteration verification)
+- CHANGELOG.md (comprehensive documentation)
+
+**DEBUGGER-014 Phase 1 + Phase 2 Complete**:
+- **Phase 1 (Basic Tracing)**: CLI flag --trace, RUCHY_TRACE env var, function entry/exit, depth tracking
+- **Phase 2 (Enhanced Values)**: Argument value tracing, return value tracing, string formatting, backward compatibility
+- **Test Coverage**: 15 tests passing (3 CLI + 1 dependency + 3 trace output + 2 depth + 6 enhanced values), 1 ignored (stderr - future enhancement)
+- **Implementation**: src/runtime/interpreter.rs:6832-6859 (commit 8aeee27a)
+- **Status**: Production-ready, Issue #84 closed
+
+**Quality Gate Fixes** (3c67eeac):
+- Fixed 5 documentation backtick errors (clippy::doc_markdown)
+- Fixed 2 lossless cast errors (i32 as i64 → i64::from())
+- Result: make lint now passes ✅
+
+---
+
+### Session Summary - 2025-10-30 (Continued Session 1)
 
 **🐛 Issue #86 FIXED: Non-Deterministic State Hashing | 100% Determinism Achieved**
 
