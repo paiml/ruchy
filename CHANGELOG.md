@@ -7,6 +7,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.151.0] - 2025-10-30
 
 ### Added
+- **[ISSUE-092] std::env namespace for CLI argument access**
+  - Ruchy code can now use `std::env::args()` to access command-line arguments with Rust-compatible API
+  - Added env module to std namespace in global environment (1 function accessible via namespace syntax)
+  - Function: `args()` returns array of strings with binary path, script info, and arguments
+  - Previous flat builtin `env_args()` still works for backward compatibility
+  - 5 comprehensive E2E tests: basic access, indexing, backward compatibility, coexistence with other std modules, real-world argument parsing
+  - Fixes GitHub Issue #92 (enhancement - user request for CLI argument API)
+  - Files: src/runtime/builtin_init.rs (+6 lines, env module registration), tests/issue_092_std_env_namespace.rs (NEW, 168 lines, 5 tests)
+  - All tests passing, std::env coexists with std::time, std::process, std::fs
+
 - **[ISSUE-090] std::fs namespace for file I/O operations**
   - Ruchy code can now use `std::fs::write()`, `std::fs::read_to_string()`, `std::fs::exists()` etc. with Rust-compatible API
   - Added fs module to std namespace in global environment (12 functions accessible via namespace syntax)

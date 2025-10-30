@@ -440,10 +440,11 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
 }
 
-/// Add std namespace with time, process, and fs modules
+/// Add std namespace with time, process, fs, and env modules
 /// STDLIB-003: GitHub Issue #55 - `std::time` module for timing measurements
 /// Issue #85: `std::process::Command` for process execution
 /// Issue #90: `std::fs` module for file I/O operations
+/// Issue #92: `std::env` module for CLI argument access
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
@@ -485,11 +486,17 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     fs_module.insert("metadata".to_string(), Value::from_string("__builtin_fs_metadata__".to_string()));
     fs_module.insert("read_dir".to_string(), Value::from_string("__builtin_fs_read_dir__".to_string()));
 
+    // Create env module object (Issue #92)
+    // Environment access with Rust std::env API compatibility
+    let mut env_module = HashMap::new();
+    env_module.insert("args".to_string(), Value::from_string("__builtin_env_args__".to_string()));
+
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
     std_namespace.insert("process".to_string(), Value::Object(Arc::new(process_module)));
     std_namespace.insert("fs".to_string(), Value::Object(Arc::new(fs_module)));
+    std_namespace.insert("env".to_string(), Value::Object(Arc::new(env_module)));
 
     // Add std to global environment
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));
