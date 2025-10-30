@@ -841,7 +841,7 @@ fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
 /// `chrono::Utc::now()` - Get current UTC time
 ///
 /// Returns a string representation of the current UTC timestamp in RFC3339 format.
-/// This implements the chrono::Utc::now() functionality for Issue #82.
+/// This implements the `chrono::Utc::now()` functionality for Issue #82.
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
