@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.66"
+  version: "3.67"
   last_updated: "2025-10-30"
   current_sprint: "🔄 IN_PROGRESS - Phase 4 Week 3: Performance Benchmarking + Debugger Enhancement"
-  latest_release: "v3.148.0"
-  latest_commit_message: "[TEST] Make deterministic tests idempotent and isolated"
+  latest_release: "v3.150.0"
+  latest_commit_message: "[RELEASE] Bump version to v3.150.0 - Module system (Issue #88)"
   next_phase: "DEBUGGER-014 Phase 2: Type-aware tracing (optional enhancement)"
   session_summary_2025_10_30_complete:
     accomplishments:
