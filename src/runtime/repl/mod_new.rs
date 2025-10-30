@@ -175,7 +175,7 @@ impl ExtremeQualityRepl {
 
     /// Print welcome message (complexity: 1)
     fn print_welcome(&self) {
-        println!("Ruchy REPL v3.22.0 - EXTREME Quality Edition");
+        println!("Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
         println!("Type :help for commands or expressions to evaluate");
     }
 
