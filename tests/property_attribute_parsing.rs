@@ -1,4 +1,6 @@
 //! Property-based tests for attribute and decorator parsing
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 //!
 //! This test suite validates attribute/decorator parsing functionality
 //! using property-based testing to ensure correctness across random inputs.

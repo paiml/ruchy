@@ -1,4 +1,6 @@
 //! CARGO-001: Build.rs Integration Prototype Tests
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 //!
 //! Test suite for the build transpiler that auto-transpiles .ruchy → .rs files
 //! during cargo build via build.rs integration.

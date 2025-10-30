@@ -7,6 +7,8 @@
 // - Bytecode should be 40-60% faster than AST for arithmetic/loops
 // - Measure execution time for various workloads
 
+#![allow(clippy::ignore_without_reason)] // Performance tests run with --ignored flag
+
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::bytecode::{Compiler, VM};
 use ruchy::runtime::interpreter::{Interpreter, Value};

@@ -22,6 +22,7 @@ use assert_cmd::Command;
 use proptest::prelude::*;
 use std::time::Instant;
 use tempfile::NamedTempFile;
+use std::io::Write;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -33,7 +34,6 @@ fn ruchy_cmd() -> Command {
 
 fn create_temp_script(content: &str) -> NamedTempFile {
     let mut file = NamedTempFile::new().expect("Failed to create temp file");
-    use std::io::Write;
     write!(file, "{content}").expect("Failed to write to temp file");
     file
 }

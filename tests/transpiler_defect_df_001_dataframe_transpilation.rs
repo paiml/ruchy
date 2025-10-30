@@ -92,7 +92,7 @@ fn test_df_003_columns_method_transpiles_to_width() {
 /// RED TEST: Transpiled `DataFrame` code should compile with rustc
 /// This is the EMPIRICAL validation test - proves generated code is correct
 #[test]
-#[ignore] // Run with: cargo test test_df_empirical_rustc_validation -- --ignored
+#[ignore = "Run with: cargo test test_df_empirical_rustc_validation -- --ignored"] // Run with: cargo test test_df_empirical_rustc_validation -- --ignored
 fn test_df_empirical_rustc_validation() {
     let code = r#"
         fun analyze(df: DataFrame) {

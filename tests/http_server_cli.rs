@@ -1,4 +1,6 @@
 // tests/http_server_cli.rs - HTTP Server CLI Tests (EXTREME TDD)
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 // [HTTP-001] RED Phase: Write failing tests FIRST
 
 #![allow(clippy::similar_names)] // coop/coep are standard HTTP header abbreviations

@@ -22,6 +22,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
+use std::io::Write;
 use std::time::Instant;
 use tempfile::{TempDir, NamedTempFile};
 
@@ -42,9 +43,8 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::Path
 }
 
 /// Create temp ruchy script
-fn create_script(content: &str) -> NamedTempFile {
+fn _create_script(content: &str) -> NamedTempFile {
     let mut file = NamedTempFile::new().expect("Failed to create temp file");
-    use std::io::Write;
     write!(file, "{content}").expect("Failed to write to temp file");
     file
 }

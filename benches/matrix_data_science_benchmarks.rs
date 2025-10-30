@@ -11,6 +11,8 @@
 // - Statistical computations: <5ms
 // - Time series analysis: <10ms for 1000 data points
 
+#![allow(deprecated)] // black_box deprecated - will fix in separate ticket
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use ruchy::runtime::repl::Repl;
 use std::path::PathBuf;

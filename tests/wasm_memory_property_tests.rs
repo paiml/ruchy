@@ -1,4 +1,6 @@
 /// WASM Memory Model Property Tests
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 ///
 /// Property-based testing for WASM memory model invariants.
 /// Uses proptest to generate thousands of random inputs and verify
