@@ -33,12 +33,12 @@ fn test_defect_002_green_negative_i32_with_abs() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let abs_val = (-5i32).abs();
     println(abs_val);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -58,12 +58,12 @@ fn test_defect_002_green_positive_i64() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let big_num = 1000000i64;
     println(big_num);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -82,12 +82,12 @@ fn test_defect_002_green_unsigned_u32() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let unsigned = 42u32;
     println(unsigned);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -106,12 +106,12 @@ fn test_defect_002_green_multiple_suffixes() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let result = 10i32 + 20i32;
     println(result);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -130,12 +130,12 @@ fn test_defect_002_green_u64_suffix() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let big_unsigned = 9999999999u64;
     println(big_unsigned);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -154,13 +154,13 @@ fn test_defect_002_baseline_typed_variable() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let x: i32 = -5;
     let abs_val = x.abs();
     println(abs_val);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -180,12 +180,12 @@ fn test_defect_002_baseline_no_suffix() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let num = 42;
     println(num);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -208,18 +208,18 @@ fn test_defect_002_green_phase_summary() {
     println!("TRANSPILER-DEFECT-002 GREEN Phase:");
     println!("- Fix ALREADY IMPLEMENTED in src/backend/transpiler/expressions.rs:43-58");
     println!("- All 7 tests now passing (5 feature tests + 2 baseline)");
-    println!("");
+    println!();
     println!("Fix details:");
     println!("- AST stores type suffix: Literal::Integer(i64, Option<String>)");
     println!("- transpile_integer() preserves suffix in generated code");
     println!("- Example: 5i32 → quote! {{ 5i32 }} (suffix preserved)");
-    println!("");
+    println!();
     println!("Validated scenarios:");
     println!("1. ✅ Negative integer with i32 suffix + .abs() method");
     println!("2. ✅ Positive integer with i64 suffix");
     println!("3. ✅ Unsigned integer with u32 suffix");
     println!("4. ✅ Multiple integers with type suffixes in expression");
     println!("5. ✅ Large unsigned integer with u64 suffix");
-    println!("");
+    println!();
     println!("Status: DEFECT-002 RESOLVED ✅");
 }

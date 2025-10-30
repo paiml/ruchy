@@ -428,7 +428,7 @@ mod tests {
         ];
 
         for t in types {
-            let debug_str = format!("{:?}", t);
+            let debug_str = format!("{t:?}");
             assert!(!debug_str.is_empty());
         }
     }
@@ -508,7 +508,7 @@ mod tests {
 
             #[test]
             fn test_notebook_005_property_row_count_matches(
-                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s.to_string()), 1..5),
+                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s), 1..5),
                 row_count in 0usize..20
             ) {
                 let rows: Vec<Vec<String>> = (0..row_count)
@@ -521,7 +521,7 @@ mod tests {
                 prop_assert_eq!(df.row_count(), row_count);
 
                 let html = df.to_html();
-                let expected = format!("{} rows", row_count);
+                let expected = format!("{row_count} rows");
                 prop_assert!(html.contains(&expected));
             }
 
@@ -531,12 +531,12 @@ mod tests {
                 row_count in 0usize..10
             ) {
                 let columns: Vec<String> = (0..column_count)
-                    .map(|i| format!("col{}", i))
+                    .map(|i| format!("col{i}"))
                     .collect();
 
                 let rows: Vec<Vec<String>> = (0..row_count)
                     .map(|i| {
-                        (0..column_count).map(|j| format!("{}_{}", i, j)).collect()
+                        (0..column_count).map(|j| format!("{i}_{j}")).collect()
                     })
                     .collect();
 
@@ -544,7 +544,7 @@ mod tests {
                 prop_assert_eq!(df.column_count(), column_count);
 
                 let html = df.to_html();
-                let expected = format!("× {} columns", column_count);
+                let expected = format!("× {column_count} columns");
                 prop_assert!(html.contains(&expected));
             }
 
@@ -643,12 +643,12 @@ mod tests {
 
             #[test]
             fn test_notebook_005_property_html_structure_valid(
-                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s.to_string()), 1..5),
+                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s), 1..5),
                 row_count in 0usize..10
             ) {
                 let rows: Vec<Vec<String>> = (0..row_count)
                     .map(|i| {
-                        columns.iter().map(|_| format!("val_{}", i)).collect()
+                        columns.iter().map(|_| format!("val_{i}")).collect()
                     })
                     .collect();
 
@@ -666,7 +666,7 @@ mod tests {
 
             #[test]
             fn test_notebook_005_property_empty_dataframe_renders(
-                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s.to_string()), 1..5)
+                columns in prop::collection::vec("[a-z]{3,8}".prop_map(|s| s), 1..5)
             ) {
                 let df = DataFrame::new(columns.clone(), vec![]);
 

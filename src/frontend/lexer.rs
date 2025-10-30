@@ -1037,7 +1037,7 @@ mod tests {
 
         // Print tokens for debugging
         for (i, token) in tokens.iter().enumerate() {
-            eprintln!("Token {}: {:?}", i, token);
+            eprintln!("Token {i}: {token:?}");
         }
 
         // Verify f-string is tokenized as single token

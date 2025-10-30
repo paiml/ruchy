@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 // RUNTIME-090: Fix Command.output() hang (Issue #75)
 // https://github.com/paiml/ruchy/issues/75
 //
@@ -5,7 +7,6 @@
 // Expected: These tests should timeout/hang, proving the defect exists
 
 use assert_cmd::Command;
-use std::time::Duration;
 
 #[test]
 #[ignore] // RED phase: Will hang indefinitely

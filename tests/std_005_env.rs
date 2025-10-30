@@ -1,8 +1,10 @@
 //! STD-005: Environment Module Tests (ruchy/std/env)
 //!
 //! Test suite for environment operations module.
-//! Thin wrappers around Rust's std::env with Ruchy-friendly API.
+//! Thin wrappers around Rust's `std::env` with Ruchy-friendly API.
 //!
+
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
 use std::env;
@@ -10,7 +12,7 @@ use tempfile::TempDir;
 
 /// Helper to create unique test environment variable names
 fn test_var_name(suffix: &str) -> String {
-    format!("RUCHY_TEST_{}", suffix)
+    format!("RUCHY_TEST_{suffix}")
 }
 
 #[test]
@@ -174,7 +176,7 @@ fn test_std_005_current_dir() {
     assert!(result.is_ok(), "current_dir should succeed");
     let dir = result.unwrap();
     assert!(!dir.is_empty(), "Current directory must not be empty");
-    assert!(dir.contains("/"), "Path must contain separators");
+    assert!(dir.contains('/'), "Path must contain separators");
     // Should be an absolute path
     assert!(
         dir.starts_with('/') || dir.contains(":\\"),
@@ -235,7 +237,7 @@ fn test_std_005_args() {
         !args[0].is_empty(),
         "First arg (program name) must not be empty"
     );
-    assert!(args.len() >= 1, "Must have at least program name");
+    assert!(!args.is_empty(), "Must have at least program name");
 }
 
 #[test]
@@ -248,7 +250,7 @@ fn test_std_005_temp_dir() {
     assert!(result.is_ok(), "temp_dir should succeed");
     let dir = result.unwrap();
     assert!(!dir.is_empty(), "Temp directory must not be empty");
-    assert!(dir.contains("/") || dir.contains("\\"), "Must be a path");
+    assert!(dir.contains('/') || dir.contains('\\'), "Must be a path");
     // Should be an absolute path
     assert!(
         dir.starts_with('/') || dir.contains(":\\"),
@@ -306,7 +308,7 @@ mod property_tests {
         fn test_std_005_vars_contains_set(key in "[A-Z_]{5,20}", value in "[a-z0-9]{1,20}") {
             // Property: vars() contains any variable we set
 
-            let var_name = format!("RUCHY_PROP_{}", key);
+            let var_name = format!("RUCHY_PROP_{key}");
 
             let set_result = ruchy::stdlib::env::set_var(&var_name, &value);
             assert!(set_result.is_ok(), "set_var should succeed");

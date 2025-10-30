@@ -281,7 +281,7 @@ fn cli_property_tests_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -291,7 +291,7 @@ fun factorial(n) {
 }
 
 println(factorial(5))
-"#,
+",
     );
 
     ruchy_cmd()

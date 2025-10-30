@@ -91,7 +91,7 @@ fn cli_notebook_validate_outputs_success_message() {
 // ============================================================================
 
 #[test]
-#[ignore] // Starts server, requires manual shutdown
+#[ignore = "Starts server, requires manual shutdown"]
 fn cli_notebook_custom_port() {
     ruchy_cmd()
         .arg("notebook")
@@ -126,7 +126,7 @@ fn cli_notebook_port_out_of_range() {
 // ============================================================================
 
 #[test]
-#[ignore] // Starts server
+#[ignore = "Starts server"]
 fn cli_notebook_custom_host() {
     ruchy_cmd()
         .arg("notebook")
@@ -137,7 +137,7 @@ fn cli_notebook_custom_host() {
 }
 
 #[test]
-#[ignore] // Starts server
+#[ignore = "Starts server"]
 fn cli_notebook_localhost_host() {
     ruchy_cmd()
         .arg("notebook")
@@ -152,7 +152,7 @@ fn cli_notebook_localhost_host() {
 // ============================================================================
 
 #[test]
-#[ignore] // Starts server and opens browser
+#[ignore = "Starts server and opens browser"]
 fn cli_notebook_open_browser_flag() {
     ruchy_cmd()
         .arg("notebook")
@@ -251,7 +251,7 @@ fn cli_notebook_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -262,7 +262,7 @@ fun factorial(n) {
 
 let result = factorial(5)
 println(result)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -278,7 +278,7 @@ fn cli_notebook_notebook_with_cells() {
     let file = create_temp_file(
         &temp,
         "notebook_cells.ruchy",
-        r#"
+        r"
 let x = 42
 println(x)
 
@@ -287,7 +287,7 @@ println(y)
 
 let z = y + x
 println(z)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -323,7 +323,7 @@ fn cli_notebook_validate_with_functions() {
     let file = create_temp_file(
         &temp,
         "functions.ruchy",
-        r#"
+        r"
 fun add(a, b) {
     a + b
 }
@@ -335,7 +335,7 @@ fun multiply(a, b) {
 let result1 = add(5, 3)
 let result2 = multiply(result1, 2)
 println(result2)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -351,7 +351,7 @@ fn cli_notebook_validate_with_loops() {
     let file = create_temp_file(
         &temp,
         "loops.ruchy",
-        r#"
+        r"
 for i in range(10) {
     println(i)
 }
@@ -361,7 +361,7 @@ for i in range(5) {
     sum = sum + i
 }
 println(sum)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -404,7 +404,7 @@ fn cli_notebook_validate_with_arrays() {
     let file = create_temp_file(
         &temp,
         "arrays.ruchy",
-        r#"
+        r"
 let arr = [1, 2, 3, 4, 5]
 for item in arr {
     println(item)
@@ -415,7 +415,7 @@ for i in range(5) {
     sum = sum + arr[i]
 }
 println(sum)
-"#,
+",
     );
 
     ruchy_cmd()

@@ -1,7 +1,7 @@
-//! Sprint 2 Phase 4: High Priority ExprKind Variants
+//! Sprint 2 Phase 4: High Priority `ExprKind` Variants
 //!
 //! Ticket: [FMT-PERFECT-009]
-//! Goal: Implement 15-20 high-priority remaining ExprKind variants
+//! Goal: Implement 15-20 high-priority remaining `ExprKind` variants
 //! TDD: RED → GREEN → REFACTOR
 //!
 //! Priority Variants:
@@ -10,16 +10,16 @@
 //! - Reference (&, &mut)
 //! - PreIncrement/PostIncrement (++x, x++)
 //! - PreDecrement/PostDecrement (--x, x--)
-//! - ActorSend (actor <- message)
-//! - ActorQuery (actor <? query)
+//! - `ActorSend` (actor <- message)
+//! - `ActorQuery` (actor <? query)
 //! - Ask (ask expression)
-//! - ListComprehension ([x for x in list])
-//! - DictComprehension ({k: v for k, v in dict})
-//! - SetComprehension ({x for x in set})
-//! - ImportAll (import module::*)
-//! - ImportDefault (import default from module)
-//! - ExportList (export {a, b, c})
-//! - ExportDefault (export default value)
+//! - `ListComprehension` ([x for x in list])
+//! - `DictComprehension` ({k: v for k, v in dict})
+//! - `SetComprehension` ({x for x in set})
+//! - `ImportAll` (import `module::`*)
+//! - `ImportDefault` (import default from module)
+//! - `ExportList` (export {a, b, c})
+//! - `ExportDefault` (export default value)
 //! - Command (shell command execution)
 
 use assert_cmd::Command;
@@ -307,7 +307,7 @@ fn test_fmt_import_all() {
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("import"), "Should preserve import keyword");
-    assert!(formatted.contains("*"), "Should preserve wildcard import");
+    assert!(formatted.contains('*'), "Should preserve wildcard import");
 }
 
 #[test]
@@ -372,7 +372,7 @@ fn test_fmt_command() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("command.ruchy");
 
-    fs::write(&test_file, r#"let output = `ls -la`"#).expect("Failed to write test file");
+    fs::write(&test_file, r"let output = `ls -la`").expect("Failed to write test file");
 
     ruchy_cmd()
         .arg("fmt")
@@ -381,5 +381,5 @@ fn test_fmt_command() {
         .success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("`"), "Should preserve command backticks");
+    assert!(formatted.contains('`'), "Should preserve command backticks");
 }

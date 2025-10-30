@@ -1,7 +1,7 @@
-//! DataFrame Access Validation Tests
+//! `DataFrame` Access Validation Tests
 //!
 //! Comprehensive validation that DEFECT-DATAFRAME-001 and DEFECT-DATAFRAME-002 are fixed
-//! Tests DataFrame indexing and field access with realistic scenarios
+//! Tests `DataFrame` indexing and field access with realistic scenarios
 
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::{Interpreter, Value};
@@ -35,7 +35,7 @@ fn test_dataframe_row_indexing_returns_object() {
             assert_eq!(obj.get("id"), Some(&Value::Integer(1)));
             assert_eq!(obj.get("name"), Some(&Value::from_string("Alice".to_string())));
         }
-        _ => panic!("Expected Object, got {:?}", result),
+        _ => panic!("Expected Object, got {result:?}"),
     }
 }
 
@@ -59,7 +59,7 @@ fn test_dataframe_column_access_returns_array() {
             assert_eq!(arr[1], Value::Integer(2));
             assert_eq!(arr[2], Value::Integer(3));
         }
-        _ => panic!("Expected Array, got {:?}", result),
+        _ => panic!("Expected Array, got {result:?}"),
     }
 }
 
@@ -82,7 +82,7 @@ fn test_dataframe_string_column_access() {
             assert_eq!(arr[1], Value::from_string("Bob".to_string()));
             assert_eq!(arr[2], Value::from_string("Charlie".to_string()));
         }
-        _ => panic!("Expected Array of strings, got {:?}", result),
+        _ => panic!("Expected Array of strings, got {result:?}"),
     }
 }
 
@@ -105,7 +105,7 @@ fn test_dataframe_column_via_bracket_indexing() {
             assert_eq!(arr[1], Value::Integer(200));
             assert_eq!(arr[2], Value::Integer(300));
         }
-        _ => panic!("Expected Array, got {:?}", result),
+        _ => panic!("Expected Array, got {result:?}"),
     }
 }
 
@@ -126,7 +126,7 @@ fn test_dataframe_second_row_access() {
             assert_eq!(obj.get("id"), Some(&Value::Integer(2)));
             assert_eq!(obj.get("name"), Some(&Value::from_string("Bob".to_string())));
         }
-        _ => panic!("Expected Object, got {:?}", result),
+        _ => panic!("Expected Object, got {result:?}"),
     }
 }
 
@@ -159,6 +159,6 @@ fn test_dataframe_realistic_scenario() {
             assert_eq!(arr[2], Value::Integer(103));
             assert_eq!(arr[3], Value::Integer(104));
         }
-        _ => panic!("Expected Array, got {:?}", result),
+        _ => panic!("Expected Array, got {result:?}"),
     }
 }

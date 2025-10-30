@@ -59,14 +59,14 @@ println("Done");
 /// RED TEST: Simple mutable increment in match
 #[test]
 fn test_issue_040_simple_mutable_increment() {
-    let code = r#"
+    let code = r"
 let mut x = 0;
 match 1 {
     1 => x = x + 1
     _ => {}
 }
 println(x)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -103,7 +103,7 @@ println(x.to_string() + "," + y.to_string())
 /// RED TEST: Mutation in nested match
 #[test]
 fn test_issue_040_nested_match_mutation() {
-    let code = r#"
+    let code = r"
 let mut counter = 0;
 match 1 {
     1 => {
@@ -115,7 +115,7 @@ match 1 {
     _ => {}
 }
 println(counter)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -128,7 +128,7 @@ println(counter)
 /// RED TEST: Mutation with pattern binding (ensure pattern vars don't interfere)
 #[test]
 fn test_issue_040_mutation_with_pattern_binding() {
-    let code = r#"
+    let code = r"
 let mut sum = 0;
 match Some(5) {
     Some(n) => {
@@ -137,7 +137,7 @@ match Some(5) {
     None => {}
 }
 println(sum)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -150,7 +150,7 @@ println(sum)
 /// RED TEST: Mutation in loop with match (comprehensive)
 #[test]
 fn test_issue_040_loop_with_match_mutation() {
-    let code = r#"
+    let code = r"
 let mut i = 0;
 let mut sum = 0;
 loop {
@@ -168,7 +168,7 @@ loop {
     i = i + 1;
 }
 println(sum)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -181,7 +181,7 @@ println(sum)
 /// RED TEST: Guard condition doesn't prevent mutation
 #[test]
 fn test_issue_040_mutation_with_guard() {
-    let code = r#"
+    let code = r"
 let mut x = 0;
 let value = 5;
 match value {
@@ -189,7 +189,7 @@ match value {
     _ => {}
 }
 println(x)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -206,15 +206,15 @@ mod property_tests {
 
     /// Property test: Counter increments correctly N times in match
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored
+    #[ignore = "Run with: cargo test property_tests -- --ignored"]
     fn proptest_counter_increment_in_match() {
         for n in 0..100 {
             let code = format!(
-                r#"
+                r"
 let mut counter = 0;
 let mut i = 0;
 loop {{
-    if i >= {} {{
+    if i >= {n} {{
         break;
     }}
     match i {{
@@ -223,8 +223,7 @@ loop {{
     i = i + 1;
 }}
 println(counter)
-"#,
-                n
+"
             );
 
             let output = Command::new("ruchy")
@@ -242,27 +241,25 @@ println(counter)
 
             assert_eq!(
                 result, n,
-                "Counter should increment {} times, got {}",
-                n, result
+                "Counter should increment {n} times, got {result}"
             );
         }
     }
 
     /// Property test: Mutation persists across match arms
     #[test]
-    #[ignore]
+    #[ignore = "Property test - run with --ignored"]
     fn proptest_mutation_persists_across_arms() {
         for initial in 0..50 {
             for increment in 1..20 {
                 let code = format!(
-                    r#"
-let mut x = {};
-match {} {{
+                    r"
+let mut x = {initial};
+match {increment} {{
     n => x = x + n
 }}
 println(x)
-"#,
-                    initial, increment
+"
                 );
 
                 let output = Command::new("ruchy")

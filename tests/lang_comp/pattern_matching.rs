@@ -357,13 +357,13 @@ fn test_langcomp_009_04_let_destructuring() {
     let temp_file = std::env::temp_dir().join("langcomp_009_04_let_destruct.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let coordinates = (100, 200)
 let (x, y) = coordinates
 
 println(x)
 println(y)
-"#,
+",
     )
     .unwrap();
 
@@ -383,13 +383,13 @@ fn test_langcomp_009_04_nested_destructuring() {
     let temp_file = std::env::temp_dir().join("langcomp_009_04_nested.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let nested = ((1, 2), (3, 4))
 let ((a, b), (c, d)) = nested
 
 println(a)
 println(d)
-"#,
+",
     )
     .unwrap();
 

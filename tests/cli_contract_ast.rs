@@ -288,7 +288,7 @@ fn cli_parse_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun fibonacci(n) {
     if n <= 1 {
         n
@@ -299,7 +299,7 @@ fun fibonacci(n) {
 
 let result = fibonacci(10)
 println(result)
-"#,
+",
     );
 
     ruchy_cmd()

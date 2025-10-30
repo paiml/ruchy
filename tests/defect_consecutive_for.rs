@@ -17,7 +17,7 @@ fn test_defect_consecutive_for_loops() {
     let temp_file = std::env::temp_dir().join("defect_consecutive_for.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..3 {
         println(i)
@@ -27,7 +27,7 @@ fn main() {
         println(n)
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -47,7 +47,7 @@ fn test_defect_three_consecutive_for_loops() {
     let temp_file = std::env::temp_dir().join("defect_three_for.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..2 {
         println(i)
@@ -61,7 +61,7 @@ fn main() {
         println(k)
     }
 }
-"#,
+",
     )
     .unwrap();
 

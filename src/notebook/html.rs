@@ -299,7 +299,7 @@ mod tests {
         let html = formatter.format_code("let x = 42");
 
         assert!(html.contains("<pre"));
-        assert!(html.contains("x"));
+        assert!(html.contains('x'));
         assert!(html.contains("42"));
     }
 
@@ -418,7 +418,7 @@ mod tests {
     #[test]
     fn test_notebook_004_formatter_debug() {
         let formatter = HtmlFormatter::new();
-        let debug_str = format!("{:?}", formatter);
+        let debug_str = format!("{formatter:?}");
 
         assert!(debug_str.contains("HtmlFormatter"));
         assert!(debug_str.contains("light"));
@@ -514,7 +514,7 @@ mod tests {
                 headers in prop::collection::vec("[a-zA-Z0-9]{1,20}", 0..10)
             ) {
                 let formatter = HtmlFormatter::new();
-                let header_refs: Vec<&str> = headers.iter().map(|s| s.as_str()).collect();
+                let header_refs: Vec<&str> = headers.iter().map(std::string::String::as_str).collect();
                 let rows: Vec<Vec<&str>> = vec![];
                 let html = formatter.format_table(&header_refs, &rows);
                 assert!(html.contains("<table"));
@@ -525,7 +525,7 @@ mod tests {
                 items in prop::collection::vec(".*", 0..20)
             ) {
                 let formatter = HtmlFormatter::new();
-                let item_refs: Vec<&str> = items.iter().map(|s| s.as_str()).collect();
+                let item_refs: Vec<&str> = items.iter().map(std::string::String::as_str).collect();
                 let html = formatter.format_list(&item_refs);
                 assert!(html.contains("<ul"));
             }

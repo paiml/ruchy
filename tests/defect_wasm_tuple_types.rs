@@ -14,7 +14,7 @@ fn compile_to_wasm(code: &str) -> anyhow::Result<Vec<u8>> {
     let emitter = WasmEmitter::new();
     let wasm_bytes = emitter
         .emit(&ast)
-        .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {e}"))?;
 
     // CRITICAL: Validate the WASM bytecode
     // This will fail if there are type mismatches
@@ -30,7 +30,7 @@ fn compile_to_wasm(code: &str) -> anyhow::Result<Vec<u8>> {
     match wasmparser::validate(&wasm_bytes) {
         Ok(_) => eprintln!("Validation: PASSED"),
         Err(e) => {
-            eprintln!("Validation: FAILED - {}", e);
+            eprintln!("Validation: FAILED - {e}");
             return Err(e.into());
         }
     }
@@ -44,11 +44,11 @@ fn compile_to_wasm(code: &str) -> anyhow::Result<Vec<u8>> {
 
 #[test]
 fn test_wasm_tuple_int_float() {
-    let code = r#"
+    let code = r"
 let x = (1, 3.0)
 let a = x.0
 let b = x.1
-"#;
+";
 
     let result = compile_to_wasm(code);
     assert!(
@@ -60,11 +60,11 @@ let b = x.1
 
 #[test]
 fn test_wasm_tuple_float_int() {
-    let code = r#"
+    let code = r"
 let x = (3.0, 1)
 println(x.0)
 println(x.1)
-"#;
+";
 
     let result = compile_to_wasm(code);
     assert!(
@@ -76,12 +76,12 @@ println(x.1)
 
 #[test]
 fn test_wasm_tuple_all_floats() {
-    let code = r#"
+    let code = r"
 let x = (1.0, 2.0, 3.0)
 println(x.0)
 println(x.1)
 println(x.2)
-"#;
+";
 
     let result = compile_to_wasm(code);
     assert!(

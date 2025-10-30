@@ -31,18 +31,18 @@ fn test_issue_086_diagnose_non_determinism() {
     println!("Hash: {}", result1.state_hash);
     println!("Bindings:");
     for (name, value) in repl1.get_bindings() {
-        println!("  {} = {:?}", name, value);
-        println!("    to_string: '{}'", value.to_string());
-        println!("    debug: {:?}", value);
+        println!("  {name} = {value:?}");
+        println!("    to_string: '{value}'");
+        println!("    debug: {value:?}");
     }
 
     println!("\n=== REPL 2 ===");
     println!("Hash: {}", result2.state_hash);
     println!("Bindings:");
     for (name, value) in repl2.get_bindings() {
-        println!("  {} = {:?}", name, value);
-        println!("    to_string: '{}'", value.to_string());
-        println!("    debug: {:?}", value);
+        println!("  {name} = {value:?}");
+        println!("    to_string: '{value}'");
+        println!("    debug: {value:?}");
     }
 
     println!("\n=== COMPARISON ===");
@@ -58,19 +58,19 @@ fn test_issue_086_diagnose_non_determinism() {
 
     for (name, value1) in bindings1 {
         if let Some(value2) = bindings2.get(name) {
-            if value1 != value2 {
-                println!("  MISMATCH: {} = {:?} vs {:?}", name, value1, value2);
+            if value1 == value2 {
+                println!("  MATCH: {name} = {value1:?}");
             } else {
-                println!("  MATCH: {} = {:?}", name, value1);
+                println!("  MISMATCH: {name} = {value1:?} vs {value2:?}");
             }
         } else {
-            println!("  MISSING in repl2: {}", name);
+            println!("  MISSING in repl2: {name}");
         }
     }
 
     for name in bindings2.keys() {
         if !bindings1.contains_key(name) {
-            println!("  MISSING in repl1: {}", name);
+            println!("  MISSING in repl1: {name}");
         }
     }
 }
@@ -112,7 +112,7 @@ fn test_issue_086_repeated_runs() {
     }
 
     println!("\n=== Hash Frequency Analysis ===");
-    for (hash, count) in hash_frequency.iter() {
+    for (hash, count) in &hash_frequency {
         println!("{}... appeared {} times", &hash[..16], count);
     }
 

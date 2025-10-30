@@ -243,7 +243,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_try_catch_with_identifier(err_name in "[a-z]+") {
-                let code = format!("try {{ 42 }} catch ({}) {{ 0 }}", err_name);
+                let code = format!("try {{ 42 }} catch ({err_name}) {{ 0 }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -251,7 +251,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_try_finally_parses(val in 0i32..100) {
-                let code = format!("try {{ {} }} finally {{ cleanup() }}", val);
+                let code = format!("try {{ {val} }} finally {{ cleanup() }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -261,7 +261,7 @@ mod tests {
             fn prop_multiple_catch_parses(n in 1usize..5) {
                 let mut code = String::from("try { risky() }");
                 for i in 0..n {
-                    code.push_str(&format!(" catch (e{}) {{ handle{}() }}", i, i));
+                    code.push_str(&format!(" catch (e{i}) {{ handle{i}() }}"));
                 }
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -284,7 +284,7 @@ mod tests {
                 }
                 code.push_str("42");
                 for i in 0..depth {
-                    code.push_str(&format!(" }} catch (e{}) {{ 0 }}", i));
+                    code.push_str(&format!(" }} catch (e{i}) {{ 0 }}"));
                 }
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -293,7 +293,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_catch_without_parens_parses(err_name in "[a-z]+") {
-                let code = format!("try {{ 42 }} catch {} {{ 0 }}", err_name);
+                let code = format!("try {{ 42 }} catch {err_name} {{ 0 }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

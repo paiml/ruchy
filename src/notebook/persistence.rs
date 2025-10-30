@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_notebook_003_checkpoint_debug() {
         let checkpoint = Checkpoint::new("debug_test".to_string());
-        let debug_str = format!("{:?}", checkpoint);
+        let debug_str = format!("{checkpoint:?}");
 
         assert!(debug_str.contains("Checkpoint"));
         assert!(debug_str.contains("debug_test"));
@@ -270,7 +270,7 @@ mod tests {
     #[test]
     fn test_notebook_003_transaction_result_debug() {
         let success = TransactionResult::Success(100);
-        let debug_str = format!("{:?}", success);
+        let debug_str = format!("{success:?}");
 
         assert!(debug_str.contains("Success"));
         assert!(debug_str.contains("100"));
@@ -278,7 +278,7 @@ mod tests {
         let failure: TransactionResult<i32> = TransactionResult::RolledBack {
             error: "error message".to_string(),
         };
-        let debug_str = format!("{:?}", failure);
+        let debug_str = format!("{failure:?}");
 
         assert!(debug_str.contains("RolledBack"));
         assert!(debug_str.contains("error message"));
@@ -297,7 +297,7 @@ mod tests {
     fn test_notebook_003_checkpoint_large_state() {
         let mut state = HashMap::new();
         for i in 0..100 {
-            state.insert(format!("var_{}", i), format!("value_{}", i));
+            state.insert(format!("var_{i}"), format!("value_{i}"));
         }
 
         let checkpoint = Checkpoint::with_state("large".to_string(), state);

@@ -9,13 +9,13 @@ fn main() {
     // Get directory from args or use current directory
     let dir = env::args().nth(1).unwrap_or_else(|| ".".to_string());
 
-    println!("🔍 Walking directory: {}", dir);
+    println!("🔍 Walking directory: {dir}");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     // Ruchy code to execute
     let code = format!(
         r#"
-        let entries = walk_parallel("{}")
+        let entries = walk_parallel("{dir}")
         let rust_files = entries.filter(fn(e) {{
             e.is_file && e.name.ends_with(".rs")
         }})
@@ -33,13 +33,12 @@ fn main() {
         }}
 
         rust_files.len()
-    "#,
-        dir
+    "#
     );
 
     // Run via ruchy interpreter
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--release", "--bin", "ruchy", "--", "-e", &code])
+        .args(["run", "--release", "--bin", "ruchy", "--", "-e", &code])
         .output()
         .expect("Failed to execute ruchy");
 

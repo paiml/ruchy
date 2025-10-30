@@ -2,7 +2,7 @@
 //!
 //! **Problem**: Loop followed by tuple was misparsed as function call
 //! **Root Cause**: Parser treated `loop { } (x, x)` as `(loop { })(x, x)`
-//! **Fix**: Added is_block_like_expression() check in try_handle_single_postfix()
+//! **Fix**: Added `is_block_like_expression()` check in `try_handle_single_postfix()`
 //! **Discovered**: 2025-10-19 (BOOTSTRAP-003 session in ruchyruchy)
 //! **Status**: GREEN PHASE - All tests passing
 //!
@@ -22,7 +22,7 @@ fn ruchy_cmd() -> Command {
 ///
 /// Tests the fix for PARSER-DEFECT-001 where:
 /// - Pattern: `loop { } (x, x)` was parsed as `(loop { })(x, x)` (function call)
-/// - Fix: is_block_like_expression() prevents block-like exprs from consuming `(` as call
+/// - Fix: `is_block_like_expression()` prevents block-like exprs from consuming `(` as call
 /// - Expected: Returns (10, 5) and prints "Sum: 10, Index: 5"
 #[test]
 fn test_green_loop_mut_tuple_basic() {

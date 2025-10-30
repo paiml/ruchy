@@ -37,7 +37,7 @@ fn fuzz_pattern_never_panics_basic() {
         Value::Bool(true),
         Value::Bool(false),
         Value::from_string("test".to_string()),
-        Value::from_string("".to_string()),
+        Value::from_string(String::new()),
         Value::Nil,
         Value::Tuple(std::sync::Arc::from(vec![])),
         Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1)])),
@@ -63,7 +63,7 @@ fn fuzz_pattern_never_panics_basic() {
         }
     }
 
-    println!("Fuzz tested {} pattern/value combinations without panic", tested);
+    println!("Fuzz tested {tested} pattern/value combinations without panic");
     assert!(tested > 0);
 }
 

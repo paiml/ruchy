@@ -1,6 +1,6 @@
-//! STDLIB-DEFECT-001: env::args() Not Accessible from Ruchy Code
+//! STDLIB-DEFECT-001: `env::args()` Not Accessible from Ruchy Code
 //!
-//! **Problem**: env::args() exists in src/stdlib/env.rs but cannot be called from Ruchy
+//! **Problem**: `env::args()` exists in src/stdlib/env.rs but cannot be called from Ruchy
 //! **Discovered**: 2025-10-13 (Book compatibility investigation)
 //! **Severity**: HIGH
 //!
@@ -25,18 +25,18 @@ fn temp_dir() -> TempDir {
 
 // ==================== RED PHASE: Failing Tests ====================
 
-/// Test 1: Basic env_args() call (global builtin function approach)
+/// Test 1: Basic `env_args()` call (global builtin function approach)
 #[test]
 fn test_stdlib_defect_001_green_env_args_basic() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let args = env_args();
     println(args);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -48,21 +48,21 @@ fun main() {
         .success();
 }
 
-/// Test 2: env_args() with iteration - CLI limitation: can't pass extra args
+/// Test 2: `env_args()` with iteration - CLI limitation: can't pass extra args
 #[test]
 #[ignore = "CLI doesn't support passing extra arguments to programs (limitation)"]
 fn test_stdlib_defect_001_green_env_args_iteration() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let args = env_args();
     for arg in args {
         println(arg);
     }
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -75,7 +75,7 @@ fun main() {
         .success();
 }
 
-/// Test 3: env_args() in compiled binary
+/// Test 3: `env_args()` in compiled binary
 #[test]
 fn test_stdlib_defect_001_green_env_args_compile() {
     let temp = temp_dir();
@@ -101,7 +101,7 @@ fun main() {
         .success();
 }
 
-/// Test 4: Other env functions (env_var) - NOT YET IMPLEMENTED
+/// Test 4: Other env functions (`env_var`) - NOT YET IMPLEMENTED
 #[test]
 #[ignore = "env_var() not yet implemented - only env_args() is complete"]
 fn test_stdlib_defect_001_green_env_var() {
@@ -130,12 +130,12 @@ fn test_stdlib_defect_001_baseline_builtins() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let x = sqrt(16.0);
     println(x);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -156,11 +156,11 @@ fn test_stdlib_defect_001_summary() {
     println!("- env::args() exists in src/stdlib/env.rs:119");
     println!("- But cannot be called from Ruchy code");
     println!("- Error: 'use of unresolved module env'");
-    println!("");
+    println!();
     println!("Root Cause:");
     println!("- Transpiler doesn't generate 'use' statements for stdlib");
     println!("- Runtime has env functions but they're not exposed");
-    println!("");
+    println!();
     println!("Solution Needed:");
     println!("- Add stdlib module imports to transpiled code");
     println!("- Or expose env functions as builtins");

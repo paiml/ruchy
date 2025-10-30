@@ -1,7 +1,7 @@
-//! STDLIB-009: String .substring() + Array .sort() and .join()
+//! STDLIB-009: String .`substring()` + Array .`sort()` and .`join()`
 //!
 //! ROOT CAUSE: Missing implementations for these convenience methods
-//! SOLUTION: Implement substring(), sort(), join()
+//! SOLUTION: Implement `substring()`, `sort()`, `join()`
 //!
 //! EXTREME TDD: RED → GREEN → REFACTOR
 
@@ -66,10 +66,10 @@ println(s.substring(2, 2))
 
 #[test]
 fn test_sort_integers() {
-    let code = r#"
+    let code = r"
 let arr = [3, 1, 4, 1, 5, 9, 2, 6];
 println(arr.sort())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -96,10 +96,10 @@ println(arr.sort())
 
 #[test]
 fn test_sort_empty() {
-    let code = r#"
+    let code = r"
 let arr = [];
 println(arr.sort())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

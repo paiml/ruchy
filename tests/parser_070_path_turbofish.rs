@@ -30,7 +30,7 @@ fn write_temp_file(code: &str) -> (TempDir, PathBuf) {
     (temp_dir, file_path)
 }
 
-/// Test basic path turbofish - Vec::<i32>::new()
+/// Test basic path turbofish - `Vec::`<i32>`::new()`
 #[test]
 fn test_parser_070_basic_path_turbofish() {
     let code = r#"
@@ -48,7 +48,7 @@ println("Created vec: {:?}", vec)
         .stdout(predicate::str::contains("Created vec"));
 }
 
-/// Test path turbofish with multiple type parameters - HashMap::<String, i32>::new()
+/// Test path turbofish with multiple type parameters - `HashMap::`<String, `i32>::new()`
 #[test]
 fn test_parser_070_multiple_type_params() {
     let code = r#"
@@ -66,7 +66,7 @@ println("Created map")
         .success();
 }
 
-/// Test nested path turbofish - Vec::<Vec::<i32>>::new()
+/// Test nested path turbofish - `Vec::`<`Vec::`<i32>>`::new()`
 #[test]
 fn test_parser_070_nested_generics() {
     let code = r#"
@@ -84,8 +84,8 @@ println("Created nested vec")
         .success();
 }
 
-/// Test path turbofish with Result - Result::<i32, String>::new()
-/// NOTE: Enum variant turbofish (::Some, ::Ok) is out of scope for PARSER-070
+/// Test path turbofish with Result - `Result::`<i32, `String>::new()`
+/// NOTE: Enum variant turbofish (`::Some`, `::Ok`) is out of scope for PARSER-070
 /// This test uses method call syntax instead
 #[test]
 fn test_parser_070_result_turbofish() {
@@ -189,9 +189,9 @@ println("Vec: {:?}", vec)
 /// Test that AST is correct - should parse as path expression with turbofish
 #[test]
 fn test_parser_070_ast_structure() {
-    let code = r#"
+    let code = r"
 Vec::<i32>::new()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -208,9 +208,9 @@ Vec::<i32>::new()
 /// Test syntax check passes (not just runtime)
 #[test]
 fn test_parser_070_check_command() {
-    let code = r#"
+    let code = r"
 let map = HashMap::<String, i32>::new()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -224,9 +224,9 @@ let map = HashMap::<String, i32>::new()
 /// Test linting passes
 #[test]
 fn test_parser_070_lint_command() {
-    let code = r#"
+    let code = r"
 let vec = Vec::<i32>::new()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -240,9 +240,9 @@ let vec = Vec::<i32>::new()
 /// Test transpilation succeeds
 #[test]
 fn test_parser_070_transpile_command() {
-    let code = r#"
+    let code = r"
 let vec = Vec::<i32>::new()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 

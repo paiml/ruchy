@@ -20,7 +20,7 @@ fn ruchy_cmd() -> Command {
 }
 
 fn fixture_path(name: &str) -> String {
-    format!("tests/fixtures/fmt/{}", name)
+    format!("tests/fixtures/fmt/{name}")
 }
 
 // ============================================================================
@@ -119,7 +119,7 @@ fn test_fmt_round_trip_idempotency() {
 fn test_fmt_basic_file() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--stdout")
         .assert()
         .success()
@@ -131,7 +131,7 @@ fn test_fmt_stdout_option() {
     // --stdout should output formatted code to stdout without modifying file
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--stdout")
         .assert()
         .success()
@@ -144,7 +144,7 @@ fn test_fmt_check_option() {
     // Exit code 1 if formatting needed, 0 if already formatted
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--check")
         .assert()
         .code(predicate::eq(0).or(predicate::eq(1))); // Either formatted or needs formatting
@@ -164,7 +164,7 @@ fn test_fmt_missing_file() {
 fn test_fmt_operators() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("operators.ruchy"))
+        .arg(fixture_path("operators.ruchy"))
         .arg("--stdout")
         .assert()
         .success()
@@ -178,7 +178,7 @@ fn test_fmt_operators() {
 fn test_fmt_control_flow() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("control_flow.ruchy"))
+        .arg(fixture_path("control_flow.ruchy"))
         .arg("--stdout")
         .assert()
         .success()
@@ -190,7 +190,7 @@ fn test_fmt_control_flow() {
 fn test_fmt_functions() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("functions.ruchy"))
+        .arg(fixture_path("functions.ruchy"))
         .arg("--stdout")
         .assert()
         .success()
@@ -206,7 +206,7 @@ fn test_fmt_functions() {
 fn test_fmt_line_width_option() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--line-width")
         .arg("80")
         .arg("--stdout")
@@ -218,7 +218,7 @@ fn test_fmt_line_width_option() {
 fn test_fmt_indent_option() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--indent")
         .arg("2")
         .arg("--stdout")
@@ -230,7 +230,7 @@ fn test_fmt_indent_option() {
 fn test_fmt_use_tabs_option() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--use-tabs")
         .arg("--stdout")
         .assert()
@@ -241,7 +241,7 @@ fn test_fmt_use_tabs_option() {
 fn test_fmt_diff_option() {
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--diff")
         .assert()
         .success();
@@ -252,7 +252,7 @@ fn test_fmt_config_option() {
     // Config file doesn't exist yet, but option should be recognized
     ruchy_cmd()
         .arg("fmt")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--config")
         .arg("fmt.toml")
         .arg("--stdout")
@@ -511,7 +511,7 @@ fn test_fmt_no_debug_fallback_field_access() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper field access syntax
-    assert!(formatted.contains("."), "Missing field access operator");
+    assert!(formatted.contains('.'), "Missing field access operator");
 
     // Must NOT contain Debug output
     assert!(!formatted.contains("FieldAccess"),
@@ -610,7 +610,7 @@ fn test_fmt_no_debug_fallback_unary_ops() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper unary operators
-    assert!(formatted.contains("-") || formatted.contains("!"),
+    assert!(formatted.contains('-') || formatted.contains('!'),
             "Missing unary operators");
 
     // Must NOT contain Debug output
@@ -637,8 +637,8 @@ fn test_fmt_no_debug_fallback_list_literal() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper list syntax
-    assert!(formatted.contains("["), "Missing list opening bracket");
-    assert!(formatted.contains("]"), "Missing list closing bracket");
+    assert!(formatted.contains('['), "Missing list opening bracket");
+    assert!(formatted.contains(']'), "Missing list closing bracket");
 
     // Must NOT contain Debug output
     assert!(!formatted.contains("List {"),
@@ -664,7 +664,7 @@ fn test_fmt_no_debug_fallback_tuple_literal() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper tuple syntax
-    assert!(formatted.contains("(") && formatted.contains(")"),
+    assert!(formatted.contains('(') && formatted.contains(')'),
             "Missing tuple parentheses");
 
     // Must NOT contain Debug output
@@ -825,10 +825,10 @@ fn test_fmt_all_binary_operators() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain actual operators, not Debug names
-    assert!(formatted.contains("+"), "Missing + operator");
-    assert!(formatted.contains("-"), "Missing - operator");
-    assert!(formatted.contains("*"), "Missing * operator");
-    assert!(formatted.contains("/"), "Missing / operator");
+    assert!(formatted.contains('+'), "Missing + operator");
+    assert!(formatted.contains('-'), "Missing - operator");
+    assert!(formatted.contains('*'), "Missing * operator");
+    assert!(formatted.contains('/'), "Missing / operator");
 
     // Must NOT contain Debug trait names
     assert!(!formatted.contains("Add"), "Operator mangling: Add found");

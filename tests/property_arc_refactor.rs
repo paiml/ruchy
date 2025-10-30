@@ -61,7 +61,7 @@ fn arb_value() -> impl Strategy<Value = Value> {
                         data,
                     }),
                 // Range
-                (inner.clone(), inner.clone(), any::<bool>()).prop_map(|(start, end, incl)| {
+                (inner.clone(), inner, any::<bool>()).prop_map(|(start, end, incl)| {
                     Value::Range {
                         start: Box::new(start),
                         end: Box::new(end),
@@ -73,7 +73,8 @@ fn arb_value() -> impl Strategy<Value = Value> {
     )
 }
 
-/// Generate arbitrary HashMap<String, Value> for environment testing
+/// Generate arbitrary `HashMap<String, Value>` for environment testing
+#[allow(dead_code)] // Reserved for future environment property tests
 fn arb_env() -> impl Strategy<Value = HashMap<String, Value>> {
     prop::collection::hash_map("[a-z][a-z0-9_]{0,10}", arb_value(), 0..5)
 }
@@ -138,7 +139,7 @@ proptest! {
     /// Property: For all values v, v.clone().clone() == v.clone()
     #[test]
     fn test_value_clone_idempotent(value in arb_value()) {
-        let clone1 = value.clone();
+        let clone1 = value;
         let clone2 = clone1.clone();
 
         prop_assert!(
@@ -152,7 +153,7 @@ proptest! {
     /// Property: Array cloning creates independent copies (Rc semantics)
     #[test]
     fn test_array_clone_semantics(values in prop::collection::vec(arb_value(), 0..5)) {
-        let array = Value::Array(Arc::from(values.clone().into_boxed_slice()));
+        let array = Value::Array(Arc::from(values.into_boxed_slice()));
         let cloned = array.clone();
 
         // After cloning, both should have same values
@@ -173,7 +174,7 @@ proptest! {
     fn test_object_clone_semantics(
         map in prop::collection::hash_map("[a-z][a-z0-9]{0,5}", arb_value(), 0..5)
     ) {
-        let object = Value::Object(Arc::new(map.clone()));
+        let object = Value::Object(Arc::new(map));
         let cloned = object.clone();
 
         // After cloning, both should have same key-value pairs
@@ -183,7 +184,7 @@ proptest! {
                 if let Some(val_b) = b.get(key) {
                     prop_assert!(value_eq(val_a, val_b));
                 } else {
-                    panic!("Key {:?} missing in cloned object", key);
+                    panic!("Key {key:?} missing in cloned object");
                 }
             }
         } else {
@@ -211,7 +212,7 @@ proptest! {
     /// Property: Tuple cloning preserves all elements (Rc semantics)
     #[test]
     fn test_tuple_clone_semantics(values in prop::collection::vec(arb_value(), 0..5)) {
-        let tuple = Value::Tuple(Arc::from(values.clone().into_boxed_slice()));
+        let tuple = Value::Tuple(Arc::from(values.into_boxed_slice()));
         let cloned = tuple.clone();
 
         if let (Value::Tuple(a), Value::Tuple(b)) = (&tuple, &cloned) {
@@ -234,9 +235,9 @@ proptest! {
         data in prop::option::of(prop::collection::vec(arb_value(), 0..3))
     ) {
         let variant = Value::EnumVariant {
-            enum_name: enum_name.clone(),
-            variant_name: variant_name.clone(),
-            data: data.clone(),
+            enum_name,
+            variant_name,
+            data,
         };
         let cloned = variant.clone();
 
@@ -284,7 +285,7 @@ fn value_eq(a: &Value, b: &Value) -> bool {
         (Value::Object(x), Value::Object(y)) => {
             x.len() == y.len()
                 && x.iter()
-                    .all(|(k, v1)| y.get(k).map_or(false, |v2| value_eq(v1, v2)))
+                    .all(|(k, v1)| y.get(k).is_some_and(|v2| value_eq(v1, v2)))
         }
         (Value::BuiltinFunction(x), Value::BuiltinFunction(y)) => x == y,
         (

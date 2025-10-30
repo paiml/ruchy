@@ -147,7 +147,7 @@ mod tests {
 
     /// Test WASM benchmark (requires test fixture)
     ///
-    /// RED: This test should FAIL because benchmark_wasm() is unimplemented
+    /// RED: This test should FAIL because `benchmark_wasm()` is unimplemented
     #[test]
     #[ignore = "Requires WASM test fixture - run with: cargo test -- --ignored"]
     #[cfg(feature = "notebook")]
@@ -156,7 +156,7 @@ mod tests {
         // For now, this is a placeholder test
         let module_path = PathBuf::from("tests/fixtures/test.wasm");
         if !module_path.exists() {
-            eprintln!("Skipping test - no WASM fixture at {:?}", module_path);
+            eprintln!("Skipping test - no WASM fixture at {module_path:?}");
             return;
         }
 

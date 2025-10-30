@@ -837,13 +837,13 @@ mod property_tests {
         #[test]
         fn prop_tuple_arity_must_match(size in 1usize..5) {
             let patterns: Vec<Pattern> = (0..size)
-                .map(|i| Pattern::Identifier(format!("x{}", i)))
+                .map(|i| Pattern::Identifier(format!("x{i}")))
                 .collect();
             let pattern = Pattern::Tuple(patterns);
 
             // Correct arity - should match
             let values: Vec<Value> = (0..size).map(|i| Value::Integer(i as i64)).collect();
-            let val = Value::Tuple(std::sync::Arc::from(values.clone()));
+            let val = Value::Tuple(std::sync::Arc::from(values));
             let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
             prop_assert!(result.is_some());
 
@@ -873,7 +873,7 @@ mod property_tests {
             // Tuple variant (with data) - should NOT match
             let val_tuple = Value::EnumVariant {
                 enum_name: "Enum".to_string(),
-                variant_name: variant_name.clone(),
+                variant_name,
                 data: Some(vec![Value::Integer(42)]),
             };
             let result = try_pattern_match(&pattern, &val_tuple, &test_eval_literal).unwrap();
@@ -885,7 +885,7 @@ mod property_tests {
         fn prop_tuple_variant_binds_all(count in 1usize..4, values in prop::collection::vec(any::<i64>(), 1..4)) {
             let count = count.min(values.len());
             let patterns: Vec<Pattern> = (0..count)
-                .map(|i| Pattern::Identifier(format!("x{}", i)))
+                .map(|i| Pattern::Identifier(format!("x{i}")))
                 .collect();
 
             let pattern = Pattern::TupleVariant {
@@ -900,7 +900,7 @@ mod property_tests {
             let val = Value::EnumVariant {
                 enum_name: "Type".to_string(),
                 variant_name: "Variant".to_string(),
-                data: Some(variant_values.clone()),
+                data: Some(variant_values),
             };
 
             let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
@@ -910,7 +910,7 @@ mod property_tests {
             prop_assert_eq!(bindings.len(), count);
 
             for i in 0..count {
-                prop_assert_eq!(&bindings[i].0, &format!("x{}", i));
+                prop_assert_eq!(&bindings[i].0, &format!("x{i}"));
                 prop_assert_eq!(&bindings[i].1, &Value::Integer(values[i]));
             }
         }

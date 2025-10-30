@@ -45,8 +45,7 @@ fn test_fmt_preserves_single_line_comment() {
     // CRITICAL: Must preserve comment
     assert!(
         formatted.contains("// This is a comment"),
-        "Line comment was stripped! Got:\n{}",
-        formatted
+        "Line comment was stripped! Got:\n{formatted}"
     );
 }
 
@@ -70,8 +69,7 @@ fn test_fmt_preserves_block_comment() {
 
     assert!(
         formatted.contains("/* This is a block comment */"),
-        "Block comment was stripped! Got:\n{}",
-        formatted
+        "Block comment was stripped! Got:\n{formatted}"
     );
 }
 
@@ -95,8 +93,7 @@ fn test_fmt_preserves_doc_comment() {
 
     assert!(
         formatted.contains("/// Returns the sum"),
-        "Doc comment was stripped! Got:\n{}",
-        formatted
+        "Doc comment was stripped! Got:\n{formatted}"
     );
 }
 
@@ -120,8 +117,7 @@ fn test_fmt_preserves_trailing_comment() {
 
     assert!(
         formatted.contains("// Important value"),
-        "Trailing comment was stripped! Got:\n{}",
-        formatted
+        "Trailing comment was stripped! Got:\n{formatted}"
     );
 }
 
@@ -131,10 +127,10 @@ fn test_fmt_preserves_multiple_line_comments() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("multiple_comments.ruchy");
 
-    let original = r#"// Comment 1
+    let original = r"// Comment 1
 // Comment 2
 // Comment 3
-let x = 42"#;
+let x = 42";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -157,10 +153,10 @@ fn test_fmt_preserves_mixed_comment_types() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("mixed_comments.ruchy");
 
-    let original = r#"// Line comment
+    let original = r"// Line comment
 /* Block comment */
 /// Doc comment
-let x = 42  // Trailing comment"#;
+let x = 42  // Trailing comment";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -184,10 +180,10 @@ fn test_fmt_preserves_comment_inside_function() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("comment_in_function.ruchy");
 
-    let original = r#"fun add(a, b) {
+    let original = r"fun add(a, b) {
     // Calculate sum
     a + b
-}"#;
+}";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -211,12 +207,12 @@ fn test_fmt_preserves_comment_order() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("comment_order.ruchy");
 
-    let original = r#"// Before function
+    let original = r"// Before function
 fun add(a, b) {
     // Inside function
     a + b  // End of line
 }
-// After function"#;
+// After function";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -251,10 +247,7 @@ fun add(a, b) {
 
     assert!(
         before_idx < inside_idx && inside_idx < after_idx,
-        "Comment order not preserved! before={} inside={} after={}",
-        before_idx,
-        inside_idx,
-        after_idx
+        "Comment order not preserved! before={before_idx} inside={inside_idx} after={after_idx}"
     );
 }
 
@@ -264,12 +257,12 @@ fn test_fmt_preserves_multiline_block_comment() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("multiline_block.ruchy");
 
-    let original = r#"/*
+    let original = r"/*
  * This is a multi-line
  * block comment with
  * proper formatting
  */
-let x = 42"#;
+let x = 42";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -412,12 +405,12 @@ fn test_fmt_preserves_exact_comment_count() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("comment_count.ruchy");
 
-    let original = r#"// Comment 1
+    let original = r"// Comment 1
 let x = 42  // Comment 2
 /* Comment 3 */
 let y = x * 2
 // Comment 4
-// Comment 5"#;
+// Comment 5";
     fs::write(&test_file, original).unwrap();
 
     let output = ruchy_cmd()
@@ -439,13 +432,11 @@ let y = x * 2
 
     assert_eq!(
         original_line_comments, formatted_line_comments,
-        "Line comment count mismatch! Original: {}, Formatted: {}",
-        original_line_comments, formatted_line_comments
+        "Line comment count mismatch! Original: {original_line_comments}, Formatted: {formatted_line_comments}"
     );
 
     assert_eq!(
         original_block_comments, formatted_block_comments,
-        "Block comment count mismatch! Original: {}, Formatted: {}",
-        original_block_comments, formatted_block_comments
+        "Block comment count mismatch! Original: {original_block_comments}, Formatted: {formatted_block_comments}"
     );
 }

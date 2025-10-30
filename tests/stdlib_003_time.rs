@@ -34,7 +34,7 @@ fn write_temp_file(code: &str) -> (TempDir, PathBuf) {
     (temp_dir, file_path)
 }
 
-/// Test basic std::time::now_millis() functionality
+/// Test basic `std::time::now_millis()` functionality
 #[test]
 fn test_stdlib_003_basic_now_millis() {
     let code = r#"
@@ -143,9 +143,9 @@ println("Time: {}", timestamp)
 /// Test check command passes
 #[test]
 fn test_stdlib_003_check() {
-    let code = r#"
+    let code = r"
 let timestamp = std::time::now_millis()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -159,9 +159,9 @@ let timestamp = std::time::now_millis()
 /// Test lint command passes
 #[test]
 fn test_stdlib_003_lint() {
-    let code = r#"
+    let code = r"
 let timestamp = std::time::now_millis()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -172,12 +172,12 @@ let timestamp = std::time::now_millis()
         .success();
 }
 
-/// Test AST structure for std::time::now_millis() call
+/// Test AST structure for `std::time::now_millis()` call
 #[test]
 fn test_stdlib_003_ast() {
-    let code = r#"
+    let code = r"
 std::time::now_millis()
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 

@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 // OPT-004: Semantic Equivalence Tests - Verify AST and Bytecode modes produce identical results
 //
 // Test Strategy:
@@ -18,25 +20,25 @@ use std::sync::Arc;
 /// Helper: Execute program in AST mode
 fn execute_ast(source: &str) -> Result<Value, String> {
     let mut parser = RuchyParser::new(source);
-    let ast = parser.parse().map_err(|e| format!("Parse error: {:?}", e))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
     let mut interpreter = Interpreter::new();
     interpreter
         .eval_expr(&ast)
-        .map_err(|e| format!("AST eval error: {:?}", e))
+        .map_err(|e| format!("AST eval error: {e:?}"))
 }
 
 /// Helper: Execute program in bytecode mode
 fn execute_bytecode(source: &str) -> Result<Value, String> {
     let mut parser = RuchyParser::new(source);
-    let ast = parser.parse().map_err(|e| format!("Parse error: {:?}", e))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
     let mut compiler = Compiler::new("test".to_string());
     compiler
         .compile_expr(&ast)
-        .map_err(|e| format!("Compilation error: {}", e))?;
+        .map_err(|e| format!("Compilation error: {e}"))?;
     let chunk = compiler.finalize();
     let mut vm = VM::new();
     vm.execute(&chunk)
-        .map_err(|e| format!("VM error: {}", e))
+        .map_err(|e| format!("VM error: {e}"))
 }
 
 /// Helper: Assert AST and bytecode produce same result
@@ -46,18 +48,15 @@ fn assert_semantic_equivalence(source: &str, expected: Value) {
 
     assert_eq!(
         ast_result, expected,
-        "AST mode: expected {:?}, got {:?}",
-        expected, ast_result
+        "AST mode: expected {expected:?}, got {ast_result:?}"
     );
     assert_eq!(
         bytecode_result, expected,
-        "Bytecode mode: expected {:?}, got {:?}",
-        expected, bytecode_result
+        "Bytecode mode: expected {expected:?}, got {bytecode_result:?}"
     );
     assert_eq!(
         ast_result, bytecode_result,
-        "Semantic equivalence violated: AST={:?}, Bytecode={:?}",
-        ast_result, bytecode_result
+        "Semantic equivalence violated: AST={ast_result:?}, Bytecode={bytecode_result:?}"
     );
 }
 

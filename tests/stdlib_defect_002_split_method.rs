@@ -1,6 +1,6 @@
-//! STDLIB-DEFECT-002: String.split() Returns Internal Rust Type
+//! STDLIB-DEFECT-002: `String.split()` Returns Internal Rust Type
 //!
-//! **Problem**: .split() returns std::str::Split iterator instead of Vec<String>
+//! **Problem**: .`split()` returns `std::str::Split` iterator instead of Vec<String>
 //! **Discovered**: 2025-10-13 (Book compatibility investigation)
 //! **Severity**: MEDIUM
 //!
@@ -25,7 +25,7 @@ fn temp_dir() -> TempDir {
 
 // ==================== RED PHASE: Failing Tests ====================
 
-/// Test 1: Basic split with .len() access
+/// Test 1: Basic split with .`len()` access
 #[test]
 fn test_stdlib_defect_002_green_split_with_len() {
     let temp = temp_dir();
@@ -208,11 +208,11 @@ fn test_stdlib_defect_002_summary() {
     println!("- .split() returns std::str::Split iterator");
     println!("- Should return Vec<String>");
     println!("- Error: cannot call .len() on iterator");
-    println!("");
+    println!();
     println!("Root Cause:");
     println!("- Transpiler emits raw .split() call");
     println!("- Doesn't collect() iterator into Vec");
-    println!("");
+    println!();
     println!("Solution Needed:");
     println!("- Change transpiler to emit .split().collect::<Vec<_>>()");
     println!("- Similar to how .substring() collects into String");

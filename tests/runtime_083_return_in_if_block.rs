@@ -24,7 +24,7 @@ use std::path::PathBuf;
 #[test]
 fn test_runtime_083_return_in_if_terminates_function() {
     // Simple case: return in if block should exit function immediately
-    let code = r#"fun check_positive(x: i32) -> i32 {
+    let code = r"fun check_positive(x: i32) -> i32 {
     if x > 0 {
         return 1;
     }
@@ -34,7 +34,7 @@ fn test_runtime_083_return_in_if_terminates_function() {
 fun main() {
     println(check_positive(5));
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_return_if.ruchy");
     fs::write(&temp_file, code).unwrap();
@@ -53,7 +53,7 @@ fun main() {
 #[test]
 fn test_runtime_083_return_in_else_terminates_function() {
     // Return in else block should also exit function immediately
-    let code = r#"fun check_negative(x: i32) -> i32 {
+    let code = r"fun check_negative(x: i32) -> i32 {
     if x > 0 {
         1
     } else {
@@ -64,7 +64,7 @@ fn test_runtime_083_return_in_else_terminates_function() {
 fun main() {
     println(check_negative(-5));
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_return_else.ruchy");
     fs::write(&temp_file, code).unwrap();
@@ -83,7 +83,7 @@ fun main() {
 #[test]
 fn test_runtime_083_early_return_prevents_subsequent_code() {
     // Code after if block with return should NOT execute
-    let code = r#"fun classify(x: i32) -> i32 {
+    let code = r"fun classify(x: i32) -> i32 {
     if x < 0 {
         return -1;
     }
@@ -98,7 +98,7 @@ fun main() {
     println(classify(0));
     println(classify(5));
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_early_return.ruchy");
     fs::write(&temp_file, code).unwrap();
@@ -117,7 +117,7 @@ fun main() {
 #[test]
 fn test_runtime_083_nested_if_return() {
     // Return in nested if block should exit outer function
-    let code = r#"fun check_range(x: i32) -> i32 {
+    let code = r"fun check_range(x: i32) -> i32 {
     if x > 0 {
         if x < 10 {
             return 1;
@@ -132,7 +132,7 @@ fun main() {
     println(check_range(15));
     println(check_range(-5));
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_nested_if.ruchy");
     fs::write(&temp_file, code).unwrap();
@@ -151,7 +151,7 @@ fun main() {
 #[test]
 fn test_runtime_083_return_value_not_overwritten() {
     // Return value should be preserved, not overwritten by later code
-    let code = r#"fun get_status(x: i32) -> i32 {
+    let code = r"fun get_status(x: i32) -> i32 {
     if x > 100 {
         return 1;
     }
@@ -162,7 +162,7 @@ fun main() {
     let result = get_status(150);
     println(result);
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_value_preserved.ruchy");
     fs::write(&temp_file, code).unwrap();
@@ -181,7 +181,7 @@ fun main() {
 #[test]
 fn test_runtime_083_multiple_returns_first_wins() {
     // First matching return should execute, subsequent returns ignored
-    let code = r#"fun priority_check(x: i32) -> i32 {
+    let code = r"fun priority_check(x: i32) -> i32 {
     if x < 0 {
         return 1;
     }
@@ -200,7 +200,7 @@ fun main() {
     println(priority_check(50));
     println(priority_check(150));
 }
-"#;
+";
 
     let temp_file = PathBuf::from("/tmp/test_runtime_083_multiple_returns.ruchy");
     fs::write(&temp_file, code).unwrap();

@@ -31,18 +31,18 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test #1: Basic chrono::Utc import (minimal reproduction from Issue #82)
+/// Test #1: Basic `chrono::Utc` import (minimal reproduction from Issue #82)
 /// This is the exact test case reported in the GitHub issue.
 #[test]
 fn test_regression_082_chrono_utc_basic_import() {
-    let code = r#"
+    let code = r"
 use chrono::Utc;
 
 fun main() {
     let now = Utc::now();
     println(now);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -54,7 +54,7 @@ fun main() {
         .stdout(predicate::str::contains("202"));  // Check for year 202x
 }
 
-/// Test #2: Chrono::Utc with timestamp formatting
+/// Test #2: `Chrono::Utc` with timestamp formatting
 /// Verifies that Utc type works in more complex scenarios
 #[test]
 fn test_regression_082_chrono_utc_with_formatting() {
@@ -102,8 +102,8 @@ fun main() {
         .stdout(predicate::str::contains("DateTime:"));
 }
 
-/// Test #4: .to_rfc3339() method on datetime strings
-/// Verifies that RFC3339 datetime strings have .to_rfc3339() method
+/// Test #4: .`to_rfc3339()` method on datetime strings
+/// Verifies that RFC3339 datetime strings have .`to_rfc3339()` method
 #[test]
 fn test_regression_082_to_rfc3339_method() {
     let code = r#"

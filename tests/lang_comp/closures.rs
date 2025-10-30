@@ -138,10 +138,10 @@ fn test_langcomp_010_01_closure_one_parameter() {
     let temp_file = std::env::temp_dir().join("langcomp_010_01_one_param.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let double = |x| { x * 2 }
 println(double(21))
-"#,
+",
     )
     .unwrap();
 
@@ -160,10 +160,10 @@ fn test_langcomp_010_01_closure_multiple_parameters() {
     let temp_file = std::env::temp_dir().join("langcomp_010_01_multi_params.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let add = |a, b| { a + b }
 println(add(10, 20))
-"#,
+",
     )
     .unwrap();
 
@@ -205,11 +205,11 @@ fn test_langcomp_010_02_capture_outer_variable() {
     let temp_file = std::env::temp_dir().join("langcomp_010_02_capture.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let x = 10
 let add_x = |y| { x + y }
 println(add_x(5))
-"#,
+",
     )
     .unwrap();
 
@@ -228,12 +228,12 @@ fn test_langcomp_010_02_capture_multiple_variables() {
     let temp_file = std::env::temp_dir().join("langcomp_010_02_multi_capture.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let a = 2
 let b = 3
 let calculate = |n| { n * a + b }
 println(calculate(5))
-"#,
+",
     )
     .unwrap();
 
@@ -274,10 +274,10 @@ fn test_langcomp_010_03_closure_implicit_return() {
     let temp_file = std::env::temp_dir().join("langcomp_010_03_implicit.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let square = |x| { x * x }
 println(square(5))
-"#,
+",
     )
     .unwrap();
 
@@ -296,14 +296,14 @@ fn test_langcomp_010_03_closure_multiple_expressions() {
     let temp_file = std::env::temp_dir().join("langcomp_010_03_multi_expr.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let process = |n| {
     let doubled = n * 2
     let added = doubled + 10
     added
 }
 println(process(15))
-"#,
+",
     )
     .unwrap();
 
@@ -344,14 +344,14 @@ fn test_langcomp_010_04_function_taking_closure() {
     let temp_file = std::env::temp_dir().join("langcomp_010_04_take_closure.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn apply(f, x) {
     f(x)
 }
 
 let double = |n| { n * 2 }
 println(apply(double, 21))
-"#,
+",
     )
     .unwrap();
 
@@ -370,7 +370,7 @@ fn test_langcomp_010_04_function_composition() {
     let temp_file = std::env::temp_dir().join("langcomp_010_04_compose.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn compose(f, g, x) {
     f(g(x))
 }
@@ -378,7 +378,7 @@ fn compose(f, g, x) {
 let add_one = |n| { n + 1 }
 let times_two = |n| { n * 2 }
 println(compose(add_one, times_two, 5))
-"#,
+",
     )
     .unwrap();
 

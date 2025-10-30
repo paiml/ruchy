@@ -271,7 +271,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_simple_variable_interpolation(var in "[a-z][a-z0-9]{0,10}") {
-                let text = format!("Value: {{{}}}", var);
+                let text = format!("Value: {{{var}}}");
                 let result = parse_fstring_into_parts(&text);
                 prop_assert!(result.is_ok(), "Variable interpolation {} should parse", text);
             }
@@ -279,7 +279,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_multiple_interpolations(n in 1..5usize) {
-                let text = (0..n).map(|i| format!("{{x{}}}", i)).collect::<Vec<_>>().join(" ");
+                let text = (0..n).map(|i| format!("{{x{i}}}")).collect::<Vec<_>>().join(" ");
                 let result = parse_fstring_into_parts(&text);
                 prop_assert!(result.is_ok(), "Multiple interpolations should parse");
             }
@@ -287,7 +287,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_unmatched_closing_brace_fails(text in "[a-zA-Z0-9]{0,10}") {
-                let bad_text = format!("{}}}", text);
+                let bad_text = format!("{text}}}");
                 let result = parse_fstring_into_parts(&bad_text);
                 prop_assert!(result.is_err(), "Unmatched }} should fail");
             }

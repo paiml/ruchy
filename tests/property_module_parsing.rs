@@ -3,6 +3,8 @@
 //! This test suite validates module declaration functionality using
 //! property-based testing to ensure correctness across random inputs.
 
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;
 
@@ -20,7 +22,7 @@ fn arb_module_name() -> impl Strategy<Value = String> {
 fn arb_module_body() -> impl Strategy<Value = String> {
     prop_oneof![
         // Empty module
-        Just("".to_string()),
+        Just(String::new()),
         // Single literal
         Just("42".to_string()),
         Just("\"hello\"".to_string()),
@@ -42,9 +44,9 @@ fn arb_module_body() -> impl Strategy<Value = String> {
 fn arb_module_declaration() -> impl Strategy<Value = String> {
     (arb_module_name(), arb_module_body()).prop_map(|(name, body)| {
         if body.is_empty() {
-            format!("module {} {{}}", name)
+            format!("module {name} {{}}")
         } else {
-            format!("module {} {{ {} }}", name, body)
+            format!("module {name} {{ {body} }}")
         }
     })
 }
@@ -85,13 +87,13 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_module_name_preserved(name in arb_module_name()) {
-        let module_decl = format!("module {} {{}}", name);
+        let module_decl = format!("module {name} {{}}");
         let result = Parser::new(&module_decl).parse();
 
         if let Ok(ast) = result {
-            let ast_str = format!("{:?}", ast);
+            let ast_str = format!("{ast:?}");
             prop_assert!(
-                ast_str.contains(&format!("name: \"{}\"", name)) || ast_str.contains(&name),
+                ast_str.contains(&format!("name: \"{name}\"")) || ast_str.contains(&name),
                 "Module name '{}' should be preserved in AST", name
             );
         }
@@ -101,7 +103,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_empty_module_parses(name in arb_module_name()) {
-        let module_decl = format!("module {} {{}}", name);
+        let module_decl = format!("module {name} {{}}");
         let result = Parser::new(&module_decl).parse();
         prop_assert!(result.is_ok(), "Empty module should parse: {}", module_decl);
     }
@@ -113,7 +115,7 @@ proptest! {
         name in arb_module_name(),
         expr in "(0i32..100i32)"
     ) {
-        let module_decl = format!("module {} {{ {} }}", name, expr);
+        let module_decl = format!("module {name} {{ {expr} }}");
         let result = Parser::new(&module_decl).parse();
 
         // Should either parse or give clear error
@@ -129,7 +131,7 @@ proptest! {
     fn prop_invalid_module_clear_error(
         invalid_name in "[^a-zA-Z0-9_]+"
     ) {
-        let module_decl = format!("module {} {{}}", invalid_name);
+        let module_decl = format!("module {invalid_name} {{}}");
         let result = Parser::new(&module_decl).parse();
 
         if let Err(e) = result {
@@ -158,7 +160,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -173,7 +175,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -187,7 +189,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -223,7 +225,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_err(), "Should error on: {}", code);
+            assert!(result.is_err(), "Should error on: {code}");
         }
     }
 }

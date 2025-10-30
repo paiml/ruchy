@@ -196,14 +196,14 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_integers_never_panic(n in any::<i32>()) {
-                let code = format!("{}", n);
+                let code = format!("{n}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
             #[ignore]
             fn prop_floats_never_panic(f in any::<f64>().prop_filter("finite", |x| x.is_finite())) {
-                let code = format!("{}", f);
+                let code = format!("{f}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
@@ -217,7 +217,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_bools_always_parse(b in any::<bool>()) {
-                let code = format!("{}", b);
+                let code = format!("{b}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -226,7 +226,7 @@ mod tests {
             #[ignore]
             fn prop_integer_type_suffixes(n in any::<i32>(),
                                           suffix in prop::sample::select(vec!["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"])) {
-                let code = format!("{}{}", n, suffix);
+                let code = format!("{n}{suffix}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Integer with suffix {} should parse", suffix);
             }
@@ -234,7 +234,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_hex_integers_parse(n in 0u32..=0xFFFF) {
-                let code = format!("0x{:X}", n);
+                let code = format!("0x{n:X}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Hex integer 0x{:X} should parse", n);
             }

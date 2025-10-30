@@ -56,10 +56,10 @@ fn test_parser_075_01_empty_block_comment() {
 #[test]
 fn test_parser_075_01_multiline_block_comment() {
     // Multiline block comment
-    let source = r#"/*
+    let source = r"/*
  * This is a
  * multiline comment
- */"#;
+ */";
     let tokens = tokenize(source);
 
     assert_eq!(tokens.len(), 1);
@@ -149,13 +149,13 @@ fn test_parser_075_03_deep_nesting() {
 #[test]
 fn test_parser_075_04_commented_out_code_with_nesting() {
     // Commenting out code that itself contains comments
-    let source = r#"
+    let source = r"
         let active = 42;
         /* temporarily disabled
         let disabled = /* old value */ 99;
         */
         let also_active = 7;
-    "#;
+    ";
     let tokens = tokenize(source);
 
     // Should have tokens for: let, active, =, 42, ;, BlockComment, let, also_active, =, 7, ;
@@ -271,11 +271,11 @@ fn test_parser_075_06_block_comment_with_line_comment_syntax() {
 #[test]
 fn test_parser_075_06_mixed_comment_types() {
     // Mix of line and block comments
-    let source = r#"
+    let source = r"
         // line comment
         /* block comment */
         let x = 42; // another line comment
-    "#;
+    ";
     let tokens = tokenize(source);
 
     let line_comments: Vec<_> = tokens.iter()

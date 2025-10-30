@@ -1,20 +1,20 @@
 //! STDLIB Phase 4: JSON Functions Tests
 //!
 //! **Task**: Implement 10 JSON functions
-//! **Priority**: HIGH (Phase 4 of STDLIB_ACCESS_PLAN)
+//! **Priority**: HIGH (Phase 4 of `STDLIB_ACCESS_PLAN`)
 //! **Pattern**: Three-layer builtin function (proven from env/fs/path functions)
 //!
 //! Functions:
-//! 1. json_parse(str: String) -> Value
-//! 2. json_stringify(value: Value) -> String
-//! 3. json_pretty(value: Value) -> String
-//! 4. json_read(path: String) -> Value
-//! 5. json_write(path: String, value: Value) -> Bool
-//! 6. json_validate(str: String) -> Bool
-//! 7. json_type(str: String) -> String
-//! 8. json_merge(obj1: Value, obj2: Value) -> Value
-//! 9. json_get(obj: Value, path: String) -> Value
-//! 10. json_set(obj: Value, path: String, value: Value) -> Value
+//! 1. `json_parse(str`: String) -> Value
+//! 2. `json_stringify(value`: Value) -> String
+//! 3. `json_pretty(value`: Value) -> String
+//! 4. `json_read(path`: String) -> Value
+//! 5. `json_write(path`: String, value: Value) -> Bool
+//! 6. `json_validate(str`: String) -> Bool
+//! 7. `json_type(str`: String) -> String
+//! 8. `json_merge(obj1`: Value, obj2: Value) -> Value
+//! 9. `json_get(obj`: Value, path: String) -> Value
+//! 10. `json_set(obj`: Value, path: String, value: Value) -> Value
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
@@ -104,13 +104,13 @@ fun main() {
 fn test_json_stringify_array() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
-    let code = r#"
+    let code = r"
 fun main() {
     let arr = [1, 2, 3, 4, 5];
     let json = json_stringify(arr);
     println(json);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -358,7 +358,7 @@ fn test_json_functions_summary() {
     println!("8. json_merge(obj1, obj2) - Deep merge two JSON objects");
     println!("9. json_get(obj, path) - Get nested value by path");
     println!("10. json_set(obj, path, value) - Set nested value by path");
-    println!("");
+    println!();
     println!("Three-Layer Implementation Required for each:");
     println!("1. Runtime: builtin_* in builtins.rs");
     println!("2. Transpiler: case in try_transpile_json_function()");

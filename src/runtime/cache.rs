@@ -364,7 +364,7 @@ mod mutation_tests {
         let cache = BytecodeCache::new();
         let stats = cache.stats();
 
-        let display = format!("{}", stats);
+        let display = format!("{stats}");
         assert!(
             display.contains("Cache:"),
             "Display should contain 'Cache:'"

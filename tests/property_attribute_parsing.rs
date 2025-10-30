@@ -29,7 +29,7 @@ fn arb_decorator_args() -> impl Strategy<Value = Vec<String>> {
 fn arb_at_decorator() -> impl Strategy<Value = String> {
     (arb_decorator_name(), arb_decorator_args()).prop_map(|(name, args)| {
         if args.is_empty() {
-            format!("@{}\nfun test() {{}}", name)
+            format!("@{name}\nfun test() {{}}")
         } else {
             format!("@{}({})\nfun test() {{}}", name, args.join(", "))
         }
@@ -40,7 +40,7 @@ fn arb_at_decorator() -> impl Strategy<Value = String> {
 fn arb_rust_attribute() -> impl Strategy<Value = String> {
     (arb_decorator_name(), arb_decorator_args()).prop_map(|(name, args)| {
         if args.is_empty() {
-            format!("#[{}]\nfun test() {{}}", name)
+            format!("#[{name}]\nfun test() {{}}")
         } else {
             format!("#[{}({})]\nfun test() {{}}", name, args.join(", "))
         }
@@ -52,10 +52,10 @@ fn arb_multiple_decorators() -> impl Strategy<Value = String> {
     prop::collection::vec(arb_decorator_name(), 1..4).prop_map(|names| {
         let decorators = names
             .iter()
-            .map(|name| format!("@{}", name))
+            .map(|name| format!("@{name}"))
             .collect::<Vec<_>>()
             .join("\n");
-        format!("{}\nfun test() {{}}", decorators)
+        format!("{decorators}\nfun test() {{}}")
     })
 }
 
@@ -115,11 +115,11 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_decorator_name_preservation(name in arb_decorator_name()) {
-        let code = format!("@{}\nfun test() {{}}", name);
+        let code = format!("@{name}\nfun test() {{}}");
         let result = Parser::new(&code).parse();
 
         if let Ok(ast) = result {
-            let ast_str = format!("{:?}", ast);
+            let ast_str = format!("{ast:?}");
             prop_assert!(
                 ast_str.contains(&name),
                 "Decorator name '{}' not preserved in AST", name
@@ -131,7 +131,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_invalid_decorator_clear_errors(invalid_char in "[^a-zA-Z0-9_@#\\[\\](),\\s]") {
-        let code = format!("@test{}\nfun test() {{}}", invalid_char);
+        let code = format!("@test{invalid_char}\nfun test() {{}}");
         let result = Parser::new(&code).parse();
 
         if let Err(e) = result {
@@ -163,7 +163,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -178,7 +178,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -193,7 +193,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -207,7 +207,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -221,7 +221,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 }

@@ -31,21 +31,21 @@ fn arb_int() -> impl Strategy<Value = i32> {
 fn arb_range_expr() -> impl Strategy<Value = String> {
     prop_oneof![
         // Closed range: 2..5
-        (arb_int(), arb_int()).prop_map(|(start, end)| format!("{}..{}", start, end)),
+        (arb_int(), arb_int()).prop_map(|(start, end)| format!("{start}..{end}")),
         // Open-ended range (start only): 2..
-        arb_int().prop_map(|start| format!("{}..", start)),
+        arb_int().prop_map(|start| format!("{start}..")),
         // Open-ended range (end only): ..5
-        arb_int().prop_map(|end| format!("..{}", end)),
+        arb_int().prop_map(|end| format!("..{end}")),
         // Full range: ..
         Just("..".to_string()),
         // Inclusive closed range: 2..=5
-        (arb_int(), arb_int()).prop_map(|(start, end)| format!("{}..={}", start, end)),
+        (arb_int(), arb_int()).prop_map(|(start, end)| format!("{start}..={end}")),
     ]
 }
 
 /// Generate slice expressions with ranges
 fn arb_slice_expr() -> impl Strategy<Value = String> {
-    (arb_range_expr(),).prop_map(|(range,)| format!("arr[{}]", range))
+    (arb_range_expr(),).prop_map(|(range,)| format!("arr[{range}]"))
 }
 
 // ============================================================================
@@ -59,7 +59,7 @@ proptest! {
     #[test]
     #[ignore] // Run with: cargo test property_range -- --ignored --nocapture
     fn prop_parse_range_never_panics(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ let r = {}; }}", range_expr);
+        let code = format!("fun test() {{ let r = {range_expr}; }}");
         let result = std::panic::catch_unwind(|| {
             Parser::new(&code).parse()
         });
@@ -74,7 +74,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_closed_ranges_parse(start in arb_int(), end in arb_int()) {
-        let code = format!("fun test() {{ let r = {}..{}; }}", start, end);
+        let code = format!("fun test() {{ let r = {start}..{end}; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse closed range {}..{}", start, end);
@@ -86,7 +86,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_open_start_ranges_parse(start in arb_int()) {
-        let code = format!("fun test() {{ let r = {}..; }}", start);
+        let code = format!("fun test() {{ let r = {start}..; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse open-ended range {}..", start);
@@ -98,7 +98,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_open_end_ranges_parse(end in arb_int()) {
-        let code = format!("fun test() {{ let r = ..{}; }}", end);
+        let code = format!("fun test() {{ let r = ..{end}; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse open-ended range ..{}", end);
@@ -110,7 +110,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_slice_with_range_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ let arr = [1, 2, 3]; let slice = arr[{}]; }}", range_expr);
+        let code = format!("fun test() {{ let arr = [1, 2, 3]; let slice = arr[{range_expr}]; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse slice arr[{}]", range_expr);
@@ -122,7 +122,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_string_slice_with_range_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ let s = \"hello\"; let slice = &s[{}]; }}", range_expr);
+        let code = format!("fun test() {{ let s = \"hello\"; let slice = &s[{range_expr}]; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse string slice &s[{}]", range_expr);
@@ -134,7 +134,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_range_in_let_statement_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ let x = {}; }}", range_expr);
+        let code = format!("fun test() {{ let x = {range_expr}; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse let x = {};", range_expr);
@@ -146,7 +146,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_range_as_argument_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ func({}); }}", range_expr);
+        let code = format!("fun test() {{ func({range_expr}); }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse func({});", range_expr);
@@ -158,7 +158,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_range_in_if_block_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ if true {{ let r = {}; }} }}", range_expr);
+        let code = format!("fun test() {{ if true {{ let r = {range_expr}; }} }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse range in if block: {}", range_expr);
@@ -170,7 +170,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_range_in_while_loop_parses(range_expr in arb_range_expr()) {
-        let code = format!("fun test() {{ while true {{ let r = {}; break; }} }}", range_expr);
+        let code = format!("fun test() {{ while true {{ let r = {range_expr}; break; }} }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse range in while loop: {}", range_expr);
@@ -182,7 +182,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_multiple_ranges_parse(r1 in arb_range_expr(), r2 in arb_range_expr()) {
-        let code = format!("fun test() {{ let a = {}; let b = {}; }}", r1, r2);
+        let code = format!("fun test() {{ let a = {r1}; let b = {r2}; }}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok(), "Failed to parse multiple ranges: {} and {}", r1, r2);

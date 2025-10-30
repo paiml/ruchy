@@ -1,16 +1,16 @@
 //! STDLIB Phase 1: Remaining Environment Functions Tests
 //!
 //! **Task**: Implement remaining 6 environment functions
-//! **Priority**: HIGH (Phase 1 of STDLIB_ACCESS_PLAN)
-//! **Pattern**: Three-layer builtin function (proven from env_args and env_var)
+//! **Priority**: HIGH (Phase 1 of `STDLIB_ACCESS_PLAN`)
+//! **Pattern**: Three-layer builtin function (proven from `env_args` and `env_var`)
 //!
 //! Functions:
-//! 1. env_set_var(key: String, value: String) -> Result<()>
-//! 2. env_remove_var(key: String) -> Result<()>
-//! 3. env_vars() -> HashMap<String, String>
-//! 4. env_current_dir() -> Result<String>
-//! 5. env_set_current_dir(path: String) -> Result<()>
-//! 6. env_temp_dir() -> String
+//! 1. `env_set_var(key`: String, value: String) -> Result<()>
+//! 2. `env_remove_var(key`: String) -> Result<()>
+//! 3. `env_vars()` -> `HashMap`<String, String>
+//! 4. `env_current_dir()` -> Result<String>
+//! 5. `env_set_current_dir(path`: String) -> Result<()>
+//! 6. `env_temp_dir()` -> String
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
@@ -276,7 +276,7 @@ fn test_env_functions_summary() {
     println!("4. env_current_dir() - Get current working directory");
     println!("5. env_set_current_dir(path) - Change current directory");
     println!("6. env_temp_dir() - Get system temp directory");
-    println!("");
+    println!();
     println!("Three-Layer Implementation Required for each:");
     println!("1. Runtime: builtin_* in builtins.rs");
     println!("2. Transpiler: case in try_transpile_environment_function()");

@@ -1295,7 +1295,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_identifier_patterns_parse(name in "[a-z][a-z0-9_]*") {
-                let code = format!("let {} = 42", name);
+                let code = format!("let {name} = 42");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -1303,7 +1303,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_tuple_patterns_parse(a in "[a-z]+", b in "[a-z]+") {
-                let code = format!("let ({}, {}) = (1, 2)", a, b);
+                let code = format!("let ({a}, {b}) = (1, 2)");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -1311,7 +1311,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_list_patterns_parse(name in "[a-z]+") {
-                let code = format!("let [{}, ...rest] = [1, 2, 3]", name);
+                let code = format!("let [{name}, ...rest] = [1, 2, 3]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -1319,7 +1319,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_some_patterns_parse(inner in "[a-z]+") {
-                let code = format!("let Some({}) = value", inner);
+                let code = format!("let Some({inner}) = value");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -1335,7 +1335,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_literal_patterns_parse(n in 0i32..1000) {
-                let code = format!("match x {{ {} => true, _ => false }}", n);
+                let code = format!("match x {{ {n} => true, _ => false }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -1343,7 +1343,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_struct_patterns_parse(field in "[a-z]+") {
-                let code = format!("let Point {{ {} }} = p", field);
+                let code = format!("let Point {{ {field} }} = p");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

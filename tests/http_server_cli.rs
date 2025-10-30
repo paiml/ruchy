@@ -1,6 +1,9 @@
 // tests/http_server_cli.rs - HTTP Server CLI Tests (EXTREME TDD)
 // [HTTP-001] RED Phase: Write failing tests FIRST
 
+#![allow(clippy::similar_names)] // coop/coep are standard HTTP header abbreviations
+#![allow(clippy::zombie_processes)] // Test processes are explicitly killed in tests
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::net::TcpListener;
@@ -89,7 +92,7 @@ fn test_red_ruchy_serve_starts_server() {
     std::thread::sleep(Duration::from_millis(500));
 
     // Test HTTP request
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/index.html", port));
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html"));
     assert!(response.is_ok(), "Failed to connect to server");
 
     let response = response.unwrap();
@@ -163,7 +166,7 @@ mod property_tests {
         #![proptest_config(ProptestConfig::with_cases(10_000))]
 
         #[test]
-        #[ignore] // Remove when implementation complete
+        #[ignore = "Remove when implementation complete"]
         fn prop_ruchy_serve_never_panics_on_invalid_port(port in 0u16..1024u16) {
             // Property: ruchy serve with invalid port should fail gracefully, not panic
             let test_dir = create_test_dir();
@@ -187,7 +190,7 @@ mod property_tests {
             let temp_dir = TempDir::new().unwrap();
             let test_path = temp_dir.path().join(&dir_name);
 
-            if let Ok(_) = std::fs::create_dir_all(&test_path) {
+            if let Ok(()) = std::fs::create_dir_all(&test_path) {
                 std::fs::write(test_path.join("test.html"), "<html></html>").unwrap();
 
                 let result = ruchy_cmd()
@@ -225,7 +228,7 @@ fn test_http002_mime_html() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/index.html", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html")).unwrap();
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get("content-type").unwrap(),
@@ -254,7 +257,7 @@ fn test_http002_mime_css() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/style.css", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/style.css")).unwrap();
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get("content-type").unwrap(),
@@ -283,12 +286,12 @@ fn test_http002_mime_javascript() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.js", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.js")).unwrap();
     assert_eq!(response.status(), 200);
     let content_type = response.headers().get("content-type").unwrap().to_str().unwrap();
     assert!(
         content_type.contains("application/javascript") || content_type.contains("text/javascript"),
-        "Expected JavaScript MIME type, got: {}", content_type
+        "Expected JavaScript MIME type, got: {content_type}"
     );
 
     child.kill().unwrap();
@@ -315,7 +318,7 @@ fn test_http002_mime_wasm() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/module.wasm", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/module.wasm")).unwrap();
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get("content-type").unwrap(),
@@ -345,7 +348,7 @@ fn test_http002_mime_json() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/data.json", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/data.json")).unwrap();
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get("content-type").unwrap(),
@@ -379,7 +382,7 @@ fn test_http003_wasm_coop_header() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.wasm", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.wasm")).unwrap();
     assert_eq!(response.status(), 200);
 
     // COOP header required for SharedArrayBuffer
@@ -413,7 +416,7 @@ fn test_http003_wasm_coep_header() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/app.wasm", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.wasm")).unwrap();
     assert_eq!(response.status(), 200);
 
     // COEP header required for SharedArrayBuffer
@@ -447,7 +450,7 @@ fn test_http003_html_coop_header() {
 
     std::thread::sleep(Duration::from_millis(500));
 
-    let response = reqwest::blocking::get(format!("http://127.0.0.1:{}/index.html", port)).unwrap();
+    let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html")).unwrap();
     assert_eq!(response.status(), 200);
 
     // HTML pages that load WASM need these headers too

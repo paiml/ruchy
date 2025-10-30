@@ -12,7 +12,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test Case 1: Minimal Vec::new() with while loop (8 lines)
+/// Test Case 1: Minimal `Vec::new()` with while loop (8 lines)
 /// This is the smallest reproduction case from Issue #76
 #[test]
 fn test_regression_076_minimal_vec_new() {
@@ -36,7 +36,7 @@ println!("Success: {} elements", vec.len());
         .stdout(predicate::str::contains("10"));
 }
 
-/// Test Case 2: Vec::push in while loop (from logger test)
+/// Test Case 2: `Vec::push` in while loop (from logger test)
 /// This worked in v3.146.0, hangs in v3.147.0
 #[test]
 fn test_regression_076_vec_push_loop() {
@@ -84,7 +84,7 @@ println!("Created vector with {} elements", vec.len());
         .stdout(predicate::str::contains("Created vector with 100 elements"));
 }
 
-/// Test Case 4: Box::new() should still work (should NOT generate QualifiedName)
+/// Test Case 4: `Box::new()` should still work (should NOT generate `QualifiedName`)
 /// This verifies that the fix doesn't break other standard library types
 #[test]
 fn test_regression_076_box_new_still_works() {
@@ -103,7 +103,7 @@ println!("Boxed value: {}", boxed);
         .stdout(predicate::str::contains("Boxed value: 42"));
 }
 
-/// Test Case 5: HashMap::new() should still work
+/// Test Case 5: `HashMap::new()` should still work
 #[test]
 fn test_regression_076_hashmap_new_still_works() {
     let script = r#"
@@ -122,10 +122,10 @@ println!("Map size: {}", map.len());
         .stdout(predicate::str::contains("Map size: 1"));
 }
 
-/// Test Case 6: Command::new() SHOULD generate QualifiedName (Issue #75)
+/// Test Case 6: `Command::new()` SHOULD generate `QualifiedName` (Issue #75)
 /// This verifies that the PARSER-091 fix still works for Command
 #[test]
-#[ignore] // Still blocked by Issue #75 - Command runtime not implemented
+#[ignore = "Still blocked by Issue #75 - Command runtime not implemented"]
 fn test_regression_076_command_new_generates_qualifiedname() {
     let script = r#"
 let cmd = Command::new("echo");

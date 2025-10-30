@@ -326,7 +326,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_unit_enums_parse(name in "[A-Z][a-z]+", v1 in "[A-Z][a-z]+", v2 in "[A-Z][a-z]+") {
-                let code = format!("enum {} {{ {}, {} }}", name, v1, v2);
+                let code = format!("enum {name} {{ {v1}, {v2} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -334,7 +334,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_tuple_variant_parses(name in "[A-Z][a-z]+", variant in "[A-Z][a-z]+") {
-                let code = format!("enum {} {{ {}(String) }}", name, variant);
+                let code = format!("enum {name} {{ {variant}(String) }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -342,7 +342,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_discriminant_enums_parse(name in "[A-Z][a-z]+", v1 in "[A-Z][a-z]+", n1 in 0i32..100) {
-                let code = format!("enum {} {{ {} = {} }}", name, v1, n1);
+                let code = format!("enum {name} {{ {v1} = {n1} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -350,7 +350,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_generic_enums_parse(name in "[A-Z][a-z]+", param in "[A-Z]") {
-                let code = format!("enum {}<{}> {{ Some({}), None }}", name, param, param);
+                let code = format!("enum {name}<{param}> {{ Some({param}), None }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -358,7 +358,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_mixed_variant_enums_parse(name in "[A-Z][a-z]+") {
-                let code = format!("enum {} {{ Unit, Tuple(i32), Struct {{ x: i32 }} }}", name);
+                let code = format!("enum {name} {{ Unit, Tuple(i32), Struct {{ x: i32 }} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

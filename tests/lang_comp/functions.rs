@@ -3,6 +3,8 @@
 // Validates: LANG-COMP-004 Functions (declaration, parameters, return values, closures)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
 
+#![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::path::PathBuf;
@@ -341,12 +343,11 @@ mod property_tests {
 fn double(x) {{
     x * 2
 }}
-println(f"Result: {{double({})}}")
-"#,
-                i
+println(f"Result: {{double({i})}}")
+"#
             );
             let temp_file =
-                std::env::temp_dir().join(format!("langcomp_004_prop_deterministic_{}.ruchy", i));
+                std::env::temp_dir().join(format!("langcomp_004_prop_deterministic_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             // Run twice and compare
@@ -371,12 +372,11 @@ fn double(x) {{
 fn square(x) {{
     x * x
 }}
-println(f"Result: {{square(double({}))}}")
-"#,
-                i
+println(f"Result: {{square(double({i}))}}")
+"#
             );
             let temp_file =
-                std::env::temp_dir().join(format!("langcomp_004_prop_nested_{}.ruchy", i));
+                std::env::temp_dir().join(format!("langcomp_004_prop_nested_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd().arg("run").arg(&temp_file).assert().success();
@@ -389,12 +389,12 @@ println(f"Result: {{square(double({}))}}")
     #[ignore]
     fn test_langcomp_004_property_parameter_count_matches() {
         // Property: Calling fn with wrong number of params fails gracefully
-        let code = r#"
+        let code = r"
 fn add(a, b) {
     a + b
 }
 add(5)
-"#;
+";
         let temp_file = std::env::temp_dir().join("langcomp_004_prop_param_count.ruchy");
         std::fs::write(&temp_file, code).unwrap();
 

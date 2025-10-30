@@ -29,10 +29,10 @@ fn test_fmt_ignore_preserves_single_line() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignore directive and intentionally bad formatting
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
+    fs::write(&test_file, r"// ruchy-fmt-ignore
 let x    =    1  +  2
 
-let y = 3 + 4"#).expect("Failed to write test file");
+let y = 3 + 4").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -57,8 +57,8 @@ fn test_fmt_ignore_next_alias() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignore-next directive
-    fs::write(&test_file, r#"// ruchy-fmt-ignore-next
-let x    =    1  +  2"#).expect("Failed to write test file");
+    fs::write(&test_file, r"// ruchy-fmt-ignore-next
+let x    =    1  +  2").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -80,7 +80,7 @@ fn test_fmt_ignore_multiple_expressions() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with multiple ignore directives
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
+    fs::write(&test_file, r"// ruchy-fmt-ignore
 let a    =    1
 
 let b = 2
@@ -88,7 +88,7 @@ let b = 2
 // ruchy-fmt-ignore
 let c    =    3
 
-let d = 4"#).expect("Failed to write test file");
+let d = 4").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -115,10 +115,10 @@ fn test_fmt_ignore_with_complex_expression() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignored function
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
+    fs::write(&test_file, r"// ruchy-fmt-ignore
 fn foo ( x,y ) { x+y }
 
-fn bar(a, b) { a + b }"#).expect("Failed to write test file");
+fn bar(a, b) { a + b }").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -143,8 +143,8 @@ fn test_fmt_ignore_with_check_mode() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignore directive
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
-let x    =    1  +  2"#).expect("Failed to write test file");
+    fs::write(&test_file, r"// ruchy-fmt-ignore
+let x    =    1  +  2").expect("Failed to write test file");
 
     // First format it
     ruchy_cmd()
@@ -169,10 +169,10 @@ fn test_fmt_ignore_preserves_comments_and_whitespace() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignored code containing comments and extra whitespace
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
+    fs::write(&test_file, r"// ruchy-fmt-ignore
 let x  =  1  +  2   // trailing comment
     // inner comment
-    +   3"#).expect("Failed to write test file");
+    +   3").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -195,8 +195,8 @@ fn test_fmt_ignore_does_not_affect_other_files() {
     let normal_file = temp_dir.path().join("normal.ruchy");
 
     // Create file with ignore directive
-    fs::write(&ignored_file, r#"// ruchy-fmt-ignore
-let x    =    1  +  2"#).expect("Failed to write ignored file");
+    fs::write(&ignored_file, r"// ruchy-fmt-ignore
+let x    =    1  +  2").expect("Failed to write ignored file");
 
     // Create normal file with bad formatting
     fs::write(&normal_file, "let y    =    3  +  4").expect("Failed to write normal file");
@@ -231,12 +231,12 @@ fn test_fmt_ignore_with_nested_expressions() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignored block containing nested expressions
-    fs::write(&test_file, r#"// ruchy-fmt-ignore
+    fs::write(&test_file, r"// ruchy-fmt-ignore
 {
     let a=1
     let b=2
     a+b
-}"#).expect("Failed to write test file");
+}").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -259,8 +259,8 @@ fn test_fmt_ignore_case_sensitivity() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with uppercase ignore directive (should NOT work)
-    fs::write(&test_file, r#"// RUCHY-FMT-IGNORE
-let x    =    1  +  2"#).expect("Failed to write test file");
+    fs::write(&test_file, r"// RUCHY-FMT-IGNORE
+let x    =    1  +  2").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()
@@ -282,8 +282,8 @@ fn test_fmt_ignore_with_extra_whitespace() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Write file with ignore directive with extra whitespace
-    fs::write(&test_file, r#"//   ruchy-fmt-ignore
-let x    =    1  +  2"#).expect("Failed to write test file");
+    fs::write(&test_file, r"//   ruchy-fmt-ignore
+let x    =    1  +  2").expect("Failed to write test file");
 
     // Format file
     ruchy_cmd()

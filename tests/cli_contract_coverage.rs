@@ -132,7 +132,7 @@ fn cli_coverage_json_format_output() {
     // JSON output should be parseable
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
-        stdout.contains("{") && stdout.contains("}"),
+        stdout.contains('{') && stdout.contains('}'),
         "Should output JSON format"
     );
 }
@@ -219,7 +219,7 @@ fn cli_coverage_threshold_message() {
     // Check if threshold is mentioned in output (either stdout or stderr)
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
-    let combined = format!("{}{}", stdout, stderr);
+    let combined = format!("{stdout}{stderr}");
 
     assert!(
         combined.contains("threshold") || combined.contains("50"),
@@ -265,7 +265,7 @@ fn cli_coverage_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -284,7 +284,7 @@ fun fibonacci(n) {
 
 println(factorial(5))
 println(fibonacci(8))
-"#,
+",
     );
 
     ruchy_cmd()

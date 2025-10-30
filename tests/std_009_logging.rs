@@ -284,7 +284,7 @@ mod property_tests {
             // Note: Can't test changing levels because logger can only init once
 
             init_test_logger();
-            let result = ruchy::stdlib::logging::is_level_enabled(&level);
+            let result = ruchy::stdlib::logging::is_level_enabled(level);
             prop_assert!(result.is_ok(), "is_level_enabled should succeed for valid level");
         }
 
@@ -293,7 +293,7 @@ mod property_tests {
             // Property: Invalid levels always return errors
 
             init_test_logger();
-            let valid_levels = vec!["trace", "debug", "info", "warn", "error", "off"];
+            let valid_levels = ["trace", "debug", "info", "warn", "error", "off"];
             if !valid_levels.contains(&level.as_str()) {
                 let result = ruchy::stdlib::logging::init_logger(&level);
                 prop_assert!(result.is_err(), "Invalid level should fail");

@@ -94,7 +94,7 @@ pub fn suggest_correction(input: &str) -> Option<String> {
 /// - Unexpected tokens in import list
 ///
 /// Parse import statement (complexity: 7)
-/// NOTE: Import/export parsing functions moved to utils_helpers/imports.rs
+/// NOTE: Import/export parsing functions moved to `utils_helpers/imports.rs`
 /// # Errors
 ///
 /// Returns an error if the operation fails

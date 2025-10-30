@@ -128,13 +128,13 @@ fn test_walk_parallel_nonexistent_path() {
 
 // Test 6: Parallel processing (100 files)
 #[test]
-#[ignore] // Run with: cargo test -- --ignored
+#[ignore = "Run with: cargo test -- --ignored"]
 fn test_walk_parallel_performance() {
     let temp = TempDir::new().unwrap();
 
     // Create 100 files
     for i in 0..100 {
-        fs::write(temp.path().join(format!("file{}.txt", i)), "test").unwrap();
+        fs::write(temp.path().join(format!("file{i}.txt")), "test").unwrap();
     }
 
     let code = format!(r#"

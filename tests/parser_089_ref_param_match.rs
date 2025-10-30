@@ -18,7 +18,7 @@ use std::fs;
 use tempfile::NamedTempFile;
 
 fn write_and_check(code: &str) {
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(temp_file.path(), code).unwrap();
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
@@ -150,7 +150,7 @@ pub fun validate_dependencies(deps: Vec<String>) -> bool {
 /// Test mutable reference parameter with match
 #[test]
 fn test_parser_089_mut_ref_param_with_match() {
-    let code = r#"
+    let code = r"
 pub fun modify_and_check(value: &mut i32) -> bool {
     *value += 1;
     match *value {
@@ -158,7 +158,7 @@ pub fun modify_and_check(value: &mut i32) -> bool {
         _ => false,
     }
 }
-"#;
+";
     write_and_check(code);
 }
 

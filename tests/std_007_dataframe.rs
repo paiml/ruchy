@@ -1,6 +1,6 @@
-//! STD-007: DataFrame Module Tests (ruchy/std/dataframe)
+//! STD-007: `DataFrame` Module Tests (ruchy/std/dataframe)
 //!
-//! Test suite for DataFrame operations module.
+//! Test suite for `DataFrame` operations module.
 //! Thin wrappers around polars-rs for data manipulation.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
@@ -400,7 +400,7 @@ fn test_std_007_row_count_empty() {
 
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    
     use proptest::prelude::*;
 
     proptest! {
@@ -411,7 +411,7 @@ mod property_tests {
             // Property: write_csv → read_csv should preserve shape
 
             // Create DataFrame with random dimensions
-            let col_names: Vec<String> = (0..cols).map(|i| format!("col{}", i)).collect();
+            let col_names: Vec<String> = (0..cols).map(|i| format!("col{i}")).collect();
             let columns: Vec<(&str, Vec<i64>)> = col_names.iter()
                 .enumerate()
                 .map(|(i, name)| {
@@ -424,7 +424,7 @@ mod property_tests {
             let original_shape = df.shape();
 
             // Write to CSV
-            let test_file = format!("/tmp/test_std_007_roundtrip_{}_{}.csv", rows, cols);
+            let test_file = format!("/tmp/test_std_007_roundtrip_{rows}_{cols}.csv");
             ruchy::stdlib::dataframe::write_csv(&mut df, &test_file).unwrap();
 
             // Read back
@@ -443,7 +443,7 @@ mod property_tests {
         fn test_std_007_never_panics_select(n_cols in 1usize..10) {
             // Property: select should never panic, even with invalid input
 
-            let col_names: Vec<String> = (0..n_cols).map(|i| format!("col{}", i)).collect();
+            let col_names: Vec<String> = (0..n_cols).map(|i| format!("col{i}")).collect();
             let columns: Vec<(&str, Vec<i64>)> = col_names.iter()
                 .map(|name| (name.as_str(), vec![1, 2, 3]))
                 .collect();

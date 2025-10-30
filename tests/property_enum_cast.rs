@@ -13,10 +13,10 @@ use proptest::prelude::*;
 #[test]
 fn test_property_runtime_092_enum_to_i32() {
     proptest!(|(disc0 in 0i64..10, disc1 in 10i64..20)| {
-        let code = format!(r#"
+        let code = format!(r"
 enum TestEnum {{
-    Variant0 = {},
-    Variant1 = {},
+    Variant0 = {disc0},
+    Variant1 = {disc1},
 }}
 fun main() {{
     let v0 = TestEnum::Variant0;
@@ -26,7 +26,7 @@ fun main() {{
     println(val0);
     println(val1);
 }}
-"#, disc0, disc1);
+");
 
         Command::cargo_bin("ruchy")
             .unwrap()
@@ -44,16 +44,16 @@ fun main() {{
 #[test]
 fn test_property_runtime_092_enum_arithmetic() {
     proptest!(|(disc in 0i64..100, add_val in 1i64..10)| {
-        let code = format!(r#"
+        let code = format!(r"
 enum Value {{
-    X = {},
+    X = {disc},
 }}
 fun main() {{
     let v = Value::X;
-    let result = (v as i32) + {};
+    let result = (v as i32) + {add_val};
     println(result);
 }}
-"#, disc, add_val);
+");
 
         let expected = disc + add_val;
         Command::cargo_bin("ruchy")
@@ -71,11 +71,11 @@ fun main() {{
 #[test]
 fn test_property_runtime_092_multiple_variables() {
     proptest!(|(d0 in 0i64..10, d1 in 10i64..20, d2 in 20i64..30)| {
-        let code = format!(r#"
+        let code = format!(r"
 enum Status {{
-    A = {},
-    B = {},
-    C = {},
+    A = {d0},
+    B = {d1},
+    C = {d2},
 }}
 fun main() {{
     let a = Status::A;
@@ -85,7 +85,7 @@ fun main() {{
     println(b as i32);
     println(c as i32);
 }}
-"#, d0, d1, d2);
+");
 
         Command::cargo_bin("ruchy")
             .unwrap()
@@ -104,9 +104,9 @@ fun main() {{
 #[test]
 fn test_property_runtime_092_multiple_int_types() {
     proptest!(|(disc in 0i64..1000)| {
-        let code = format!(r#"
+        let code = format!(r"
 enum Value {{
-    X = {},
+    X = {disc},
 }}
 fun main() {{
     let v = Value::X;
@@ -119,7 +119,7 @@ fun main() {{
     println(as_i64);
     println(as_isize);
 }}
-"#, disc);
+");
 
         Command::cargo_bin("ruchy")
             .unwrap()
@@ -136,9 +136,9 @@ fun main() {{
 #[test]
 fn test_property_runtime_092_discriminant_preservation() {
     proptest!(|(disc in 0i64..50)| {
-        let code = format!(r#"
+        let code = format!(r"
 enum Priority {{
-    Level = {},
+    Level = {disc},
 }}
 fun main() {{
     let p = Priority::Level;
@@ -148,7 +148,7 @@ fun main() {{
     let sum = val1 + val2;
     println(sum);
 }}
-"#, disc);
+");
 
         let expected = disc * 2;
         Command::cargo_bin("ruchy")

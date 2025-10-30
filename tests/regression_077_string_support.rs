@@ -10,7 +10,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test Case 1: String::new() creates empty string
+/// Test Case 1: `String::new()` creates empty string
 #[test]
 fn test_regression_077_string_new() {
     let script = r#"
@@ -28,7 +28,7 @@ println!("Success");
         .stdout(predicate::str::contains("Success"));
 }
 
-/// Test Case 2: String::from() converts value to string
+/// Test Case 2: `String::from()` converts value to string
 #[test]
 fn test_regression_077_string_from() {
     let script = r#"
@@ -108,7 +108,7 @@ println!("Success");
         .stdout(predicate::str::contains("Success"));
 }
 
-/// Test Case 5: Vec::new() should still work (no regression from v3.147.1)
+/// Test Case 5: `Vec::new()` should still work (no regression from v3.147.1)
 #[test]
 fn test_regression_077_vec_new_still_works() {
     let script = r#"

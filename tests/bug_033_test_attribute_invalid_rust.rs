@@ -59,12 +59,12 @@ fn test_bug_033_baseline_test_without_description() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 @test
 fun test_subtraction() {
     assert_eq(2 - 1, 1)
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -165,14 +165,12 @@ fun test_example() {
 
     // Should generate #[test] or # [test] (with formatting spaces), NOT #[test(description)]
     assert!(transpiled.contains("#[test]") || transpiled.contains("# [test]"),
-        "Transpiled code should contain #[test] attribute, found: {}",
-        transpiled);
+        "Transpiled code should contain #[test] attribute, found: {transpiled}");
 
     // Should NOT contain invalid syntax with arguments
     assert!(!transpiled.contains("#[test(") && !transpiled.contains("#[test (")
             && !transpiled.contains("# [test ("),
-        "Transpiled code should NOT contain #[test(description)] - found: {}",
-        transpiled);
+        "Transpiled code should NOT contain #[test(description)] - found: {transpiled}");
 }
 
 /// Test 6: property-tests command should work
@@ -204,10 +202,10 @@ fun test_example() {
 #[test]
 fn test_bug_033_red_phase_summary() {
     println!("BUG-033 RED Phase: @test(description) Invalid Rust");
-    println!("");
+    println!();
     println!("Problem: @test(\"description\") → #[test(description)] (invalid)");
     println!("Impact: Breaks ruchy property-tests command");
-    println!("");
+    println!();
     println!("Test Suite Created:");
     println!("1. @test with description - compile");
     println!("2. @test without description - baseline");
@@ -215,12 +213,12 @@ fn test_bug_033_red_phase_summary() {
     println!("4. Multiple @test functions");
     println!("5. Verify transpiled output format");
     println!("6. property-tests command works");
-    println!("");
+    println!();
     println!("Expected Results:");
     println!("- RED Phase: Tests 1, 3-6 FAIL (invalid Rust)");
     println!("- RED Phase: Test 2 PASS (baseline)");
     println!("- GREEN Phase: ALL tests PASS after fix");
-    println!("");
+    println!();
     println!("Fix Strategy:");
     println!("- Modify format_regular_attribute() to strip args when name == \"test\"");
     println!("- Optional: Add description as doc comment /// <description>");

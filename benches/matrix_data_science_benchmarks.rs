@@ -66,7 +66,7 @@ fn bench_arithmetic_division(c: &mut Criterion) {
 fn bench_csv_array_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_002_csv_operations");
 
-    for size in [10, 100, 1000].iter() {
+    for size in &[10, 100, 1000] {
         group.bench_with_input(BenchmarkId::new("array_creation", size), size, |b, &size| {
             b.iter(|| {
                 let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
@@ -137,13 +137,13 @@ fn bench_csv_filter_map_reduce_pipeline(c: &mut Criterion) {
 fn bench_stats_mean_calculation(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_003_statistical_operations");
 
-    for size in [10, 100, 1000].iter() {
+    for size in &[10, 100, 1000] {
         group.bench_with_input(BenchmarkId::new("mean", size), size, |b, &size| {
             b.iter(|| {
                 let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
                 // Generate array and calculate mean
                 let data = (1..=size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
-                let code = format!("let data = [{}]; data.reduce(|acc, x| acc + x, 0) / data.len()", data);
+                let code = format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0) / data.len()");
                 let result = repl.eval(&code);
                 black_box(result)
             });
@@ -229,12 +229,12 @@ fn bench_timeseries_percent_change(c: &mut Criterion) {
 fn bench_timeseries_cumulative_sum(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_004_timeseries_operations");
 
-    for size in [10, 100, 1000].iter() {
+    for size in &[10, 100, 1000] {
         group.bench_with_input(BenchmarkId::new("cumulative_sum", size), size, |b, &size| {
             b.iter(|| {
                 let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
                 let data = (1..=size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
-                let code = format!("let data = [{}]; data.reduce(|acc, x| acc + x, 0)", data);
+                let code = format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0)");
                 let result = repl.eval(&code);
                 black_box(result)
             });

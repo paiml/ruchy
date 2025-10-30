@@ -1,4 +1,4 @@
-//! EXTREME TDD Tests for Titanic DataFrame Example
+//! EXTREME TDD Tests for Titanic `DataFrame` Example
 //!
 //! Test Strategy: RED → GREEN → REFACTOR
 //! - RED: These tests WILL FAIL until example is implemented
@@ -7,7 +7,7 @@
 //!
 //! Test Coverage:
 //! 1. Example file exists and parses
-//! 2. Transpiles to valid Rust with correct DataFrame API
+//! 2. Transpiles to valid Rust with correct `DataFrame` API
 //! 3. Method name mapping works (rows→height, columns→width)
 //! 4. Polars imports generated correctly
 
@@ -21,8 +21,7 @@ fn test_titanic_example_file_exists() {
     let example_path = "examples/titanic_dataframe.ruchy";
     assert!(
         Path::new(example_path).exists(),
-        "Example file not found: {}. Create it to make this test pass!",
-        example_path
+        "Example file not found: {example_path}. Create it to make this test pass!"
     );
 }
 
@@ -105,16 +104,16 @@ fn test_titanic_example_transpiles() {
     );
 }
 
-/// RED TEST: DataFrame method names must be mapped correctly
+/// RED TEST: `DataFrame` method names must be mapped correctly
 #[test]
 fn test_dataframe_method_name_mapping() {
-    let code = r#"
+    let code = r"
         fun analyze(df: DataFrame) {
             let row_count = df.rows()
             let col_count = df.columns()
             return row_count + col_count
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -126,27 +125,23 @@ fn test_dataframe_method_name_mapping() {
     // Verify method name mapping
     assert!(
         rust_code.contains(". height ()"),
-        "df.rows() must transpile to df.height().\nGenerated:\n{}",
-        rust_code
+        "df.rows() must transpile to df.height().\nGenerated:\n{rust_code}"
     );
 
     assert!(
         rust_code.contains(". width ()"),
-        "df.columns() must transpile to df.width().\nGenerated:\n{}",
-        rust_code
+        "df.columns() must transpile to df.width().\nGenerated:\n{rust_code}"
     );
 
     // Should NOT contain old method names
     assert!(
         !rust_code.contains(". rows ()"),
-        "Transpiled code should NOT contain .rows() method.\nFound in:\n{}",
-        rust_code
+        "Transpiled code should NOT contain .rows() method.\nFound in:\n{rust_code}"
     );
 
     assert!(
         !rust_code.contains(". columns ()"),
-        "Transpiled code should NOT contain .columns() method.\nFound in:\n{}",
-        rust_code
+        "Transpiled code should NOT contain .columns() method.\nFound in:\n{rust_code}"
     );
 }
 
@@ -196,7 +191,7 @@ fn test_dataframe_builder_pattern() {
     );
 }
 
-/// RED TEST: Multiple DataFrames in same file must work
+/// RED TEST: Multiple `DataFrames` in same file must work
 #[test]
 fn test_multiple_dataframes() {
     let code = r#"
@@ -242,7 +237,7 @@ fn test_multiple_dataframes() {
 mod property_tests {
     use super::*;
 
-    /// Property: Any valid DataFrame builder pattern should transpile without panicking
+    /// Property: Any valid `DataFrame` builder pattern should transpile without panicking
     #[test]
     fn property_dataframe_builder_never_panics() {
         let test_cases = vec![
@@ -253,11 +248,11 @@ mod property_tests {
             // Without .build()
             r#"let df = DataFrame::new().column("a", [1])"#,
             // Empty DataFrame
-            r#"let df = DataFrame::new().build()"#,
+            r"let df = DataFrame::new().build()",
         ];
 
         for (i, code) in test_cases.iter().enumerate() {
-            let full_code = format!("fun test() {{ {} }}", code);
+            let full_code = format!("fun test() {{ {code} }}");
 
             let mut parser = Parser::new(&full_code);
             let parse_result = parser.parse();

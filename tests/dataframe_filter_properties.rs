@@ -1,7 +1,7 @@
-//! DF-002: DataFrame filter() Property Tests (EXTREME TDD)
+//! DF-002: `DataFrame` `filter()` Property Tests (EXTREME TDD)
 //!
 //! **CRITICAL**: Property tests with 10,000+ iterations per invariant to prove
-//! filter() correctness across all possible inputs.
+//! `filter()` correctness across all possible inputs.
 //!
 //! **Toyota Way**: Jidoka - Stop the line if ANY property violation found.
 
@@ -10,7 +10,7 @@ use ruchy::runtime::{DataFrameColumn, Value};
 use ruchy::runtime::eval_dataframe_ops::eval_dataframe_filter;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 
-/// Generate arbitrary DataFrameColumn for property testing
+/// Generate arbitrary `DataFrameColumn` for property testing
 #[allow(dead_code)]
 fn arb_dataframe_column(name: String, size: usize) -> BoxedStrategy<DataFrameColumn> {
     prop::collection::vec(
@@ -28,7 +28,7 @@ fn arb_dataframe_column(name: String, size: usize) -> BoxedStrategy<DataFrameCol
     .boxed()
 }
 
-/// Generate DataFrame with random columns and rows
+/// Generate `DataFrame` with random columns and rows
 fn arb_dataframe(num_cols: usize, num_rows: usize) -> BoxedStrategy<Vec<DataFrameColumn>> {
     prop::collection::vec(
         prop::collection::vec(
@@ -46,7 +46,7 @@ fn arb_dataframe(num_cols: usize, num_rows: usize) -> BoxedStrategy<Vec<DataFram
             .into_iter()
             .enumerate()
             .map(|(i, values)| DataFrameColumn {
-                name: format!("col_{}", i),
+                name: format!("col_{i}"),
                 values,
             })
             .collect()
@@ -224,7 +224,7 @@ proptest! {
         );
         // Keep only even rows (0, 2, 4, ...)
         let eval_fn = |_: &Expr, _: &[DataFrameColumn], row_idx: usize| {
-            Ok(Value::Bool(row_idx % 2 == 0))
+            Ok(Value::Bool(row_idx.is_multiple_of(2)))
         };
 
         let result = eval_dataframe_filter(&columns, &condition, eval_fn);
@@ -233,7 +233,7 @@ proptest! {
         if let Ok(Value::DataFrame { columns: result_cols }) = result {
             if !result_cols.is_empty() {
                 let filtered_count = result_cols[0].values.len();
-                let expected_count = (original_row_count + 1) / 2; // Ceiling division
+                let expected_count = original_row_count.div_ceil(2); // Ceiling division
                 prop_assert_eq!(
                     filtered_count,
                     expected_count,
@@ -276,7 +276,7 @@ proptest! {
             ExprKind::Literal(Literal::Bool(true)),
             Span::new(0, 0)
         );
-        let captured_value = invalid_value.clone();
+        let captured_value = invalid_value;
         let eval_fn = move |_: &Expr, _: &[DataFrameColumn], _: usize| {
             Ok(captured_value.clone())
         };

@@ -1,20 +1,20 @@
-//! Sprint 2 Phase 5: Final ExprKind Variants (Complete 100%)
+//! Sprint 2 Phase 5: Final `ExprKind` Variants (Complete 100%)
 //!
 //! Ticket: [FMT-PERFECT-010]
-//! Goal: Implement final 10 ExprKind variants to achieve 85/85 (100%)
+//! Goal: Implement final 10 `ExprKind` variants to achieve 85/85 (100%)
 //! TDD: RED → GREEN → REFACTOR
 //!
 //! Final Variants:
-//! - DataFrame (df![] literal syntax)
-//! - DataFrameOperation (operations on DataFrames)
+//! - `DataFrame` (df![] literal syntax)
+//! - `DataFrameOperation` (operations on `DataFrames`)
 //! - Extension (extension blocks for types)
 //! - Macro (macro definitions)
-//! - MacroInvocation (macro calls)
-//! - OptionalMethodCall (obj?.method())
-//! - QualifiedName (module::path::name)
-//! - ReExport (re-export from another module)
+//! - `MacroInvocation` (macro calls)
+//! - `OptionalMethodCall` (`obj?.method()`)
+//! - `QualifiedName` (`module::path::name`)
+//! - `ReExport` (re-export from another module)
 //! - Spread (...expr for spreading)
-//! - TypeAlias (type Name = Type)
+//! - `TypeAlias` (type Name = Type)
 
 use assert_cmd::Command;
 use std::fs;

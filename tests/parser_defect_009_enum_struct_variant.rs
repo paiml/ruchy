@@ -12,13 +12,13 @@ fn ruchy_cmd() -> Command {
 // Test 1: Basic enum with struct variant
 #[test]
 fn test_parser_009_basic_struct_variant() {
-    let code = r#"
+    let code = r"
 enum Message {
     Quit,
     Move { x: i32, y: i32 },
     Write(String),
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_basic.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -32,11 +32,11 @@ enum Message {
 // Test 2: Struct variant only
 #[test]
 fn test_parser_009_struct_variant_only() {
-    let code = r#"
+    let code = r"
 enum Position {
     Point { x: i32, y: i32, z: i32 },
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_struct_only.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -49,13 +49,13 @@ enum Position {
 // Test 3: Multiple struct variants
 #[test]
 fn test_parser_009_multiple_struct_variants() {
-    let code = r#"
+    let code = r"
 enum Shape {
     Circle { radius: f64 },
     Rectangle { width: f64, height: f64 },
     Triangle { base: f64, height: f64, angle: f64 },
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_multiple.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -68,14 +68,14 @@ enum Shape {
 // Test 4: Mixed variant kinds (unit, tuple, struct)
 #[test]
 fn test_parser_009_mixed_variants() {
-    let code = r#"
+    let code = r"
 enum Event {
     Quit,
     KeyPress(char),
     MouseMove { x: i32, y: i32 },
     Click { x: i32, y: i32, button: String },
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_mixed.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -88,12 +88,12 @@ enum Event {
 // Test 5: Generic enum with struct variant (Result-like)
 #[test]
 fn test_parser_009_generic_struct_variant() {
-    let code = r#"
+    let code = r"
 enum Result<T, E> {
     Ok(T),
     Err(E),
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_generic.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -106,11 +106,11 @@ enum Result<T, E> {
 // Test 6: Struct variant with trailing comma
 #[test]
 fn test_parser_009_trailing_comma() {
-    let code = r#"
+    let code = r"
 enum Message {
     Move { x: i32, y: i32, },
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_trailing.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -123,11 +123,11 @@ enum Message {
 // Test 7: Empty struct variant (edge case)
 #[test]
 fn test_parser_009_empty_struct_variant() {
-    let code = r#"
+    let code = r"
 enum Empty {
     Unit {},
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_empty.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -140,14 +140,14 @@ enum Empty {
 // Test 8: Book example (appendix-b-syntax-reference_example_19)
 #[test]
 fn test_parser_009_book_example() {
-    let code = r#"
+    let code = r"
 // Enum definition
 enum Message {
     Quit,
     Move { x: i32, y: i32 },
     Write(String),
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_book.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -160,13 +160,13 @@ enum Message {
 // Test 9: Transpile to Rust (verify code generation)
 #[test]
 fn test_parser_009_transpile() {
-    let code = r#"
+    let code = r"
 enum Message {
     Quit,
     Move { x: i32, y: i32 },
     Write(String),
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_009_transpile.ruchy", code).unwrap();
 
     ruchy_cmd()

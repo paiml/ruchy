@@ -29,10 +29,9 @@ proptest! {
         let code = format!(
             "enum Expr {{
                 Lit(i32),
-                Binary(Box<{}>)
+                Binary(Box<{type_name}>)
             }}
-            let x = Expr::Lit(42)",
-            type_name
+            let x = Expr::Lit(42)"
         );
 
         // Parse should succeed
@@ -48,12 +47,10 @@ proptest! {
 
         let rust_code = transpiled.unwrap().to_string();
         // Transpiler adds spaces: Box < TypeName >
-        let expected_type = format!("Box < {} >", type_name);
+        let expected_type = format!("Box < {type_name} >");
         assert!(
             rust_code.contains(&expected_type),
-            "Transpiled code missing Box<{}>:\n{}",
-            type_name,
-            rust_code
+            "Transpiled code missing Box<{type_name}>:\n{rust_code}"
         );
     }
 }
@@ -72,11 +69,10 @@ proptest! {
         // Generate enum with Vec<TypeName>
         let code = format!(
             "enum Statement {{
-                Block(Vec<{}>),
+                Block(Vec<{type_name}>),
                 Expr(i32)
             }}
-            let x = Statement::Expr(42)",
-            type_name
+            let x = Statement::Expr(42)"
         );
 
         // Parse should succeed
@@ -92,12 +88,10 @@ proptest! {
 
         let rust_code = transpiled.unwrap().to_string();
         // Transpiler adds spaces: Vec < TypeName >
-        let expected_type = format!("Vec < {} >", type_name);
+        let expected_type = format!("Vec < {type_name} >");
         assert!(
             rust_code.contains(&expected_type),
-            "Transpiled code missing Vec<{}>:\n{}",
-            type_name,
-            rust_code
+            "Transpiled code missing Vec<{type_name}>:\n{rust_code}"
         );
     }
 }
@@ -116,22 +110,21 @@ proptest! {
         // Generate nested Box<Box<...<Expr>>> structure (input format)
         let mut box_type_input = String::from("Expr");
         for _ in 0..depth {
-            box_type_input = format!("Box<{}>", box_type_input);
+            box_type_input = format!("Box<{box_type_input}>");
         }
 
         // Generate expected output format with spaces: Box < Box < Expr > >
         let mut box_type_output = String::from("Expr");
         for _ in 0..depth {
-            box_type_output = format!("Box < {} >", box_type_output);
+            box_type_output = format!("Box < {box_type_output} >");
         }
 
         let code = format!(
             "enum Expr {{
                 Lit(i32),
-                Nested({})
+                Nested({box_type_input})
             }}
-            let x = Expr::Lit(42)",
-            box_type_input
+            let x = Expr::Lit(42)"
         );
 
         // Parse should succeed for reasonable nesting depths
@@ -158,9 +151,7 @@ proptest! {
         let rust_code = transpiled.unwrap().to_string();
         assert!(
             rust_code.contains(&box_type_output),
-            "Transpiled code missing nested Box type {}:\n{}",
-            box_type_output,
-            rust_code
+            "Transpiled code missing nested Box type {box_type_output}:\n{rust_code}"
         );
     }
 }
@@ -183,12 +174,11 @@ proptest! {
         // Generate enum with multiple Vec<T> variants
         let code = format!(
             "enum Data {{
-                List1(Vec<{}>),
-                List2(Vec<{}>),
+                List1(Vec<{type1}>),
+                List2(Vec<{type2}>),
                 Single(i32)
             }}
-            let x = Data::Single(42)",
-            type1, type2
+            let x = Data::Single(42)"
         );
 
         // Parse should succeed
@@ -217,16 +207,12 @@ proptest! {
         let rust_code = transpiled.unwrap().to_string();
         // Transpiler adds spaces: Vec < TypeName >
         assert!(
-            rust_code.contains(&format!("Vec < {} >", type1)),
-            "Transpiled code missing Vec<{}>:\n{}",
-            type1,
-            rust_code
+            rust_code.contains(&format!("Vec < {type1} >")),
+            "Transpiled code missing Vec<{type1}>:\n{rust_code}"
         );
         assert!(
-            rust_code.contains(&format!("Vec < {} >", type2)),
-            "Transpiled code missing Vec<{}>:\n{}",
-            type2,
-            rust_code
+            rust_code.contains(&format!("Vec < {type2} >")),
+            "Transpiled code missing Vec<{type2}>:\n{rust_code}"
         );
     }
 }
@@ -245,11 +231,10 @@ proptest! {
         // Generate Box<Vec<T>> combination
         let code = format!(
             "enum Node {{
-                Items(Box<Vec<{}>>),
+                Items(Box<Vec<{inner_type}>>),
                 Leaf(i32)
             }}
-            let x = Node::Leaf(42)",
-            inner_type
+            let x = Node::Leaf(42)"
         );
 
         // Parse should succeed
@@ -275,12 +260,10 @@ proptest! {
 
         let rust_code = transpiled.unwrap().to_string();
         // Transpiler adds spaces: Box < Vec < TypeName > >
-        let expected_type = format!("Box < Vec < {} > >", inner_type);
+        let expected_type = format!("Box < Vec < {inner_type} > >");
         assert!(
             rust_code.contains(&expected_type),
-            "Transpiled code missing Box<Vec<{}>>:\n{}",
-            inner_type,
-            rust_code
+            "Transpiled code missing Box<Vec<{inner_type}>>:\n{rust_code}"
         );
     }
 }
@@ -299,11 +282,10 @@ proptest! {
         // Generate Vec<Box<T>> combination
         let code = format!(
             "enum Expr {{
-                Args(Vec<Box<{}>>),
+                Args(Vec<Box<{inner_type}>>),
                 Lit(i32)
             }}
-            let x = Expr::Lit(42)",
-            inner_type
+            let x = Expr::Lit(42)"
         );
 
         // Parse should succeed
@@ -329,12 +311,10 @@ proptest! {
 
         let rust_code = transpiled.unwrap().to_string();
         // Transpiler adds spaces: Vec < Box < TypeName > >
-        let expected_type = format!("Vec < Box < {} > >", inner_type);
+        let expected_type = format!("Vec < Box < {inner_type} > >");
         assert!(
             rust_code.contains(&expected_type),
-            "Transpiled code missing Vec<Box<{}>>:\n{}",
-            inner_type,
-            rust_code
+            "Transpiled code missing Vec<Box<{inner_type}>>:\n{rust_code}"
         );
     }
 }

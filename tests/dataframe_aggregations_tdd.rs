@@ -1,4 +1,4 @@
-//! DF-003: DataFrame Aggregation Functions (EXTREME TDD)
+//! DF-003: `DataFrame` Aggregation Functions (EXTREME TDD)
 //!
 //! **CRITICAL**: RED → GREEN → REFACTOR cycle with comprehensive test coverage.
 //!
@@ -7,7 +7,7 @@
 use ruchy::runtime::{DataFrameColumn, Value};
 use ruchy::runtime::eval_dataframe_ops::eval_dataframe_method;
 
-/// Test helper to create simple numeric DataFrameColumn
+/// Test helper to create simple numeric `DataFrameColumn`
 fn numeric_column(name: &str, values: Vec<i64>) -> DataFrameColumn {
     DataFrameColumn {
         name: name.to_string(),
@@ -15,7 +15,7 @@ fn numeric_column(name: &str, values: Vec<i64>) -> DataFrameColumn {
     }
 }
 
-/// Test helper to create float DataFrameColumn
+/// Test helper to create float `DataFrameColumn`
 fn float_column(name: &str, values: Vec<f64>) -> DataFrameColumn {
     DataFrameColumn {
         name: name.to_string(),
@@ -27,7 +27,7 @@ fn float_column(name: &str, values: Vec<f64>) -> DataFrameColumn {
 mod df003_std_tests {
     use super::*;
 
-    /// DF-003: GREEN phase - std() calculates standard deviation
+    /// DF-003: GREEN phase - `std()` calculates standard deviation
     #[test]
     fn test_df003_std_basic_integers() {
         let columns = vec![numeric_column("values", vec![1, 2, 3, 4, 5])];
@@ -37,7 +37,7 @@ mod df003_std_tests {
         assert!(result.is_ok(), "std() should work on numeric columns");
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.414).abs() < 0.01, "std([1,2,3,4,5]) ≈ 1.414, got {}", std_val);
+            assert!((std_val - 1.414).abs() < 0.01, "std([1,2,3,4,5]) ≈ 1.414, got {std_val}");
         } else {
             panic!("Expected Float result from std()");
         }
@@ -64,7 +64,7 @@ mod df003_std_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.118).abs() < 0.01, "std([1,2,3,4]) ≈ 1.118, got {}", std_val);
+            assert!((std_val - 1.118).abs() < 0.01, "std([1,2,3,4]) ≈ 1.118, got {std_val}");
         }
     }
 
@@ -102,7 +102,7 @@ mod df003_std_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.707).abs() < 0.01, "std of all values ≈ 1.707, got {}", std_val);
+            assert!((std_val - 1.707).abs() < 0.01, "std of all values ≈ 1.707, got {std_val}");
         }
     }
 }
@@ -111,7 +111,7 @@ mod df003_std_tests {
 mod df003_var_tests {
     use super::*;
 
-    /// DF-003: GREEN phase - var() calculates variance
+    /// DF-003: GREEN phase - `var()` calculates variance
     #[test]
     fn test_df003_var_basic_integers() {
         let columns = vec![numeric_column("values", vec![1, 2, 3, 4, 5])];
@@ -121,7 +121,7 @@ mod df003_var_tests {
         assert!(result.is_ok(), "var() should work on numeric columns");
 
         if let Ok(Value::Float(var_val)) = result {
-            assert!((var_val - 2.0).abs() < 0.01, "var([1,2,3,4,5]) = 2.0, got {}", var_val);
+            assert!((var_val - 2.0).abs() < 0.01, "var([1,2,3,4,5]) = 2.0, got {var_val}");
         } else {
             panic!("Expected Float result from var()");
         }
@@ -148,7 +148,7 @@ mod df003_var_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(var_val)) = result {
-            assert!((var_val - 5.0).abs() < 0.01, "var([2,4,6,8]) = 5.0, got {}", var_val);
+            assert!((var_val - 5.0).abs() < 0.01, "var([2,4,6,8]) = 5.0, got {var_val}");
         }
     }
 

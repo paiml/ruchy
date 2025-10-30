@@ -21,8 +21,7 @@ fn assert_rs_file_exists(dir: &TempDir, name: &str) -> String {
     let rs_path = dir.path().join(name.replace(".ruchy", ".rs"));
     assert!(
         rs_path.exists(),
-        "Expected transpiled .rs file to exist: {:?}",
-        rs_path
+        "Expected transpiled .rs file to exist: {rs_path:?}"
     );
     fs::read_to_string(&rs_path).expect("Failed to read transpiled file")
 }
@@ -69,9 +68,9 @@ fn test_cargo_001_transpile_all_multiple_files() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
     // Create multiple .ruchy files
-    create_ruchy_file(&temp_dir, "main.ruchy", r#"fun main() { helper() }"#);
+    create_ruchy_file(&temp_dir, "main.ruchy", r"fun main() { helper() }");
 
-    create_ruchy_file(&temp_dir, "helper.ruchy", r#"fun helper() -> i32 { 42 }"#);
+    create_ruchy_file(&temp_dir, "helper.ruchy", r"fun helper() -> i32 { 42 }");
 
     // Transpile all files
     let result = ruchy::build_transpiler::transpile_all(
@@ -106,7 +105,7 @@ fn test_cargo_001_transpile_all_nested_directories() {
 
     // Create file in subdirectory
     let utils_file = sub_dir.join("math.ruchy");
-    fs::write(&utils_file, r#"fun add(a: i32, b: i32) -> i32 { a + b }"#)
+    fs::write(&utils_file, r"fun add(a: i32, b: i32) -> i32 { a + b }")
         .expect("Failed to write utils file");
 
     // Transpile all files recursively
@@ -125,8 +124,7 @@ fn test_cargo_001_transpile_all_nested_directories() {
     let math_rs_path = sub_dir.join("math.rs");
     assert!(
         math_rs_path.exists(),
-        "Expected utils/math.rs to exist: {:?}",
-        math_rs_path
+        "Expected utils/math.rs to exist: {math_rs_path:?}"
     );
 }
 
@@ -244,9 +242,9 @@ fn test_cargo_001_transpile_all_syntax_error_reporting() {
     create_ruchy_file(
         &temp_dir,
         "broken.ruchy",
-        r#"fun main() {
+        r"fun main() {
     let x =  // Missing value (syntax error)
-}"#,
+}",
     );
 
     // Transpilation should fail with clear error
@@ -306,7 +304,7 @@ mod property_tests {
 
             // Create random number of files with random (but valid) names
             for i in 0..file_count {
-                let file_name = format!("file_{}_{}. ruchy", file_name_seed, i);
+                let file_name = format!("file_{file_name_seed}_{i}. ruchy");
                 let _ = fs::write(
                     temp_dir.path().join(&file_name),
                     "fun main() { println(\"test\") }",

@@ -3,6 +3,8 @@
 // Validates: LANG-COMP-003 Control Flow (if, match, for, while, break/continue)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
 
+#![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::path::PathBuf;
@@ -199,13 +201,13 @@ fn test_langcomp_003_03_for_loop_range() {
     let temp_file = std::env::temp_dir().join("langcomp_003_03_for_range.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let sum = 0
 for i in 0..3 {
     sum = sum + i
 }
 sum
-"#,
+",
     )
     .unwrap();
 
@@ -238,13 +240,13 @@ fn test_langcomp_003_04_while_loop_condition() {
     let temp_file = std::env::temp_dir().join("langcomp_003_04_while.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let count = 0
 while count < 3 {
     count = count + 1
 }
 count
-"#,
+",
     )
     .unwrap();
 
@@ -277,7 +279,7 @@ fn test_langcomp_003_05_break_exits_loop() {
     let temp_file = std::env::temp_dir().join("langcomp_003_05_break.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let i = 0
 while true {
     if i == 3 {
@@ -286,7 +288,7 @@ while true {
     i = i + 1
 }
 i
-"#,
+",
     )
     .unwrap();
 
@@ -321,8 +323,8 @@ mod property_tests {
     fn test_langcomp_003_property_if_else_always_returns_value() {
         // Property: if-else always returns a value (no case uncovered)
         for i in 0..100 {
-            let code = format!("if {} > 50 {{ 1 }} else {{ 0 }}", i);
-            let temp_file = std::env::temp_dir().join(format!("langcomp_003_prop_if_{}.ruchy", i));
+            let code = format!("if {i} > 50 {{ 1 }} else {{ 0 }}");
+            let temp_file = std::env::temp_dir().join(format!("langcomp_003_prop_if_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd()
@@ -341,9 +343,9 @@ mod property_tests {
     fn test_langcomp_003_property_match_wildcard_never_fails() {
         // Property: match with wildcard always succeeds
         for i in 0..100 {
-            let code = format!("match {} {{ 1 => 100, _ => 999 }}", i);
+            let code = format!("match {i} {{ 1 => 100, _ => 999 }}");
             let temp_file =
-                std::env::temp_dir().join(format!("langcomp_003_prop_match_{}.ruchy", i));
+                std::env::temp_dir().join(format!("langcomp_003_prop_match_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd().arg("run").arg(&temp_file).assert().success();
@@ -358,16 +360,15 @@ mod property_tests {
         // Property: for loop runs exactly range.len() times
         for n in 1..10 {
             let code = format!(
-                r#"
+                r"
 let count = 0
-for i in 0..{} {{
+for i in 0..{n} {{
     count = count + 1
 }}
 count
-"#,
-                n
+"
             );
-            let temp_file = std::env::temp_dir().join(format!("langcomp_003_prop_for_{}.ruchy", n));
+            let temp_file = std::env::temp_dir().join(format!("langcomp_003_prop_for_{n}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd()

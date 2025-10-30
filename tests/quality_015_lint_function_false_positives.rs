@@ -1,10 +1,10 @@
 //! QUALITY-015: Fix linter incorrectly reporting used functions as "unused variable"
 //!
-//! GitHub Issue #15: https://github.com/your-org/ruchy/issues/15
+//! GitHub Issue #15: <https://github.com/your-org/ruchy/issues/15>
 //!
 //! BUG: ruchy lint incorrectly reports used functions as "unused variable"
-//! ROOT CAUSE: Functions defined with VarType::Local instead of VarType::Function
-//! FIX: Add VarType::Function variant and exclude from unused checks
+//! ROOT CAUSE: Functions defined with `VarType::Local` instead of `VarType::Function`
+//! FIX: Add `VarType::Function` variant and exclude from unused checks
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -13,7 +13,7 @@ use std::fs;
 
 /// Helper function to run ruchy lint on code and return the output
 fn lint_code(code: &str, test_name: &str) -> assert_cmd::assert::Assert {
-    let temp_file = format!("/tmp/quality_015_{}.ruchy", test_name);
+    let temp_file = format!("/tmp/quality_015_{test_name}.ruchy");
     fs::write(&temp_file, code).unwrap();
 
     let assert = Command::cargo_bin("ruchy")
@@ -74,7 +74,7 @@ fun main() {
         .stdout(predicate::str::contains("unused variable: main").not());
 }
 
-/// RED: Test that main() is NOT flagged as "unused variable"
+/// RED: Test that `main()` is NOT flagged as "unused variable"
 #[test]
 fn test_quality_015_03_main_not_flagged_as_variable() {
     let code = r#"
@@ -271,19 +271,18 @@ proptest! {
 
         let code = format!(
             r#"
-fun {}() -> i32 {{
-    {}
+fun {fn_name}() -> i32 {{
+    {body}
 }}
 
 fun main() {{
-    let result = {}()
+    let result = {fn_name}()
     println("Result: {{}}", result)
 }}
-"#,
-            fn_name, body, fn_name
+"#
         );
 
-        let temp_file = format!("/tmp/quality_015_prop_{}.ruchy", fn_name);
+        let temp_file = format!("/tmp/quality_015_prop_{fn_name}.ruchy");
         fs::write(&temp_file, &code).unwrap();
 
         let output = Command::cargo_bin("ruchy")
@@ -299,7 +298,7 @@ fun main() {{
         let stderr = String::from_utf8_lossy(&output.stderr);
 
         // Property: Function name should NEVER appear in "unused variable" warnings
-        let unused_msg = format!("unused variable: {}", fn_name);
+        let unused_msg = format!("unused variable: {fn_name}");
         prop_assert!(
             !stdout.contains(&unused_msg) && !stderr.contains(&unused_msg),
             "Function '{}' was incorrectly flagged as unused variable\nStdout: {}\nStderr: {}",
@@ -321,14 +320,13 @@ fun main() {{
             r#"
 fun main() {{
     let x = 5
-    let {} = 42
+    let {var_name} = 42
     println("x = {{}}", x)
 }}
-"#,
-            var_name
+"#
         );
 
-        let temp_file = format!("/tmp/quality_015_prop_unused_{}.ruchy", var_name);
+        let temp_file = format!("/tmp/quality_015_prop_unused_{var_name}.ruchy");
         fs::write(&temp_file, &code).unwrap();
 
         let output = Command::cargo_bin("ruchy")
@@ -343,7 +341,7 @@ fun main() {{
         let stdout = String::from_utf8_lossy(&output.stdout);
 
         // Property: Unused local variable SHOULD be flagged
-        let unused_msg = format!("unused variable: {}", var_name);
+        let unused_msg = format!("unused variable: {var_name}");
         prop_assert!(
             stdout.contains(&unused_msg),
             "Unused variable '{}' was NOT flagged (regression)\nStdout: {}",
@@ -359,11 +357,10 @@ fun main() {{
         let code = format!(
             r#"
 fun main() {{
-    let x = {}
+    let x = {body}
     println("x = {{}}", x)
 }}
-"#,
-            body
+"#
         );
 
         let temp_file = "/tmp/quality_015_prop_main.ruchy";

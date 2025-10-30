@@ -41,7 +41,7 @@ fn measure_bytecode(source: &str, iterations: u32) -> u128 {
     start.elapsed().as_micros()
 }
 
-/// Calculate speedup percentage: (ast_time - bytecode_time) / ast_time * 100
+/// Calculate speedup percentage: (`ast_time` - `bytecode_time`) / `ast_time` * 100
 fn speedup_percentage(ast_time: u128, bytecode_time: u128) -> f64 {
     if ast_time == 0 { return 0.0; }
     ((ast_time as f64 - bytecode_time as f64) / ast_time as f64) * 100.0
@@ -60,13 +60,11 @@ fn test_opt_010_arithmetic_speedup() {
         let bytecode_time = measure_bytecode(code, iterations);
         let speedup = speedup_percentage(ast_time, bytecode_time);
 
-        println!("Arithmetic/{}: AST={}µs, Bytecode={}µs, Speedup={:.1}%",
-                 name, ast_time, bytecode_time, speedup);
+        println!("Arithmetic/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
         assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {}: speedup={:.1}%",
-                name, speedup);
+                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
     }
 }
 
@@ -83,13 +81,11 @@ fn test_opt_010_loop_speedup() {
         let bytecode_time = measure_bytecode(code, iterations);
         let speedup = speedup_percentage(ast_time, bytecode_time);
 
-        println!("Loop/{}: AST={}µs, Bytecode={}µs, Speedup={:.1}%",
-                 name, ast_time, bytecode_time, speedup);
+        println!("Loop/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
         assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {}: speedup={:.1}%",
-                name, speedup);
+                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
     }
 }
 
@@ -107,13 +103,11 @@ fn test_opt_010_comparison_speedup() {
         let bytecode_time = measure_bytecode(code, iterations);
         let speedup = speedup_percentage(ast_time, bytecode_time);
 
-        println!("Comparison/{}: AST={}µs, Bytecode={}µs, Speedup={:.1}%",
-                 name, ast_time, bytecode_time, speedup);
+        println!("Comparison/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
         assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {}: speedup={:.1}%",
-                name, speedup);
+                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
     }
 }
 
@@ -131,20 +125,18 @@ fn test_opt_010_control_flow_speedup() {
         let bytecode_time = measure_bytecode(code, iterations);
         let speedup = speedup_percentage(ast_time, bytecode_time);
 
-        println!("ControlFlow/{}: AST={}µs, Bytecode={}µs, Speedup={:.1}%",
-                 name, ast_time, bytecode_time, speedup);
+        println!("ControlFlow/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
         assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {}: speedup={:.1}%",
-                name, speedup);
+                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
     }
 }
 
 #[test]
 fn test_opt_010_fibonacci_speedup() {
     // Iterative Fibonacci - good test for loops + mutations
-    let fib_code = r#"{
+    let fib_code = r"{
         let mut a = 0;
         let mut b = 1;
         let mut i = 0;
@@ -155,20 +147,18 @@ fn test_opt_010_fibonacci_speedup() {
             i = i + 1
         };
         a
-    }"#;
+    }";
 
     let iterations = 1000;
     let ast_time = measure_ast(fib_code, iterations);
     let bytecode_time = measure_bytecode(fib_code, iterations);
     let speedup = speedup_percentage(ast_time, bytecode_time);
 
-    println!("Fibonacci: AST={}µs, Bytecode={}µs, Speedup={:.1}%",
-             ast_time, bytecode_time, speedup);
+    println!("Fibonacci: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
     // Bytecode should be faster (positive speedup)
     assert!(speedup > 0.0,
-            "Bytecode should be faster than AST for fibonacci: speedup={:.1}%",
-            speedup);
+            "Bytecode should be faster than AST for fibonacci: speedup={speedup:.1}%");
 
     // Verify correctness (Fib(20) = 6765)
     let mut parser = Parser::new(fib_code);
@@ -208,8 +198,7 @@ fn test_opt_010_comprehensive_performance_report() {
         total_ast += ast_time;
         total_bytecode += bytecode_time;
 
-        println!("{:<30} {:>15} {:>15} {:>9.1}%",
-                 name, ast_time, bytecode_time, speedup);
+        println!("{name:<30} {ast_time:>15} {bytecode_time:>15} {speedup:>9.1}%");
     }
 
     println!("{:-<70}", "");
@@ -218,9 +207,9 @@ fn test_opt_010_comprehensive_performance_report() {
              "TOTAL", total_ast, total_bytecode, overall_speedup);
 
     println!("\nTarget: 40-60% speedup");
-    println!("Actual: {:.1}% speedup", overall_speedup);
+    println!("Actual: {overall_speedup:.1}% speedup");
 
-    if overall_speedup >= 40.0 && overall_speedup <= 60.0 {
+    if (40.0..=60.0).contains(&overall_speedup) {
         println!("✅ Performance target achieved!");
     } else if overall_speedup > 0.0 {
         println!("⚠️  Bytecode is faster, but outside target range");

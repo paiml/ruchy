@@ -1,7 +1,7 @@
 //! RED TEST for Issue #39: Match with if-else in arm causes parser error
 //!
 //! BUG: Parser fails when match arm contains if-else block
-//! Error: "Expected RightBrace, found Match"
+//! Error: "Expected `RightBrace`, found Match"
 //!
 //! Extreme TDD: RED → GREEN → REFACTOR
 

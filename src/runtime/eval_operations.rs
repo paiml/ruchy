@@ -595,7 +595,7 @@ mod tests {
         assert!(!greater_than_values(&Value::Integer(3), &Value::Integer(5)).unwrap());
     }
 
-    /// QUALITY-017: Comprehensive tests for equal_values() before refactoring
+    /// QUALITY-017: Comprehensive tests for `equal_values()` before refactoring
     /// Tests cover all Value types to ensure refactoring doesn't break equality
     #[test]
     fn test_equal_values_comprehensive() {

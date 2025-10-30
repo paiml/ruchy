@@ -4,7 +4,6 @@
 // Use case: Find duplicate files in a directory (like rclean)
 // Perfect composable API design
 
-use std::env;
 use std::fs;
 use tempfile::TempDir;
 
@@ -79,7 +78,7 @@ fn main() {
 
     // Run via ruchy interpreter
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--release", "--bin", "ruchy", "--", "-e", &code])
+        .args(["run", "--release", "--bin", "ruchy", "--", "-e", &code])
         .output()
         .expect("Failed to execute ruchy");
 

@@ -17,7 +17,7 @@ fn test_defect_closure_return_simple_adder() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_adder.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     fn make_adder(n) {
         |x| { x + n }
@@ -26,7 +26,7 @@ fn main() {
     let add_five = make_adder(5)
     println(add_five(10))
 }
-"#,
+",
     )
     .unwrap();
 
@@ -45,7 +45,7 @@ fn test_defect_closure_return_multiplier() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_mult.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     fn make_multiplier(factor) {
         |x| { x * factor }
@@ -54,7 +54,7 @@ fn main() {
     let times_three = make_multiplier(3)
     println(times_three(7))
 }
-"#,
+",
     )
     .unwrap();
 
@@ -73,7 +73,7 @@ fn test_defect_closure_return_counter() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_counter.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     fn make_counter(start) {
         |increment| { start + increment }
@@ -83,7 +83,7 @@ fn main() {
     println(counter(5))
     println(counter(3))
 }
-"#,
+",
     )
     .unwrap();
 
@@ -104,11 +104,11 @@ fn test_defect_closure_return_transpile() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_transpile.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn make_adder(n) {
     |x| { x + n }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -126,15 +126,13 @@ fn make_adder(n) {
     // Should contain impl Fn, not -> i32
     assert!(
         transpiled.contains("impl Fn"),
-        "Transpiled code should contain 'impl Fn', got: {}",
-        transpiled
+        "Transpiled code should contain 'impl Fn', got: {transpiled}"
     );
 
     // Should NOT have incorrect -> i32 return type
     assert!(
         !transpiled.contains("make_adder (n : & str) -> i32"),
-        "Transpiled code should not have incorrect i32 return type, got: {}",
-        transpiled
+        "Transpiled code should not have incorrect i32 return type, got: {transpiled}"
     );
 
     std::fs::remove_file(&temp_file).ok();

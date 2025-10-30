@@ -17,11 +17,11 @@ fn ruchy_cmd() -> Command {
 }
 
 fn temp_wasm_file(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("wasm_memory_test_{}.wasm", name))
+    std::env::temp_dir().join(format!("wasm_memory_test_{name}.wasm"))
 }
 
 fn temp_ruchy_file(name: &str, code: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("wasm_memory_test_{}.ruchy", name));
+    let path = std::env::temp_dir().join(format!("wasm_memory_test_{name}.ruchy"));
     fs::write(&path, code).expect("Failed to write test file");
     path
 }
@@ -30,13 +30,13 @@ fn temp_ruchy_file(name: &str, code: &str) -> PathBuf {
 
 #[test]
 fn test_wasm_tuple_creation() {
-    let code = r#"
+    let code = r"
 fn main() {
     let pair = (3, 4)
     println(pair.0)
     println(pair.1)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("tuple_creation", code);
     let wasm_file = temp_wasm_file("tuple_creation");
 
@@ -64,14 +64,14 @@ fn main() {
 
 #[test]
 fn test_wasm_tuple_field_access() {
-    let code = r#"
+    let code = r"
 fn main() {
     let triple = (10, 20, 30)
     println(triple.0)
     println(triple.1)
     println(triple.2)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("tuple_field_access", code);
     let wasm_file = temp_wasm_file("tuple_field_access");
 
@@ -90,13 +90,13 @@ fn main() {
 
 #[test]
 fn test_wasm_nested_tuples() {
-    let code = r#"
+    let code = r"
 fn main() {
     let nested = ((1, 2), (3, 4))
     println(nested.0)
     println(nested.1)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("nested_tuples", code);
     let wasm_file = temp_wasm_file("nested_tuples");
 
@@ -117,13 +117,13 @@ fn main() {
 
 #[test]
 fn test_wasm_tuple_destructuring_basic() {
-    let code = r#"
+    let code = r"
 fn main() {
     let (x, y) = (3, 4)
     println(x)
     println(y)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("tuple_destructuring_basic", code);
     let wasm_file = temp_wasm_file("tuple_destructuring_basic");
 
@@ -142,14 +142,14 @@ fn main() {
 
 #[test]
 fn test_wasm_tuple_destructuring_nested() {
-    let code = r#"
+    let code = r"
 fn main() {
     let ((a, b), c) = ((1, 2), 3)
     println(a)
     println(b)
     println(c)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("tuple_destructuring_nested", code);
     let wasm_file = temp_wasm_file("tuple_destructuring_nested");
 
@@ -168,13 +168,13 @@ fn main() {
 
 #[test]
 fn test_wasm_tuple_destructuring_underscore() {
-    let code = r#"
+    let code = r"
 fn main() {
     let (x, _, z) = (1, 2, 3)
     println(x)
     println(z)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("tuple_destructuring_underscore", code);
     let wasm_file = temp_wasm_file("tuple_destructuring_underscore");
 
@@ -195,7 +195,7 @@ fn main() {
 
 #[test]
 fn test_wasm_struct_creation() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -206,7 +206,7 @@ fn main() {
     println(p.x)
     println(p.y)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("struct_creation", code);
     let wasm_file = temp_wasm_file("struct_creation");
 
@@ -225,7 +225,7 @@ fn main() {
 
 #[test]
 fn test_wasm_struct_field_mutation() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -238,7 +238,7 @@ fn main() {
     println(p.x)
     println(p.y)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("struct_field_mutation", code);
     let wasm_file = temp_wasm_file("struct_field_mutation");
 
@@ -257,7 +257,7 @@ fn main() {
 
 #[test]
 fn test_wasm_struct_multiple_fields() {
-    let code = r#"
+    let code = r"
 struct Rectangle {
     width: i32,
     height: i32,
@@ -272,7 +272,7 @@ fn main() {
     r.height = 100
     println(r.height)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("struct_multiple_fields", code);
     let wasm_file = temp_wasm_file("struct_multiple_fields");
 
@@ -293,14 +293,14 @@ fn main() {
 
 #[test]
 fn test_wasm_array_creation() {
-    let code = r#"
+    let code = r"
 fn main() {
     let arr = [10, 20, 30]
     println(arr[0])
     println(arr[1])
     println(arr[2])
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("array_creation", code);
     let wasm_file = temp_wasm_file("array_creation");
 
@@ -319,7 +319,7 @@ fn main() {
 
 #[test]
 fn test_wasm_array_mutation() {
-    let code = r#"
+    let code = r"
 fn main() {
     let mut arr = [10, 20, 30]
     println(arr[0])
@@ -327,7 +327,7 @@ fn main() {
     println(arr[0])
     println(arr[1])
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("array_mutation", code);
     let wasm_file = temp_wasm_file("array_mutation");
 
@@ -346,7 +346,7 @@ fn main() {
 
 #[test]
 fn test_wasm_array_multiple_mutations() {
-    let code = r#"
+    let code = r"
 fn main() {
     let mut arr = [1, 2, 3, 4, 5]
     arr[0] = 100
@@ -358,7 +358,7 @@ fn main() {
     println(arr[3])
     println(arr[4])
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("array_multiple_mutations", code);
     let wasm_file = temp_wasm_file("array_multiple_mutations");
 
@@ -379,7 +379,7 @@ fn main() {
 
 #[test]
 fn test_wasm_mixed_data_structures() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -394,7 +394,7 @@ fn main() {
     println(tup.0)
     println(p.x)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("mixed_data_structures", code);
     let wasm_file = temp_wasm_file("mixed_data_structures");
 
@@ -413,7 +413,7 @@ fn main() {
 
 #[test]
 fn test_wasm_complex_mutations() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -432,7 +432,7 @@ fn main() {
     println(tup.1)
     println(p.y)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("complex_mutations", code);
     let wasm_file = temp_wasm_file("complex_mutations");
 
@@ -453,12 +453,12 @@ fn main() {
 
 #[test]
 fn test_wasm_empty_tuple() {
-    let code = r#"
+    let code = r"
 fn main() {
     let unit = ()
     println(42)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("empty_tuple", code);
     let wasm_file = temp_wasm_file("empty_tuple");
 
@@ -477,12 +477,12 @@ fn main() {
 
 #[test]
 fn test_wasm_single_element_tuple() {
-    let code = r#"
+    let code = r"
 fn main() {
     let single = (42,)
     println(single.0)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("single_element_tuple", code);
     let wasm_file = temp_wasm_file("single_element_tuple");
 
@@ -501,14 +501,14 @@ fn main() {
 
 #[test]
 fn test_wasm_large_tuple() {
-    let code = r#"
+    let code = r"
 fn main() {
     let large = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     println(large.0)
     println(large.5)
     println(large.9)
 }
-"#;
+";
     let ruchy_file = temp_ruchy_file("large_tuple", code);
     let wasm_file = temp_wasm_file("large_tuple");
 

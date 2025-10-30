@@ -13,13 +13,13 @@ use predicates::prelude::*;
 /// This case currently works, so it's a control test
 #[test]
 fn test_parser_087_01_two_str_refs_bool_return() {
-    let code = r#"
+    let code = r"
 impl ConfigManager {
     fun test_two_refs_bool(&self, key: &str, value: &str) -> bool {
         return true
     }
 }
-"#;
+";
 
     let temp_file = "/tmp/test_parser_087_01.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write test file");
@@ -95,13 +95,13 @@ impl ConfigManager {
 /// This tests the bug with 3+ reference parameters
 #[test]
 fn test_parser_087_04_three_str_refs_string_return() {
-    let code = r#"
+    let code = r"
 impl ConfigManager {
     fun get_config(&self, section: &str, key: &str, default: &str) -> String {
         return default.to_string()
     }
 }
-"#;
+";
 
     let temp_file = "/tmp/test_parser_087_04.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write test file");
@@ -149,11 +149,11 @@ impl ConfigManager {
 /// Test 6: Regular functions (non-impl) with multiple &str params
 #[test]
 fn test_parser_087_06_regular_function_multiple_str_refs() {
-    let code = r#"
+    let code = r"
 fun join_strings(left: &str, right: &str, separator: &str) -> String {
     return left.to_string() + separator + right
 }
-"#;
+";
 
     let temp_file = "/tmp/test_parser_087_06.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write test file");

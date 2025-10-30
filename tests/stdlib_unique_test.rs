@@ -1,7 +1,7 @@
-//! STDLIB-006: Array .unique() method
+//! STDLIB-006: Array .`unique()` method
 //!
 //! ROOT CAUSE: Missing array deduplication operation
-//! SOLUTION: Implement .unique() method using HashSet-based deduplication
+//! SOLUTION: Implement .`unique()` method using HashSet-based deduplication
 //!
 //! EXTREME TDD: RED → GREEN → REFACTOR
 
@@ -17,10 +17,10 @@ fn ruchy_cmd() -> Command {
 
 #[test]
 fn test_unique_basic() {
-    let code = r#"
+    let code = r"
 let arr = [1, 2, 1, 3, 2];
 println(arr.unique())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -32,10 +32,10 @@ println(arr.unique())
 
 #[test]
 fn test_unique_empty() {
-    let code = r#"
+    let code = r"
 let arr = [];
 println(arr.unique())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -47,10 +47,10 @@ println(arr.unique())
 
 #[test]
 fn test_unique_already_unique() {
-    let code = r#"
+    let code = r"
 let arr = [1, 2, 3];
 println(arr.unique())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -62,10 +62,10 @@ println(arr.unique())
 
 #[test]
 fn test_unique_all_duplicates() {
-    let code = r#"
+    let code = r"
 let arr = [5, 5, 5, 5];
 println(arr.unique())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -92,10 +92,10 @@ println(arr.unique())
 
 #[test]
 fn test_unique_preserves_order() {
-    let code = r#"
+    let code = r"
 let arr = [3, 1, 4, 1, 5, 9, 2, 6, 5];
 println(arr.unique())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

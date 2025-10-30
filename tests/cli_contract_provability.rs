@@ -110,13 +110,13 @@ fn cli_provability_verify_with_function() {
     let file = create_temp_file(
         &temp,
         "verify_func.ruchy",
-        r#"
+        r"
 fun add(a, b) {
     a + b
 }
 
 add(1, 2)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -153,7 +153,7 @@ fn cli_provability_contracts_with_precondition() {
     let file = create_temp_file(
         &temp,
         "contracts_pre.ruchy",
-        r#"
+        r"
 fun divide(a, b) {
     if b == 0 {
         return 0
@@ -162,7 +162,7 @@ fun divide(a, b) {
 }
 
 divide(10, 2)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -199,12 +199,12 @@ fn cli_provability_invariants_with_loop() {
     let file = create_temp_file(
         &temp,
         "invariants_loop.ruchy",
-        r#"
+        r"
 let sum = 0
 for i in range(10) {
     sum = sum + i
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -241,12 +241,12 @@ fn cli_provability_termination_with_loop() {
     let file = create_temp_file(
         &temp,
         "termination_loop.ruchy",
-        r#"
+        r"
 let i = 0
 while i < 10 {
     i = i + 1
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -263,7 +263,7 @@ fn cli_provability_termination_with_recursion() {
     let file = create_temp_file(
         &temp,
         "termination_recursion.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -273,7 +273,7 @@ fun factorial(n) {
 }
 
 factorial(5)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -310,12 +310,12 @@ fn cli_provability_bounds_with_array() {
     let file = create_temp_file(
         &temp,
         "bounds_array.ruchy",
-        r#"
+        r"
 let arr = [1, 2, 3, 4, 5]
 for i in range(5) {
     println(arr[i])
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -488,7 +488,7 @@ fn cli_provability_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -499,7 +499,7 @@ fun factorial(n) {
 
 let result = factorial(5)
 println(result)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -536,12 +536,12 @@ fn cli_provability_safe_array_access() {
     let file = create_temp_file(
         &temp,
         "safe_array.ruchy",
-        r#"
+        r"
 let arr = [1, 2, 3]
 for i in range(3) {
     println(arr[i])
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -558,14 +558,14 @@ fn cli_provability_loop_invariant_maintained() {
     let file = create_temp_file(
         &temp,
         "loop_invariant.ruchy",
-        r#"
+        r"
 let sum = 0
 let i = 0
 while i < 10 {
     sum = sum + i
     i = i + 1
 }
-"#,
+",
     );
 
     ruchy_cmd()

@@ -32,17 +32,17 @@ fn temp_dir() -> TempDir {
 
 // ==================== RED PHASE: Unit Tests (Will Fail Initially) ====================
 
-/// Test 1: Basic DataFrame compilation
+/// Test 1: Basic `DataFrame` compilation
 ///
-/// This test verifies that a simple DataFrame created with df![] macro
+/// This test verifies that a simple `DataFrame` created with df![] macro
 /// can be compiled to a binary and executed successfully.
 ///
 /// Expected behavior:
 /// - Code compiles without errors
-/// - Binary executes and displays DataFrame
-/// - Output contains DataFrame content
+/// - Binary executes and displays `DataFrame`
+/// - Output contains `DataFrame` content
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_basic_compilation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -75,7 +75,7 @@ fn test_dataframe_001_basic_compilation() {
 
 /// Test 2: Cargo.toml generation
 ///
-/// This test verifies that when compiling DataFrame code, a Cargo.toml
+/// This test verifies that when compiling `DataFrame` code, a Cargo.toml
 /// file is automatically generated with the polars dependency.
 ///
 /// Expected behavior:
@@ -83,7 +83,7 @@ fn test_dataframe_001_basic_compilation() {
 /// - File contains polars dependency
 /// - Dependency version is specified
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_cargo_toml_generation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -130,9 +130,9 @@ fn test_dataframe_001_cargo_toml_generation() {
     }
 }
 
-/// Test 3: DataFrame column operations
+/// Test 3: `DataFrame` column operations
 ///
-/// This test verifies that DataFrames with multiple columns can be
+/// This test verifies that `DataFrames` with multiple columns can be
 /// compiled and that column selection operations work correctly.
 ///
 /// Expected behavior:
@@ -140,7 +140,7 @@ fn test_dataframe_001_cargo_toml_generation() {
 /// - Column access works in compiled binary
 /// - Output is consistent with interpreter mode
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_column_operations() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -176,9 +176,9 @@ println(df);
         .stdout(predicate::str::contains("35"));
 }
 
-/// Test 4: DataFrame filtering
+/// Test 4: `DataFrame` filtering
 ///
-/// This test verifies that filter operations on DataFrames compile
+/// This test verifies that filter operations on `DataFrames` compile
 /// and execute correctly in binaries.
 ///
 /// Expected behavior:
@@ -186,7 +186,7 @@ println(df);
 /// - Filtered results are correct
 /// - Output matches filtered data
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_filtering() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -216,17 +216,17 @@ println(filtered);
         .stdout(predicate::str::contains("5"));
 }
 
-/// Test 5: Multiple DataFrames
+/// Test 5: Multiple `DataFrames`
 ///
-/// This test verifies that code with multiple DataFrame instances
-/// can be compiled and all DataFrames work correctly.
+/// This test verifies that code with multiple `DataFrame` instances
+/// can be compiled and all `DataFrames` work correctly.
 ///
 /// Expected behavior:
 /// - Multiple df![] macros compile
-/// - Each DataFrame is independent
-/// - All DataFrames can be used in same binary
+/// - Each `DataFrame` is independent
+/// - All `DataFrames` can be used in same binary
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_multiple_dataframes() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -259,17 +259,17 @@ println(df2);
         .stdout(predicate::str::contains("4"));
 }
 
-/// Test 6: Error handling for invalid DataFrame syntax
+/// Test 6: Error handling for invalid `DataFrame` syntax
 ///
 /// This test verifies that compilation fails gracefully with a clear
-/// error message when invalid DataFrame syntax is used.
+/// error message when invalid `DataFrame` syntax is used.
 ///
 /// Expected behavior:
 /// - Compilation fails (not a runtime error)
-/// - Error message mentions DataFrame or df
+/// - Error message mentions `DataFrame` or df
 /// - Error is actionable
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_error_handling() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -277,7 +277,7 @@ fn test_dataframe_001_error_handling() {
     // Invalid DataFrame syntax (missing column definition)
     fs::write(
         &source,
-        r#"let df = df![]; println(df);"#
+        r"let df = df![]; println(df);"
     ).unwrap();
 
     let output_binary = temp.path().join("test_binary");
@@ -295,17 +295,17 @@ fn test_dataframe_001_error_handling() {
         );
 }
 
-/// Test 7: Large DataFrame compilation
+/// Test 7: Large `DataFrame` compilation
 ///
-/// This test verifies that DataFrames with many rows can be compiled
+/// This test verifies that `DataFrames` with many rows can be compiled
 /// and that performance is acceptable.
 ///
 /// Expected behavior:
-/// - Large DataFrames compile successfully
+/// - Large `DataFrames` compile successfully
 /// - Compilation time is reasonable (<60 seconds)
 /// - Binary executes without errors
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_large_dataframe() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -316,7 +316,7 @@ fn test_dataframe_001_large_dataframe() {
 
     fs::write(
         &source,
-        format!(r#"let df = df![{{"x": [{}]}}]; println(df.len());"#, values_str)
+        format!(r#"let df = df![{{"x": [{values_str}]}}]; println(df.len());"#)
     ).unwrap();
 
     let output_binary = temp.path().join("test_binary");
@@ -334,9 +334,9 @@ fn test_dataframe_001_large_dataframe() {
         .stdout(predicate::str::contains("1000"));
 }
 
-/// Test 8: Mixed types in DataFrame
+/// Test 8: Mixed types in `DataFrame`
 ///
-/// This test verifies that DataFrames with columns of different types
+/// This test verifies that `DataFrames` with columns of different types
 /// (int, float, string) compile correctly.
 ///
 /// Expected behavior:
@@ -344,7 +344,7 @@ fn test_dataframe_001_large_dataframe() {
 /// - All types are preserved
 /// - Output shows all types correctly
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_mixed_types() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -387,7 +387,7 @@ println(df);
 /// - Build artifacts are in expected location
 /// - Cleanup is documented
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_cleanup() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -427,14 +427,13 @@ fn test_dataframe_001_cleanup() {
     // Allow the binary and optionally a build directory
     assert!(
         new_files.len() <= 2,
-        "Too many new files created: {:?}",
-        new_files
+        "Too many new files created: {new_files:?}"
     );
 }
 
 /// Test 10: Interpreter compatibility
 ///
-/// This test verifies that the same DataFrame code produces identical
+/// This test verifies that the same `DataFrame` code produces identical
 /// output in both interpreter mode and compiled binary mode.
 ///
 /// Expected behavior:
@@ -442,7 +441,7 @@ fn test_dataframe_001_cleanup() {
 /// - Output is identical (or semantically equivalent)
 /// - No behavioral differences
 #[test]
-#[ignore] // RED phase - will fail until implementation
+#[ignore = "RED phase - will fail until implementation"]
 fn test_dataframe_001_interpreter_compatibility() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -482,11 +481,11 @@ fn test_dataframe_001_interpreter_compatibility() {
     let compiled_str = String::from_utf8_lossy(&compiled_output);
 
     assert!(
-        interpreter_str.contains("1") && compiled_str.contains("1"),
+        interpreter_str.contains('1') && compiled_str.contains('1'),
         "Both outputs should contain DataFrame data"
     );
     assert!(
-        interpreter_str.contains("x") && compiled_str.contains("x"),
+        interpreter_str.contains('x') && compiled_str.contains('x'),
         "Both outputs should contain column name"
     );
 }
@@ -567,9 +566,9 @@ mod property_tests {
     use proptest::prelude::*;
     use ruchy::frontend::parser::Parser;
 
-    /// Property test: DataFrame detection with random column names
+    /// Property test: `DataFrame` detection with random column names
     ///
-    /// Validates that code with DataFrames is always detected correctly.
+    /// Validates that code with `DataFrames` is always detected correctly.
     #[test]
     fn proptest_dataframe_detection_any_column_name() {
         let config = ProptestConfig::with_cases(1000); // Fast: just parsing, no compilation
@@ -577,11 +576,10 @@ mod property_tests {
             let code = format!(
                 r#"fun main() {{
                     let df = df![
-                        "{}" => [1, 2, 3]
+                        "{col_name}" => [1, 2, 3]
                     ];
                     println(df);
-                }}"#,
-                col_name
+                }}"#
             );
 
             // Parse the code
@@ -594,9 +592,9 @@ mod property_tests {
         });
     }
 
-    /// Property test: DataFrame with random number of elements
+    /// Property test: `DataFrame` with random number of elements
     ///
-    /// For ANY size array (1-100 elements), DataFrame should be detected.
+    /// For ANY size array (1-100 elements), `DataFrame` should be detected.
     #[test]
     fn proptest_dataframe_any_size() {
         let config = ProptestConfig::with_cases(1000); // Fast: just parsing
@@ -607,11 +605,10 @@ mod property_tests {
             let code = format!(
                 r#"fun main() {{
                     let df = df![
-                        "x" => [{}]
+                        "x" => [{elements_str}]
                     ];
                     println(df);
-                }}"#,
-                elements_str
+                }}"#
             );
 
             // Parse the code
@@ -624,9 +621,9 @@ mod property_tests {
         });
     }
 
-    /// Property test: Non-DataFrame code is NOT detected as DataFrame
+    /// Property test: Non-DataFrame code is NOT detected as `DataFrame`
     ///
-    /// For ANY simple program without DataFrames, should NOT detect DataFrame usage.
+    /// For ANY simple program without `DataFrames`, should NOT detect `DataFrame` usage.
     /// This validates that our detection doesn't have false positives.
     #[test]
     fn proptest_non_dataframe_not_detected() {
@@ -649,7 +646,7 @@ mod property_tests {
         });
     }
 
-    /// Property test: DataFrame detection is deterministic
+    /// Property test: `DataFrame` detection is deterministic
     ///
     /// The same code should always be detected the same way.
     /// This validates determinism in our detection logic.
@@ -683,9 +680,9 @@ mod property_tests {
         });
     }
 
-    /// Property test: Multiple DataFrames in same file
+    /// Property test: Multiple `DataFrames` in same file
     ///
-    /// For ANY number of DataFrames (1-5), all should be detected.
+    /// For ANY number of `DataFrames` (1-5), all should be detected.
     #[test]
     fn proptest_multiple_dataframes() {
         let config = ProptestConfig::with_cases(100); // Fast: just parsing
@@ -693,10 +690,9 @@ mod property_tests {
             let mut dataframes = Vec::new();
             for i in 0..count {
                 dataframes.push(format!(
-                    r#"let df{} = df![
-                        "col{}" => [1, 2, 3]
-                    ];"#,
-                    i, i
+                    r#"let df{i} = df![
+                        "col{i}" => [1, 2, 3]
+                    ];"#
                 ));
             }
 

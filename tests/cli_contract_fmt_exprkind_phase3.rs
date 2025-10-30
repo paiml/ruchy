@@ -29,13 +29,11 @@ fn test_fmt_struct_declaration() {
 
     assert!(
         formatted.contains("struct Point"),
-        "Struct declaration lost! Got:\n{}",
-        formatted
+        "Struct declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Struct not implemented! Got:\n{}",
-        formatted
+        "Struct not implemented! Got:\n{formatted}"
     );
 }
 
@@ -58,13 +56,11 @@ fn test_fmt_enum_declaration() {
 
     assert!(
         formatted.contains("enum Result"),
-        "Enum declaration lost! Got:\n{}",
-        formatted
+        "Enum declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Enum not implemented! Got:\n{}",
-        formatted
+        "Enum not implemented! Got:\n{formatted}"
     );
 }
 
@@ -87,13 +83,11 @@ fn test_fmt_trait_declaration() {
 
     assert!(
         formatted.contains("trait Display"),
-        "Trait declaration lost! Got:\n{}",
-        formatted
+        "Trait declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Trait not implemented! Got:\n{}",
-        formatted
+        "Trait not implemented! Got:\n{formatted}"
     );
 }
 
@@ -116,13 +110,11 @@ fn test_fmt_impl_block() {
 
     assert!(
         formatted.contains("impl Point"),
-        "Impl block lost! Got:\n{}",
-        formatted
+        "Impl block lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Impl not implemented! Got:\n{}",
-        formatted
+        "Impl not implemented! Got:\n{formatted}"
     );
 }
 
@@ -146,13 +138,11 @@ fn test_fmt_module_declaration() {
 
     assert!(
         formatted.contains("mod utils"),
-        "Module declaration lost! Got:\n{}",
-        formatted
+        "Module declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Module not implemented! Got:\n{}",
-        formatted
+        "Module not implemented! Got:\n{formatted}"
     );
 }
 
@@ -175,13 +165,11 @@ fn test_fmt_import_statement() {
 
     assert!(
         formatted.contains("import"),
-        "Import statement lost! Got:\n{}",
-        formatted
+        "Import statement lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Import not implemented! Got:\n{}",
-        formatted
+        "Import not implemented! Got:\n{formatted}"
     );
 }
 
@@ -204,13 +192,11 @@ fn test_fmt_export_statement() {
 
     assert!(
         formatted.contains("export"),
-        "Export statement lost! Got:\n{}",
-        formatted
+        "Export statement lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Export not implemented! Got:\n{}",
-        formatted
+        "Export not implemented! Got:\n{formatted}"
     );
 }
 
@@ -234,13 +220,11 @@ fn test_fmt_let_pattern() {
 
     assert!(
         formatted.contains("let") && formatted.contains("in"),
-        "Let pattern lost! Got:\n{}",
-        formatted
+        "Let pattern lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "LetPattern not implemented! Got:\n{}",
-        formatted
+        "LetPattern not implemented! Got:\n{formatted}"
     );
 }
 
@@ -263,13 +247,11 @@ fn test_fmt_while_let() {
 
     assert!(
         formatted.contains("while let"),
-        "While let lost! Got:\n{}",
-        formatted
+        "While let lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "WhileLet not implemented! Got:\n{}",
-        formatted
+        "WhileLet not implemented! Got:\n{formatted}"
     );
 }
 
@@ -292,14 +274,12 @@ fn test_fmt_string_interpolation() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     assert!(
-        formatted.contains("f\"") || formatted.contains("{"),
-        "String interpolation lost! Got:\n{}",
-        formatted
+        formatted.contains("f\"") || formatted.contains('{'),
+        "String interpolation lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "StringInterpolation not implemented! Got:\n{}",
-        formatted
+        "StringInterpolation not implemented! Got:\n{formatted}"
     );
 }
 
@@ -323,13 +303,11 @@ fn test_fmt_actor_declaration() {
 
     assert!(
         formatted.contains("actor Counter"),
-        "Actor declaration lost! Got:\n{}",
-        formatted
+        "Actor declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Actor not implemented! Got:\n{}",
-        formatted
+        "Actor not implemented! Got:\n{formatted}"
     );
 }
 
@@ -352,13 +330,11 @@ fn test_fmt_send_message() {
 
     assert!(
         formatted.contains("send"),
-        "Send message lost! Got:\n{}",
-        formatted
+        "Send message lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Send not implemented! Got:\n{}",
-        formatted
+        "Send not implemented! Got:\n{formatted}"
     );
 }
 
@@ -381,14 +357,12 @@ fn test_fmt_tuple_struct() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     assert!(
-        formatted.contains("struct Color") && formatted.contains("("),
-        "Tuple struct lost! Got:\n{}",
-        formatted
+        formatted.contains("struct Color") && formatted.contains('('),
+        "Tuple struct lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "TupleStruct not implemented! Got:\n{}",
-        formatted
+        "TupleStruct not implemented! Got:\n{formatted}"
     );
 }
 
@@ -411,12 +385,10 @@ fn test_fmt_class_declaration() {
 
     assert!(
         formatted.contains("class Animal"),
-        "Class declaration lost! Got:\n{}",
-        formatted
+        "Class declaration lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Class not implemented! Got:\n{}",
-        formatted
+        "Class not implemented! Got:\n{formatted}"
     );
 }

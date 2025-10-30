@@ -1,7 +1,7 @@
 //! [SQLITE-TEST-001] Test Harness 1.1: Parser Grammar Coverage Suite
 //!
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.1
-//! **Research Foundation**: NASA MC/DC (DO-178B/C), SQLite Lemon parser methodology
+//! **Research Foundation**: NASA MC/DC (DO-178B/C), `SQLite` Lemon parser methodology
 //! **Ticket**: SQLITE-TEST-001
 //! **Status**: 100% Milestone ✅ - 20,000 property iterations (145/2000 tests = 7.25%)
 //!
@@ -324,12 +324,12 @@ fn test_sqlite_076_pattern_guards() {
 #[test]
 #[ignore = "Parser limitation: nested object destructuring - needs [PARSER-061] ticket"]
 fn test_sqlite_077_nested_destructuring() {
-    assert_parses(r#"
+    assert_parses(r"
         let (a, (b, c)) = (1, (2, 3))
-    "#);
-    assert_parses(r#"
+    ");
+    assert_parses(r"
         let {x: {y: z}} = {x: {y: 42}}
-    "#);
+    ");
 }
 
 /// Test spread patterns in destructuring
@@ -479,35 +479,35 @@ fn test_sqlite_223_generic_function_calls() {
 /// Test generic type constraints
 #[test]
 fn test_sqlite_224_generic_constraints() {
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T: Display>(x: T) { }
-    "#);
+    ");
 }
 
 /// Test multiple type constraints
 #[test]
 fn test_sqlite_225_multiple_constraints() {
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T: Display + Clone>(x: T) { }
-    "#);
+    ");
 }
 
 /// Test where clauses
 #[test]
 fn test_sqlite_226_where_clauses() {
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T>(x: T) where T: Display { }
-    "#);
+    ");
 }
 
 /// Test complex where clauses
 #[test]
 #[ignore = "Parser limitation: multiple where clause constraints separated by comma - needs [PARSER-068] ticket"]
 fn test_sqlite_227_complex_where() {
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T, U>(x: T, y: U)
         where T: Display, U: Clone { }
-    "#);
+    ");
 }
 
 /// Test string interpolation - f-strings
@@ -590,43 +590,43 @@ fn test_sqlite_237_await_expressions() {
 /// Test loop labels
 #[test]
 fn test_sqlite_238_loop_labels() {
-    assert_parses(r#"
+    assert_parses(r"
         'outer: loop {
             'inner: loop {
                 break 'outer
             }
         }
-    "#);
+    ");
 }
 
 /// Test break with labels
 #[test]
 fn test_sqlite_239_break_labels() {
-    assert_parses(r#"
+    assert_parses(r"
         'outer: for x in items {
             break 'outer
         }
-    "#);
+    ");
 }
 
 /// Test continue with labels
 #[test]
 fn test_sqlite_240_continue_labels() {
-    assert_parses(r#"
+    assert_parses(r"
         'outer: for x in items {
             continue 'outer
         }
-    "#);
+    ");
 }
 
 /// Test break with values
 #[test]
 fn test_sqlite_241_break_values() {
-    assert_parses(r#"
+    assert_parses(r"
         let result = loop {
             break 42
         }
-    "#);
+    ");
 }
 
 /// Test tuple expressions
@@ -708,7 +708,7 @@ fn test_sqlite_251_complex_precedence() {
 /// Test labeled break statements (loop control)
 #[test]
 fn test_sqlite_252_labeled_break() {
-    assert_parses(r#"
+    assert_parses(r"
         'outer: loop {
             for i in 1..10 {
                 if i == 5 {
@@ -716,13 +716,13 @@ fn test_sqlite_252_labeled_break() {
                 }
             }
         }
-    "#);
+    ");
 }
 
 /// Test labeled continue statements
 #[test]
 fn test_sqlite_253_labeled_continue() {
-    assert_parses(r#"
+    assert_parses(r"
         'outer: for i in 1..10 {
             for j in 1..10 {
                 if j == 3 {
@@ -730,7 +730,7 @@ fn test_sqlite_253_labeled_continue() {
                 }
             }
         }
-    "#);
+    ");
 }
 
 /// Test complex operator precedence edge cases
@@ -914,24 +914,24 @@ fn test_sqlite_271_range_patterns() {
 #[test]
 #[ignore = "Parser limitation: Reference patterns (&pattern) not supported - needs [PARSER-094] ticket"]
 fn test_sqlite_272_reference_patterns() {
-    assert_parses(r#"
+    assert_parses(r"
         match &value {
             &Some(ref x) => x,
             &None => 0
         }
-    "#);
+    ");
 }
 
 /// Test slice patterns
 #[test]
 #[ignore = "Parser limitation: Slice patterns ([first, rest @ ..]) not supported - needs [PARSER-079] ticket"]
 fn test_sqlite_273_slice_patterns() {
-    assert_parses(r#"
+    assert_parses(r"
         match arr {
             [first, rest @ ..] => first,
             [] => 0
         }
-    "#);
+    ");
 }
 
 /// Test box patterns
@@ -949,12 +949,12 @@ fn test_sqlite_274_box_patterns() {
 /// Test at-patterns
 #[test]
 fn test_sqlite_275_at_patterns() {
-    assert_parses(r#"
+    assert_parses(r"
         match x {
             n @ 1..=5 => n,
             _ => 0
         }
-    "#);
+    ");
 }
 
 /// Test wildcard in struct patterns
@@ -976,32 +976,32 @@ fn test_sqlite_276_struct_wildcard_patterns() {
 #[test]
 #[ignore = "Parser limitation: Associated types (type Item = T) not supported - needs [PARSER-081] ticket"]
 fn test_sqlite_277_associated_types() {
-    assert_parses(r#"
+    assert_parses(r"
         trait Iterator {
             type Item;
             fun next() -> Option<Self::Item>;
         }
-    "#);
+    ");
 }
 
 /// Test higher-ranked trait bounds
 #[test]
 #[ignore = "Parser limitation: HRTB (for<'a>) not supported - needs [PARSER-082] ticket"]
 fn test_sqlite_278_hrtb() {
-    assert_parses(r#"
+    assert_parses(r"
         fun apply<F>(f: F) where F: for<'a> Fn(&'a i32) -> &'a i32 {}
-    "#);
+    ");
 }
 
 /// Test impl trait syntax
 #[test]
 #[ignore = "Parser limitation: impl Trait syntax not supported - needs [PARSER-083] ticket"]
 fn test_sqlite_279_impl_trait() {
-    assert_parses(r#"
+    assert_parses(r"
         fun make_iterator() -> impl Iterator<Item=i32> {
             vec![1, 2, 3].into_iter()
         }
-    "#);
+    ");
 }
 
 /// Test dyn trait syntax
@@ -1015,32 +1015,32 @@ fn test_sqlite_280_dyn_trait() {
 #[test]
 #[ignore = "Parser limitation: Const generics ([T; N]) not supported - needs [PARSER-085] ticket"]
 fn test_sqlite_281_const_generics() {
-    assert_parses(r#"
+    assert_parses(r"
         struct Array<T, const N: usize> {
             data: [T; N]
         }
-    "#);
+    ");
 }
 
 /// Test type bounds in where clause
 #[test]
 fn test_sqlite_282_where_clause_bounds() {
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T>(value: T) where T: Clone + Debug {
             value.clone()
         }
-    "#);
+    ");
 }
 
 /// Test lifetime bounds
 #[test]
 #[ignore = "Parser limitation: Lifetime bounds ('a: 'b) not supported - needs [PARSER-086] ticket"]
 fn test_sqlite_283_lifetime_bounds() {
-    assert_parses(r#"
+    assert_parses(r"
         fun longest<'a, 'b: 'a>(x: &'a str, y: &'b str) -> &'a str {
             if x.len() > y.len() { x } else { y }
         }
-    "#);
+    ");
 }
 
 /// Test trait object syntax with multiple bounds
@@ -1054,22 +1054,22 @@ fn test_sqlite_284_trait_object_multiple_bounds() {
 #[test]
 #[ignore = "Parser limitation: PhantomData not supported - needs [PARSER-088] ticket"]
 fn test_sqlite_285_phantom_data() {
-    assert_parses(r#"
+    assert_parses(r"
         struct Marker<T> {
             _marker: PhantomData<T>
         }
-    "#);
+    ");
 }
 
 /// Test self type in trait
 #[test]
 fn test_sqlite_286_self_type_in_trait() {
-    assert_parses(r#"
+    assert_parses(r"
         trait Builder {
             fun new() -> Self;
             fun build(self) -> String;
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -1079,35 +1079,35 @@ fn test_sqlite_286_self_type_in_trait() {
 /// Test if-let expressions
 #[test]
 fn test_sqlite_287_if_let() {
-    assert_parses(r#"
+    assert_parses(r"
         if let Some(x) = maybe_value {
             x
         } else {
             0
         }
-    "#);
+    ");
 }
 
 /// Test while-let loops
 #[test]
 fn test_sqlite_288_while_let() {
-    assert_parses(r#"
+    assert_parses(r"
         while let Some(x) = iterator.next() {
             process(x)
         }
-    "#);
+    ");
 }
 
 /// Test loop with break value
 #[test]
 fn test_sqlite_289_loop_break_value() {
-    assert_parses(r#"
+    assert_parses(r"
         let result = loop {
             if condition {
                 break 42;
             }
         }
-    "#);
+    ");
 }
 
 /// Test nested closures
@@ -1155,7 +1155,7 @@ fn test_sqlite_295_mixed_precedence() {
 /// Test complex nested expressions
 #[test]
 fn test_sqlite_296_complex_nesting() {
-    assert_parses(r#"
+    assert_parses(r"
         {
             let x = if cond1 {
                 match val {
@@ -1172,7 +1172,7 @@ fn test_sqlite_296_complex_nesting() {
             };
             x
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -1222,30 +1222,30 @@ fn test_sqlite_301_macro_definition() {
 #[test]
 #[ignore = "Parser limitation: Procedural macro attributes not supported - needs [PARSER-090] ticket"]
 fn test_sqlite_302_proc_macro_attributes() {
-    assert_parses(r#"
+    assert_parses(r"
         #[derive(Debug, Clone)]
         struct Point { x: i32, y: i32 }
-    "#);
+    ");
 }
 
 /// Test custom derive
 #[test]
 #[ignore = "Parser limitation: Custom derive macros not supported - needs [PARSER-091] ticket"]
 fn test_sqlite_303_custom_derive() {
-    assert_parses(r#"
+    assert_parses(r"
         #[derive(MyTrait)]
         struct CustomType;
-    "#);
+    ");
 }
 
 /// Test attribute macros
 #[test]
 #[ignore = "Parser limitation: Attribute macros not supported - needs [PARSER-092] ticket"]
 fn test_sqlite_304_attribute_macros() {
-    assert_parses(r#"
+    assert_parses(r"
         #[my_attribute]
         fun decorated_function() {}
-    "#);
+    ");
 }
 
 /// Test function-like procedural macros
@@ -1361,12 +1361,12 @@ fn test_sqlite_317_function_result_types() {
 /// Test function with where clause
 #[test]
 fn test_sqlite_318_function_where_clause() {
-    assert_parses(r#"
+    assert_parses(r"
         fun compare<T>(a: T, b: T) -> bool
         where T: PartialEq {
             a == b
         }
-    "#);
+    ");
 }
 
 /// Test function with lifetime parameters
@@ -1400,24 +1400,24 @@ fn test_sqlite_322_function_unit_return() {
 /// Test recursive function definition
 #[test]
 fn test_sqlite_323_recursive_function() {
-    assert_parses(r#"
+    assert_parses(r"
         fun factorial(n: i32) -> i32 {
             if n <= 1 { 1 } else { n * factorial(n - 1) }
         }
-    "#);
+    ");
 }
 
 /// Test mutually recursive functions
 #[test]
 fn test_sqlite_324_mutual_recursion() {
-    assert_parses(r#"
+    assert_parses(r"
         fun is_even(n: i32) -> bool {
             if n == 0 { true } else { is_odd(n - 1) }
         }
         fun is_odd(n: i32) -> bool {
             if n == 0 { false } else { is_even(n - 1) }
         }
-    "#);
+    ");
 }
 
 /// Test function with mutable parameters
@@ -1441,25 +1441,25 @@ fn test_sqlite_326_reference_parameters() {
 #[ignore = "Parser limitation: Field visibility modifiers (pub, pub(crate)) not supported - needs [PARSER-430] ticket"]
 #[test]
 fn test_sqlite_327_struct_field_visibility() {
-    assert_parses(r#"
+    assert_parses(r"
         struct Config {
             pub host: String,
             pub(crate) port: i32,
             api_key: String
         }
-    "#);
+    ");
 }
 
 /// Test struct with default field values
 #[test]
 #[ignore = "Parser limitation: Default field values not supported - needs [PARSER-101] ticket"]
 fn test_sqlite_328_struct_default_values() {
-    assert_parses(r#"
+    assert_parses(r"
         struct Options {
             timeout: i32 = 30,
             retries: i32 = 3
         }
-    "#);
+    ");
 }
 
 /// Test tuple struct with multiple elements
@@ -1480,35 +1480,35 @@ fn test_sqlite_330_unit_struct() {
 #[test]
 #[ignore = "Parser limitation: Enum discriminants not supported - needs [PARSER-102] ticket"]
 fn test_sqlite_331_enum_discriminants() {
-    assert_parses(r#"
+    assert_parses(r"
         enum Status {
             Ok = 0,
             Error = 1,
             Pending = 2
         }
-    "#);
+    ");
 }
 
 /// Test enum with mixed variants
 #[test]
 fn test_sqlite_332_enum_mixed_variants() {
-    assert_parses(r#"
+    assert_parses(r"
         enum Data {
             None,
             Single(i32),
             Pair(i32, i32),
             Record { x: i32, y: i32 }
         }
-    "#);
+    ");
 }
 
 /// Test struct update syntax
 #[test]
 #[ignore = "Parser limitation: Struct update syntax (..) not supported - needs [PARSER-103] ticket"]
 fn test_sqlite_333_struct_update() {
-    assert_parses(r#"
+    assert_parses(r"
         let p2 = Point { x: 5, ..p1 };
-    "#);
+    ");
 }
 
 /// Test struct with generic parameters
@@ -1521,24 +1521,24 @@ fn test_sqlite_334_struct_generics() {
 /// Test enum with generic parameters
 #[test]
 fn test_sqlite_335_enum_generics() {
-    assert_parses(r#"
+    assert_parses(r"
         enum Result<T, E> {
             Ok(T),
             Err(E)
         }
-    "#);
+    ");
 }
 
 /// Test struct with where clause
 #[test]
 #[ignore = "Parser limitation: where clause in struct definitions not supported - needs [PARSER-119] ticket"]
 fn test_sqlite_336_struct_where_clause() {
-    assert_parses(r#"
+    assert_parses(r"
         struct Container<T>
         where T: Clone {
             value: T
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -1638,96 +1638,96 @@ fn test_sqlite_346_safe_navigation() {
 #[test]
 #[ignore = "Parser limitation: Function attributes not fully supported - needs [PARSER-106] ticket"]
 fn test_sqlite_347_function_attributes() {
-    assert_parses(r#"
+    assert_parses(r"
         #[inline]
         fun fast_function() {}
-    "#);
+    ");
 }
 
 /// Test conditional compilation
 #[test]
 #[ignore = "Parser limitation: cfg attributes not supported - needs [PARSER-107] ticket"]
 fn test_sqlite_348_cfg_attributes() {
-    assert_parses(r#"
+    assert_parses(r"
         #[cfg(test)]
         fun test_only() {}
-    "#);
+    ");
 }
 
 /// Test deprecated attribute
 #[test]
 #[ignore = "Parser limitation: deprecated attribute not supported - needs [PARSER-108] ticket"]
 fn test_sqlite_349_deprecated() {
-    assert_parses(r#"
+    assert_parses(r"
         #[deprecated]
         fun old_function() {}
-    "#);
+    ");
 }
 
 /// Test allow/warn/deny attributes
 #[test]
 #[ignore = "Parser limitation: lint attributes not supported - needs [PARSER-109] ticket"]
 fn test_sqlite_350_lint_attributes() {
-    assert_parses(r#"
+    assert_parses(r"
         #[allow(unused_variables)]
         fun with_unused() {}
-    "#);
+    ");
 }
 
 /// Test test attribute
 #[test]
 #[ignore = "Parser limitation: test attribute not supported - needs [PARSER-110] ticket"]
 fn test_sqlite_351_test_attribute() {
-    assert_parses(r#"
+    assert_parses(r"
         #[test]
         fun test_addition() {
             assert_eq!(2 + 2, 4);
         }
-    "#);
+    ");
 }
 
 /// Test doc comments as attributes
 #[test]
 fn test_sqlite_352_doc_comments() {
-    assert_parses(r#"
+    assert_parses(r"
         /// This is a doc comment
         /// It can span multiple lines
         fun documented() {}
-    "#);
+    ");
 }
 
-/// Test must_use attribute
+/// Test `must_use` attribute
 #[test]
 #[ignore = "Parser limitation: must_use attribute not supported - needs [PARSER-111] ticket"]
 fn test_sqlite_353_must_use() {
-    assert_parses(r#"
+    assert_parses(r"
         #[must_use]
         fun important() -> i32 { 42 }
-    "#);
+    ");
 }
 
 /// Test repr attribute
 #[test]
 #[ignore = "Parser limitation: repr attribute not supported - needs [PARSER-112] ticket"]
 fn test_sqlite_354_repr() {
-    assert_parses(r#"
+    assert_parses(r"
         #[repr(C)]
         struct FFIStruct {
             x: i32,
             y: i32
         }
-    "#);
+    ");
 }
 
 /// Test multiple attributes
 #[test]
 #[ignore = "Parser limitation: Multiple attributes not fully supported - needs [PARSER-113] ticket"]
 fn test_sqlite_355_multiple_attributes() {
-    assert_parses(r#"
+    assert_parses(r"
         #[inline]
         #[must_use]
         fun optimized() -> i32 { 1 }
-    "#);
+    ");
 }
 
 /// Test attribute with arguments
@@ -1837,7 +1837,7 @@ fn test_sqlite_366_trait_object_send_sync() {
 #[ignore = "Parser limitation: Rest patterns in arrays - needs [PARSER-137] ticket"]
 #[test] fn test_sqlite_381_rest_patterns() { assert_parses("let [first, .., last] = arr"); }
 #[test] fn test_sqlite_382_string_escapes() { assert_parses(r#""Hello\nWorld\t!""#); }
-#[test] fn test_sqlite_383_raw_string_hashes() { assert_parses(r###"r#"raw"#"###); }
+#[test] fn test_sqlite_383_raw_string_hashes() { assert_parses(r##"r#"raw"#"##); }
 #[test] fn test_sqlite_384_format_strings() { assert_parses(r#"format!("x = {}", x)"#); }
 #[test] fn test_sqlite_385_debug_format() { assert_parses(r#"format!("{:?}", value)"#); }
 #[test] fn test_sqlite_386_hex_format() { assert_parses(r#"format!("{:x}", num)"#); }
@@ -4320,22 +4320,22 @@ fn test_sqlite_120_trait_definitions() {
 #[test]
 fn test_sqlite_121_trait_with_multiple_methods() {
     // Traits with multiple methods
-    assert_parses(r#"
+    assert_parses(r"
         trait Drawable {
             fun draw(self)
             fun area(self)
         }
-    "#);
+    ");
 }
 
 #[test]
 fn test_sqlite_122_impl_blocks() {
     // Impl blocks
-    assert_parses(r#"
+    assert_parses(r"
         impl Point {
             fun new(x, y) { Point { x, y } }
         }
-    "#);
+    ");
 }
 
 #[test]
@@ -4351,11 +4351,11 @@ fn test_sqlite_123_trait_implementations() {
 #[test]
 fn test_sqlite_124_generic_impl() {
     // Generic implementations
-    assert_parses(r#"
+    assert_parses(r"
         impl<T> Vec<T> {
             fun new() { Vec { items: [] } }
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -4387,25 +4387,25 @@ fn test_sqlite_132_enum_variants() {
 #[test]
 fn test_sqlite_133_enum_pattern_matching() {
     // Pattern matching on enums
-    assert_parses(r#"
+    assert_parses(r"
         match color {
             Color::Red => 1,
             Color::Green => 2,
             Color::Blue => 3
         }
-    "#);
+    ");
 }
 
 #[test]
 fn test_sqlite_134_nested_enum_patterns() {
     // Nested enum patterns
-    assert_parses(r#"
+    assert_parses(r"
         match result {
             Ok(Some(value)) => value,
             Ok(None) => 0,
             Err(e) => -1
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -4495,20 +4495,20 @@ fn test_sqlite_161_generic_constraints() {
 #[test]
 fn test_sqlite_162_where_clauses() {
     // Where clauses
-    assert_parses(r#"
+    assert_parses(r"
         fun process<T>(value: T) where T: Display { }
-    "#);
+    ");
 }
 
 #[test]
 fn test_sqlite_163_associated_types() {
     // Associated types
-    assert_parses(r#"
+    assert_parses(r"
         trait Iterator {
             type Item
             fun next(self): Option<Self.Item>
         }
-    "#);
+    ");
 }
 
 // ============================================================================
@@ -4556,12 +4556,12 @@ fn test_sqlite_174_while_let_expressions() {
 #[test]
 fn test_sqlite_180_actor_definitions() {
     // Actor definitions
-    assert_parses(r#"
+    assert_parses(r"
         actor Counter {
             state { count: i32 }
             fun increment() { self.count += 1 }
         }
-    "#);
+    ");
 }
 
 #[test]
@@ -4783,7 +4783,7 @@ fn test_sqlite_200_parse_time_linear_small() {
         let elapsed = start.elapsed().as_micros();
 
         times_us.push(elapsed);
-        println!("Size {}: {} μs", size, elapsed);
+        println!("Size {size}: {elapsed} μs");
     }
 
     // Just verify it completes in reasonable time
@@ -4812,8 +4812,7 @@ proptest! {
 
         assert!(
             result.is_ok(),
-            "Parser panicked on input: {}",
-            expr
+            "Parser panicked on input: {expr}"
         );
     }
 }
@@ -4831,7 +4830,7 @@ proptest! {
             let _ = parse_with_error(&id);
         });
 
-        assert!(result.is_ok(), "Parser panicked on identifier: {}", id);
+        assert!(result.is_ok(), "Parser panicked on identifier: {id}");
     }
 }
 
@@ -4844,10 +4843,10 @@ proptest! {
     /// **Milestone**: TARGET ACHIEVED - Full 5K iterations
     #[test]
     fn test_sqlite_302_property_valid_numbers(n in 0i64..1000000) {
-        let input = format!("{}", n);
+        let input = format!("{n}");
         let result = parse_str(&input);
 
-        assert!(result.is_ok(), "Failed to parse number: {}", n);
+        assert!(result.is_ok(), "Failed to parse number: {n}");
     }
 }
 
@@ -4945,10 +4944,10 @@ mod test_stats {
     //! 1. Reach 100+ test milestone (11 more tests needed)
     //! 2. Add more error recovery scenarios
     //! 3. Add parse-print-parse identity tests
-    //! 4. Add DataFrame literal tests
+    //! 4. Add `DataFrame` literal tests
     //! 5. Add visibility modifier tests (pub, pub(crate), etc.)
     //!
-    //! **Parser Limitations Discovered** (via SQLite defensive testing):
+    //! **Parser Limitations Discovered** (via `SQLite` defensive testing):
     //! - [PARSER-055] Bare `return` statements not supported
     //! - [PARSER-056] Async blocks not supported
     //! - [PARSER-057] Export keyword not supported

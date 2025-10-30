@@ -7179,10 +7179,10 @@ mod negative_indexing_tests {
 
     #[test]
     fn test_negative_tuple_indexing() {
-        let code = r#"
+        let code = r"
             let point = (10, 20, 30)
             point[-1]
-        "#;
+        ";
         let mut parser = crate::frontend::parser::Parser::new(code);
         let ast = parser.parse().expect("Parse failed");
         let mut interpreter = Interpreter::new();
@@ -7192,10 +7192,10 @@ mod negative_indexing_tests {
 
     #[test]
     fn test_negative_indexing_with_integers() {
-        let code = r#"
+        let code = r"
             let numbers = [100, 200, 300, 400]
             numbers[-2]
-        "#;
+        ";
         let mut parser = crate::frontend::parser::Parser::new(code);
         let ast = parser.parse().expect("Parse failed");
         let mut interpreter = Interpreter::new();

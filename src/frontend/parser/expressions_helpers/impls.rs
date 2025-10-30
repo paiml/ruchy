@@ -300,7 +300,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_basic_impls_parse(type_name in "[A-Z][a-z]+", method in "[a-z]+") {
-                let code = format!("impl {} {{ fun {}() {{ 42 }} }}", type_name, method);
+                let code = format!("impl {type_name} {{ fun {method}() {{ 42 }} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -308,7 +308,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_trait_impls_parse(trait_name in "[A-Z][a-z]+", type_name in "[A-Z][a-z]+") {
-                let code = format!("impl {} for {} {{ }}", trait_name, type_name);
+                let code = format!("impl {trait_name} for {type_name} {{ }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -316,7 +316,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_generic_impls_parse(type_name in "[A-Z][a-z]+", param in "[A-Z]") {
-                let code = format!("impl<{}> {} {{ }}", param, type_name);
+                let code = format!("impl<{param}> {type_name} {{ }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -324,7 +324,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_empty_impls_parse(type_name in "[A-Z][a-z]+") {
-                let code = format!("impl {} {{}}", type_name);
+                let code = format!("impl {type_name} {{}}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

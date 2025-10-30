@@ -14,11 +14,11 @@ fn ruchy_cmd() -> Command {
 // Test 1: Basic trait with associated type
 #[test]
 fn test_parser_010_basic_associated_type() {
-    let code = r#"
+    let code = r"
 trait Iterator {
     type Item
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_basic.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -32,12 +32,12 @@ trait Iterator {
 // Test 2: Trait with associated type and method
 #[test]
 fn test_parser_010_associated_type_with_method() {
-    let code = r#"
+    let code = r"
 trait Iterator {
     type Item
     fn next(&mut self) -> Option<Self::Item>
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_with_method.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -50,11 +50,11 @@ trait Iterator {
 // Test 3: Trait with generic parameter
 #[test]
 fn test_parser_010_trait_generic() {
-    let code = r#"
+    let code = r"
 trait From<T> {
     fn from(value: T) -> Self
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_generic.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -88,14 +88,14 @@ trait Summary {
 // Test 5: Multiple associated types (including reserved keywords)
 #[test]
 fn test_parser_010_multiple_associated_types() {
-    let code = r#"
+    let code = r"
 trait Container {
     type Item
     type Err
     type Result
     type Output
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_multiple.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -147,12 +147,12 @@ trait From<T> {
 // Test 7: Transpile trait with associated type
 #[test]
 fn test_parser_010_transpile() {
-    let code = r#"
+    let code = r"
 trait Iterator {
     type Item
     fn next(&mut self) -> Option<Self::Item>
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_transpile.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -167,7 +167,7 @@ trait Iterator {
 // Test 8: Complex trait with all features
 #[test]
 fn test_parser_010_complex() {
-    let code = r#"
+    let code = r"
 trait ComplexTrait<T, U> {
     type Output
     type Error
@@ -179,7 +179,7 @@ trait ComplexTrait<T, U> {
         input
     }
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_010_complex.ruchy", code).unwrap();
 
     ruchy_cmd()

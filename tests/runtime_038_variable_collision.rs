@@ -23,7 +23,7 @@ mod property_tests {
     /// Property test: Nested functions with same variable names should not leak
     /// Tests 10K+ random combinations of nested calls
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored
+    #[ignore = "Run with: cargo test property_tests -- --ignored"]
     fn prop_nested_variables_isolated() {
         use rand::Rng;
         let mut rng = rand::thread_rng();
@@ -34,21 +34,18 @@ mod property_tests {
             let inner_value = rng.gen::<i32>();
 
             let code = format!(
-                r#"
+                r"
 fun inner() -> (i32, i32) {{
-    let {var} = {inner};
-    ({inner}, {var})
+    let {var_name} = {inner_value};
+    ({inner_value}, {var_name})
 }}
 
 fun main() {{
-    let {var} = {outer};
+    let {var_name} = {outer_value};
     let result = inner();
-    assert_eq({var}, {outer});  // Outer variable should NOT change!
+    assert_eq({var_name}, {outer_value});  // Outer variable should NOT change!
 }}
-"#,
-                var = var_name,
-                outer = outer_value,
-                inner = inner_value
+"
             );
 
             let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
@@ -65,7 +62,7 @@ fun main() {{
                 .stderr(predicate::str::is_empty());
 
             if iteration % 1000 == 0 {
-                println!("Property test iteration: {}/10000", iteration);
+                println!("Property test iteration: {iteration}/10000");
             }
         }
 
@@ -79,7 +76,7 @@ fn ruchy_cmd() -> Command {
 
 /// Minimal reproduction from Issue #38
 ///
-/// Expected: Variable 'a' in main() should be a String
+/// Expected: Variable 'a' in `main()` should be a String
 /// Actual: Variable 'a' corrupted to integer (1103515245) from nested function
 #[test]
 fn test_runtime038_minimal_reproduction() {

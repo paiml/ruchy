@@ -293,7 +293,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_lambda_with_param(param in "[a-z]+") {
-                let code = format!("async |{}| {}", param, param);
+                let code = format!("async |{param}| {param}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -301,7 +301,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_arrow_lambda_parses(param in "[a-z]+", val in 0i32..100) {
-                let code = format!("async {} => {}", param, val);
+                let code = format!("async {param} => {val}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -309,7 +309,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_function_parses(name in "[a-z]+") {
-                let code = format!("async fun {}() {{ 42 }}", name);
+                let code = format!("async fun {name}() {{ 42 }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -317,7 +317,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_lambda_multi_params(p1 in "[a-z]+", p2 in "[a-z]+") {
-                let code = format!("async |{}, {}| {} + {}", p1, p2, p1, p2);
+                let code = format!("async |{p1}, {p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -325,7 +325,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_block_with_expressions(n in 0i32..100) {
-                let code = format!("async {{ {} }}", n);
+                let code = format!("async {{ {n} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -333,7 +333,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_async_function_with_params(name in "[a-z]+", param in "[a-z]+") {
-                let code = format!("async fun {}({}) {{ {} }}", name, param, param);
+                let code = format!("async fun {name}({param}) {{ {param} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

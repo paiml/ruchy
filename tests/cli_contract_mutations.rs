@@ -56,7 +56,7 @@ fn cli_mutations_valid_program_runs() {
     let output = result.get_output();
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let combined = format!("{}{}", stdout, stderr);
+    let combined = format!("{stdout}{stderr}");
 
     // Should mention mutations or error about missing cargo-mutants
     assert!(
@@ -316,7 +316,7 @@ fn cli_mutations_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -326,7 +326,7 @@ fun factorial(n) {
 }
 
 println(factorial(5))
-"#,
+",
     );
 
     ruchy_cmd()

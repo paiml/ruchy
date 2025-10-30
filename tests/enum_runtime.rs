@@ -1,9 +1,9 @@
 //! Integration tests for enum runtime support
 //!
 //! Tests enum variant construction and execution:
-//! - Unit variants (Status::Success)
-//! - Tuple variants (Response::Error("msg"))
-//! - Keyword variants (Maybe::Some, Maybe::None)
+//! - Unit variants (`Status::Success`)
+//! - Tuple variants (`Response::Error("msg`"))
+//! - Keyword variants (`Maybe::Some`, `Maybe::None`)
 
 use assert_cmd::Command;
 use predicates::prelude::*;

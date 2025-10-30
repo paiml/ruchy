@@ -335,7 +335,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_valid_identifiers_always_parse(ident in valid_identifier()) {
-                let code = format!("{}", ident);
+                let code = ident.clone();
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Valid identifier {} should parse", ident);
             }
@@ -346,7 +346,7 @@ mod tests {
                 mod1 in valid_identifier(),
                 mod2 in valid_identifier()
             ) {
-                let code = format!("{}::{}", mod1, mod2);
+                let code = format!("{mod1}::{mod2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Qualified path {}::{} should parse", mod1, mod2);
             }
@@ -358,7 +358,7 @@ mod tests {
                 mod2 in valid_identifier(),
                 mod3 in valid_identifier()
             ) {
-                let code = format!("{}::{}::{}", mod1, mod2, mod3);
+                let code = format!("{mod1}::{mod2}::{mod3}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Triple path {}::{}::{} should parse", mod1, mod2, mod3);
             }
@@ -370,7 +370,7 @@ mod tests {
                     "as", "for", "if", "match", "while", "let", "fn", "mod"
                 ])
             ) {
-                let code = format!("crate::{}", keyword);
+                let code = format!("crate::{keyword}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Keyword {} as path segment should parse", keyword);
             }
@@ -380,7 +380,7 @@ mod tests {
             fn prop_special_identifiers_always_parse(
                 special in prop::sample::select(vec!["_", "self", "super", "default"])
             ) {
-                let code = format!("{}", special);
+                let code = special.to_string();
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Special identifier {} should parse", special);
             }
@@ -388,7 +388,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_fat_arrow_lambdas_parse(param in valid_identifier()) {
-                let code = format!("{} => {} + 1", param, param);
+                let code = format!("{param} => {param} + 1");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Fat arrow lambda with {} should parse", param);
             }

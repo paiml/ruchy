@@ -1,7 +1,7 @@
-//! STDLIB-005: Array .concat() and .flatten() methods
+//! STDLIB-005: Array .`concat()` and .`flatten()` methods
 //!
 //! ROOT CAUSE: Missing array concatenation and flattening operations
-//! SOLUTION: Implement .concat() and .flatten() methods
+//! SOLUTION: Implement .`concat()` and .`flatten()` methods
 //!
 //! EXTREME TDD: RED → GREEN → REFACTOR
 
@@ -17,11 +17,11 @@ fn ruchy_cmd() -> Command {
 
 #[test]
 fn test_concat_basic() {
-    let code = r#"
+    let code = r"
 let a = [1, 2];
 let b = [3, 4];
 println(a.concat(b))
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -33,11 +33,11 @@ println(a.concat(b))
 
 #[test]
 fn test_concat_empty_arrays() {
-    let code = r#"
+    let code = r"
 let a = [1, 2];
 let b = [];
 println(a.concat(b))
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -49,12 +49,12 @@ println(a.concat(b))
 
 #[test]
 fn test_concat_multiple() {
-    let code = r#"
+    let code = r"
 let a = [1];
 let b = [2];
 let c = [3];
 println(a.concat(b).concat(c))
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -86,10 +86,10 @@ println(a.concat(b))
 
 #[test]
 fn test_flatten_basic() {
-    let code = r#"
+    let code = r"
 let nested = [[1, 2], [3, 4]];
 println(nested.flatten())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -101,10 +101,10 @@ println(nested.flatten())
 
 #[test]
 fn test_flatten_single_level() {
-    let code = r#"
+    let code = r"
 let nested = [[1], [2], [3]];
 println(nested.flatten())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -116,10 +116,10 @@ println(nested.flatten())
 
 #[test]
 fn test_flatten_empty_subarrays() {
-    let code = r#"
+    let code = r"
 let nested = [[1, 2], [], [3]];
 println(nested.flatten())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -146,10 +146,10 @@ println(nested.flatten())
 
 #[test]
 fn test_flatten_already_flat() {
-    let code = r#"
+    let code = r"
 let flat = [1, 2, 3];
 println(flat.flatten())
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

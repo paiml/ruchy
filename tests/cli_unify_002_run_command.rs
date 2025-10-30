@@ -66,7 +66,7 @@ fun main() {
     // Get list of files in /tmp before
     let before_files = fs::read_dir("/tmp")
         .unwrap()
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| {
             e.file_name()
                 .to_string_lossy()
@@ -83,7 +83,7 @@ fun main() {
     // Get list of files in /tmp after
     let after_files = fs::read_dir("/tmp")
         .unwrap()
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| {
             e.file_name()
                 .to_string_lossy()
@@ -133,11 +133,11 @@ fn test_ruchy_run_handles_errors() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        r#"
+        r"
 fun main() {
     let x = 1 +
 }
-"#,
+",
     )
     .unwrap();
 
@@ -157,13 +157,13 @@ fn test_ruchy_run_same_output_as_direct() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        r#"
+        r"
 fun main() {
     let x = 10
     let y = 20
     println(x + y)
 }
-"#,
+",
     )
     .unwrap();
 

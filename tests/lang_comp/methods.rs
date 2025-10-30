@@ -118,11 +118,11 @@ fn test_langcomp_008_01_to_string_method() {
     let temp_file = std::env::temp_dir().join("langcomp_008_01_to_string.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let num = 42
 let text = num.to_string()
 println(text)
-"#,
+",
     )
     .unwrap();
 
@@ -209,11 +209,11 @@ fn test_langcomp_008_02_array_first_method() {
     let temp_file = std::env::temp_dir().join("langcomp_008_02_first.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let numbers = [1, 2, 3, 4, 5]
 let first = numbers.first()
 println(first)
-"#,
+",
     )
     .unwrap();
 
@@ -227,11 +227,11 @@ fn test_langcomp_008_02_array_last_method() {
     let temp_file = std::env::temp_dir().join("langcomp_008_02_last.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let numbers = [1, 2, 3, 4, 5]
 let last = numbers.last()
 println(last)
-"#,
+",
     )
     .unwrap();
 
@@ -261,11 +261,11 @@ fn test_langcomp_008_03_integer_abs_method() {
     let temp_file = std::env::temp_dir().join("langcomp_008_03_abs.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let negative = -42i32
 let positive = negative.abs()
 println(positive)
-"#,
+",
     )
     .unwrap();
 
@@ -284,11 +284,11 @@ fn test_langcomp_008_03_integer_pow_method() {
     let temp_file = std::env::temp_dir().join("langcomp_008_03_pow.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let base = 2i32
 let result = base.pow(3)
 println(result)
-"#,
+",
     )
     .unwrap();
 

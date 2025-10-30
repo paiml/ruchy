@@ -29,7 +29,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test #1: Basic Command::new() and output() (minimal reproduction from Issue #85)
+/// Test #1: Basic `Command::new()` and `output()` (minimal reproduction from Issue #85)
 /// This is the exact test case reported in the GitHub issue.
 #[test]
 fn test_regression_085_command_basic_output() {

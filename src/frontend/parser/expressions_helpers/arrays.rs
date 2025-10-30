@@ -225,7 +225,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_single_element_lists_parse(n in any::<i32>()) {
-                let code = format!("[{}]", n);
+                let code = format!("[{n}]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Single element list [{}] should parse", n);
             }
@@ -237,7 +237,7 @@ mod tests {
                 b in any::<i32>(),
                 c in any::<i32>()
             ) {
-                let code = format!("[{}, {}, {}]", a, b, c);
+                let code = format!("[{a}, {b}, {c}]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Multi-element list [{}, {}, {}] should parse", a, b, c);
             }
@@ -245,7 +245,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_array_init_parses(value in any::<i32>(), size in 1..100usize) {
-                let code = format!("[{}; {}]", value, size);
+                let code = format!("[{value}; {size}]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Array init [{}; {}] should parse", value, size);
             }
@@ -253,7 +253,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_trailing_commas_parse(n in any::<i32>()) {
-                let code = format!("[{},]", n);
+                let code = format!("[{n},]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Trailing comma [{}] should parse", n);
             }
@@ -264,9 +264,9 @@ mod tests {
                 inner1 in prop::collection::vec(any::<i32>(), 0..5),
                 inner2 in prop::collection::vec(any::<i32>(), 0..5)
             ) {
-                let inner1_str = inner1.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ");
-                let inner2_str = inner2.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ");
-                let code = format!("[[{}], [{}]]", inner1_str, inner2_str);
+                let inner1_str = inner1.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
+                let inner2_str = inner2.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
+                let code = format!("[[{inner1_str}], [{inner2_str}]]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Nested list [[...], [...]] should parse");
             }

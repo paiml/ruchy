@@ -41,7 +41,7 @@ fun main() {
             || code.contains("struct Person<'a >");
         assert!(
             has_lifetime_param,
-            "Expected struct Person<'a>, but got:\n{}", code
+            "Expected struct Person<'a>, but got:\n{code}"
         );
 
         // ASSERTION 2: name field should have &'a str type (with flexible spacing)
@@ -50,19 +50,19 @@ fun main() {
             || code.contains("name : & 'a str");
         assert!(
             has_lifetime_field,
-            "Expected name field to have type &'a str, but got:\n{}", code
+            "Expected name field to have type &'a str, but got:\n{code}"
         );
     }
 
     #[test]
     fn test_book_compat_001_struct_without_references_unchanged() {
         // This should continue to work (no lifetimes needed)
-        let input = r#"
+        let input = r"
 struct Point {
     x: i32,
     y: i32
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let ast = parser.parse().expect("Failed to parse");
@@ -74,20 +74,20 @@ struct Point {
         // ASSERTION: Struct should NOT have lifetime parameter
         assert!(
             code.contains("struct Point") && !code.contains("struct Point<"),
-            "Struct without references should not have lifetime parameter:\n{}", code
+            "Struct without references should not have lifetime parameter:\n{code}"
         );
     }
 
     #[test]
     fn test_book_compat_001_multiple_str_references() {
         // Test struct with multiple &str fields
-        let input = r#"
+        let input = r"
 struct Book {
     title: &str,
     author: &str,
     pages: i32
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let ast = parser.parse().expect("Failed to parse");
@@ -102,7 +102,7 @@ struct Book {
             || code.contains("struct Book<'a >");
         assert!(
             has_lifetime_param,
-            "Expected struct Book<'a>, but got:\n{}", code
+            "Expected struct Book<'a>, but got:\n{code}"
         );
     }
 
@@ -134,13 +134,13 @@ fun main() {
         // ASSERTION: String literals should NOT have .to_string() call
         assert!(
             !code.contains(r#""Alice" . to_string ()"#) && !code.contains(r#""Alice".to_string()"#),
-            "String literals should not call .to_string() in struct initialization, but got:\n{}", code
+            "String literals should not call .to_string() in struct initialization, but got:\n{code}"
         );
 
         // ASSERTION: Should contain just the string literal
         assert!(
             code.contains(r#""Alice""#),
-            "Expected string literal \"Alice\" without .to_string(), but got:\n{}", code
+            "Expected string literal \"Alice\" without .to_string(), but got:\n{code}"
         );
     }
 }

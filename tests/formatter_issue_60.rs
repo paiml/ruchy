@@ -6,7 +6,6 @@
 // Extreme TDD: RED phase - tests written FIRST to demonstrate bug
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 
@@ -34,13 +33,11 @@ fn test_format_preserves_fun_keyword() {
     let content = fs::read_to_string(&file).unwrap();
     assert!(
         content.contains("fun greet"),
-        "Formatter should preserve 'fun' keyword, but got: {}",
-        content
+        "Formatter should preserve 'fun' keyword, but got: {content}"
     );
     assert!(
         !content.contains("fn greet"),
-        "Formatter incorrectly converted 'fun' to 'fn': {}",
-        content
+        "Formatter incorrectly converted 'fun' to 'fn': {content}"
     );
 }
 
@@ -72,14 +69,12 @@ fun greet(name) { println("Hello, {}", name) }
     assert_eq!(
         content.matches("fun ").count(),
         3,
-        "Expected 3 'fun' keywords, got: {}",
-        content
+        "Expected 3 'fun' keywords, got: {content}"
     );
     assert_eq!(
         content.matches("fn ").count(),
         0,
-        "Formatter incorrectly output 'fn' keyword: {}",
-        content
+        "Formatter incorrectly output 'fn' keyword: {content}"
     );
 }
 
@@ -91,12 +86,12 @@ fn test_format_nested_functions_preserve_fun() {
 
     fs::write(
         &file,
-        r#"
+        r"
 fun outer() {
     fun inner(x) { x + 1 }
     inner(42)
 }
-"#,
+",
     )
     .unwrap();
 
@@ -110,18 +105,15 @@ fun outer() {
 
     assert!(
         content.contains("fun outer"),
-        "Outer function should use 'fun': {}",
-        content
+        "Outer function should use 'fun': {content}"
     );
     assert!(
         content.contains("fun inner"),
-        "Inner function should use 'fun': {}",
-        content
+        "Inner function should use 'fun': {content}"
     );
     assert!(
         !content.contains("fn "),
-        "Formatter incorrectly used 'fn': {}",
-        content
+        "Formatter incorrectly used 'fn': {content}"
     );
 }
 
@@ -147,13 +139,11 @@ fn test_format_typed_functions_preserve_fun() {
 
     assert!(
         content.contains("fun add"),
-        "Typed function should use 'fun': {}",
-        content
+        "Typed function should use 'fun': {content}"
     );
     assert!(
         !content.contains("fn add"),
-        "Formatter incorrectly used 'fn': {}",
-        content
+        "Formatter incorrectly used 'fn': {content}"
     );
 }
 
@@ -165,10 +155,10 @@ fn test_format_anonymous_functions_preserve_fun() {
 
     fs::write(
         &file,
-        r#"
+        r"
 let double = fun(x) { x * 2 }
 let result = double(21)
-"#,
+",
     )
     .unwrap();
 
@@ -184,8 +174,7 @@ let result = double(21)
     if content.contains("fun(") || content.contains("fun (") {
         assert!(
             !content.contains("fn(") && !content.contains("fn ("),
-            "Formatter incorrectly converted 'fun' to 'fn': {}",
-            content
+            "Formatter incorrectly converted 'fun' to 'fn': {content}"
         );
     }
 }
@@ -199,7 +188,7 @@ fn test_format_ruchyruchy_pattern() {
     // Pattern from ruchyruchy bootstrap
     fs::write(
         &file,
-        r#"
+        r"
 struct Compiler {
     source: String
 }
@@ -214,7 +203,7 @@ impl Compiler {
         Ok(())
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -229,18 +218,15 @@ impl Compiler {
     // Both impl methods should use `fun`
     assert!(
         content.contains("fun new"),
-        "Method 'new' should use 'fun': {}",
-        content
+        "Method 'new' should use 'fun': {content}"
     );
     assert!(
         content.contains("fun compile"),
-        "Method 'compile' should use 'fun': {}",
-        content
+        "Method 'compile' should use 'fun': {content}"
     );
     assert_eq!(
         content.matches("fn ").count(),
         0,
-        "Formatter incorrectly used 'fn' instead of 'fun': {}",
-        content
+        "Formatter incorrectly used 'fn' instead of 'fun': {content}"
     );
 }

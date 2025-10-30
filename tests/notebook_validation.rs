@@ -105,8 +105,7 @@ fn test_validate_01_literals_notebook() {
     // Assert ≥90% pass rate (per specification)
     assert!(
         pass_rate >= 90.0,
-        "Pass rate {:.1}% below 90% threshold",
-        pass_rate
+        "Pass rate {pass_rate:.1}% below 90% threshold"
     );
 }
 
@@ -128,8 +127,7 @@ fn test_validate_01_variables_notebook() {
 
     assert!(
         pass_rate >= 90.0,
-        "Pass rate {:.1}% below 90% threshold",
-        pass_rate
+        "Pass rate {pass_rate:.1}% below 90% threshold"
     );
 }
 
@@ -151,8 +149,7 @@ fn test_validate_02_arithmetic_notebook() {
 
     assert!(
         pass_rate >= 90.0,
-        "Pass rate {:.1}% below 90% threshold",
-        pass_rate
+        "Pass rate {pass_rate:.1}% below 90% threshold"
     );
 }
 
@@ -174,8 +171,7 @@ fn test_validate_03_if_else_notebook() {
 
     assert!(
         pass_rate >= 90.0,
-        "Pass rate {:.1}% below 90% threshold",
-        pass_rate
+        "Pass rate {pass_rate:.1}% below 90% threshold"
     );
 }
 
@@ -235,11 +231,10 @@ fn test_validate_all_notebooks_comprehensive() {
         100.0
     };
 
-    println!("  Overall Pass Rate: {:.1}%", overall_pass_rate);
+    println!("  Overall Pass Rate: {overall_pass_rate:.1}%");
 
     assert!(
         overall_pass_rate >= 90.0,
-        "Overall pass rate {:.1}% below 90% threshold",
-        overall_pass_rate
+        "Overall pass rate {overall_pass_rate:.1}% below 90% threshold"
     );
 }

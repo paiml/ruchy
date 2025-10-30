@@ -1,8 +1,8 @@
-//! STDLIB Phase 1: env_var() Implementation Tests
+//! STDLIB Phase 1: `env_var()` Implementation Tests
 //!
-//! **Task**: Implement env_var(key: String) -> Result<String>
-//! **Priority**: HIGH (Phase 1 of STDLIB_ACCESS_PLAN)
-//! **Pattern**: Three-layer builtin function (proven from env_args)
+//! **Task**: Implement `env_var(key`: String) -> Result<String>
+//! **Priority**: HIGH (Phase 1 of `STDLIB_ACCESS_PLAN`)
+//! **Pattern**: Three-layer builtin function (proven from `env_args`)
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
@@ -22,7 +22,7 @@ fn temp_dir() -> TempDir {
 
 // ==================== RED PHASE: Failing Tests ====================
 
-/// Test 1: Basic env_var() with existing variable
+/// Test 1: Basic `env_var()` with existing variable
 #[test]
 fn test_env_var_basic() {
     let temp = temp_dir();
@@ -46,7 +46,7 @@ fun main() {
         .success();
 }
 
-/// Test 2: env_var() in compiled mode
+/// Test 2: `env_var()` in compiled mode
 #[test]
 fn test_env_var_compile() {
     let temp = temp_dir();
@@ -71,7 +71,7 @@ fun main() {
         .success();
 }
 
-/// Test 3: env_var() with custom variable
+/// Test 3: `env_var()` with custom variable
 #[test]
 fn test_env_var_custom() {
     let temp = temp_dir();
@@ -95,7 +95,7 @@ fun main() {
         .success();
 }
 
-/// Test 4: env_var() error handling for missing variable
+/// Test 4: `env_var()` error handling for missing variable
 #[test]
 fn test_env_var_missing() {
     let temp = temp_dir();
@@ -118,17 +118,17 @@ fun main() {
         .failure();
 }
 
-/// Test 5: env_var() with wrong number of arguments
+/// Test 5: `env_var()` with wrong number of arguments
 #[test]
 fn test_env_var_wrong_args() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let value = env_var();  // Missing argument
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -149,7 +149,7 @@ fn test_env_var_summary() {
     println!("- Function: env_var(key: String) -> Result<String>");
     println!("- Retrieves environment variable by key");
     println!("- Returns error if variable doesn't exist");
-    println!("");
+    println!();
     println!("Three-Layer Implementation Required:");
     println!("1. Runtime: builtin_env_var() in builtins.rs");
     println!("2. Transpiler: env_var case in try_transpile_environment_function()");

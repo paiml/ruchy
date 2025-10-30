@@ -3,13 +3,16 @@
 // GREEN Phase: Fix with minimal changes
 // REFACTOR Phase: Redesign architecture to prevent recurrence
 
+#![allow(clippy::similar_names)] // formatter/formatted are acceptable in test code
+#![allow(clippy::ignore_without_reason)] // RED phase tests intentionally ignored
+
 use ruchy::frontend::parser::Parser;
 use ruchy::quality::formatter::Formatter;
 
 // Helper to strip quotes from Value::String display format
 fn normalize_whitespace(s: &str) -> String {
     s.lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join("\n")
@@ -38,10 +41,10 @@ fun test() {
     let formatted = formatter.format(&ast).expect("Format should succeed");
 
     // Verify all 3 let statements are preserved
-    assert!(formatted.contains("let x = 1"), "Formatter deleted 'let x = 1': {}", formatted);
-    assert!(formatted.contains("let y = 2"), "Formatter deleted 'let y = 2': {}", formatted);
-    assert!(formatted.contains("let z = 3"), "Formatter deleted 'let z = 3': {}", formatted);
-    assert!(formatted.contains("println"), "Formatter deleted println call: {}", formatted);
+    assert!(formatted.contains("let x = 1"), "Formatter deleted 'let x = 1': {formatted}");
+    assert!(formatted.contains("let y = 2"), "Formatter deleted 'let y = 2': {formatted}");
+    assert!(formatted.contains("let z = 3"), "Formatter deleted 'let z = 3': {formatted}");
+    assert!(formatted.contains("println"), "Formatter deleted println call: {formatted}");
 }
 
 #[test]
@@ -64,11 +67,11 @@ fun test() {
     let formatter = Formatter::new();
     let formatted = formatter.format(&ast).expect("Format should succeed");
 
-    assert!(formatted.contains("let x = 10"), "Formatter deleted let statement: {}", formatted);
-    assert!(formatted.contains("if"), "Formatter deleted if keyword: {}", formatted);
-    assert!(formatted.contains("greater"), "Formatter deleted then branch: {}", formatted);
-    assert!(formatted.contains("else"), "Formatter deleted else keyword: {}", formatted);
-    assert!(formatted.contains("lesser"), "Formatter deleted else branch: {}", formatted);
+    assert!(formatted.contains("let x = 10"), "Formatter deleted let statement: {formatted}");
+    assert!(formatted.contains("if"), "Formatter deleted if keyword: {formatted}");
+    assert!(formatted.contains("greater"), "Formatter deleted then branch: {formatted}");
+    assert!(formatted.contains("else"), "Formatter deleted else keyword: {formatted}");
+    assert!(formatted.contains("lesser"), "Formatter deleted else branch: {formatted}");
 }
 
 #[test]
@@ -103,7 +106,7 @@ fun test() {
 #[ignore] // TODO: Parser doesn't attach top-level comments to AST - separate issue
 fn test_formatter_data_loss_04_comments_preserved() {
     // Bug: Formatter deletes comments
-    let code = r#"
+    let code = r"
 // Header comment
 fun test() {
     // Inline comment
@@ -111,7 +114,7 @@ fun test() {
     // Another comment
     let y = 2
 }
-"#;
+";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
@@ -155,9 +158,7 @@ fun test() {
     assert_eq!(
         normalize_whitespace(&formatted1),
         normalize_whitespace(&formatted2),
-        "Formatter is not idempotent! First:\n{}\n\nSecond:\n{}",
-        formatted1,
-        formatted2
+        "Formatter is not idempotent! First:\n{formatted1}\n\nSecond:\n{formatted2}"
     );
 }
 
@@ -188,17 +189,14 @@ fun test() {
     // Formatter should NEVER decrease node count (that means code deletion)
     assert!(
         formatted_node_count >= original_node_count,
-        "Formatter DELETED AST nodes! Original: {}, Formatted: {}. Code:\n{}",
-        original_node_count,
-        formatted_node_count,
-        formatted
+        "Formatter DELETED AST nodes! Original: {original_node_count}, Formatted: {formatted_node_count}. Code:\n{formatted}"
     );
 }
 
 #[test]
 fn test_formatter_property_03_semantic_equivalence() {
     // Property: format(code) should evaluate to same result as code
-    let code = r#"
+    let code = r"
 fun main() {
     let x = 10
     let y = 20
@@ -207,7 +205,7 @@ fun main() {
 }
 
 main()
-"#;
+";
 
     // Evaluate original code
     let mut parser1 = Parser::new(code);
@@ -229,10 +227,7 @@ main()
     assert_eq!(
         result1.to_string(),
         result2.to_string(),
-        "Formatter changed semantics! Original result: {}, Formatted result: {}. Formatted code:\n{}",
-        result1,
-        result2,
-        formatted
+        "Formatter changed semantics! Original result: {result1}, Formatted result: {result2}. Formatted code:\n{formatted}"
     );
 }
 
@@ -352,7 +347,7 @@ fn count_ast_nodes(expr: &ruchy::frontend::ast::Expr) -> usize {
         ExprKind::If { condition, then_branch, else_branch } => {
             count_ast_nodes(condition)
                 + count_ast_nodes(then_branch)
-                + else_branch.as_ref().map(|e| count_ast_nodes(e)).unwrap_or(0)
+                + else_branch.as_ref().map_or(0, |e| count_ast_nodes(e))
         }
         ExprKind::Call { func, args } => {
             count_ast_nodes(func) + args.iter().map(count_ast_nodes).sum::<usize>()

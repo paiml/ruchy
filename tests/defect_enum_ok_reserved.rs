@@ -20,13 +20,13 @@ fn parse_code(code: &str) -> anyhow::Result<()> {
 #[test]
 fn test_enum_variant_ok_alone_in_function() {
     // This works - enum alone
-    let code = r#"
+    let code = r"
 fn main() {
     enum HttpStatus {
         Ok = 200
     }
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -39,14 +39,14 @@ fn main() {
 #[test]
 fn test_enum_variant_ok_with_enum_reference() {
     // BUG: Referencing enum variant Test::Ok triggers parser error
-    let code = r#"
+    let code = r"
 fn main() {
     enum HttpStatus {
         Ok = 200
     }
     let x = HttpStatus::Ok
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -59,14 +59,14 @@ fn main() {
 #[test]
 fn test_enum_normal_variant_with_reference() {
     // This works - normal identifier variant
-    let code = r#"
+    let code = r"
 fn main() {
     enum Test {
         A = 1
     }
     let x = Test::A
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -79,14 +79,14 @@ fn main() {
 #[test]
 fn test_enum_variant_ok_with_statement_before() {
     // This works - statement + enum after
-    let code = r#"
+    let code = r"
 fn main() {
     let x = 1
     enum HttpStatus {
         Ok = 200
     }
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -98,14 +98,14 @@ fn main() {
 
 #[test]
 fn test_enum_variant_err_inside_function() {
-    let code = r#"
+    let code = r"
 fn main() {
     enum Status {
         Err = 500
     }
     let x = Status::Err
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -117,7 +117,7 @@ fn main() {
 
 #[test]
 fn test_enum_variant_some_inside_function() {
-    let code = r#"
+    let code = r"
 fn main() {
     enum Optional {
         Some = 1,
@@ -125,7 +125,7 @@ fn main() {
     }
     let x = Optional::Some
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -137,7 +137,7 @@ fn main() {
 
 #[test]
 fn test_enum_all_reserved_variants() {
-    let code = r#"
+    let code = r"
 fn main() {
     enum AllReserved {
         Ok = 1,
@@ -150,7 +150,7 @@ fn main() {
     let c = AllReserved::Some
     let d = AllReserved::None
 }
-"#;
+";
 
     let result = parse_code(code);
     assert!(
@@ -197,8 +197,7 @@ mod property_tests {
         ) {
             let keyword = RESERVED_KEYWORDS[keyword_idx];
             let code = format!(
-                "fn main() {{\n    enum Test {{\n        {} = {}\n    }}\n    let x = Test::{}\n}}",
-                keyword, discriminant, keyword
+                "fn main() {{\n    enum Test {{\n        {keyword} = {discriminant}\n    }}\n    let x = Test::{keyword}\n}}"
             );
 
             // Should not panic
@@ -212,8 +211,7 @@ mod property_tests {
         ) {
             let keyword = RESERVED_KEYWORDS[keyword_idx];
             let code = format!(
-                "fn main() {{\n    enum Status {{\n        {}\n    }}\n    let x = Status::{}\n}}",
-                keyword, keyword
+                "fn main() {{\n    enum Status {{\n        {keyword}\n    }}\n    let x = Status::{keyword}\n}}"
             );
 
             let result = parse_code(&code);

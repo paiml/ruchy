@@ -1,11 +1,11 @@
-//! DEFECT-DATAFRAME-001 & 002: DataFrame Indexing and Field Access
+//! DEFECT-DATAFRAME-001 & 002: `DataFrame` Indexing and Field Access
 //! 
 //! RED Phase Tests - Following EXTREME TDD
 //! 
-//! Root Cause: eval_index_access() and eval_field_access() don't handle DataFrame
+//! Root Cause: `eval_index_access()` and `eval_field_access()` don't handle `DataFrame`
 //! Location: src/runtime/interpreter.rs:1306, 1413
 //!
-//! Tests will FAIL until we implement DataFrame indexing/field access
+//! Tests will FAIL until we implement `DataFrame` indexing/field access
 
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::Interpreter;
@@ -28,7 +28,7 @@ fn test_dataframe_indexing_row_access() {
     let result = interpreter.eval_expr(&ast);
 
     // Should return first row (not error)
-    assert!(result.is_ok(), "DataFrame indexing should work: {:?}", result);
+    assert!(result.is_ok(), "DataFrame indexing should work: {result:?}");
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn test_dataframe_field_access_column() {
     let result = interpreter.eval_expr(&ast);
 
     // Should return [1, 2, 3] column (not error)
-    assert!(result.is_ok(), "DataFrame field access should work: {:?}", result);
+    assert!(result.is_ok(), "DataFrame field access should work: {result:?}");
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn test_dataframe_column_access_via_string_index() {
     let result = interpreter.eval_expr(&ast);
 
     // Should return ["Alice", "Bob", "Charlie"] column
-    assert!(result.is_ok(), "DataFrame string indexing should work: {:?}", result);
+    assert!(result.is_ok(), "DataFrame string indexing should work: {result:?}");
 }
 
 #[test]

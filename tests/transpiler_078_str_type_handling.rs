@@ -142,15 +142,13 @@ fun greet(name: str) {
 
     assert!(
         stdout.contains("&str"),
-        "Expected &str in transpiled output, but got: {}",
-        stdout
+        "Expected &str in transpiled output, but got: {stdout}"
     );
 
     // This checks for ": str)" pattern which indicates unsized str parameter (WRONG)
     assert!(
         !stdout.contains(": str)"),
-        "Found ': str)' pattern (unsized str parameter - BUG!), output: {}",
-        stdout
+        "Found ': str)' pattern (unsized str parameter - BUG!), output: {stdout}"
     );
 }
 
@@ -252,21 +250,21 @@ fun main() {
 #[test]
 fn test_transpiler_078_red_phase_summary() {
     println!("TRANSPILER-078 Status: ✅ PRIMARY FIX COMPLETE");
-    println!("");
+    println!();
     println!("Fix Applied: src/backend/transpiler/types.rs:83");
     println!("  Before: 'str' => quote! {{ str }}");
     println!("  After:  'str' => quote! {{ &str }}");
-    println!("");
+    println!();
     println!("Impact:");
     println!("✅ Function parameters: 'name: str' → 'name: &str' (sized, borrowing)");
     println!("ℹ️  Return types: Use 'String' for owned data (e.g., format! returns String)");
     println!("ℹ️  Struct fields: Use 'String' for owned data (avoids lifetime annotations)");
-    println!("");
+    println!();
     println!("Idiomatic Rust string types:");
     println!("  - Parameters: &str (borrowed, most flexible)");
     println!("  - Returns: String (owned) or &str with lifetime");
     println!("  - Struct fields: String (owned, simpler) or &str with lifetime");
-    println!("");
+    println!();
     println!("GitHub Issue #13: ✅ RESOLVED");
 }
 
@@ -340,12 +338,12 @@ fn test_transpiler_078_property_02_multiple_params() {
 
         // Generate multiple parameters
         let params: Vec<String> = (0..param_count)
-            .map(|i| format!("p{}: str", i))
+            .map(|i| format!("p{i}: str"))
             .collect();
         let param_str = params.join(", ");
 
         let param_uses: Vec<String> = (0..param_count)
-            .map(|i| format!("p{}", i))
+            .map(|i| format!("p{i}"))
             .collect();
 
         let code = format!(r#"
@@ -397,13 +395,13 @@ fn test_transpiler_078_property_03_complex_bodies() {
 
         let code = format!(r#"
 fun {fn_name}(input: str) {{
-    {}
+    {body}
 }}
 
 fun main() {{
     {fn_name}("test")
 }}
-"#, body);
+"#);
 
         fs::write(&source, code).expect("Failed to write test file");
 
@@ -429,7 +427,7 @@ fn test_transpiler_078_property_summary() {
     println!("- Test 1: 10K random function names with str parameters");
     println!("- Test 2: 5K random multi-parameter functions (2-4 params)");
     println!("- Test 3: 3K random function bodies (if/match/simple)");
-    println!("");
+    println!();
     println!("Total: 18K property test cases");
     println!("Run with: cargo test --test transpiler_078_str_type_handling property -- --ignored --nocapture");
 }

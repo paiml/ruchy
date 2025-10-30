@@ -115,13 +115,13 @@ fn test_langcomp_011_01_single_range_loop() {
     let temp_file = std::env::temp_dir().join("langcomp_011_01_single.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..5 {
         println(i)
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -142,7 +142,7 @@ fn test_langcomp_011_01_consecutive_range_loops() {
     let temp_file = std::env::temp_dir().join("langcomp_011_01_consecutive.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..3 {
         println(i)
@@ -151,7 +151,7 @@ fn main() {
         println(n)
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -173,7 +173,7 @@ fn test_langcomp_011_01_three_consecutive_ranges() {
     let temp_file = std::env::temp_dir().join("langcomp_011_01_three.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..2 {
         println(i)
@@ -185,7 +185,7 @@ fn main() {
         println(k)
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -232,7 +232,7 @@ fn test_langcomp_011_02_range_sum_accumulation() {
     let temp_file = std::env::temp_dir().join("langcomp_011_02_sum.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     let mut sum = 0
     for i in 1..6 {
@@ -240,7 +240,7 @@ fn main() {
     }
     println(sum)
 }
-"#,
+",
     )
     .unwrap();
 
@@ -259,7 +259,7 @@ fn test_langcomp_011_02_nested_range_loops() {
     let temp_file = std::env::temp_dir().join("langcomp_011_02_nested.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     for i in 0..2 {
         for j in 0..2 {
@@ -267,7 +267,7 @@ fn main() {
         }
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -310,14 +310,14 @@ fn test_langcomp_011_03_range_in_variable() {
     let temp_file = std::env::temp_dir().join("langcomp_011_03_var.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn main() {
     let range = 0..5
     for i in range {
         println(i)
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -365,18 +365,17 @@ fn test_langcomp_011_property_range_bounds() {
     for start in 0..10 {
         for end in (start + 1)..15 {
             let temp_file = std::env::temp_dir()
-                .join(format!("langcomp_011_prop_bounds_{}_{}.ruchy", start, end));
+                .join(format!("langcomp_011_prop_bounds_{start}_{end}.ruchy"));
             std::fs::write(
                 &temp_file,
                 format!(
-                    r#"
+                    r"
 fn main() {{
-    for i in {}..{} {{
+    for i in {start}..{end} {{
         println(i)
     }}
 }}
-"#,
-                    start, end
+"
                 ),
             )
             .unwrap();

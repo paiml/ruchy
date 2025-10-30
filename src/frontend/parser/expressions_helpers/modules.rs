@@ -191,7 +191,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_basic_modules_parse(name in "[a-z][a-z0-9_]*") {
-                let code = format!("mod {} {{ 42 }}", name);
+                let code = format!("mod {name} {{ 42 }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -199,7 +199,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_pub_functions_parse(mod_name in "[a-z]+", fn_name in "[a-z]+") {
-                let code = format!("mod {} {{ pub fun {}() {{ 1 }} }}", mod_name, fn_name);
+                let code = format!("mod {mod_name} {{ pub fun {fn_name}() {{ 1 }} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -207,7 +207,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_nested_modules_parse(outer in "[a-z]+", inner in "[a-z]+") {
-                let code = format!("mod {} {{ mod {} {{ 42 }} }}", outer, inner);
+                let code = format!("mod {outer} {{ mod {inner} {{ 42 }} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -215,7 +215,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_empty_modules_parse(name in "[a-z]+") {
-                let code = format!("mod {} {{}}", name);
+                let code = format!("mod {name} {{}}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -223,7 +223,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_module_keyword_parses(name in "[a-z]+") {
-                let code = format!("module {} {{ 42 }}", name);
+                let code = format!("module {name} {{ 42 }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -231,7 +231,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_pub_nested_modules_parse(outer in "[a-z]+", inner in "[a-z]+") {
-                let code = format!("mod {} {{ pub mod {} {{ 1 }} }}", outer, inner);
+                let code = format!("mod {outer} {{ pub mod {inner} {{ 1 }} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -239,9 +239,9 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_module_with_multiple_items(name in "[a-z]+", n in 1usize..5) {
-                let mut code = format!("mod {} {{", name);
+                let mut code = format!("mod {name} {{");
                 for i in 0..n {
-                    code.push_str(&format!(" fun f{}() {{ {} }}", i, i));
+                    code.push_str(&format!(" fun f{i}() {{ {i} }}"));
                 }
                 code.push_str(" }");
                 let result = Parser::new(&code).parse();

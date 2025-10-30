@@ -7,7 +7,7 @@
 //! **Expected**: Smart inference based on built-in function signatures
 //! **Actual**: Defaults to i32 for parameters used as function arguments
 //!
-//! **Root Cause**: is_param_used_as_function_argument() doesn't check what function
+//! **Root Cause**: `is_param_used_as_function_argument()` doesn't check what function
 //! the parameter is passed to, just returns true → defaults to i32
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
@@ -28,17 +28,17 @@ fn temp_dir() -> TempDir {
 
 // ==================== RED PHASE: Failing Tests ====================
 
-/// Test 1: fs_read parameter should be &str, not i32
+/// Test 1: `fs_read` parameter should be &str, not i32
 #[test]
 fn test_bug_035_red_fs_read_parameter_type() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun read_file(path) {
     fs_read(path)
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -58,22 +58,21 @@ fun read_file(path) {
     // Should generate: fn read_file(path: &str)
     assert!(
         transpiled.contains("path: &str") || transpiled.contains("path : & str"),
-        "Parameter should be &str for file path, found: {}",
-        transpiled
+        "Parameter should be &str for file path, found: {transpiled}"
     );
 }
 
-/// Test 2: env_args doesn't need parameters - return type inference
+/// Test 2: `env_args` doesn't need parameters - return type inference
 #[test]
 fn test_bug_035_red_env_args_return_type() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun get_args() {
     env_args()
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -93,22 +92,21 @@ fun get_args() {
     // env_args() returns Vec<String>, so function should return Vec<String> or similar
     assert!(
         !transpiled.contains("-> i32"),
-        "Return type should not be i32 for env_args, found: {}",
-        transpiled
+        "Return type should not be i32 for env_args, found: {transpiled}"
     );
 }
 
-/// Test 3: http_get parameter should be &str (URL), not i32
+/// Test 3: `http_get` parameter should be &str (URL), not i32
 #[test]
 fn test_bug_035_red_http_get_parameter_type() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun fetch_data(url) {
     http_get(url)
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -125,8 +123,7 @@ fun fetch_data(url) {
 
     assert!(
         transpiled.contains("url: &str") || transpiled.contains("url : & str"),
-        "Parameter should be &str for URL, found: {}",
-        transpiled
+        "Parameter should be &str for URL, found: {transpiled}"
     );
 }
 
@@ -136,11 +133,11 @@ fn test_bug_035_baseline_numeric_parameter() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun add(a, b) {
     a + b
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -158,8 +155,7 @@ fun add(a, b) {
     // Numeric operations should still infer i32 (baseline - already working)
     assert!(
         transpiled.contains("a: i32") || transpiled.contains("a : i32"),
-        "Numeric parameters should be i32, found: {}",
-        transpiled
+        "Numeric parameters should be i32, found: {transpiled}"
     );
 }
 
@@ -198,22 +194,22 @@ fun main() {
 #[test]
 fn test_bug_035_red_phase_summary() {
     println!("BUG-035 RED Phase: Type Inference Wrong Types");
-    println!("");
+    println!();
     println!("Problem: Parameters default to i32 even for string paths");
     println!("Impact: Incorrect type signatures in generated Rust");
-    println!("");
+    println!();
     println!("Test Suite Created:");
     println!("1. fs_read parameter type (&str expected, i32 actual)");
     println!("2. env_args return type (not i32)");
     println!("3. http_get parameter type (&str expected)");
     println!("4. Numeric parameters - baseline (i32 correct)");
     println!("5. Compilation succeeds with correct types");
-    println!("");
+    println!();
     println!("Expected Results:");
     println!("- RED Phase: Tests 1-3, 5 FAIL (wrong types)");
     println!("- RED Phase: Test 4 PASS (baseline)");
     println!("- GREEN Phase: ALL tests PASS after fix");
-    println!("");
+    println!();
     println!("Fix Strategy:");
     println!("- Check built-in function signatures to infer parameter types");
     println!("- fs_read(path: &str) → infer path parameter as &str");

@@ -529,7 +529,7 @@ mod tests {
                 let html = notebook.execute_cell_html(&code);
 
                 // HTML should always be a valid string (may be empty for empty input)
-                prop_assert!(html.is_empty() || html.len() > 0);
+                prop_assert!(html.is_empty() || !html.is_empty());
             }
 
             #[test]

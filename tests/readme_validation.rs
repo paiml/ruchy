@@ -91,8 +91,7 @@ fn test_readme_required_sections() {
     for section in required_sections {
         assert!(
             content.contains(section),
-            "README.md must contain section: {}",
-            section
+            "README.md must contain section: {section}"
         );
     }
 }
@@ -114,14 +113,14 @@ fn test_readme_ruchy_examples_all_work() {
     let mut passed = 0;
     let mut failed = Vec::new();
 
-    for (line_num, code) in examples.iter() {
+    for (line_num, code) in &examples {
         // Skip examples with special markers
         if code.contains("// NOT IMPLEMENTED") || code.contains("// TODO") {
             continue;
         }
 
         // Write code to temp file
-        let test_file = temp_dir.path().join(format!("readme_line_{}.ruchy", line_num));
+        let test_file = temp_dir.path().join(format!("readme_line_{line_num}.ruchy"));
         fs::write(&test_file, code).expect("Failed to write test file");
 
         // Try to run with ruchy
@@ -141,8 +140,8 @@ fn test_readme_ruchy_examples_all_work() {
         eprintln!("\n❌ README.md VALIDATION FAILED");
         eprintln!("Passed: {}/{}", passed, examples.len());
         eprintln!("\nFailing examples:");
-        for (line_num, code) in failed.iter() {
-            eprintln!("\nLine {}: ```ruchy", line_num);
+        for (line_num, code) in &failed {
+            eprintln!("\nLine {line_num}: ```ruchy");
             eprintln!("{}", code.trim());
             eprintln!("```");
         }
@@ -152,7 +151,7 @@ fn test_readme_ruchy_examples_all_work() {
         );
     }
 
-    println!("✅ All {} README.md examples validated successfully", passed);
+    println!("✅ All {passed} README.md examples validated successfully");
 }
 
 /// Test that README.md doesn't claim features that don't exist
@@ -169,8 +168,7 @@ fn test_readme_no_false_claims() {
     for claim in false_claims {
         assert!(
             !content.contains(claim),
-            "README.md falsely claims: '{}'. Either implement it or remove the claim.",
-            claim
+            "README.md falsely claims: '{claim}'. Either implement it or remove the claim."
         );
     }
 }
@@ -199,12 +197,12 @@ fn test_readme_syntax_check_all_examples() {
 
     let mut syntax_errors = Vec::new();
 
-    for (line_num, code) in examples.iter() {
+    for (line_num, code) in &examples {
         if code.contains("// NOT IMPLEMENTED") || code.contains("// TODO") {
             continue;
         }
 
-        let test_file = temp_dir.path().join(format!("syntax_{}.ruchy", line_num));
+        let test_file = temp_dir.path().join(format!("syntax_{line_num}.ruchy"));
         fs::write(&test_file, code).expect("Failed to write test file");
 
         // Check syntax only (don't run)
@@ -221,8 +219,8 @@ fn test_readme_syntax_check_all_examples() {
     if !syntax_errors.is_empty() {
         eprintln!("\n❌ README.md SYNTAX VALIDATION FAILED");
         eprintln!("\nExamples with syntax errors:");
-        for (line_num, code) in syntax_errors.iter() {
-            eprintln!("\nLine {}: ```ruchy", line_num);
+        for (line_num, code) in &syntax_errors {
+            eprintln!("\nLine {line_num}: ```ruchy");
             eprintln!("{}", code.trim());
             eprintln!("```");
         }
@@ -249,13 +247,13 @@ fn test_readme_stability() {
     // Should have multiple examples
     let ruchy_examples = extract_code_blocks(&content, "ruchy");
     assert!(
-        ruchy_examples.len() >= 1,
+        !ruchy_examples.is_empty(),
         "README.md should have at least 1 Ruchy example (found {})",
         ruchy_examples.len()
     );
 }
 
-/// Test that README.md mentions DataFrame status accurately
+/// Test that README.md mentions `DataFrame` status accurately
 #[test]
 fn test_readme_dataframe_accuracy() {
     let content = fs::read_to_string("README.md")
@@ -298,7 +296,7 @@ fn test_readme_version_consistency() {
     // If README mentions version, it should be current or "latest"
     if content.contains("version") || content.contains("v3.") || content.contains("v4.") {
         println!("README.md may contain version info - verify manually");
-        println!("Current version: {}", version);
+        println!("Current version: {version}");
     }
 }
 
@@ -345,7 +343,7 @@ mod property_tests {
                 continue;
             }
 
-            let test_file = temp_dir.path().join(format!("idempotent_{}.ruchy", line_num));
+            let test_file = temp_dir.path().join(format!("idempotent_{line_num}.ruchy"));
             fs::write(&test_file, code).expect("Failed to write test file");
 
             // Run twice
@@ -365,8 +363,7 @@ mod property_tests {
             assert_eq!(
                 result1.status.success(),
                 result2.status.success(),
-                "Example at line {} should be deterministic",
-                line_num
+                "Example at line {line_num} should be deterministic"
             );
         }
     }

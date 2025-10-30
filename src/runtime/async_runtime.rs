@@ -104,8 +104,7 @@ mod tests {
         let elapsed = start.elapsed();
         assert!(
             elapsed >= Duration::from_millis(40),
-            "Sleep should delay at least 40ms, got {:?}",
-            elapsed
+            "Sleep should delay at least 40ms, got {elapsed:?}"
         );
     }
 

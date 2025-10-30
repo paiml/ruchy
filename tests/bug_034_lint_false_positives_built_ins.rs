@@ -5,7 +5,7 @@
 //! **Severity**: MEDIUM - Makes linter output unusable due to false positives
 //!
 //! **Expected**: Linter should recognize built-in functions and not report errors
-//! **Actual**: Reports "undefined variable" for fs_read, env_args, range, etc.
+//! **Actual**: Reports "undefined variable" for `fs_read`, `env_args`, range, etc.
 //!
 //! **Root Cause**: Linter only recognizes println/print/eprintln as built-ins
 //!
@@ -43,18 +43,17 @@ fun read_config() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "fs_read should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "fs_read should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 2: env_ functions should not be reported as undefined
 #[test]
 fn test_bug_034_red_env_functions() {
-    let code = r#"
+    let code = r"
 fun get_args() {
     env_args()
 }
-"#;
+";
 
     let issues = lint_code(code);
 
@@ -63,20 +62,19 @@ fun get_args() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "env_args should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "env_args should be recognized as built-in, found: {undefined_issues:?}");
 }
 
-/// Test 3: range() function should not be reported as undefined
+/// Test 3: `range()` function should not be reported as undefined
 #[test]
 fn test_bug_034_red_range_function() {
-    let code = r#"
+    let code = r"
 fun test_loop() {
     for i in range(0, 10) {
         println(i)
     }
 }
-"#;
+";
 
     let issues = lint_code(code);
 
@@ -85,8 +83,7 @@ fun test_loop() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "range should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "range should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 4: http_ functions should not be reported as undefined
@@ -105,8 +102,7 @@ fun fetch_data() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "http_get should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "http_get should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 5: json_ functions should not be reported as undefined
@@ -125,18 +121,17 @@ fun parse_json() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "json_parse should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "json_parse should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 6: time_ functions should not be reported as undefined
 #[test]
 fn test_bug_034_red_time_functions() {
-    let code = r#"
+    let code = r"
 fun get_timestamp() {
     time_now()
 }
-"#;
+";
 
     let issues = lint_code(code);
 
@@ -145,8 +140,7 @@ fun get_timestamp() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "time_now should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "time_now should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 7: path_ functions should not be reported as undefined
@@ -165,8 +159,7 @@ fun get_extension() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "path_extension should be recognized as built-in, found: {:?}",
-        undefined_issues);
+        "path_extension should be recognized as built-in, found: {undefined_issues:?}");
 }
 
 /// Test 8: Baseline - println already works
@@ -192,11 +185,11 @@ fun test() {
 /// Test 9: Baseline - undefined variables should still be reported
 #[test]
 fn test_bug_034_baseline_real_undefined() {
-    let code = r#"
+    let code = r"
 fun test() {
     undefined_function_xyz()
 }
-"#;
+";
 
     let issues = lint_code(code);
 
@@ -231,8 +224,7 @@ fun main() {
         .collect();
 
     assert_eq!(undefined_issues.len(), 0,
-        "No built-ins should be reported as undefined, found: {:?}",
-        undefined_issues);
+        "No built-ins should be reported as undefined, found: {undefined_issues:?}");
 }
 
 // ==================== RED PHASE SUMMARY ====================
@@ -241,10 +233,10 @@ fun main() {
 #[test]
 fn test_bug_034_red_phase_summary() {
     println!("BUG-034 RED Phase: Linter False Positives for Built-ins");
-    println!("");
+    println!();
     println!("Problem: Linter only recognizes println/print/eprintln as built-ins");
     println!("Impact: Makes linter output unusable due to excessive false positives");
-    println!("");
+    println!();
     println!("Test Suite Created:");
     println!("1. fs_ functions (fs_read, fs_write, etc.)");
     println!("2. env_ functions (env_args, env_var, etc.)");
@@ -256,11 +248,11 @@ fn test_bug_034_red_phase_summary() {
     println!("8. Baseline: println already works");
     println!("9. Baseline: real undefined variables still reported");
     println!("10. Multiple built-ins in one file");
-    println!("");
+    println!();
     println!("Expected Results:");
     println!("- RED Phase: Tests 1-7, 10 FAIL (false positives)");
     println!("- RED Phase: Tests 8-9 PASS (baseline validation)");
     println!("- GREEN Phase: ALL tests PASS after fix");
-    println!("");
+    println!();
     println!("Next Step: Add is_builtin() function to linter");
 }

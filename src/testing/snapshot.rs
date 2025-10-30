@@ -121,7 +121,7 @@ impl SnapshotRunner {
         } else {
             // No existing snapshot
             if self.config.fail_on_missing {
-                bail!("Missing snapshot for test: {}", name);
+                bail!("Missing snapshot for test: {name}");
             }
             // Create new snapshot
             self.create_snapshot(name, input, &output, &output_hash)?;
@@ -205,7 +205,7 @@ impl SnapshotRunner {
             println!("  Updated: {updated}");
         }
         if failed > 0 {
-            bail!("{} snapshot tests failed", failed);
+            bail!("{failed} snapshot tests failed");
         }
         Ok(())
     }

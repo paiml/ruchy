@@ -25,7 +25,7 @@ fn create_temp_file(content: &str) -> NamedTempFile {
 
 #[test]
 fn test_parser_005_let_else_minimal() {
-    let code = r#"
+    let code = r"
 fn main() {
     let x = Some(42);
     let Some(value) = x else {
@@ -33,7 +33,7 @@ fn main() {
     };
     println(value);
 }
-"#;
+";
     let file = create_temp_file(code);
     ruchy_cmd()
         .arg("check")
@@ -81,7 +81,7 @@ fn main() {
 
 #[test]
 fn test_parser_005_let_else_complex_pattern() {
-    let code = r#"
+    let code = r"
 fn main() {
     let x = Some((1, 2));
     let Some((a, b)) = x else {
@@ -89,7 +89,7 @@ fn main() {
     };
     println(a + b);
 }
-"#;
+";
     let file = create_temp_file(code);
     ruchy_cmd()
         .arg("check")
@@ -121,13 +121,13 @@ fn main() {
 #[test]
 fn test_parser_005_regular_let_still_works() {
     // Ensure regular let statements still work (control test)
-    let code = r#"
+    let code = r"
 fn main() {
     let x = 42;
     let Some(y) = Some(10);
     println(x + y);
 }
-"#;
+";
     let file = create_temp_file(code);
     ruchy_cmd()
         .arg("check")

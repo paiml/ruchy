@@ -1,11 +1,11 @@
 //! Tests for DEBUGGER-014 Phase 3: Type-aware tracing
-//! GitHub Issue: https://github.com/paiml/ruchy/issues/84
+//! GitHub Issue: <https://github.com/paiml/ruchy/issues/84>
 //!
 //! Phase 3 enhances Phase 2 (argument/return values) with type information:
 //! - Before: TRACE: → square(5)
 //! - After:  TRACE: → square(5: integer)
 //!
-//! Test naming convention: test_debugger_014_phase_3_<feature>_<scenario>
+//! Test naming convention: `test_debugger_014_phase_3`_<feature>_<scenario>
 
 use assert_cmd::Command;
 use predicates::prelude::*;

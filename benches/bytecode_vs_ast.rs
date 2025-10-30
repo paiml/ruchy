@@ -130,7 +130,7 @@ fn bench_fibonacci_iterative(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
 
     // Iterative Fibonacci using while loops and mutations
-    let fib_code = r#"{
+    let fib_code = r"{
         let mut a = 0;
         let mut b = 1;
         let mut i = 0;
@@ -141,12 +141,12 @@ fn bench_fibonacci_iterative(c: &mut Criterion) {
             i = i + 1
         };
         a
-    }"#;
+    }";
 
     let test_values = vec![7, 15, 25];
 
     for n in test_values {
-        let code = fib_code.replace("N", &n.to_string());
+        let code = fib_code.replace('N', &n.to_string());
 
         group.bench_with_input(BenchmarkId::new("ast", n), &code, |b, code| {
             b.iter(|| execute_ast(black_box(code)));

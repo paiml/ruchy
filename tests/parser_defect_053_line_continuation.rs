@@ -27,7 +27,7 @@ mod property_tests {
         #[test]
         #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_line_continuation_with_comment_parses(val1 in 1..100i32, val2 in 1..100i32) {
-            let source = format!("let x = {} + {}\n    // comment\n    + {}", val1, val2, val1);
+            let source = format!("let x = {val1} + {val2}\n    // comment\n    + {val1}");
             let mut parser = RuchyParser::new(&source);
             let result = parser.parse();
 
@@ -40,7 +40,7 @@ mod property_tests {
         fn prop_multiple_line_continuations_parse(count in 2..5usize) {
             let mut source = "let x = 1".to_string();
             for i in 2..=count {
-                source.push_str(&format!("\n    + {}", i));
+                source.push_str(&format!("\n    + {i}"));
             }
 
             let mut parser = RuchyParser::new(&source);
@@ -53,7 +53,7 @@ mod property_tests {
         #[test]
         #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_line_continuation_multiple_comments(val1 in 1..100i32, val2 in 1..100i32, val3 in 1..100i32) {
-            let source = format!("let x = {}\n    // comment 1\n    + {}\n    // comment 2\n    + {}", val1, val2, val3);
+            let source = format!("let x = {val1}\n    // comment 1\n    + {val2}\n    // comment 2\n    + {val3}");
             let mut parser = RuchyParser::new(&source);
             let result = parser.parse();
 
@@ -65,8 +65,8 @@ mod property_tests {
 #[test]
 fn test_parse_line_continuation_without_comment() {
     // This SHOULD work (baseline)
-    let source = r#"let x = 1 + 2
-    + 3"#;
+    let source = r"let x = 1 + 2
+    + 3";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -77,8 +77,8 @@ fn test_parse_line_continuation_without_comment() {
 #[test]
 fn test_parse_line_continuation_with_trailing_comment() {
     // This SHOULD work - trailing comment on first line
-    let source = r#"let x = 1 + 2   // trailing comment
-    + 3"#;
+    let source = r"let x = 1 + 2   // trailing comment
+    + 3";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -89,9 +89,9 @@ fn test_parse_line_continuation_with_trailing_comment() {
 #[test]
 fn test_parse_line_continuation_with_intervening_comment() {
     // This CURRENTLY FAILS but SHOULD work
-    let source = r#"let x = 1 + 2
+    let source = r"let x = 1 + 2
     // inner comment
-    + 3"#;
+    + 3";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -106,7 +106,7 @@ fn test_parse_line_continuation_with_intervening_comment() {
                 ExprKind::Binary { .. } => {
                     // Good - it's a binary operation
                 }
-                other => panic!("Expected binary operation, got: {:?}", other),
+                other => panic!("Expected binary operation, got: {other:?}"),
             }
         } else {
             panic!("Expected Let expression at top level");
@@ -117,9 +117,9 @@ fn test_parse_line_continuation_with_intervening_comment() {
 #[test]
 fn test_parse_line_continuation_with_both_comments() {
     // This CURRENTLY FAILS but SHOULD work
-    let source = r#"let x = 1 + 2   // trailing comment
+    let source = r"let x = 1 + 2   // trailing comment
     // inner comment
-    + 3"#;
+    + 3";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -130,9 +130,9 @@ fn test_parse_line_continuation_with_both_comments() {
 #[test]
 fn test_parse_multiple_line_continuations() {
     // This SHOULD work - multiple continuations
-    let source = r#"let x = 1 + 2
+    let source = r"let x = 1 + 2
     + 3
-    + 4"#;
+    + 4";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -143,11 +143,11 @@ fn test_parse_multiple_line_continuations() {
 #[test]
 fn test_parse_line_continuation_with_multiple_comments() {
     // This CURRENTLY FAILS but SHOULD work
-    let source = r#"let x = 1 + 2
+    let source = r"let x = 1 + 2
     // comment 1
     + 3
     // comment 2
-    + 4"#;
+    + 4";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();

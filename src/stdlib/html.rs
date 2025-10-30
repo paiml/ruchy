@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn test_parse_simple_html() {
         let html = HtmlDocument::parse("<div>Test</div>");
-        assert!(html.dom.document.children.borrow().len() > 0);
+        assert!(!html.dom.document.children.borrow().is_empty());
     }
 
     #[test]

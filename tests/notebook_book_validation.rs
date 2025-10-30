@@ -29,7 +29,7 @@ struct ExecuteResponse {
 }
 
 /// Extract code examples from a markdown file
-/// Returns: Vec<(code, expected_output)>
+/// Returns: Vec<(code, `expected_output`)>
 fn extract_examples(md_path: &Path) -> Vec<(String, Option<String>)> {
     let content = fs::read_to_string(md_path).expect("Failed to read MD file");
     let mut examples = Vec::new();
@@ -206,7 +206,7 @@ mod tests {
             let result = match execute_notebook_code(&client, code) {
                 Ok(r) => r,
                 Err(e) => {
-                    eprintln!("Example {} failed to execute: {}", i, e);
+                    eprintln!("Example {i} failed to execute: {e}");
                     failed += 1;
                     continue;
                 }
@@ -225,10 +225,10 @@ mod tests {
                 if actual == expected {
                     passed += 1;
                 } else {
-                    eprintln!("Example {} output mismatch:", i);
+                    eprintln!("Example {i} output mismatch:");
                     eprintln!("  Code: {}", code.trim());
-                    eprintln!("  Expected: {}", expected);
-                    eprintln!("  Got: {}", actual);
+                    eprintln!("  Expected: {expected}");
+                    eprintln!("  Got: {actual}");
                     failed += 1;
                 }
             } else {
@@ -239,20 +239,19 @@ mod tests {
 
         let total = passed + failed;
         let pass_rate = if total > 0 {
-            (passed as f64 / total as f64) * 100.0
+            (f64::from(passed) / f64::from(total)) * 100.0
         } else {
             0.0
         };
 
         println!("\nChapter: 01-literals");
-        println!("  Passed: {}/{} ({:.1}%)", passed, total, pass_rate);
-        println!("  Failed: {}", failed);
+        println!("  Passed: {passed}/{total} ({pass_rate:.1}%)");
+        println!("  Failed: {failed}");
 
         // Target: ≥90% passing
         assert!(
             pass_rate >= 90.0,
-            "Pass rate {:.1}% below 90% target",
-            pass_rate
+            "Pass rate {pass_rate:.1}% below 90% target"
         );
     }
 }

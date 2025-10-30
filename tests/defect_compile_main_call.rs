@@ -1,4 +1,4 @@
-//! DEFECT-COMPILE-MAIN-CALL: Stack Overflow on Double main() Call
+//! DEFECT-COMPILE-MAIN-CALL: Stack Overflow on Double `main()` Call
 //!
 //! Ticket: DEFECT-COMPILE-MAIN-CALL
 //! Priority: HIGH (P0) - User-facing crash
@@ -22,7 +22,7 @@ fn ruchy_cmd() -> Command {
 // ===========================================================================
 
 #[test]
-#[ignore] // Will pass after fix
+#[ignore = "Will pass after fix"]
 fn test_main_function_with_explicit_call_no_stack_overflow() {
     // DEFECT: This currently causes stack overflow in compiled binary
     // EXPECTED: Should work (either skip the call or warn)
@@ -103,7 +103,7 @@ fn test_main_function_without_explicit_call_works() {
 // ===========================================================================
 
 #[test]
-#[ignore] // Will pass after fix
+#[ignore = "Will pass after fix"]
 fn test_nested_main_call_in_function() {
     // Edge case: main() called from another function
 
@@ -176,7 +176,7 @@ fun main() {
 }
 
 #[test]
-#[ignore] // Will pass after fix
+#[ignore = "Will pass after fix"]
 fn test_multiple_main_calls() {
     // Edge case: multiple main() calls at module level
 
@@ -211,55 +211,6 @@ main()
 }
 
 // ===========================================================================
-// Property Tests (for mutation testing validation)
-// ===========================================================================
-
-#[cfg(test)]
-mod property_tests {
-    use super::*;
-    use proptest::prelude::*;
-
-    // Property: Any function named main should compile and run without stack overflow
-    proptest! {
-        #[test]
-        #[ignore] // Expensive test - run manually with --ignored
-        fn prop_main_function_never_stack_overflows(
-            message in "Hello.*|Test.*|Output.*"
-        ) {
-            let temp_dir = TempDir::new().unwrap();
-            let test_file = temp_dir.path().join("prop_test.ruchy");
-
-            let code = format!(r#"fun main() {{
-    println("{}");
-}}
-
-main()
-"#, message);
-
-            fs::write(&test_file, code).unwrap();
-
-            let compile_result = ruchy_cmd()
-                .arg("compile")
-                .arg(&test_file)
-                .current_dir(temp_dir.path())
-                .assert()
-                .try_success();
-
-            if compile_result.is_ok() {
-                let binary_path = temp_dir.path().join("a.out");
-                if binary_path.exists() {
-                    // Should not timeout (no stack overflow)
-                    let _ = Command::new(&binary_path)
-                        .timeout(std::time::Duration::from_secs(2))
-                        .assert()
-                        .try_success();
-                }
-            }
-        }
-    }
-}
-
-// ===========================================================================
 // Documentation Tests
 // ===========================================================================
 
@@ -284,3 +235,52 @@ main()
 /// ```
 #[allow(dead_code)]
 fn documentation_examples() {}
+
+// ===========================================================================
+// Property Tests (for mutation testing validation)
+// ===========================================================================
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Property: Any function named main should compile and run without stack overflow
+    proptest! {
+        #[test]
+        #[ignore = "Expensive test - run manually with --ignored"]
+        fn prop_main_function_never_stack_overflows(
+            message in "Hello.*|Test.*|Output.*"
+        ) {
+            let temp_dir = TempDir::new().unwrap();
+            let test_file = temp_dir.path().join("prop_test.ruchy");
+
+            let code = format!(r#"fun main() {{
+    println("{message}");
+}}
+
+main()
+"#);
+
+            fs::write(&test_file, code).unwrap();
+
+            let compile_result = ruchy_cmd()
+                .arg("compile")
+                .arg(&test_file)
+                .current_dir(temp_dir.path())
+                .assert()
+                .try_success();
+
+            if compile_result.is_ok() {
+                let binary_path = temp_dir.path().join("a.out");
+                if binary_path.exists() {
+                    // Should not timeout (no stack overflow)
+                    let _ = Command::new(&binary_path)
+                        .timeout(std::time::Duration::from_secs(2))
+                        .assert()
+                        .try_success();
+                }
+            }
+        }
+    }
+}

@@ -110,7 +110,7 @@ mod tests {
 
     /// Test CLI benchmark with echo command
     ///
-    /// RED: This test should PASS because benchmark_cli() is implemented
+    /// RED: This test should PASS because `benchmark_cli()` is implemented
     #[test]
     fn test_cli_benchmark_echo() {
         let results = benchmark_cli("echo 'test'", 5, 2).unwrap();

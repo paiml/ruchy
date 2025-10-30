@@ -1,6 +1,6 @@
 //! REPL-005: Fix for loop () output in REPL (Issue #5)
 //!
-//! Root Cause: for/while loops return Value::Unit, which gets printed as "nil"
+//! Root Cause: for/while loops return `Value::Unit`, which gets printed as "nil"
 //! Expected: Unit values should NOT be printed in REPL (like they aren't in scripts)
 
 use assert_cmd::Command;

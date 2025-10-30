@@ -154,13 +154,13 @@ mod property_tests {
     proptest! {
         #[test]
         fn test_increment_never_panics(var in "[a-z][a-z0-9_]{0,10}") {
-            let code = format!("++{}", var);
+            let code = format!("++{var}");
             let _ = Parser::new(&code).parse();
         }
 
         #[test]
         fn test_decrement_never_panics(var in "[a-z][a-z0-9_]{0,10}") {
-            let code = format!("--{}", var);
+            let code = format!("--{var}");
             let _ = Parser::new(&code).parse();
         }
 
@@ -174,7 +174,7 @@ mod property_tests {
             container in "(Option|Result)",
             variant in "(Some|None|Ok|Err)"
         ) {
-            let code = format!("{}::{}", container, variant);
+            let code = format!("{container}::{variant}");
             let _ = Parser::new(&code).parse();
         }
     }

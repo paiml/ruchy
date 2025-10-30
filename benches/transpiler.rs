@@ -13,6 +13,8 @@ fn transpile_literals(c: &mut Criterion) {
                 kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ),
         (
@@ -21,6 +23,8 @@ fn transpile_literals(c: &mut Criterion) {
                 kind: ExprKind::Literal(Literal::Float(3.1415)),
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ),
         (
@@ -29,6 +33,8 @@ fn transpile_literals(c: &mut Criterion) {
                 kind: ExprKind::Literal(Literal::String("Hello, World!".to_string())),
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ),
         (
@@ -37,6 +43,8 @@ fn transpile_literals(c: &mut Criterion) {
                 kind: ExprKind::Literal(Literal::Bool(true)),
                 span: Span::default(),
                 attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ),
     ];

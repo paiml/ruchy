@@ -235,7 +235,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_negate_parses(n in any::<i32>()) {
-                let code = format!("-{}", n);
+                let code = format!("-{n}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Negation -{} should parse", n);
             }
@@ -243,7 +243,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_not_parses(b in any::<bool>()) {
-                let code = format!("!{}", b);
+                let code = format!("!{b}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Logical not !{} should parse", b);
             }
@@ -251,7 +251,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_bitwise_not_parses(n in any::<u32>()) {
-                let code = format!("~{}", n);
+                let code = format!("~{n}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Bitwise not ~{} should parse", n);
             }
@@ -260,7 +260,7 @@ mod tests {
             #[ignore]
             fn prop_nested_negations_parse(depth in 1..5usize) {
                 let negations = "-".repeat(depth);
-                let code = format!("{}42", negations);
+                let code = format!("{negations}42");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Nested negations {} should parse", code);
             }

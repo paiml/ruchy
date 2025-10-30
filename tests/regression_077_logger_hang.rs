@@ -11,7 +11,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test Case 1: Minimal Logger::new_with_options() hang
+/// Test Case 1: Minimal `Logger::new_with_options()` hang
 /// This is the smallest reproduction case from Issue #77 Bug #1
 #[test]
 fn test_regression_077_logger_new_with_options() {
@@ -61,7 +61,7 @@ fun main() {
         .stdout(predicate::str::contains("Success"));
 }
 
-/// Test Case 2: Logger.log() method with String parameter
+/// Test Case 2: `Logger.log()` method with String parameter
 /// Verifies methods with String parameters work after fix
 #[test]
 fn test_regression_077_logger_log_method() {
@@ -182,7 +182,7 @@ fun main() {
         .stdout(predicate::str::contains("Success"));
 }
 
-/// Test Case 5: Vec::new() should still work (no regression from v3.147.1)
+/// Test Case 5: `Vec::new()` should still work (no regression from v3.147.1)
 /// This verifies the v3.147.1 fix isn't broken by v3.147.2
 #[test]
 fn test_regression_077_vec_new_still_works() {

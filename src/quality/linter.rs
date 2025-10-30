@@ -2677,20 +2677,19 @@ mod sprint_44_tests {
         let unused_x = issues
             .iter()
             .any(|i| i.name == "x" && i.rule.contains("unused"));
-        assert!(!unused_x, "Variable 'x' should NOT be reported as unused - it's used in the next statement. Issues: {:?}", issues);
+        assert!(!unused_x, "Variable 'x' should NOT be reported as unused - it's used in the next statement. Issues: {issues:?}");
 
         // CRITICAL: Variable 'x' should NOT be reported as undefined (it's defined in previous statement)
         let undefined_x = issues
             .iter()
             .any(|i| i.name == "x" && i.rule.contains("undefined"));
-        assert!(!undefined_x, "Variable 'x' should NOT be reported as undefined - it's defined in previous statement. Issues: {:?}", issues);
+        assert!(!undefined_x, "Variable 'x' should NOT be reported as undefined - it's defined in previous statement. Issues: {issues:?}");
 
         // The code should have ZERO issues
         assert_eq!(
             issues.len(),
             0,
-            "Code should have zero linting issues, got: {:?}",
-            issues
+            "Code should have zero linting issues, got: {issues:?}"
         );
     }
 

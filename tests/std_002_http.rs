@@ -340,7 +340,7 @@ mod property_tests {
                 then.status(200).body("OK");
             });
 
-            let url = server.url(&format!("/{}", path));
+            let url = server.url(format!("/{path}"));
             let _ = ruchy::stdlib::http::get(&url);
             // Should not panic
         }

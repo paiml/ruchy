@@ -13,7 +13,7 @@ fn ruchy_cmd() -> Command {
 }
 
 fn fixture_path(name: &str) -> String {
-    format!("tests/fixtures/{}", name)
+    format!("tests/fixtures/{name}")
 }
 
 #[test]

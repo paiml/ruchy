@@ -1,7 +1,7 @@
 //! EXTREME TDD Test - println stdout capture
 //!
 //! This validates that the WASM REPL correctly captures println output
-//! Bug: https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT
+//! Bug: <https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT>
 
 use ruchy::wasm::repl::{WasmRepl, ReplOutput};
 

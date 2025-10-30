@@ -27,8 +27,7 @@ fn test_code(code: &str) {
         .as_nanos();
     let thread_id = thread::current().id();
     let temp_file = PathBuf::from(format!(
-        "/tmp/test_pub_visibility_{}_{:?}.ruchy",
-        timestamp, thread_id
+        "/tmp/test_pub_visibility_{timestamp}_{thread_id:?}.ruchy"
     ));
 
     fs::write(&temp_file, code).expect("Failed to write test file");
@@ -111,7 +110,7 @@ mod property_tests {
         fn prop_pub_in_single_segment(
             segment in "[a-z][a-z0-9_]{0,10}"
         ) {
-            let code = format!("pub(in crate::{}) fn test() {{}}", segment);
+            let code = format!("pub(in crate::{segment}) fn test() {{}}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -124,8 +123,7 @@ mod property_tests {
             seg2 in "[a-z][a-z0-9_]{0,5}",
             seg3 in "[a-z][a-z0-9_]{0,5}"
         ) {
-            let code = format!("pub(in crate::{}::{}::{}) fn test() {{}}",
-                seg1, seg2, seg3);
+            let code = format!("pub(in crate::{seg1}::{seg2}::{seg3}) fn test() {{}}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -136,7 +134,7 @@ mod property_tests {
         fn prop_pub_in_super_path(
             segment in "[a-z][a-z0-9_]{0,10}"
         ) {
-            let code = format!("pub(in super::{}) fn test() {{}}", segment);
+            let code = format!("pub(in super::{segment}) fn test() {{}}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -147,7 +145,7 @@ mod property_tests {
         fn prop_pub_in_self_path(
             segment in "[a-z][a-z0-9_]{0,10}"
         ) {
-            let code = format!("pub(in self::{}) fn test() {{}}", segment);
+            let code = format!("pub(in self::{segment}) fn test() {{}}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -158,7 +156,7 @@ mod property_tests {
         fn prop_pub_in_absolute_path(
             segment in "[a-z][a-z0-9_]{0,10}"
         ) {
-            let code = format!("pub(in ::{}) fn test() {{}}", segment);
+            let code = format!("pub(in ::{segment}) fn test() {{}}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });

@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 // RUNTIME-001: Baseline Audit - Parser vs Runtime Status
 // Purpose: Document what parses vs what executes for parser-only features
 // Status: These tests DOCUMENT CURRENT STATE (parser succeeds, runtime fails)

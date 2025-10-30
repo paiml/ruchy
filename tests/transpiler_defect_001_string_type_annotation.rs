@@ -129,7 +129,7 @@ fun main() {
         .success();
 }
 
-/// Test 5: Workaround validation - manual .to_string() should still work
+/// Test 5: Workaround validation - manual .`to_string()` should still work
 #[test]
 fn test_defect_001_workaround_manual_to_string() {
     let temp = temp_dir();
@@ -188,12 +188,12 @@ fn test_defect_001_red_phase_summary() {
     println!("TRANSPILER-DEFECT-001 RED Phase:");
     println!("- 4 tests created that WILL FAIL when un-ignored");
     println!("- 2 baseline tests that pass NOW (workaround + type inference)");
-    println!("");
+    println!();
     println!("Expected failures:");
     println!("1. String literal with String type annotation");
     println!("2. Multiple string variables with annotations");
     println!("3. Function parameter with String annotation");
     println!("4. F-string with String annotation");
-    println!("");
+    println!();
     println!("Next: GREEN phase - fix transpiler to auto-convert");
 }

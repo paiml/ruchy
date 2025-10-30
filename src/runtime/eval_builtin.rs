@@ -3520,15 +3520,15 @@ mod tests {
         let test_values = vec![3.1, 3.9, -2.3, -2.9, 0.0, 5.0];
 
         for val in test_values {
-            let floor_result = eval_floor(&vec![Value::Float(val)]).unwrap();
-            let ceil_result = eval_ceil(&vec![Value::Float(val)]).unwrap();
+            let floor_result = eval_floor(&[Value::Float(val)]).unwrap();
+            let ceil_result = eval_ceil(&[Value::Float(val)]).unwrap();
 
             if let (Value::Integer(floor), Value::Integer(ceil)) = (floor_result, ceil_result) {
                 let floor_f = floor as f64;
                 let ceil_f = ceil as f64;
-                assert!(floor_f <= val, "floor({}) should be <= {}", val, val);
-                assert!(ceil_f >= val, "ceil({}) should be >= {}", val, val);
-                assert!(floor_f <= ceil_f, "floor({}) <= ceil({})", val, val);
+                assert!(floor_f <= val, "floor({val}) should be <= {val}");
+                assert!(ceil_f >= val, "ceil({val}) should be >= {val}");
+                assert!(floor_f <= ceil_f, "floor({val}) <= ceil({val})");
             }
         }
     }
@@ -3540,13 +3540,13 @@ mod tests {
         let test_angles = vec![0.0, PI / 6.0, PI / 4.0, PI / 3.0, PI / 2.0];
 
         for angle in test_angles {
-            let sin_val = eval_sin(&vec![Value::Float(angle)]).unwrap();
-            let cos_val = eval_cos(&vec![Value::Float(angle)]).unwrap();
+            let sin_val = eval_sin(&[Value::Float(angle)]).unwrap();
+            let cos_val = eval_cos(&[Value::Float(angle)]).unwrap();
 
             if let (Value::Float(s), Value::Float(c)) = (sin_val, cos_val) {
                 let identity = s * s + c * c;
                 assert!((identity - 1.0).abs() < 1e-10,
-                        "sin²({}) + cos²({}) should = 1, got {}", angle, angle, identity);
+                        "sin²({angle}) + cos²({angle}) should = 1, got {identity}");
             }
         }
     }
@@ -3564,7 +3564,7 @@ mod tests {
         ];
 
         for val in test_values {
-            let result = eval_abs(&vec![val]).unwrap();
+            let result = eval_abs(&[val]).unwrap();
             match result {
                 Value::Integer(i) => assert!(i >= 0, "abs should be non-negative"),
                 Value::Float(f) => assert!(f >= 0.0, "abs should be non-negative"),
@@ -3585,9 +3585,9 @@ fn test_println_string_no_quotes() {
     
     // Should NOT contain quotes around Ruchy
     assert!(!output.contains("\"Ruchy\""), 
-        "println should not print quotes around strings, got: {}", output);
+        "println should not print quotes around strings, got: {output}");
     assert!(output.contains("Name: Ruchy"), 
-        "Expected 'Name: Ruchy' without quotes, got: {}", output);
+        "Expected 'Name: Ruchy' without quotes, got: {output}");
 }
 
 // NOTE: DEFECT-RETURN test removed due to API limitations
