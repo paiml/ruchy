@@ -6,6 +6,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[DEBUGGER-014] Add ruchyruchy dependency (Issue #84 Phase 1.2)**
+  - **Problem**: No ruchyruchy library available for execution tracing implementation
+  - **Solution**: Added ruchyruchy 1.8.0 as path dependency (Phase 1.2 of 5-phase implementation)
+  - **Implementation**: Path dependency to `../ruchyruchy` (Cargo.toml:245) since 1.8.0 not yet on crates.io
+  - **Test Status**: 1/1 test passing ✅
+    - test_debugger_014_phase_1_2_dependency_available (extern crate availability)
+  - **Files Modified** (2 files):
+    - Cargo.toml (added ruchyruchy path dependency)
+    - tests/debugger_014_dependency.rs (NEW - extern crate test)
+  - **Impact**: Foundation for tracing infrastructure (ruchyruchy provides debugging tools)
+  - **EXTREME TDD**: RED (extern crate error) → GREEN (path dependency) → REFACTOR (documentation)
+  - **Next Phase**: Phase 1.3 - Inject function entry/exit calls in codegen
+
 - **[DEBUGGER-014] Add --trace CLI flag (Issue #84 Phase 1.1)**
   - **Problem**: No execution tracing capability for debugging Ruchy programs
   - **Solution**: Added --trace flag to CLI argument parser (Phase 1.1 of 5-phase implementation)
