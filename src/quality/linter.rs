@@ -345,6 +345,15 @@ impl Linter {
                     let_scope.define(name.clone(), 2, 1, VarType::Local);
                     // Analyze the body with the new scope
                     self.analyze_expr(body, &mut let_scope, issues);
+                    // LINT-008 FIX: Propagate "used" status from cloned parent back to original scope
+                    // The let_scope's parent is a clone of the original scope, so we need to sync the "used" flags
+                    if let Some(parent_scope) = &let_scope.parent {
+                        for (var_name, parent_var_info) in &parent_scope.variables {
+                            if parent_var_info.used {
+                                scope.mark_used(var_name);
+                            }
+                        }
+                    }
                     // Check for unused variables in the let scope
                     self.check_unused_in_scope(&let_scope, issues);
                 }
@@ -537,6 +546,13 @@ impl Linter {
             ExprKind::Assign { target, value, .. } => {
                 self.analyze_expr(target, scope, issues);
                 self.analyze_expr(value, scope, issues);
+            }
+            ExprKind::MacroInvocation { args, .. } => {
+                // LINT-008: Visit macro arguments to mark variables as used (Issue #8)
+                // format!("{}", name) should mark 'name' as used
+                for arg in args {
+                    self.analyze_expr(arg, scope, issues);
+                }
             }
             _ => {
                 // Handle other expression types as needed

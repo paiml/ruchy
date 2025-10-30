@@ -4,6 +4,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- **[LINT-008] Fix format! macro variable false positive (Issue #8)**
+  - **Problem**: Variables used in `format!()` macro arguments incorrectly marked as unused
+  - **Root Cause #1**: Linter had no handler for `ExprKind::MacroInvocation` - never visited macro arguments
+  - **Root Cause #2**: Expression-level Let scopes used cloned parents, "used" status didn't propagate back
+  - **Solution**:
+    - Added `MacroInvocation` handler to visit all macro arguments (src/quality/linter.rs:541-547)
+    - Propagate "used" status from cloned parent scope back to original scope (src/quality/linter.rs:348-356)
+  - **Test Status**: 5/5 tests passing ✅
+    - test_lint_008_format_macro_single_variable ✅
+    - test_lint_008_format_macro_multiple_variables ✅
+    - test_lint_008_format_macro_with_expressions ✅
+    - test_lint_008_truly_unused_variable_still_detected ✅
+    - test_lint_008_format_result_used ✅
+  - **Impact**: Fixes 63% of Ruchy book examples that were showing false positives
+  - **Files Modified**:
+    - tests/lint_008_format_variables.rs (NEW - 5 comprehensive tests)
+    - src/quality/linter.rs (MacroInvocation handler + scope propagation fix)
+  - **Toyota Way**: Stopped the line, used EXTREME TDD (RED→GREEN→REFACTOR)
+  - **Closed**: Issues #8, #11, #14
+
 ### Added
 
 - **[DEBUGGER-014] Phase 1.4 assessment - Core requirements met (Issue #84)**
