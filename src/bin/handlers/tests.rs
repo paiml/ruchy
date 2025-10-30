@@ -4,25 +4,25 @@ use tempfile::TempDir;
 
 #[test]
 fn test_handle_eval_command_basic() {
-    let result = handle_eval_command("2 + 2", false, "text");
+    let result = handle_eval_command("2 + 2", false, "text", false);
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_handle_eval_command_verbose() {
-    let result = handle_eval_command("42", true, "text");
+    let result = handle_eval_command("42", true, "text", false);
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_handle_eval_command_json_format() {
-    let result = handle_eval_command("1 + 1", false, "json");
+    let result = handle_eval_command("1 + 1", false, "json", false);
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_handle_eval_command_invalid_expr() {
-    let result = handle_eval_command("invalid++syntax", false, "text");
+    let result = handle_eval_command("invalid++syntax", false, "text", false);
     assert!(result.is_err());
 }
 
