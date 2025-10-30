@@ -38,6 +38,7 @@ use std::time::SystemTime;
 ///
 /// Handles file discovery, parsing, dependency resolution, and caching
 /// for multi-file Ruchy programs.
+#[derive(Debug)]
 pub struct ModuleLoader {
     /// Cache of parsed modules to avoid re-parsing unchanged files
     cache: HashMap<String, ParsedModule>,
