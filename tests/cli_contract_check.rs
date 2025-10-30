@@ -5,6 +5,7 @@
 //!
 
 #![allow(clippy::ignore_without_reason)] // CLI contract tests with known limitations
+#![allow(missing_docs)]
 //! **Contract Specification**:
 //! - Exit code 0: Valid syntax
 //! - Exit code 1: Invalid syntax OR file not found
@@ -116,7 +117,7 @@ fn cli_check_missing_file_writes_stderr() {
 // ============================================================================
 
 #[test]
-#[ignore] // DEFECT: Error messages don't include filename (CLI-CONTRACT-CHECK-001)
+#[ignore = DEFECT: Error messages don't include filename (CLI-CONTRACT-CHECK-001)
 fn cli_check_error_includes_filename() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "bad_syntax.ruchy", "let x = \n");
@@ -130,7 +131,7 @@ fn cli_check_error_includes_filename() {
 }
 
 #[test]
-#[ignore] // DEFECT: Error messages don't include line number (CLI-CONTRACT-CHECK-002)
+#[ignore = DEFECT: Error messages don't include line number (CLI-CONTRACT-CHECK-002)
 fn cli_check_error_includes_line_number() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "error_line.ruchy", "let x = 1\nlet y = \n"); // Line 2 error
@@ -150,7 +151,7 @@ fn cli_check_error_includes_line_number() {
 }
 
 #[test]
-#[ignore] // LIMITATION: `check` tool doesn't support multiple files (CLI-CONTRACT-CHECK-003)
+#[ignore = LIMITATION: `check` tool doesn't support multiple files (CLI-CONTRACT-CHECK-003)
 fn cli_check_multiple_files_checks_all() {
     let temp = TempDir::new().unwrap();
     let file1 = create_temp_file(&temp, "valid1.ruchy", "let x = 1\n");

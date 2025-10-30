@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-001: File I/O Module Tests (ruchy/std/fs)
 //!
 //! Test suite for file system operations module.

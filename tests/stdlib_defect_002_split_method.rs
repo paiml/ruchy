@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-DEFECT-002: `String.split()` Returns Internal Rust Type
 //!
 //! **Problem**: .`split()` returns `std::str::Split` iterator instead of Vec<String>

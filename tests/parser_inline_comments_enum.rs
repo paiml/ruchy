@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Test inline comments in enum variant definitions
 //!
 //! Bug: Parser fails with "Expected variant name in enum" when comments

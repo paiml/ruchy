@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BOOTSTRAP-002 Character Stream Processing - Runtime Test
 //! Tests that `String.chars().nth()` method works in runtime evaluation
 //!

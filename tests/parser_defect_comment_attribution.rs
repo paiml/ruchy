@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER DEFECT: Standalone comments wrongly attributed as trailing comments
 // Toyota Way: Stop the line, fix root cause with Extreme TDD
 //

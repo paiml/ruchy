@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-013: ColonColon (::) operator in import statements
 // Tests for Rust-style module path syntax
 

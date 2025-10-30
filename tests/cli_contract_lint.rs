@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy lint`
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, lint warnings/errors)

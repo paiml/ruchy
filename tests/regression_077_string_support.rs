@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // REGRESSION-077: String::new() and String::from() support
 // GitHub Issue: https://github.com/paiml/ruchy/issues/77
 //

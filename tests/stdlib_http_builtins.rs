@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-PHASE-5: HTTP Builtin Functions Tests (RED Phase)
 //!
 //! Following EXTREME TDD: RED → GREEN → REFACTOR

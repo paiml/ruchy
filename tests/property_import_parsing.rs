@@ -15,8 +15,11 @@
 //! 4. **Error Clarity**: Invalid imports produce clear error messages
 
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 #![allow(clippy::expect_used)]
+#![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
+#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::Parser;
@@ -58,7 +61,7 @@ proptest! {
     ///
     /// Invariant: For all valid import strings i, parse(i) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore] // Run with: cargo test property_import -- --ignored --nocapture
+    #[ignore = Run with: cargo test property_import -- --ignored --nocapture
     fn prop_parse_import_never_panics(import_stmt in arb_import_statement()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&import_stmt).parse()
@@ -226,7 +229,7 @@ mod unit_tests {
 
     /// Sanity check: Wildcard imports (skipped - not fully implemented yet)
     #[test]
-    #[ignore] // Wildcard imports not fully supported in current parser
+    #[ignore = Wildcard imports not fully supported in current parser
     fn test_wildcard_imports_parse() {
         let test_cases = vec![
             "import std::collections::*",

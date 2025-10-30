@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Regression tests for GitHub Issue #79: Runtime hang when accessing enum field via self and casting to i32
 // https://github.com/paiml/ruchy/issues/79
 //

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Tests for DEBUGGER-014: --trace flag support (Issue #84 Phase 1.1)
 // GitHub Issue: https://github.com/paiml/ruchy/issues/84
 //

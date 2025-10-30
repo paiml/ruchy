@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! P0 CRITICAL FEATURE TESTS - MUST NEVER FAIL
 //!
 //! These tests represent the absolute minimum functionality that must work.

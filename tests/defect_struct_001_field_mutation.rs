@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-STRUCT-001: Struct Field Mutation Broken
 //!
 //! **Problem**: Struct field mutation fails with "Cannot access field 'count' on non-object"

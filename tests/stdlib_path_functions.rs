@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB Phase 3: Path Functions Tests
 //!
 //! **Task**: Implement 13 path functions

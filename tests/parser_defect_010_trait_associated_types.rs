@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-010: Trait Associated Types
 // Bug: Parser failed with "Expected 'fun' or 'fn' keyword" on `type Item` declarations
 // Also: Parser failed on trait generic parameters and default implementations

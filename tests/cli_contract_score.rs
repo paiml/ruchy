@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy score` command
 //
 // Purpose: Validate quality scoring tool via CLI interface (Layer 4: Black Box)

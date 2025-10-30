@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 //! Dataflow debugger for `DataFrame` pipeline debugging (RUCHY-0818)
 //!
 //! Provides comprehensive debugging capabilities for `DataFrame` operations,

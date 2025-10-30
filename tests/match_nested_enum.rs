@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for nested enum pattern matching
 //!
 //! Tests matching enum variants that contain other enum variants:

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // BUG: fn main() in -e mode returns <function> instead of executing
 // EXTREME TDD: RED → GREEN → REFACTOR
 

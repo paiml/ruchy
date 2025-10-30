@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-067: Struct pattern matching tests
 //!
 //! This test suite validates that struct patterns in match expressions

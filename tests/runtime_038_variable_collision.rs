@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // RUNTIME-038: Variable Collision in Nested Function Calls with Tuple Unpacking
 //
 // Bug: Variable names in outer scope collide with variable names in nested call stacks,

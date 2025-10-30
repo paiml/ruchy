@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CARGO-002: Project Template Generator Tests
 //!
 //! Test suite for `ruchy new` command that creates Ruchy projects

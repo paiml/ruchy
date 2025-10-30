@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Issue #60: ruchy fmt incorrectly transforms fun → fn
 //
 // Problem: The formatter outputs `fn` (Rust syntax) instead of `fun` (Ruchy syntax)

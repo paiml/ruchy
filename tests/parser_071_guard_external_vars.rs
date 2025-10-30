@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-071: Guard clauses with external variable references (GitHub Issue #56)
 //
 // Root Cause: When parsing guard expressions like `n < limit`, if an external variable

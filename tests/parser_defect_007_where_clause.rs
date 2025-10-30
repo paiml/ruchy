@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-007: Where Clause Syntax
 // Bug: Parser failed with "Unexpected token: Where" when encountering where clauses
 // Fix: Added parse_where_clause() to parse and skip trait bounds after function signature

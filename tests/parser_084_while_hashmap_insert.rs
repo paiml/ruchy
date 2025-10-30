@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-084: Test for Issue #67 Sub-issue #1 - while loop + HashMap.insert() parser bug
 //
 // ROOT CAUSE: Parser error "Expected RightBrace, found Let" at line beyond EOF

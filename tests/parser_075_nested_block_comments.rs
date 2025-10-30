@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-075: Nested block comments with depth tracking (GitHub Issue #58, Part 2/4)
 //!
 //! Tests Rust-style nested block comments: /* outer /* inner */ still outer */

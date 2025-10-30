@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI-UNIFY-003: Property Tests for CLI Behavior (10 tests × 10,000 iterations)
 //!
 //! **Purpose**: Validate CLI invariants through property-based testing

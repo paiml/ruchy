@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-006: Attributes inside block bodies
 // Root cause: parse_next_block_expression() doesn't call parse_attributes()
 // Impact: 9 book examples failing with "Unexpected token: AttributeStart"

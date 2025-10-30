@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Regression tests for GitHub Issue #82: Runtime error when using `use chrono::Utc;`
 // https://github.com/paiml/ruchy/issues/82
 //

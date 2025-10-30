@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for `ruchy build` command (CARGO-004)
 //!
 //! Tests the complete workflow of building Ruchy projects

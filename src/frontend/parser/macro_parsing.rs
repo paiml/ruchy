@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 //! Macro parsing utilities - Extracted to reduce complexity
 //!
 //! This module contains helper functions for parsing various macro types,

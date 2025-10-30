@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Complete mutation coverage for `eval_string_methods.rs`
 //! TOYOTA WAY: Stop the line - fix ALL 20 MISSED mutations
 //!

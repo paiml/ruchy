@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-081: Array Literals with Identifiers (GitHub Issue #62)
 //
 // RED phase test - These tests MUST FAIL initially, proving the bug exists

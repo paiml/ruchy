@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! TRANSPILER-DEFECT-004: Let-Else Transpilation Not Implemented
 //!
 //! **Problem**: Let-else statements fail with "not yet implemented" error

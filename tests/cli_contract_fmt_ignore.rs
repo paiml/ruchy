@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Tests for formatter ignore directives
 //!
 //! Sprint 3 Phase 2: Ignore Directives

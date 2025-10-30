@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI-UNIFY-001: Test that 'ruchy' (no args) opens REPL
 // EXTREME TDD: RED phase - these tests will FAIL initially
 

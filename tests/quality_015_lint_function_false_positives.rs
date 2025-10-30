@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! QUALITY-015: Fix linter incorrectly reporting used functions as "unused variable"
 //!
 //! GitHub Issue #15: <https://github.com/your-org/ruchy/issues/15>

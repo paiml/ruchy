@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Test for BOOK-COMPAT-001: &str lifetime annotations in structs
 // GitHub Issue: https://github.com/paiml/ruchy/issues/50
 // Priority: HIGH - Blocks 100% book compatibility (Ch19 Ex2)

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-009: Enum Struct Variants
 // Bug: Parser failed with "Expected variant name in enum" on struct-style variants
 // Fix: Added EnumVariantKind enum and parse_variant_struct_fields() helper

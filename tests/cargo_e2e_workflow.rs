@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! End-to-end integration tests for Cargo workflows (CARGO-005)
 //!
 //! Tests complete workflows: new → add → build → run

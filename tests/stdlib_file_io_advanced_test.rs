@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-003: Advanced File I/O Functions
 //
 // Implementing: append_file, file_exists, delete_file

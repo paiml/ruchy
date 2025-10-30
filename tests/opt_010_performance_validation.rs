@@ -8,6 +8,7 @@
 // - Measure execution time for various workloads
 
 #![allow(clippy::ignore_without_reason)] // Performance tests run with --ignored flag
+#![allow(missing_docs)]
 
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::bytecode::{Compiler, VM};
@@ -171,7 +172,7 @@ fn test_opt_010_fibonacci_speedup() {
 }
 
 #[test]
-#[ignore] // Only run manually for detailed performance analysis
+#[ignore = Only run manually for detailed performance analysis
 fn test_opt_010_comprehensive_performance_report() {
     println!("\n=== OPT-010: Comprehensive Performance Report ===\n");
 

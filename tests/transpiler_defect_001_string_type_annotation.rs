@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! TRANSPILER-DEFECT-001: String Type Annotations Don't Auto-Convert
 //!
 //! **Problem**: String literals with String type annotations don't auto-convert

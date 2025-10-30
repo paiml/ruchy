@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-085: Function Pointer Support (GitHub Issue #70)
 //!
 //! Tests for function pointer type syntax (`fn()` types) and higher-order functions.

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Regression tests for GitHub Issue #83: Runtime error when using format! macro
 // https://github.com/paiml/ruchy/issues/83
 //

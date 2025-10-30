@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-CLOSURE-RETURN: Functions returning closures fail with type inference error
 // ROOT CAUSE: Transpiler defaults to `-> i32` for any non-unit expression
 // FIX: Detect when function body is a closure and generate `impl Fn` return type

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for enum runtime support
 //!
 //! Tests enum variant construction and execution:

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-014: Impl blocks with generic target types
 // Tests for impl<T> Trait for Type<T> syntax
 

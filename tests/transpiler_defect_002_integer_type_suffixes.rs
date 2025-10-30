@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! TRANSPILER-DEFECT-002: Integer Literal Type Suffixes Not Preserved
 //!
 //! **Problem**: Integer literals with type suffixes (i32, i64, etc.) lose their suffix

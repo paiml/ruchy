@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB Phase 1: Remaining Environment Functions Tests
 //!
 //! **Task**: Implement remaining 6 environment functions

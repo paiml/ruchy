@@ -8,6 +8,7 @@
 // 3. REFACTOR: Add property tests ensuring AST equivalence
 
 #![allow(clippy::similar_names)] // formatter/formatted are acceptable in test code
+#![allow(missing_docs)]
 
 use ruchy::frontend::parser::Parser;
 use ruchy::quality::formatter::Formatter;

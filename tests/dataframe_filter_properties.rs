@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DF-002: `DataFrame` `filter()` Property Tests (EXTREME TDD)
 //!
 //! **CRITICAL**: Property tests with 10,000+ iterations per invariant to prove

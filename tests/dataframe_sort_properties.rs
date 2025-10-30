@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DF-004: `DataFrame` `sort_by()` Property Tests (EXTREME TDD Validation)
 //!
 //! **CRITICAL**: Property tests with 10,000+ iterations to prove `sort_by()` correctness.

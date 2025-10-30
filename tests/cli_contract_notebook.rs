@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy notebook`
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, notebook functionality)

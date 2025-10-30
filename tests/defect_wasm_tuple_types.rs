@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-WASM-TUPLE-TYPES: WASM tuple compilation should handle mixed types
 //
 // BUG: WASM compilation fails for tuples with mixed types (int + float)

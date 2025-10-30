@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! [SQLITE-TEST-001] Test Harness 1.1: Parser Grammar Coverage Suite
 //!
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.1
@@ -2597,7 +2598,7 @@ fn test_sqlite_366_trait_object_send_sync() {
 
 #[test] fn test_sqlite_742_attr_outer() { assert_parses("#[test] fun foo() { }"); }
 #[test] fn test_sqlite_743_attr_inner() { assert_parses("fun foo() { #![allow(unused)] }"); }
-#[test] fn test_sqlite_744_attr_multiple() { assert_parses("#[test] #[ignore] fun foo() { }"); }
+#[test] fn test_sqlite_744_attr_multiple() { assert_parses("#[test] #[ignore = "fun foo() { }"); }"]
 #[test] fn test_sqlite_745_attr_with_value() { assert_parses("#[cfg(target = \"x86\")] fun foo() { }"); }
 #[ignore = "Parser limitation: attribute with path not supported - needs [PARSER-244] ticket"]
 #[test] fn test_sqlite_746_attr_path() { assert_parses("#[some::path::attr] fun foo() { }"); }
@@ -3763,7 +3764,7 @@ fn test_sqlite_366_trait_object_send_sync() {
 // ============================================================================
 
 #[test] fn test_sqlite_1367_test_simple() { assert_parses("#[test] fn test_foo() { }"); }
-#[test] fn test_sqlite_1368_test_ignore() { assert_parses("#[test] #[ignore] fn test_foo() { }"); }
+#[test] fn test_sqlite_1368_test_ignore() { assert_parses("#[test] #[ignore = "fn test_foo() { }"); }"]
 #[test] fn test_sqlite_1369_test_should_panic() { assert_parses("#[test] #[should_panic] fn test_foo() { }"); }
 #[test] fn test_sqlite_1370_test_should_panic_msg() { assert_parses("#[test] #[should_panic(expected = \"panic\")] fn test_foo() { }"); }
 #[test] fn test_sqlite_1371_bench() { assert_parses("#[bench] fn bench_foo(b: &mut Bencher) { }"); }

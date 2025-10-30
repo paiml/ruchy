@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // HTTP-002-D: HTML Method Call Support (GitHub Issue #43)
 //
 // RED phase tests - These tests MUST FAIL initially, proving the bug exists

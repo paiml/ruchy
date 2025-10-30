@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-001: Type Conversion Functions
 // Test both interpreter (REPL) and transpiler modes
 

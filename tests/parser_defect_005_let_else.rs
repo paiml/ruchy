@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-PARSER-005: Let-else Pattern Syntax Not Supported
 //!
 //! ROOT CAUSE: Parser doesn't recognize `let pattern = expr else { diverging_block }` syntax

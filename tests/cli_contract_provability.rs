@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy provability`
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, formal verification)

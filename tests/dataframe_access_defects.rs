@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-DATAFRAME-001 & 002: `DataFrame` Indexing and Field Access
 //! 
 //! RED Phase Tests - Following EXTREME TDD

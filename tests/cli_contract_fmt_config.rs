@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Tests for formatter configuration integration
 //!
 //! Sprint 3 Phase 1: Configuration System

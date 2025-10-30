@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-COMPILE-MAIN-CALL: Stack Overflow on Double `main()` Call
 //!
 //! Ticket: DEFECT-COMPILE-MAIN-CALL

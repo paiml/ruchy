@@ -1,5 +1,6 @@
 //! Property-based tests for attribute and decorator parsing
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 
 //!
 //! This test suite validates attribute/decorator parsing functionality

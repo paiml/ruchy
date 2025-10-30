@@ -5,6 +5,7 @@
 //!
 
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
 use std::env;

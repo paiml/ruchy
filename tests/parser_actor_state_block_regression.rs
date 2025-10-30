@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! REGRESSION TEST: Actor State Block Default Values
 //!
 //! ROOT CAUSE: After DEFECT-PARSER-001 fix (removing `Token::State` keyword),

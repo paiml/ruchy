@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB Phase 2: File System Functions Tests
 //!
 //! **Task**: Implement 12 file system functions

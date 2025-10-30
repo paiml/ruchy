@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-003: std::time Module Implementation
 //
 // GitHub Issue: https://github.com/paiml/ruchy/issues/55

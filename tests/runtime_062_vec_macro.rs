@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // RUNTIME-062: vec! Macro Implementation (GitHub Issue #62)
 // Tests for vec! macro evaluation in interpreter
 // Ticket: RUNTIME-062

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PRIORITY-3: Zero Coverage - `eval_control_flow_new.rs`
 //! Integration tests exercising control flow through runtime
 

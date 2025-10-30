@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // 15-TOOL VALIDATION SUITE - PROGRAMMATIC TESTING
 // MANDATORY: All LANG-COMP examples MUST pass all 15 tools programmatically
 // Uses assert_cmd for deterministic, automated validation

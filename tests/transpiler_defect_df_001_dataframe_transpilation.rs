@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-TRANSPILER-DF-001 through DF-004: `DataFrame` Transpilation Tests
 //!
 //! Root Cause: Transpiler generates incorrect Polars API code for `DataFrames`

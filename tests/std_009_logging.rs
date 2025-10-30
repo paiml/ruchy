@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-009: Logging Module Tests (ruchy/std/logging)
 //!
 //! Test suite for Logging operations module.

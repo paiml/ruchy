@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-089: Fix parser handling of reference parameters with match expressions (GitHub Issue #73)
 //!
 //! ROOT CAUSE: When parsing a function with reference-type parameters (`&str`),

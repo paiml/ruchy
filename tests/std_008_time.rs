@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-008: Time Module Tests (ruchy/std/time)
 //!
 //! Test suite for Time operations module.

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Regression tests for Issue #81: panic!() and undefined functions return exit code 0
 //!
 //! Bug: panic!() and undefined function calls should return non-zero exit codes

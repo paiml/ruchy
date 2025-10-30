@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 
 // WASM REPL Evaluation Tests
 // Bug: WASM REPL returns AST debug string instead of evaluating code
@@ -231,7 +232,7 @@ mod property_tests {
 
     /// Property test: All valid integers should evaluate correctly
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored
+    #[ignore = Run with: cargo test property_tests -- --ignored
     fn proptest_integer_evaluation() {
         #[cfg(not(target_arch = "wasm32"))]
         {

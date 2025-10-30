@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy parse` (AST Pretty-Printer)
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, AST output)

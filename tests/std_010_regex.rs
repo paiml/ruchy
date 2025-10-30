@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-010: Regex Module Tests (ruchy/std/regex)
 //!
 //! Test suite for Regular Expression operations module.

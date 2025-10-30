@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-069: Fix turbofish syntax parsing in method calls
 // GitHub Issue: https://github.com/paiml/ruchy/issues/26
 //

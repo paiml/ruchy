@@ -5,6 +5,7 @@
 //! Simple test-based performance measurement to validate the 98-99% speedup claims
 
 #![allow(clippy::ignore_without_reason)] // Performance tests run with --ignored flag
+#![allow(missing_docs)]
 //! by comparing AST interpreter vs bytecode VM execution.
 //!
 //! This is a fallback approach that avoids criterion/linker complexity.
@@ -50,7 +51,7 @@ fn benchmark_code(name: &str, code: &str, iterations: u32) {
 }
 
 #[test]
-#[ignore] // Run with --ignored --nocapture
+#[ignore = Run with --ignored --nocapture
 fn test_opt_021_basic_arithmetic() {
     benchmark_code(
         "Basic Arithmetic (OPT-001)",

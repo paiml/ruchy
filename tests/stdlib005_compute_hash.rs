@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-005: compute_hash() Tests - MD5 File Hashing for Duplicate Detection
 //
 // Architecture: Simple composable primitive that computes MD5 hash of a file

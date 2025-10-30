@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI-UNIFY-005: Example Validation Tests
 //!
 //! **Purpose**: Validate all 10 CLI examples work with all 4 invocation patterns

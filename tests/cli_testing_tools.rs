@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // EXTREME TDD - RED PHASE: Tests written FIRST
 // Testing new CLI subcommands: property-tests, mutations, fuzz
 // These tests WILL FAIL until implementation is complete

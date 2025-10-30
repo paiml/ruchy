@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-061 & PARSER-080: Box<T> and Vec<T> Generics in Enum Variants
 //
 // Test Strategy:

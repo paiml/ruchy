@@ -1,11 +1,11 @@
 #![cfg(test)]
+#![allow(missing_docs)]
 #![allow(warnings)]
 #![allow(clippy::assertions_on_constants)]
 #![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Critical REPL Feature Tests
 //! These tests MUST pass or the product is broken
-
-#![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;

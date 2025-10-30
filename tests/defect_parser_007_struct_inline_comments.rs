@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-PARSER-007: Inline Comments in Struct Field Definitions
 //!
 //! **Problem**: Inline comments after struct field declarations cause "Expected field name" error

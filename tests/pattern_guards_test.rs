@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Pattern Guards Tests - HYBRID-C-5
 //! Empirical verification that pattern guards already work
 

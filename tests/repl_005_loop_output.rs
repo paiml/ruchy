@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! REPL-005: Fix for loop () output in REPL (Issue #5)
 //!
 //! Root Cause: for/while loops return `Value::Unit`, which gets printed as "nil"

@@ -6,6 +6,7 @@
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
 #![cfg(feature = "dataframe")]
+#![allow(missing_docs)]
 
 use std::fs;
 use std::path::Path;

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-016: pub(in path) visibility modifier
 //
 // ROOT CAUSE: Parser accepts pub(crate) and pub(super) but rejects pub(in path)

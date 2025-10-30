@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy quality-gate` command
 //
 // Purpose: Validate quality gate enforcement tool via CLI interface (Layer 4: Black Box)

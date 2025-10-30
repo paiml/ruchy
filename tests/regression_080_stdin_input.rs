@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Regression tests for Issue #80: Ruchy doesn't support stdin input
 //!
 //! Bug: `ruchy run -` should read from stdin (Unix convention)

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-PARSER-001: Parse Error with Blank Line Before Function with `let mut`
 //!
 //! ROOT CAUSE: Parser fails to properly close function block scope when:

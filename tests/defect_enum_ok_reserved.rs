@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-ENUM-OK-RESERVED: Parser should accept reserved keywords as enum variant names
 //
 // BUG: Parser rejects 'Ok' and 'Err' as enum variant names inside functions

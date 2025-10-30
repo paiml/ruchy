@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy fmt` command
 //
 // Purpose: Validate fmt tool behavior via CLI interface (Layer 4: Black Box)

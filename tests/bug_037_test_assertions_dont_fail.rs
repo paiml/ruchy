@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-037: Test Assertions Don't Fail Tests (CRITICAL)
 //!
 //! **Problem**: `ruchy test` reports PASS even when assertions fail

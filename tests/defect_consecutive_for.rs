@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-CONSECUTIVE-FOR: Parser fails on consecutive for loops
 // ROOT CAUSE: Parser doesn't properly handle multiple for loops in sequence
 // FIX: Parser must allow consecutive loop statements

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Sprint 2 Phase 4: High Priority `ExprKind` Variants
 //!
 //! Ticket: [FMT-PERFECT-009]

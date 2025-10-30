@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! NOTEBOOK-009 Phase 6: Notebook Validation Tests
 //!
 //! Automated testing for .rnb notebook files:

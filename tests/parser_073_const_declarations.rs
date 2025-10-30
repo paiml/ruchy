@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-073: Const variable declarations (GitHub Issue #57, Part 2/3)
 //
 // Root Cause: Parser only accepts `const fun` or `const fn`, not `const VARIABLE = value`

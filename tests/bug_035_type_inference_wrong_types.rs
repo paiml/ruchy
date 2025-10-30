@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-035: Type Inference Generates Incorrect Types
 //!
 //! **Problem**: Type inference generates i32 for all parameters, even string paths

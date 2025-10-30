@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! `DataFrame` Access Validation Tests
 //!
 //! Comprehensive validation that DEFECT-DATAFRAME-001 and DEFECT-DATAFRAME-002 are fixed

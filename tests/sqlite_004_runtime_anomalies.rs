@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! [SQLITE-TEST-004] Test Harness 1.4: Runtime Anomaly Validation Suite
 //!
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.4

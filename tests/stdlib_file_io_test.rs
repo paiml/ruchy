@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-008: File I/O functions (`file_exists`, `append_file`, `delete_file`)
 //!
 //! ROOT CAUSE: Missing basic file system operations

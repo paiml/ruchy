@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Tests for LINT-008: Variables used in format! macros marked as unused (Issue #8)
 // GitHub Issue: https://github.com/paiml/ruchy/issues/8
 //

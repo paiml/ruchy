@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 
 //! CLI INTERACTIVE VALIDATION SUITE (rexpect-based)
 //!
@@ -33,7 +34,7 @@ fn temp_dir() -> TempDir {
 // ============================================================================
 
 #[test]
-#[ignore] // Requires terminal - run manually or in CI with PTY
+#[ignore = Requires terminal - run manually or in CI with PTY
 fn repl_interactive_arithmetic() {
     let binary = ruchy_binary();
 
@@ -57,7 +58,7 @@ fn repl_interactive_arithmetic() {
 }
 
 #[test]
-#[ignore] // Requires terminal
+#[ignore = Requires terminal
 fn repl_interactive_function_definition() {
     let binary = ruchy_binary();
     let mut repl = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
@@ -76,7 +77,7 @@ fn repl_interactive_function_definition() {
 }
 
 #[test]
-#[ignore] // Requires terminal
+#[ignore = Requires terminal
 fn repl_interactive_error_recovery() {
     let binary = ruchy_binary();
     let mut repl = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
@@ -181,7 +182,7 @@ fn cli_handles_ctrl_c_gracefully() {
 // ============================================================================
 
 #[test]
-#[ignore] // Requires PTY
+#[ignore = Requires PTY
 fn repl_detects_interactive_tty() {
     let binary = ruchy_binary();
     let mut proc = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
@@ -357,7 +358,7 @@ println(sum)
 }
 
 #[test]
-#[ignore] // Resource intensive
+#[ignore = Resource intensive
 fn cli_handles_memory_intensive_operations() {
     let binary = ruchy_binary();
     let output = std::process::Command::new(binary)

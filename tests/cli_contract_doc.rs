@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy doc` command
 use assert_cmd::Command;
 use predicates::prelude::*;

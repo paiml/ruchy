@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! RED TEST for Issue #39: Match with if-else in arm causes parser error
 //!
 //! BUG: Parser fails when match arm contains if-else block

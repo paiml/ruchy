@@ -1,10 +1,13 @@
 // tests/http_server_cli.rs - HTTP Server CLI Tests (EXTREME TDD)
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 
 // [HTTP-001] RED Phase: Write failing tests FIRST
 
 #![allow(clippy::similar_names)] // coop/coep are standard HTTP header abbreviations
+#![allow(missing_docs)]
 #![allow(clippy::zombie_processes)] // Test processes are explicitly killed in tests
+#![allow(missing_docs)]
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -474,10 +477,10 @@ fn test_http003_html_coop_header() {
 #[test]
 fn test_red_phase_validation() {
     // This test ensures we're in RED phase
-    // All #[ignore] tests above MUST fail when un-ignored
+    // All #[ignore = "tests above MUST fail when un-ignored"]
 
     println!("✅ RED Phase: 5 failing tests created");
     println!("✅ Property tests: 2 tests with 10K iterations each");
-    println!("🔴 Next: Remove #[ignore] and watch tests FAIL");
+    println!("🔴 Next: Remove #[ignore = "and watch tests FAIL");"]
     println!("🟢 Then: Implement ruchy serve to make tests PASS");
 }
