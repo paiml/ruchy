@@ -4,7 +4,7 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-## [3.149.0] - 2025-10-30
+## [3.150.0] - 2025-10-30
 
 ### Added
 - **[ISSUE-088] Module system (use imports)** - Enables multi-file program development
@@ -17,6 +17,9 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/runtime/interpreter.rs (+40 lines), src/backend/module_loader.rs (+1), tests/issue_088_module_imports.rs (NEW, 261 lines)
   - Commit: 42f4019e
 
+## [3.149.0] - 2025-10-30
+
+### Added
 - **[DEBUGGER-014] Phase 3: Type-aware tracing** - Enhanced `--trace` flag with type annotations
   - Tracing now shows argument and return value types: `TRACE: → square(5: integer)`
   - Before: `TRACE: → square(5)` / `TRACE: ← square = 25`
