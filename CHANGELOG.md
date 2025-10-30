@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[ISSUE-063] Fix `make quality-web` target for frontend quality checks**
+  - Corrected HTML linting paths: `static/**/*.html` (was `assets/**/*.html testing/**/*.html`)
+  - Added ESLint configuration (.eslintrc.json) for TypeScript linting
+  - Fixed unused variable warning in 00-smoke-test.spec.ts (renamed `page` to `_page`)
+  - Changed target to focus on fast linting (< 10s) instead of running full E2E suite
+  - E2E tests now run separately via `make test-e2e` or `make test-e2e-smoke`
+  - All linting now passes: HTML (2 files, 0 errors), TS (0 warnings)
+  - Fixes GitHub Issue #63 (Web Quality Alert - automated maintenance)
+  - Files: Makefile (quality-web target refactored), .eslintrc.json (NEW), tests/e2e/notebook/00-smoke-test.spec.ts (+1 line fix)
+
 ## [3.152.0] - 2025-10-30
 
 ### Added
