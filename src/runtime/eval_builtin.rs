@@ -194,10 +194,10 @@ fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, I
     match name {
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
-        // BUG-037: Test assertions
+        // Test assertion built-ins for unit testing support
         "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
         "__builtin_assert__" => Ok(Some(eval_assert(args)?)),
-        // STDLIB-004: Advanced array utilities
+        // Advanced array utilities for functional programming patterns
         "__builtin_zip__" => Ok(Some(eval_zip(args)?)),
         "__builtin_enumerate__" => Ok(Some(eval_enumerate(args)?)),
         _ => Ok(None),

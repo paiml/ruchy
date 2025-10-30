@@ -16,6 +16,16 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/runtime/interpreter.rs (`slice_string` helper + index_access match arm), tests/issue_094_string_slicing.rs (NEW, 191 lines, 12 tests)
 
 ### Fixed
+- **[QUALITY-008] Remove SATD comments from active source code (Phase 2: CRITICAL+HIGH)**
+  - Removed 4 CRITICAL TDD DEBUG println statements from production notebook server code
+  - Replaced 3 HIGH historic bug reference comments (BUG-037, STDLIB-004) with proper documentation
+  - PMAT SATD violations reduced: 22 → 20 (7 violations eliminated total across Phase 1+2)
+  - Production log noise eliminated - TDD DEBUG statements removed from server.rs
+  - All 4028 library tests passing, zero regressions
+  - Enforces zero-tolerance SATD policy from CLAUDE.md
+  - Fixes GitHub Issue #95 Phase 2 (code quality - PMAT SATD analysis)
+  - Files: src/notebook/server.rs (4 TDD DEBUG removed), src/runtime/builtin_init.rs:159 (BUG-037), src/runtime/eval_builtin.rs:197+200 (BUG-037 + STDLIB-004)
+
 - **[QUALITY-008] Remove SATD comments from active source code (Phase 1: HIGH/CRITICAL)**
   - Removed 4 historic bug reference comments (BUG-XXX, DEFECT-XXX, PARSER-XXX FIX)
   - Replaced with proper documentation explaining WHY, not documenting WHAT was fixed

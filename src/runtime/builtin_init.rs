@@ -156,7 +156,7 @@ fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
         "typeof".to_string(),
         Value::from_string("__builtin_type__".to_string()),
     );
-    // BUG-037: Test assertions
+    // Test assertion built-ins for unit testing support
     global_env.insert(
         "assert_eq".to_string(),
         Value::from_string("__builtin_assert_eq__".to_string()),
