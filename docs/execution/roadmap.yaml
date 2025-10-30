@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.68"
+  version: "3.69"
   last_updated: "2025-10-30"
   current_sprint: "🔄 IN_PROGRESS - Phase 4 Week 3: Performance Benchmarking + Debugger Enhancement"
-  latest_release: "v3.150.0"
-  latest_commit_message: "[ISSUE-089] Support stdlib 'use' statements in imported modules"
+  latest_release: "v3.151.0"
+  latest_commit_message: "[RELEASE] Bump version to v3.151.0 - Stdlib imports in modules (Issue #89)"
   next_phase: "DEBUGGER-014 Phase 2: Type-aware tracing (optional enhancement)"
   session_summary_2025_10_30_complete:
     accomplishments:
@@ -758,7 +758,7 @@ metadata:
           - "Eliminates 'Failed to load module' errors for std::* imports"
           - "Preserves existing Issue #88 file module loading"
           - "Natural follow-up to Issue #88 module system"
-        version_fixed: "v3.150.0"
+        version_fixed: "v3.151.0"
         extreme_tdd: "RED (5 failing tests) → GREEN (all passing) → REFACTOR (simplified unrelated bugs)"
       - id: 85
         url: "https://github.com/paiml/ruchy/issues/85"
