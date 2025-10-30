@@ -7076,8 +7076,7 @@ impl Interpreter {
     }
 
     // ========================================================================
-    // EXTREME TDD: stdout Capture for WASM/REPL
-    // Bug: https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT
+    // stdout Capture for WASM/REPL
     // ========================================================================
 
     /// Capture println output to stdout buffer
