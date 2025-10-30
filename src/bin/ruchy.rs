@@ -1050,6 +1050,7 @@ mod tests {
             vm_mode: VmMode::Ast,
             file: None,
             command: None,
+            trace: false,
         };
         let result = try_handle_direct_evaluation(&cli);
         assert!(result.is_some());
@@ -1067,6 +1068,7 @@ mod tests {
             vm_mode: VmMode::Ast,
             file: Some(temp_file.path().to_path_buf()),
             command: None,
+            trace: false,
         };
         let result = try_handle_direct_evaluation(&cli);
         assert!(result.is_some());
@@ -1081,6 +1083,7 @@ mod tests {
             vm_mode: VmMode::Ast,
             file: None,
             command: None,
+            trace: false,
         };
         let result = try_handle_direct_evaluation(&cli);
         assert!(result.is_none());
