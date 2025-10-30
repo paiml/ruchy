@@ -4760,6 +4760,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rexpect",
+ "ruchyruchy",
  "rustyline",
  "serde",
  "serde-wasm-bindgen",
@@ -4802,6 +4803,15 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
+]
+
+[[package]]
+name = "ruchyruchy"
+version = "1.8.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
