@@ -296,7 +296,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // PARSER-079: Break statements in blocks not yet working
+    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_for_loop() {
         let code = "'outer: for i in 0..10 { break 'outer }";
         let result = Parser::new(code).parse();
@@ -304,7 +304,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // PARSER-079: Break statements in blocks not yet working
+    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_while_loop() {
         let code = "'outer: while true { break 'outer }";
         let result = Parser::new(code).parse();
@@ -312,7 +312,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // PARSER-079: Break statements in blocks not yet working
+    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_infinite_loop() {
         let code = "'outer: loop { break 'outer }";
         let result = Parser::new(code).parse();
@@ -327,21 +327,21 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_for_loops_never_panic(var in "[a-z]+", n in 0u32..100) {
                 let code = format!("for {var} in 0..{n} {{ }}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_while_loops_never_panic(var in "[a-z]+", n in 0i32..100) {
                 let code = format!("while {var} < {n} {{ }}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_infinite_loops_always_parse(_seed in any::<u32>()) {
                 let code = "loop { break }";
                 let result = Parser::new(code).parse();
@@ -349,7 +349,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_labeled_loops_parse(label in "[a-z]+") {
                 let code = format!("'{label}: loop {{ break '{label}  }}");
                 let result = Parser::new(&code).parse();
@@ -357,7 +357,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_for_tuple_destructuring(var1 in "[a-z]+", var2 in "[a-z]+") {
                 let code = format!("for {var1}, {var2} in pairs {{ }}");
                 let result = Parser::new(&code).parse();
@@ -365,7 +365,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_while_let_always_has_pattern(var in "[a-z]+") {
                 let code = format!("while let Some({var}) = opt {{ }}");
                 let result = Parser::new(&code).parse();
@@ -373,7 +373,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_loops_parse(depth in 1usize..5) {
                 let mut code = String::new();
                 for i in 0..depth {

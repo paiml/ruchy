@@ -254,14 +254,14 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_plain_text_always_parses(text in "[a-zA-Z0-9 ]{0,100}") {
                 let result = parse_fstring_into_parts(&text);
                 prop_assert!(result.is_ok(), "Plain text should always parse");
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_escaped_braces_parse(n in 0..10usize) {
                 let text = "{{".repeat(n);
                 let result = parse_fstring_into_parts(&text);
@@ -269,7 +269,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_simple_variable_interpolation(var in "[a-z][a-z0-9]{0,10}") {
                 let text = format!("Value: {{{var}}}");
                 let result = parse_fstring_into_parts(&text);
@@ -277,7 +277,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multiple_interpolations(n in 1..5usize) {
                 let text = (0..n).map(|i| format!("{{x{i}}}")).collect::<Vec<_>>().join(" ");
                 let result = parse_fstring_into_parts(&text);
@@ -285,7 +285,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_unmatched_closing_brace_fails(text in "[a-zA-Z0-9]{0,10}") {
                 let bad_text = format!("{text}}}");
                 let result = parse_fstring_into_parts(&bad_text);
@@ -293,7 +293,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_empty_string_parses(_n in 0..100) {
                 let result = parse_fstring_into_parts("");
                 prop_assert!(result.is_ok(), "Empty string should parse");
@@ -302,7 +302,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_escaped_sequences_have_half_braces(n in 1..10usize) {
                 let input = "{{".repeat(n);
                 let result = parse_fstring_into_parts(&input);

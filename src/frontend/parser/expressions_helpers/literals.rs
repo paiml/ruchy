@@ -194,28 +194,28 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_integers_never_panic(n in any::<i32>()) {
                 let code = format!("{n}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_floats_never_panic(f in any::<f64>().prop_filter("finite", |x| x.is_finite())) {
                 let code = format!("{f}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_strings_never_panic(s in "\\PC*") {
                 let code = format!("\"{}\"", s.replace('"', "\\\""));
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_bools_always_parse(b in any::<bool>()) {
                 let code = format!("{b}");
                 let result = Parser::new(&code).parse();
@@ -223,7 +223,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_integer_type_suffixes(n in any::<i32>(),
                                           suffix in prop::sample::select(vec!["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"])) {
                 let code = format!("{n}{suffix}");
@@ -232,7 +232,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_hex_integers_parse(n in 0u32..=0xFFFF) {
                 let code = format!("0x{n:X}");
                 let result = Parser::new(&code).parse();

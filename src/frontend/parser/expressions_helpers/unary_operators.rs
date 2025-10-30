@@ -233,7 +233,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_negate_parses(n in any::<i32>()) {
                 let code = format!("-{n}");
                 let result = Parser::new(&code).parse();
@@ -241,7 +241,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_not_parses(b in any::<bool>()) {
                 let code = format!("!{b}");
                 let result = Parser::new(&code).parse();
@@ -249,7 +249,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_bitwise_not_parses(n in any::<u32>()) {
                 let code = format!("~{n}");
                 let result = Parser::new(&code).parse();
@@ -257,7 +257,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_negations_parse(depth in 1..5usize) {
                 let negations = "-".repeat(depth);
                 let code = format!("{negations}42");

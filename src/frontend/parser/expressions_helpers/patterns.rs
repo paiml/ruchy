@@ -1293,7 +1293,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_identifier_patterns_parse(name in "[a-z][a-z0-9_]*") {
                 let code = format!("let {name} = 42");
                 let result = Parser::new(&code).parse();
@@ -1301,7 +1301,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_tuple_patterns_parse(a in "[a-z]+", b in "[a-z]+") {
                 let code = format!("let ({a}, {b}) = (1, 2)");
                 let result = Parser::new(&code).parse();
@@ -1309,7 +1309,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_list_patterns_parse(name in "[a-z]+") {
                 let code = format!("let [{name}, ...rest] = [1, 2, 3]");
                 let result = Parser::new(&code).parse();
@@ -1317,7 +1317,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_some_patterns_parse(inner in "[a-z]+") {
                 let code = format!("let Some({inner}) = value");
                 let result = Parser::new(&code).parse();
@@ -1325,7 +1325,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_wildcard_always_parses(_seed in any::<u32>()) {
                 let code = "let _ = 42";
                 let result = Parser::new(code).parse();
@@ -1333,7 +1333,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_literal_patterns_parse(n in 0i32..1000) {
                 let code = format!("match x {{ {n} => true, _ => false }}");
                 let result = Parser::new(&code).parse();
@@ -1341,7 +1341,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_struct_patterns_parse(field in "[a-z]+") {
                 let code = format!("let Point {{ {field} }} = p");
                 let result = Parser::new(&code).parse();

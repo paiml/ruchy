@@ -303,7 +303,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_all_arithmetic_tokens_map(_n in 0..100) {
                 let tokens = vec![
                     Token::Plus, Token::Minus, Token::Star,
@@ -316,7 +316,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_all_comparison_tokens_map(_n in 0..100) {
                 let tokens = vec![
                     Token::EqualEqual, Token::NotEqual,
@@ -330,7 +330,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_all_logical_tokens_map(_n in 0..100) {
                 let tokens = vec![Token::AndAnd, Token::OrOr, Token::NullCoalesce];
                 for token in tokens {
@@ -340,7 +340,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_precedence_is_positive(_n in 0..100) {
                 let ops = vec![
                     BinaryOp::Add, BinaryOp::Multiply, BinaryOp::Power,
@@ -353,7 +353,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_precedence_bounded(_n in 0..100) {
                 let ops = vec![
                     BinaryOp::Add, BinaryOp::Multiply, BinaryOp::Power,
@@ -367,7 +367,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multiply_binds_tighter_than_add(_a in 1..100, _b in 1..100) {
                 let mul_prec = get_precedence(BinaryOp::Multiply);
                 let add_prec = get_precedence(BinaryOp::Add);
@@ -376,7 +376,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_power_binds_tightest(_a in 1..100) {
                 let power_prec = get_precedence(BinaryOp::Power);
                 let other_ops = vec![

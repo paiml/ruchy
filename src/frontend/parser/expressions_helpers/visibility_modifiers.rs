@@ -533,7 +533,7 @@ mod tests {
         // Property: All valid visibility modifiers should parse without panic
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_visibility_modifiers_never_panic(modifier in prop::sample::select(vec![
                 "pub", "pub(crate)", "pub(super)", "const", "sealed",
                 "final", "abstract", "unsafe"
@@ -546,7 +546,7 @@ mod tests {
         // Property: pub(crate) and pub(super) are semantically equivalent for parsing
         proptest! {
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_pub_crate_super_equivalent_parsing(
                 fn_name in "[a-z][a-z0-9_]{0,10}"
             ) {
@@ -564,7 +564,7 @@ mod tests {
         // Property: final can be used as identifier or modifier
         proptest! {
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_final_dual_usage(use_as_modifier in prop::bool::ANY) {
                 let code = if use_as_modifier {
                     "final class Test {}"
@@ -580,7 +580,7 @@ mod tests {
         // Property: Combining pub with other modifiers should work
         proptest! {
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_pub_combinations(
                 modifier in prop::sample::select(vec!["const", "unsafe"])
             ) {
@@ -593,7 +593,7 @@ mod tests {
         // Property: Invalid modifier combinations should fail gracefully
         proptest! {
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_invalid_modifiers_fail_gracefully(
                 invalid in prop::sample::select(vec![
                     "sealed fn", "abstract struct", "final trait"
@@ -609,7 +609,7 @@ mod tests {
         // Property: Class modifiers only work with classes
         proptest! {
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_class_modifiers_require_class(
                 modifier in prop::sample::select(vec!["sealed", "abstract", "final"])
             ) {

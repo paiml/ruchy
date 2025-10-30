@@ -281,7 +281,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_basic_traits_parse(name in "[A-Z][a-z]+", method in "[a-z]+") {
                 let code = format!("trait {name} {{ fun {method}() }}");
                 let result = Parser::new(&code).parse();
@@ -289,7 +289,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_generic_traits_parse(name in "[A-Z][a-z]+", param in "[A-Z]") {
                 let code = format!("trait {name}<{param}> {{ }}");
                 let result = Parser::new(&code).parse();
@@ -297,7 +297,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_traits_with_associated_types(name in "[A-Z][a-z]+", type_name in "[A-Z][a-z]+") {
                 let code = format!("trait {name} {{ type {type_name} }}");
                 let result = Parser::new(&code).parse();
@@ -305,7 +305,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_interface_keyword_parses(name in "[A-Z][a-z]+") {
                 let code = format!("interface {name} {{ }}");
                 let result = Parser::new(&code).parse();
@@ -313,7 +313,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_empty_traits_parse(name in "[A-Z][a-z]+") {
                 let code = format!("trait {name} {{}}");
                 let result = Parser::new(&code).parse();
