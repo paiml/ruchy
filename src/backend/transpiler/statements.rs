@@ -732,8 +732,8 @@ impl Transpiler {
             is_param_used_numerically,
         };
 
-        // BUG-035 FIX: Check built-in function signatures FIRST
-        // This gives us precise type information for stdlib functions
+        // Check built-in function signatures first to get precise type information
+        // for stdlib functions. Built-in signatures are more reliable than heuristics.
         if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
             if type_hint == "&str" {
                 return quote! { &str };
@@ -799,10 +799,11 @@ impl Transpiler {
         } else if name == "main" {
             Ok(quote! {})
         } else if self.returns_closure(body) {
-            // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
-            // Functions returning closures should have `impl Fn` return type
+            // Functions returning closures need `impl Fn` return type annotation.
+            // Without this, Rust cannot infer the closure signature.
             Ok(quote! { -> impl Fn(i32) -> i32 })
-        // BUG-035 FIX: Infer return type from built-in function calls
+        // Infer return type from built-in function calls to provide accurate type hints.
+        // Built-in stdlib functions have well-defined return types.
         } else if let Some(return_ty) = infer_return_type_from_builtin_call(body) {
             match return_ty {
                 "String" => {
@@ -1031,11 +1032,12 @@ impl Transpiler {
 
         let attr_name = format_ident!("{}", attr.name);
 
-        // BUG-033: Rust's #[test] attribute takes NO arguments
-        // Strip descriptions: @test("desc") → #[test]
+        // Rust's #[test] attribute takes no arguments, unlike Ruchy's @test("desc").
+        // Strip descriptions to match Rust's syntax: @test("desc") → #[test]
         if attr.name == "test" {
-            // PARSER-077 FIX: Manual TokenStream construction with Spacing::Joint
-            let pound = Punct::new('#', Spacing::Joint);  // Joint = no space after
+            // Manual TokenStream construction with Spacing::Joint ensures no space after #.
+            // This produces #[test] instead of # [test], which is a syntax error.
+            let pound = Punct::new('#', Spacing::Joint);
             let attr_tokens = quote! { #attr_name };
             let group = Group::new(Delimiter::Bracket, attr_tokens);
 

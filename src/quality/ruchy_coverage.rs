@@ -360,7 +360,9 @@ impl RuchyCoverageCollector {
         use crate::frontend::parser::Parser;
         use crate::runtime::repl::Repl;
 
-        // BUG-036 FIX: Analyze file first to populate total_lines and total_functions
+        // Analyze file before execution to ensure coverage metrics are initialized.
+        // Without pre-analysis, total_lines and total_functions remain zero,
+        // resulting in NaN or incorrect coverage percentages.
         self.analyze_file(file_path)?;
 
         let file_str = file_path.to_str().unwrap_or("unknown");
