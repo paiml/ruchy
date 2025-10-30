@@ -2,11 +2,11 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.67"
+  version: "3.68"
   last_updated: "2025-10-30"
   current_sprint: "🔄 IN_PROGRESS - Phase 4 Week 3: Performance Benchmarking + Debugger Enhancement"
   latest_release: "v3.150.0"
-  latest_commit_message: "[RELEASE] Bump version to v3.150.0 - Module system (Issue #88)"
+  latest_commit_message: "[ISSUE-089] Support stdlib 'use' statements in imported modules"
   next_phase: "DEBUGGER-014 Phase 2: Type-aware tracing (optional enhancement)"
   session_summary_2025_10_30_complete:
     accomplishments:
@@ -717,8 +717,49 @@ metadata:
           - "Unblocks large program organization"
           - "Module isolation via environment scoping"
           - "Qualified name resolution via field access"
-        version_fixed: "v3.149.0"
+        version_fixed: "v3.150.0"
         extreme_tdd: "RED (6 failing tests) → GREEN (all passing) → REFACTOR (documented)"
+      - id: 89
+        url: "https://github.com/paiml/ruchy/issues/89"
+        title: "Support stdlib 'use' statements in imported modules"
+        impact: "RUNTIME - Blocked stdlib usage in module files"
+        ticket: "ISSUE-089"
+        priority: "MEDIUM"
+        status: "✅ CLOSED - Implemented (stdlib imports in modules)"
+        closed_date: "2025-10-30"
+        context: "Module files could not contain use std::* statements without errors"
+        problem:
+          - "use std::process::Command; in module file causes 'Failed to load module' error"
+          - "ModuleLoader tries to load std/process/Command.ruchy file instead of recognizing stdlib"
+          - "Modules forced to use fully qualified names without any use statements"
+        root_cause:
+          - "Import handler treats ALL imports as file modules"
+          - "No namespace check to distinguish stdlib (std::*) from file modules"
+          - "Stdlib types already in global environment, but handler tries file load anyway"
+        solution:
+          - "Added namespace check in Import handler (interpreter.rs:1216)"
+          - "If module.starts_with('std::') → skip file loading, return Ok(Nil)"
+          - "File modules continue normal load workflow"
+          - "Stdlib imports now syntax sugar (types already available via qualified names)"
+        test_results:
+          total: 5
+          passing: 5
+          tests:
+            - "test_issue_089_stdlib_import_in_module (basic stdlib import in module)"
+            - "test_issue_089_multiple_stdlib_imports (multiple stdlib use statements)"
+            - "test_issue_089_transitive_stdlib_imports (module imports module with stdlib)"
+            - "test_issue_089_standalone_stdlib_imports_still_work (sanity check)"
+            - "test_issue_089_mixed_stdlib_and_file_imports (both stdlib + file modules)"
+        files_modified:
+          - "src/runtime/interpreter.rs (+18 lines, namespace check)"
+          - "tests/issue_089_stdlib_imports_in_modules.rs (NEW - 308 lines, 5 tests)"
+        impact_metrics:
+          - "Modules can now use stdlib APIs with use statements"
+          - "Eliminates 'Failed to load module' errors for std::* imports"
+          - "Preserves existing Issue #88 file module loading"
+          - "Natural follow-up to Issue #88 module system"
+        version_fixed: "v3.150.0"
+        extreme_tdd: "RED (5 failing tests) → GREEN (all passing) → REFACTOR (simplified unrelated bugs)"
       - id: 85
         url: "https://github.com/paiml/ruchy/issues/85"
         title: "Command execution (std::process::Command) not implemented"

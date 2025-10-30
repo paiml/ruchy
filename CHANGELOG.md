@@ -17,6 +17,15 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/runtime/interpreter.rs (+40 lines), src/backend/module_loader.rs (+1), tests/issue_088_module_imports.rs (NEW, 261 lines)
   - Commit: 42f4019e
 
+- **[ISSUE-089] Support stdlib 'use' statements in imported modules**
+  - Modules can now contain `use std::*` statements without "Failed to load module" errors
+  - Added namespace check: stdlib imports (`std::*`) skip file loading (already in global env)
+  - File modules (mylib) continue to load from filesystem as normal
+  - 5 comprehensive tests: basic, multiple, transitive, standalone, mixed imports
+  - Fixes GitHub Issue #89 (MEDIUM priority - stdlib imports in modules blocked)
+  - Files: src/runtime/interpreter.rs (+18 lines, namespace check), tests/issue_089_stdlib_imports_in_modules.rs (NEW, 308 lines, 5 tests)
+  - Commit: 89468c7b
+
 ## [3.149.0] - 2025-10-30
 
 ### Added
