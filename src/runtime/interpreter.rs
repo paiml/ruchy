@@ -241,6 +241,10 @@ pub struct Interpreter {
     /// Stdout buffer for capturing println output (WASM/REPL)
     /// Complexity: 1 (simple field addition)
     stdout_buffer: Vec<String>,
+
+    /// Module loader for multi-file programs (Issue #88)
+    /// Enables `use module;` imports
+    module_loader: crate::backend::module_loader::ModuleLoader,
 }
 
 /// Error scope for try/catch blocks
@@ -839,6 +843,7 @@ impl Interpreter {
             gc: ConservativeGC::new(),
             error_scopes: Vec::new(),
             stdout_buffer: Vec::new(),       // Initialize empty stdout buffer
+            module_loader: crate::backend::module_loader::ModuleLoader::new(), // Issue #88
         }
     }
 
@@ -1199,8 +1204,45 @@ impl Interpreter {
 
                 Ok(Value::Nil)
             }
-            ExprKind::Import { .. } | ExprKind::ImportDefault { .. } => {
-                // TODO: Implement other import variants
+            ExprKind::Import { module, items: _ } => {
+                // Issue #88: Load module from file system and execute it
+                // Example: `use mylib;` loads mylib.ruchy
+
+                // Load the module file
+                let parsed_module = self.module_loader
+                    .load_module(module)
+                    .map_err(|e| InterpreterError::RuntimeError(
+                        format!("Failed to load module '{}': {}", module, e)
+                    ))?;
+
+                // Create a new environment scope for the module
+                let mut module_env = HashMap::new();
+
+                // Evaluate the module AST to execute its definitions
+                // We need to push a new environment, evaluate, then pop
+                self.env_stack.push(module_env.clone());
+                let eval_result = self.eval_expr(&parsed_module.ast);
+                module_env = self.env_stack.pop().unwrap();
+
+                // Check for evaluation errors
+                eval_result?;
+
+                // Create a module namespace object containing all exported symbols
+                let mut module_object = std::collections::HashMap::new();
+                for (name, value) in module_env {
+                    module_object.insert(name, value);
+                }
+
+                // Add the module object to global environment
+                // This allows `mylib::add` to work via field access
+                if let Some(global_env) = self.env_stack.first_mut() {
+                    global_env.insert(module.clone(), Value::Object(module_object.into()));
+                }
+
+                Ok(Value::Nil)
+            }
+            ExprKind::ImportDefault { .. } => {
+                // TODO: Implement ImportDefault variant
                 Ok(Value::Nil)
             }
             // Handle vec! macro (GitHub Issue #62)
