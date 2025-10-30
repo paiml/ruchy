@@ -229,7 +229,9 @@ impl Repl {
         for (name, value) in sorted_vars {
             hasher.update(name.as_bytes());
             hasher.update(b":");
-            hasher.update(format!("{value:?}").as_bytes());
+            // FIX Issue #86: Use to_string() instead of {:?} to ensure deterministic
+            // serialization of nested HashMaps in Value::Object
+            hasher.update(value.to_string().as_bytes());
             hasher.update(b";");
         }
         format!("{:x}", hasher.finalize())
@@ -241,7 +243,6 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    #[ignore = "RED phase: Non-deterministic execution - hashes differ between runs (Issue #86)"]
     fn test_deterministic_execution() {
         // Each test gets isolated temp directory for idempotence
         let temp_dir1 = TempDir::new().unwrap();
@@ -436,7 +437,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "RED phase: Non-deterministic execution - hashes differ between runs (Issue #86)"]
     fn test_execute_with_seed_state_hash_determinism() {
         // Mutation test: The comparison operators (==) and boolean operators (&&)
         // in lines 71-80 are currently DEAD CODE because s is always "success"
