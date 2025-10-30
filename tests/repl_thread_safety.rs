@@ -14,7 +14,7 @@ use ruchy::runtime::Repl;
 /// This is the RED phase test - it MUST fail with Rc, MUST pass with Arc.
 /// Currently fails due to Rc<markup5ever_rcdom::Node> in HTML parsing.
 #[test]
-#[ignore] // RED phase: Fails due to Rc in markup5ever_rcdom (HTML parsing dependency)
+#[ignore = "RED phase: Fails due to Rc in markup5ever_rcdom - requires Arc refactoring"]
 fn test_repl_is_send() {
     fn assert_send<T: Send>() {}
     assert_send::<Repl>(); // FAILS with Rc, PASSES with Arc
@@ -24,7 +24,7 @@ fn test_repl_is_send() {
 ///
 /// This proves the practical use case: sharing Repl in Arc<Mutex<Repl>>
 #[test]
-#[ignore] // Cannot compile with Rc-based Values
+#[ignore = "RED phase: Cannot compile with Rc-based Values - requires Arc refactoring"]
 fn test_repl_shared_across_threads() {
     use std::sync::{Arc, Mutex};
     use std::thread;

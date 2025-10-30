@@ -358,7 +358,7 @@ fn test_langcomp_011_04_range_patterns_example_file() {
 // ============================================================================
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_langcomp_011_property_range_bounds() {
     // Property test: All valid ranges should execute successfully
     // This test is ignored by default due to long runtime (10000 cases)

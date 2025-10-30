@@ -58,7 +58,7 @@ fn test_opt_021_basic_arithmetic() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_complex_arithmetic() {
     benchmark_code(
         "Complex Arithmetic (OPT-001)",
@@ -68,7 +68,7 @@ fn test_opt_021_complex_arithmetic() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_variables() {
     benchmark_code(
         "Variable Access (OPT-002)",
@@ -78,7 +78,7 @@ fn test_opt_021_variables() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_comparisons() {
     benchmark_code(
         "Comparisons (OPT-003)",
@@ -88,7 +88,7 @@ fn test_opt_021_comparisons() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_logical_ops() {
     benchmark_code(
         "Logical Operations (OPT-004)",
@@ -98,7 +98,7 @@ fn test_opt_021_logical_ops() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_while_loop() {
     benchmark_code(
         "While Loop (OPT-006)",
@@ -116,7 +116,7 @@ fn test_opt_021_while_loop() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_assignments() {
     benchmark_code(
         "Assignments (OPT-008)",
@@ -132,7 +132,7 @@ fn test_opt_021_assignments() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_for_loop() {
     benchmark_code(
         "For Loop (OPT-012)",
@@ -148,7 +148,7 @@ fn test_opt_021_for_loop() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_array_indexing() {
     benchmark_code(
         "Array Indexing (OPT-013)",
@@ -161,7 +161,7 @@ fn test_opt_021_array_indexing() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_string_methods() {
     benchmark_code(
         "String Methods (OPT-014)",
@@ -174,7 +174,7 @@ fn test_opt_021_string_methods() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_object_field_access() {
     benchmark_code(
         "Object Field Access (OPT-015)",
@@ -187,7 +187,7 @@ fn test_opt_021_object_field_access() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_object_literal() {
     benchmark_code(
         "Object Literal (OPT-016)",
@@ -197,7 +197,7 @@ fn test_opt_021_object_literal() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_tuple_literal() {
     benchmark_code(
         "Tuple Literal (OPT-017)",
@@ -207,7 +207,7 @@ fn test_opt_021_tuple_literal() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_match_simple() {
     benchmark_code(
         "Match Expression (OPT-018)",
@@ -224,7 +224,7 @@ fn test_opt_021_match_simple() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_closure_simple() {
     benchmark_code(
         "Closure (OPT-019)",
@@ -238,7 +238,7 @@ fn test_opt_021_closure_simple() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_non_literal_array() {
     benchmark_code(
         "Non-Literal Array (OPT-020)",
@@ -253,7 +253,7 @@ fn test_opt_021_non_literal_array() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_fibonacci() {
     benchmark_code(
         "Fibonacci Iterative (Comprehensive)",
@@ -274,7 +274,7 @@ fn test_opt_021_fibonacci() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_data_processing() {
     benchmark_code(
         "Data Processing (Comprehensive)",
@@ -297,7 +297,7 @@ fn test_opt_021_data_processing() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_performance_summary() {
     println!("\n{}", "=".repeat(60));
     println!("BYTECODE VM PERFORMANCE VALIDATION - OPT-021");
