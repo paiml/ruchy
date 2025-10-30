@@ -197,7 +197,7 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
 /// Add two values
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cyclomatic complexity: 12 (auto-conversion for string concatenation)
 fn add_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
     match (left, right) {
         (Value::Integer(a), Value::Integer(b)) => {
@@ -218,6 +218,27 @@ fn add_values(left: &Value, right: &Value) -> Result<Value, InterpreterError> {
         }
         (Value::String(a), Value::String(b)) => {
             Ok(Value::from_string(format!("{}{}", a.as_ref(), b.as_ref())))
+        }
+        // Feature #88: String + Integer auto-conversion
+        (Value::String(s), Value::Integer(i)) => {
+            Ok(Value::from_string(format!("{}{}", s.as_ref(), i)))
+        }
+        (Value::Integer(i), Value::String(s)) => {
+            Ok(Value::from_string(format!("{}{}", i, s.as_ref())))
+        }
+        // Feature #88: String + Float auto-conversion
+        (Value::String(s), Value::Float(f)) => {
+            Ok(Value::from_string(format!("{}{}", s.as_ref(), f)))
+        }
+        (Value::Float(f), Value::String(s)) => {
+            Ok(Value::from_string(format!("{}{}", f, s.as_ref())))
+        }
+        // Feature #88: String + Boolean auto-conversion
+        (Value::String(s), Value::Bool(b)) => {
+            Ok(Value::from_string(format!("{}{}", s.as_ref(), b)))
+        }
+        (Value::Bool(b), Value::String(s)) => {
+            Ok(Value::from_string(format!("{}{}", b, s.as_ref())))
         }
         (Value::Array(a), Value::Array(b)) => {
             let mut result = a.as_ref().to_vec();
