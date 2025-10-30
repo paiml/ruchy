@@ -4,6 +4,21 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Session Summary - 2025-10-30 (Continued)
+
+**🐛 Issue #86 FIXED: Non-Deterministic State Hashing | 100% Determinism Achieved**
+
+**Critical Bug Fix - Deterministic Replay**:
+- **Issue #86**: Non-deterministic state hashing causing 70% test failure rate
+- **Root Cause**: `compute_state_hash` used `format!("{:?}")` which calls HashMap Debug impl with non-deterministic key ordering
+- **Investigation**: Genchi Genbutsu approach - created diagnostic tests, ran 10 iterations, found 2 unique hashes appearing ~50/50
+- **Fix**: Changed from `format!("{value:?}")` to `value.to_string()` for deterministic serialization (src/runtime/deterministic.rs:234)
+- **Verification**: 100/100 iterations with identical hashes ✅ (tests/issue_086_verify_fix.rs)
+- **Tests Un-ignored**: test_deterministic_execution, test_execute_with_seed_state_hash_determinism (both now passing consistently)
+- **Test Suite**: 4028/4028 passing (100%, zero flaky tests)
+
+---
+
 ### Session Summary - 2025-10-30
 
 **🎉 8 GitHub Issues Closed | 100% Test Pass Rate | Zero Flaky Tests**
