@@ -392,7 +392,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_simple_use_parses(module in "[a-z]+", item in "[a-z]+") {
                 let code = format!("use {module}::{item}");
                 let result = Parser::new(&code).parse();
@@ -400,7 +400,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_wildcard_use_parses(module in "[a-z]+") {
                 let code = format!("use {module}::*");
                 let result = Parser::new(&code).parse();
@@ -408,7 +408,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_aliased_use_parses(module in "[a-z]+", item in "[a-z]+", alias in "[A-Z][a-z]+") {
                 let code = format!("use {module}::{item} as {alias}");
                 let result = Parser::new(&code).parse();
@@ -416,7 +416,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_grouped_use_parses(module in "[a-z]+", item1 in "[a-z]+", item2 in "[a-z]+") {
                 let code = format!("use {module}::{{{item1}, {item2}}}");
                 let result = Parser::new(&code).parse();
@@ -424,7 +424,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_path_parses(m1 in "[a-z]+", m2 in "[a-z]+", item in "[a-z]+") {
                 let code = format!("use {m1}::{m2}::{item}");
                 let result = Parser::new(&code).parse();

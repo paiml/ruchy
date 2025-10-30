@@ -333,7 +333,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_valid_identifiers_always_parse(ident in valid_identifier()) {
                 let code = ident.clone();
                 let result = Parser::new(&code).parse();
@@ -341,7 +341,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_qualified_paths_parse(
                 mod1 in valid_identifier(),
                 mod2 in valid_identifier()
@@ -352,7 +352,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_triple_qualified_paths_parse(
                 mod1 in valid_identifier(),
                 mod2 in valid_identifier(),
@@ -364,7 +364,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_keywords_as_path_segments(
                 keyword in prop::sample::select(vec![
                     "as", "for", "if", "match", "while", "let", "fn", "mod"
@@ -376,7 +376,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_special_identifiers_always_parse(
                 special in prop::sample::select(vec!["_", "self", "super", "default"])
             ) {
@@ -386,7 +386,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_fat_arrow_lambdas_parse(param in valid_identifier()) {
                 let code = format!("{param} => {param} + 1");
                 let result = Parser::new(&code).parse();

@@ -206,7 +206,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_no_param_lambdas_parse(_seed in any::<u32>()) {
                 let code = "|| 42";
                 let result = Parser::new(code).parse();
@@ -214,7 +214,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_single_param_lambdas_parse(param in "[a-z]+") {
                 let code = format!("|{param}| {param}");
                 let result = Parser::new(&code).parse();
@@ -222,7 +222,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multi_param_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
                 let code = format!("|{p1}, {p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
@@ -230,7 +230,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_arrow_syntax_parses(param in "[a-z]+") {
                 let code = format!("{param} => {param} * 2");
                 let result = Parser::new(&code).parse();
@@ -238,7 +238,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_arrow_tuple_syntax_parses(p1 in "[a-z]+", p2 in "[a-z]+") {
                 let code = format!("({p1}, {p2}) => {p1} + {p2}");
                 let result = Parser::new(&code).parse();
@@ -246,7 +246,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_lambda_with_numbers(n in 0i32..100) {
                 let code = format!("|x| x + {n}");
                 let result = Parser::new(&code).parse();
@@ -254,7 +254,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
                 let code = format!("|{p1}| |{p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();

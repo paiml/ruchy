@@ -381,7 +381,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
+    #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_multiple_println() {
         let mut repl = WasmRepl::new().unwrap();
         let code = r#"
@@ -401,7 +401,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
+    #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_println_with_variables() {
         let mut repl = WasmRepl::new().unwrap();
         let code = r#"
@@ -443,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
+    #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_println_in_function() {
         let mut repl = WasmRepl::new().unwrap();
         let code = r#"

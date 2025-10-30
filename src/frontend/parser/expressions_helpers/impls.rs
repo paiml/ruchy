@@ -298,7 +298,7 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore] // Run with: cargo test property_tests -- --ignored
+            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_basic_impls_parse(type_name in "[A-Z][a-z]+", method in "[a-z]+") {
                 let code = format!("impl {type_name} {{ fun {method}() {{ 42 }} }}");
                 let result = Parser::new(&code).parse();
@@ -306,7 +306,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_trait_impls_parse(trait_name in "[A-Z][a-z]+", type_name in "[A-Z][a-z]+") {
                 let code = format!("impl {trait_name} for {type_name} {{ }}");
                 let result = Parser::new(&code).parse();
@@ -314,7 +314,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_generic_impls_parse(type_name in "[A-Z][a-z]+", param in "[A-Z]") {
                 let code = format!("impl<{param}> {type_name} {{ }}");
                 let result = Parser::new(&code).parse();
@@ -322,7 +322,7 @@ mod tests {
             }
 
             #[test]
-            #[ignore]
+            #[ignore = "Property tests run with --ignored flag"]
             fn prop_empty_impls_parse(type_name in "[A-Z][a-z]+") {
                 let code = format!("impl {type_name} {{}}");
                 let result = Parser::new(&code).parse();
