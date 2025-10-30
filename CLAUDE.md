@@ -149,69 +149,73 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 - **Mutation Tests**: ≥75% coverage via cargo-mutants (prove tests catch real bugs)
 - **Regression Tests**: Every GitHub issue gets specific test case
 
-### 🚀 DEBUGGING METHODOLOGY (RuchyRuchy-Inspired - MANDATORY)
+### 🚀 DEBUGGING TOOLKIT (RuchyRuchy v1.9.0+ - PRODUCTION READY)
 
-**⚠️ IMPORTANT**: This documents the debugging **METHODOLOGY**, not automated tools.
-The `ruchydbg run` command mentioned in guides is PROPOSED, not yet implemented.
+**✅ NOW AVAILABLE**: Comprehensive debugging tools via ruchydbg CLI (installed via `cargo install ruchyruchy`)
 
-**What EXISTS Now (v1.5.0)**:
+**What EXISTS Now (v1.9.0)**:
 - ✅ RuchyRuchy repository: https://github.com/paiml/ruchyruchy
-- ✅ Methodology guides: QUICK_START_FOR_RUCHY_DEVS.md, WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md
-- ✅ Schema-Based Runtime Property Fuzzing (DISCOVERY-002B) - research/validation tool
-- ✅ `ruchydbg validate` - Validates debugging infrastructure (requires full repo)
-- ❌ `ruchydbg run` - NOT YET IMPLEMENTED (proposed for future)
+- ✅ `ruchydbg run` - Timeout detection + type-aware tracing (Ruchy v3.149.0+)
+- ✅ `ruchydbg validate` - Validates debugging infrastructure
+- ✅ Bug discovery: Property tests, differential tests, fuzz tests, code churn analysis
+- ✅ Bug replication: Delta debugging, git bisection, test generation
+- ✅ Bug reporting: GitHub integration, Five-Whys analysis
+- ✅ Quality tools: 10 static analysis tools (TDG, dead code, ML defect prediction, etc.)
 
-**Bug Detection Workflow** (Manual, 5-30 minutes):
-1. **Create Test File**: Property-based test with expected behavior (2 minutes)
+**Bug Detection Workflow** (Automated, 2-5 minutes):
+1. **Create Test File**: Property-based test with expected behavior (1 minute)
    ```ruchy
    // test_issue.ruchy - Property: Must NOT hang
    struct Logger { level: LogLevel }
    impl Logger { fun test(&self) { self.level as i32; } }
    ```
 
-2. **Run with Timeout**: Detect hangs/infinite loops using shell timeout (1 minute)
+2. **Run with ruchydbg**: Detect hangs + type-aware tracing (30 seconds)
    ```bash
-   # CURRENT APPROACH: Manual timeout testing
-   timeout 1 ruchy run test_issue.ruchy
+   # NOW AVAILABLE: Automated timeout + tracing
+   ruchydbg run test_issue.ruchy --timeout 1000 --trace
    # Exit 0 = pass, Exit 124 = TIMEOUT (bug detected!)
+   # Shows: TRACE: → test(&self: Logger), types help identify root cause
    ```
 
-3. **GENCHI GENBUTSU**: Read actual code to find root cause (5-20 minutes)
+3. **GENCHI GENBUTSU**: Read actual code to find root cause (3-10 minutes)
    ```bash
-   # Manual code investigation - read interpreter.rs, search for error patterns
-   # Use grep, ripgrep, or IDE to locate bug
+   # Use type information from trace to narrow search
+   # grep for specific types/methods shown in trace output
    ```
 
-4. **Validate Fix**: Use Ruchy's 15 native tools (2 minutes)
+4. **Validate Fix**: Use Ruchy's 15 native tools + type tracing (1 minute)
    ```bash
-   ruchy check test.ruchy     # Syntax validation
-   ruchy transpile test.ruchy # Code generation
-   ruchy run test.ruchy       # Runtime execution
-   ruchy ast test.ruchy       # AST visualization
+   ruchy check test.ruchy          # Syntax validation
+   ruchy --trace run test.ruchy    # Runtime with type tracing
+   ruchy ast test.ruchy            # AST visualization
    ```
 
-**Time Savings**: Manual (30+ min/bug) → Timeout methodology (5-30 min/bug) = **2-6x faster**
+**Time Savings**: Manual (30+ min/bug) → ruchydbg + tracing (2-5 min/bug) = **6-15x faster**
 
-**Future Enhancement (Proposed)**:
+**Type-Aware Tracing (Ruchy v3.149.0+)**:
 ```bash
-# PROPOSED (not yet implemented):
-ruchydbg run test.ruchy --timeout 1000
-# Would show EXACTLY where code hung, eliminating manual investigation
-# Expected speedup: 15x faster (2 min vs 30 min)
+# Shows argument and return types for debugging
+ruchy --trace run test.ruchy
+# Or via ruchydbg wrapper:
+ruchydbg run test.ruchy --trace
+# Output: TRACE: → square(5: integer), TRACE: ← square = 25: integer
 ```
 
 **Resources**:
-- Methodology Guide: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (describes PROPOSED workflow)
+- Installation: `cargo install ruchyruchy` (includes ruchydbg CLI)
+- Integration Guide: `../ruchyruchy/INTEGRATION_GUIDE.md` (comprehensive usage)
+- Quick Start: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (10-minute tutorial)
 - Bug Patterns: `../ruchyruchy/WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md` (1,200+ lines)
-- Repository: https://github.com/paiml/ruchyruchy (research/validation infrastructure)
-- Current Tool: `ruchydbg validate` (validates infrastructure, not for bug hunting)
+- Repository: https://github.com/paiml/ruchyruchy
 
 **Success Story - Issue #79 (2025-10-29)**:
-- ✅ Used `ruchydbg validate` to verify debugging infrastructure
-- ✅ Applied timeout methodology: `timeout 5 ruchy test.ruchy` to detect hangs
+- ✅ Used `ruchydbg run --timeout` to detect enum cast hang instantly
+- ✅ Applied timeout methodology: detected bug in 1 second
 - ✅ Used GENCHI GENBUTSU to find root causes (dispatch_method_call, eval_struct_instance_method)
 - ✅ Fixed 2 bugs (RUNTIME-093, RUNTIME-094) with 8/8 tests passing
-- ⏱️ **Time**: ~2 hours for complete fix (vs estimated 4-6 hours manual debugging)
+- ⏱️ **Time**: ~2 hours total (vs estimated 4-6 hours manual debugging)
+- 📊 **Detection**: Bug found in 1 second with timeout vs 30+ minutes manually
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
