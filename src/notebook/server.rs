@@ -83,8 +83,6 @@ async fn execute_handler(
     State(repl_executor): State<ReplExecutor>,
     Json(request): Json<ExecuteRequest>,
 ) -> Json<ExecuteResponse> {
-    println!("🔧 TDD DEBUG: execute_handler called with: {request:?}");
-
     // Send command to REPL executor task
     let (response_tx, response_rx) = tokio::sync::oneshot::channel();
     let command = ReplCommand {
@@ -288,8 +286,6 @@ async fn save_notebook_handler(
 /// }
 /// ```
 pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
-    println!("🔧 TDD DEBUG: start_server called, about to create app");
-
     // Create LocalSet to run non-Send REPL executor task
     let local = tokio::task::LocalSet::new();
 
@@ -304,8 +300,6 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/notebook/save", post(save_notebook_handler))
         .route("/health", get(health))
         .with_state(repl_executor);
-    println!("🔧 TDD DEBUG: Creating app with /api/execute route");
-    println!("🔧 TDD DEBUG: app created, binding to addr");
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
     println!("🚀 Notebook server running at http://127.0.0.1:{port}");
