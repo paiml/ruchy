@@ -1205,10 +1205,22 @@ impl Interpreter {
                 Ok(Value::Nil)
             }
             ExprKind::Import { module, items: _ } => {
-                // Issue #88: Load module from file system and execute it
-                // Example: `use mylib;` loads mylib.ruchy
+                // Issue #89: Distinguish between stdlib imports and file module imports
+                // - stdlib imports (std::*): Already available in global environment, no file to load
+                // - file modules (mylib): Load from mylib.ruchy file
+                //
+                // Example: `use std::process::Command;` → No-op (already available)
+                // Example: `use mylib;` → Load mylib.ruchy file
 
-                // Load the module file
+                // Check if this is a stdlib import
+                if module.starts_with("std::") {
+                    // Stdlib types are already registered in global environment via builtin_init
+                    // No file to load - stdlib imports are just syntax sugar for qualified names
+                    return Ok(Value::Nil);
+                }
+
+                // Issue #88: Load file module from file system and execute it
+                // Example: `use mylib;` loads mylib.ruchy
                 let parsed_module = self.module_loader
                     .load_module(module)
                     .map_err(|e| InterpreterError::RuntimeError(
