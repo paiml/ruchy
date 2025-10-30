@@ -4,6 +4,66 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.149.0] - 2025-10-30
+
+### Added
+- **[DEBUGGER-014] Phase 3: Type-aware tracing** - Enhanced `--trace` flag with type annotations
+  - Tracing now shows argument and return value types: `TRACE: → square(5: integer)`
+  - Before: `TRACE: → square(5)` / `TRACE: ← square = 25`
+  - After: `TRACE: → square(5: integer)` / `TRACE: ← square = 25: integer`
+  - Implementation uses `Value::type_name()` for all types
+  - 14 comprehensive tests (6 Phase 2 + 8 Phase 3)
+  - Commit: c61abd22
+
+### Session Summary - 2025-10-30 (Continued Session 4 - Type-Aware Tracing)
+
+**✅ DEBUGGER-014 Phase 3 Complete | 4 Issues Closed Today | EXTREME TDD Success**
+
+**GitHub Issues Closed (4 total today)**:
+- **Issue #86**: Non-deterministic state hashing (CRITICAL - 70% failure rate) → 100% determinism
+- **Issue #84**: DEBUGGER-014 Phase 1+2+3 complete (--trace flag with type-aware tracing)
+- **Issue #19**: WASM compilation verified working (2502 lines, 368 tests)
+- **Issue #43**: HTML parsing verified working (452 lines, 30 tests)
+
+**DEBUGGER-014 Complete (23 tests passing)**:
+- **Phase 1 (Basic tracing)**: 9 tests - CLI flag, RUCHY_TRACE env var, function entry/exit
+- **Phase 2 (Argument/return values)**: 6 tests - Shows actual values passed/returned
+- **Phase 3 (Type-aware tracing)**: 8 tests - Shows types for all values
+
+**EXTREME TDD Applied**:
+- **RED**: Created 8 comprehensive failing tests for Phase 3
+- **GREEN**: Implemented type-aware tracing (minimal 2-line change)
+- **REFACTOR**: Updated Phase 2 tests to expect Phase 3 format
+
+**Example Output**:
+```bash
+$ ruchy --trace -e "fun square(x) { x * x }; square(5)"
+TRACE: → square(5: integer)
+TRACE: ← square = 25: integer
+```
+
+**Type Support**:
+- Integers: `42: integer`
+- Strings: `"Alice": string`
+- Floats: `2.5: float`
+- Booleans: `true: boolean`
+- Arrays: `[1, 2, 3]: array`
+- All Value types via `type_name()`
+
+**Test Status**: 4036/4036 passing (100%, 8 new Phase 3 tests added)
+
+**Quality Gates**: ✅ ALL PASSING
+
+**Files Modified**:
+- src/runtime/interpreter.rs (Phase 3 implementation - 2 lines)
+- src/bin/ruchy.rs (Fixed 3 test cases - added trace: false)
+- tests/debugger_014_phase_3_types.rs (NEW - 8 comprehensive tests)
+- tests/debugger_014_phase_2_values.rs (Updated 4 tests for Phase 3 format)
+
+**Commit**: c61abd22 - [DEBUGGER-014] Phase 3: Type-aware tracing complete
+
+---
+
 ### Session Summary - 2025-10-30 (Continued Session 3)
 
 **✅ 2 Issues Closed (Already Implemented) | Issue Hygiene Sprint**
