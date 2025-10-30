@@ -16,6 +16,16 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/runtime/interpreter.rs (`slice_string` helper + index_access match arm), tests/issue_094_string_slicing.rs (NEW, 191 lines, 12 tests)
 
 ### Fixed
+- **[QUALITY-008] Remove SATD comments from active source code (Phase 1: HIGH/CRITICAL)**
+  - Removed 4 historic bug reference comments (BUG-XXX, DEFECT-XXX, PARSER-XXX FIX)
+  - Replaced with proper documentation explaining WHY, not documenting WHAT was fixed
+  - PMAT SATD violations reduced: 26 → 22 (4 HIGH/CRITICAL eliminated)
+  - Zero functional changes - documentation-only improvements
+  - All 4028 tests passing, zero regressions
+  - Enforces zero-tolerance SATD policy from CLAUDE.md
+  - Fixes GitHub Issue #95 Phase 1 (code quality - PMAT SATD analysis)
+  - Files: src/quality/ruchy_coverage.rs:363 (1 fix), src/backend/transpiler/statements.rs (3 fixes at lines 735, 802-805, 1034-1037)
+
 - **[ISSUE-093] Refactor eval_command_method to reduce cyclomatic complexity (15→9)**
   - Applied Extract Function refactoring following EXTREME TDD methodology
   - Extracted `build_command_from_obj()` helper (complexity 5) to eliminate duplication
