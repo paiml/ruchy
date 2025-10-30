@@ -7,6 +7,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.149.0] - 2025-10-30
 
 ### Added
+- **[ISSUE-088] Module system (use imports)** - Enables multi-file program development
+  - Implemented Import handler in interpreter.rs
+  - ModuleLoader now wired to Interpreter (was backend-only)
+  - Module loading workflow: load file → eval in isolated scope → create namespace Object → add to global env
+  - Qualified name resolution via field access: `mylib::add(2, 3)` works
+  - 6 comprehensive tests: basic imports, multiple functions, nested calls, constants, error handling, sanity check
+  - Fixes GitHub Issue #88 (HIGH priority - blocked multi-file programs)
+  - Files: src/runtime/interpreter.rs (+40 lines), src/backend/module_loader.rs (+1), tests/issue_088_module_imports.rs (NEW, 261 lines)
+  - Commit: 42f4019e
+
 - **[DEBUGGER-014] Phase 3: Type-aware tracing** - Enhanced `--trace` flag with type annotations
   - Tracing now shows argument and return value types: `TRACE: → square(5: integer)`
   - Before: `TRACE: → square(5)` / `TRACE: ← square = 25`
