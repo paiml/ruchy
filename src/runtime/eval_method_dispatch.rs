@@ -237,7 +237,37 @@ fn eval_object_method(
 /// Evaluate methods on Command objects (RUNTIME-090, Issue #75)
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Helper: Build std::process::Command from Command object
+/// Cyclomatic complexity: 3 (A+ standard)
+#[cfg(not(target_arch = "wasm32"))]
+fn build_command_from_obj(
+    obj: &std::collections::HashMap<String, Value>,
+) -> Result<std::process::Command, InterpreterError> {
+    let program = match obj.get("program") {
+        Some(Value::String(p)) => &**p,
+        _ => return Err(InterpreterError::RuntimeError(
+            "Command object missing 'program' field".to_string(),
+        )),
+    };
+
+    let args = match obj.get("args") {
+        Some(Value::Array(arr)) => arr.clone(),
+        _ => Arc::new([]),
+    };
+
+    let mut command = std::process::Command::new(program);
+    for arg in args.iter() {
+        if let Value::String(arg_str) = arg {
+            command.arg(&**arg_str);
+        }
+    }
+
+    Ok(command)
+}
+
+/// Evaluate methods on Command objects (post-refactoring)
+/// Cyclomatic complexity: 9 (A+ standard: ≤10)
+/// Reduced from 15 via Extract Function refactoring (Issue #93)
 #[cfg(not(target_arch = "wasm32"))]
 fn eval_command_method(
     obj: &std::collections::HashMap<String, Value>,
@@ -267,24 +297,7 @@ fn eval_command_method(
         }
         "status" => {
             // Execute the command and return Result<ExitStatus, Error> (Issue #85)
-            let program = match obj.get("program") {
-                Some(Value::String(p)) => &**p,
-                _ => return Err(InterpreterError::RuntimeError(
-                    "Command object missing 'program' field".to_string(),
-                )),
-            };
-
-            let args = match obj.get("args") {
-                Some(Value::Array(arr)) => arr.clone(),
-                _ => Arc::new([]),
-            };
-
-            let mut command = std::process::Command::new(program);
-            for arg in args.iter() {
-                if let Value::String(arg_str) = arg {
-                    command.arg(&**arg_str);
-                }
-            }
+            let mut command = build_command_from_obj(obj)?;
 
             match command.status() {
                 Ok(status) => {
@@ -313,24 +326,7 @@ fn eval_command_method(
         }
         "output" => {
             // Execute the command and return Result<Output, Error> (Issue #85)
-            let program = match obj.get("program") {
-                Some(Value::String(p)) => &**p,
-                _ => return Err(InterpreterError::RuntimeError(
-                    "Command object missing 'program' field".to_string(),
-                )),
-            };
-
-            let args = match obj.get("args") {
-                Some(Value::Array(arr)) => arr.clone(),
-                _ => Arc::new([]),
-            };
-
-            let mut command = std::process::Command::new(program);
-            for arg in args.iter() {
-                if let Value::String(arg_str) = arg {
-                    command.arg(&**arg_str);
-                }
-            }
+            let mut command = build_command_from_obj(obj)?;
 
             match command.output() {
                 Ok(output) => {

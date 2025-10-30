@@ -5,6 +5,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[ISSUE-093] Refactor eval_command_method to reduce cyclomatic complexity (15→9)**
+  - Applied Extract Function refactoring following EXTREME TDD methodology
+  - Extracted `build_command_from_obj()` helper (complexity 5) to eliminate duplication
+  - Reduced `eval_command_method` from complexity 15 to 9 (achieves A+ standard: ≤10)
+  - Eliminated duplicate command-building logic between status() and output() branches
+  - Verified functionality with integration tests: Command.arg(), Command.status(), Command.output()
+  - Improved maintainability and testability of Command method dispatch
+  - Fixes GitHub Issue #93 (code quality - PMAT complexity analysis)
+  - Files: src/runtime/eval_method_dispatch.rs (extracted helper function, reduced complexity)
+
 - **[ISSUE-063] Fix `make quality-web` target for frontend quality checks**
   - Corrected HTML linting paths: `static/**/*.html` (was `assets/**/*.html testing/**/*.html`)
   - Added ESLint configuration (.eslintrc.json) for TypeScript linting
