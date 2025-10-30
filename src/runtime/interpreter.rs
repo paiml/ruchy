@@ -6829,18 +6829,19 @@ impl Interpreter {
             _ => "anonymous".to_string(),
         };
 
-        // DEBUGGER-014 Phase 2: Enhanced tracing with argument and return values
+        // DEBUGGER-014 Phase 3: Type-aware tracing with argument/return values and types
         let trace_enabled = std::env::var("RUCHY_TRACE").is_ok();
         if trace_enabled {
-            // Format argument values for trace output
+            // Format argument values with type annotations for trace output
             let args_str = arg_vals
                 .iter()
                 .map(|v| {
-                    // Format value with proper string quoting
-                    match v {
+                    // Format value with proper string quoting + type annotation
+                    let value_str = match v {
                         Value::String(s) => format!("\"{}\"", s),
                         other => other.to_string(),
-                    }
+                    };
+                    format!("{}: {}", value_str, v.type_name())
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -6849,13 +6850,13 @@ impl Interpreter {
 
         let result = self.call_function(func_val, &arg_vals)?;
 
-        // DEBUGGER-014 Phase 2: Trace function exit with return value
+        // DEBUGGER-014 Phase 3: Trace function exit with return value and type
         if trace_enabled {
             let result_str = match &result {
                 Value::String(s) => format!("\"{}\"", s),
                 other => other.to_string(),
             };
-            println!("TRACE: ← {} = {}", func_name, result_str);
+            println!("TRACE: ← {} = {}: {}", func_name, result_str, result.type_name());
         }
 
         // Collect type feedback for function call
