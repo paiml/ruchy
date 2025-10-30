@@ -362,27 +362,21 @@ coverage-wasm-notebook:
 
 # HTML/JS Quality and Coverage (>80% target)
 quality-web:
-	@echo "🌐 HTML/JS Quality Analysis (>80% coverage)"
-	@echo "==========================================="
+	@echo "🌐 HTML/TS Quality Analysis (Linting Only)"
+	@echo "=========================================="
 	@echo ""
 	@echo "📦 Installing dependencies..."
-	@npm install --silent 2>/dev/null || (echo "⚠️  npm not available - skipping JS tests" && exit 0)
+	@npm install --silent 2>/dev/null || (echo "⚠️  npm not available - skipping web quality checks" && exit 0)
 	@echo ""
 	@echo "🔍 Linting HTML files..."
-	@npx htmlhint assets/**/*.html testing/**/*.html || echo "⚠️  HTML linting completed with warnings"
+	@npx htmlhint static/**/*.html || echo "⚠️  HTML linting completed with warnings"
 	@echo ""
-	@echo "🔍 Linting JavaScript files..."
-	@npx eslint js/**/*.js --fix || echo "⚠️  JS linting completed with warnings"
+	@echo "🔍 Linting TypeScript E2E tests..."
+	@npx eslint tests/e2e/**/*.ts --ext .ts || echo "⚠️  TS linting completed with warnings"
 	@echo ""
-	@echo "🧪 Running JavaScript tests with coverage..."
-	@npm test || echo "⚠️  Some tests failed"
-	@echo ""
-	@echo "📊 Coverage Report:"
-	@echo "==================="
-	@cat coverage/coverage-summary.json 2>/dev/null | grep -E '"lines"|"statements"|"functions"|"branches"' | head -4 || echo "Coverage report not available"
-	@echo ""
-	@echo "✅ Web quality analysis complete"
-	@echo "📁 HTML coverage report: coverage/lcov-report/index.html"
+	@echo "✅ Web quality linting complete"
+	@echo "💡 To run full E2E tests: make test-e2e (requires WASM build)"
+	@echo "💡 To run smoke tests only: make test-e2e-smoke"
 
 # Test coverage and quality per component (parser, interpreter, repl)
 test-coverage-quality:

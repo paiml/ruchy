@@ -55,7 +55,7 @@ test.describe('Notebook Smoke Test - Reality Check', () => {
     expect(output).toContain('42');
   });
 
-  test('should execute via API (backend verification)', async ({ page, request }) => {
+  test('should execute via API (backend verification)', async ({ page: _page, request }) => {
     // Direct API test to prove backend works
     const response = await request.post('http://localhost:8080/api/execute', {
       data: {
