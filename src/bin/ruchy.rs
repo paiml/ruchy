@@ -59,6 +59,9 @@ struct Cli {
     /// Enable verbose output
     #[arg(short = 'v', long)]
     verbose: bool,
+    /// Enable execution tracing (DEBUGGER-014, Issue #84)
+    #[arg(long)]
+    trace: bool,
     /// VM execution mode: ast (default) or bytecode (experimental, faster)
     #[arg(long, value_enum, default_value = "ast")]
     vm_mode: VmMode,
