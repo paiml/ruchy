@@ -844,7 +844,7 @@ fn main() -> Result<()> {
 fn try_handle_direct_evaluation(cli: &Cli) -> Option<Result<()>> {
     // Handle one-liner evaluation with -e flag
     if let Some(expr) = &cli.eval {
-        return Some(handle_eval_command(expr, cli.verbose, &cli.format));
+        return Some(handle_eval_command(expr, cli.verbose, &cli.format, cli.trace));
     }
     // Handle script file execution (without subcommand)
     if let Some(file) = &cli.file {
