@@ -412,10 +412,9 @@ impl Repl {
         }
     }
 
-    /// Print welcome message (complexity: 2)
+    /// Print welcome message (complexity: 1)
     fn print_welcome(&self) {
-        println!("🚀 Ruchy REPL v3.22.0 - EXTREME Quality Edition");
-        println!("✨ ALL functions <10 complexity • 90% coverage • TDG A+");
+        println!("Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
         println!("Type :help for commands or expressions to evaluate\n");
     }
 
