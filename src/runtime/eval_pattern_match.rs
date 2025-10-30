@@ -188,7 +188,7 @@ fn try_match_none_pattern(value: &Value) -> Result<Option<Vec<(String, Value)>>,
 
 /// Try to match an Ok pattern
 ///
-/// Supports both EnumVariant (Issue #85) and legacy Object representations
+/// Supports both `EnumVariant` (Issue #85) and legacy Object representations
 ///
 /// # Complexity
 /// Cyclomatic complexity: 7 (within Toyota Way limits)
@@ -225,7 +225,7 @@ fn try_match_ok_pattern(
 
 /// Try to match an Err pattern
 ///
-/// Supports both EnumVariant (Issue #85) and legacy Object representations
+/// Supports both `EnumVariant` (Issue #85) and legacy Object representations
 ///
 /// # Complexity
 /// Cyclomatic complexity: 7 (within Toyota Way limits)

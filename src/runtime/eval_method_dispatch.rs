@@ -285,7 +285,7 @@ fn eval_command_method(
                     let mut status_obj = std::collections::HashMap::new();
                     status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
                     status_obj.insert("success".to_string(), Value::from_bool(status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(status.code().unwrap_or(-1) as i64));
+                    status_obj.insert("code".to_string(), Value::Integer(i64::from(status.code().unwrap_or(-1))));
 
                     // Return Result::Ok(status_obj)
                     Ok(Value::EnumVariant {
@@ -343,7 +343,7 @@ fn eval_command_method(
                     let mut status_obj = std::collections::HashMap::new();
                     status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
                     status_obj.insert("success".to_string(), Value::from_bool(output.status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(output.status.code().unwrap_or(-1) as i64));
+                    status_obj.insert("code".to_string(), Value::Integer(i64::from(output.status.code().unwrap_or(-1))));
                     output_obj.insert("status".to_string(), Value::Object(Arc::new(status_obj)));
 
                     // Return Result::Ok(output_obj)
@@ -381,7 +381,7 @@ fn eval_command_method(
     )))
 }
 
-/// Evaluate methods on ExitStatus objects (Issue #85)
+/// Evaluate methods on `ExitStatus` objects (Issue #85)
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)

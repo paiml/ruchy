@@ -477,7 +477,7 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));
 }
 
-/// Add chrono namespace with Utc, DateTime, Local types
+/// Add chrono namespace with Utc, `DateTime`, Local types
 /// Issue #82: chrono support for date/time operations
 ///
 /// # Complexity
