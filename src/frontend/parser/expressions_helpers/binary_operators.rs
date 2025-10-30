@@ -368,7 +368,7 @@ mod tests {
 
             #[test]
             #[ignore]
-            fn prop_multiply_binds_tighter_than_add(a in 1..100, b in 1..100) {
+            fn prop_multiply_binds_tighter_than_add(_a in 1..100, _b in 1..100) {
                 let mul_prec = get_precedence(BinaryOp::Multiply);
                 let add_prec = get_precedence(BinaryOp::Add);
                 prop_assert!(mul_prec > add_prec,
@@ -377,7 +377,7 @@ mod tests {
 
             #[test]
             #[ignore]
-            fn prop_power_binds_tightest(a in 1..100) {
+            fn prop_power_binds_tightest(_a in 1..100) {
                 let power_prec = get_precedence(BinaryOp::Power);
                 let other_ops = vec![
                     BinaryOp::Add, BinaryOp::Multiply, BinaryOp::Divide,
