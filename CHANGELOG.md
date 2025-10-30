@@ -6,6 +6,27 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ### Added
 
+- **[DEBUGGER-014] Implement function tracing (Issue #84 Phase 1.3)**
+  - **Problem**: No execution tracing output when --trace flag is used
+  - **Solution**: Basic function entry/exit tracing via RUCHY_TRACE environment variable (Phase 1.3 of 5-phase implementation)
+  - **Implementation**:
+    - Thread trace flag from CLI through handle_eval_command (src/bin/ruchy.rs, handlers/mod.rs)
+    - Set RUCHY_TRACE environment variable when --trace is enabled
+    - Add trace output in eval_function_call: "TRACE: → func_name" (entry) and "TRACE: ← func_name" (exit)
+    - Extract function names from ExprKind::Identifier for tracing
+  - **Test Status**: 3/3 tests passing ✅
+    - test_debugger_014_phase_1_3_trace_outputs_function_calls (fibonacci example)
+    - test_debugger_014_phase_1_3_trace_shows_nesting (inner/outer calls)
+    - test_debugger_014_phase_1_3_trace_disabled_by_default (no trace by default)
+  - **Files Modified** (4 files):
+    - tests/debugger_014_trace_output.rs (NEW - 3 comprehensive trace tests)
+    - src/bin/ruchy.rs (pass cli.trace to handle_eval_command)
+    - src/bin/handlers/mod.rs (set RUCHY_TRACE env var based on trace flag)
+    - src/runtime/interpreter.rs (trace function entry/exit in eval_function_call)
+  - **Impact**: Basic function call tracing now working with --trace flag
+  - **EXTREME TDD**: RED (no trace output, 2/3 failed) → GREEN (environment variable approach, 3/3 pass) → REFACTOR (documented)
+  - **Next Phase**: Phase 1.4 - Initialize/finalize tracing in runtime (estimated 2 days)
+
 - **[DEBUGGER-014] Add ruchyruchy dependency (Issue #84 Phase 1.2)**
   - **Problem**: No ruchyruchy library available for execution tracing implementation
   - **Solution**: Added ruchyruchy 1.8.0 as path dependency (Phase 1.2 of 5-phase implementation)
