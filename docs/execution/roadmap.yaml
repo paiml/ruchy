@@ -672,6 +672,53 @@ metadata:
   github_issues:
     active: []
     recently_closed:
+      - id: 88
+        url: "https://github.com/paiml/ruchy/issues/88"
+        title: "Module system (use imports) not working"
+        impact: "RUNTIME - Blocked multi-file program development"
+        ticket: "ISSUE-088"
+        priority: "HIGH"
+        status: "✅ CLOSED - Implemented (module imports)"
+        closed_date: "2025-10-30"
+        context: "Parser creates Import AST nodes, but interpreter doesn't load modules"
+        problem:
+          - "use mylib; mylib::add(2, 3) fails with 'Undefined variable: mylib'"
+          - "ModuleLoader exists in backend/ but never wired to interpreter"
+          - "Multi-file programs completely broken"
+        root_cause:
+          - "ExprKind::Import handler missing in interpreter"
+          - "No module namespace creation logic"
+          - "ModuleLoader not instantiated in Interpreter"
+        solution:
+          - "Added ModuleLoader field to Interpreter struct"
+          - "Implemented Import handler in eval_misc_expr"
+          - "Module loading workflow:"
+          - "  1. Load module file via module_loader.load_module()"
+          - "  2. Evaluate module AST in isolated environment scope"
+          - "  3. Extract symbols into module namespace Object"
+          - "  4. Add Object to global environment with module name"
+          - "Qualified calls work via existing field access mechanism"
+        test_results:
+          total: 6
+          passing: 6
+          tests:
+            - "test_issue_088_basic_module_import (use mylib; mylib::add(2, 3) → 5)"
+            - "test_issue_088_multiple_function_calls (math::double + math::triple)"
+            - "test_issue_088_nested_module_calls (utils::square(utils::square(2)) → 16)"
+            - "test_issue_088_module_with_constants (constants::get_pi() → 3)"
+            - "test_issue_088_module_not_found (clear error message, not 'Undefined variable')"
+            - "test_issue_088_no_imports_still_works (sanity check - single-file programs)"
+        files_modified:
+          - "src/runtime/interpreter.rs (+40 lines)"
+          - "src/backend/module_loader.rs (+1 line - Debug trait)"
+          - "tests/issue_088_module_imports.rs (NEW - 261 lines)"
+        impact_metrics:
+          - "Enables multi-file program development"
+          - "Unblocks large program organization"
+          - "Module isolation via environment scoping"
+          - "Qualified name resolution via field access"
+        version_fixed: "v3.149.0"
+        extreme_tdd: "RED (6 failing tests) → GREEN (all passing) → REFACTOR (documented)"
       - id: 85
         url: "https://github.com/paiml/ruchy/issues/85"
         title: "Command execution (std::process::Command) not implemented"
