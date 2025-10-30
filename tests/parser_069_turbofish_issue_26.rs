@@ -112,7 +112,7 @@ test("demo", || {
 }
 
 /// Test turbofish with multiple type parameters
-/// NOTE: Requires PARSER-070 (path expression turbofish) + HashMap type implementation
+/// NOTE: Requires PARSER-070 (path expression turbofish) + `HashMap` type implementation
 #[test]
 #[ignore = "PARSER-070: Path expression turbofish not yet implemented (HashMap::<T>::new)"]
 fn test_parser_069_turbofish_multiple_type_params() {
@@ -215,7 +215,7 @@ if s.parse::<i32>() == 42 {
         .stdout(predicate::str::contains("Correct"));
 }
 
-/// Test that AST is correct - should be MethodCall with turbofish
+/// Test that AST is correct - should be `MethodCall` with turbofish
 #[test]
 fn test_parser_069_ast_structure() {
     let code = r#"

@@ -5,7 +5,7 @@
 //! **Severity**: CRITICAL - Broken test framework undermines all QA
 //!
 //! **Expected**: Tests with failing assertions should report as FAILED
-//! **Actual**: Tests report as PASSED even with assert_eq(2, 3)
+//! **Actual**: Tests report as PASSED even with `assert_eq(2`, 3)
 //!
 //! **Root Cause**: Test runner evaluates file but doesn't execute @test functions
 //! Location: src/bin/handlers/handlers_modules/test_helpers.rs:87-89
@@ -58,8 +58,7 @@ fun test_failing_assertion() {
     // Should contain failure indicator
     assert!(
         stdout.contains("FAILED") || stdout.contains("❌"),
-        "Test output should indicate failure, found: {}",
-        stdout
+        "Test output should indicate failure, found: {stdout}"
     );
 }
 
@@ -118,9 +117,8 @@ fun test_failing() {
 
     // Should show 1 passed, 1 failed
     assert!(
-        stdout.contains("1") && (stdout.contains("failed") || stdout.contains("FAILED")),
-        "Should show test failure count, found: {}",
-        stdout
+        stdout.contains('1') && (stdout.contains("failed") || stdout.contains("FAILED")),
+        "Should show test failure count, found: {stdout}"
     );
 }
 
@@ -187,28 +185,28 @@ fun test_writes_file() {{
 #[test]
 fn test_bug_037_red_phase_summary() {
     println!("BUG-037 RED Phase: Test Assertions Don't Fail Tests");
-    println!("");
+    println!();
     println!("Problem: Test runner doesn't execute @test functions");
     println!("Impact: Assertions don't cause test failures");
-    println!("");
+    println!();
     println!("Root Cause:");
     println!("- run_test_file() calls repl.evaluate_expr_str()");
     println!("- This only parses and defines functions");
     println!("- Test functions are NEVER called");
     println!("- Assertions never execute, so they can't fail");
-    println!("");
+    println!();
     println!("Test Suite Created:");
     println!("1. Failing assertion should make test fail");
     println!("2. Passing assertion should make test pass (baseline)");
     println!("3. Mixed results should report correctly");
     println!("4. Tests without assertions should pass (baseline)");
     println!("5. Test functions should actually execute");
-    println!("");
+    println!();
     println!("Expected Results:");
     println!("- RED Phase: Tests 1, 3, 5 FAIL (test framework broken)");
     println!("- RED Phase: Tests 2, 4 PASS (baseline)");
     println!("- GREEN Phase: ALL tests PASS after fix");
-    println!("");
+    println!();
     println!("Fix Strategy:");
     println!("1. Parse AST to find functions with @test attribute");
     println!("2. For each test function:");

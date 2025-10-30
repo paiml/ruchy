@@ -61,8 +61,8 @@ use ruchy::frontend::parser::Parser;
 fn parse_program(source: &str) -> Result<String, String> {
     let mut parser = Parser::new(source);
     match parser.parse() {
-        Ok(ast) => Ok(format!("{:?}", ast)),
-        Err(e) => Err(format!("{}", e)),
+        Ok(ast) => Ok(format!("{ast:?}")),
+        Err(e) => Err(format!("{e}")),
     }
 }
 
@@ -113,8 +113,8 @@ fn test_sqlite_3001_mr1_constant_folding_addition() {
     let result_orig = parse_program(original);
     let result_opt = parse_program(optimized);
 
-    assert!(result_orig.is_ok(), "Original should parse: {}", original);
-    assert!(result_opt.is_ok(), "Optimized should parse: {}", optimized);
+    assert!(result_orig.is_ok(), "Original should parse: {original}");
+    assert!(result_opt.is_ok(), "Optimized should parse: {optimized}");
 }
 
 #[test]
@@ -125,8 +125,8 @@ fn test_sqlite_3002_mr1_constant_folding_multiplication() {
     let result_orig = parse_program(original);
     let result_opt = parse_program(optimized);
 
-    assert!(result_orig.is_ok(), "Original should parse: {}", original);
-    assert!(result_opt.is_ok(), "Optimized should parse: {}", optimized);
+    assert!(result_orig.is_ok(), "Original should parse: {original}");
+    assert!(result_opt.is_ok(), "Optimized should parse: {optimized}");
 }
 
 #[test]
@@ -278,12 +278,12 @@ fn test_sqlite_3050_mr6_parse_identity_literals() {
 
     for prog in programs {
         let first_parse = parse_program(prog);
-        assert!(first_parse.is_ok(), "Should parse: {}", prog);
+        assert!(first_parse.is_ok(), "Should parse: {prog}");
 
         // NOTE: Full roundtrip requires pretty-printer implementation
         // For now, we validate that parsing is deterministic
         let second_parse = parse_program(prog);
-        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {}", prog);
+        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {prog}");
     }
 }
 
@@ -299,7 +299,7 @@ fn test_sqlite_3051_mr6_parse_identity_expressions() {
     for prog in programs {
         let first_parse = parse_program(prog);
         let second_parse = parse_program(prog);
-        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {}", prog);
+        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {prog}");
     }
 }
 
@@ -318,7 +318,7 @@ proptest! {
         a in 0i32..100,
         b in 0i32..100
     ) {
-        let expr = format!("{} + {}", a, b);
+        let expr = format!("{a} + {b}");
         let folded = format!("{}", a + b);
 
         // Both should parse successfully
@@ -335,8 +335,8 @@ proptest! {
     /// **Target**: 100K iterations (currently 50000 for Phase 1 - 50% milestone)
     #[test]
     fn test_sqlite_3101_property_alpha_renaming(value in 0i32..1000) {
-        let original = format!("let x = {}; x + 1", value);
-        let renamed = format!("let y = {}; y + 1", value);
+        let original = format!("let x = {value}; x + 1");
+        let renamed = format!("let y = {value}; y + 1");
 
         prop_assert!(parse_program(&original).is_ok(), "Original should parse");
         prop_assert!(parse_program(&renamed).is_ok(), "Renamed should parse");
@@ -351,7 +351,7 @@ proptest! {
     /// **Target**: 100K iterations (currently 50000 for Phase 1 - 50% milestone)
     #[test]
     fn test_sqlite_3102_property_parse_deterministic(value in 0i32..1000) {
-        let program = format!("{} + 1", value);
+        let program = format!("{value} + 1");
 
         let parse1 = parse_program(&program);
         let parse2 = parse_program(&program);

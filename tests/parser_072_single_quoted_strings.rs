@@ -133,9 +133,9 @@ println("{}", msg)
 #[test]
 fn test_parser_072_check_mode() {
     // Verify syntax checking works with single-quoted strings
-    let code = r#"
+    let code = r"
 let msg = 'hello world'
-"#;
+";
 
     // Write code to temporary file
     let temp_file = "/tmp/test_parser_072_check.ruchy";

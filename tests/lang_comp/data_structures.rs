@@ -116,10 +116,10 @@ fn test_langcomp_006_01_array_literal_creation() {
     let temp_file = std::env::temp_dir().join("langcomp_006_01_array_literal.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let numbers = [1, 2, 3, 4, 5]
 println(numbers)
-"#,
+",
     )
     .unwrap();
 
@@ -138,11 +138,11 @@ fn test_langcomp_006_01_array_indexing() {
     let temp_file = std::env::temp_dir().join("langcomp_006_01_array_index.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let numbers = [10, 20, 30]
 let first = numbers[0]
 println(first)
-"#,
+",
     )
     .unwrap();
 
@@ -207,12 +207,12 @@ fn test_langcomp_006_02_tuple_destructuring() {
     let temp_file = std::env::temp_dir().join("langcomp_006_02_tuple_destruct.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let point = (100, 200)
 let (x, y) = point
 println(x)
 println(y)
-"#,
+",
     )
     .unwrap();
 

@@ -29,13 +29,11 @@ fn test_fmt_array_literal() {
 
     assert!(
         formatted.contains("[1, 2, 3, 4, 5]"),
-        "Array literal lost! Got:\n{}",
-        formatted
+        "Array literal lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Array not implemented! Got:\n{}",
-        formatted
+        "Array not implemented! Got:\n{formatted}"
     );
 }
 
@@ -58,8 +56,7 @@ fn test_fmt_array_init() {
 
     assert!(
         formatted.contains("[0; 10]"),
-        "Array init lost! Got:\n{}",
-        formatted
+        "Array init lost! Got:\n{formatted}"
     );
 }
 
@@ -83,13 +80,11 @@ fn test_fmt_ok_variant() {
 
     assert!(
         formatted.contains("Ok(42)"),
-        "Ok variant lost! Got:\n{}",
-        formatted
+        "Ok variant lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Ok not implemented! Got:\n{}",
-        formatted
+        "Ok not implemented! Got:\n{formatted}"
     );
 }
 
@@ -112,8 +107,7 @@ fn test_fmt_err_variant() {
 
     assert!(
         formatted.contains("Err("),
-        "Err variant lost! Got:\n{}",
-        formatted
+        "Err variant lost! Got:\n{formatted}"
     );
 }
 
@@ -137,13 +131,11 @@ fn test_fmt_some_variant() {
 
     assert!(
         formatted.contains("Some(100)"),
-        "Some variant lost! Got:\n{}",
-        formatted
+        "Some variant lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Some not implemented! Got:\n{}",
-        formatted
+        "Some not implemented! Got:\n{formatted}"
     );
 }
 
@@ -166,8 +158,7 @@ fn test_fmt_none_variant() {
 
     assert!(
         formatted.contains("None"),
-        "None variant lost! Got:\n{}",
-        formatted
+        "None variant lost! Got:\n{formatted}"
     );
 }
 
@@ -190,14 +181,12 @@ fn test_fmt_try_operator() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     assert!(
-        formatted.contains("?"),
-        "Try operator lost! Got:\n{}",
-        formatted
+        formatted.contains('?'),
+        "Try operator lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Try not implemented! Got:\n{}",
-        formatted
+        "Try not implemented! Got:\n{formatted}"
     );
 }
 
@@ -221,13 +210,11 @@ fn test_fmt_spawn() {
 
     assert!(
         formatted.contains("spawn"),
-        "Spawn keyword lost! Got:\n{}",
-        formatted
+        "Spawn keyword lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Spawn not implemented! Got:\n{}",
-        formatted
+        "Spawn not implemented! Got:\n{formatted}"
     );
 }
 
@@ -250,8 +237,7 @@ fn test_fmt_async_lambda() {
 
     assert!(
         formatted.contains("async") && formatted.contains("|x|"),
-        "Async lambda lost! Got:\n{}",
-        formatted
+        "Async lambda lost! Got:\n{formatted}"
     );
 }
 
@@ -275,13 +261,11 @@ fn test_fmt_if_let() {
 
     assert!(
         formatted.contains("if let"),
-        "if let lost! Got:\n{}",
-        formatted
+        "if let lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "IfLet not implemented! Got:\n{}",
-        formatted
+        "IfLet not implemented! Got:\n{formatted}"
     );
 }
 
@@ -305,13 +289,11 @@ fn test_fmt_slice() {
 
     assert!(
         formatted.contains("[1..5]"),
-        "Slice syntax lost! Got:\n{}",
-        formatted
+        "Slice syntax lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Slice not implemented! Got:\n{}",
-        formatted
+        "Slice not implemented! Got:\n{formatted}"
     );
 }
 
@@ -335,12 +317,10 @@ fn test_fmt_optional_field_access() {
 
     assert!(
         formatted.contains("?."),
-        "Optional chaining lost! Got:\n{}",
-        formatted
+        "Optional chaining lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "OptionalFieldAccess not implemented! Got:\n{}",
-        formatted
+        "OptionalFieldAccess not implemented! Got:\n{formatted}"
     );
 }

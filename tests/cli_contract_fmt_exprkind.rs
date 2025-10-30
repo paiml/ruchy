@@ -29,13 +29,11 @@ fn test_fmt_lambda_simple() {
 
     assert!(
         formatted.contains("|x, y|"),
-        "Lambda parameters lost! Got:\n{}",
-        formatted
+        "Lambda parameters lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Lambda not implemented! Got:\n{}",
-        formatted
+        "Lambda not implemented! Got:\n{formatted}"
     );
 }
 
@@ -58,8 +56,7 @@ fn test_fmt_lambda_no_params() {
 
     assert!(
         formatted.contains("|| 42"),
-        "Lambda format broken! Got:\n{}",
-        formatted
+        "Lambda format broken! Got:\n{formatted}"
     );
 }
 
@@ -83,8 +80,7 @@ fn test_fmt_object_literal_empty() {
 
     assert!(
         formatted.contains("{}"),
-        "Empty object lost! Got:\n{}",
-        formatted
+        "Empty object lost! Got:\n{formatted}"
     );
 }
 
@@ -107,13 +103,11 @@ fn test_fmt_object_literal_with_fields() {
 
     assert!(
         formatted.contains("name:") && formatted.contains("age:"),
-        "Object fields lost! Got:\n{}",
-        formatted
+        "Object fields lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "ObjectLiteral not implemented! Got:\n{}",
-        formatted
+        "ObjectLiteral not implemented! Got:\n{formatted}"
     );
 }
 
@@ -137,13 +131,11 @@ fn test_fmt_struct_literal() {
 
     assert!(
         formatted.contains("Point") && formatted.contains("x:") && formatted.contains("y:"),
-        "Struct literal broken! Got:\n{}",
-        formatted
+        "Struct literal broken! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "StructLiteral not implemented! Got:\n{}",
-        formatted
+        "StructLiteral not implemented! Got:\n{formatted}"
     );
 }
 
@@ -166,14 +158,12 @@ fn test_fmt_ternary() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     assert!(
-        formatted.contains("?") && formatted.contains(":"),
-        "Ternary operator lost! Got:\n{}",
-        formatted
+        formatted.contains('?') && formatted.contains(':'),
+        "Ternary operator lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Ternary not implemented! Got:\n{}",
-        formatted
+        "Ternary not implemented! Got:\n{formatted}"
     );
 }
 
@@ -197,13 +187,11 @@ fn test_fmt_throw() {
 
     assert!(
         formatted.contains("throw"),
-        "Throw keyword lost! Got:\n{}",
-        formatted
+        "Throw keyword lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Throw not implemented! Got:\n{}",
-        formatted
+        "Throw not implemented! Got:\n{formatted}"
     );
 }
 
@@ -226,13 +214,11 @@ fn test_fmt_try_catch() {
 
     assert!(
         formatted.contains("try") && formatted.contains("catch"),
-        "Try/catch structure lost! Got:\n{}",
-        formatted
+        "Try/catch structure lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "TryCatch not implemented! Got:\n{}",
-        formatted
+        "TryCatch not implemented! Got:\n{formatted}"
     );
 }
 
@@ -256,13 +242,11 @@ fn test_fmt_await() {
 
     assert!(
         formatted.contains("await"),
-        "Await keyword lost! Got:\n{}",
-        formatted
+        "Await keyword lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "Await not implemented! Got:\n{}",
-        formatted
+        "Await not implemented! Got:\n{formatted}"
     );
 }
 
@@ -285,8 +269,7 @@ fn test_fmt_async_block() {
 
     assert!(
         formatted.contains("async"),
-        "Async keyword lost! Got:\n{}",
-        formatted
+        "Async keyword lost! Got:\n{formatted}"
     );
 }
 
@@ -310,12 +293,10 @@ fn test_fmt_type_cast() {
 
     assert!(
         formatted.contains("as i32"),
-        "Type cast lost! Got:\n{}",
-        formatted
+        "Type cast lost! Got:\n{formatted}"
     );
     assert!(
         !formatted.contains("UNIMPLEMENTED"),
-        "TypeCast not implemented! Got:\n{}",
-        formatted
+        "TypeCast not implemented! Got:\n{formatted}"
     );
 }

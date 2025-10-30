@@ -20,12 +20,11 @@ fn test_property_tests_command_exists() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("property-tests") || stdout.contains("Property"),
-        "Help output should mention property-tests: {}",
-        stdout
+        "Help output should mention property-tests: {stdout}"
     );
 }
 
-/// RED PHASE TEST 2: property-tests runs on lang_comp directory
+/// RED PHASE TEST 2: property-tests runs on `lang_comp` directory
 #[test]
 fn test_property_tests_runs_on_lang_comp() {
     let output = Command::new("cargo")
@@ -50,8 +49,7 @@ fn test_property_tests_runs_on_lang_comp() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("Property Test Report") || stdout.contains("property"),
-        "Output should contain property test results: {}",
-        stdout
+        "Output should contain property test results: {stdout}"
     );
 }
 
@@ -83,8 +81,7 @@ fn test_property_tests_json_format() {
     // Should output valid JSON
     assert!(
         stdout.contains('{') && stdout.contains('}'),
-        "JSON output should contain braces: {}",
-        stdout
+        "JSON output should contain braces: {stdout}"
     );
 }
 
@@ -104,8 +101,7 @@ fn test_mutations_command_exists() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("mutation") || stdout.contains("Mutation"),
-        "Help output should mention mutations: {}",
-        stdout
+        "Help output should mention mutations: {stdout}"
     );
 }
 
@@ -132,9 +128,7 @@ fn test_mutations_runs_on_test_file() {
 
     assert!(
         stdout.contains("Mutation") || stderr.contains("mutation"),
-        "Output should contain mutation test results: stdout={}, stderr={}",
-        stdout,
-        stderr
+        "Output should contain mutation test results: stdout={stdout}, stderr={stderr}"
     );
 }
 
@@ -162,8 +156,7 @@ fn test_mutations_json_format() {
     let has_json = stdout.contains('{') && stdout.contains('}');
     assert!(
         has_json || output.status.success(),
-        "mutations should support JSON format: {}",
-        stdout
+        "mutations should support JSON format: {stdout}"
     );
 }
 
@@ -183,8 +176,7 @@ fn test_fuzz_command_exists() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("fuzz") || stdout.contains("Fuzz"),
-        "Help output should mention fuzz: {}",
-        stdout
+        "Help output should mention fuzz: {stdout}"
     );
 }
 
@@ -211,9 +203,7 @@ fn test_fuzz_runs_with_iterations() {
     // Fuzz may fail if targets don't exist yet, but should attempt to run
     assert!(
         stdout.contains("Fuzz") || stderr.contains("fuzz") || stdout.contains("iterations"),
-        "Output should contain fuzz test results: stdout={}, stderr={}",
-        stdout,
-        stderr
+        "Output should contain fuzz test results: stdout={stdout}, stderr={stderr}"
     );
 }
 
@@ -241,8 +231,7 @@ fn test_fuzz_json_format() {
     let has_json = stdout.contains('{') && stdout.contains('}');
     assert!(
         has_json || output.status.success(),
-        "fuzz should support JSON format: {}",
-        stdout
+        "fuzz should support JSON format: {stdout}"
     );
 }
 
@@ -265,13 +254,11 @@ fn test_all_testing_commands_in_help() {
 
     assert!(
         has_property_tests,
-        "Help should list property-tests command: {}",
-        stdout
+        "Help should list property-tests command: {stdout}"
     );
     assert!(
         has_mutations,
-        "Help should list mutations command: {}",
-        stdout
+        "Help should list mutations command: {stdout}"
     );
-    assert!(has_fuzz, "Help should list fuzz command: {}", stdout);
+    assert!(has_fuzz, "Help should list fuzz command: {stdout}");
 }

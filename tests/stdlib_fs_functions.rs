@@ -1,22 +1,22 @@
 //! STDLIB Phase 2: File System Functions Tests
 //!
 //! **Task**: Implement 12 file system functions
-//! **Priority**: HIGH (Phase 2 of STDLIB_ACCESS_PLAN)
+//! **Priority**: HIGH (Phase 2 of `STDLIB_ACCESS_PLAN`)
 //! **Pattern**: Three-layer builtin function (proven from env functions)
 //!
 //! Functions:
-//! 1. fs_read(path: String) -> Result<String>
-//! 2. fs_write(path: String, content: String) -> Result<()>
-//! 3. fs_exists(path: String) -> Bool
-//! 4. fs_create_dir(path: String) -> Result<()>
-//! 5. fs_remove_file(path: String) -> Result<()>
-//! 6. fs_remove_dir(path: String) -> Result<()>
-//! 7. fs_copy(from: String, to: String) -> Result<()>
-//! 8. fs_rename(from: String, to: String) -> Result<()>
-//! 9. fs_metadata(path: String) -> Result<Metadata>
-//! 10. fs_read_dir(path: String) -> Result<Vec<String>>
-//! 11. fs_canonicalize(path: String) -> Result<String>
-//! 12. fs_is_file(path: String) -> Bool
+//! 1. `fs_read(path`: String) -> Result<String>
+//! 2. `fs_write(path`: String, content: String) -> Result<()>
+//! 3. `fs_exists(path`: String) -> Bool
+//! 4. `fs_create_dir(path`: String) -> Result<()>
+//! 5. `fs_remove_file(path`: String) -> Result<()>
+//! 6. `fs_remove_dir(path`: String) -> Result<()>
+//! 7. `fs_copy(from`: String, to: String) -> Result<()>
+//! 8. `fs_rename(from`: String, to: String) -> Result<()>
+//! 9. `fs_metadata(path`: String) -> Result<Metadata>
+//! 10. `fs_read_dir(path`: String) -> Result<Vec<String>>
+//! 11. `fs_canonicalize(path`: String) -> Result<String>
+//! 12. `fs_is_file(path`: String) -> Bool
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
@@ -351,7 +351,7 @@ fn test_fs_functions_summary() {
     println!("10. fs_read_dir(path) - List directory contents");
     println!("11. fs_canonicalize(path) - Get absolute path");
     println!("12. fs_is_file(path) - Check if path is file");
-    println!("");
+    println!();
     println!("Three-Layer Implementation Required for each:");
     println!("1. Runtime: builtin_* in builtins.rs");
     println!("2. Transpiler: case in try_transpile_fs_function()");

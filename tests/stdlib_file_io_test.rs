@@ -1,7 +1,7 @@
-//! STDLIB-008: File I/O functions (file_exists, append_file, delete_file)
+//! STDLIB-008: File I/O functions (`file_exists`, `append_file`, `delete_file`)
 //!
 //! ROOT CAUSE: Missing basic file system operations
-//! SOLUTION: Implement file_exists(), append_file(), delete_file()
+//! SOLUTION: Implement `file_exists()`, `append_file()`, `delete_file()`
 //!
 //! EXTREME TDD: RED → GREEN → REFACTOR
 
@@ -23,7 +23,7 @@ fn test_file_exists_true() {
     let test_file = "/tmp/ruchy_test_exists.txt";
     fs::write(test_file, "test content").unwrap();
 
-    let code = format!(r#"println(file_exists("{}"))"#, test_file);
+    let code = format!(r#"println(file_exists("{test_file}"))"#);
 
     ruchy_cmd()
         .arg("-e")
@@ -57,7 +57,7 @@ fn test_append_file_to_existing() {
     let test_file = "/tmp/ruchy_test_append.txt";
     fs::write(test_file, "line1\n").unwrap();
 
-    let code = format!(r#"append_file("{}", "line2\n")"#, test_file);
+    let code = format!(r#"append_file("{test_file}", "line2\n")"#);
 
     ruchy_cmd()
         .arg("-e")
@@ -78,7 +78,7 @@ fn test_append_file_creates_new() {
     let test_file = "/tmp/ruchy_test_append_new.txt";
     let _ = fs::remove_file(test_file); // Ensure it doesn't exist
 
-    let code = format!(r#"append_file("{}", "new content\n")"#, test_file);
+    let code = format!(r#"append_file("{test_file}", "new content\n")"#);
 
     ruchy_cmd()
         .arg("-e")
@@ -103,7 +103,7 @@ fn test_delete_file_exists() {
     let test_file = "/tmp/ruchy_test_delete.txt";
     fs::write(test_file, "to be deleted").unwrap();
 
-    let code = format!(r#"delete_file("{}")"#, test_file);
+    let code = format!(r#"delete_file("{test_file}")"#);
 
     ruchy_cmd()
         .arg("-e")
@@ -120,7 +120,7 @@ fn test_delete_file_nonexistent() {
     let test_file = "/tmp/ruchy_test_delete_nonexistent.txt";
     let _ = fs::remove_file(test_file); // Ensure it doesn't exist
 
-    let code = format!(r#"delete_file("{}")"#, test_file);
+    let code = format!(r#"delete_file("{test_file}")"#);
 
     // Should succeed (idempotent delete)
     ruchy_cmd()

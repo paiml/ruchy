@@ -4,7 +4,7 @@
 //! Expected: Exit code 1 (or other non-zero)
 //! Actual: Exit code 0 (success)
 //!
-//! GitHub Issue: https://github.com/paiml/ruchy/issues/81
+//! GitHub Issue: <https://github.com/paiml/ruchy/issues/81>
 //! Ticket: DEBUGGER-013
 
 use assert_cmd::Command;
@@ -45,11 +45,11 @@ fn test_regression_081_undefined_function_returns_nonzero_exit_code() {
     let mut temp_file = NamedTempFile::new().unwrap();
     writeln!(
         temp_file,
-        r#"
+        r"
 fun main() {{
     undefined_function_that_does_not_exist();
 }}
-"#
+"
     )
     .unwrap();
 
@@ -93,11 +93,11 @@ fn test_regression_081_runtime_error_returns_nonzero_exit_code() {
     let mut temp_file = NamedTempFile::new().unwrap();
     writeln!(
         temp_file,
-        r#"
+        r"
 fun main() {{
     let x = 1 / 0;  // Division by zero
 }}
-"#
+"
     )
     .unwrap();
 

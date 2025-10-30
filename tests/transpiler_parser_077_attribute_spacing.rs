@@ -9,7 +9,7 @@
 //! Actual (before fix): `# [test]` with space between # and [
 //! Actual (after fix): `#[test]` with correct spacing
 //!
-//! **Root Cause**: PARSER-076 fixed TokenStream spacing for attributes as side effect
+//! **Root Cause**: PARSER-076 fixed `TokenStream` spacing for attributes as side effect
 //! **Test Status**: All 6 tests PASSING (GREEN phase) - bug no longer present
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
@@ -39,12 +39,12 @@ fn test_parser_077_red_simple_test_attribute() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 #[test]
 fun foo() {
     42
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -63,14 +63,12 @@ fun foo() {
 
     assert!(
         stdout.contains("#[test]"),
-        "Expected #[test] without space, but got: {}",
-        stdout
+        "Expected #[test] without space, but got: {stdout}"
     );
 
     assert!(
         !stdout.contains("# [test]"),
-        "Found # [test] with space (BUG!), output: {}",
-        stdout
+        "Found # [test] with space (BUG!), output: {stdout}"
     );
 }
 
@@ -80,7 +78,7 @@ fn test_parser_077_red_multiple_test_attributes() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 #[test]
 fun test_one() { 1 }
 
@@ -89,7 +87,7 @@ fun test_two() { 2 }
 
 #[test]
 fun test_three() { 3 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -107,14 +105,12 @@ fun test_three() { 3 }
 
     assert_eq!(
         test_count, 3,
-        "Expected 3 #[test] attributes, found {}, output: {}",
-        test_count, stdout
+        "Expected 3 #[test] attributes, found {test_count}, output: {stdout}"
     );
 
     assert_eq!(
         bad_test_count, 0,
-        "Found {} # [test] with spaces (BUG!), output: {}",
-        bad_test_count, stdout
+        "Found {bad_test_count} # [test] with spaces (BUG!), output: {stdout}"
     );
 }
 
@@ -124,13 +120,13 @@ fn test_parser_077_red_derive_attribute() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 #[derive(Debug, Clone)]
 struct Point {
     x: i32,
     y: i32
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -145,14 +141,12 @@ struct Point {
     // #[derive(...)] must have correct spacing
     assert!(
         stdout.contains("#[derive("),
-        "Expected #[derive( without space, but got: {}",
-        stdout
+        "Expected #[derive( without space, but got: {stdout}"
     );
 
     assert!(
         !stdout.contains("# [derive("),
-        "Found # [derive( with space (BUG!), output: {}",
-        stdout
+        "Found # [derive( with space (BUG!), output: {stdout}"
     );
 }
 
@@ -162,13 +156,13 @@ fn test_parser_077_red_compile_with_test_attribute() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 #[test]
 fun test_addition() {
     let result = 2 + 2;
     assert_eq!(result, 4);
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -189,9 +183,9 @@ fn test_parser_077_red_attribute_at_file_start() {
     let source = temp.path().join("test.ruchy");
 
     // No newline before #[test] - edge case
-    let code = r#"#[test]
+    let code = r"#[test]
 fun foo() { 42 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -205,14 +199,12 @@ fun foo() { 42 }
 
     assert!(
         stdout.contains("#[test]"),
-        "Expected #[test] without space, but got: {}",
-        stdout
+        "Expected #[test] without space, but got: {stdout}"
     );
 
     assert!(
         !stdout.contains("# [test]"),
-        "Found # [test] with space (BUG!), output: {}",
-        stdout
+        "Found # [test] with space (BUG!), output: {stdout}"
     );
 }
 
@@ -222,16 +214,16 @@ fun foo() { 42 }
 #[test]
 fn test_parser_077_red_phase_summary() {
     println!("PARSER-077 Status: ✅ BUG FIXED (GREEN Phase)");
-    println!("");
+    println!();
     println!("Fixed by: PARSER-076 (unary plus operator implementation)");
     println!("All 6 tests PASSING - attribute spacing is correct");
-    println!("");
+    println!();
     println!("Verified correct spacing:");
     println!("1. ✅ Simple #[test] attribute - no space");
     println!("2. ✅ Multiple #[test] attributes - all correct");
     println!("3. ✅ #[derive(...)] attribute - no space");
     println!("4. ✅ Compile succeeds - #[test] is valid Rust");
     println!("5. ✅ Edge case: attribute at file start - correct");
-    println!("");
+    println!();
     println!("These tests now serve as regression tests.");
 }

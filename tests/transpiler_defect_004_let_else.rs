@@ -5,10 +5,10 @@
 //! **Severity**: MEDIUM (5 TODO markers blocking language feature)
 //!
 //! **SATD Violations (5 TODOs)**:
-//! - src/backend/transpiler/dispatcher.rs:390 (ExprKind::Let)
-//! - src/backend/transpiler/dispatcher.rs:411 (ExprKind::LetPattern)
+//! - src/backend/transpiler/dispatcher.rs:390 (`ExprKind::Let`)
+//! - src/backend/transpiler/dispatcher.rs:411 (`ExprKind::LetPattern`)
 //! - src/backend/transpiler/statements.rs (1 instance)
-//! - src/backend/transpiler/dispatcher_helpers/error_handling.rs (2 instances)
+//! - `src/backend/transpiler/dispatcher_helpers/error_handling.rs` (2 instances)
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR → MUTATION → PROPERTY)
 
@@ -29,7 +29,7 @@ fn temp_dir() -> TempDir {
 // ==================== RED PHASE: Failing Tests ====================
 // These tests MUST FAIL initially with "let-else transpilation not yet implemented"
 
-/// Test 1: Basic let-else with Option::Some pattern
+/// Test 1: Basic let-else with `Option::Some` pattern
 ///
 /// Ruchy code:
 /// ```ruchy
@@ -51,14 +51,14 @@ fn test_let_else_red_option_some_pattern() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() -> i64 {
     let Some(x) = Some(42) else {
         return 1
     }
     x
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -70,7 +70,7 @@ fun main() -> i64 {
         .success();
 }
 
-/// Test 2: Let-else with Option::None fallback
+/// Test 2: Let-else with `Option::None` fallback
 ///
 /// Ruchy code:
 /// ```ruchy
@@ -109,7 +109,7 @@ fun main() -> i64 {
         .success();
 }
 
-/// Test 3: Let-else with Result::Ok pattern
+/// Test 3: Let-else with `Result::Ok` pattern
 ///
 /// Ruchy code:
 /// ```ruchy
@@ -166,7 +166,7 @@ fn test_let_else_red_enum_destructuring() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 enum Response {
     Success(i64),
     Error(String)
@@ -182,7 +182,7 @@ fun main() -> i64 {
     }
     code
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -207,7 +207,7 @@ fn test_let_else_red_tuple_destructuring() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun get_coordinates() -> Option<(i64, i64)> {
     Some((10, 20))
 }
@@ -218,7 +218,7 @@ fun main() -> (i64, i64) {
     }
     (x, y)
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -243,7 +243,7 @@ fn test_let_else_red_nested_patterns() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun nested_result() -> Option<Result<i64, String>> {
     Some(Ok(42))
 }
@@ -254,7 +254,7 @@ fun main() -> i64 {
     }
     value
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -318,12 +318,12 @@ fn test_let_else_baseline_regular_let() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() -> i64 {
     let x = 42
     x
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -341,7 +341,7 @@ fn test_let_else_baseline_match_alternative() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() -> i64 {
     let opt = Some(42)
     match opt {
@@ -349,7 +349,7 @@ fun main() -> i64 {
         None => -1
     }
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 

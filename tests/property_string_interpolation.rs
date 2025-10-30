@@ -86,7 +86,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_escaped_braces_preserved(text in "[a-z ]{1,20}") {
-        let s = format!("f\"{{{{{}}}}}\"", text);
+        let s = format!("f\"{{{{{text}}}}}\"");
         let result = Parser::new(&s).parse();
 
         // Should parse successfully and preserve escaped braces
@@ -119,7 +119,7 @@ proptest! {
         let result = Parser::new(&s).parse();
 
         if let Ok(ast) = result {
-            let ast_str = format!("{:?}", ast);
+            let ast_str = format!("{ast:?}");
             // Should contain both variable references
             prop_assert!(
                 ast_str.contains(&var1) || ast_str.contains(&var2),
@@ -163,7 +163,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -178,7 +178,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -192,7 +192,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -207,7 +207,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 
@@ -221,7 +221,7 @@ mod unit_tests {
 
         for code in test_cases {
             let result = Parser::new(code).parse();
-            assert!(result.is_ok(), "Failed to parse: {}", code);
+            assert!(result.is_ok(), "Failed to parse: {code}");
         }
     }
 }

@@ -392,7 +392,7 @@ mod property_tests {
         for url in invalid_urls {
             let result = get(url);
             assert!(result.is_err(),
-                    "get('{}') should return Err, not panic", url);
+                    "get('{url}') should return Err, not panic");
         }
     }
 
@@ -407,7 +407,7 @@ mod property_tests {
         for (url, body) in test_cases {
             let result = post(url, body);
             assert!(result.is_err(),
-                    "post('{}', '{}') should return Err", url, body);
+                    "post('{url}', '{body}') should return Err");
         }
     }
 

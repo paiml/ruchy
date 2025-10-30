@@ -305,7 +305,7 @@ mod tests {
         for opcode in &opcodes {
             let u8_val = opcode.to_u8();
             let recovered = OpCode::from_u8(u8_val).expect("Failed to recover opcode");
-            assert_eq!(*opcode, recovered, "Opcode roundtrip failed for {:?}", opcode);
+            assert_eq!(*opcode, recovered, "Opcode roundtrip failed for {opcode:?}");
         }
     }
 

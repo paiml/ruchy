@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 // STDLIB-002: Advanced Math Functions
 //
 // Implementing: sin, cos, tan, log, log10, random
@@ -327,14 +329,13 @@ mod property_tests {
 
             let code = format!(
                 r#"
-let x = {}
+let x = {x}
 let s = sin(x)
 let c = cos(x)
 let sum = s * s + c * c
 let diff = abs(sum - 1.0)
 println("sin²({{}}) + cos²({{}}) = {{}}, diff = {{}}", x, x, sum, diff)
-"#,
-                x
+"#
             );
 
             ruchy_cmd()
@@ -344,7 +345,7 @@ println("sin²({{}}) + cos²({{}}) = {{}}, diff = {{}}", x, x, sum, diff)
                 .success();
 
             if iteration % 1000 == 0 {
-                println!("Property test iteration: {}/10000", iteration);
+                println!("Property test iteration: {iteration}/10000");
             }
         }
 
@@ -364,14 +365,13 @@ println("sin²({{}}) + cos²({{}}) = {{}}, diff = {{}}", x, x, sum, diff)
 
             let code = format!(
                 r#"
-let a = {}
-let b = {}
+let a = {a}
+let b = {b}
 let log_ab = log(a * b)
 let log_a_plus_log_b = log(a) + log(b)
 let diff = abs(log_ab - log_a_plus_log_b)
 println("log({{}}) = {{}}, diff = {{}}", a * b, log_ab, diff)
-"#,
-                a, b
+"#
             );
 
             ruchy_cmd()
@@ -381,14 +381,14 @@ println("log({{}}) = {{}}, diff = {{}}", a * b, log_ab, diff)
                 .success();
 
             if iteration % 1000 == 0 {
-                println!("Property test iteration: {}/10000", iteration);
+                println!("Property test iteration: {iteration}/10000");
             }
         }
 
         println!("✅ Property test passed: log(a*b) = log(a) + log(b) for 10,000 random values");
     }
 
-    /// Property: random() returns values in [0.0, 1.0)
+    /// Property: `random()` returns values in [0.0, 1.0)
     #[test]
     #[ignore]
     fn prop_random_in_range() {
@@ -405,7 +405,7 @@ println("random() = {}", r)
                 .success();
 
             if iteration % 1000 == 0 {
-                println!("Property test iteration: {}/10000", iteration);
+                println!("Property test iteration: {iteration}/10000");
             }
         }
 

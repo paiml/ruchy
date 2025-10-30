@@ -1,8 +1,8 @@
 //! Integration tests for match expression with enum variants
 //!
 //! Tests pattern matching on custom enum types:
-//! - Unit variant patterns (Status::Success)
-//! - Tuple variant patterns with destructuring (Response::Error(msg))
+//! - Unit variant patterns (`Status::Success`)
+//! - Tuple variant patterns with destructuring (`Response::Error(msg)`)
 //! - Match exhaustiveness
 //! - Guards with enum patterns
 
@@ -88,7 +88,7 @@ println(result)
 
 #[test]
 fn test_match_multiple_variants() {
-    let code = r#"
+    let code = r"
 enum Action {
     Start,
     Stop,
@@ -112,7 +112,7 @@ let r2 = match a2 {
 
 println(r1)
 println(r2)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

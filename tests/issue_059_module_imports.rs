@@ -8,7 +8,7 @@
 use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::ExprKind;
 
-/// Test naming convention: test_issue059_<section>_<syntax>_<case>
+/// Test naming convention: `test_issue059`_<section>_<syntax>_<case>
 /// Traceability: issue059 → GitHub issue #59
 
 #[test]
@@ -123,13 +123,13 @@ fn test_issue059_09_from_import_wildcard() {
 #[test]
 fn test_issue059_10_struct_with_imports() {
     // Real-world scenario from GitHub issue: struct with imports
-    let source = r#"
+    let source = r"
 use types::DiscoveryFramework
 
 struct TestRunner {
     framework: DiscoveryFramework,
 }
-"#;
+";
     let ast = Parser::new(source).parse().expect("Should parse struct with imports");
 
     assert!(
@@ -141,14 +141,14 @@ struct TestRunner {
 #[test]
 fn test_issue059_11_multiline_imports() {
     // Multiple import statements in sequence
-    let source = r#"
+    let source = r"
 use std::collections::HashMap
 use std::io::Read
 import fs.readFile
 from utils import helper
 
 let x = 42
-"#;
+";
     let ast = Parser::new(source).parse().expect("Should parse multiple imports");
 
     assert!(
@@ -199,7 +199,7 @@ mod property_tests {
             module in arb_module_path(),
             item in arb_identifier()
         ) {
-            let source = format!("use {}::{}", module, item);
+            let source = format!("use {module}::{item}");
             let result = Parser::new(&source).parse();
             prop_assert!(result.is_ok(), "use statement should always parse: {}", source);
         }
@@ -209,7 +209,7 @@ mod property_tests {
             parts in prop::collection::vec("[a-z][a-z0-9_]*", 1..5)
         ) {
             let module = parts.join(".");
-            let source = format!("import {}", module);
+            let source = format!("import {module}");
             let result = Parser::new(&source).parse();
             prop_assert!(result.is_ok(), "import statement should always parse: {}", source);
         }
@@ -221,7 +221,7 @@ mod property_tests {
         ) {
             let module_dots = module.replace("::", ".");
             let items_str = items.join(", ");
-            let source = format!("from {} import {}", module_dots, items_str);
+            let source = format!("from {module_dots} import {items_str}");
             let result = Parser::new(&source).parse();
             prop_assert!(result.is_ok(), "from import should always parse: {}", source);
         }
@@ -235,12 +235,12 @@ mod property_tests {
 fn test_issue059_runtime_01_use_statement_executes() {
     use ruchy::runtime::interpreter::Interpreter;
 
-    let source = r#"
+    let source = r"
 use std::collections::HashMap
 
 let x = 42
 x
-"#;
+";
 
     let ast = Parser::new(source).parse().expect("Should parse");
     let mut interpreter = Interpreter::new();
@@ -249,8 +249,7 @@ x
     // Should NOT error with "Expression type not yet implemented"
     assert!(
         result.is_ok(),
-        "use statement should execute without error, got: {:?}",
-        result
+        "use statement should execute without error, got: {result:?}"
     );
 
     // Result should be 42 (the last expression)
@@ -261,12 +260,12 @@ x
 fn test_issue059_runtime_02_import_statement_executes() {
     use ruchy::runtime::interpreter::Interpreter;
 
-    let source = r#"
+    let source = r"
 import std.collections
 
 let x = 42
 x
-"#;
+";
 
     let ast = Parser::new(source).parse().expect("Should parse");
     let mut interpreter = Interpreter::new();
@@ -274,8 +273,7 @@ x
 
     assert!(
         result.is_ok(),
-        "import statement should execute without error, got: {:?}",
-        result
+        "import statement should execute without error, got: {result:?}"
     );
 
     assert_eq!(result.unwrap().to_string(), "42");
@@ -285,12 +283,12 @@ x
 fn test_issue059_runtime_03_from_import_executes() {
     use ruchy::runtime::interpreter::Interpreter;
 
-    let source = r#"
+    let source = r"
 from std import println
 
 let x = 42
 x
-"#;
+";
 
     let ast = Parser::new(source).parse().expect("Should parse");
     let mut interpreter = Interpreter::new();
@@ -298,8 +296,7 @@ x
 
     assert!(
         result.is_ok(),
-        "from import statement should execute without error, got: {:?}",
-        result
+        "from import statement should execute without error, got: {result:?}"
     );
 
     assert_eq!(result.unwrap().to_string(), "42");
@@ -309,12 +306,12 @@ x
 fn test_issue059_runtime_04_wildcard_import_executes() {
     use ruchy::runtime::interpreter::Interpreter;
 
-    let source = r#"
+    let source = r"
 use std::*
 
 let x = 42
 x
-"#;
+";
 
     let ast = Parser::new(source).parse().expect("Should parse");
     let mut interpreter = Interpreter::new();
@@ -322,8 +319,7 @@ x
 
     assert!(
         result.is_ok(),
-        "wildcard import should execute without error, got: {:?}",
-        result
+        "wildcard import should execute without error, got: {result:?}"
     );
 
     assert_eq!(result.unwrap().to_string(), "42");
@@ -333,7 +329,7 @@ x
 fn test_issue059_runtime_05_multiple_imports_execute() {
     use ruchy::runtime::interpreter::Interpreter;
 
-    let source = r#"
+    let source = r"
 use std::collections::HashMap
 use std::io::Read
 import fs.readFile
@@ -341,7 +337,7 @@ from utils import helper
 
 let x = 42
 x
-"#;
+";
 
     let ast = Parser::new(source).parse().expect("Should parse");
     let mut interpreter = Interpreter::new();
@@ -349,8 +345,7 @@ x
 
     assert!(
         result.is_ok(),
-        "multiple import statements should execute without error, got: {:?}",
-        result
+        "multiple import statements should execute without error, got: {result:?}"
     );
 
     assert_eq!(result.unwrap().to_string(), "42");

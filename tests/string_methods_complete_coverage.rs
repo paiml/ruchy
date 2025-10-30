@@ -1,4 +1,4 @@
-//! Complete mutation coverage for eval_string_methods.rs
+//! Complete mutation coverage for `eval_string_methods.rs`
 //! TOYOTA WAY: Stop the line - fix ALL 20 MISSED mutations
 //!
 //! This test file catches all mutations found by cargo-mutants
@@ -79,7 +79,7 @@ fn test_lines_method() {
             panic!("Second line should be String");
         }
     } else {
-        panic!("Expected Array, got {:?}", result);
+        panic!("Expected Array, got {result:?}");
     }
 }
 
@@ -150,7 +150,7 @@ fn test_char_at_boundary() {
     if let Value::String(ch) = result {
         assert_eq!(&*ch, "h", "char_at(0) should return 'h'");
     } else {
-        panic!("Expected String, got {:?}", result);
+        panic!("Expected String, got {result:?}");
     }
 
     // Valid index 1 - must verify it works
@@ -158,7 +158,7 @@ fn test_char_at_boundary() {
     if let Value::String(ch) = result2 {
         assert_eq!(&*ch, "i", "char_at(1) should return 'i'");
     } else {
-        panic!("Expected String, got {:?}", result2);
+        panic!("Expected String, got {result2:?}");
     }
 
     // Invalid index (should return Nil or error, NOT panic)
@@ -181,7 +181,7 @@ fn test_substring_logic() {
     if let Value::String(substr) = result {
         assert_eq!(&*substr, "el", "substring(1, 3) should return 'el'");
     } else {
-        panic!("Expected String, got {:?}", result);
+        panic!("Expected String, got {result:?}");
     }
 
     // Invalid: negative start (should error with &&, but might succeed with ||)
@@ -212,6 +212,6 @@ fn test_integer_to_string() {
     if let Value::String(s) = result {
         assert_eq!(&*s, "42", "Integer.to_string() should work");
     } else {
-        panic!("Expected String, got {:?}", result);
+        panic!("Expected String, got {result:?}");
     }
 }

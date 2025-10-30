@@ -54,11 +54,11 @@ fn test_fmt_loads_config_from_current_directory() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config file with custom settings
-    fs::write(&config_file, r#"
+    fs::write(&config_file, r"
 indent_width = 2
 use_tabs = false
 max_line_length = 80
-"#).expect("Failed to write config file");
+").expect("Failed to write config file");
 
     // Write test file
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
@@ -80,10 +80,10 @@ fn test_fmt_searches_parent_directories_for_config() {
     let test_file = subdir.join("test.ruchy");
 
     // Create config file in parent directory
-    fs::write(&config_file, r#"
+    fs::write(&config_file, r"
 indent_width = 2
 use_tabs = false
-"#).expect("Failed to write config file");
+").expect("Failed to write config file");
 
     // Write test file in subdirectory
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
@@ -153,10 +153,10 @@ fn test_fmt_with_tabs_config() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config file with tabs enabled
-    fs::write(&config_file, r#"
+    fs::write(&config_file, r"
 indent_width = 4
 use_tabs = true
-"#).expect("Failed to write config file");
+").expect("Failed to write config file");
 
     // Write test file that needs indentation
     fs::write(&test_file, "{\nlet x = 1\n}").expect("Failed to write test file");
@@ -218,10 +218,10 @@ fn test_fmt_with_custom_indent_width() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config with indent_width = 2
-    fs::write(&config_file, r#"
+    fs::write(&config_file, r"
 indent_width = 2
 use_tabs = false
-"#).expect("Failed to write config file");
+").expect("Failed to write config file");
 
     // Write test file
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");

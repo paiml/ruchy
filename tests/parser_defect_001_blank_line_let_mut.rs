@@ -5,7 +5,7 @@
 //! 2. Followed by blank line
 //! 3. Next function starts with `let mut`
 //!
-//! Error: "Expected RightBrace, found Let"
+//! Error: "Expected `RightBrace`, found Let"
 //! Location: Parser block closing logic (TBD)
 //!
 //! RED Phase Tests - Following EXTREME TDD

@@ -80,7 +80,7 @@ fn tool_02_transpile_output_is_valid_rust() {
 // ============================================================================
 
 #[test]
-#[ignore] // REPL requires interactive input - use rexpect in integration tests
+#[ignore = "REPL requires interactive input - use rexpect in integration tests"]
 fn tool_03_repl_evaluates_expressions() {
     // This test is ignored because REPL requires interactive session
     // See: tests/integration/repl_validation.rs for rexpect-based tests
@@ -123,7 +123,7 @@ fn tool_04_lint_detects_unused_variables() {
 #[test]
 fn tool_05_compile_generates_binary() {
     let temp_dir = std::env::temp_dir();
-    let output_binary = temp_dir.join("test_compile_output");
+    let _output_binary = temp_dir.join("test_compile_output");
 
     ruchy_cmd()
         .arg("compile")
@@ -301,7 +301,7 @@ fn tool_13_mutations_runs_successfully() {
 // ============================================================================
 
 #[test]
-#[ignore] // Requires cargo-fuzz setup and long runtime
+#[ignore = "Requires cargo-fuzz setup and long runtime"]
 fn tool_14_fuzz_runs_successfully() {
     ruchy_cmd()
         .arg("fuzz")
@@ -334,7 +334,7 @@ fn tool_15_notebook_help_works() {
 }
 
 #[test]
-#[ignore] // Requires server startup - use integration tests with timeout
+#[ignore = "Requires server startup - use integration tests with timeout"]
 fn tool_15_notebook_starts_server() {
     // This test is ignored because notebook starts a long-running server
     // Integration tests should verify server startup and shutdown
@@ -345,7 +345,7 @@ fn tool_15_notebook_starts_server() {
 // ============================================================================
 
 #[test]
-#[ignore] // Run manually: cargo test --test fourteen_tool_validation comprehensive_validation -- --ignored
+#[ignore = "Run manually: cargo test --test fourteen_tool_validation comprehensive_validation -- --ignored"]
 fn comprehensive_validation_all_15_tools() {
     let example = example_path("01-basic-syntax/01_variables.ruchy");
 

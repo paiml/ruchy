@@ -115,7 +115,7 @@ mod tests {
 
     /// Test that PID file is created with current process ID
     ///
-    /// RED: This test should FAIL because PidFile::new() is unimplemented
+    /// RED: This test should FAIL because `PidFile::new()` is unimplemented
     #[test]
     fn test_pid_file_creation() {
         let temp_dir = tempfile::tempdir().unwrap();
@@ -157,7 +157,7 @@ mod tests {
 
     /// Test that stale PID file (non-existent process) is replaced
     ///
-    /// RED: This test should FAIL because PidFile::new() doesn't check for stale PIDs
+    /// RED: This test should FAIL because `PidFile::new()` doesn't check for stale PIDs
     #[test]
     fn test_pid_file_replaces_stale() {
         let temp_dir = tempfile::tempdir().unwrap();
@@ -179,7 +179,7 @@ mod tests {
 
     /// Test that PID file with running process is handled gracefully
     ///
-    /// RED: This test should FAIL because PidFile::new() doesn't kill running processes
+    /// RED: This test should FAIL because `PidFile::new()` doesn't kill running processes
     #[test]
     #[ignore = "Requires Unix signals - run with: cargo test -- --ignored"]
     fn test_pid_file_kills_running_process() {
@@ -195,7 +195,7 @@ mod tests {
         fs::write(&pid_path, child_pid.to_string()).unwrap();
 
         // Create PidFile - should kill the child process
-        let _pid_file = PidFile::new(pid_path.clone()).unwrap();
+        let _pid_file = PidFile::new(pid_path).unwrap();
 
         // Wait a moment for kill to take effect
         thread::sleep(Duration::from_millis(100));
@@ -216,7 +216,7 @@ mod tests {
 
     /// Property test: PID file always contains valid process ID
     ///
-    /// RED: This test should FAIL because PidFile::new() is unimplemented
+    /// RED: This test should FAIL because `PidFile::new()` is unimplemented
     #[test]
     #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_pid_file_always_valid() {
@@ -224,7 +224,7 @@ mod tests {
 
         proptest!(|(seed in any::<u32>())| {
             let temp_dir = tempfile::tempdir().unwrap();
-            let pid_path = temp_dir.path().join(format!("test_{}.pid", seed));
+            let pid_path = temp_dir.path().join(format!("test_{seed}.pid"));
 
             let _pid_file = PidFile::new(pid_path.clone()).unwrap();
 

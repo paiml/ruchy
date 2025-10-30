@@ -25,12 +25,12 @@ use tempfile::TempDir;
 #[test]
 fn test_parser_061_01_box_simple_enum_check() {
     // Parser accepts Box<T> syntax in enum variants
-    let code = r#"
+    let code = r"
 enum Expr {
     Literal(i32),
     Binary(String, Box<Expr>, Box<Expr>)
 }
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -47,13 +47,13 @@ enum Expr {
 #[test]
 fn test_parser_061_02_box_transpile_correctness() {
     // Transpiler generates correct Rust code with Box<T>
-    let code = r#"
+    let code = r"
 enum Expr {
     Num(i32),
     Add(Box<Expr>, Box<Expr>)
 }
 let x = Expr::Num(42)
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -71,14 +71,14 @@ let x = Expr::Num(42)
 #[test]
 fn test_parser_061_03_box_instantiation_literal() {
     // Can instantiate enum with Box<T> - simple case
-    let code = r#"
+    let code = r"
 enum Expr {
     Lit(i32),
     Add(Box<Expr>, Box<Expr>)
 }
 let x = Expr::Lit(42)
 println(x)
-"#;
+";
 
     let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -91,7 +91,7 @@ println(x)
 #[test]
 fn test_parser_061_04_box_instantiation_recursive() {
     // Can instantiate enum with Box<T> - recursive case
-    let code = r#"
+    let code = r"
 enum Expr {
     Num(i32),
     Add(Box<Expr>, Box<Expr>)
@@ -100,7 +100,7 @@ let left = Expr::Num(1)
 let right = Expr::Num(2)
 let add = Expr::Add(Box::new(left), Box::new(right))
 println(add)
-"#;
+";
 
     let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -113,7 +113,7 @@ println(add)
 #[test]
 fn test_parser_061_05_box_nested_three_levels() {
     // Box<T> works with deep nesting (3 levels)
-    let code = r#"
+    let code = r"
 enum Tree {
     Leaf(i32),
     Node(Box<Tree>, Box<Tree>)
@@ -124,7 +124,7 @@ let c = Tree::Node(Box::new(a), Box::new(b))
 let d = Tree::Leaf(3)
 let root = Tree::Node(Box::new(c), Box::new(d))
 println(root)
-"#;
+";
 
     let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -137,7 +137,7 @@ println(root)
 #[test]
 fn test_parser_061_06_box_multiple_type_params() {
     // Box<T> with different type parameters in same enum
-    let code = r#"
+    let code = r"
 enum Value {
     Int(Box<i32>),
     Str(Box<String>),
@@ -145,7 +145,7 @@ enum Value {
 }
 let v = Value::Int(Box::new(42))
 println(v)
-"#;
+";
 
     let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -225,12 +225,12 @@ println(add)
 #[test]
 fn test_parser_080_01_vec_simple_enum_check() {
     // Parser accepts Vec<T> syntax in enum variants
-    let code = r#"
+    let code = r"
 enum Statement {
     Block(Vec<Statement>),
     Expr(i32)
 }
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -247,13 +247,13 @@ enum Statement {
 #[test]
 fn test_parser_080_02_vec_transpile_correctness() {
     // Transpiler generates correct Rust code with Vec<T>
-    let code = r#"
+    let code = r"
 enum Stmt {
     Block(Vec<Stmt>),
     Val(i32)
 }
 let x = Stmt::Val(42)
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -271,7 +271,7 @@ let x = Stmt::Val(42)
 #[test]
 fn test_parser_080_03_vec_empty_instantiation() {
     // Can instantiate enum with Vec<T> - empty case (using Vec::new())
-    let code = r#"
+    let code = r"
 enum Stmt {
     Block(Vec<Stmt>),
     Val(i32)
@@ -279,7 +279,7 @@ enum Stmt {
 let v: Vec<Stmt> = Vec::new()
 let empty = Stmt::Block(v)
 println(empty)
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -296,7 +296,7 @@ println(empty)
 #[test]
 fn test_parser_080_04_vec_with_elements() {
     // Can instantiate enum with Vec<T> - with elements (using push)
-    let code = r#"
+    let code = r"
 enum Stmt {
     Block(Vec<Stmt>),
     Expr(i32)
@@ -308,7 +308,7 @@ v.push(s1)
 v.push(s2)
 let block = Stmt::Block(v)
 println(block)
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -325,7 +325,7 @@ println(block)
 #[test]
 fn test_parser_080_05_vec_nested_blocks() {
     // Vec<T> with nested blocks (2 levels)
-    let code = r#"
+    let code = r"
 enum Stmt {
     Block(Vec<Stmt>),
     Val(i32)
@@ -339,7 +339,7 @@ outer_v.push(inner)
 outer_v.push(Stmt::Val(3))
 let outer = Stmt::Block(outer_v)
 println(outer)
-"#;
+";
 
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.ruchy");
@@ -418,7 +418,7 @@ println(func)
 #[test]
 fn test_parser_061_080_01_box_and_vec_same_enum() {
     // Enum with both Box<T> and Vec<T> variants
-    let code = r#"
+    let code = r"
 enum Node {
     Single(Box<Node>),
     Multiple(Vec<Node>),
@@ -427,7 +427,7 @@ enum Node {
 let leaf = Node::Leaf(42)
 let single = Node::Single(Box::new(leaf))
 println(single)
-"#;
+";
 
     let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")

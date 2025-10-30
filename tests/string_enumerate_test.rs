@@ -1,9 +1,9 @@
-//! RED TEST for Issue #40: Missing .enumerate() causes O(n²) code
+//! RED TEST for Issue #40: Missing .`enumerate()` causes O(n²) code
 //!
 //! ROOT CAUSE: No way to iterate with index, forcing users to use
 //! inefficient pattern: loop { chars().nth(i); i += 1 }
 //!
-//! SOLUTION: Implement .enumerate() that returns (index, value) tuples
+//! SOLUTION: Implement .`enumerate()` that returns (index, value) tuples
 
 use assert_cmd::Command;
 
@@ -34,12 +34,12 @@ println(count)
 
 #[test]
 fn test_array_enumerate() {
-    let code = r#"
+    let code = r"
 let arr = [10, 20, 30];
 for item in arr.enumerate() {
     println(item)
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

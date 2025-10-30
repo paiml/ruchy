@@ -10,14 +10,14 @@ mod defect_parser_006_tests {
     fn test_defect_parser_006_attribute_in_macro_block() {
         // RED PHASE: This test SHOULD FAIL with current implementation
         // From interactive.paiml.com book - chapter2.md block 11
-        let input = r#"
+        let input = r"
 proptest! {
     #[test]
     fn test_example(n: i64) {
         let x = n;
     }
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let result = parser.parse();
@@ -31,7 +31,7 @@ proptest! {
 
     #[test]
     fn test_defect_parser_006_multiple_attributes_in_block() {
-        let input = r#"
+        let input = r"
 proptest! {
     #[test]
     fn test_one() {
@@ -43,7 +43,7 @@ proptest! {
         let y = 2;
     }
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let result = parser.parse();
@@ -58,14 +58,14 @@ proptest! {
     #[test]
     fn test_defect_parser_006_attribute_in_regular_block() {
         // Ensure attributes work inside any { } block, not just macros
-        let input = r#"
+        let input = r"
 {
     #[test]
     fn inner_test() {
         let x = 42;
     }
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let result = parser.parse();
@@ -80,12 +80,12 @@ proptest! {
     #[test]
     fn test_defect_parser_006_top_level_attribute_still_works() {
         // Regression test - ensure top-level attributes still work
-        let input = r#"
+        let input = r"
 #[test]
 fn test_example() {
     let x = 42;
 }
-"#;
+";
 
         let mut parser = Parser::new(input);
         let result = parser.parse();

@@ -13,7 +13,7 @@ fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-/// Test: Html.parse() creates HTML document
+/// Test: `Html.parse()` creates HTML document
 /// RED: This test should FAIL because Html type doesn't exist yet
 #[test]
 fn test_html_parse() {
@@ -28,8 +28,8 @@ fn test_html_parse() {
         .stdout(predicate::str::contains("HtmlDocument"));
 }
 
-/// Test: .select() returns array of elements
-/// RED: This test should FAIL because .select() method doesn't exist
+/// Test: .`select()` returns array of elements
+/// RED: This test should FAIL because .`select()` method doesn't exist
 #[test]
 fn test_html_select() {
     ruchy_cmd()
@@ -44,8 +44,8 @@ fn test_html_select() {
         .stdout(predicate::str::contains("2"));
 }
 
-/// Test: .query_selector() returns first element or nil
-/// RED: This test should FAIL because .query_selector() doesn't exist
+/// Test: .`query_selector()` returns first element or nil
+/// RED: This test should FAIL because .`query_selector()` doesn't exist
 #[test]
 fn test_html_query_selector() {
     ruchy_cmd()
@@ -60,7 +60,7 @@ fn test_html_query_selector() {
         .stdout(predicate::str::contains("Hello World"));
 }
 
-/// Test: .query_selector() returns nil for no match
+/// Test: .`query_selector()` returns nil for no match
 #[test]
 fn test_html_query_selector_no_match() {
     ruchy_cmd()
@@ -75,8 +75,8 @@ fn test_html_query_selector_no_match() {
         .stdout(predicate::str::contains("true"));
 }
 
-/// Test: Element.text() gets text content
-/// RED: This test should FAIL because .text() method doesn't exist
+/// Test: `Element.text()` gets text content
+/// RED: This test should FAIL because .`text()` method doesn't exist
 #[test]
 fn test_html_element_text() {
     ruchy_cmd()
@@ -91,8 +91,8 @@ fn test_html_element_text() {
         .stdout(predicate::str::contains("Hello World"));
 }
 
-/// Test: Element.attr() gets attribute value
-/// RED: This test should FAIL because .attr() method doesn't exist
+/// Test: `Element.attr()` gets attribute value
+/// RED: This test should FAIL because .`attr()` method doesn't exist
 #[test]
 fn test_html_element_attr() {
     ruchy_cmd()
@@ -107,7 +107,7 @@ fn test_html_element_attr() {
         .stdout(predicate::str::contains("http://example.com"));
 }
 
-/// Test: Element.attr() returns nil for missing attribute
+/// Test: `Element.attr()` returns nil for missing attribute
 #[test]
 fn test_html_element_attr_missing() {
     ruchy_cmd()
@@ -122,8 +122,8 @@ fn test_html_element_attr_missing() {
         .stdout(predicate::str::contains("true"));
 }
 
-/// Test: Element.html() gets inner HTML
-/// RED: This test should FAIL because .html() method doesn't exist
+/// Test: `Element.html()` gets inner HTML
+/// RED: This test should FAIL because .`html()` method doesn't exist
 #[test]
 fn test_html_element_html() {
     ruchy_cmd()
@@ -158,7 +158,7 @@ fn test_html_complex_selector() {
         .stdout(predicate::str::contains("2"));
 }
 
-/// Test: .query_selector_all() is alias for .select()
+/// Test: .`query_selector_all()` is alias for .`select()`
 #[test]
 fn test_html_query_selector_all() {
     ruchy_cmd()
@@ -249,7 +249,7 @@ fn prop_html_elements_have_valid_selectors() {
         class in "[a-z]{1,10}",
         content in "[a-zA-Z0-9 ]{0,50}",
     )| {
-        let html_str = format!("<{} class='{}'>{}</{}>", tag, class, content, tag);
+        let html_str = format!("<{tag} class='{class}'>{content}</{tag}>");
 
         // This would need proper integration with Ruchy runtime
         // For now, just verify it compiles

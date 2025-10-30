@@ -154,9 +154,9 @@ println("{}", PI)
 #[test]
 fn test_parser_073_const_check_mode() {
     // Verify syntax checking works with const
-    let code = r#"
+    let code = r"
 const MAX_VALUE = 1000
-"#;
+";
 
     // Write code to temporary file
     let temp_file = "/tmp/test_parser_073_check.ruchy";

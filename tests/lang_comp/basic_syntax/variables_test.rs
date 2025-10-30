@@ -14,17 +14,17 @@ fn run_repl_code(code: &str) -> Result<String, String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Failed to spawn: {}", e))?;
+        .map_err(|e| format!("Failed to spawn: {e}"))?;
 
     if let Some(mut stdin) = child.stdin.take() {
         stdin
             .write_all(code.as_bytes())
-            .map_err(|e| format!("Failed to write: {}", e))?;
+            .map_err(|e| format!("Failed to write: {e}"))?;
     }
 
     let output = child
         .wait_with_output()
-        .map_err(|e| format!("Failed to wait: {}", e))?;
+        .map_err(|e| format!("Failed to wait: {e}"))?;
 
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -87,7 +87,7 @@ proptest! {
     /// Property: Let bindings should work with any valid identifier
     #[test]
     fn prop_variable_names_valid(name in "[a-z][a-z0-9_]{0,15}") {
-        let code = format!("let {} = 42; {}", name, name);
+        let code = format!("let {name} = 42; {name}");
         let result = run_repl_code(&code);
 
         // Should either succeed or fail with clear error
@@ -105,7 +105,7 @@ proptest! {
     /// Property: Integer literals should preserve exact values
     #[test]
     fn prop_integer_literals(n in -1000i64..1000i64) {
-        let code = format!("{}", n);
+        let code = format!("{n}");
         if let Ok(stdout) = run_repl_code(&code) {
             prop_assert!(
                 stdout.contains(&n.to_string()),
@@ -117,7 +117,7 @@ proptest! {
     /// Property: Float literals should preserve values
     #[test]
     fn prop_float_literals(f in -100.0f64..100.0f64) {
-        let code = format!("{}", f);
+        let code = format!("{f}");
         if let Ok(stdout) = run_repl_code(&code) {
             // Float representation may vary slightly
             prop_assert!(
@@ -130,7 +130,7 @@ proptest! {
     /// Property: String literals should preserve content
     #[test]
     fn prop_string_literals(s in "[a-zA-Z0-9 ]{1,20}") {
-        let code = format!("\"{}\"", s);
+        let code = format!("\"{s}\"");
         if let Ok(stdout) = run_repl_code(&code) {
             prop_assert!(
                 stdout.contains(&s),
@@ -142,7 +142,7 @@ proptest! {
     /// Property: Multiple variable declarations should maintain independence
     #[test]
     fn prop_multiple_variables(a in 0i64..100, b in 0i64..100) {
-        let code = format!("let x = {}; let y = {}; x + y", a, b);
+        let code = format!("let x = {a}; let y = {b}; x + y");
         let expected = a + b;
 
         if let Ok(stdout) = run_repl_code(&code) {
@@ -163,17 +163,13 @@ fn test_boolean_literals() {
         let result = run_repl_code(input);
         assert!(
             result.is_ok(),
-            "Boolean literal failed: {} - {:?}",
-            input,
-            result
+            "Boolean literal failed: {input} - {result:?}"
         );
 
         let stdout = result.unwrap();
         assert!(
             stdout.contains(expected),
-            "Expected '{}' in output, got: {}",
-            expected,
-            stdout
+            "Expected '{expected}' in output, got: {stdout}"
         );
     }
 }
@@ -191,17 +187,13 @@ fn test_comments() {
         let result = run_repl_code(input);
         assert!(
             result.is_ok(),
-            "Comment test failed: {} - {:?}",
-            input,
-            result
+            "Comment test failed: {input} - {result:?}"
         );
 
         let stdout = result.unwrap();
         assert!(
             stdout.contains(expected),
-            "Expected '{}' in output, got: {}",
-            expected,
-            stdout
+            "Expected '{expected}' in output, got: {stdout}"
         );
     }
 }

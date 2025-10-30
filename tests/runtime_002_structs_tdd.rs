@@ -8,6 +8,8 @@
 //
 // Requirements from roadmap.yaml:
 // - Value::Struct(HashMap<String, Value>) runtime representation
+
+#![allow(clippy::ignore_without_reason)] // TDD RED phase - tests intentionally ignored until impl
 // - Struct instantiation: Point { x: 1.0, y: 2.0 }
 // - Field access: point.x, point.y
 // - Value semantics (copy on assignment)
@@ -148,8 +150,7 @@ mod property_tests {
     fn prop_struct_field_access_preserves_values() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(
-                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {}, y: {} }}; p.x",
-                x, y
+                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {x}, y: {y} }}; p.x"
             );
             let result = ruchy_cmd()
                 .arg("-e")
@@ -171,8 +172,7 @@ mod property_tests {
         proptest!(|(x: i32)| {
             let code = format!(
                 "struct Point {{ x: i32 }}; struct Rectangle {{ top_left: Point }}; \
-                 let rect = Rectangle {{ top_left: Point {{ x: {} }} }}; rect.top_left.x",
-                x
+                 let rect = Rectangle {{ top_left: Point {{ x: {x} }} }}; rect.top_left.x"
             );
             let result = ruchy_cmd()
                 .arg("-e")
@@ -193,8 +193,7 @@ mod property_tests {
     fn prop_missing_field_always_errors() {
         proptest!(|(x: i32)| {
             let code = format!(
-                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {} }}",
-                x
+                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {x} }}"
             );
             ruchy_cmd()
                 .arg("-e")
@@ -213,8 +212,7 @@ mod property_tests {
     fn prop_invalid_field_access_always_errors() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(
-                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {}, y: {} }}; p.z",
-                x, y
+                "struct Point {{ x: i32, y: i32 }}; let p = Point {{ x: {x}, y: {y} }}; p.z"
             );
             ruchy_cmd()
                 .arg("-e")
@@ -233,8 +231,7 @@ mod property_tests {
     fn prop_float_fields_work() {
         proptest!(|(x in -1000.0f64..1000.0f64, y in -1000.0f64..1000.0f64)| {
             let code = format!(
-                "struct Point {{ x: f64, y: f64 }}; let p = Point {{ x: {}, y: {} }}; p.x",
-                x, y
+                "struct Point {{ x: f64, y: f64 }}; let p = Point {{ x: {x}, y: {y} }}; p.x"
             );
             let result = ruchy_cmd()
                 .arg("-e")

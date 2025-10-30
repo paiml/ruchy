@@ -175,7 +175,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_grouped_expressions_parse(n in any::<i32>()) {
-                let code = format!("({})", n);
+                let code = format!("({n})");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Grouped ({}) should parse", n);
             }
@@ -183,7 +183,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_two_tuples_parse(a in any::<i32>(), b in any::<i32>()) {
-                let code = format!("({}, {})", a, b);
+                let code = format!("({a}, {b})");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Tuple ({}, {}) should parse", a, b);
             }
@@ -195,7 +195,7 @@ mod tests {
                 b in any::<i32>(),
                 c in any::<i32>()
             ) {
-                let code = format!("({}, {}, {})", a, b, c);
+                let code = format!("({a}, {b}, {c})");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Tuple ({}, {}, {}) should parse", a, b, c);
             }
@@ -203,7 +203,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_trailing_commas_parse(a in any::<i32>(), b in any::<i32>()) {
-                let code = format!("({}, {},)", a, b);
+                let code = format!("({a}, {b},)");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Trailing comma ({}, {}) should parse", a, b);
             }
@@ -216,7 +216,7 @@ mod tests {
                 c in any::<i32>(),
                 d in any::<i32>()
             ) {
-                let code = format!("(({}, {}), ({}, {}))", a, b, c, d);
+                let code = format!("(({a}, {b}), ({c}, {d}))");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Nested tuple should parse");
             }

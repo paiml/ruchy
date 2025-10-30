@@ -7,7 +7,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test forward function reference (calling function defined later)
-/// RED: This SHOULD FAIL with "undefined variable: helper_function"
+/// RED: This SHOULD FAIL with "undefined variable: `helper_function`"
 /// GREEN: After two-pass implementation, this SHOULD PASS
 #[test]
 fn test_linter_086_01_forward_function_reference() {

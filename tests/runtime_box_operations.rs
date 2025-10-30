@@ -18,13 +18,13 @@ fn ruchy_cmd() -> Command {
 #[test]
 fn test_red_box_new_simple() {
     // RED: Box::new() should work but currently hangs
-    let code = r#"
+    let code = r"
 fn main() {
     let x = 42;
     let boxed = Box::new(x);
     println(1);
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -58,13 +58,13 @@ fn main() {
 #[test]
 fn test_red_box_deref() {
     // RED: Dereferencing Box should work
-    let code = r#"
+    let code = r"
 fn main() {
     let boxed = Box::new(42);
     let value = *boxed;
     println(value);
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -78,7 +78,7 @@ fn main() {
 #[test]
 fn test_red_box_in_enum_variant() {
     // RED: Using Box in enum variant construction
-    let code = r#"
+    let code = r"
 enum Tree {
     Leaf(i32),
     Node(i32, Box<Tree>, Box<Tree>)
@@ -90,7 +90,7 @@ fn main() {
     let node = Tree::Node(3, Box::new(leaf1), Box::new(leaf2));
     println(3);
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -104,7 +104,7 @@ fn main() {
 #[test]
 fn test_red_box_pattern_match() {
     // RED: Pattern matching on Box in enum
-    let code = r#"
+    let code = r"
 enum Tree {
     Leaf(i32),
     Node(i32, Box<Tree>, Box<Tree>)
@@ -120,7 +120,7 @@ fn main() {
         Tree::Node(val, left, right) => println(val)
     }
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -138,7 +138,7 @@ fn main() {
 #[test]
 fn test_baseline_enum_without_box_runtime() {
     // BASELINE: Enums work without Box
-    let code = r#"
+    let code = r"
 enum Simple {
     A(i32),
     B(String)
@@ -151,7 +151,7 @@ fn main() {
         Simple::B(s) => println(s)
     }
 }
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -178,8 +178,7 @@ mod property_tests {
         #[ignore] // Run with: cargo test --test runtime_box_operations -- --ignored
         fn prop_box_preserves_integer_values(n in -1000i64..1000i64) {
             let code = format!(
-                r#"fn main() {{ let boxed = Box::new({}); let value = *boxed; println(value); }}"#,
-                n
+                r"fn main() {{ let boxed = Box::new({n}); let value = *boxed; println(value); }}"
             );
 
             ruchy_cmd()
@@ -197,8 +196,7 @@ mod property_tests {
         #[ignore]
         fn prop_box_new_never_panics(n in i64::MIN..i64::MAX) {
             let code = format!(
-                r#"fn main() {{ let boxed = Box::new({}); println(1); }}"#,
-                n
+                r"fn main() {{ let boxed = Box::new({n}); println(1); }}"
             );
 
             ruchy_cmd()
@@ -216,13 +214,12 @@ mod property_tests {
         #[ignore]
         fn prop_nested_box_preserves_values(n in 0i64..100i64) {
             let code = format!(
-                r#"fn main() {{
-                    let boxed1 = Box::new({});
+                r"fn main() {{
+                    let boxed1 = Box::new({n});
                     let boxed2 = Box::new(boxed1);
                     let value = **boxed2;
                     println(value);
-                }}"#,
-                n
+                }}"
             );
 
             ruchy_cmd()

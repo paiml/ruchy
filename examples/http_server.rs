@@ -4,7 +4,6 @@
 //
 // This example shows how to use the ruchy HTTP server to serve static files.
 
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create style.css
     std::fs::write(
         test_path.join("style.css"),
-        r#"body {
+        r"body {
     font-family: system-ui, sans-serif;
     max-width: 800px;
     margin: 0 auto;
@@ -45,16 +44,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     background: #f5f5f5;
 }
 h1 { color: #333; }
-p { color: #666; }"#,
+p { color: #666; }",
     )?;
 
     // Create app.js
     std::fs::write(
         test_path.join("app.js"),
-        r#"console.log('Ruchy HTTP Server - Ready!');
+        r"console.log('Ruchy HTTP Server - Ready!');
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Page loaded successfully');
-});"#,
+});",
     )?;
 
     // Create a minimal WASM file (magic number + version)

@@ -225,7 +225,7 @@ mod property_tests {
         #[ignore = "Property test - run with: cargo test -- --ignored"]
         fn prop_pid_file_always_contains_valid_pid(seed in any::<u32>()) {
             let temp_dir = TempDir::new().unwrap();
-            let pid_path = temp_dir.path().join(format!("test_{}.pid", seed));
+            let pid_path = temp_dir.path().join(format!("test_{seed}.pid"));
 
             let _pid_file = PidFile::new(pid_path.clone()).unwrap();
 

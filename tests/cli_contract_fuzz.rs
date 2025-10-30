@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 //! CLI Contract Tests: `ruchy fuzz`
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, fuzz reporting)
@@ -56,7 +58,7 @@ fn cli_fuzz_valid_program_runs() {
     let output = result.get_output();
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let combined = format!("{}{}", stdout, stderr);
+    let combined = format!("{stdout}{stderr}");
 
     // Should mention fuzz or error about missing cargo-fuzz
     assert!(
@@ -325,7 +327,7 @@ fn cli_fuzz_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -335,7 +337,7 @@ fun factorial(n) {
 }
 
 println(factorial(5))
-"#,
+",
     );
 
     ruchy_cmd()

@@ -93,7 +93,7 @@ impl RuchyMCP {
         if let Some(expected_type) = self.type_registry.get(type_name) {
             self.validate_json_value(value, expected_type)
         } else {
-            Err(anyhow!("Type '{}' not registered", type_name))
+            Err(anyhow!("Type '{type_name}' not registered"))
         }
     }
     /// Validate JSON value against `MonoType`
@@ -122,9 +122,7 @@ impl RuchyMCP {
                 }
             }
             _ => Err(anyhow!(
-                "Type mismatch: expected {:?}, got {:?}",
-                expected_type,
-                value
+                "Type mismatch: expected {expected_type:?}, got {value:?}"
             )),
         }
     }
@@ -279,7 +277,7 @@ fn create_score_tool() -> (&'static str, RuchyMCPTool) {
                     .unwrap_or("standard");
                 // Parse and analyze the code
                 let mut parser = crate::frontend::parser::Parser::new(code);
-                let ast = parser.parse().map_err(|e| anyhow!("Parse error: {}", e))?;
+                let ast = parser.parse().map_err(|e| anyhow!("Parse error: {e}"))?;
                 // Score with the quality engine
                 let analysis_depth = match depth {
                     "shallow" => AnalysisDepth::Shallow,
@@ -404,7 +402,7 @@ fn create_analyze_tool() -> (&'static str, RuchyMCPTool) {
                     .unwrap_or(true);
                 // Parse and analyze
                 let mut parser = crate::frontend::parser::Parser::new(code);
-                let _ast = parser.parse().map_err(|e| anyhow!("Parse error: {}", e))?;
+                let _ast = parser.parse().map_err(|e| anyhow!("Parse error: {e}"))?;
                 let mut result = serde_json::json!({
                     "analysis_complete": true,
                     "timestamp": chrono::Utc::now().to_rfc3339()

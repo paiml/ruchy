@@ -240,11 +240,10 @@ mod property_tests {
             let code = format!(
                 "class Counter {{ init(n: i32) {{ self.count = n; }} \
                                   fun add(n: i32) {{ self.count = self.count + n; }} }}; \
-                 let c1 = Counter({}); \
+                 let c1 = Counter({initial}); \
                  let c2 = c1; \
-                 c2.add({}); \
-                 c1.count",
-                initial, delta
+                 c2.add({delta}); \
+                 c1.count"
             );
 
             let expected = initial + delta;
@@ -267,10 +266,9 @@ mod property_tests {
         proptest!(|(value in 0i32..1000i32)| {
             let code = format!(
                 "class Box {{ init(v: i32) {{ self.value = v; }} }}; \
-                 let b1 = Box({}); \
+                 let b1 = Box({value}); \
                  let b2 = b1; \
-                 b1 == b2",
-                value
+                 b1 == b2"
             );
 
             ruchy_cmd()
@@ -292,10 +290,9 @@ mod property_tests {
         proptest!(|(value in 0i32..1000i32)| {
             let code = format!(
                 "class Box {{ init(v: i32) {{ self.value = v; }} }}; \
-                 let b1 = Box({}); \
-                 let b2 = Box({}); \
-                 b1 == b2",
-                value, value
+                 let b1 = Box({value}); \
+                 let b2 = Box({value}); \
+                 b1 == b2"
             );
 
             ruchy_cmd()
@@ -319,10 +316,9 @@ mod property_tests {
                 "class Accumulator {{ init() {{ self.sum = 0; }} \
                                       fun add(n: i32) {{ self.sum = self.sum + n; }} }}; \
                  let acc = Accumulator(); \
-                 acc.add({}); \
-                 acc.add({}); \
-                 acc.sum",
-                a, b
+                 acc.add({a}); \
+                 acc.add({b}); \
+                 acc.sum"
             );
 
             let expected = a + b;
@@ -345,9 +341,8 @@ mod property_tests {
         proptest!(|(x in -100i32..100i32, y in -100i32..100i32)| {
             let code = format!(
                 "class Point {{ init(x: i32, y: i32) {{ self.x = x; self.y = y; }} }}; \
-                 let p = Point({}, {}); \
-                 p.x",
-                x, y
+                 let p = Point({x}, {y}); \
+                 p.x"
             );
 
             ruchy_cmd()

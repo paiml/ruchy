@@ -4,7 +4,7 @@
 //! Expected: Code from stdin is executed
 //! Actual: Error: -: No such file or directory
 //!
-//! GitHub Issue: https://github.com/paiml/ruchy/issues/80
+//! GitHub Issue: <https://github.com/paiml/ruchy/issues/80>
 //! Ticket: DEBUGGER-013
 
 use assert_cmd::Command;

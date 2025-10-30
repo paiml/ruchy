@@ -410,7 +410,7 @@ mod mutation_tests {
         assert!(!Value::Integer(0).is_nil(), "Integer should return false");
         assert!(!Value::Bool(false).is_nil(), "Bool should return false");
         assert!(
-            !Value::from_string("".to_string()).is_nil(),
+            !Value::from_string(String::new()).is_nil(),
             "String should return false"
         );
     }

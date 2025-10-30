@@ -1,7 +1,7 @@
 //! STD-001: File I/O Module Tests (ruchy/std/fs)
 //!
 //! Test suite for file system operations module.
-//! Thin wrappers around Rust's std::fs with Ruchy-friendly API.
+//! Thin wrappers around Rust's `std::fs` with Ruchy-friendly API.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 

@@ -14,6 +14,7 @@
 //! 3. **Module Preservation**: Parsed imports maintain module paths
 //! 4. **Error Clarity**: Invalid imports produce clear error messages
 
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
 
@@ -38,13 +39,13 @@ fn arb_identifier() -> impl Strategy<Value = String> {
 fn arb_import_statement() -> impl Strategy<Value = String> {
     prop_oneof![
         // Simple imports: import std::collections
-        arb_module_path().prop_map(|path| format!("import {}", path)),
+        arb_module_path().prop_map(|path| format!("import {path}")),
         // Aliased imports: import std::vec::Vec as Vector
         (arb_module_path(), arb_identifier()).prop_map(|(path, alias)| {
-            format!("import {} as {}", path, alias)
+            format!("import {path} as {alias}")
         }),
         // Wildcard imports: import std::collections::*
-        arb_module_path().prop_map(|path| format!("import {}::*", path)),
+        arb_module_path().prop_map(|path| format!("import {path}::*")),
     ]
 }
 
@@ -73,7 +74,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_simple_imports_parse(module_path in arb_module_path()) {
-        let code = format!("import {}", module_path);
+        let code = format!("import {module_path}");
         let result = Parser::new(&code).parse();
 
         // Should parse successfully or fail gracefully
@@ -86,7 +87,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_wildcard_imports_parse(module_path in arb_module_path()) {
-        let code = format!("import {}::*", module_path);
+        let code = format!("import {module_path}::*");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", code);
@@ -101,7 +102,7 @@ proptest! {
         module_path in arb_module_path(),
         alias in arb_identifier()
     ) {
-        let code = format!("import {} as {}", module_path, alias);
+        let code = format!("import {module_path} as {alias}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", code);
@@ -145,7 +146,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_module_path_preservation(module_path in arb_module_path()) {
-        let code = format!("import {}", module_path);
+        let code = format!("import {module_path}");
 
         if let Ok(_program) = Parser::new(&code).parse() {
             // Successful parse means module path was preserved
@@ -163,7 +164,7 @@ proptest! {
         module_path in arb_module_path(),
         alias in arb_identifier()
     ) {
-        let code = format!("import {} as {}", module_path, alias);
+        let code = format!("import {module_path} as {alias}");
 
         if let Ok(_program) = Parser::new(&code).parse() {
             // Successful parse means alias was preserved
@@ -185,7 +186,7 @@ proptest! {
     fn prop_invalid_import_clear_errors(
         invalid_char in "[^a-zA-Z0-9_: \\*]"
     ) {
-        let code = format!("import bad{}", invalid_char);
+        let code = format!("import bad{invalid_char}");
 
         let result = Parser::new(&code).parse();
 
@@ -219,7 +220,7 @@ mod unit_tests {
 
         for import_stmt in test_cases {
             let result = Parser::new(import_stmt).parse();
-            assert!(result.is_ok(), "Failed to parse import: {}", import_stmt);
+            assert!(result.is_ok(), "Failed to parse import: {import_stmt}");
         }
     }
 
@@ -233,7 +234,7 @@ mod unit_tests {
 
         for import_stmt in test_cases {
             let result = Parser::new(import_stmt).parse();
-            assert!(result.is_ok(), "Failed to parse import: {}", import_stmt);
+            assert!(result.is_ok(), "Failed to parse import: {import_stmt}");
         }
     }
 
@@ -247,7 +248,7 @@ mod unit_tests {
 
         for import_stmt in test_cases {
             let result = Parser::new(import_stmt).parse();
-            assert!(result.is_ok(), "Failed to parse import: {}", import_stmt);
+            assert!(result.is_ok(), "Failed to parse import: {import_stmt}");
         }
     }
 

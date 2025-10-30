@@ -1,9 +1,9 @@
 //! PARSER-074: Struct field visibility modifiers (pub(crate), pub(super))
 //!
 //! GitHub Issue: #57 (Part 3/3)
-//! Bug: "Expected RightParen, found Crate" when parsing pub(crate) fields
-//! Root Cause: Parser checks for Token::Identifier("crate") but lexer emits Token::Crate
-//! Fix: Match Token::Crate and Token::Super in parse_scoped_visibility()
+//! Bug: "Expected `RightParen`, found Crate" when parsing pub(crate) fields
+//! Root Cause: Parser checks for `Token::Identifier("crate`") but lexer emits `Token::Crate`
+//! Fix: Match `Token::Crate` and `Token::Super` in `parse_scoped_visibility()`
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -82,12 +82,12 @@ println("{}", user.name)
 // Test 4: Transpile mode - verify pub(crate) emitted correctly
 #[test]
 fn test_parser_074_transpile_pub_crate() {
-    let code = r#"
+    let code = r"
 struct BankAccount {
     pub owner: String,
     pub(crate) balance: f64
 }
-"#;
+";
     let temp_file = "/tmp/test_parser_074_transpile.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write temp file");
 
@@ -104,12 +104,12 @@ struct BankAccount {
 // Test 5: Transpile mode - verify pub(super) emitted correctly
 #[test]
 fn test_parser_074_transpile_pub_super() {
-    let code = r#"
+    let code = r"
 struct User {
     pub(super) id: i32,
     name: String
 }
-"#;
+";
     let temp_file = "/tmp/test_parser_074_transpile_super.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write temp file");
 
@@ -164,11 +164,11 @@ println("{}", p.0)
 // Test 8: ruchy check mode - should validate visibility
 #[test]
 fn test_parser_074_check_mode() {
-    let code = r#"
+    let code = r"
 struct BankAccount {
     pub(crate) balance: f64
 }
-"#;
+";
     let temp_file = "/tmp/test_parser_074_check.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write temp file");
 

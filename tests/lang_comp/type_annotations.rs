@@ -117,10 +117,10 @@ fn test_langcomp_007_01_integer_type_annotation() {
     let temp_file = std::env::temp_dir().join("langcomp_007_01_integer.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let x: i32 = 42
 println(x)
-"#,
+",
     )
     .unwrap();
 
@@ -139,10 +139,10 @@ fn test_langcomp_007_01_float_type_annotation() {
     let temp_file = std::env::temp_dir().join("langcomp_007_01_float.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let pi: f64 = 3.14
 println(pi)
-"#,
+",
     )
     .unwrap();
 
@@ -207,13 +207,13 @@ fn test_langcomp_007_02_function_parameter_types() {
     let temp_file = std::env::temp_dir().join("langcomp_007_02_params.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }
 
 println(add(10, 20))
-"#,
+",
     )
     .unwrap();
 
@@ -232,13 +232,13 @@ fn test_langcomp_007_02_function_return_type() {
     let temp_file = std::env::temp_dir().join("langcomp_007_02_return.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 fn get_pi() -> f64 {
     3.14159
 }
 
 println(get_pi())
-"#,
+",
     )
     .unwrap();
 
@@ -278,10 +278,10 @@ fn test_langcomp_007_03_vec_type_annotation() {
     let temp_file = std::env::temp_dir().join("langcomp_007_03_vec.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let numbers: Vec<i32> = vec![1, 2, 3]
 println(numbers)
-"#,
+",
     )
     .unwrap();
 
@@ -316,10 +316,10 @@ fn test_langcomp_007_04_integer_inference() {
     let temp_file = std::env::temp_dir().join("langcomp_007_04_inference.ruchy");
     std::fs::write(
         &temp_file,
-        r#"
+        r"
 let x = 42
 println(x)
-"#,
+",
     )
     .unwrap();
 

@@ -1,7 +1,7 @@
 //! STD-003: JSON Module Tests (ruchy/std/json)
 //!
 //! Test suite for JSON operations module.
-//! Thin wrappers around serde_json with Ruchy-friendly API.
+//! Thin wrappers around `serde_json` with Ruchy-friendly API.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
@@ -33,7 +33,7 @@ fn test_std_003_parse_object() {
 fn test_std_003_parse_array() {
     // STD-003: Test parsing JSON array
 
-    let json_str = r#"[1, 2, 3, 4, 5]"#;
+    let json_str = r"[1, 2, 3, 4, 5]";
 
     let result = ruchy::stdlib::json::parse(json_str);
 
@@ -85,15 +85,14 @@ fn test_std_003_parse_invalid_json() {
         "[1, 2,",              // Incomplete array
         r#"{"key": }"#,        // Missing value
         "undefined",           // Invalid literal
-        r#"{'key': 'value'}"#, // Single quotes
+        r"{'key': 'value'}", // Single quotes
     ];
 
     for invalid_json in invalid_cases {
         let result = ruchy::stdlib::json::parse(invalid_json);
         assert!(
             result.is_err(),
-            "Invalid JSON should return error: {}",
-            invalid_json
+            "Invalid JSON should return error: {invalid_json}"
         );
     }
 }
@@ -130,7 +129,7 @@ fn test_std_003_stringify_object() {
 fn test_std_003_stringify_array() {
     // STD-003: Test stringifying array
 
-    let json_str = r#"[1,2,3,4,5]"#;
+    let json_str = r"[1,2,3,4,5]";
     let value = ruchy::stdlib::json::parse(json_str).unwrap();
 
     let result = ruchy::stdlib::json::stringify(&value);
@@ -220,7 +219,7 @@ fn test_std_003_get_nested_field() {
 fn test_std_003_get_array_index() {
     // STD-003: Test getting array element by index
 
-    let json_str = r#"[10, 20, 30, 40]"#;
+    let json_str = r"[10, 20, 30, 40]";
     let value = ruchy::stdlib::json::parse(json_str).unwrap();
 
     // Call ruchy::stdlib::json::get_index
@@ -233,7 +232,7 @@ fn test_std_003_get_array_index() {
 fn test_std_003_get_array_index_out_of_bounds() {
     // STD-003: Test getting out of bounds index returns None
 
-    let json_str = r#"[10, 20, 30]"#;
+    let json_str = r"[10, 20, 30]";
     let value = ruchy::stdlib::json::parse(json_str).unwrap();
 
     let elem = ruchy::stdlib::json::get_index(&value, 10);
@@ -286,8 +285,8 @@ fn test_std_003_as_bool() {
     let result = ruchy::stdlib::json::as_bool(&value);
     assert!(result.is_some(), "Boolean value should convert");
     let bool_val = result.unwrap();
-    assert_eq!(bool_val, true, "Boolean must be true");
-    assert_ne!(bool_val, false, "Boolean must not be false");
+    assert!(bool_val, "Boolean must be true");
+    assert!(bool_val, "Boolean must not be false");
     assert!(bool_val, "Boolean must be truthy");
 }
 
@@ -329,7 +328,7 @@ mod property_tests {
         fn test_std_003_parse_stringify_roundtrip(s in "[a-z]{1,20}") {
             // Property: Parsing then stringifying should preserve structure
 
-            let json_str = format!(r#"{{"key":"{}"}}"#, s);
+            let json_str = format!(r#"{{"key":"{s}"}}"#);
             let parsed = ruchy::stdlib::json::parse(&json_str);
 
             if let Ok(value) = parsed {

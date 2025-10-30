@@ -47,7 +47,7 @@ fn test_formatter_088_01_vec_macro_preserved() {
     // MUST preserve the `!` suffix - this is a macro CALL
     // Note: Ruchy uses parentheses for macro args, both `vec![...]` and `vec!(...)` are valid
     assert!(formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
-        "vec! macro call must be preserved, got: {}", formatted);
+        "vec! macro call must be preserved, got: {formatted}");
 
     // MUST NOT contain "macro vec(" - that's a definition, not a call
     assert!(!formatted.contains("macro vec("),
@@ -111,7 +111,7 @@ fn test_formatter_088_05_macro_in_function() {
 
     // MUST preserve vec! and println! as macro CALLS
     assert!(formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
-        "vec! macro must be preserved in function body, got: {}", formatted);
+        "vec! macro must be preserved in function body, got: {formatted}");
     assert!(formatted.contains("println!("),
         "println! macro must be preserved in function body");
 
@@ -130,7 +130,7 @@ fn test_formatter_088_06_nested_macro_calls() {
 
     // MUST preserve all three macros as CALLS
     assert!(formatted.contains("vec!(") || formatted.contains("vec!["),
-        "vec! must be preserved, got: {}", formatted);
+        "vec! must be preserved, got: {formatted}");
     assert!(formatted.contains("assert!("),
         "assert! must be preserved");
     assert!(formatted.contains("println!("),
@@ -156,7 +156,7 @@ mod property_tests {
         /// Property: Formatter NEVER transforms macro calls to macro definitions
         /// Invariant: If input contains `name!(`, output must also contain `name!(`
         #[test]
-        #[ignore] // Run with: cargo test --test formatter_088_macro_preservation property_tests -- --ignored
+        #[ignore = "Run with: cargo test --test formatter_088_macro_preservation property_tests -- --ignored"]
         fn prop_macro_calls_never_become_definitions(
             macro_name in "[a-z_][a-z0-9_]{0,20}",
             arg in 0..1000i32
@@ -181,7 +181,7 @@ mod property_tests {
         #[test]
         #[ignore]
         fn prop_vec_macro_always_preserved(values: Vec<i32>) {
-            let values_str = values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
+            let values_str = values.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
             let input = format!("vec![{values_str}]");
             let formatted = format_code(&input);
 

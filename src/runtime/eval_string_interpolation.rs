@@ -255,7 +255,7 @@ mod mutation_tests {
             result.starts_with('('),
             "Tuple should format with parentheses"
         );
-        assert!(result.contains("1"), "Tuple should contain first element");
+        assert!(result.contains('1'), "Tuple should contain first element");
         assert!(
             result.contains("test"),
             "Tuple should contain second element"

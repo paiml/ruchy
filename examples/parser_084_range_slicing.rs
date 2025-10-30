@@ -3,7 +3,7 @@
 //! Demonstrates the fix for GitHub Issue #67 - parsing open-ended and closed
 //! range expressions in various contexts.
 //!
-//! Run with: cargo run --example parser_084_range_slicing
+//! Run with: cargo run --example `parser_084_range_slicing`
 
 use ruchy::Parser;
 
@@ -103,12 +103,12 @@ fun example_nested_context() {
 }
 
 fn test_parse(description: &str, code: &str) {
-    print!("Testing: {}... ", description);
+    print!("Testing: {description}... ");
     match Parser::new(code).parse() {
         Ok(_) => println!("✓ Parsed successfully"),
         Err(e) => {
             println!("✗ Failed!");
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {e}");
             std::process::exit(1);
         }
     }

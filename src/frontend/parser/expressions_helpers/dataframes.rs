@@ -135,10 +135,10 @@ mod tests {
             #[ignore]
             fn prop_single_column_integers_parse(values in prop::collection::vec(any::<i32>(), 1..10)) {
                 let values_str = values.iter()
-                    .map(|v| v.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
-                let code = format!("df![x => [{}]]", values_str);
+                let code = format!("df![x => [{values_str}]]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Single column with integers {} should parse", code);
             }
@@ -157,7 +157,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_dataframe_column_names_parse(name in "[a-z][a-z0-9_]{0,10}") {
-                let code = format!("df![{} => [1, 2, 3]]", name);
+                let code = format!("df![{name} => [1, 2, 3]]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "DataFrame with column {} should parse", name);
             }
@@ -166,10 +166,10 @@ mod tests {
             #[ignore]
             fn prop_multiple_columns_parse(num_cols in 1..5usize) {
                 let columns = (0..num_cols)
-                    .map(|i| format!("col{} => [1, 2]", i))
+                    .map(|i| format!("col{i} => [1, 2]"))
                     .collect::<Vec<_>>()
                     .join(", ");
-                let code = format!("df![{}]", columns);
+                let code = format!("df![{columns}]");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "DataFrame with {} columns should parse", num_cols);
             }

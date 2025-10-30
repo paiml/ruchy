@@ -361,7 +361,7 @@ mod tests {
                 ];
                 for op in ops {
                     let prec = get_precedence(op);
-                    prop_assert!(prec >= 1 && prec <= 12,
+                    prop_assert!((1..=12).contains(&prec),
                         "Precedence {} for {:?} should be in range [1, 12]", prec, op);
                 }
             }

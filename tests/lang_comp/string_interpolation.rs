@@ -3,6 +3,8 @@
 // Validates: LANG-COMP-005 String Interpolation (basic, expressions, functions, nested)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
 
+#![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::path::PathBuf;
@@ -435,13 +437,12 @@ mod property_tests {
         for i in 1..20 {
             let code = format!(
                 r#"
-let x = {}
+let x = {i}
 println(f"Value: {{x}}")
-"#,
-                i
+"#
             );
             let temp_file =
-                std::env::temp_dir().join(format!("langcomp_005_prop_deterministic_{}.ruchy", i));
+                std::env::temp_dir().join(format!("langcomp_005_prop_deterministic_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             // Run twice and compare
@@ -461,14 +462,13 @@ println(f"Value: {{x}}")
             for j in 1..10 {
                 let code = format!(
                     r#"
-let a = {}
-let b = {}
+let a = {i}
+let b = {j}
 println(f"Result: {{a + b}}")
-"#,
-                    i, j
+"#
                 );
                 let temp_file = std::env::temp_dir()
-                    .join(format!("langcomp_005_prop_expr_eval_{}_{}.ruchy", i, j));
+                    .join(format!("langcomp_005_prop_expr_eval_{i}_{j}.ruchy"));
                 std::fs::write(&temp_file, &code).unwrap();
 
                 let expected = format!("Result: {}", i + j);
@@ -499,7 +499,7 @@ println(f"{{a}} {{b}}")
                 i * 2
             );
             let temp_file =
-                std::env::temp_dir().join(format!("langcomp_005_prop_multi_interp_{}.ruchy", i));
+                std::env::temp_dir().join(format!("langcomp_005_prop_multi_interp_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             let expected = format!("{} {}", i, i * 2);

@@ -188,9 +188,9 @@ impl BenchmarkResults {
 mod tests {
     use super::*;
 
-    /// Test requests_per_second calculation
+    /// Test `requests_per_second` calculation
     ///
-    /// RED: This test should PASS because requests_per_second() is implemented
+    /// RED: This test should PASS because `requests_per_second()` is implemented
     #[test]
     fn test_requests_per_second() {
         let results = BenchmarkResults {
@@ -204,9 +204,9 @@ mod tests {
         assert_eq!(results.requests_per_second(), 10.0);
     }
 
-    /// Test mean_time calculation
+    /// Test `mean_time` calculation
     ///
-    /// RED: This test should PASS because mean_time() is implemented
+    /// RED: This test should PASS because `mean_time()` is implemented
     #[test]
     fn test_mean_time() {
         let results = BenchmarkResults {
@@ -226,7 +226,7 @@ mod tests {
 
     /// Test percentile calculation
     ///
-    /// RED: This test should PASS because percentile() is implemented
+    /// RED: This test should PASS because `percentile()` is implemented
     #[test]
     fn test_percentile() {
         let results = BenchmarkResults {
@@ -247,7 +247,7 @@ mod tests {
         assert_eq!(results.percentile(100.0), Duration::from_millis(50));
     }
 
-    /// Test edge case: empty request_times
+    /// Test edge case: empty `request_times`
     #[test]
     fn test_empty_results() {
         let results = BenchmarkResults {

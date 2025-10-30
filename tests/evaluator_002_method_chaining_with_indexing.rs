@@ -119,7 +119,7 @@ main()
 
 #[test]
 fn test_evaluator002_06_array_method_index_method() {
-    let code = r#"
+    let code = r"
 fun create_array() {
     [10, 20, 30]
 }
@@ -130,7 +130,7 @@ fun main() {
 }
 
 main()
-"#;
+";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
@@ -146,7 +146,7 @@ main()
 
 #[test]
 fn test_evaluator002_07_nested_arrays_with_chaining() {
-    let code = r#"
+    let code = r"
 fun create_nested() {
     [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 }
@@ -157,7 +157,7 @@ fun main() {
 }
 
 main()
-"#;
+";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");

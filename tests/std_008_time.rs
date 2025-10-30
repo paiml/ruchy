@@ -1,7 +1,7 @@
 //! STD-008: Time Module Tests (ruchy/std/time)
 //!
 //! Test suite for Time operations module.
-//! Thin wrappers around std::time for time measurement and duration operations.
+//! Thin wrappers around `std::time` for time measurement and duration operations.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
@@ -304,7 +304,7 @@ mod property_tests {
 
             // Elapsed is u128, always non-negative by type (no >= 0 check needed)
             // Verify elapsed time is reasonable (at least the sleep duration)
-            assert!(elapsed >= delay_ms as u128, "Elapsed time should be at least the sleep duration");
+            assert!(elapsed >= u128::from(delay_ms), "Elapsed time should be at least the sleep duration");
         }
 
         #[test]
@@ -314,11 +314,7 @@ mod property_tests {
             if let Ok(formatted) = ruchy::stdlib::time::format_duration(millis) {
                 if let Ok(parsed) = ruchy::stdlib::time::parse_duration(&formatted) {
                     // Allow some tolerance due to formatting (e.g., "1h" loses seconds)
-                    let diff = if millis > parsed {
-                        millis - parsed
-                    } else {
-                        parsed - millis
-                    };
+                    let diff = millis.abs_diff(parsed);
 
                     // Tolerance: max 1000ms difference for rounding
                     prop_assert!(

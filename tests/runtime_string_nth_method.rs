@@ -1,7 +1,7 @@
 //! BOOTSTRAP-002 Character Stream Processing - Runtime Test
-//! Tests that String.chars().nth() method works in runtime evaluation
+//! Tests that `String.chars().nth()` method works in runtime evaluation
 //!
-//! Bug Report: String.chars().nth() method not implemented
+//! Bug Report: `String.chars().nth()` method not implemented
 //! Version: Ruchy 3.93.0
 //! Blocker: BOOTSTRAP-002 Character Stream Processing
 

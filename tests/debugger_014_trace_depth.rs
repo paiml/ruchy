@@ -47,7 +47,7 @@ fun main() {
     assert!(stdout.contains("inner"), "Should trace inner function");
 }
 
-/// Test #2: Verify main() function is also traced
+/// Test #2: Verify `main()` function is also traced
 #[test]
 fn test_debugger_014_phase_1_4_trace_includes_main() {
     let code = r#"
@@ -77,7 +77,7 @@ fun main() {
 /// Test #3: Verify trace output goes to stderr (not stdout)
 /// This allows separating program output from trace output
 #[test]
-#[ignore] // Phase 1.4 enhancement - trace to stderr
+#[ignore = "Phase 1.4 enhancement - trace to stderr"]
 fn test_debugger_014_phase_1_4_trace_to_stderr() {
     let code = r#"
 fun test_func() {

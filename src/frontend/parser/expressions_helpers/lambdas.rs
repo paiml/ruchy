@@ -216,7 +216,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_single_param_lambdas_parse(param in "[a-z]+") {
-                let code = format!("|{}| {}", param, param);
+                let code = format!("|{param}| {param}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -224,7 +224,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_multi_param_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
-                let code = format!("|{}, {}| {} + {}", p1, p2, p1, p2);
+                let code = format!("|{p1}, {p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -232,7 +232,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_arrow_syntax_parses(param in "[a-z]+") {
-                let code = format!("{} => {} * 2", param, param);
+                let code = format!("{param} => {param} * 2");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -240,7 +240,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_arrow_tuple_syntax_parses(p1 in "[a-z]+", p2 in "[a-z]+") {
-                let code = format!("({}, {}) => {} + {}", p1, p2, p1, p2);
+                let code = format!("({p1}, {p2}) => {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -248,7 +248,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_lambda_with_numbers(n in 0i32..100) {
-                let code = format!("|x| x + {}", n);
+                let code = format!("|x| x + {n}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -256,7 +256,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_nested_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
-                let code = format!("|{}| |{}| {} + {}", p1, p2, p1, p2);
+                let code = format!("|{p1}| |{p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

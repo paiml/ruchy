@@ -40,18 +40,17 @@ fn test_issue_086_fix_verification_100_iterations() {
 
         // Print progress every 10 iterations
         if i % 10 == 0 {
-            println!("Progress: {}/100 iterations complete ({} matches, {} mismatches)",
-                i, match_count, mismatch_count);
+            println!("Progress: {i}/100 iterations complete ({match_count} matches, {mismatch_count} mismatches)");
         }
     }
 
     println!("\n=== Final Results ===");
     println!("Total iterations: 100");
-    println!("Matches: {} ({:.1}%)", match_count, match_count as f64);
-    println!("Mismatches: {} ({:.1}%)", mismatch_count, mismatch_count as f64);
+    println!("Matches: {} ({:.1}%)", match_count, f64::from(match_count));
+    println!("Mismatches: {} ({:.1}%)", mismatch_count, f64::from(mismatch_count));
 
     println!("\n=== Hash Frequency Analysis ===");
-    for (hash, count) in hash_frequency.iter() {
+    for (hash, count) in &hash_frequency {
         println!("{}... appeared {} times", &hash[..16], count);
     }
 

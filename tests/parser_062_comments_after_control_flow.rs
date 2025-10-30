@@ -11,19 +11,19 @@
 //!     }
 //! }
 //! ```
-//! Error: "Expected body after for iterator: Expected RightBrace, found If"
+//! Error: "Expected body after for iterator: Expected `RightBrace`, found If"
 
 use ruchy::Parser;
 
 #[test]
 fn test_parser_062_break_with_inline_comment() {
-    let input = r#"
+    let input = r"
 for n in [1, 2, 3] {
     if n > 1 {
         break  // Exit loop
     }
 }
-"#;
+";
     let mut parser = Parser::new(input);
     let result = parser.parse();
     assert!(
@@ -35,14 +35,14 @@ for n in [1, 2, 3] {
 
 #[test]
 fn test_parser_062_continue_with_inline_comment() {
-    let input = r#"
+    let input = r"
 for n in [1, 2, 3] {
     if n == 2 {
         continue  // Skip this iteration
     }
     print(n)
 }
-"#;
+";
     let mut parser = Parser::new(input);
     let result = parser.parse();
     assert!(
@@ -73,7 +73,7 @@ fun test() {
 
 #[test]
 fn test_parser_062_full_book_example() {
-    let input = r#"
+    let input = r"
 let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 let has_large = false
 
@@ -85,7 +85,7 @@ for n in numbers {
 }
 
 has_large  // Returns: false
-"#;
+";
     let mut parser = Parser::new(input);
     let result = parser.parse();
     assert!(
@@ -97,7 +97,7 @@ has_large  // Returns: false
 
 #[test]
 fn test_parser_062_multiple_comments_in_nested_blocks() {
-    let input = r#"
+    let input = r"
 for i in 0..10 {
     for j in 0..10 {
         if i == j {
@@ -109,7 +109,7 @@ for i in 0..10 {
         print(i, j)
     }
 }
-"#;
+";
     let mut parser = Parser::new(input);
     let result = parser.parse();
     assert!(

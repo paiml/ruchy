@@ -12,7 +12,7 @@ use predicates::prelude::*;
 /// Test #1: Basic enum cast to i32 (simplest case from Issue #79)
 #[test]
 fn test_regression_079_enum_cast_i32() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Info = 1,
 }
@@ -20,7 +20,7 @@ fun main() {
     let val = LogLevel::Info as i32;
     println(val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -35,7 +35,7 @@ fun main() {
 /// Test #2: Multiple enum variants with different discriminants
 #[test]
 fn test_regression_079_multiple_variants() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Debug = 0,
     Info = 1,
@@ -52,7 +52,7 @@ fun main() {
     println(warn_val);
     println(error_val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -70,7 +70,7 @@ fun main() {
 /// Test #3: Enum cast to i64 (different integer type)
 #[test]
 fn test_regression_079_enum_cast_i64() {
-    let code = r#"
+    let code = r"
 enum Status {
     Pending = 100,
     Active = 200,
@@ -79,7 +79,7 @@ fun main() {
     let val = Status::Active as i64;
     println(val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -94,7 +94,7 @@ fun main() {
 /// Test #4: Enum cast to isize
 #[test]
 fn test_regression_079_enum_cast_isize() {
-    let code = r#"
+    let code = r"
 enum Priority {
     Low = 1,
     High = 10,
@@ -103,7 +103,7 @@ fun main() {
     let val = Priority::High as isize;
     println(val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -118,7 +118,7 @@ fun main() {
 /// Test #5: Enum cast in arithmetic expression
 #[test]
 fn test_regression_079_enum_cast_arithmetic() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Debug = 0,
     Info = 1,
@@ -127,7 +127,7 @@ fun main() {
     let result = (LogLevel::Info as i32) + 10;
     println(result);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -144,7 +144,7 @@ fun main() {
 /// Previous versions (v3.147.3) only supported direct enum literal casts.
 #[test]
 fn test_regression_079_enum_variable_cast() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Debug = 0,
     Info = 1,
@@ -154,7 +154,7 @@ fun main() {
     let val = level as i32;
     println(val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -176,7 +176,7 @@ fun main() {
 /// Once the method dispatch bug is fixed, this test should pass.
 #[test]
 fn test_regression_079_enum_field_cast() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Debug = 0,
     Info = 1,
@@ -194,7 +194,7 @@ fun main() {
     let logger = Logger { level: LogLevel::Info };
     logger.test();
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -211,7 +211,7 @@ fun main() {
 /// Tests both Debug (0) and Info (1) discriminant values.
 #[test]
 fn test_regression_079_multiple_variable_casts() {
-    let code = r#"
+    let code = r"
 enum LogLevel {
     Debug = 0,
     Info = 1,
@@ -224,7 +224,7 @@ fun main() {
     println(debug_val);
     println(info_val);
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()

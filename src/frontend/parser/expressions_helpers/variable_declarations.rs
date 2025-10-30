@@ -517,7 +517,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_let_with_identifiers(name in "[a-z]+", value in 0i32..100) {
-                let code = format!("let {} = {}", name, value);
+                let code = format!("let {name} = {value}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -525,7 +525,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_let_mut_parses(name in "[a-z]+", value in 0i32..100) {
-                let code = format!("let mut {} = {}", name, value);
+                let code = format!("let mut {name} = {value}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -533,7 +533,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_var_parses(name in "[a-z]+", value in 0i32..100) {
-                let code = format!("var {} = {}", name, value);
+                let code = format!("var {name} = {value}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -541,7 +541,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_let_with_tuple(n1 in 0i32..100, n2 in 0i32..100) {
-                let code = format!("let (x, y) = ({}, {})", n1, n2);
+                let code = format!("let (x, y) = ({n1}, {n2})");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -549,7 +549,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_let_in_expr(name in "[a-z]+", val in 0i32..100, expr in 0i32..100) {
-                let code = format!("let {} = {} in {}", name, val, expr);
+                let code = format!("let {name} = {val} in {expr}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -557,7 +557,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_let_type_annotation(name in "[a-z]+", value in 0i32..100) {
-                let code = format!("let {}: i32 = {}", name, value);
+                let code = format!("let {name}: i32 = {value}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -565,7 +565,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_var_tuple_destructuring(n1 in 0i32..100, n2 in 0i32..100) {
-                let code = format!("var (a, b) = ({}, {})", n1, n2);
+                let code = format!("var (a, b) = ({n1}, {n2})");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

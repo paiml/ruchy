@@ -1,4 +1,4 @@
-//! PRIORITY-3: Zero Coverage - eval_control_flow_new.rs
+//! PRIORITY-3: Zero Coverage - `eval_control_flow_new.rs`
 //! Integration tests exercising control flow through runtime
 
 use ruchy::frontend::parser::Parser;
@@ -116,7 +116,7 @@ fn test_for_with_continue() {
 
 #[test]
 fn test_nested_loops_break() {
-    let code = r#"
+    let code = r"
         let mut found = false
         for i in 0..5 {
             for j in 0..5 {
@@ -127,7 +127,7 @@ fn test_nested_loops_break() {
             }
         }
         found
-    "#;
+    ";
     let v = eval_code(code).unwrap();
     assert_eq!(v, Value::Bool(true));
 }
@@ -194,7 +194,7 @@ fn test_match_wildcard_in_pattern() {
 
 #[test]
 fn test_match_multiple_arms() {
-    let code = r#"
+    let code = r"
         match 2 {
             0 => 10,
             1 => 20,
@@ -202,7 +202,7 @@ fn test_match_multiple_arms() {
             3 => 40,
             _ => 50,
         }
-    "#;
+    ";
     let v = eval_code(code).unwrap();
     assert_eq!(v, Value::Integer(30));
 }
@@ -248,7 +248,7 @@ fn test_range_exclusive() {
 
 #[test]
 fn test_for_nested_arrays() {
-    let code = r#"
+    let code = r"
         let mut total = 0
         for row in [[1, 2], [3, 4]] {
             for elem in row {
@@ -256,7 +256,7 @@ fn test_for_nested_arrays() {
             }
         }
         total
-    "#;
+    ";
     let v = eval_code(code).unwrap();
     assert_eq!(v, Value::Integer(10)); // 1+2+3+4
 }

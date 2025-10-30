@@ -7,7 +7,6 @@
 // test_parser_060_<section>_<feature>_<scenario>
 
 use std::fs;
-use std::path::PathBuf;
 use std::rc::Rc;
 use tempfile::TempDir;
 
@@ -111,11 +110,11 @@ fn test_parser_060_02_loading_module_with_multiple_functions() {
     // Test: Load module with multiple function definitions
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("utils.ruchy");
-    fs::write(&module_path, r#"
+    fs::write(&module_path, r"
         fun add(x, y) { x + y }
         fun sub(x, y) { x - y }
         fun mul(x, y) { x * y }
-    "#).unwrap();
+    ").unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let symbols = loaded_module.symbols();
@@ -147,10 +146,10 @@ fn test_parser_060_03_extract_function_symbols() {
     // Test: Extract function definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("funcs.ruchy");
-    fs::write(&module_path, r#"
+    fs::write(&module_path, r"
         fun public_func() { 1 }
         fun helper_func(x) { x * 2 }
-    "#).unwrap();
+    ").unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let functions = extract_functions(&loaded_module);
@@ -165,10 +164,10 @@ fn test_parser_060_03_extract_struct_symbols() {
     // Test: Extract struct definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("structs.ruchy");
-    fs::write(&module_path, r#"
+    fs::write(&module_path, r"
         struct Point { x: i32, y: i32 }
         struct Circle { center: Point, radius: f64 }
-    "#).unwrap();
+    ").unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let structs = extract_structs(&loaded_module);
@@ -183,10 +182,10 @@ fn test_parser_060_03_extract_const_symbols() {
     // Test: Extract constant definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("consts.ruchy");
-    fs::write(&module_path, r#"
+    fs::write(&module_path, r"
         const PI = 3.14159
         const MAX_SIZE = 1000
-    "#).unwrap();
+    ").unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let consts = extract_consts(&loaded_module);
@@ -238,10 +237,10 @@ fn test_parser_060_04_import_multiple_functions() {
     // Test: use utils::{add, sub} imports multiple functions
     let temp_dir = TempDir::new().unwrap();
     let utils_path = temp_dir.path().join("utils.ruchy");
-    fs::write(&utils_path, r#"
+    fs::write(&utils_path, r"
         fun add(x, y) { x + y }
         fun sub(x, y) { x - y }
-    "#).unwrap();
+    ").unwrap();
 
     let code = "use utils::{add, sub}\nadd(10, 5) + sub(10, 5)";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
@@ -352,7 +351,7 @@ fn test_parser_060_05_cache_multiple_modules() {
 // -------------------------------------------------------------------
 
 use ruchy::runtime::module_loader::{
-    AllSymbols, ConstSymbol, FunctionSymbol, LoadedModule, ModuleCache, StructSymbol, Symbol,
+    ModuleCache,
     extract_all_symbols, extract_consts, extract_functions, extract_structs,
     load_module, resolve_module_path, resolve_module_path_dot_notation,
 };

@@ -1,9 +1,9 @@
-//! DEFECT-TRANSPILER-DF-001 through DF-004: DataFrame Transpilation Tests
+//! DEFECT-TRANSPILER-DF-001 through DF-004: `DataFrame` Transpilation Tests
 //!
-//! Root Cause: Transpiler generates incorrect Polars API code for DataFrames
+//! Root Cause: Transpiler generates incorrect Polars API code for `DataFrames`
 //! - DF-001: Missing `use polars::prelude::*;` imports
-//! - DF-002: Wrong API - DataFrame::empty().column() doesn't exist
-//! - DF-003: Wrong method names - rows() should be height(), columns() should be width()
+//! - DF-002: Wrong API - `DataFrame::empty().column()` doesn't exist
+//! - DF-003: Wrong method names - `rows()` should be `height()`, `columns()` should be `width()`
 //! - DF-004: Missing error handling for Result types
 //!
 //! Test Strategy: EXTREME TDD with empirical rustc validation
@@ -11,7 +11,7 @@
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 
-/// RED TEST: DataFrame transpilation should generate correct Polars imports
+/// RED TEST: `DataFrame` transpilation should generate correct Polars imports
 #[test]
 fn test_df_001_transpiler_generates_polars_imports() {
     let code = r#"
@@ -31,19 +31,18 @@ fn test_df_001_transpiler_generates_polars_imports() {
     // ASSERTION: Must contain polars import
     assert!(
         rust_code.contains("use polars :: prelude :: *"),
-        "Transpiled code missing polars import:\n{}",
-        rust_code
+        "Transpiled code missing polars import:\n{rust_code}"
     );
 }
 
-/// RED TEST: DataFrame.rows() should transpile to .height()
+/// RED TEST: `DataFrame.rows()` should transpile to .`height()`
 #[test]
 fn test_df_003_rows_method_transpiles_to_height() {
-    let code = r#"
+    let code = r"
         fun count_rows(df: DataFrame) {
             return df.rows()
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -55,24 +54,22 @@ fn test_df_003_rows_method_transpiles_to_height() {
     // ASSERTION: .rows() must become .height()
     assert!(
         rust_code.contains(". height ()"),
-        "Expected .height() but got:\n{}",
-        rust_code
+        "Expected .height() but got:\n{rust_code}"
     );
     assert!(
         !rust_code.contains(". rows ()"),
-        "Should not contain .rows():\n{}",
-        rust_code
+        "Should not contain .rows():\n{rust_code}"
     );
 }
 
-/// RED TEST: DataFrame.columns() should transpile to .width()
+/// RED TEST: `DataFrame.columns()` should transpile to .`width()`
 #[test]
 fn test_df_003_columns_method_transpiles_to_width() {
-    let code = r#"
+    let code = r"
         fun count_cols(df: DataFrame) {
             return df.columns()
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -84,17 +81,15 @@ fn test_df_003_columns_method_transpiles_to_width() {
     // ASSERTION: .columns() must become .width()
     assert!(
         rust_code.contains(". width ()"),
-        "Expected .width() but got:\n{}",
-        rust_code
+        "Expected .width() but got:\n{rust_code}"
     );
     assert!(
         !rust_code.contains(". columns ()"),
-        "Should not contain .columns():\n{}",
-        rust_code
+        "Should not contain .columns():\n{rust_code}"
     );
 }
 
-/// RED TEST: Transpiled DataFrame code should compile with rustc
+/// RED TEST: Transpiled `DataFrame` code should compile with rustc
 /// This is the EMPIRICAL validation test - proves generated code is correct
 #[test]
 #[ignore] // Run with: cargo test test_df_empirical_rustc_validation -- --ignored
@@ -148,13 +143,11 @@ fn test_df_empirical_rustc_validation() {
             .filter(|line| line.contains("error"))
             .collect();
 
-        if !real_errors.is_empty() {
-            panic!(
+        assert!(real_errors.is_empty(), 
                 "Transpiled code has compilation errors:\n{}\n\nGenerated code:\n{}",
                 real_errors.join("\n"),
                 rust_code
             );
-        }
     }
 }
 
@@ -162,7 +155,7 @@ fn test_df_empirical_rustc_validation() {
 mod property_tests {
     use super::*;
 
-    /// Property: Any DataFrame method call should transpile without panicking
+    /// Property: Any `DataFrame` method call should transpile without panicking
     #[test]
     fn property_dataframe_methods_never_panic() {
         let test_cases = vec![
@@ -173,7 +166,7 @@ mod property_tests {
         ];
 
         for (input, expected_method) in test_cases {
-            let code = format!("fun test(df: DataFrame) {{ return {} }}", input);
+            let code = format!("fun test(df: DataFrame) {{ return {input} }}");
 
             let mut parser = Parser::new(&code);
             let parse_result = parser.parse();
@@ -186,17 +179,14 @@ mod property_tests {
 
                 assert!(
                     result.is_ok(),
-                    "Transpiler panicked on input: {}",
-                    input
+                    "Transpiler panicked on input: {input}"
                 );
 
                 if let Ok(Ok(tokens)) = result {
                     let rust_code = tokens.to_string();
                     assert!(
                         rust_code.contains(expected_method),
-                        "Expected method '{}' not found in:\n{}",
-                        expected_method,
-                        rust_code
+                        "Expected method '{expected_method}' not found in:\n{rust_code}"
                     );
                 }
             }

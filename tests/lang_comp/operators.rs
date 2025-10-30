@@ -3,6 +3,8 @@
 // Validates: LANG-COMP-002 Operators (arithmetic, comparison, logical, precedence)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
 
+#![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::path::PathBuf;
@@ -435,11 +437,11 @@ mod property_tests {
         // Property: a + b == b + a for all integers
         use proptest::prelude::*;
         proptest!(|(a: i32, b: i32)| {
-            let code1 = format!("{} + {}", a, b);
-            let code2 = format!("{} + {}", b, a);
+            let code1 = format!("{a} + {b}");
+            let code2 = format!("{b} + {a}");
 
-            let temp1 = std::env::temp_dir().join(format!("langcomp_002_prop_add1_{}_{}.ruchy", a, b));
-            let temp2 = std::env::temp_dir().join(format!("langcomp_002_prop_add2_{}_{}.ruchy", a, b));
+            let temp1 = std::env::temp_dir().join(format!("langcomp_002_prop_add1_{a}_{b}.ruchy"));
+            let temp2 = std::env::temp_dir().join(format!("langcomp_002_prop_add2_{a}_{b}.ruchy"));
 
             std::fs::write(&temp1, &code1).unwrap();
             std::fs::write(&temp2, &code2).unwrap();
@@ -462,8 +464,8 @@ mod property_tests {
         proptest!(|(a: i32, b: i32)| {
             let operators = vec!["==", "!=", "<", ">", "<=", ">="];
             for op in operators {
-                let code = format!("{} {} {}", a, op, b);
-                let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_cmp_{}_{}_{}.ruchy", a, op.replace("=", "e"), b));
+                let code = format!("{a} {op} {b}");
+                let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_cmp_{}_{}_{}.ruchy", a, op.replace('=', "e"), b));
                 std::fs::write(&temp_file, &code).unwrap();
 
                 ruchy_cmd()
@@ -482,8 +484,8 @@ mod property_tests {
     fn test_langcomp_002_property_double_negation_identity() {
         // Property: !!x == x for all booleans
         for b in [true, false] {
-            let code = format!("!!{}", b);
-            let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_neg_{}.ruchy", b));
+            let code = format!("!!{b}");
+            let temp_file = std::env::temp_dir().join(format!("langcomp_002_prop_neg_{b}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd()
@@ -504,13 +506,13 @@ mod property_tests {
         for a in 1..5 {
             for b in 1..5 {
                 for c in 1..5 {
-                    let code1 = format!("({} * {}) * {}", a, b, c);
-                    let code2 = format!("{} * ({} * {})", a, b, c);
+                    let code1 = format!("({a} * {b}) * {c}");
+                    let code2 = format!("{a} * ({b} * {c})");
 
                     let temp1 = std::env::temp_dir()
-                        .join(format!("langcomp_002_prop_mul1_{}_{}_{}ruchy", a, b, c));
+                        .join(format!("langcomp_002_prop_mul1_{a}_{b}_{c}ruchy"));
                     let temp2 = std::env::temp_dir()
-                        .join(format!("langcomp_002_prop_mul2_{}_{}_{}ruchy", a, b, c));
+                        .join(format!("langcomp_002_prop_mul2_{a}_{b}_{c}ruchy"));
 
                     std::fs::write(&temp1, &code1).unwrap();
                     std::fs::write(&temp2, &code2).unwrap();

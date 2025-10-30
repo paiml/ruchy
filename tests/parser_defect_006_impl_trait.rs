@@ -11,11 +11,11 @@ fn ruchy_cmd() -> Command {
 // Test 1: Basic impl Fn return type
 #[test]
 fn test_parser_006_impl_fn_return() {
-    let code = r#"
+    let code = r"
 fn make_adder(n: i32) -> impl Fn(i32) -> i32 {
     move |x| x + n
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_006_impl_fn.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -28,11 +28,11 @@ fn make_adder(n: i32) -> impl Fn(i32) -> i32 {
 // Test 2: impl FnOnce return type
 #[test]
 fn test_parser_006_impl_fn_once_return() {
-    let code = r#"
+    let code = r"
 fn make_consumer(data: Vec<i32>) -> impl FnOnce() -> i32 {
     move || data.len() as i32
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_006_impl_fn_once.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -45,7 +45,7 @@ fn make_consumer(data: Vec<i32>) -> impl FnOnce() -> i32 {
 // Test 3: impl FnMut return type
 #[test]
 fn test_parser_006_impl_fn_mut_return() {
-    let code = r#"
+    let code = r"
 fn make_counter() -> impl FnMut() -> i32 {
     let mut count = 0;
     move || {
@@ -53,7 +53,7 @@ fn make_counter() -> impl FnMut() -> i32 {
         count
     }
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_006_impl_fn_mut.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -66,11 +66,11 @@ fn make_counter() -> impl FnMut() -> i32 {
 // Test 4: impl Fn with multiple parameters
 #[test]
 fn test_parser_006_impl_fn_multi_params() {
-    let code = r#"
+    let code = r"
 fn make_op() -> impl Fn(i32, i32) -> i32 {
     move |x, y| x + y
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_006_impl_fn_multi.ruchy", code).unwrap();
 
     ruchy_cmd()
@@ -83,11 +83,11 @@ fn make_op() -> impl Fn(i32, i32) -> i32 {
 // Test 5: impl Fn as parameter (not just return type)
 #[test]
 fn test_parser_006_impl_fn_parameter() {
-    let code = r#"
+    let code = r"
 fn apply_op(x: i32, y: i32, op: impl Fn(i32, i32) -> i32) -> i32 {
     op(x, y)
 }
-"#;
+";
     std::fs::write("/tmp/test_parser_006_impl_fn_param.ruchy", code).unwrap();
 
     ruchy_cmd()

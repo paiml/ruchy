@@ -69,7 +69,7 @@ fn polars_dtype_to_arrow(dtype: &PolarsDataType) -> Result<ArrowDataType> {
             arrow::datatypes::TimeUnit::Microsecond,
             None,
         )),
-        _ => anyhow::bail!("Unsupported Polars DataType: {:?}", dtype),
+        _ => anyhow::bail!("Unsupported Polars DataType: {dtype:?}"),
     }
 }
 /// Convert Polars Series to Arrow Array

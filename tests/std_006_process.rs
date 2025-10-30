@@ -1,7 +1,7 @@
 //! STD-006: Process Module Tests (ruchy/std/process)
 //!
 //! Test suite for process operations module.
-//! Thin wrappers around Rust's std::process with Ruchy-friendly API.
+//! Thin wrappers around Rust's `std::process` with Ruchy-friendly API.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
@@ -37,7 +37,7 @@ fn test_std_006_execute_with_output() {
     assert!(stdout.contains("test"), "stdout must contain 'test'");
     assert!(stdout.contains("output"), "stdout must contain 'output'");
     assert_eq!(exit_code, 0, "exit code must be 0");
-    assert_eq!(stdout.len() > 5, true, "stdout length must be > 5");
+    assert!(stdout.len() > 5, "stdout length must be > 5");
 }
 
 #[test]

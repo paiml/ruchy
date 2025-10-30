@@ -546,8 +546,8 @@ mod tests {
         let path_str = temp_dir.path().to_str().unwrap();
 
         // Create some files
-        write(&format!("{}/file1.txt", path_str), "content1").unwrap();
-        write(&format!("{}/file2.txt", path_str), "content2").unwrap();
+        write(&format!("{path_str}/file1.txt"), "content1").unwrap();
+        write(&format!("{path_str}/file2.txt"), "content2").unwrap();
 
         let entries = read_dir(path_str).unwrap();
         assert_eq!(entries.len(), 2, "Directory should have 2 entries");
@@ -634,23 +634,21 @@ mod property_tests {
     #[test]
     fn prop_write_read_round_trip() {
         let temp_dir = TempDir::new().unwrap();
-        let test_cases = vec![
-            "",
+        let test_cases = ["",
             "Hello",
             "Multi\nLine\nContent",
             "Unicode: 世界🦀",
-            "Special: \t\r\n",
-        ];
+            "Special: \t\r\n"];
 
         for (i, content) in test_cases.iter().enumerate() {
-            let file_path = temp_dir.path().join(format!("test_{}.txt", i));
+            let file_path = temp_dir.path().join(format!("test_{i}.txt"));
             let path_str = file_path.to_str().unwrap();
 
             write(path_str, content).unwrap();
             let read_back = read_to_string(path_str).unwrap();
 
             assert_eq!(*content, read_back,
-                       "Round-trip should preserve content: {:?}", content);
+                       "Round-trip should preserve content: {content:?}");
         }
     }
 

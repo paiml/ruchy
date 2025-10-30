@@ -283,7 +283,7 @@ mod tests {
             #[test]
             #[ignore] // Run with: cargo test property_tests -- --ignored
             fn prop_basic_traits_parse(name in "[A-Z][a-z]+", method in "[a-z]+") {
-                let code = format!("trait {} {{ fun {}() }}", name, method);
+                let code = format!("trait {name} {{ fun {method}() }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -291,7 +291,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_generic_traits_parse(name in "[A-Z][a-z]+", param in "[A-Z]") {
-                let code = format!("trait {}<{}> {{ }}", name, param);
+                let code = format!("trait {name}<{param}> {{ }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -299,7 +299,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_traits_with_associated_types(name in "[A-Z][a-z]+", type_name in "[A-Z][a-z]+") {
-                let code = format!("trait {} {{ type {} }}", name, type_name);
+                let code = format!("trait {name} {{ type {type_name} }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -307,7 +307,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_interface_keyword_parses(name in "[A-Z][a-z]+") {
-                let code = format!("interface {} {{ }}", name);
+                let code = format!("interface {name} {{ }}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }
@@ -315,7 +315,7 @@ mod tests {
             #[test]
             #[ignore]
             fn prop_empty_traits_parse(name in "[A-Z][a-z]+") {
-                let code = format!("trait {} {{}}", name);
+                let code = format!("trait {name} {{}}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
             }

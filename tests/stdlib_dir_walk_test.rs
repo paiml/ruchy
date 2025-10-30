@@ -74,11 +74,10 @@ fn test_stdlib005_walk_basic() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 assert(entries.len() > 0, "Should find at least one entry")
 println("Found {{}} entries", entries.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -96,12 +95,11 @@ fn test_stdlib005_walk_returns_array() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 // Verify it's an array by checking it has length and can be indexed
 assert(entries.len() >= 0, "walk() should return an array with length")
 println("Type check passed")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -119,7 +117,7 @@ fn test_stdlib005_walk_file_entries_have_fields() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 let first = entries[0]
 
 // FileEntry should have required fields
@@ -128,8 +126,7 @@ assert(first.name != nil, "Should have name field")
 assert(first.is_file != nil || first.is_dir != nil, "Should have type fields")
 
 println("Field check passed")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -147,13 +144,12 @@ fn test_stdlib005_walk_filter_files() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 let files = entries.filter(|e| e.is_file)
 
 assert(files.len() > 0, "Should find at least one file")
 println("Found {{}} files", files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -171,13 +167,12 @@ fn test_stdlib005_walk_filter_directories() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 let dirs = entries.filter(|e| e.is_dir)
 
 assert(dirs.len() > 0, "Should find at least one directory")
 println("Found {{}} directories", dirs.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -195,7 +190,7 @@ fn test_stdlib005_walk_recursive() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 
 // Should find files in subdirectories (recursive)
 // We created file4.txt in dir1/subdir/
@@ -203,8 +198,7 @@ let deep_files = entries.filter(|e| e.path.contains("subdir"))
 
 assert(deep_files.len() > 0, "Should find files in subdirectories")
 println("Recursive walk successful")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -222,7 +216,7 @@ fn test_stdlib005_walk_depth_field() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 
 // Check that depth field exists and has valid values
 let depths = entries.map(|e| e.depth)
@@ -230,8 +224,7 @@ let has_zero = depths.contains(0)  // Root level
 
 assert(has_zero, "Should have depth 0 entries")
 println("Depth field verified")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -249,13 +242,12 @@ fn test_stdlib005_walk_filter_by_extension() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 let txt_files = entries.filter(|e| e.path.ends_with(".txt"))
 
 assert(txt_files.len() > 0, "Should find .txt files")
 println("Found {{}} .txt files", txt_files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -273,13 +265,12 @@ fn test_stdlib005_walk_empty_directory() {
 
     let code = format!(
         r#"
-let entries = walk("{}")
+let entries = walk("{path}")
 
 // Empty directory should return at least the directory itself
 assert(entries.len() >= 0, "Should handle empty directory")
 println("Empty directory handled correctly")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -315,12 +306,11 @@ fn test_stdlib005_glob_basic_pattern() {
 
     let code = format!(
         r#"
-let pattern = "{}/*.txt"
+let pattern = "{path}/*.txt"
 let files = glob(pattern)
 assert(files.len() > 0, "Should find .txt files")
 println("Found {{}} .txt files", files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -338,12 +328,11 @@ fn test_stdlib005_glob_recursive_pattern() {
 
     let code = format!(
         r#"
-let pattern = "{}/**/*.txt"
+let pattern = "{path}/**/*.txt"
 let files = glob(pattern)
 assert(files.len() >= 3, "Should find all .txt files recursively")
 println("Found {{}} .txt files recursively", files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -361,13 +350,12 @@ fn test_stdlib005_glob_returns_string_array() {
 
     let code = format!(
         r#"
-let pattern = "{}/*.txt"
+let pattern = "{path}/*.txt"
 let files = glob(pattern)
 let first = files[0]
 // String paths should be printable
 println("First file: {{}}", first)
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -385,14 +373,13 @@ fn test_stdlib005_glob_filter_by_extension() {
 
     let code = format!(
         r#"
-let txt_files = glob("{}/**/*.txt")
-let log_files = glob("{}/**/*.log")
+let txt_files = glob("{path}/**/*.txt")
+let log_files = glob("{path}/**/*.log")
 
 assert(txt_files.len() > 0, "Should find .txt files")
 assert(log_files.len() > 0, "Should find .log files")
 println("Found {{}} .txt and {{}} .log files", txt_files.len(), log_files.len())
-"#,
-        path, path
+"#
     );
 
     ruchy_cmd()
@@ -410,11 +397,10 @@ fn test_stdlib005_glob_no_matches() {
 
     let code = format!(
         r#"
-let files = glob("{}/**/*.nonexistent")
+let files = glob("{path}/**/*.nonexistent")
 assert(files.len() == 0, "Should return empty array for no matches")
 println("No matches found (expected)")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -432,12 +418,11 @@ fn test_stdlib005_glob_absolute_paths() {
 
     let code = format!(
         r#"
-let files = glob("{}/**/*.txt")
+let files = glob("{path}/**/*.txt")
 // Results should be absolute paths
 assert(files[0].starts_with("/") || files[0].starts_with("C:"), "Should return absolute paths")
 println("Absolute paths verified")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -467,11 +452,10 @@ fn find(path, predicate) {{
 }}
 
 // Use the library function
-let files = find("{}", |e| e.is_file)
+let files = find("{path}", |e| e.is_file)
 assert(files.len() > 0, "Should find files")
 println("Found {{}} files via library function", files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -491,11 +475,10 @@ fn test_stdlib005_find_txt_files() {
         r#"
 fn find(path, predicate) {{ walk(path).filter(predicate) }}
 
-let txt_files = find("{}", |e| e.is_file && e.path.ends_with(".txt"))
+let txt_files = find("{path}", |e| e.is_file && e.path.ends_with(".txt"))
 assert(txt_files.len() >= 3, "Should find .txt files")
 println("Found {{}} .txt files", txt_files.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -518,11 +501,10 @@ fn test_stdlib005_find_demonstrates_composability() {
 // 2. filter() is a Rust builtin (higher-order function)
 // 3. find() is a Ruchy library function (convenience wrapper)
 
-let dirs = walk("{}").filter(|e| e.is_dir)
+let dirs = walk("{path}").filter(|e| e.is_dir)
 assert(dirs.len() >= 3, "Should find directories")
 println("Composability: {{}} directories found", dirs.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -544,11 +526,10 @@ fn test_stdlib005_search_basic() {
 
     let code = format!(
         r#"
-let matches = search("error", "{}")
+let matches = search("error", "{path}")
 assert(matches.len() > 0, "Should find matches for 'error'")
 println("Found {{}} matches", matches.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -566,11 +547,10 @@ fn test_stdlib005_search_returns_array() {
 
     let code = format!(
         r#"
-let matches = search("test", "{}")
+let matches = search("test", "{path}")
 assert(matches.len() >= 0, "Should return an array")
 println("Search returned array with {{}} matches", matches.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -588,7 +568,7 @@ fn test_stdlib005_search_match_has_fields() {
 
     let code = format!(
         r#"
-let matches = search("error", "{}")
+let matches = search("error", "{path}")
 let first = matches[0]
 
 // SearchMatch should have required fields
@@ -597,8 +577,7 @@ assert(first.line_num > 0, "Should have line_num field")
 assert(first.line != nil, "Should have line field")
 
 println("SearchMatch fields validated")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -617,13 +596,12 @@ fn test_stdlib005_search_case_insensitive() {
     let code = format!(
         r#"
 // Should find both "error" and "ERROR"
-let matches = search("ERROR", "{}", {{
+let matches = search("ERROR", "{path}", {{
     case_insensitive: true
 }})
 assert(matches.len() > 0, "Should find case-insensitive matches")
 println("Found {{}} case-insensitive matches", matches.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -641,11 +619,10 @@ fn test_stdlib005_search_no_matches() {
 
     let code = format!(
         r#"
-let matches = search("nonexistentpattern12345", "{}")
+let matches = search("nonexistentpattern12345", "{path}")
 assert(matches.len() == 0, "Should return empty array for no matches")
 println("No matches found (expected)")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -663,12 +640,11 @@ fn test_stdlib005_search_multiple_files() {
 
     let code = format!(
         r#"
-let matches = search("test", "{}")
+let matches = search("test", "{path}")
 // Should find matches in multiple files (test1.txt and test2.log)
 assert(matches.len() > 0, "Should find matches across multiple files")
 println("Found {{}} matches across files", matches.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -691,7 +667,7 @@ fn test_stdlib005_walk_with_options_max_depth() {
 
     let code = format!(
         r#"
-let entries = walk_with_options("{}", {{
+let entries = walk_with_options("{path}", {{
     max_depth: 1
 }})
 
@@ -701,8 +677,7 @@ let deep_file = paths.filter(|p| p.contains("file4.txt"))
 assert(deep_file.len() == 0, "Should not include files deeper than max_depth")
 
 println("Max depth test passed")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -721,18 +696,17 @@ fn test_stdlib005_walk_with_options_min_depth() {
 
     let code = format!(
         r#"
-let entries = walk_with_options("{}", {{
+let entries = walk_with_options("{path}", {{
     min_depth: 1
 }})
 
 // Should not include the root directory itself
 let paths = entries.map(|e| e.path)
-let root_entries = paths.filter(|p| p == "{}")
+let root_entries = paths.filter(|p| p == "{path}")
 assert(root_entries.len() == 0, "Should not include root directory with min_depth: 1")
 
 println("Min depth test passed")
-"#,
-        path, path
+"#
     );
 
     ruchy_cmd()
@@ -751,15 +725,14 @@ fn test_stdlib005_walk_with_options_empty_options() {
 
     let code = format!(
         r#"
-let entries = walk_with_options("{}", {{}})
+let entries = walk_with_options("{path}", {{}})
 
 // Should return FileEntry array like walk()
 assert(entries.len() > 0, "Should return entries with empty options")
 assert(entries[0].path != nil, "Entries should have path field")
 
 println("Empty options test passed")
-"#,
-        path
+"#
     );
 
     ruchy_cmd()
@@ -778,7 +751,7 @@ fn test_stdlib005_walk_with_options_combined() {
 
     let code = format!(
         r#"
-let entries = walk_with_options("{}", {{
+let entries = walk_with_options("{path}", {{
     max_depth: 2,
     min_depth: 1
 }})
@@ -786,8 +759,7 @@ let entries = walk_with_options("{}", {{
 // Should only include depth 1 and 2, not root (0) or deeper (3+)
 assert(entries.len() > 0, "Should have some entries")
 println("Combined options test passed: {{}} entries", entries.len())
-"#,
-        path
+"#
     );
 
     ruchy_cmd()

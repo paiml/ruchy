@@ -490,8 +490,7 @@ mod tests {
             let result = compiler.compile(&ast);
             assert!(
                 result.is_ok(),
-                "Should compile at optimization level {}",
-                level
+                "Should compile at optimization level {level}"
             );
         }
     }
@@ -525,7 +524,7 @@ mod tests {
             #[test]
             fn prop_compile_integer_never_panics(n in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_int(n as i64);
+                let ast = make_int(i64::from(n));
                 let _ = compiler.compile(&ast);
             }
 
@@ -541,7 +540,7 @@ mod tests {
             #[test]
             fn prop_compiled_modules_have_magic_number(n in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_int(n as i64);
+                let ast = make_int(i64::from(n));
                 if let Ok(module) = compiler.compile(&ast) {
                     let bytes = module.bytes();
                     prop_assert!(bytes.len() >= 4, "Module should have at least 4 bytes");
@@ -553,7 +552,7 @@ mod tests {
             #[test]
             fn prop_compilation_is_deterministic(n in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_int(n as i64);
+                let ast = make_int(i64::from(n));
                 if let Ok(module1) = compiler.compile(&ast) {
                     if let Ok(module2) = compiler.compile(&ast) {
                         prop_assert_eq!(module1.bytes(), module2.bytes(), "Same AST should produce same bytecode");
@@ -573,7 +572,7 @@ mod tests {
             #[test]
             fn prop_valid_modules_pass_validation(n in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_int(n as i64);
+                let ast = make_int(i64::from(n));
                 if let Ok(module) = compiler.compile(&ast) {
                     prop_assert!(module.validate().is_ok(), "Valid module should pass validation");
                 }
@@ -583,7 +582,7 @@ mod tests {
             #[test]
             fn prop_binary_add_compiles_consistently(a in any::<i32>(), b in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_binary(make_int(a as i64), BinaryOp::Add, make_int(b as i64));
+                let ast = make_binary(make_int(i64::from(a)), BinaryOp::Add, make_int(i64::from(b)));
                 if let Ok(module) = compiler.compile(&ast) {
                     prop_assert!(module.validate().is_ok(), "Binary operation should produce valid WASM");
                 }
@@ -593,7 +592,7 @@ mod tests {
             #[test]
             fn prop_bytes_call_idempotent(n in any::<i32>()) {
                 let compiler = WasmCompiler::new();
-                let ast = make_int(n as i64);
+                let ast = make_int(i64::from(n));
                 if let Ok(module) = compiler.compile(&ast) {
                     let bytes1 = module.bytes();
                     let bytes2 = module.bytes();

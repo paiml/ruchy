@@ -24,11 +24,11 @@ use ruchy::frontend::ast::{ExprKind, CommentKind};
 
 #[test]
 fn test_parse_multiple_leading_comments_in_block() {
-    let source = r#"// comment 1
+    let source = r"// comment 1
 let a = 1
 
 // comment 2
-let b = 2"#;
+let b = 2";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -63,14 +63,14 @@ let b = 2"#;
 
 #[test]
 fn test_parse_three_leading_comments_in_block() {
-    let source = r#"// comment 1
+    let source = r"// comment 1
 let a = 1
 
 // comment 2
 let b = 2
 
 // comment 3
-let c = 3"#;
+let c = 3";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -94,7 +94,7 @@ let c = 3"#;
 #[test]
 fn test_ignore_directives_preserved_in_ast() {
     // This is the ACTUAL failing case from test_fmt_ignore_multiple_expressions
-    let source = r#"// ruchy-fmt-ignore
+    let source = r"// ruchy-fmt-ignore
 let a    =    1
 
 let b = 2
@@ -102,7 +102,7 @@ let b = 2
 // ruchy-fmt-ignore
 let c    =    3
 
-let d = 4"#;
+let d = 4";
 
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
@@ -146,7 +146,7 @@ mod property_tests {
         fn prop_all_leading_comments_preserved(count in 2..10usize) {
             let mut source = String::new();
             for i in 0..count {
-                source.push_str(&format!("// comment {}\nlet x{} = {}\n\n", i, i, i));
+                source.push_str(&format!("// comment {i}\nlet x{i} = {i}\n\n"));
             }
 
             let mut parser = RuchyParser::new(&source);

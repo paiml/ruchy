@@ -231,12 +231,12 @@ fun main() {
 /// Test that AST is correct - negation should be Unary NOT, not Binary Send
 #[test]
 fn test_parser_068_ast_structure() {
-    let code = r#"
+    let code = r"
 fun test() {
     let x = false
     !x
 }
-"#;
+";
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
@@ -256,7 +256,7 @@ fun test() {
 #[test]
 #[ignore = "Actor model not yet implemented"]
 fn test_parser_068_actor_send_adjacent() {
-    let code = r#"
+    let code = r"
         actor Counter {
             state: { count: 0 }
 
@@ -269,7 +269,7 @@ fn test_parser_068_actor_send_adjacent() {
             let counter = Counter()
             counter ! Increment
         }
-    "#;
+    ";
 
     ruchy_cmd()
         .arg("-e")

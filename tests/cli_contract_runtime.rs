@@ -6,7 +6,7 @@
 //! **Contract Specification**:
 //! - Exit code 0: Runtime analysis completed successfully
 //! - Exit code 1: Analysis failed OR file not found OR syntax error
-//! - stdout: Performance report (profiling, BigO, benchmarks, memory)
+//! - stdout: Performance report (profiling, `BigO`, benchmarks, memory)
 //! - stderr: Error messages (analysis errors, missing files)
 //! - Options: --profile, --bigo, --bench, --compare, --memory, --verbose, --output
 //!
@@ -110,11 +110,11 @@ fn cli_runtime_profile_with_loop() {
     let file = create_temp_file(
         &temp,
         "profile_loop.ruchy",
-        r#"
+        r"
 for i in range(10) {
     println(i)
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -151,11 +151,11 @@ fn cli_runtime_bigo_with_loop() {
     let file = create_temp_file(
         &temp,
         "bigo_loop.ruchy",
-        r#"
+        r"
 for i in range(100) {
     let x = i * 2
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -174,13 +174,13 @@ fn cli_runtime_bigo_with_nested_loops() {
     let file = create_temp_file(
         &temp,
         "bigo_nested.ruchy",
-        r#"
+        r"
 for i in range(10) {
     for j in range(10) {
         let x = i * j
     }
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -217,12 +217,12 @@ fn cli_runtime_bench_with_computation() {
     let file = create_temp_file(
         &temp,
         "bench_compute.ruchy",
-        r#"
+        r"
 let sum = 0
 for i in range(100) {
     sum = sum + i
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -300,13 +300,13 @@ fn cli_runtime_memory_with_allocations() {
     let file = create_temp_file(
         &temp,
         "memory_alloc.ruchy",
-        r#"
+        r"
 let arr = [1, 2, 3, 4, 5]
 let sum = 0
 for i in arr {
     sum = sum + i
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -478,7 +478,7 @@ fn cli_runtime_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -489,7 +489,7 @@ fun factorial(n) {
 
 let result = factorial(5)
 println(result)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -506,7 +506,7 @@ fn cli_runtime_recursive_function_bigo() {
     let file = create_temp_file(
         &temp,
         "recursive.ruchy",
-        r#"
+        r"
 fun fib(n) {
     if n <= 1 {
         n
@@ -516,7 +516,7 @@ fun fib(n) {
 }
 
 fib(10)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -553,11 +553,11 @@ fn cli_runtime_constant_time_program() {
     let file = create_temp_file(
         &temp,
         "constant.ruchy",
-        r#"
+        r"
 let x = 42
 let y = x * 2
 println(y)
-"#,
+",
     );
 
     ruchy_cmd()
@@ -576,11 +576,11 @@ fn cli_runtime_linear_time_program() {
     let file = create_temp_file(
         &temp,
         "linear.ruchy",
-        r#"
+        r"
 for i in range(100) {
     println(i)
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -599,13 +599,13 @@ fn cli_runtime_quadratic_time_program() {
     let file = create_temp_file(
         &temp,
         "quadratic.ruchy",
-        r#"
+        r"
 for i in range(10) {
     for j in range(10) {
         println(i * j)
     }
 }
-"#,
+",
     );
 
     ruchy_cmd()

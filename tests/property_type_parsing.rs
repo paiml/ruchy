@@ -14,6 +14,8 @@
 //! 3. **Type Preservation**: Parsed types maintain semantic meaning
 //! 4. **Error Clarity**: Invalid types produce clear error messages
 
+#![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
 
@@ -60,21 +62,21 @@ fn arb_type_expr() -> impl Strategy<Value = String> {
                 // Reference types: &T, &mut T
                 (any::<bool>(), inner.clone()).prop_map(|(is_mut, ty)| {
                     if is_mut {
-                        format!("&mut {}", ty)
+                        format!("&mut {ty}")
                     } else {
-                        format!("&{}", ty)
+                        format!("&{ty}")
                     }
                 }),
                 // Generic types: Vec<T>, Option<T>
                 (arb_simple_type_name(), inner.clone()).prop_map(|(name, ty)| {
                     if matches!(name.as_str(), "Vec" | "Option" | "Result") {
-                        format!("{}<{}>", name, ty)
+                        format!("{name}<{ty}>")
                     } else {
                         name
                     }
                 }),
                 // List types: [T]
-                inner.clone().prop_map(|ty| format!("[{}]", ty)),
+                inner.clone().prop_map(|ty| format!("[{ty}]")),
                 // Tuple types: (T1, T2)
                 prop::collection::vec(inner.clone(), 2..4).prop_map(|types| {
                     format!("({})", types.join(", "))
@@ -82,7 +84,7 @@ fn arb_type_expr() -> impl Strategy<Value = String> {
                 // Function types: fn(T1, T2) -> T3
                 (
                     prop::collection::vec(inner.clone(), 0..3),
-                    inner.clone()
+                    inner
                 )
                     .prop_map(|(params, ret)| {
                         format!("fn({}) -> {}", params.join(", "), ret)
@@ -92,7 +94,7 @@ fn arb_type_expr() -> impl Strategy<Value = String> {
     )
 }
 
-/// Generate arbitrary qualified type names (e.g., std::vec::Vec)
+/// Generate arbitrary qualified type names (e.g., `std::vec::Vec`)
 fn arb_qualified_type() -> impl Strategy<Value = String> {
     prop::collection::vec("[a-z][a-z0-9]{0,5}", 1..4).prop_map(|parts| parts.join("::"))
 }
@@ -114,7 +116,7 @@ proptest! {
     #[test]
     #[ignore] // Run with: cargo test property_type -- --ignored --nocapture
     fn prop_parse_type_never_panics(type_str in arb_type_expr()) {
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = std::panic::catch_unwind(|| {
             Parser::new(&code).parse()
         });
@@ -129,7 +131,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_simple_types_parse(type_name in arb_simple_type_name()) {
-        let code = format!("fun f(x: {}) {{}}", type_name);
+        let code = format!("fun f(x: {type_name}) {{}}");
         let result = Parser::new(&code).parse();
 
         // Most simple types should parse successfully
@@ -147,11 +149,11 @@ proptest! {
         inner_type in arb_simple_type_name()
     ) {
         let type_str = if is_mut {
-            format!("&mut {}", inner_type)
+            format!("&mut {inner_type}")
         } else {
-            format!("&{}", inner_type)
+            format!("&{inner_type}")
         };
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", type_str);
@@ -166,8 +168,8 @@ proptest! {
         container in prop_oneof![Just("Vec"), Just("Option"), Just("Result")],
         inner_type in arb_simple_type_name()
     ) {
-        let type_str = format!("{}<{}>", container, inner_type);
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let type_str = format!("{container}<{inner_type}>");
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", type_str);
@@ -179,8 +181,8 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_list_types_parse(inner_type in arb_simple_type_name()) {
-        let type_str = format!("[{}]", inner_type);
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let type_str = format!("[{inner_type}]");
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", type_str);
@@ -195,7 +197,7 @@ proptest! {
         types in prop::collection::vec(arb_simple_type_name(), 2..5)
     ) {
         let type_str = format!("({})", types.join(", "));
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", type_str);
@@ -211,7 +213,7 @@ proptest! {
         return_type in arb_simple_type_name()
     ) {
         let type_str = format!("fn({}) -> {}", param_types.join(", "), return_type);
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", type_str);
@@ -223,7 +225,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_qualified_types_parse(qualified in arb_qualified_type()) {
-        let code = format!("fun f(x: {}) {{}}", qualified);
+        let code = format!("fun f(x: {qualified}) {{}}");
         let result = Parser::new(&code).parse();
 
         prop_assert!(result.is_ok() || result.is_err(), "Failed on: {}", qualified);
@@ -241,7 +243,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_type_parsing_deterministic(type_str in arb_type_expr()) {
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
 
         let result1 = Parser::new(&code).parse();
         let result2 = Parser::new(&code).parse();
@@ -269,7 +271,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_named_type_preservation(type_name in "[A-Z][a-zA-Z0-9]{0,10}") {
-        let code = format!("fun f(x: {}) {{}}", type_name);
+        let code = format!("fun f(x: {type_name}) {{}}");
 
         if let Ok(_program) = Parser::new(&code).parse() {
             // Successful parse means type was preserved correctly
@@ -288,11 +290,11 @@ proptest! {
         inner_type in arb_simple_type_name()
     ) {
         let type_str = if is_mut {
-            format!("&mut {}", inner_type)
+            format!("&mut {inner_type}")
         } else {
-            format!("&{}", inner_type)
+            format!("&{inner_type}")
         };
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let code = format!("fun f(x: {type_str}) {{}}");
 
         if let Ok(_program) = Parser::new(&code).parse() {
             // Would check AST for TypeKind::Reference { is_mut, ... }
@@ -309,8 +311,8 @@ proptest! {
         container in prop_oneof![Just("Vec"), Just("Option")],
         inner_type in arb_simple_type_name()
     ) {
-        let type_str = format!("{}<{}>", container, inner_type);
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let type_str = format!("{container}<{inner_type}>");
+        let code = format!("fun f(x: {type_str}) {{}}");
 
         if let Ok(_program) = Parser::new(&code).parse() {
             // Would check AST for TypeKind::Generic with correct args
@@ -332,8 +334,8 @@ proptest! {
     fn prop_invalid_type_clear_errors(
         invalid_char in "[^a-zA-Z0-9_<>\\[\\]()&:, \\-]"
     ) {
-        let type_str = format!("Bad{}", invalid_char);
-        let code = format!("fun f(x: {}) {{}}", type_str);
+        let type_str = format!("Bad{invalid_char}");
+        let code = format!("fun f(x: {type_str}) {{}}");
 
         let result = Parser::new(&code).parse();
 
@@ -362,9 +364,9 @@ mod unit_tests {
         let test_cases = vec!["i32", "i64", "f64", "bool", "String", "()"];
 
         for type_name in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_name);
+            let code = format!("fun f(x: {type_name}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_name);
+            assert!(result.is_ok(), "Failed to parse type: {type_name}");
         }
     }
 
@@ -374,9 +376,9 @@ mod unit_tests {
         let test_cases = vec!["&i32", "&mut i32", "&String", "&mut bool"];
 
         for type_str in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_str);
+            let code = format!("fun f(x: {type_str}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_str);
+            assert!(result.is_ok(), "Failed to parse type: {type_str}");
         }
     }
 
@@ -386,9 +388,9 @@ mod unit_tests {
         let test_cases = vec!["Vec<i32>", "Option<String>", "Result<i32, String>"];
 
         for type_str in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_str);
+            let code = format!("fun f(x: {type_str}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_str);
+            assert!(result.is_ok(), "Failed to parse type: {type_str}");
         }
     }
 
@@ -399,9 +401,9 @@ mod unit_tests {
         // Note: Single-element tuples like (i32,) not yet supported
 
         for type_str in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_str);
+            let code = format!("fun f(x: {type_str}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_str);
+            assert!(result.is_ok(), "Failed to parse type: {type_str}");
         }
     }
 
@@ -416,9 +418,9 @@ mod unit_tests {
         ];
 
         for type_str in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_str);
+            let code = format!("fun f(x: {type_str}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_str);
+            assert!(result.is_ok(), "Failed to parse type: {type_str}");
         }
     }
 
@@ -434,9 +436,9 @@ mod unit_tests {
         ];
 
         for type_str in test_cases {
-            let code = format!("fun f(x: {}) {{}}", type_str);
+            let code = format!("fun f(x: {type_str}) {{}}");
             let result = Parser::new(&code).parse();
-            assert!(result.is_ok(), "Failed to parse type: {}", type_str);
+            assert!(result.is_ok(), "Failed to parse type: {type_str}");
         }
     }
 

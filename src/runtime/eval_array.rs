@@ -394,6 +394,190 @@ fn validate_single_closure_argument(
     Ok(())
 }
 
+// ============================================================================
+// STDLIB-005: Array concatenation and flattening (ISSUE #41)
+// ============================================================================
+
+/// Concatenate two arrays
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2].concat([3, 4]) => [1, 2, 3, 4]
+/// ```
+fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let mut result = arr.to_vec();
+            result.extend_from_slice(other_arr);
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "concat() requires array argument, got {other:?}"
+        ))),
+    }
+}
+
+/// Flatten nested arrays by one level
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [[1, 2], [3, 4]].flatten() => [1, 2, 3, 4]
+/// [1, 2, 3].flatten() => [1, 2, 3]  // Already flat
+/// ```
+fn eval_array_flatten(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut result = Vec::new();
+
+    for item in arr.iter() {
+        match item {
+            Value::Array(nested) => {
+                result.extend_from_slice(nested);
+            }
+            _ => {
+                // Not an array - keep as-is (already flat at this level)
+                result.push(item.clone());
+            }
+        }
+    }
+
+    Ok(Value::Array(Arc::from(result)))
+}
+/// Compute union of two arrays (treats arrays as sets with unique elements)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3].union([3, 4, 5]) => [1, 2, 3, 4, 5]
+/// [1, 2, 2].union([2, 3]) => [1, 2, 3]  // Duplicates removed
+/// ```
+fn eval_array_union(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            // Add all unique elements from first array
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            // Add unique elements from second array that aren't already in result
+            for item in other_arr.iter() {
+                let key = format!("{item:?}");
+                if seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "union() requires array argument, got {other:?}"
+        ))),
+    }
+}
+
+/// Compute intersection of two arrays (common elements only)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3, 4].intersection([3, 4, 5, 6]) => [3, 4]
+/// [1, 2].intersection([3, 4]) => []  // No common elements
+/// ```
+fn eval_array_intersection(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let other_set: std::collections::HashSet<_> =
+                other_arr.iter().map(|v| format!("{v:?}")).collect();
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if other_set.contains(&key) && seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "intersection() requires array argument, got {other:?}"
+        ))),
+    }
+}
+
+/// Compute difference of two arrays (elements in first but not in second)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [1, 2, 3, 4].difference([3, 4, 5, 6]) => [1, 2]
+/// [1, 2].difference([3, 4]) => [1, 2]  // All elements retained
+/// [1, 2].difference([1, 2, 3]) => []   // All elements removed
+/// ```
+fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let other_set: std::collections::HashSet<_> =
+                other_arr.iter().map(|v| format!("{v:?}")).collect();
+            let mut seen = std::collections::HashSet::new();
+            let mut result = Vec::new();
+
+            for item in arr.iter() {
+                let key = format!("{item:?}");
+                if !other_set.contains(&key) && seen.insert(key) {
+                    result.push(item.clone());
+                }
+            }
+
+            Ok(Value::Array(Arc::from(result)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "difference() requires array argument, got {other:?}"
+        ))),
+    }
+}
+
+/// STDLIB-009: Sort array elements
+///
+/// Returns a new sorted array without modifying the original.
+/// Sorts by string representation to handle heterogeneous arrays.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// [3, 1, 4, 1, 5].sort() => [1, 1, 3, 4, 5]
+/// ["zebra", "apple", "banana"].sort() => ["apple", "banana", "zebra"]
+/// [].sort() => []
+/// ```
+fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut sorted = arr.to_vec();
+    sorted.sort_by(|a, b| {
+        let a_str = format!("{a:?}");
+        let b_str = format!("{b:?}");
+        a_str.cmp(&b_str)
+    });
+    Ok(Value::Array(Arc::from(sorted)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -840,188 +1024,4 @@ mod tests {
             }
         }
     }
-}
-
-// ============================================================================
-// STDLIB-005: Array concatenation and flattening (ISSUE #41)
-// ============================================================================
-
-/// Concatenate two arrays
-///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [1, 2].concat([3, 4]) => [1, 2, 3, 4]
-/// ```
-fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
-    match other {
-        Value::Array(other_arr) => {
-            let mut result = arr.to_vec();
-            result.extend_from_slice(other_arr);
-            Ok(Value::Array(Arc::from(result)))
-        }
-        _ => Err(InterpreterError::TypeError(format!(
-            "concat() requires array argument, got {other:?}"
-        ))),
-    }
-}
-
-/// Flatten nested arrays by one level
-///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [[1, 2], [3, 4]].flatten() => [1, 2, 3, 4]
-/// [1, 2, 3].flatten() => [1, 2, 3]  // Already flat
-/// ```
-fn eval_array_flatten(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
-    let mut result = Vec::new();
-
-    for item in arr.iter() {
-        match item {
-            Value::Array(nested) => {
-                result.extend_from_slice(nested);
-            }
-            _ => {
-                // Not an array - keep as-is (already flat at this level)
-                result.push(item.clone());
-            }
-        }
-    }
-
-    Ok(Value::Array(Arc::from(result)))
-}
-/// Compute union of two arrays (treats arrays as sets with unique elements)
-///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [1, 2, 3].union([3, 4, 5]) => [1, 2, 3, 4, 5]
-/// [1, 2, 2].union([2, 3]) => [1, 2, 3]  // Duplicates removed
-/// ```
-fn eval_array_union(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
-    match other {
-        Value::Array(other_arr) => {
-            let mut seen = std::collections::HashSet::new();
-            let mut result = Vec::new();
-
-            // Add all unique elements from first array
-            for item in arr.iter() {
-                let key = format!("{item:?}");
-                if seen.insert(key) {
-                    result.push(item.clone());
-                }
-            }
-
-            // Add unique elements from second array that aren't already in result
-            for item in other_arr.iter() {
-                let key = format!("{item:?}");
-                if seen.insert(key) {
-                    result.push(item.clone());
-                }
-            }
-
-            Ok(Value::Array(Arc::from(result)))
-        }
-        _ => Err(InterpreterError::TypeError(format!(
-            "union() requires array argument, got {other:?}"
-        ))),
-    }
-}
-
-/// Compute intersection of two arrays (common elements only)
-///
-/// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [1, 2, 3, 4].intersection([3, 4, 5, 6]) => [3, 4]
-/// [1, 2].intersection([3, 4]) => []  // No common elements
-/// ```
-fn eval_array_intersection(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
-    match other {
-        Value::Array(other_arr) => {
-            let other_set: std::collections::HashSet<_> =
-                other_arr.iter().map(|v| format!("{v:?}")).collect();
-            let mut seen = std::collections::HashSet::new();
-            let mut result = Vec::new();
-
-            for item in arr.iter() {
-                let key = format!("{item:?}");
-                if other_set.contains(&key) && seen.insert(key) {
-                    result.push(item.clone());
-                }
-            }
-
-            Ok(Value::Array(Arc::from(result)))
-        }
-        _ => Err(InterpreterError::TypeError(format!(
-            "intersection() requires array argument, got {other:?}"
-        ))),
-    }
-}
-
-/// Compute difference of two arrays (elements in first but not in second)
-///
-/// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [1, 2, 3, 4].difference([3, 4, 5, 6]) => [1, 2]
-/// [1, 2].difference([3, 4]) => [1, 2]  // All elements retained
-/// [1, 2].difference([1, 2, 3]) => []   // All elements removed
-/// ```
-fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
-    match other {
-        Value::Array(other_arr) => {
-            let other_set: std::collections::HashSet<_> =
-                other_arr.iter().map(|v| format!("{v:?}")).collect();
-            let mut seen = std::collections::HashSet::new();
-            let mut result = Vec::new();
-
-            for item in arr.iter() {
-                let key = format!("{item:?}");
-                if !other_set.contains(&key) && seen.insert(key) {
-                    result.push(item.clone());
-                }
-            }
-
-            Ok(Value::Array(Arc::from(result)))
-        }
-        _ => Err(InterpreterError::TypeError(format!(
-            "difference() requires array argument, got {other:?}"
-        ))),
-    }
-}
-
-/// STDLIB-009: Sort array elements
-///
-/// Returns a new sorted array without modifying the original.
-/// Sorts by string representation to handle heterogeneous arrays.
-///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
-///
-/// # Examples
-/// ```
-/// [3, 1, 4, 1, 5].sort() => [1, 1, 3, 4, 5]
-/// ["zebra", "apple", "banana"].sort() => ["apple", "banana", "zebra"]
-/// [].sort() => []
-/// ```
-fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
-    let mut sorted = arr.to_vec();
-    sorted.sort_by(|a, b| {
-        let a_str = format!("{a:?}");
-        let b_str = format!("{b:?}");
-        a_str.cmp(&b_str)
-    });
-    Ok(Value::Array(Arc::from(sorted)))
 }

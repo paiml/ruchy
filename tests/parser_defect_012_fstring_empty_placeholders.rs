@@ -15,7 +15,7 @@ fn test_code(code: &str) {
     use std::thread;
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let thread_id = thread::current().id();
-    let temp_file = PathBuf::from(format!("/tmp/test_fstring_defect_{}_{:?}.ruchy", timestamp, thread_id));
+    let temp_file = PathBuf::from(format!("/tmp/test_fstring_defect_{timestamp}_{thread_id:?}.ruchy"));
     fs::write(&temp_file, code).expect("Failed to write temp file");
 
     ruchy_cmd()

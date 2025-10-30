@@ -304,8 +304,7 @@ fn test_http002d_10_html_error_invalid_selector() {
     // Should return error for invalid selector
     assert!(
         result.is_err(),
-        "Invalid selector should return error, got: {:?}",
-        result
+        "Invalid selector should return error, got: {result:?}"
     );
 }
 

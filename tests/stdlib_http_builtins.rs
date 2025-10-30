@@ -4,10 +4,10 @@
 //! Pattern: Three-layer builtin architecture (proven from path/json modules)
 //!
 //! Functions to implement:
-//! 1. http_get(url) - Send GET request, return response body
-//! 2. http_post(url, body) - Send POST request with body
-//! 3. http_put(url, body) - Send PUT request with body
-//! 4. http_delete(url) - Send DELETE request
+//! 1. `http_get(url)` - Send GET request, return response body
+//! 2. `http_post(url`, body) - Send POST request with body
+//! 3. `http_put(url`, body) - Send PUT request with body
+//! 4. `http_delete(url)` - Send DELETE request
 
 use assert_cmd::Command;
 use std::fs;

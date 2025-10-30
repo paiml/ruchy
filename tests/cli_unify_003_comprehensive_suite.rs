@@ -45,7 +45,7 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::Path
 fn create_script(content: &str) -> NamedTempFile {
     let mut file = NamedTempFile::new().expect("Failed to create temp file");
     use std::io::Write;
-    write!(file, "{}", content).expect("Failed to write to temp file");
+    write!(file, "{content}").expect("Failed to write to temp file");
     file
 }
 
@@ -137,7 +137,7 @@ fn test_011_run_command_interprets() {
 
     let duration = start.elapsed();
     // Interpretation should be fast (<2s), compilation would be 10-60s
-    assert!(duration.as_secs() < 2, "Run command too slow: {:?}", duration);
+    assert!(duration.as_secs() < 2, "Run command too slow: {duration:?}");
 }
 
 #[test]
@@ -166,12 +166,12 @@ fn test_012_run_command_equals_direct() {
 fn test_013_file_with_functions() {
     // Execute file containing function definitions
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "functions.ruchy", r#"
+    let script = create_temp_file(&temp, "functions.ruchy", r"
 fun add(a, b) {
     a + b
 }
 println(add(2, 3))
-"#);
+");
 
     ruchy_cmd()
         .arg(&script)
@@ -204,10 +204,10 @@ if x > 5 {
 fn test_015_file_with_data_structures() {
     // Execute file with arrays/objects
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "data.ruchy", r#"
+    let script = create_temp_file(&temp, "data.ruchy", r"
 let arr = [1, 2, 3]
 println(arr[0])
-"#);
+");
 
     ruchy_cmd()
         .arg(&script)
@@ -338,7 +338,7 @@ fn test_024_eval_fast() {
         .success();
 
     let duration = start.elapsed();
-    assert!(duration.as_millis() < 1000, "Eval too slow: {:?}", duration);
+    assert!(duration.as_millis() < 1000, "Eval too slow: {duration:?}");
 }
 
 // ============================================================================
@@ -515,7 +515,7 @@ fn test_052_compile_slow_is_ok() {
 
     let duration = start.elapsed();
     // Compilation can be slow - this is expected and documented
-    println!("Compile time: {:?} (expected: 1-60s)", duration);
+    println!("Compile time: {duration:?} (expected: 1-60s)");
 }
 
 #[test]
@@ -696,7 +696,7 @@ fn test_070_tool_mutations() {
 }
 
 #[test]
-#[ignore] // Fuzz is long-running, skip in regular test runs
+#[ignore = "Fuzz is long-running - skip in regular test runs"]
 fn test_071_tool_fuzz() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
@@ -805,7 +805,7 @@ fn test_084_very_large_file() {
     let temp = TempDir::new().unwrap();
     let mut large_program = String::new();
     for i in 0..1000 {
-        large_program.push_str(&format!("let x{} = {}\n", i, i));
+        large_program.push_str(&format!("let x{i} = {i}\n"));
     }
     large_program.push_str("println(x999)");
 

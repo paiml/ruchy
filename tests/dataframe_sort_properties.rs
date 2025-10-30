@@ -1,14 +1,14 @@
-//! DF-004: DataFrame sort_by() Property Tests (EXTREME TDD Validation)
+//! DF-004: `DataFrame` `sort_by()` Property Tests (EXTREME TDD Validation)
 //!
-//! **CRITICAL**: Property tests with 10,000+ iterations to prove sort_by() correctness.
+//! **CRITICAL**: Property tests with 10,000+ iterations to prove `sort_by()` correctness.
 //!
-//! **Note**: sort_by() already implemented, adding comprehensive test coverage retroactively.
+//! **Note**: `sort_by()` already implemented, adding comprehensive test coverage retroactively.
 
 use proptest::prelude::*;
 use ruchy::runtime::{DataFrameColumn, Value};
 use ruchy::runtime::eval_dataframe_ops::eval_dataframe_method;
 
-/// Generate DataFrame with sortable numeric column
+/// Generate `DataFrame` with sortable numeric column
 fn arb_numeric_dataframe(num_rows: usize) -> BoxedStrategy<Vec<DataFrameColumn>> {
     prop::collection::vec(any::<i64>(), num_rows..=num_rows)
         .prop_map(move |values| {
@@ -122,8 +122,8 @@ proptest! {
 
         prop_assert!(result.is_ok());
         if let Ok(Value::DataFrame { columns: sorted_cols }) = result {
-            let mut original_sorted = values.clone();
-            original_sorted.sort();
+            let mut original_sorted = values;
+            original_sorted.sort_unstable();
 
             let result_values: Vec<i64> = sorted_cols[0]
                 .values

@@ -1,15 +1,15 @@
 //! PARSER-085: Function Pointer Support (GitHub Issue #70)
 //!
-//! Tests for function pointer type syntax (fn() types) and higher-order functions.
+//! Tests for function pointer type syntax (`fn()` types) and higher-order functions.
 //!
 //! Discovered during: RUCHY-005 Deno Updater conversion (2025-10-28)
 //! Blocks: ubuntu-config-scripts TypeScript→Ruchy conversions
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/70
+//! Reference: <https://github.com/paiml/ruchy/issues/70>
 //!
 //! EXTREME TDD PROTOCOL:
 //! ✅ RED Phase: This test file (all tests should FAIL)
-//! ⏸️ GREEN Phase: Implement parser support for fn() type syntax
+//! ⏸️ GREEN Phase: Implement parser support for `fn()` type syntax
 //! ⏸️ REFACTOR Phase: Apply quality gates (complexity ≤10)
 
 use assert_cmd::Command;
@@ -19,15 +19,15 @@ use tempfile::NamedTempFile;
 /// Test parsing simple function pointer type (no parameters, no return)
 #[test]
 fn test_parser_085_01_simple_function_pointer_type() {
-    let code = r#"
+    let code = r"
 fun run(f: fn()) {
     f();
 }
 
 fun main() {}
-"#;
+";
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     // RED: Expected to FAIL until parser implements fn() type syntax
@@ -42,15 +42,15 @@ fun main() {}
 /// Test parsing function pointer with parameters
 #[test]
 fn test_parser_085_02_function_pointer_with_params() {
-    let code = r#"
+    let code = r"
 fun apply(f: fn(i32), x: i32) {
     f(x);
 }
 
 fun main() {}
-"#;
+";
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -64,15 +64,15 @@ fun main() {}
 /// Test parsing function pointer with return type
 #[test]
 fn test_parser_085_03_function_pointer_with_return() {
-    let code = r#"
+    let code = r"
 fun transform(f: fn(i32) -> i32, x: i32) -> i32 {
     f(x)
 }
 
 fun main() {}
-"#;
+";
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -86,15 +86,15 @@ fun main() {}
 /// Test parsing function pointer with multiple parameters
 #[test]
 fn test_parser_085_04_function_pointer_multiple_params() {
-    let code = r#"
+    let code = r"
 fun combine(f: fn(i32, i32) -> i32, a: i32, b: i32) -> i32 {
     f(a, b)
 }
 
 fun main() {}
-"#;
+";
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -126,7 +126,7 @@ fun main() {
 }
 "#;
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -160,7 +160,7 @@ fun main() {
 }
 "#;
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -174,15 +174,15 @@ fun main() {
 /// Test transpilation generates valid Rust code
 #[test]
 fn test_parser_085_07_transpile_function_pointer() {
-    let code = r#"
+    let code = r"
 fun apply(f: fn(i32) -> i32, value: i32) -> i32 {
     f(value)
 }
 
 fun main() {}
-"#;
+";
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     // Test transpilation works
@@ -213,14 +213,14 @@ fun main() {
 }
 "#;
 
-    let mut temp_file = NamedTempFile::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
     // Test evaluation works and outputs "10"
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("-e")
-        .arg(&code)
+        .arg(code)
         .assert()
         .success()
         .stdout(predicates::str::contains("10"));

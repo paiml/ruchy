@@ -1,7 +1,7 @@
 //! String case conversion method tests - HYBRID-C-1
 //!
 //! EXTREME TDD: Tests written FIRST, implementation follows
-//! Ensures to_uppercase() and to_lowercase() methods work
+//! Ensures `to_uppercase()` and `to_lowercase()` methods work
 
 use ruchy::runtime::eval_string_methods::eval_string_method;
 use ruchy::runtime::Value;
@@ -14,7 +14,7 @@ fn test_to_uppercase_method() {
 
     match result {
         Value::String(upper) => assert_eq!(&*upper, "HELLO"),
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -25,7 +25,7 @@ fn test_to_lowercase_method() {
 
     match result {
         Value::String(lower) => assert_eq!(&*lower, "world"),
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -36,7 +36,7 @@ fn test_to_uppercase_empty_string() {
 
     match result {
         Value::String(upper) => assert_eq!(&*upper, ""),
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -47,7 +47,7 @@ fn test_to_lowercase_mixed_case() {
 
     match result {
         Value::String(lower) => assert_eq!(&*lower, "hello world"),
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 
@@ -58,7 +58,7 @@ fn test_to_uppercase_unicode() {
 
     match result {
         Value::String(upper) => assert_eq!(&*upper, "CAFÉ"),
-        _ => panic!("Expected String, got {:?}", result),
+        _ => panic!("Expected String, got {result:?}"),
     }
 }
 

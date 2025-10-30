@@ -34,7 +34,7 @@ fn ruchy_cmd() -> Command {
 fn create_temp_script(content: &str) -> NamedTempFile {
     let mut file = NamedTempFile::new().expect("Failed to create temp file");
     use std::io::Write;
-    write!(file, "{}", content).expect("Failed to write to temp file");
+    write!(file, "{content}").expect("Failed to write to temp file");
     file
 }
 
@@ -49,7 +49,7 @@ proptest! {
     #[test]
     fn prop_001_determinism_direct_execution(code in "[a-z0-9 +\\-*/()]+") {
         // Generate simple arithmetic expressions
-        let script_content = format!("println({})", code);
+        let script_content = format!("println({code})");
         let script = create_temp_script(&script_content);
 
         // Run twice and compare outputs
@@ -106,12 +106,12 @@ proptest! {
     /// Property: Interpretation is fast (<2s)
     #[test]
     fn prop_010_speed_interpretation_fast(n in 1..100i32) {
-        let script_content = format!("println({})", n);
+        let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
 
         let start = Instant::now();
         let result = ruchy_cmd()
-            .arg(&script.path())
+            .arg(script.path())
             .output();
         let duration = start.elapsed();
 
@@ -129,7 +129,7 @@ proptest! {
         let start = Instant::now();
         let result = ruchy_cmd()
             .arg("-e")
-            .arg(format!("{}", n))
+            .arg(format!("{n}"))
             .output();
         let duration = start.elapsed();
 
@@ -152,7 +152,7 @@ proptest! {
     /// Property: Direct execution = Run command
     #[test]
     fn prop_020_consistency_direct_equals_run(n in 1..100i32) {
-        let script_content = format!("println({})", n);
+        let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
 
         let direct = ruchy_cmd()
@@ -176,7 +176,7 @@ proptest! {
     /// Property: Eval produces same result as file execution
     #[test]
     fn prop_021_consistency_eval_equals_file(n in 1..100i32) {
-        let code = format!("println({})", n);
+        let code = format!("println({n})");
         let script = create_temp_script(&code);
 
         let eval_output = ruchy_cmd()
@@ -245,7 +245,7 @@ proptest! {
     /// Property: Output is always valid UTF-8
     #[test]
     fn prop_040_output_valid_utf8(n in 1..1000i32) {
-        let script_content = format!("println({})", n);
+        let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
 
         if let Ok(output) = ruchy_cmd().arg(script.path()).output() {
@@ -272,7 +272,7 @@ proptest! {
     /// Property: Valid code exits with 0
     #[test]
     fn prop_050_valid_code_exits_zero(n in 1..100i32) {
-        let script_content = format!("let x = {}\nprintln(x)", n);
+        let script_content = format!("let x = {n}\nprintln(x)");
         let script = create_temp_script(&script_content);
 
         if let Ok(output) = ruchy_cmd().arg(script.path()).output() {
@@ -287,7 +287,7 @@ proptest! {
     #[test]
     fn prop_051_syntax_error_exits_nonzero(prefix in "[a-z]+") {
         // Create syntactically invalid code
-        let invalid_code = format!("let {} = ", prefix);
+        let invalid_code = format!("let {prefix} = ");
         let script = create_temp_script(&invalid_code);
 
         if let Ok(output) = ruchy_cmd().arg(script.path()).output() {
@@ -307,7 +307,7 @@ proptest! {
     /// Property: Multiple runs produce same result (idempotency)
     #[test]
     fn prop_060_idempotent_execution(n in 1..100i32) {
-        let script_content = format!("println({})", n);
+        let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
 
         let mut outputs = Vec::new();
@@ -340,7 +340,7 @@ proptest! {
     /// Property: Unicode strings are handled correctly
     #[test]
     fn prop_070_unicode_handling(text in "[\\u{0080}-\\u{00FF}]{1,20}") {
-        let script_content = format!("println(\"{}\")", text);
+        let script_content = format!("println(\"{text}\")");
         let script = create_temp_script(&script_content);
 
         if let Ok(output) = ruchy_cmd().arg(script.path()).output() {
@@ -355,7 +355,7 @@ proptest! {
     /// Property: Emoji support
     #[test]
     fn prop_071_emoji_support(emoji in "[😀😁😂😃😄😅😆😇]{1,5}") {
-        let script_content = format!("println(\"{}\")", emoji);
+        let script_content = format!("println(\"{emoji}\")");
         let script = create_temp_script(&script_content);
 
         if let Ok(output) = ruchy_cmd().arg(script.path()).output() {

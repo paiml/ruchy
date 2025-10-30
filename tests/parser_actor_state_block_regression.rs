@@ -1,6 +1,6 @@
 //! REGRESSION TEST: Actor State Block Default Values
 //!
-//! ROOT CAUSE: After DEFECT-PARSER-001 fix (removing Token::State keyword),
+//! ROOT CAUSE: After DEFECT-PARSER-001 fix (removing `Token::State` keyword),
 //! discovered that `parse_state_block` didn't support default values.
 //!
 //! Example that failed:
@@ -12,8 +12,8 @@
 //! }
 //! ```
 //!
-//! FIX: Added default value parsing to parse_state_block (lines 106-112)
-//! to match parse_inline_state_field behavior.
+//! FIX: Added default value parsing to `parse_state_block` (lines 106-112)
+//! to match `parse_inline_state_field` behavior.
 
 use assert_cmd::Command;
 use std::fs;
@@ -28,13 +28,13 @@ fn test_actor_state_block_with_default_value() {
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 actor Counter {
     state {
         count: i32 = 0
     }
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -50,13 +50,13 @@ fn test_actor_state_block_without_default_value() {
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 actor Counter {
     state {
         count: i32
     }
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 
@@ -96,7 +96,7 @@ fn test_actor_state_block_mixed_defaults() {
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
 
-    let code = r#"
+    let code = r"
 actor Database {
     state {
         url: &str
@@ -104,7 +104,7 @@ actor Database {
         timeout: i32
     }
 }
-"#;
+";
 
     fs::write(&source, code).expect("Failed to write test file");
 

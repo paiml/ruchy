@@ -188,7 +188,7 @@ mod tests {
 
     /// Test HTTP benchmark with httpbin.org (requires internet)
     ///
-    /// RED: This test should FAIL because benchmark_http() is unimplemented
+    /// RED: This test should FAIL because `benchmark_http()` is unimplemented
     #[test]
     #[ignore = "Requires internet connection - run with: cargo test -- --ignored"]
     fn test_http_benchmark_get() {

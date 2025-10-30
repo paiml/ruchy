@@ -29,7 +29,7 @@ fn test_dataframe_multiple_rows() {
 
 #[test]
 fn test_dataframe_empty() {
-    let code = r#"df![]"#;
+    let code = r"df![]";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(

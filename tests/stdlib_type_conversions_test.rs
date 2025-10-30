@@ -72,10 +72,10 @@ println(x)
 
 #[test]
 fn test_stdlib001_int_from_float() {
-    let code = r#"
+    let code = r"
 let x = int(3.14)
 assert_eq(x, 3)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -86,10 +86,10 @@ assert_eq(x, 3)
 
 #[test]
 fn test_stdlib001_int_from_bool() {
-    let code = r#"
+    let code = r"
 assert_eq(int(true), 1)
 assert_eq(int(false), 0)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -114,10 +114,10 @@ assert_eq(x, 3.14)
 
 #[test]
 fn test_stdlib001_float_from_int() {
-    let code = r#"
+    let code = r"
 let x = float(42)
 assert_eq(x, 42.0)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -128,11 +128,11 @@ assert_eq(x, 42.0)
 
 #[test]
 fn test_stdlib001_bool_from_int() {
-    let code = r#"
+    let code = r"
 assert_eq(bool(1), true)
 assert_eq(bool(0), false)
 assert_eq(bool(42), true)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")
@@ -219,12 +219,12 @@ fn main() {
 
 #[test]
 fn test_stdlib001_transpiler_bool() {
-    let code = r#"
+    let code = r"
 fn main() {
     assert_eq(bool(1), true)
     assert_eq(bool(0), false)
 }
-"#;
+";
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
     temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");

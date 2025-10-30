@@ -538,7 +538,7 @@ mod tests {
                 "pub", "pub(crate)", "pub(super)", "const", "sealed",
                 "final", "abstract", "unsafe"
             ])) {
-                let code = format!("{} fn test() {{}}", modifier);
+                let code = format!("{modifier} fn test() {{}}");
                 let _ = Parser::new(&code).parse(); // Should not panic
             }
         }
@@ -550,8 +550,8 @@ mod tests {
             fn prop_pub_crate_super_equivalent_parsing(
                 fn_name in "[a-z][a-z0-9_]{0,10}"
             ) {
-                let code_crate = format!("pub(crate) fn {}() {{}}", fn_name);
-                let code_super = format!("pub(super) fn {}() {{}}", fn_name);
+                let code_crate = format!("pub(crate) fn {fn_name}() {{}}");
+                let code_super = format!("pub(super) fn {fn_name}() {{}}");
 
                 let result_crate = Parser::new(&code_crate).parse();
                 let result_super = Parser::new(&code_super).parse();
@@ -584,7 +584,7 @@ mod tests {
             fn prop_pub_combinations(
                 modifier in prop::sample::select(vec!["const", "unsafe"])
             ) {
-                let code = format!("pub {} fn test() {{}}", modifier);
+                let code = format!("pub {modifier} fn test() {{}}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "pub + {} should parse", modifier);
             }
@@ -599,7 +599,7 @@ mod tests {
                     "sealed fn", "abstract struct", "final trait"
                 ])
             ) {
-                let code = format!("{} Test {{}}", invalid);
+                let code = format!("{invalid} Test {{}}");
                 let result = Parser::new(&code).parse();
                 // Should either fail or succeed, but never panic
                 let _ = result;
@@ -614,11 +614,11 @@ mod tests {
                 modifier in prop::sample::select(vec!["sealed", "abstract", "final"])
             ) {
                 // Valid: modifier + class
-                let valid_code = format!("{} class Test {{}}", modifier);
+                let valid_code = format!("{modifier} class Test {{}}");
                 let valid_result = Parser::new(&valid_code).parse();
 
                 // Invalid: modifier + fn (except final which is dual-purpose)
-                let invalid_code = format!("{} fn test() {{}}", modifier);
+                let invalid_code = format!("{modifier} fn test() {{}}");
                 let invalid_result = Parser::new(&invalid_code).parse();
 
                 if modifier == "final" {

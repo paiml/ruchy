@@ -16,7 +16,7 @@ fn ruchy_cmd() -> Command {
 }
 
 fn fixture_path(name: &str) -> String {
-    format!("tests/fixtures/wasm/{}", name)
+    format!("tests/fixtures/wasm/{name}")
 }
 
 // ============================================================================
@@ -30,7 +30,7 @@ fn test_wasm_basic_compilation() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--output")
         .arg(&output_file)
         .assert()
@@ -57,7 +57,7 @@ fn test_wasm_math_functions() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("math.ruchy"))
+        .arg(fixture_path("math.ruchy"))
         .arg("--output")
         .arg(&output_file)
         .assert()
@@ -71,7 +71,7 @@ fn test_wasm_loop_constructs() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("loop.ruchy"))
+        .arg(fixture_path("loop.ruchy"))
         .arg("--output")
         .arg(&output_file)
         .assert()
@@ -89,7 +89,7 @@ fn test_wasm_target_wasm32() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--target")
         .arg("wasm32")
         .arg("--output")
@@ -105,7 +105,7 @@ fn test_wasm_target_wasi() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--target")
         .arg("wasi")
         .arg("--output")
@@ -121,7 +121,7 @@ fn test_wasm_target_browser() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--target")
         .arg("browser")
         .arg("--output")
@@ -137,7 +137,7 @@ fn test_wasm_target_nodejs() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--target")
         .arg("nodejs")
         .arg("--output")
@@ -153,7 +153,7 @@ fn test_wasm_target_cloudflare_workers() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--target")
         .arg("cloudflare-workers")
         .arg("--output")
@@ -173,7 +173,7 @@ fn test_wasm_opt_level_none() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("none")
         .arg("--output")
@@ -189,7 +189,7 @@ fn test_wasm_opt_level_o1() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("O1")
         .arg("--output")
@@ -205,7 +205,7 @@ fn test_wasm_opt_level_o2() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("O2")
         .arg("--output")
@@ -221,7 +221,7 @@ fn test_wasm_opt_level_o3() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("O3")
         .arg("--output")
@@ -237,7 +237,7 @@ fn test_wasm_opt_level_os() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("Os")
         .arg("--output")
@@ -253,7 +253,7 @@ fn test_wasm_opt_level_oz() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--opt-level")
         .arg("Oz")
         .arg("--output")
@@ -273,7 +273,7 @@ fn test_wasm_with_debug() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--debug")
         .arg("--output")
         .arg(&output_file)
@@ -288,7 +288,7 @@ fn test_wasm_with_simd() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--simd")
         .arg("--output")
         .arg(&output_file)
@@ -303,7 +303,7 @@ fn test_wasm_with_threads() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--threads")
         .arg("--output")
         .arg(&output_file)
@@ -318,7 +318,7 @@ fn test_wasm_component_model() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--component-model")
         .arg("--output")
         .arg(&output_file)
@@ -337,7 +337,7 @@ fn test_wasm_generate_wit() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--wit")
         .arg("--output")
         .arg(&output_file)
@@ -356,7 +356,7 @@ fn test_wasm_with_name() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--name")
         .arg("my-component")
         .arg("--output")
@@ -372,7 +372,7 @@ fn test_wasm_with_version() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--version")
         .arg("1.0.0")
         .arg("--output")
@@ -389,7 +389,7 @@ fn test_wasm_with_version() {
 fn test_wasm_portability_analysis() {
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--portability")
         .assert()
         .code(predicate::ne(2)); // Should analyze portability
@@ -406,7 +406,7 @@ fn test_wasm_verbose_output() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--verbose")
         .arg("--output")
         .arg(&output_file)
@@ -464,7 +464,7 @@ fn test_wasm_deploy_option() {
 
     ruchy_cmd()
         .arg("wasm")
-        .arg(&fixture_path("simple.ruchy"))
+        .arg(fixture_path("simple.ruchy"))
         .arg("--deploy")
         .arg("--deploy-target")
         .arg("cloudflare")

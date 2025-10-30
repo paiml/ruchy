@@ -508,22 +508,22 @@ mod tests {
 
     #[test]
     fn test_is_absolute_true() {
-        assert_eq!(is_absolute("/home/user"), true);
+        assert!(is_absolute("/home/user"));
     }
 
     #[test]
     fn test_is_absolute_false() {
-        assert_eq!(is_absolute("relative/path"), false);
+        assert!(!is_absolute("relative/path"));
     }
 
     #[test]
     fn test_is_absolute_current_dir() {
-        assert_eq!(is_absolute("."), false);
+        assert!(!is_absolute("."));
     }
 
     #[test]
     fn test_is_absolute_parent_dir() {
-        assert_eq!(is_absolute(".."), false);
+        assert!(!is_absolute(".."));
     }
 
     // --------------------------------------------------------------------------
@@ -532,17 +532,17 @@ mod tests {
 
     #[test]
     fn test_is_relative_true() {
-        assert_eq!(is_relative("relative/path"), true);
+        assert!(is_relative("relative/path"));
     }
 
     #[test]
     fn test_is_relative_false() {
-        assert_eq!(is_relative("/home/user"), false);
+        assert!(!is_relative("/home/user"));
     }
 
     #[test]
     fn test_is_relative_current_dir() {
-        assert_eq!(is_relative("."), true);
+        assert!(is_relative("."));
     }
 
     // --------------------------------------------------------------------------
@@ -658,8 +658,7 @@ mod tests {
             assert_eq!(
                 is_absolute(path),
                 !is_relative(path),
-                "is_absolute and is_relative should be inverses for '{}'",
-                path
+                "is_absolute and is_relative should be inverses for '{path}'"
             );
         }
     }
@@ -695,7 +694,7 @@ mod tests {
         let name = file_name(path).unwrap();
 
         if let (Some(s), Some(e), Some(n)) = (stem, ext, name) {
-            assert_eq!(format!("{}.{}", s, e), n,
+            assert_eq!(format!("{s}.{e}"), n,
                        "file_stem + extension should equal file_name");
         }
     }
@@ -720,7 +719,7 @@ mod tests {
     #[test]
     fn test_special_characters() {
         let result = join("/home", "user@domain").unwrap();
-        assert!(result.contains("@"));
+        assert!(result.contains('@'));
     }
 
     #[test]

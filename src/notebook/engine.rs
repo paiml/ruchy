@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn test_notebook_001_engine_debug_format() {
         let engine = NotebookEngine::new().unwrap();
-        let debug_str = format!("{:?}", engine);
+        let debug_str = format!("{engine:?}");
         assert!(debug_str.contains("NotebookEngine"));
     }
 
@@ -459,7 +459,7 @@ mod tests {
     #[test]
     fn test_notebook_001_execute_multiline_function() {
         let mut engine = NotebookEngine::new().unwrap();
-        let code = r#"
+        let code = r"
 fn factorial(n) {
     if n <= 1 {
         1
@@ -467,7 +467,7 @@ fn factorial(n) {
         n * factorial(n - 1)
     }
 }
-        "#;
+        ";
         let result = engine.execute_cell(code);
         assert!(result.is_ok());
     }
@@ -482,10 +482,10 @@ fn factorial(n) {
     #[test]
     fn test_notebook_001_execute_struct_literal() {
         let mut engine = NotebookEngine::new().unwrap();
-        let code = r#"
+        let code = r"
 struct Point { x: i64, y: i64 }
 Point { x: 10, y: 20 }
-        "#;
+        ";
         let result = engine.execute_cell(code);
         assert!(result.is_ok());
     }
@@ -710,11 +710,11 @@ Point { x: 10, y: 20 }
     #[test]
     fn test_notebook_002_detailed_multiline_code() {
         let mut engine = NotebookEngine::new().unwrap();
-        let code = r#"
+        let code = r"
 let a = 10
 let b = 20
 a + b
-        "#;
+        ";
         let result = engine.execute_cell_detailed(code);
 
         assert!(result.is_success());
@@ -769,7 +769,7 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
 
                 // Define variable
-                let define = format!("let {} = {}", var_name, value);
+                let define = format!("let {var_name} = {value}");
                 if engine.execute_cell(&define).is_ok() {
                     // Use variable - should succeed if definition succeeded
                     let use_var = engine.execute_cell(&var_name);
@@ -796,16 +796,16 @@ a + b
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
 
-                let add = format!("{} + {}", a, b);
+                let add = format!("{a} + {b}");
                 prop_assert!(engine.execute_cell(&add).is_ok());
 
-                let sub = format!("{} - {}", a, b);
+                let sub = format!("{a} - {b}");
                 prop_assert!(engine.execute_cell(&sub).is_ok());
 
-                let mul = format!("{} * {}", a, b);
+                let mul = format!("{a} * {b}");
                 prop_assert!(engine.execute_cell(&mul).is_ok());
 
-                let div = format!("{} / {}", a, b);
+                let div = format!("{a} / {b}");
                 prop_assert!(engine.execute_cell(&div).is_ok());
             }
 
@@ -814,7 +814,7 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
                 // Escape the string properly
                 let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
-                let code = format!("\"{}\"", escaped);
+                let code = format!("\"{escaped}\"");
                 // Should handle any string content
                 let _ = engine.execute_cell(&code);
             }
@@ -826,13 +826,13 @@ a + b
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
 
-                let and = format!("{} && {}", a, b);
+                let and = format!("{a} && {b}");
                 prop_assert!(engine.execute_cell(&and).is_ok());
 
-                let or = format!("{} || {}", a, b);
+                let or = format!("{a} || {b}");
                 prop_assert!(engine.execute_cell(&or).is_ok());
 
-                let not = format!("!{}", a);
+                let not = format!("!{a}");
                 prop_assert!(engine.execute_cell(&not).is_ok());
             }
 
@@ -874,7 +874,7 @@ a + b
                 comment_text in ".*"
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
-                let code = format!("// {}", comment_text);
+                let code = format!("// {comment_text}");
                 // Comments should always succeed
                 prop_assert!(engine.execute_cell(&code).is_ok());
             }
@@ -904,7 +904,7 @@ a + b
                 value in 1i64..1000
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
-                let code = format!("{}", value);
+                let code = format!("{value}");
                 let result = engine.execute_cell_detailed(&code);
 
                 if result.is_success() {
@@ -1002,14 +1002,14 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
 
                 // Define variable
-                let def_result = engine.execute_cell_detailed(&format!("let {} = {}", var_name, value1));
+                let def_result = engine.execute_cell_detailed(&format!("let {var_name} = {value1}"));
                 if def_result.is_success() {
                     // Use variable
                     let use_result = engine.execute_cell_detailed(&var_name);
                     prop_assert!(use_result.is_success());
 
                     // Modify variable
-                    let mod_result = engine.execute_cell_detailed(&format!("{} = {}", var_name, value2));
+                    let mod_result = engine.execute_cell_detailed(&format!("{var_name} = {value2}"));
                     if mod_result.is_success() {
                         // Check new value
                         let check_result = engine.execute_cell_detailed(&var_name);
@@ -1049,7 +1049,7 @@ a + b
 
                 // Create variables
                 for i in 0..var_count {
-                    let _ = engine.execute_cell(&format!("let var{} = {}", i, i));
+                    let _ = engine.execute_cell(&format!("let var{i} = {i}"));
                 }
 
                 let checkpoint = engine.create_checkpoint("test".to_string());
@@ -1065,12 +1065,12 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
 
                 // Set variable
-                let def = format!("let {} = {}", var_name, value);
+                let def = format!("let {var_name} = {value}");
                 if engine.execute_cell(&def).is_ok() {
                     let checkpoint = engine.create_checkpoint("save".to_string());
 
                     // Modify
-                    let _ = engine.execute_cell(&format!("{} = 9999", var_name));
+                    let _ = engine.execute_cell(&format!("{var_name} = 9999"));
 
                     // Restore
                     engine.restore_checkpoint(&checkpoint);
@@ -1087,7 +1087,7 @@ a + b
                 value in 1i64..1000
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
-                let code = format!("{}", value);
+                let code = format!("{value}");
                 let result = engine.execute_transaction(&code);
 
                 if result.is_success() {
@@ -1103,7 +1103,7 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
 
                 // Set initial state
-                if engine.execute_cell(&format!("let x = {}", initial_value)).is_ok() {
+                if engine.execute_cell(&format!("let x = {initial_value}")).is_ok() {
                     // Transaction that will fail
                     let result = engine.execute_transaction(&invalid_code);
 
@@ -1132,7 +1132,7 @@ a + b
                 let mut engine = NotebookEngine::new().unwrap();
 
                 for (name, value) in &vars {
-                    let _ = engine.execute_cell(&format!("let {} = {}", name, value));
+                    let _ = engine.execute_cell(&format!("let {name} = {value}"));
                 }
 
                 let cp1 = engine.create_checkpoint("cp1".to_string());
@@ -1151,7 +1151,7 @@ a + b
             ) {
                 let mut engine = NotebookEngine::new().unwrap();
 
-                if engine.execute_cell(&format!("let x = {}", value)).is_ok() {
+                if engine.execute_cell(&format!("let x = {value}")).is_ok() {
                     let checkpoint = engine.create_checkpoint("save".to_string());
 
                     // Restore multiple times

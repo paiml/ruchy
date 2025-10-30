@@ -1,9 +1,9 @@
 //! Integration tests for nested enum pattern matching
 //!
 //! Tests matching enum variants that contain other enum variants:
-//! - Token::Char(ch, Position::Pos(line, col, offset))
-//! - Result::Ok(Option::Some(value))
-//! - Message::Data(Response::Error(msg))
+//! - `Token::Char(ch`, `Position::Pos(line`, col, offset))
+//! - `Result::Ok(Option::Some(value))`
+//! - `Message::Data(Response::Error(msg))`
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -121,7 +121,7 @@ println(result)
 
 #[test]
 fn test_nested_enum_multiple_levels() {
-    let code = r#"
+    let code = r"
 enum Inner {
     Val(i32)
 }
@@ -143,7 +143,7 @@ let result = match outer {
 }
 
 println(result)
-"#;
+";
 
     ruchy_cmd()
         .arg("-e")

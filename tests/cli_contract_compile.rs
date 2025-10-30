@@ -309,7 +309,7 @@ fn cli_compile_complex_program() {
     let file = create_temp_file(
         &temp,
         "complex.ruchy",
-        r#"
+        r"
 fun fibonacci(n) {
     if n <= 1 {
         n
@@ -319,7 +319,7 @@ fun fibonacci(n) {
 }
 
 println(fibonacci(10))
-"#,
+",
     );
     let output = temp.path().join("complex");
 

@@ -1,7 +1,7 @@
 //! STD-004: Path Module Tests (ruchy/std/path)
 //!
 //! Test suite for path manipulation operations module.
-//! Thin wrappers around Rust's std::path with Ruchy-friendly API.
+//! Thin wrappers around Rust's `std::path` with Ruchy-friendly API.
 //!
 //! EXTREME TDD: These tests are written BEFORE implementation (RED phase).
 
@@ -141,7 +141,7 @@ fn test_std_004_extension() {
     let ext_str = ext.unwrap();
     assert_eq!(ext_str, "txt", "Extension must be exactly 'txt'");
     assert_eq!(ext_str.len(), 3, "Extension length must be 3");
-    assert!(!ext_str.contains("."), "Extension must not contain dot");
+    assert!(!ext_str.contains('.'), "Extension must not contain dot");
     assert!(!ext_str.is_empty(), "Extension must not be empty");
 }
 
@@ -161,13 +161,13 @@ fn test_std_004_is_absolute() {
     // STD-004: Test checking if path is absolute
 
     let result = ruchy::stdlib::path::is_absolute("/home/user/file.txt");
-    assert_eq!(result, true, "Path starting with / must be absolute");
+    assert!(result, "Path starting with / must be absolute");
 
     let result = ruchy::stdlib::path::is_absolute("relative/path");
-    assert_eq!(result, false, "Path not starting with / must be relative");
+    assert!(!result, "Path not starting with / must be relative");
 
     let result = ruchy::stdlib::path::is_absolute("./relative");
-    assert_eq!(result, false, "Path starting with ./ must be relative");
+    assert!(!result, "Path starting with ./ must be relative");
 }
 
 #[test]
@@ -175,10 +175,10 @@ fn test_std_004_is_relative() {
     // STD-004: Test checking if path is relative
 
     let result = ruchy::stdlib::path::is_relative("relative/path");
-    assert_eq!(result, true, "Path without / must be relative");
+    assert!(result, "Path without / must be relative");
 
     let result = ruchy::stdlib::path::is_relative("/home/user");
-    assert_eq!(result, false, "Absolute path must not be relative");
+    assert!(!result, "Absolute path must not be relative");
 }
 
 #[test]

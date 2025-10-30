@@ -1,23 +1,23 @@
 //! STDLIB Phase 3: Path Functions Tests
 //!
 //! **Task**: Implement 13 path functions
-//! **Priority**: HIGH (Phase 3 of STDLIB_ACCESS_PLAN)
+//! **Priority**: HIGH (Phase 3 of `STDLIB_ACCESS_PLAN`)
 //! **Pattern**: Three-layer builtin function (proven from env/fs functions)
 //!
 //! Functions:
-//! 1. path_join(base: String, component: String) -> String
-//! 2. path_join_many(components: Vec<String>) -> String
-//! 3. path_parent(path: String) -> Option<String>
-//! 4. path_file_name(path: String) -> Option<String>
-//! 5. path_file_stem(path: String) -> Option<String>
-//! 6. path_extension(path: String) -> Option<String>
-//! 7. path_is_absolute(path: String) -> Bool
-//! 8. path_is_relative(path: String) -> Bool
-//! 9. path_canonicalize(path: String) -> Result<String>
-//! 10. path_with_extension(path: String, ext: String) -> String
-//! 11. path_with_file_name(path: String, name: String) -> String
-//! 12. path_components(path: String) -> Vec<String>
-//! 13. path_normalize(path: String) -> String
+//! 1. `path_join(base`: String, component: String) -> String
+//! 2. `path_join_many(components`: Vec<String>) -> String
+//! 3. `path_parent(path`: String) -> Option<String>
+//! 4. `path_file_name(path`: String) -> Option<String>
+//! 5. `path_file_stem(path`: String) -> Option<String>
+//! 6. `path_extension(path`: String) -> Option<String>
+//! 7. `path_is_absolute(path`: String) -> Bool
+//! 8. `path_is_relative(path`: String) -> Bool
+//! 9. `path_canonicalize(path`: String) -> Result<String>
+//! 10. `path_with_extension(path`: String, ext: String) -> String
+//! 11. `path_with_file_name(path`: String, name: String) -> String
+//! 12. `path_components(path`: String) -> Vec<String>
+//! 13. `path_normalize(path`: String) -> String
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
@@ -342,7 +342,7 @@ fn test_path_functions_summary() {
     println!("11. path_with_file_name(path, name) - Replace file name");
     println!("12. path_components(path) - Split path into components");
     println!("13. path_normalize(path) - Normalize path (./ and ../)");
-    println!("");
+    println!();
     println!("Three-Layer Implementation Required for each:");
     println!("1. Runtime: builtin_* in builtins.rs");
     println!("2. Transpiler: case in try_transpile_path_function()");

@@ -23,7 +23,7 @@ mod property_tests {
         #[test]
         #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_standalone_comments_never_trailing(code1 in "[a-z]+", code2 in "[a-z]+") {
-            let source = format!("let {} = 1\n\n// comment\nlet {} = 2", code1, code2);
+            let source = format!("let {code1} = 1\n\n// comment\nlet {code2} = 2");
             let mut parser = RuchyParser::new(&source);
 
             if let Ok(ast) = parser.parse() {
@@ -45,7 +45,7 @@ mod property_tests {
         #[test]
         #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_inline_comments_are_trailing(var in "[a-z]+", val in 1..100i32, comment in "[a-zA-Z ]+") {
-            let source = format!("let {} = {} // {}", var, val, comment);
+            let source = format!("let {var} = {val} // {comment}");
             let mut parser = RuchyParser::new(&source);
 
             if let Ok(ast) = parser.parse() {
@@ -66,7 +66,7 @@ mod property_tests {
                 if i > 0 {
                     source.push_str("\n\n// comment\n");
                 }
-                source.push_str(&format!("let v{} = {}", i, i));
+                source.push_str(&format!("let v{i} = {i}"));
             }
 
             let mut parser = RuchyParser::new(&source);
@@ -91,10 +91,10 @@ mod property_tests {
 
 #[test]
 fn test_standalone_comment_should_be_leading_not_trailing() {
-    let source = r#"let a = 1
+    let source = r"let a = 1
 
 // This comment is standalone on its own line
-let b = 2"#;
+let b = 2";
 
     let mut parser = RuchyParser::new(source);
     let ast = parser.parse().expect("Should parse successfully");
@@ -135,8 +135,8 @@ let b = 2"#;
 
 #[test]
 fn test_trailing_comment_on_same_line_is_trailing() {
-    let source = r#"let a = 1 // trailing comment on same line
-let b = 2"#;
+    let source = r"let a = 1 // trailing comment on same line
+let b = 2";
 
     let mut parser = RuchyParser::new(source);
     let ast = parser.parse().expect("Should parse successfully");
@@ -168,13 +168,13 @@ let b = 2"#;
 
 #[test]
 fn test_multiple_standalone_comments() {
-    let source = r#"let a = 1
+    let source = r"let a = 1
 
 // First standalone comment
 let b = 2
 
 // Second standalone comment
-let c = 3"#;
+let c = 3";
 
     let mut parser = RuchyParser::new(source);
     let ast = parser.parse().expect("Should parse successfully");
@@ -201,10 +201,10 @@ let c = 3"#;
 #[test]
 fn test_ignore_directive_as_standalone_comment() {
     // This is the actual use case that's broken
-    let source = r#"let a = 1
+    let source = r"let a = 1
 
 // ruchy-fmt-ignore
-let b    =    2"#;
+let b    =    2";
 
     let mut parser = RuchyParser::new(source);
     let ast = parser.parse().expect("Should parse successfully");

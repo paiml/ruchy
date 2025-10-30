@@ -19,11 +19,11 @@ fn ruchy_cmd() -> Command {
 }
 
 fn temp_wasm_file(name: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("wasm_prop_test_{}.wasm", name))
+    std::env::temp_dir().join(format!("wasm_prop_test_{name}.wasm"))
 }
 
 fn temp_ruchy_file(name: &str, code: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("wasm_prop_test_{}.ruchy", name));
+    let path = std::env::temp_dir().join(format!("wasm_prop_test_{name}.ruchy"));
     fs::write(&path, code).expect("Failed to write test file");
     path
 }
@@ -65,20 +65,19 @@ mod property_tests {
     proptest! {
         /// Property: Any tuple with valid i32 values compiles to valid WASM
         #[test]
-        #[ignore] // Run explicitly: cargo test property_tests -- --ignored
+        #[ignore = "Run explicitly: cargo test property_tests -- --ignored"]
         fn prop_tuple_creation_always_valid(
             a in -1000i32..1000,
             b in -1000i32..1000,
             c in -1000i32..1000
         ) {
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let t = ({}, {}, {})
+    let t = ({a}, {b}, {c})
     println(t.0)
 }}
-"#,
-                a, b, c
+"
             );
 
             prop_assert!(
@@ -95,18 +94,17 @@ fn main() {{
             elements in prop::collection::vec(-1000i32..1000, 1..10)
         ) {
             let elements_str = elements.iter()
-                .map(|x| x.to_string())
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
 
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let arr = [{}]
+    let arr = [{elements_str}]
     println(arr[0])
 }}
-"#,
-                elements_str
+"
             );
 
             prop_assert!(
@@ -128,18 +126,17 @@ fn main() {{
             }
 
             let values_str = values.iter()
-                .map(|x| x.to_string())
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
 
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let t = ({})
-    println(t.{})
+    let t = ({values_str})
+    println(t.{index})
 }}
-"#,
-                values_str, index
+"
             );
 
             prop_assert!(
@@ -163,19 +160,18 @@ fn main() {{
 
             let initial = vec![0; size];
             let elements_str = initial.iter()
-                .map(|x| x.to_string())
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
 
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let mut arr = [{}]
-    arr[{}] = {}
-    println(arr[{}])
+    let mut arr = [{elements_str}]
+    arr[{index}] = {new_value}
+    println(arr[{index}])
 }}
-"#,
-                elements_str, index, new_value, index
+"
             );
 
             prop_assert!(
@@ -193,18 +189,17 @@ fn main() {{
             y in -1000i32..1000
         ) {
             let code = format!(
-                r#"
+                r"
 struct Point {{
     x: i32,
     y: i32
 }}
 
 fn main() {{
-    let p = Point {{ x: {}, y: {} }}
+    let p = Point {{ x: {x}, y: {y} }}
     println(p.x)
 }}
-"#,
-                x, y
+"
             );
 
             prop_assert!(
@@ -223,19 +218,18 @@ fn main() {{
             new_x in -1000i32..1000
         ) {
             let code = format!(
-                r#"
+                r"
 struct Point {{
     x: i32,
     y: i32
 }}
 
 fn main() {{
-    let mut p = Point {{ x: {}, y: {} }}
-    p.x = {}
+    let mut p = Point {{ x: {initial_x}, y: {initial_y} }}
+    p.x = {new_x}
     println(p.x)
 }}
-"#,
-                initial_x, initial_y, new_x
+"
             );
 
             prop_assert!(
@@ -255,13 +249,12 @@ fn main() {{
             d in -100i32..100
         ) {
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let nested = (({}, {}), ({}, {}))
+    let nested = (({a}, {b}), ({c}, {d}))
     println(nested.0)
 }}
-"#,
-                a, b, c, d
+"
             );
 
             prop_assert!(
@@ -279,14 +272,13 @@ fn main() {{
             b in -1000i32..1000
         ) {
             let code = format!(
-                r#"
+                r"
 fn main() {{
-    let (x, y) = ({}, {})
+    let (x, y) = ({a}, {b})
     println(x)
     println(y)
 }}
-"#,
-                a, b
+"
             );
 
             prop_assert!(
@@ -305,20 +297,19 @@ fn main() {{
             struct_x in -100i32..100
         ) {
             let code = format!(
-                r#"
+                r"
 struct Point {{
     x: i32,
     y: i32
 }}
 
 fn main() {{
-    let arr = [{}]
-    let tup = ({}, 20)
-    let p = Point {{ x: {}, y: 200 }}
+    let arr = [{arr_val}]
+    let tup = ({tup_val}, 20)
+    let p = Point {{ x: {struct_x}, y: 200 }}
     println(arr[0])
 }}
-"#,
-                arr_val, tup_val, struct_x
+"
             );
 
             prop_assert!(
@@ -337,43 +328,43 @@ mod invariant_tests {
     /// Invariant: Empty tuple should always compile to valid WASM
     #[test]
     fn invariant_empty_tuple_compiles() {
-        let code = r#"
+        let code = r"
 fn main() {
     let unit = ()
     println(42)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "empty_tuple_inv"));
     }
 
     /// Invariant: Single element tuple should always compile
     #[test]
     fn invariant_single_element_tuple_compiles() {
-        let code = r#"
+        let code = r"
 fn main() {
     let single = (42,)
     println(single.0)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "single_tuple_inv"));
     }
 
     /// Invariant: Array with zero should always compile
     #[test]
     fn invariant_zero_array_compiles() {
-        let code = r#"
+        let code = r"
 fn main() {
     let arr = [0, 0, 0]
     println(arr[0])
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "zero_array_inv"));
     }
 
     /// Invariant: Struct with zero fields should compile
     #[test]
     fn invariant_zero_struct_compiles() {
-        let code = r#"
+        let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -383,43 +374,43 @@ fn main() {
     let p = Point { x: 0, y: 0 }
     println(p.x)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "zero_struct_inv"));
     }
 
     /// Invariant: Negative values should compile correctly
     #[test]
     fn invariant_negative_values_compile() {
-        let code = r#"
+        let code = r"
 fn main() {
     let t = (-1, -2, -3)
     println(t.0)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "negative_inv"));
     }
 
     /// Invariant: Maximum safe i32 values should compile
     #[test]
     fn invariant_max_values_compile() {
-        let code = r#"
+        let code = r"
 fn main() {
     let t = (2147483647, 2147483646, 2147483645)
     println(t.0)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "max_values_inv"));
     }
 
     /// Invariant: Minimum safe i32 values should compile
     #[test]
     fn invariant_min_values_compile() {
-        let code = r#"
+        let code = r"
 fn main() {
     let t = (-2147483648, -2147483647, -2147483646)
     println(t.0)
 }
-"#;
+";
         assert!(compiles_to_valid_wasm(code, "min_values_inv"));
     }
 }

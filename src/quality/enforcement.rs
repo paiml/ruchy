@@ -390,8 +390,7 @@ mod tests {
         // Note: /tmp may have Cargo.toml or .ruchy, so we accept both behaviors
         assert!(
             found_root == Path::new(".") || found_root.exists(),
-            "Expected either '.' or an existing path, got: {:?}",
-            found_root
+            "Expected either '.' or an existing path, got: {found_root:?}"
         );
     }
     // Test 2: CI Overrides

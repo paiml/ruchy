@@ -54,11 +54,11 @@ fn is_well_typed(expr: &str) -> bool {
 /// with the real evaluation engine.
 fn eval_expr(expr: &str) -> Result<String, String> {
     let mut parser = Parser::new(expr);
-    let ast = parser.parse().map_err(|e| format!("{}", e))?;
+    let ast = parser.parse().map_err(|e| format!("{e}"))?;
 
     // For now, return a representation of the AST
     // In full implementation, this would use actual interpreter
-    Ok(format!("{:?}", ast).chars().take(50).collect())
+    Ok(format!("{ast:?}").chars().take(50).collect())
 }
 
 /// Check if an expression is a value (cannot be reduced further)
@@ -113,14 +113,14 @@ fn test_sqlite_2001_progress_simple_arithmetic() {
     ];
 
     for (expr, expected_is_value) in cases {
-        assert!(is_well_typed(expr), "Expression should be well-typed: {}", expr);
+        assert!(is_well_typed(expr), "Expression should be well-typed: {expr}");
 
         if expected_is_value {
-            assert!(is_value(expr), "Expression should be a value: {}", expr);
+            assert!(is_value(expr), "Expression should be a value: {expr}");
         } else {
             // Can evaluate to a value
             let result = eval_expr(expr);
-            assert!(result.is_ok(), "Expression should evaluate: {} -> {:?}", expr, result);
+            assert!(result.is_ok(), "Expression should evaluate: {expr} -> {result:?}");
         }
     }
 }
@@ -136,13 +136,13 @@ fn test_sqlite_2002_progress_boolean_expressions() {
     ];
 
     for (expr, expected_is_value) in cases {
-        assert!(is_well_typed(expr), "Expression should be well-typed: {}", expr);
+        assert!(is_well_typed(expr), "Expression should be well-typed: {expr}");
 
         if expected_is_value {
-            assert!(is_value(expr), "Expression should be a value: {}", expr);
+            assert!(is_value(expr), "Expression should be a value: {expr}");
         } else {
             let result = eval_expr(expr);
-            assert!(result.is_ok(), "Expression should evaluate: {}", expr);
+            assert!(result.is_ok(), "Expression should evaluate: {expr}");
         }
     }
 }
@@ -156,10 +156,10 @@ fn test_sqlite_2003_progress_string_operations() {
     ];
 
     for (expr, expected_is_value) in cases {
-        assert!(is_well_typed(expr), "Expression should be well-typed: {}", expr);
+        assert!(is_well_typed(expr), "Expression should be well-typed: {expr}");
 
         if expected_is_value {
-            assert!(is_value(expr), "Expression should be a value: {}", expr);
+            assert!(is_value(expr), "Expression should be a value: {expr}");
         }
     }
 }
@@ -178,8 +178,8 @@ fn test_sqlite_2010_preservation_arithmetic() {
     let exprs = vec!["1 + 2", "10 * 5", "100 - 50", "20 / 4"];
 
     for expr in exprs {
-        assert!(is_well_typed(expr), "Arithmetic should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {}", expr);
+        assert!(is_well_typed(expr), "Arithmetic should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {expr}");
     }
 }
 
@@ -189,8 +189,8 @@ fn test_sqlite_2011_preservation_boolean() {
     let exprs = vec!["true && false", "true || false", "!true"];
 
     for expr in exprs {
-        assert!(is_well_typed(expr), "Boolean ops should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {}", expr);
+        assert!(is_well_typed(expr), "Boolean ops should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {expr}");
     }
 }
 
@@ -200,8 +200,8 @@ fn test_sqlite_2012_preservation_comparison() {
     let exprs = vec!["5 < 10", "10 > 5", "5 <= 10", "10 >= 5", "5 == 5", "5 != 10"];
 
     for expr in exprs {
-        assert!(is_well_typed(expr), "Comparison should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {}", expr);
+        assert!(is_well_typed(expr), "Comparison should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Should have valid AST: {expr}");
     }
 }
 
@@ -249,7 +249,7 @@ proptest! {
         a in 0i32..1000,
         b in 1i32..1000  // Non-zero to avoid division by zero
     ) {
-        let expr = format!("{} + {}", a, b);
+        let expr = format!("{a} + {b}");
 
         // Progress: Can evaluate
         let result = eval_expr(&expr);
@@ -269,7 +269,7 @@ proptest! {
         a in 0i32..100,
         b in 0i32..100
     ) {
-        let expr = format!("{} < {}", a, b);
+        let expr = format!("{a} < {b}");
 
         // Well-typed: Should parse
         prop_assert!(is_well_typed(&expr), "Comparison should be well-typed: {}", expr);
@@ -290,7 +290,7 @@ proptest! {
     fn test_sqlite_2102_property_substitution_soundness(
         value in 0i32..1000
     ) {
-        let expr = format!("let x = {}; x + 1", value);
+        let expr = format!("let x = {value}; x + 1");
 
         // Substitution lemma: Well-typed before and after substitution
         prop_assert!(is_well_typed(&expr), "Let binding should be well-typed");
@@ -318,8 +318,8 @@ fn test_sqlite_2030_polymorphic_vec() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Generic Vec should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Generic instantiation should work: {}", expr);
+        assert!(is_well_typed(expr), "Generic Vec should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Generic instantiation should work: {expr}");
     }
 }
 
@@ -333,8 +333,8 @@ fn test_sqlite_2031_polymorphic_option() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Generic Option should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Option instantiation should work: {}", expr);
+        assert!(is_well_typed(expr), "Generic Option should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Option instantiation should work: {expr}");
     }
 }
 
@@ -347,8 +347,8 @@ fn test_sqlite_2032_polymorphic_result() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Generic Result should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Result instantiation should work: {}", expr);
+        assert!(is_well_typed(expr), "Generic Result should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Result instantiation should work: {expr}");
     }
 }
 
@@ -369,8 +369,8 @@ fn test_sqlite_2040_function_types_simple() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Function definition should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Function should parse: {}", expr);
+        assert!(is_well_typed(expr), "Function definition should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Function should parse: {expr}");
     }
 }
 
@@ -384,8 +384,8 @@ fn test_sqlite_2041_lambda_types() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Lambda should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Lambda should parse: {}", expr);
+        assert!(is_well_typed(expr), "Lambda should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Lambda should parse: {expr}");
     }
 }
 
@@ -398,8 +398,8 @@ fn test_sqlite_2042_higher_order_functions() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Higher-order function should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "HOF should parse: {}", expr);
+        assert!(is_well_typed(expr), "Higher-order function should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "HOF should parse: {expr}");
     }
 }
 
@@ -422,8 +422,8 @@ fn test_sqlite_2050_array_types() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Array should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Array should parse: {}", expr);
+        assert!(is_well_typed(expr), "Array should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Array should parse: {expr}");
     }
 }
 
@@ -437,8 +437,8 @@ fn test_sqlite_2051_tuple_types() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Tuple should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Tuple should parse: {}", expr);
+        assert!(is_well_typed(expr), "Tuple should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Tuple should parse: {expr}");
     }
 }
 
@@ -451,8 +451,8 @@ fn test_sqlite_2052_struct_types() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Struct should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Struct should parse: {}", expr);
+        assert!(is_well_typed(expr), "Struct should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Struct should parse: {expr}");
     }
 }
 
@@ -465,8 +465,8 @@ fn test_sqlite_2053_field_access_types() {
     ];
 
     for expr in cases {
-        assert!(is_well_typed(expr), "Field access should be well-typed: {}", expr);
-        assert!(eval_expr(expr).is_ok(), "Field access should parse: {}", expr);
+        assert!(is_well_typed(expr), "Field access should be well-typed: {expr}");
+        assert!(eval_expr(expr).is_ok(), "Field access should parse: {expr}");
     }
 }
 
@@ -493,7 +493,7 @@ fn test_sqlite_2200_type_error_detection() {
             let _ = eval_expr(expr);
         });
 
-        assert!(result.is_ok(), "Type errors should not panic: {}", expr);
+        assert!(result.is_ok(), "Type errors should not panic: {expr}");
     }
 }
 

@@ -1,9 +1,9 @@
 //! BUG-031: ruchy fmt corrupts files - writes AST instead of formatted code
 //!
-//! Issue: https://github.com/paiml/ruchy/issues/31
+//! Issue: <https://github.com/paiml/ruchy/issues/31>
 //! Severity: CRITICAL - Data loss
 //!
-//! Root Cause: Formatter fallback uses Debug format for unimplemented ExprKind variants
+//! Root Cause: Formatter fallback uses Debug format for unimplemented `ExprKind` variants
 //! Location: src/quality/formatter.rs:146
 //!
 //! Test Strategy: EXTREME TDD (RED → GREEN → REFACTOR)
@@ -61,13 +61,13 @@ fun example() {
 /// RED TEST: Formatter should handle for loops with range
 #[test]
 fn test_bug_031_for_loop_formatting() {
-    let code = r#"
+    let code = r"
 fun example() {
     for i in range(0, 10) {
         println(i)
     }
 }
-"#;
+";
 
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -132,13 +132,13 @@ fn property_formatter_never_outputs_debug_format() {
                 // Note: legitimate code like "fun f() { ..." is fine
                 // We're checking for AST struct names like "Assign {", "Expr {", etc.
                 assert!(!result.contains("Assign {"),
-                    "Code: {}\nFormatted output should not contain 'Assign {{' (AST debug)", code);
+                    "Code: {code}\nFormatted output should not contain 'Assign {{' (AST debug)");
                 assert!(!result.contains("Expr {"),
-                    "Code: {}\nFormatted output should not contain 'Expr {{' (AST debug)", code);
+                    "Code: {code}\nFormatted output should not contain 'Expr {{' (AST debug)");
                 assert!(!result.contains("Stmt {"),
-                    "Code: {}\nFormatted output should not contain 'Stmt {{' (AST debug)", code);
+                    "Code: {code}\nFormatted output should not contain 'Stmt {{' (AST debug)");
                 assert!(!result.contains("kind:"),
-                    "Code: {}\nFormatted output should not contain 'kind:' field", code);
+                    "Code: {code}\nFormatted output should not contain 'kind:' field");
             }
         }
     }

@@ -1,11 +1,11 @@
 //! Tests for DEBUGGER-014 Phase 2: Enhanced tracing with argument and return values
-//! GitHub Issue: https://github.com/paiml/ruchy/issues/84
+//! GitHub Issue: <https://github.com/paiml/ruchy/issues/84>
 //!
 //! Phase 2 enhances Phase 1 basic tracing (function entry/exit) with:
 //! - Argument values: TRACE: → fibonacci(3)
 //! - Return values: TRACE: ← fibonacci = 2
 //!
-//! Test naming convention: test_debugger_014_phase_2_<feature>_<scenario>
+//! Test naming convention: `test_debugger_014_phase_2`_<feature>_<scenario>
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -162,7 +162,7 @@ fun main() {
 /// This ensures Phase 2 doesn't break existing Phase 1 trace output
 #[test]
 fn test_debugger_014_phase_2_backward_compatible() {
-    let code = r#"
+    let code = r"
 fun test_func() {
     return 42;
 }
@@ -170,7 +170,7 @@ fun test_func() {
 fun main() {
     test_func();
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()

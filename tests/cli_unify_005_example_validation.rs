@@ -325,7 +325,7 @@ fn test_06_data_structures_eval() {
 }
 
 #[test]
-#[ignore] // TRANSPILER-BUG: Nested object codegen broken (team.name generates wrong Rust)
+#[ignore = "TRANSPILER-BUG: Nested object codegen broken (team.name generates wrong Rust)"]
 fn test_06_data_structures_compile() {
     let output_binary = std::env::temp_dir().join("data_structures_test");
 

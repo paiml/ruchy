@@ -27,8 +27,7 @@ fn test_code(code: &str) {
         .as_nanos();
     let thread_id = thread::current().id();
     let temp_file = PathBuf::from(format!(
-        "/tmp/test_use_keywords_{}_{:?}.ruchy",
-        timestamp, thread_id
+        "/tmp/test_use_keywords_{timestamp}_{thread_id:?}.ruchy"
     ));
 
     fs::write(&temp_file, code).expect("Failed to write test file");
@@ -118,7 +117,7 @@ mod property_tests {
             seg1 in "[a-z][a-z0-9_]{0,8}",
             keyword in prop::sample::select(vec!["module", "type", "fn", "const", "trait", "for", "match"])
         ) {
-            let code = format!("use {}::{}", seg1, keyword);
+            let code = format!("use {seg1}::{keyword}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -131,7 +130,7 @@ mod property_tests {
             keyword1 in prop::sample::select(vec!["module", "type", "const"]),
             keyword2 in prop::sample::select(vec!["fn", "trait", "impl"])
         ) {
-            let code = format!("use {}::{}::{}", seg1, keyword1, keyword2);
+            let code = format!("use {seg1}::{keyword1}::{keyword2}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });
@@ -142,7 +141,7 @@ mod property_tests {
         fn prop_use_keyword_start(
             keyword in prop::sample::select(vec!["module", "type", "const", "trait"])
         ) {
-            let code = format!("use {}", keyword);
+            let code = format!("use {keyword}");
             let result = std::panic::catch_unwind(|| {
                 test_code(&code);
             });

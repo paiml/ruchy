@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 //! SYSTEMATIC TOOL VALIDATION SUITE
 //!
 //! **Purpose**: Stop whack-a-mole bug fixing by validating ALL 15 tools systematically
@@ -12,7 +14,7 @@
 //!
 //! **Test Structure**:
 //! - Each tool gets: smoke test, example test, error test, property test
-//! - All tests use assert_cmd for deterministic, CI-friendly validation
+//! - All tests use `assert_cmd` for deterministic, CI-friendly validation
 //! - Tests are grouped by tool for easy navigation and debugging
 
 use assert_cmd::Command;
@@ -91,7 +93,7 @@ fn tool_01_check_validates_example_programs() {
         if path.exists() {
             // Examples are Rust files that generate Ruchy code
             // We can't check them directly, but we verify the tool doesn't crash
-            assert!(path.exists(), "Example file should exist: {:?}", path);
+            assert!(path.exists(), "Example file should exist: {path:?}");
         }
     }
 }
@@ -141,7 +143,7 @@ fn tool_02_transpile_generates_valid_rust() {
 fn tool_02_transpile_example_validation() {
     // Verify transpiler works on transpiler_demo example
     let result = std::process::Command::new("cargo")
-        .args(&["run", "--example", "transpiler_demo"])
+        .args(["run", "--example", "transpiler_demo"])
         .output();
 
     if let Ok(output) = result {
@@ -187,7 +189,7 @@ fn tool_03_run_executes_arithmetic() {
 fn tool_03_run_example_validation() {
     // Verify run works with example programs
     let result = std::process::Command::new("cargo")
-        .args(&["run", "--example", "repl_basic_arithmetic"])
+        .args(["run", "--example", "repl_basic_arithmetic"])
         .output();
 
     if let Ok(output) = result {
@@ -417,7 +419,7 @@ fn tool_08_ast_smoke_test() {
 #[test]
 fn tool_08_ast_example_validation() {
     let result = std::process::Command::new("cargo")
-        .args(&["run", "--example", "debug_ast"])
+        .args(["run", "--example", "debug_ast"])
         .output();
 
     if let Ok(output) = result {
@@ -446,7 +448,7 @@ fn tool_09_wasm_smoke_test() {
 #[test]
 fn tool_09_wasm_example_validation() {
     let result = std::process::Command::new("cargo")
-        .args(&["run", "--example", "wasm_minimal"])
+        .args(["run", "--example", "wasm_minimal"])
         .output();
 
     if let Ok(output) = result {
@@ -474,7 +476,7 @@ fn tool_10_notebook_example_validation() {
     // Notebook acceptance tests spawn a server and run async tests
     // These are validated separately in integration test suite
     let result = std::process::Command::new("cargo")
-        .args(&["run", "--example", "notebook_acceptance_tests"])
+        .args(["run", "--example", "notebook_acceptance_tests"])
         .output();
 
     if let Ok(output) = result {

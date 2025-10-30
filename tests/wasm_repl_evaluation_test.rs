@@ -1,3 +1,5 @@
+#![allow(clippy::ignore_without_reason)] // Test file with known limitations
+
 // WASM REPL Evaluation Tests
 // Bug: WASM REPL returns AST debug string instead of evaluating code
 // Discovered: Interactive.paiml.com project blocked by non-functional REPL
@@ -200,7 +202,7 @@ fn test_wasm_repl_loop_execution() {
         use ruchy::wasm::repl::WasmRepl;
 
         let mut repl = WasmRepl::new().expect("Failed to create REPL");
-        let code = r#"
+        let code = r"
 let mut sum = 0;
 let mut i = 0;
 loop {
@@ -209,7 +211,7 @@ loop {
     i = i + 1;
 }
 sum
-"#;
+";
         let output = repl.eval(code).expect("Eval failed");
 
         let json: JsonValue = parse_repl_output(&output).expect("Invalid JSON");

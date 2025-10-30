@@ -1,7 +1,7 @@
 //! DEFECT-PARSER-002: Raw String Literals Not Supported
 //!
 //! ROOT CAUSE: Parser/lexer doesn't recognize r#"..."# syntax
-//! Error: "Expected RightBrace, found Let"
+//! Error: "Expected `RightBrace`, found Let"
 //!
 //! Impact: 15 failing book examples (highest frequency parser error)
 //!

@@ -3,11 +3,13 @@
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, error messages)
 //! **Layer 4**: CLI expectation testing (black-box validation)
 //!
+
+#![allow(clippy::ignore_without_reason)] // CLI contract tests with known limitations
 //! **Contract Specification**:
 //! - Exit code 0: Valid syntax
 //! - Exit code 1: Invalid syntax OR file not found
 //! - stdout: Success messages ("✓ Syntax is valid")
-//! - stderr: Error messages with file:line:col
+//! - stderr: Error messages with <file:line:col>
 //!
 //! **Reference**: docs/specifications/15-tool-improvement-spec.md (v4.0)
 
@@ -143,8 +145,7 @@ fn cli_check_error_includes_line_number() {
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(
         stderr.contains("line 2") || stderr.contains(":2:") || stderr.contains(" 2"),
-        "Error should include line number, got: {}",
-        stderr
+        "Error should include line number, got: {stderr}"
     );
 }
 

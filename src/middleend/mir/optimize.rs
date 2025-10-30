@@ -542,17 +542,17 @@ mod tests {
         }
     }
 
-    /// Helper function to create a LocalDecl
+    /// Helper function to create a `LocalDecl`
     fn create_local_decl(id: Local, ty: Type, name: Option<&str>) -> LocalDecl {
         LocalDecl {
             id,
             ty,
             mutable: false,
-            name: name.map(|s| s.to_string()),
+            name: name.map(std::string::ToString::to_string),
         }
     }
 
-    /// Helper function to create a BasicBlock
+    /// Helper function to create a `BasicBlock`
     fn create_basic_block(
         id: BlockId,
         statements: Vec<Statement>,
@@ -1378,7 +1378,7 @@ mod property_tests_optimize {
         /// Property 2: Parameters always preserved after DCE
         #[test]
         fn prop_dce_preserves_parameters(num_params in 0usize..5) {
-            let params: Vec<Local> = (0..num_params).map(|i| Local(i)).collect();
+            let params: Vec<Local> = (0..num_params).map(Local).collect();
             let mut func = Function {
                 name: "test".to_string(),
                 params: params.clone(),

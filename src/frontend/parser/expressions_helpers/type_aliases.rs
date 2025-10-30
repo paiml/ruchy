@@ -219,25 +219,25 @@ mod property_tests {
     proptest! {
         #[test]
         fn test_type_alias_never_panics(name in "[A-Z][a-zA-Z0-9]{0,10}", target in "[a-z][a-z0-9]{0,10}") {
-            let code = format!("type {} = {}", name, target);
+            let code = format!("type {name} = {target}");
             let _ = Parser::new(&code).parse();
         }
 
         #[test]
         fn test_generic_params_never_panic(param in "[A-Z]") {
-            let code = format!("struct Container<{}> {{ }}", param);
+            let code = format!("struct Container<{param}> {{ }}");
             let _ = Parser::new(&code).parse();
         }
 
         #[test]
         fn test_bounded_generics_never_panic(param in "[A-Z]", bound in "[A-Z][a-z]{2,8}") {
-            let code = format!("struct Container<{}: {}> {{ }}", param, bound);
+            let code = format!("struct Container<{param}: {bound}> {{ }}");
             let _ = Parser::new(&code).parse();
         }
 
         #[test]
         fn test_multiple_bounds_never_panic(param in "[A-Z]", bound1 in "[A-Z][a-z]{2,6}", bound2 in "[A-Z][a-z]{2,6}") {
-            let code = format!("struct Container<{}: {} + {}> {{ }}", param, bound1, bound2);
+            let code = format!("struct Container<{param}: {bound1} + {bound2}> {{ }}");
             let _ = Parser::new(&code).parse();
         }
     }

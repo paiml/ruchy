@@ -397,7 +397,7 @@ mod tests {
             Duration::from_millis(5),
         );
 
-        let debug_str = format!("{:?}", result);
+        let debug_str = format!("{result:?}");
         assert!(debug_str.contains("CellExecutionResult"));
         assert!(debug_str.contains("42"));
     }
@@ -464,7 +464,7 @@ mod tests {
     fn test_notebook_002_large_output() {
         let large_output = "x".repeat(10000);
         let result = CellExecutionResult::success(
-            large_output.clone(),
+            large_output,
             String::new(),
             String::new(),
             Duration::from_millis(25),

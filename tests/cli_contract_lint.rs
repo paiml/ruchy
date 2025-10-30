@@ -84,8 +84,7 @@ fn cli_lint_unused_variable_warning() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("unused") || stdout.contains("not used") || stdout.is_empty(),
-        "Expected unused variable warning or clean output, got: {}",
-        stdout
+        "Expected unused variable warning or clean output, got: {stdout}"
     );
 }
 

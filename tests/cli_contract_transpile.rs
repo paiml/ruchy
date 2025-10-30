@@ -117,7 +117,7 @@ fn cli_transpile_to_file_creates_output() {
     // Verify output file exists and contains Rust code
     assert!(output.exists(), "Output file should exist");
     let content = fs::read_to_string(&output).unwrap();
-    assert!(content.contains("fn main"), "Should contain Rust fn main, got: {}", content);
+    assert!(content.contains("fn main"), "Should contain Rust fn main, got: {content}");
 }
 
 #[test]
