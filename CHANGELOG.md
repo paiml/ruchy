@@ -4,6 +4,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+
+- **[DEBUGGER-014] Add --trace CLI flag (Issue #84 Phase 1.1)**
+  - **Problem**: No execution tracing capability for debugging Ruchy programs
+  - **Solution**: Added --trace flag to CLI argument parser (Phase 1.1 of 5-phase implementation)
+  - **Implementation**: Added `trace: bool` field with `#[arg(long)]` to Cli struct (src/bin/ruchy.rs:62-64)
+  - **Test Status**: 3/3 tests passing ✅
+    - test_debugger_014_trace_flag_recognized (--trace + --help)
+    - test_debugger_014_trace_with_eval (--trace + -e)
+    - test_debugger_014_trace_with_run (--trace + run)
+  - **Files Modified** (2 files):
+    - tests/cli_trace_flag.rs (NEW - 3 comprehensive tests)
+    - src/bin/ruchy.rs (added trace field)
+  - **Impact**: Foundation for zero-cost execution tracing (Issue #84)
+  - **EXTREME TDD**: RED (3 failing tests) → GREEN (trace field) → REFACTOR (documentation)
+  - **Next Phase**: Phase 1.2 - Add ruchyruchy dependency
+
 ## [3.148.0] - 2025-10-29
 
 ### Added
