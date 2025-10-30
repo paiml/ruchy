@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-DEFECT-001: `env::args()` Not Accessible from Ruchy Code
 //!
 //! **Problem**: `env::args()` exists in src/stdlib/env.rs but cannot be called from Ruchy

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DF-003: `DataFrame` Aggregation Functions (EXTREME TDD)
 //!
 //! **CRITICAL**: RED → GREEN → REFACTOR cycle with comprehensive test coverage.

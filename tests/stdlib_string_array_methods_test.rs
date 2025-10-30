@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-004: Custom String/Array Methods
 //
 // Implementing: substring, slice, join, unique, zip, enumerate

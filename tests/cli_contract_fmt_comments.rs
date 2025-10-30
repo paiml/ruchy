@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for Comment Preservation in `ruchy fmt`
 //
 // Purpose: Validate that formatter preserves ALL comments (Layer 4: Black Box)

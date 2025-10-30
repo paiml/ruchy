@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-005: Array .`concat()` and .`flatten()` methods
 //!
 //! ROOT CAUSE: Missing array concatenation and flattening operations

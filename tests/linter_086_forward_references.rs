@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // LINTER-086: Forward Reference Resolution (GitHub Issue #69)
 // Bug: Linter reports "undefined variable" for functions defined later in file
 // Expected: Two-pass analysis should resolve forward references

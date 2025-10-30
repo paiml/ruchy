@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! RUNTIME-001: Fix `MacroInvocation` runtime support (GitHub Issue #74)
 //!
 //! ROOT CAUSE: FORMATTER-088 changed parser to emit `ExprKind::MacroInvocation` instead of

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-011: Impl block generic parameters
 // Tests for impl<T> syntax support
 

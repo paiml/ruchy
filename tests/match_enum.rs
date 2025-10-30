@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for match expression with enum variants
 //!
 //! Tests pattern matching on custom enum types:

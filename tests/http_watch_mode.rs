@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for HTTP server watch mode (HTTP-002-A)
 //!
 //! Tests cover:

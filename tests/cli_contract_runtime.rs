@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy runtime`
 //!
 //! **Purpose**: Validate user-facing contract (exit codes, stdio, performance analysis)

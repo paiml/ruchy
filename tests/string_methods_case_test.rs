@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! String case conversion method tests - HYBRID-C-1
 //!
 //! EXTREME TDD: Tests written FIRST, implementation follows

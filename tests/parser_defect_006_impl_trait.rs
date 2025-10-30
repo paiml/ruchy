@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-006: impl Trait Return Types
 // Bug: Parser failed with "Expected type" when parsing impl Trait return types
 // Fix: Added Token::Impl handling in parse_type() + parse_impl_trait_type() function

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-015: pub keyword on modules
 // Tests for pub mod syntax
 

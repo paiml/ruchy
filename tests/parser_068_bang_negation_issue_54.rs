@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-068: Fix Bang (!) token ambiguity - Boolean negation vs Actor Send operator
 // GitHub Issue: https://github.com/paiml/ruchy/issues/54
 //

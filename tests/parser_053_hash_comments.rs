@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-053: Hash Comment Support Tests
 //! GitHub Issue: #45 - Multi-line Code Blocks with Inline Comments
 //!
@@ -211,7 +212,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore] // Property tests run separately
+        #[ignore = Property tests run separately
         fn prop_hash_comments_never_break_simple_expressions(n in 0i32..1000) {
             // Add hash comment to simple expression
             let input = format!("let x = {n}\n    # comment\n    + 1");
@@ -222,7 +223,7 @@ mod property_tests {
         }
 
         #[test]
-        #[ignore] // Property tests run separately
+        #[ignore = Property tests run separately
         fn prop_hash_comments_preserved_in_ast(comment in "[a-zA-Z0-9 ]{1,50}") {
             let input = format!("# {comment}\nlet x = 1");
 

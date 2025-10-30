@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-033: @test("description") Transpiles to Invalid Rust
 //!
 //! **Problem**: @test("description") transpiles to #[test(description)] which is invalid Rust

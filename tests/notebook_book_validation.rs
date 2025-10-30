@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! NOTEBOOK-008 Phase 2: MD Book Integration Testing
 //!
 //! This test suite validates ALL code examples from the Ruchy MD Book

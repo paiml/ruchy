@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 //! Counterexample generation for failed proofs
 use super::smt::{SmtBackend, SmtResult, SmtSolver};
 use anyhow::Result;

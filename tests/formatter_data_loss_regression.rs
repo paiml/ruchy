@@ -4,7 +4,9 @@
 // REFACTOR Phase: Redesign architecture to prevent recurrence
 
 #![allow(clippy::similar_names)] // formatter/formatted are acceptable in test code
+#![allow(missing_docs)]
 #![allow(clippy::ignore_without_reason)] // RED phase tests intentionally ignored
+#![allow(missing_docs)]
 
 use ruchy::frontend::parser::Parser;
 use ruchy::quality::formatter::Formatter;
@@ -103,7 +105,7 @@ fun test() {
 }
 
 #[test]
-#[ignore] // TODO: Parser doesn't attach top-level comments to AST - separate issue
+#[ignore = TODO: Parser doesn't attach top-level comments to AST - separate issue
 fn test_formatter_data_loss_04_comments_preserved() {
     // Bug: Formatter deletes comments
     let code = r"

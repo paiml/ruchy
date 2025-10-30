@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Property-based tests for Box<T> and Vec<T> generic support (PARSER-061/080)
 //
 // Validates invariants with 10K+ random inputs to ensure robustness:

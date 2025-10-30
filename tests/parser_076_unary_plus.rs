@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-076: Unary plus operator (+x)
 //!
 //! GitHub Issue: #58 (Part 1/4)

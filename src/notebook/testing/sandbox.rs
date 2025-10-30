@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 // SPRINT6-001: WASM sandbox execution implementation
 // PMAT Complexity: <10 per function
 use std::collections::HashMap;

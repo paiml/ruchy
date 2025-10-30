@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // RUNTIME-083: Test for Issue #66 - return statements in if blocks must terminate function
 //
 // ROOT CAUSE: Return statements inside if/else blocks don't properly terminate enclosing function

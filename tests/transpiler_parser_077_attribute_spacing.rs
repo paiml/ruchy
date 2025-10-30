@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-077: Attribute Spacing Bug - #[test] Emits with Space as # [test]
 //!
 //! **Problem**: #[test] attributes transpile with incorrect spacing: # [test] instead of #[test]

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Verification test for Issue #86 fix: Run 100 iterations to verify determinism
 
 use ruchy::runtime::Repl;

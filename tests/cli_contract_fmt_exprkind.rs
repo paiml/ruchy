@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Sprint 2: ExprKind Coverage Tests
 // RED phase: Failing tests for critical ExprKind variants
 

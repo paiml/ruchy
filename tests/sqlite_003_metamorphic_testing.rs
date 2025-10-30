@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! [SQLITE-TEST-003] Test Harness 3: Metamorphic Testing for Compiler Correctness
 //!
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.3

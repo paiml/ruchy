@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy test` command
 //
 // Purpose: Validate test runner tool via CLI interface (Layer 4: Black Box)

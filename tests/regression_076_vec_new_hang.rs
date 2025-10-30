@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // REGRESSION-076: Vec::new() causes infinite hang in v3.147.0
 // GitHub Issue: https://github.com/paiml/ruchy/issues/76
 //

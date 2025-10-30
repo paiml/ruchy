@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-006: Process Module Tests (ruchy/std/process)
 //!
 //! Test suite for process operations module.

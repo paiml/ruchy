@@ -1,4 +1,5 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
+#![allow(clippy::approx_constant)]
 //! Actor system runtime with supervision trees
 //!
 //! This module implements a robust actor system inspired by Erlang/OTP and Akka,

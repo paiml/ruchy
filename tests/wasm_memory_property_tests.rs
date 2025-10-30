@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 
 /// WASM Memory Model Property Tests
 ///

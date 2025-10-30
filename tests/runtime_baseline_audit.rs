@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 
 // RUNTIME-001: Baseline Audit - Parser vs Runtime Status
 // Purpose: Document what parses vs what executes for parser-only features
@@ -35,7 +36,7 @@ fn test_runtime_001_struct_parser_accepts_definition() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS because structs don't execute
+#[ignore = RED phase: Currently FAILS because structs don't execute
 fn test_runtime_001_struct_runtime_executes_instantiation() {
     // Runtime SHOULD execute struct instantiation (this currently fails)
     ruchy_cmd()
@@ -47,7 +48,7 @@ fn test_runtime_001_struct_runtime_executes_instantiation() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_struct_runtime_field_access() {
     ruchy_cmd()
         .arg("-e")
@@ -58,7 +59,7 @@ fn test_runtime_001_struct_runtime_field_access() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_struct_runtime_value_semantics() {
     // Test that structs have value semantics (copy on assign)
     ruchy_cmd()
@@ -82,7 +83,7 @@ fn test_runtime_001_class_parser_accepts_definition() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_class_runtime_executes_instantiation() {
     // Runtime SHOULD execute class instantiation (this currently fails)
     ruchy_cmd()
@@ -94,7 +95,7 @@ fn test_runtime_001_class_runtime_executes_instantiation() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_class_runtime_reference_semantics() {
     // Test that classes have reference semantics (shared on assign)
     ruchy_cmd()
@@ -106,7 +107,7 @@ fn test_runtime_001_class_runtime_reference_semantics() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_class_runtime_identity_comparison() {
     // Test identity comparison (===)
     ruchy_cmd()
@@ -130,7 +131,7 @@ fn test_runtime_001_actor_parser_accepts_definition() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_actor_runtime_spawn_and_send() {
     // Runtime SHOULD execute actor spawn and message sending (currently fails)
     ruchy_cmd()
@@ -144,7 +145,7 @@ fn test_runtime_001_actor_runtime_spawn_and_send() {
 // ==================== ASYNC/AWAIT: Parser vs Runtime ====================
 
 #[test]
-#[ignore] // NOT IMPLEMENTED: async keyword not recognized by parser
+#[ignore = NOT IMPLEMENTED: async keyword not recognized by parser
 fn test_runtime_001_async_parser_accepts_async_fn() {
     // Parser SHOULD accept async fn (currently DOES NOT)
     // Error: "Expected 'fun', '{', '|', or identifier after 'async'"
@@ -156,7 +157,7 @@ fn test_runtime_001_async_parser_accepts_async_fn() {
 }
 
 #[test]
-#[ignore] // NOT IMPLEMENTED: async keyword not recognized by parser
+#[ignore = NOT IMPLEMENTED: async keyword not recognized by parser
 fn test_runtime_001_async_parser_accepts_await() {
     // Parser SHOULD accept await expression (currently DOES NOT)
     ruchy_cmd()
@@ -167,7 +168,7 @@ fn test_runtime_001_async_parser_accepts_await() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_async_runtime_executes_async_fn() {
     // Runtime SHOULD execute async fn (currently fails)
     ruchy_cmd()
@@ -179,7 +180,7 @@ fn test_runtime_001_async_runtime_executes_async_fn() {
 }
 
 #[test]
-#[ignore] // RED phase: Currently FAILS
+#[ignore = RED phase: Currently FAILS
 fn test_runtime_001_async_runtime_concurrent_execution() {
     // Test that async functions can run concurrently
     ruchy_cmd()

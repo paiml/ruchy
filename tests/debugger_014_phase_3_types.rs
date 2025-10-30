@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Tests for DEBUGGER-014 Phase 3: Type-aware tracing
 //! GitHub Issue: <https://github.com/paiml/ruchy/issues/84>
 //!

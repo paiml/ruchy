@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! GitHub Issue #59: Module/Import Syntax Tests
 //!
 //! Tests for multi-file project support with various import syntaxes.

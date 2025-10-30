@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-005: walk_parallel() Tests - Perfect Composable API
 //
 // Architecture: walk_parallel() does parallel I/O, returns FileEntry array

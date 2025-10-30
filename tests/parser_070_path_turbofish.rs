@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-070: Path Expression Turbofish Support
 //
 // FEATURE: Enable turbofish syntax (::<Type>) in path expressions (not just method calls)

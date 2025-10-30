@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-054: Inline comments after semicolons cause parse failures
 // GitHub Issue: https://github.com/paiml/ruchy/issues/TBD
 // Priority: HIGH - Blocks 20% of book content (49+ blocks)

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CLI-UNIFY-003: Comprehensive CLI Test Suite (100+ tests)
 //!
 //! **Purpose**: Systematic validation of ALL CLI invocation patterns

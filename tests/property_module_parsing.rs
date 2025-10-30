@@ -4,6 +4,7 @@
 //! property-based testing to ensure correctness across random inputs.
 
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;

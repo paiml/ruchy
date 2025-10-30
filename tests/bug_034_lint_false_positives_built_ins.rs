@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-034: Linter Reports False Errors for Built-in Functions
 //!
 //! **Problem**: `ruchy lint` reports "undefined variable" errors for built-in functions

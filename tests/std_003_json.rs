@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STD-003: JSON Module Tests (ruchy/std/json)
 //!
 //! Test suite for JSON operations module.

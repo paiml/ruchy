@@ -15,9 +15,12 @@
 //! 4. **Error Clarity**: Invalid types produce clear error messages
 
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 
 #![allow(clippy::expect_used)]
+#![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
+#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::Parser;
@@ -114,7 +117,7 @@ proptest! {
     ///
     /// Invariant: For all valid type strings t, parse_type(t) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore] // Run with: cargo test property_type -- --ignored --nocapture
+    #[ignore = Run with: cargo test property_type -- --ignored --nocapture
     fn prop_parse_type_never_panics(type_str in arb_type_expr()) {
         let code = format!("fun f(x: {type_str}) {{}}");
         let result = std::panic::catch_unwind(|| {

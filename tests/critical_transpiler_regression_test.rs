@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! CRITICAL: Extreme TDD Test for v3.51.0 Transpiler Regression
 //!
 //! This test ensures the transpiler correctly handles function bodies

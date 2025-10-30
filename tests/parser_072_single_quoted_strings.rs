@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-072: Single-quoted strings (GitHub Issue #57, Part 1/3)
 //
 // Root Cause: Lexer only recognizes single quotes for character literals ('c'), not strings.

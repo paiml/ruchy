@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Fast fuzz test for pattern matching - ensure no panics
 //!
 //! Tests that pattern matching is robust against random inputs

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // REGRESSION-077: Logger/Common/Schema runtime hang in v3.147.1
 // GitHub Issue: https://github.com/paiml/ruchy/issues/77
 //

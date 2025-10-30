@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 
 // STDLIB-002: Advanced Math Functions
 //

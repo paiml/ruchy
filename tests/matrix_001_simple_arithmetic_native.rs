@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Matrix Test 01: Simple Arithmetic Operations (Native Platform)
 //
 // Companion to: tests/e2e/matrix/01-simple-arithmetic.spec.ts (WASM)

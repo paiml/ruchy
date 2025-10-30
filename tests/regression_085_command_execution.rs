@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Regression tests for GitHub Issue #85: Missing std::process::Command execution
 // https://github.com/paiml/ruchy/issues/85
 //

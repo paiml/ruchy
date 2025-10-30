@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 // Code formatter for Ruchy
 // Toyota Way: Consistent code style prevents defects
 use crate::frontend::ast::{Expr, ExprKind};

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Tests for PARSER-062: Comments after control flow statements
 //!
 //! Bug: Inline comments after break/continue/return cause parser failures

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-017: Keywords in use statement paths
 //
 // ROOT CAUSE: Use statement path parser doesn't accept keyword tokens in paths

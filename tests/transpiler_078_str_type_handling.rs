@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! TRANSPILER-078: Fix str type transpilation (str → &str)
 //!
 //! **Problem**: Transpiler emits `str` instead of `&str` for function parameters

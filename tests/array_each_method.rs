@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-010: Array.each() method implementation
 // Missing feature discovered during STDLIB-005 example validation
 // Ticket: STDLIB-010

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-008: Tuple Struct Destructuring in Let Patterns
 // Bug: Parser failed with "Expected RightParen, found Comma" on tuple patterns
 // Fix: Updated parse_variant_pattern_with_name() to handle multiple comma-separated patterns

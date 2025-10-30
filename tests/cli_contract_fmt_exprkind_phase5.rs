@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Sprint 2 Phase 5: Final `ExprKind` Variants (Complete 100%)
 //!
 //! Ticket: [FMT-PERFECT-010]

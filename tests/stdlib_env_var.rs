@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB Phase 1: `env_var()` Implementation Tests
 //!
 //! **Task**: Implement `env_var(key`: String) -> Result<String>

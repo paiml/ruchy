@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // RUNTIME-003: Implement Classes (Reference Types) - EXTREME TDD
 // RED → GREEN → REFACTOR cycle
 //
@@ -208,7 +209,7 @@ mod property_tests {
     /// Validates that class instances can be created with any string name and integer age.
     /// This tests the robustness of the instantiation mechanism.
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_class_instantiation_any_values() {
         proptest!(|(name in "[a-zA-Z0-9_]+", age in -1000i32..1000i32)| {
             let code = format!(
@@ -234,7 +235,7 @@ mod property_tests {
     /// For ANY class instance, assigning it to another variable should share the same reference.
     /// Mutations through one variable should be visible through the other.
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_reference_semantics_shared_state() {
         proptest!(|(initial in 0i32..100i32, delta in 1i32..50i32)| {
             let code = format!(
@@ -261,7 +262,7 @@ mod property_tests {
     /// For ANY class instance, comparing it with a variable holding the same reference
     /// should always return true (identity equality).
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_identity_same_reference_true() {
         proptest!(|(value in 0i32..1000i32)| {
             let code = format!(
@@ -285,7 +286,7 @@ mod property_tests {
     /// For ANY two independently created class instances (even with identical field values),
     /// identity comparison should return false.
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_identity_different_instances_false() {
         proptest!(|(value in 0i32..1000i32)| {
             let code = format!(
@@ -309,7 +310,7 @@ mod property_tests {
     /// For ANY sequence of method calls, the final state should be deterministic
     /// and consistent with reference semantics.
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_method_mutations_deterministic() {
         proptest!(|(a in 0i32..50i32, b in 0i32..50i32)| {
             let code = format!(
@@ -336,7 +337,7 @@ mod property_tests {
     /// For ANY class instance with fields, field access should return the values
     /// that were set during initialization or mutation.
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn proptest_field_access_consistent() {
         proptest!(|(x in -100i32..100i32, y in -100i32..100i32)| {
             let code = format!(

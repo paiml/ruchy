@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! P0-BOOK-005: Performance Optimization Test Suite
 //!
 //! Tests for performance optimization features including:

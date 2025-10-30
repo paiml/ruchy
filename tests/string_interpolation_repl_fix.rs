@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! String Interpolation REPL Bug Fix Test
 //! EXTREME TDD: RED phase - This test MUST fail before the fix
 

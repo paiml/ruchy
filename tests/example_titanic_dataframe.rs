@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! EXTREME TDD Tests for Titanic `DataFrame` Example
 //!
 //! Test Strategy: RED → GREEN → REFACTOR

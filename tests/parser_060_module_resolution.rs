@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-060: Module Resolution MVP Tests
 //
 // Scope: File resolution, loading, symbol extraction, imports

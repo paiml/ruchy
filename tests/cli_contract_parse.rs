@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI Contract Tests for `ruchy parse` command
 //
 // Purpose: Validate AST parser tool via CLI interface (Layer 4: Black Box)

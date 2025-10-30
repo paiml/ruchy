@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! TRANSPILER-DEFECT-003: .`to_string()` Method Calls Not Preserved
 //!
 //! **Problem**: .`to_string()` method calls on variables are not transpiled correctly

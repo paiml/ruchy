@@ -1,15 +1,23 @@
 #![cfg(test)]
+#![allow(missing_docs)]
 #![allow(warnings)]
+#![allow(missing_docs)]
 #![allow(clippy::assertions_on_constants)]
+#![allow(missing_docs)]
 #![allow(clippy::unreadable_literal)]
+#![allow(missing_docs)]
 //! Critical bug prevention tests
 //!
 //! These tests ensure we don't regress on known critical bugs
 
 #![allow(clippy::unwrap_used)]
+#![allow(missing_docs)]
 #![allow(clippy::expect_used)]
+#![allow(missing_docs)]
 #![allow(clippy::needless_raw_string_hashes)]
+#![allow(missing_docs)]
 #![allow(clippy::uninlined_format_args)]
+#![allow(missing_docs)]
 
 use ruchy::runtime::Repl;
 use std::env;

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Issue #40: Mutable variable increment inside match expression
 // Bug: Variable mutations inside match arms don't propagate to outer scope
 //

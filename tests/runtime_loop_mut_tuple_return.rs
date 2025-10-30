@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! PARSER-DEFECT-001: Block + Tuple Parsing Bug (FIXED)
 //!
 //! **Problem**: Loop followed by tuple was misparsed as function call

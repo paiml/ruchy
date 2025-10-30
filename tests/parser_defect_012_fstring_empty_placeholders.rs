@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DEFECT-PARSER-012: F-string empty placeholders
 // Tests for f"..." with {} positional arguments (Python-style)
 

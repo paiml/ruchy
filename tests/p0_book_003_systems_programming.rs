@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 /// P0-BOOK-003: Systems Programming TDD Tests
 /// These tests define the expected behavior for systems programming features
 /// Based on ruchy-book chapter 8 examples that are not yet working

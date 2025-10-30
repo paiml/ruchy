@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER DEFECT [PARSER-053]: Line continuations with intervening comments
 // Toyota Way: STOP THE LINE - No bug is out of scope
 //

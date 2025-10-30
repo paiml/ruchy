@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB Phase 4: JSON Functions Tests
 //!
 //! **Task**: Implement 10 JSON functions

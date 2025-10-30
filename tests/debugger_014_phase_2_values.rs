@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Tests for DEBUGGER-014 Phase 2: Enhanced tracing with argument and return values
 //! GitHub Issue: <https://github.com/paiml/ruchy/issues/84>
 //!

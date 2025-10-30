@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-087: Fix parser bug for methods with 2+ &str params + String return (GitHub Issue #68)
 //
 // RED Phase: These tests SHOULD FAIL with "Function parameters must be simple identifiers"

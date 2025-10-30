@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Matrix Test 04: Time Series Analysis (Native Platform)
 //
 // Companion to: tests/e2e/matrix/04-time-series.spec.ts (WASM - DEFERRED)

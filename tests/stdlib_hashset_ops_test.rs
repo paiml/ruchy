@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-007: Array set operations (.union, .intersection, .difference)
 //!
 //! ROOT CAUSE: Missing set operations for arrays (treating arrays as sets)

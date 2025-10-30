@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // STDLIB-005: Multi-Threaded Directory Walking + Text Search
 //
 // RED PHASE: Tests created first (TDD), implementation follows

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-032: `range()` Function Not Transpiled
 //!
 //! **Problem**: range(start, end) function calls are not transpiled to Rust's (start..end) syntax

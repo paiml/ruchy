@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Property tests for RUNTIME-092: Enum variable cast support (Issue #79)
 //
 // These tests use proptest to verify enum cast behavior across 10K+ random inputs

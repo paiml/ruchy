@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Dataframe Parsing Tests - HYBRID-C-4
 //! Empirical verification that dataframe literals already parse correctly
 

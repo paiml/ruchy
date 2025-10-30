@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! RED TEST for Issue #40: Missing .`enumerate()` causes O(n²) code
 //!
 //! ROOT CAUSE: No way to iterate with index, forcing users to use

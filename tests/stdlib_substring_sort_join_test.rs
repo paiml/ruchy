@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-009: String .`substring()` + Array .`sort()` and .`join()`
 //!
 //! ROOT CAUSE: Missing implementations for these convenience methods

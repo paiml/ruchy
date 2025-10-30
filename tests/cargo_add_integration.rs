@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Integration tests for `ruchy add` command (CARGO-003)
 //!
 //! Tests the complete workflow of adding dependencies to Ruchy projects

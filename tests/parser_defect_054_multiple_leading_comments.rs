@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER DEFECT [PARSER-054]: Multiple leading comments in block not preserved
 // Toyota Way: STOP THE LINE - No bug is out of scope
 //

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! HTML stdlib tests (HTTP-002-C)
 //!
 //! Tests for native HTML parsing following TDD approach:

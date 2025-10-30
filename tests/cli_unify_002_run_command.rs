@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // CLI-UNIFY-002: Test that 'ruchy run' interprets (not compiles)
 // EXTREME TDD: RED phase - these tests will FAIL initially
 

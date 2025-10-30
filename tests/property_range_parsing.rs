@@ -13,8 +13,11 @@
 //! 5. **Context Preservation**: Ranges in different contexts (statements, let bindings, slicing) all work
 
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
+#![allow(missing_docs)]
 #![allow(clippy::expect_used)]
+#![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
+#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::Parser;
@@ -58,7 +61,7 @@ proptest! {
     ///
     /// Invariant: For all valid range strings r, parse(r) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore] // Run with: cargo test property_range -- --ignored --nocapture
+    #[ignore = Run with: cargo test property_range -- --ignored --nocapture
     fn prop_parse_range_never_panics(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ let r = {range_expr}; }}");
         let result = std::panic::catch_unwind(|| {

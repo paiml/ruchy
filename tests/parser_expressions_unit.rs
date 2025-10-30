@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Unit tests for expressions.rs parser module
 //!
 //! These tests were moved from inline tests in expressions.rs to reduce file size

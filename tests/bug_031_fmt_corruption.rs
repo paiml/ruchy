@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-031: ruchy fmt corrupts files - writes AST instead of formatted code
 //!
 //! Issue: <https://github.com/paiml/ruchy/issues/31>

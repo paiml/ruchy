@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // EVALUATOR-002: Method chaining with array indexing
 // Test ticket: tests/evaluator_002_method_chaining_with_indexing.rs
 // Traceability: docs/execution/roadmap.yaml:4465-4562

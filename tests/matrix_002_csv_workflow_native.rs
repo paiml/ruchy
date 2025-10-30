@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Matrix Test 02: CSV Processing Workflow (Native Platform)
 //
 // Companion to: tests/e2e/matrix/02-csv-workflow.spec.ts (WASM - DEFERRED)

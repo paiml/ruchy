@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! DEFECT-PARSER-002: Raw String Literals Not Supported
 //!
 //! ROOT CAUSE: Parser/lexer doesn't recognize r#"..."# syntax

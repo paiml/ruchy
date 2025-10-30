@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! BUG-036: Coverage Reports 0/0 Lines (100%)
 //!
 //! **Problem**: Coverage always reports 0/0 (100%) - no actual measurement

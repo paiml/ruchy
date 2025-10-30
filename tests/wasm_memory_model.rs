@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 /// WASM Memory Model Tests
 ///
 /// Comprehensive tests for WASM memory model (Phases 1-5)

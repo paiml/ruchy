@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Investigation test for Issue #86: Non-deterministic state hashing
 //!
 //! This test attempts to identify the source of non-determinism by:

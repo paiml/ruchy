@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // DATAFRAME-001: Fix DataFrame Transpilation - EXTREME TDD
 // RED → GREEN → REFACTOR cycle
 //

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Matrix Test 03: Statistical Analysis Workflow (Native Platform)
 //
 // Companion to: tests/e2e/matrix/03-statistical-analysis.spec.ts (WASM - DEFERRED)

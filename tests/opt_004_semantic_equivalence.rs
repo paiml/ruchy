@@ -1,4 +1,5 @@
 #![allow(clippy::ignore_without_reason)] // Test file with known limitations
+#![allow(missing_docs)]
 
 // OPT-004: Semantic Equivalence Tests - Verify AST and Bytecode modes produce identical results
 //

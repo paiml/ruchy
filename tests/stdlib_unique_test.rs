@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! STDLIB-006: Array .`unique()` method
 //!
 //! ROOT CAUSE: Missing array deduplication operation

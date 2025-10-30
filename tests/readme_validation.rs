@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! README.md Validation Tests (EXTREME TDD)
 //!
 //! **SACRED RULE**: README.md can NEVER document features that don't work.

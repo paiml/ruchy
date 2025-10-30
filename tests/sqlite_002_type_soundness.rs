@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! [SQLITE-TEST-002] Test Harness 2: Type System Soundness Tests
 //!
 //! **Specification**: docs/specifications/ruchy-sqlite-testing-v2.md Section 1.2

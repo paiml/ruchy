@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Try-Catch Syntax Tests - HYBRID-C-2
 //! EXTREME TDD: Test written FIRST before implementation
 //!

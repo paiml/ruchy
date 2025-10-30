@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // PARSER-061: Box<T> Support in Enum Variants
 // RED Phase: Minimal reproduction tests demonstrating the defect
 
