@@ -48,6 +48,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "parse" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
         "to_rfc3339" => Ok(Value::from_string(s.to_string())),
+        "as_bytes" => eval_string_as_bytes(s),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),
@@ -240,6 +241,29 @@ fn eval_string_chars(s: &str) -> Result<Value, InterpreterError> {
         .map(|c| Value::from_string(c.to_string()))
         .collect();
     Ok(Value::from_array(chars))
+}
+
+/// Convert string to array of UTF-8 byte values
+///
+/// # Feature #89
+/// Implements string.as_bytes() method for binary data handling
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+///
+/// # Examples
+/// ```
+/// "Hello".as_bytes() => [72, 101, 108, 108, 111]
+/// "A".as_bytes() => [65]
+/// "".as_bytes() => []
+/// ```
+fn eval_string_as_bytes(s: &str) -> Result<Value, InterpreterError> {
+    let bytes: Vec<Value> = s
+        .as_bytes()
+        .iter()
+        .map(|&byte| Value::Integer(i64::from(byte)))
+        .collect();
+    Ok(Value::from_array(bytes))
 }
 
 /// Split string into lines
