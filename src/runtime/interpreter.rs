@@ -1744,6 +1744,9 @@ impl Interpreter {
         match (&object_value, &index_value) {
             (Value::Array(ref array), Value::Integer(idx)) => Self::index_array(array, *idx),
             (Value::String(ref s), Value::Integer(idx)) => Self::index_string(s, *idx),
+            (Value::String(ref s), Value::Range { start, end, inclusive }) => {
+                Self::slice_string(s, start, end, *inclusive)
+            }
             (Value::Tuple(ref tuple), Value::Integer(idx)) => Self::index_tuple(tuple, *idx),
             (Value::Object(ref fields), Value::String(ref key)) => Self::index_object(fields, key),
             (Value::ObjectMut(ref cell), Value::String(ref key)) => {
@@ -1807,6 +1810,90 @@ impl Interpreter {
 
         #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
         Ok(Value::from_string(chars[actual_index as usize].to_string()))
+    }
+
+    /// Slice a string using a range (ISSUE-094, GitHub Issue #94)
+    /// Supports: text[0..5], text[..5], text[5..], text[..]
+    /// Cyclomatic complexity: 9 (A+ standard: ≤10)
+    fn slice_string(
+        s: &str,
+        start: &Value,
+        end: &Value,
+        _inclusive: bool,
+    ) -> Result<Value, InterpreterError> {
+        let chars: Vec<char> = s.chars().collect();
+        let len = chars.len();
+
+        // Extract start index (default to 0 for open ranges like ..5)
+        let start_idx = match start {
+            Value::Nil => 0,
+            Value::Integer(i) => {
+                let idx = if *i < 0 {
+                    let adjusted = len as i64 + i;
+                    if adjusted < 0 {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Range start {} is out of bounds for string of length {}",
+                            i, len
+                        )));
+                    }
+                    adjusted as usize
+                } else {
+                    *i as usize
+                };
+                idx
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Range start must be integer or nil, got {}",
+                    start.type_name()
+                )))
+            }
+        };
+
+        // Extract end index (default to len for open ranges like 5..)
+        let end_idx = match end {
+            Value::Nil => len,
+            Value::Integer(i) => {
+                let idx = if *i < 0 {
+                    let adjusted = len as i64 + i;
+                    if adjusted < 0 {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Range end {} is out of bounds for string of length {}",
+                            i, len
+                        )));
+                    }
+                    adjusted as usize
+                } else {
+                    *i as usize
+                };
+                idx
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Range end must be integer or nil, got {}",
+                    end.type_name()
+                )))
+            }
+        };
+
+        // Validate range
+        if start_idx > end_idx {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Invalid range: start {} is greater than end {}",
+                start_idx, end_idx
+            )));
+        }
+
+        if end_idx > len {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Range end {} is out of bounds for string of length {}",
+                end_idx, len
+            )));
+        }
+
+        // Perform the slice
+        let sliced: String = chars[start_idx..end_idx].iter().collect();
+        Ok(Value::from_string(sliced))
     }
 
     /// Index into a tuple (complexity: 5 - added negative indexing support)
