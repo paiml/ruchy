@@ -327,6 +327,13 @@ pub fn eval_primitive_method(
 /// # Complexity
 /// Cyclomatic complexity: 8 (within Toyota Way limits)
 fn eval_float_method(f: f64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
+    // Issue #91: Special case for powf - suggest ** operator instead
+    if method == "powf" {
+        return Err(InterpreterError::RuntimeError(
+            "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)".to_string()
+        ));
+    }
+
     if !args_empty {
         return Err(InterpreterError::RuntimeError(format!(
             "Float method '{method}' takes no arguments"

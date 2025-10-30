@@ -7,6 +7,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.151.0] - 2025-10-30
 
 ### Added
+- **[ISSUE-091] Improve .powf() error message to suggest ** operator**
+  - Changed misleading error "Float method 'powf' takes no arguments" to helpful suggestion
+  - New error message: "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)"
+  - Special-case handling for common Rust method that doesn't exist in Ruchy
+  - Helps Rust developers discover idiomatic Ruchy power operator
+  - 5 comprehensive tests: helpful error with/without args, no misleading message, ** operator works, other methods unchanged
+  - Fixes GitHub Issue #91 (documentation/enhancement - user-requested error message improvement)
+  - Files: src/runtime/eval_method.rs (+6 lines), src/runtime/eval_method_dispatch.rs (+6 lines), src/runtime/eval_string_methods.rs (+6 lines), tests/issue_091_powf_error_message.rs (NEW, 115 lines, 5 tests)
+
 - **[ISSUE-092] std::env namespace for CLI argument access**
   - Ruchy code can now use `std::env::args()` to access command-line arguments with Rust-compatible API
   - Added env module to std namespace in global environment (1 function accessible via namespace syntax)
