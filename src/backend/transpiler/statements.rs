@@ -723,6 +723,22 @@ impl Transpiler {
         }
     }
 
+    /// Check if function body returns a string literal (ISSUE-103)
+    fn returns_string_literal(&self, body: &Expr) -> bool {
+        match &body.kind {
+            ExprKind::Literal(Literal::String(_)) => true,
+            ExprKind::Block(exprs) if !exprs.is_empty() => {
+                // Check if last expression in block is a string literal
+                if let Some(last_expr) = exprs.last() {
+                    matches!(&last_expr.kind, ExprKind::Literal(Literal::String(_)))
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
@@ -823,6 +839,9 @@ impl Transpiler {
             }
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
+        } else if self.returns_string_literal(body) {
+            // ISSUE-103: String literals have 'static lifetime
+            Ok(quote! { -> &'static str })
         } else if self.has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
@@ -1201,6 +1220,9 @@ impl Transpiler {
             Ok(quote! { -> impl Fn(i32) -> i32 })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
+        } else if self.returns_string_literal(body) {
+            // ISSUE-103: Detect string literal returns (with lifetime)
+            Ok(quote! { -> &'a str })
         } else if self.has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
