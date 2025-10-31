@@ -4,6 +4,44 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.160.0] - 2025-10-31
+
+### Fixed
+- **[MODULE-RESOLUTION-001] External module loading from project directories**
+  - Fixed module loader failing to find modules in standard project layout (bin/, src/, lib/)
+  - Root cause 1: Module resolver only searched current directory and immediate subdirectories
+  - Root cause 2: Import detection only checked ModuleDeclaration AST nodes, not Import nodes
+  - Impact: CRITICAL - Multi-file projects with bin/main.ruchy and src/module.ruchy failed with "Module not found"
+  - Solution:
+    1. Added project layout search paths: if compiling project/bin/main.ruchy, also search project/src/, project/lib/, project/modules/
+    2. Added Import node detection in contains_module_declaration() to trigger module resolution for `use diagnostics;` (file imports without ::)
+  - Tests: ubuntu-diag.ruchy now successfully finds and loads diagnostics module from ../src/
+  - Files: src/backend/compiler.rs (lines 143-149, 394)
+  - Real-world impact: Unblocks all multi-file Ruchy projects with standard Rust-style layout
+
+- **[TRANSPILER-DEFECT-007] Format macro argument handling for debug/hex/binary specifiers**
+  - Fixed println!/print!/panic! generating invalid Rust code with format specifiers
+  - Root cause: Format string detection only checked for `{}` placeholder, not `{:?}`, `{:#?}`, `{:x}`, etc.
+  - Impact: HIGH - Code like `println!("{:?}", error)` generated `println!("{:?}", "{:?}", error)` with duplicate format string
+  - Solution: Changed format detection from `s.contains("{}")` to `s.contains('{') && s.contains('}')` to recognize all format specifiers
+  - Tests: ubuntu-diag.ruchy format macro errors reduced from 4 to 0
+  - Files: src/backend/transpiler/dispatcher_helpers/macro_helpers.rs (lines 75-77)
+  - Real-world impact: Debug printing and error formatting now works correctly
+
+- **[TYPE-INFERENCE-001] Method call inference for stdlib types**
+  - Fixed field access generating property access instead of method calls for stdlib methods
+  - Root cause: Transpiler treated all `.field` as property access, not distinguishing methods vs fields
+  - Impact: HIGH - Code like `o.status.success` generated `.success` (property) instead of `.success()` (method call), causing 18 compilation errors
+  - Solution: Added known stdlib methods list (success, exists, is_empty, is_some, is_none, is_ok, is_err) that auto-add `()` for method calls
+  - Tests: ubuntu-diag.ruchy ExitStatus::success errors reduced from 18 to 0
+  - Files: src/backend/transpiler/expressions_helpers/field_access.rs (lines 47-57, 82-94)
+  - Real-world impact: std::process::Command and Option/Result methods now work correctly
+
+### Summary
+**3 CRITICAL compilation blockers fixed** - ubuntu-diag.ruchy compilation progress:
+- Before: 41 errors (module not found + format macros + method calls)
+- After: Compiler blockers eliminated (remaining errors are user code bugs - field name mismatches)
+
 ## [3.159.0] - 2025-10-31
 
 ### Fixed
