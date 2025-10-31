@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.165.0] - 2025-10-31
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-012] Functions returning String generate E0308 when body returns &str**
+  - Fixed functions with `-> String` return type returning string literals or variables, causing E0308: expected String, found &str
+  - Root cause: String literals in Rust are `&str`, but function transpilation didn't convert based on return type signature
+  - Impact: CRITICAL - 7 E0308 type mismatch errors in reaper project (remaining from Issue #111)
+  - Example BEFORE: `fun get() -> String { "text" }` → E0308: expected String, found &str
+  - Example AFTER: `fun get() -> String { "text" }` → transpiles to `("text").to_string()` → compiles successfully
+  - Example BEFORE: `fun get() -> String { let s = "test"; s }` → E0308: expected String, found &str
+  - Example AFTER: `fun get() -> String { let s = "test"; s }` → transpiles to `{ let s = "test"; (s).to_string() }` → compiles successfully
+  - Solution: Added automatic .to_string() wrapping for return expressions when return type is String and body is string literal/identifier
+  - Code changes:
+    - src/backend/transpiler/statements.rs:1169-1272: Added is_string_type(), body_needs_string_conversion(), generate_body_tokens_with_string_conversion()
+    - src/backend/transpiler/statements.rs:1393-1402: Modified function transpilation to apply .to_string() conversion
+  - Tests: 3 tests in tests/transpiler_defect_012_string_return_RED.rs (direct literal, variable return, String::from baseline)
+  - Real-world impact: Expected to fix 7 remaining E0308 errors in reaper project (from 10 → 3 errors remaining)
+  - Files: src/backend/transpiler/statements.rs (3 new methods, 104 lines), tests/transpiler_defect_012_string_return_RED.rs (NEW, 3 tests)
+
 ## [3.164.0] - 2025-10-31
 
 ### Fixed
