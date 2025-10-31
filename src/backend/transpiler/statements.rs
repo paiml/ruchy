@@ -358,7 +358,13 @@ impl Transpiler {
             quote! { let }
         };
 
+        // Check if this is a mutable variable
+        let is_mutable_var = is_mutable
+            || self.mutable_vars.contains(name)
+            || Self::is_variable_mutated(name, body);
+
         // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
+        // DEFECT-010 FIX: Also auto-convert string literals to String for mutable variables (no annotation)
         let value_tokens = match (&value.kind, type_annotation) {
             (
                 crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
@@ -367,6 +373,14 @@ impl Transpiler {
             {
                 // String literal with String type annotation - add .to_string()
                 quote! { #s.to_string() }
+            }
+            (
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                None,
+            ) if is_mutable_var =>
+            {
+                // Mutable variable with string literal (no type annotation) - use String::from()
+                quote! { String::from(#s) }
             }
             _ => self.transpile_expr(value)?,
         };

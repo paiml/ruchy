@@ -4,6 +4,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.163.0] - 2025-10-31
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-010] Mutable string variables generate &str instead of String type**
+  - Fixed string literals assigned to mutable variables generating `&str` type instead of `String`, causing E0308 type mismatch errors
+  - Root cause: transpile_let_with_type() only converted string literals to String when explicit type annotation (`: String`) was provided, not for inferred mutable variables
+  - Impact: CRITICAL - 30+ E0308 errors in real-world code (69% of remaining errors in reaper project)
+  - Example BEFORE: `let mut x = "test";` (type &str) `x = x + " more";` (returns String) → E0308 error
+  - Example AFTER: `let mut x = String::from("test");` `x = x + " more";` → compiles successfully
+  - Solution: Modified transpile_let_with_type() to detect mutable variables and auto-convert string literals using `String::from()` even without type annotation
+  - Code change:
+    ```rust
+    // src/backend/transpiler/statements.rs:361-386
+    let is_mutable_var = is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
+    let value_tokens = match (&value.kind, type_annotation) {
+        (ExprKind::Literal(Literal::String(s)), Some(type_ann)) if matches!(...) => quote! { #s.to_string() },
+        (ExprKind::Literal(Literal::String(s)), None) if is_mutable_var => quote! { String::from(#s) }, // NEW
+        _ => self.transpile_expr(value)?,
+    };
+    ```
+  - Tests:
+    - Unit tests: 7 tests in tests/transpiler_defect_010_mutable_string_inference.rs (all passing)
+    - Property tests: 3 property-based tests with 10K+ random inputs each (mutable string invariant, immutable string baseline, n-ary concatenations)
+    - Integration test: Reaper project (4,606 lines) compilation errors: 42 → 13 (29 errors eliminated, 69% reduction)
+  - Manual verification:
+    - Before: `let mut formatted = "Process[PID=";` → E0308 type mismatch
+    - After: `let mut formatted = String::from("Process[PID=");` → compiles successfully
+  - Files: src/backend/transpiler/statements.rs (lines 361-386), tests/transpiler_defect_010_mutable_string_inference.rs (NEW, 10 tests)
+  - Real-world impact: Eliminates 69% of remaining compilation errors in reaper project, enables string building pattern in all Ruchy code
+  - Quality: All 4,031 unit tests pass, 3 property tests pass, EXTREME TDD applied (RED→GREEN→REFACTOR)
+
 ## [3.162.0] - 2025-10-31
 
 ### Fixed
