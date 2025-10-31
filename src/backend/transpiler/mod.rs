@@ -930,7 +930,7 @@ impl Transpiler {
                 modules.push(self.transpile_module_declaration(name, body)?);
             }
             ExprKind::Block(block_exprs) => {
-                self.categorize_block(block_exprs, expr, modules, statements)?;
+                self.categorize_block(block_exprs, expr, modules, statements, imports)?;
             }
             ExprKind::Trait { .. } | ExprKind::Impl { .. } => {
                 functions.push(self.transpile_type_decl_expr(expr)?);
@@ -978,13 +978,15 @@ impl Transpiler {
         expr: &Expr,
         modules: &mut Vec<TokenStream>,
         statements: &mut Vec<TokenStream>,
+        imports: &mut Vec<TokenStream>,
     ) -> Result<()> {
         // Check if this is a module-containing block from the resolver
         if self.is_module_resolver_block(block_exprs) {
             if let ExprKind::Module { name, body } = &block_exprs[0].kind {
                 modules.push(self.transpile_module_declaration(name, body)?);
             }
-            statements.push(self.transpile_expr(&block_exprs[1])?);
+            // ISSUE-103: Import should go to imports vector, not statements
+            imports.push(self.transpile_expr(&block_exprs[1])?);
         } else {
             // Regular block, treat as statement
             statements.push(self.transpile_expr(expr)?);
