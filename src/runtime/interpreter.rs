@@ -1577,6 +1577,98 @@ impl Interpreter {
                     )))
                 }
             }
+            ExprKind::Try { expr } => {
+                // Issue #97: Try operator (?) for Result unwrapping/propagation
+                // Evaluates expr, expects Result enum (Ok/Err variants)
+                // - If Ok(value), unwrap and return value
+                // - If Err(error), propagate by returning Err variant
+                let result_value = self.eval_expr(expr)?;
+
+                match &result_value {
+                    // Case 1: Direct EnumVariant construction
+                    Value::EnumVariant {
+                        enum_name,
+                        variant_name,
+                        data,
+                    } if enum_name == "Result" => {
+                        match variant_name.as_str() {
+                            "Ok" => {
+                                // Unwrap Ok value: extract first element from data
+                                if let Some(values) = data {
+                                    if let Some(value) = values.first() {
+                                        Ok(value.clone())
+                                    } else {
+                                        Err(InterpreterError::RuntimeError(
+                                            "Try operator: Ok variant has no data".to_string(),
+                                        ))
+                                    }
+                                } else {
+                                    Err(InterpreterError::RuntimeError(
+                                        "Try operator: Ok variant has no data".to_string(),
+                                    ))
+                                }
+                            }
+                            "Err" => {
+                                // Propagate Err: early return from containing function
+                                // Use the same mechanism as 'return' statements
+                                Err(InterpreterError::Return(Value::EnumVariant {
+                                    enum_name: enum_name.clone(),
+                                    variant_name: variant_name.clone(),
+                                    data: data.clone(),
+                                }))
+                            }
+                            _ => Err(InterpreterError::RuntimeError(format!(
+                                "Try operator: unexpected Result variant '{}'",
+                                variant_name
+                            ))),
+                        }
+                    }
+                    // Case 2: Object representation (function return values)
+                    // Result is represented as Object with __type="Message", type="Ok"/"Err"
+                    Value::Object(obj) if obj.get("__type").and_then(|v| {
+                        if let Value::String(s) = v { Some(s.as_ref()) } else { None }
+                    }) == Some("Message") => {
+                        // Extract the "type" field (Ok or Err)
+                        if let Some(Value::String(variant)) = obj.get("type") {
+                            match variant.as_ref() {
+                                "Ok" => {
+                                    // Unwrap Ok: extract first element from "data" array
+                                    if let Some(Value::Array(data_arr)) = obj.get("data") {
+                                        if let Some(value) = data_arr.first() {
+                                            Ok(value.clone())
+                                        } else {
+                                            Err(InterpreterError::RuntimeError(
+                                                "Try operator: Ok has empty data".to_string(),
+                                            ))
+                                        }
+                                    } else {
+                                        Err(InterpreterError::RuntimeError(
+                                            "Try operator: Ok missing data field".to_string(),
+                                        ))
+                                    }
+                                }
+                                "Err" => {
+                                    // Propagate Err: early return from containing function
+                                    // Use the same mechanism as 'return' statements
+                                    Err(InterpreterError::Return(result_value))
+                                }
+                                _ => Err(InterpreterError::RuntimeError(format!(
+                                    "Try operator: unexpected type '{}'",
+                                    variant
+                                ))),
+                            }
+                        } else {
+                            Err(InterpreterError::RuntimeError(
+                                "Try operator: Message object missing 'type' field".to_string(),
+                            ))
+                        }
+                    }
+                    _ => Err(InterpreterError::RuntimeError(format!(
+                        "Try operator expects Result enum, got: {:?}",
+                        result_value
+                    ))),
+                }
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(

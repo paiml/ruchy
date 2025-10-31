@@ -604,7 +604,9 @@ fn is_ternary_operator(state: &mut ParserState) -> bool {
     // Look ahead - if the next token after ? is not a postfix-able token,
     // it's likely a ternary operator
     if let Some((next_token, _)) = state.tokens.peek_nth(1) {
-        // These tokens indicate postfix try operator
+        // These tokens indicate postfix try operator (Issue #97)
+        // Binary operators after ? mean it's a try operator in an expression
+        // Example: get_number()? * 2 (try, then multiply)
         !matches!(
             next_token,
             Token::Dot
@@ -613,6 +615,23 @@ fn is_ternary_operator(state: &mut ParserState) -> bool {
                 | Token::RightBracket
                 | Token::RightBrace
                 | Token::Comma
+                // Issue #97: Binary operators indicate try operator, not ternary
+                | Token::Plus
+                | Token::Minus
+                | Token::Star
+                | Token::Slash
+                | Token::Percent
+                | Token::Ampersand
+                | Token::Pipe
+                | Token::Caret
+                | Token::EqualEqual
+                | Token::NotEqual
+                | Token::Less
+                | Token::Greater
+                | Token::LessEqual
+                | Token::GreaterEqual
+                | Token::LeftShift
+                | Token::RightShift
         )
     } else {
         false // At end of input, treat as try
