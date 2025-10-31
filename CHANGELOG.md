@@ -4,6 +4,15 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[ISSUE-103] ruchy compile broken - macro support (Part 1 of 2)**
+  - Fixed MacroInvocation support in compilation: println!, format!, vec! macros now transpile correctly
+  - Added ExprKind::MacroInvocation case to transpiler dispatcher (src/backend/transpiler/dispatcher.rs:461)
+  - Module imports still in progress (Part 2 - requires module resolution enhancements)
+  - Tests: 5/9 passing (all macro tests ✅, module import tests deferred ⏳)
+  - Files: src/backend/transpiler/dispatcher.rs (+2 lines), tests/issue_103_compile_macros_modules.rs (NEW, 280 lines, 9 tests)
+  - Partial fix for GitHub Issue #103 (CRITICAL severity - blocks production binary compilation)
+
 ## [3.154.0] - 2025-10-31
 
 ### Added
