@@ -4713,7 +4713,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "3.164.0"
+version = "3.165.0"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -4798,7 +4798,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-wasm"
-version = "3.163.0"
+version = "3.165.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",

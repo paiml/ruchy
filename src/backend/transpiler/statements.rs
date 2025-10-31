@@ -1165,6 +1165,112 @@ impl Transpiler {
         matches!(ty.kind, TypeKind::Reference { .. })
     }
 
+    /// DEFECT-012: Check if a type is String
+    fn is_string_type(&self, ty: &Type) -> bool {
+        use crate::frontend::ast::TypeKind;
+        matches!(&ty.kind, TypeKind::Named(name) if name == "String")
+    }
+
+    /// DEFECT-012: Check if expression body needs .to_string() conversion
+    fn body_needs_string_conversion(&self, body: &Expr) -> bool {
+        match &body.kind {
+            ExprKind::Literal(Literal::String(_)) => true,
+            ExprKind::Identifier(_) => true,  // Could be &str variable
+            ExprKind::Block(exprs) if !exprs.is_empty() => {
+                self.body_needs_string_conversion(exprs.last().unwrap())
+            }
+            ExprKind::Let { body, .. } => {
+                // Let expressions have the return value in their body field
+                self.body_needs_string_conversion(body)
+            }
+            _ => false,
+        }
+    }
+
+    /// DEFECT-012: Generate body tokens with .to_string() wrapper on last expression
+    fn generate_body_tokens_with_string_conversion(
+        &self,
+        body: &Expr,
+        is_async: bool,
+    ) -> Result<TokenStream> {
+        if is_async {
+            let mut async_transpiler = Transpiler::new();
+            async_transpiler.in_async_context = true;
+            let body_tokens = async_transpiler.transpile_expr(body)?;
+            return Ok(quote! { (#body_tokens).to_string() });
+        }
+
+        // Handle different body types
+        match &body.kind {
+            ExprKind::Block(exprs) if exprs.len() > 1 => {
+                // Multiple expressions - wrap only the LAST one with .to_string()
+                let mut statements = Vec::new();
+                for (i, expr) in exprs.iter().enumerate() {
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    let is_let = matches!(
+                        &expr.kind,
+                        ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+                    );
+
+                    if i < exprs.len() - 1 {
+                        // Not the last expression
+                        if is_let {
+                            statements.push(expr_tokens);
+                        } else {
+                            statements.push(quote! { #expr_tokens; });
+                        }
+                    } else {
+                        // Last expression - wrap with .to_string()
+                        statements.push(quote! { (#expr_tokens).to_string() });
+                    }
+                }
+                Ok(quote! { { #(#statements)* } })
+            }
+            ExprKind::Block(exprs) if exprs.len() == 1 => {
+                // Single expression block - check if it's a Let
+                match &exprs[0].kind {
+                    ExprKind::Let { name, type_annotation, value, body: let_body, is_mutable, .. } => {
+                        // Transpile let statement parts
+                        let name_ident = format_ident!("{}", name);
+                        let value_tokens = self.transpile_expr(value)?;
+                        let let_body_tokens = self.transpile_expr(let_body)?;
+
+                        let mutability = if *is_mutable {
+                            quote! { mut }
+                        } else {
+                            quote! {}
+                        };
+
+                        let type_annotation_tokens = if let Some(ty) = type_annotation {
+                            let ty_tokens = self.transpile_type(ty)?;
+                            quote! { : #ty_tokens }
+                        } else {
+                            quote! {}
+                        };
+
+                        // Wrap the let body (the final expression) with .to_string()
+                        Ok(quote! {
+                            {
+                                let #mutability #name_ident #type_annotation_tokens = #value_tokens;
+                                (#let_body_tokens).to_string()
+                            }
+                        })
+                    }
+                    _ => {
+                        // Not a Let - wrap entire expression
+                        let expr_tokens = self.transpile_expr(&exprs[0])?;
+                        Ok(quote! { (#expr_tokens).to_string() })
+                    }
+                }
+            }
+            _ => {
+                // Single expression or simple body - wrap entire body
+                let body_tokens = self.transpile_expr(body)?;
+                Ok(quote! { (#body_tokens).to_string() })
+            }
+        }
+    }
+
     /// Generate param tokens with lifetime annotations
     fn generate_param_tokens_with_lifetime(
         &self,
@@ -1276,14 +1382,23 @@ impl Transpiler {
             self.generate_param_tokens(params, body, name)?
         };
 
-        let body_tokens = self.generate_body_tokens(body, is_async)?;
-
         // Check for #[test] attribute and override return type if found
         let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
         let effective_return_type = if has_test_attribute {
             None // Test functions should have unit return type
         } else {
             return_type
+        };
+
+        // DEFECT-012 FIX: Generate body tokens with special handling for String return type
+        let body_tokens = if let Some(ret_type) = effective_return_type {
+            if self.is_string_type(ret_type) && self.body_needs_string_conversion(body) {
+                self.generate_body_tokens_with_string_conversion(body, is_async)?
+            } else {
+                self.generate_body_tokens(body, is_async)?
+            }
+        } else {
+            self.generate_body_tokens(body, is_async)?
         };
 
         let return_type_tokens = if needs_lifetime {
