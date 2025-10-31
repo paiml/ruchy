@@ -4,6 +4,21 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.161.0] - 2025-10-31
+
+### Fixed
+- **[Issue #87 / TRANSPILER-DEFECT-008] Enum declarations placed inside main() instead of top-level**
+  - Fixed enum declarations being placed inside main() function body instead of file top-level
+  - Root cause: categorize_single_expression() in mod.rs:938 was missing ExprKind::Enum case, causing enums to fall through to _ case and be categorized as statements (placed inside main())
+  - Impact: CRITICAL - Enums placed inside main() were not in scope for function signatures, causing "cannot find type" errors
+  - Example BEFORE: `fn main() { enum ConfigError {...} } fn detect() -> Result<(), ConfigError> {...}` // ConfigError not found!
+  - Example AFTER: `enum ConfigError {...} fn detect() -> Result<(), ConfigError> {...} fn main() {...}` // Works!
+  - Solution: Added ExprKind::Enum to top-level categorization (line 941): `ExprKind::Enum { .. } | ExprKind::Class { .. } | ExprKind::Actor { .. } => functions.push(...)`
+  - Tests: Created tests/transpiler_defect_008_enum_scoping.rs with 4 comprehensive tests
+  - Manual verification: Transpile shows enum at lines 1-5 (top-level), compile succeeds, binary runs correctly
+  - Files: src/backend/transpiler/mod.rs (line 941), tests/transpiler_defect_008_enum_scoping.rs (NEW, 4 tests)
+  - Real-world impact: Unblocks all Ruchy code using enums in function signatures (Issue #87 use cases)
+
 ## [3.160.0] - 2025-10-31
 
 ### Fixed
