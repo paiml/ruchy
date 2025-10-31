@@ -158,7 +158,7 @@ fn parse_nested_grouped_imports(
 ) -> Result<Expr> {
     state.tokens.advance(); // consume {
 
-    let mut imports = Vec::new();
+    let mut items = Vec::new();
 
     loop {
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
@@ -166,9 +166,9 @@ fn parse_nested_grouped_imports(
             break;
         }
 
-        // Parse grouped import item
-        let item_imports = parse_grouped_import_item(state, &base_path, start_span)?;
-        imports.extend(item_imports);
+        // ISSUE-103: Collect item names, don't append to module path
+        let identifier = parse_import_identifier(state)?;
+        items.push(identifier);
 
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
@@ -180,8 +180,15 @@ fn parse_nested_grouped_imports(
         }
     }
 
-    // Return a block containing all imports
-    Ok(Expr::new(ExprKind::Block(imports), start_span))
+    // ISSUE-103: Create single Import node with items
+    let module_path = base_path.join("::");
+    Ok(Expr::new(
+        ExprKind::Import {
+            module: module_path,
+            items: Some(items),
+        },
+        start_span,
+    ))
 }
 
 /// Parse a single item in grouped imports

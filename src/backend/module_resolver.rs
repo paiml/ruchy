@@ -262,13 +262,19 @@ impl ModuleResolver {
         // Create inline module
         let module_expr = self.create_inline_module(module, resolved_module_ast, span);
 
-        // Create use statement
-        let use_statement = self.create_use_statement(module, items, span);
-
-        Ok(Expr::new(
-            ExprKind::Block(vec![module_expr, use_statement]),
-            span,
-        ))
+        // ISSUE-103: For simple imports like `use logger`, only emit module declaration
+        // For specific imports like `use logger::{func}`, emit both module + use statement
+        if let Some(item_list) = items {
+            // Specific items imported - need use statement
+            let use_statement = self.create_use_statement(module, Some(item_list), span);
+            Ok(Expr::new(
+                ExprKind::Block(vec![module_expr, use_statement]),
+                span,
+            ))
+        } else {
+            // Simple module import - module declaration is sufficient
+            Ok(module_expr)
+        }
     }
 
     fn resolve_file_module(&mut self, _span: Span, module: &str) -> Result<()> {
