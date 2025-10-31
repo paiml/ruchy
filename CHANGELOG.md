@@ -4,6 +4,59 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.164.0] - 2025-10-31
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-011] String arguments to contains() need &str coercion**
+  - Fixed String field access/variables passed to `contains()` failing with E0277 - Pattern trait not implemented for String
+  - Root cause: `str::contains()` requires `&str` (Pattern trait), but String doesn't implement Pattern; Rust's deref coercion doesn't work for owned values
+  - Impact: CRITICAL - Pattern matching code failed to compile (3 E0277 errors in reaper project)
+  - Example BEFORE: `text.contains(cfg.pattern)` where `cfg.pattern: String` → E0277: Pattern not implemented for String
+  - Example AFTER: `text.contains(&cfg.pattern)` → compiles successfully
+  - Solution: Modified transpile_method_call() to wrap FieldAccess/Identifier arguments with & for contains() method (src/backend/transpiler/statements.rs:1542-1554)
+  - Code change:
+    ```rust
+    // DEFECT-011 FIX: For contains() method, wrap field access/identifier args with &
+    if method == "contains" && !args.is_empty() {
+        match &args[0].kind {
+            ExprKind::FieldAccess { .. } | ExprKind::Identifier(_) => {
+                return Ok(quote! { #obj_tokens.#method_ident(&#arg_tokens) });
+            }
+            _ => {} // Fall through for literals
+        }
+    }
+    ```
+  - Tests: 6 tests in tests/transpiler_defect_011_pattern_trait.rs (field access, variables, lowercase, literals, multiple contains)
+  - Real-world impact: Reaper project errors: 13 → 10 (3 E0277 eliminated, 23% reduction)
+  - Files: src/backend/transpiler/statements.rs:1542-1554, tests/transpiler_defect_011_pattern_trait.rs (NEW, 6 tests)
+
+- **[Issue #108] ruchy mutations finds 0 mutants in .ruchy files**
+  - Fixed `ruchy mutations` tool finding 0 mutants when run on .ruchy files
+  - Root cause: cargo-mutants requires Cargo project context (Cargo.toml + tests), but tool was only transpiling .ruchy → .rs without project wrapper
+  - Impact: Users couldn't validate test quality for .ruchy code with mutation testing
+  - Example BEFORE: `ruchy mutations test.ruchy` → "Found 0 mutants"
+  - Example AFTER: `ruchy mutations test.ruchy` → "Found 6 mutants to test" (with temporary Cargo project created automatically)
+  - Solution: Modified run_cargo_mutants() to create temp Cargo project for .ruchy files (transpile → create src/lib.rs + Cargo.toml → run cargo mutants → cleanup)
+  - Code change: src/bin/handlers/mod.rs:4206-4280 (Issue #108 FIX comment)
+  - Files: src/bin/handlers/mod.rs (run_cargo_mutants, transpile_ruchy_file)
+
+- **[Issue #107] ruchy lint reports false positives for enum/struct types**
+  - Fixed linter treating enum/struct type names as undefined variables
+  - Root cause: Linter's symbol table didn't track type definitions (ExprKind::Enum, ExprKind::Struct), only runtime variables
+  - Impact: 137 false positive "undefined variable" errors on enum/struct type names in real-world code
+  - Example BEFORE: `fun create_task(p: Priority) -> Task` → Error: undefined variable: Priority (false positive)
+  - Example AFTER: `fun create_task(p: Priority) -> Task` → ✓ No issues
+  - Solution: Added VarType::TypeName variant and handling for ExprKind::Enum/Struct in analyze_expr() (src/quality/linter.rs:51,558-567,728-732)
+  - Code changes:
+    - Added `VarType::TypeName` enum variant (line 51)
+    - Added `ExprKind::Enum { name, .. }` handler to register type names (lines 558-561)
+    - Added `ExprKind::Struct { name, .. }` handler to register type names (lines 563-567)
+    - Added TypeName case to skip unused check (lines 728-732)
+  - Files: src/quality/linter.rs
+
+### Changed
+- Removed unused import `std::path::PathBuf` in handlers/mod.rs
+
 ## [3.163.0] - 2025-10-31
 
 ### Fixed

@@ -4186,25 +4186,96 @@ fn handle_property_tests_single_file(
 /// * `min_coverage` - Minimum mutation coverage (0.0-1.0)
 /// * `verbose` - Enable verbose output
 ///
+/// Transpile a .ruchy file to Rust source code
+/// Complexity: 2 (Toyota Way: <10 ✓)
+fn transpile_ruchy_file(path: &Path) -> Result<String> {
+    let source = std::fs::read_to_string(path)?;
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()?;
+
+    let mut transpiler = Transpiler::new();
+    let tokens = transpiler.transpile_to_program_with_context(&ast, Some(path))?;
+
+    Ok(prettyplease::unparse(&syn::parse2(tokens)?))
+}
+
 /// # Errors
 /// Returns error if mutation coverage is below threshold
 /// Run cargo mutants on file
-/// Complexity: 3 (Toyota Way: <10 ✓)
+/// Complexity: 9 (Toyota Way: <10 ✓)
 fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::process::Output> {
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.args([
-        "mutants",
-        "--file",
-        path.to_str().unwrap(),
-        "--timeout",
-        &timeout.to_string(),
-        "--no-times",
-    ]);
+    // Issue #108 FIX: cargo-mutants requires Cargo project, not standalone files
+    // For .ruchy files: transpile + create temp Cargo project
+    // For .rs files in ruchy workspace: run directly
 
-    let output_result = cmd.output()?;
-    log_command_output(&output_result, verbose);
+    if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+        use std::fs;
 
-    Ok(output_result)
+        // Step 1: Transpile .ruchy to .rs
+        let transpiled = transpile_ruchy_file(path)?;
+
+        // Step 2: Create temporary Cargo project
+        let temp_dir = std::env::temp_dir().join(format!(
+            "ruchy_mutations_{}",
+            path.file_stem().unwrap().to_str().unwrap()
+        ));
+        fs::create_dir_all(&temp_dir)?;
+
+        // Step 3: Write Cargo.toml
+        let cargo_toml = r#"[package]
+name = "ruchy-mutations-test"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "lib"
+path = "src/lib.rs"
+"#;
+        fs::write(temp_dir.join("Cargo.toml"), cargo_toml)?;
+
+        // Step 4: Write transpiled code to src/lib.rs
+        let src_dir = temp_dir.join("src");
+        fs::create_dir_all(&src_dir)?;
+        fs::write(src_dir.join("lib.rs"), transpiled)?;
+
+        if verbose {
+            eprintln!("Created temp Cargo project at {}", temp_dir.display());
+        }
+
+        // Step 5: Run cargo mutants in temp project
+        let mut cmd = std::process::Command::new("cargo");
+        cmd.current_dir(&temp_dir)
+            .args([
+                "mutants",
+                "--timeout",
+                &timeout.to_string(),
+                "--no-times",
+            ]);
+
+        let output_result = cmd.output()?;
+        log_command_output(&output_result, verbose);
+
+        // Step 6: Cleanup temp project
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        Ok(output_result)
+    } else {
+        // For .rs files in workspace: run directly
+        let mut cmd = std::process::Command::new("cargo");
+        cmd.args([
+            "mutants",
+            "--file",
+            path.to_str().unwrap(),
+            "--timeout",
+            &timeout.to_string(),
+            "--no-times",
+        ]);
+
+        let output_result = cmd.output()?;
+        log_command_output(&output_result, verbose);
+
+        Ok(output_result)
+    }
 }
 
 /// Write JSON format mutation test report

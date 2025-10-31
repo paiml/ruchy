@@ -1538,6 +1538,21 @@ impl Transpiler {
                 return Ok(builder_tokens);
             }
         }
+
+        // DEFECT-011 FIX: For contains() method, wrap field access/identifier args with &
+        // This handles String arguments that need to be coerced to &str for Pattern trait
+        if method == "contains" && !args.is_empty() {
+            match &args[0].kind {
+                ExprKind::FieldAccess { .. } | ExprKind::Identifier(_) => {
+                    let obj_tokens = self.transpile_expr(object)?;
+                    let arg_tokens = self.transpile_expr(&args[0])?;
+                    let method_ident = format_ident!("{}", method);
+                    return Ok(quote! { #obj_tokens.#method_ident(&#arg_tokens) });
+                }
+                _ => {} // Fall through for literals and other expressions
+            }
+        }
+
         // Use the old implementation for other cases
         self.transpile_method_call_old(object, method, args)
     }
