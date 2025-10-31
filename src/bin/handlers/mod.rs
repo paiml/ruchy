@@ -842,6 +842,194 @@ pub fn handle_coverage_command(
         Ok(())
     }
 }
+
+/// Handle bench command - benchmark Ruchy code performance
+///
+/// # Arguments
+/// * `file` - The file to benchmark
+/// * `iterations` - Number of benchmark iterations
+/// * `warmup` - Number of warmup iterations
+/// * `format` - Output format (text, json, csv)
+/// * `output` - Optional output file
+/// * `verbose` - Enable verbose output
+///
+/// # Errors
+/// Returns error if file cannot be read, parsed, or executed
+pub fn handle_bench_command(
+    file: &Path,
+    iterations: usize,
+    warmup: usize,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+) -> Result<()> {
+    use std::time::Instant;
+
+    // Read and parse the file
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+
+    // Parse to validate syntax
+    let _parser = RuchyParser::new(&source);
+
+    if verbose {
+        println!("📊 Benchmarking: {}", file.display());
+        println!("🔥 Warmup: {} iterations", warmup);
+        println!("🏃 Benchmark: {} iterations", iterations);
+    }
+
+    // Warmup phase
+    if verbose && warmup > 0 {
+        println!("\n⏱️  Running warmup...");
+    }
+    for i in 0..warmup {
+        let mut repl = create_repl()?;
+        repl.eval(&source)?;
+        if verbose {
+            println!("  Warmup iteration {}/{}", i + 1, warmup);
+        }
+    }
+
+    // Benchmark phase
+    if verbose {
+        println!("\n⏱️  Running benchmark...");
+    }
+
+    let mut timings = Vec::with_capacity(iterations);
+    for i in 0..iterations {
+        let start = Instant::now();
+        let mut repl = create_repl()?;
+        repl.eval(&source)?;
+        let duration = start.elapsed();
+        timings.push(duration.as_secs_f64() * 1000.0); // Convert to milliseconds
+
+        if verbose {
+            println!("  Iteration {}/{}: {:.3} ms", i + 1, iterations, timings[i]);
+        }
+    }
+
+    // Calculate statistics
+    let min = timings.iter().copied().fold(f64::INFINITY, f64::min);
+    let max = timings.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let sum: f64 = timings.iter().sum();
+    let mean = sum / timings.len() as f64;
+
+    // Calculate standard deviation
+    let variance: f64 = timings.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / timings.len() as f64;
+    let stddev = variance.sqrt();
+
+    // Generate output based on format
+    let report = match format {
+        "json" => generate_bench_json_output(file, iterations, warmup, &timings, min, max, mean, stddev),
+        "csv" => generate_bench_csv_output(file, iterations, warmup, &timings, min, max, mean, stddev),
+        _ => generate_bench_text_output(file, iterations, warmup, &timings, min, max, mean, stddev),
+    };
+
+    // Write output
+    if let Some(output_path) = output {
+        fs::write(output_path, &report)
+            .with_context(|| format!("Failed to write output to: {}", output_path.display()))?;
+        if verbose {
+            println!("\n💾 Results saved to: {}", output_path.display());
+        }
+    } else {
+        println!("{}", report);
+    }
+
+    Ok(())
+}
+
+/// Generate text format benchmark output
+fn generate_bench_text_output(
+    file: &Path,
+    iterations: usize,
+    warmup: usize,
+    _timings: &[f64],
+    min: f64,
+    max: f64,
+    mean: f64,
+    stddev: f64,
+) -> String {
+    format!(
+        "=== Benchmark Results ===\n\
+         File: {}\n\
+         Warmup: {} iterations\n\
+         Benchmark: {} iterations\n\
+         \n\
+         Statistics:\n\
+         ├─ Min:     {:.3} ms\n\
+         ├─ Max:     {:.3} ms\n\
+         ├─ Average: {:.3} ms\n\
+         └─ StdDev:  {:.3} ms\n",
+        file.display(),
+        warmup,
+        iterations,
+        min,
+        max,
+        mean,
+        stddev
+    )
+}
+
+/// Generate JSON format benchmark output
+fn generate_bench_json_output(
+    file: &Path,
+    iterations: usize,
+    warmup: usize,
+    timings: &[f64],
+    min: f64,
+    max: f64,
+    mean: f64,
+    stddev: f64,
+) -> String {
+    format!(
+        "{{\n\
+           \"file\": \"{}\",\n\
+           \"warmup\": {},\n\
+           \"iterations\": {},\n\
+           \"timings_ms\": {:?},\n\
+           \"statistics\": {{\n\
+             \"min_ms\": {:.3},\n\
+             \"max_ms\": {:.3},\n\
+             \"mean_ms\": {:.3},\n\
+             \"stddev_ms\": {:.3}\n\
+           }}\n\
+         }}",
+        file.display(),
+        warmup,
+        iterations,
+        timings,
+        min,
+        max,
+        mean,
+        stddev
+    )
+}
+
+/// Generate CSV format benchmark output
+fn generate_bench_csv_output(
+    file: &Path,
+    iterations: usize,
+    warmup: usize,
+    _timings: &[f64],
+    min: f64,
+    max: f64,
+    mean: f64,
+    stddev: f64,
+) -> String {
+    format!(
+        "file,warmup,iterations,min_ms,max_ms,mean_ms,stddev_ms\n\
+         \"{}\",{},{},{:.3},{:.3},{:.3},{:.3}\n",
+        file.display(),
+        warmup,
+        iterations,
+        min,
+        max,
+        mean,
+        stddev
+    )
+}
+
 /// Watch and run tests on changes - delegated to refactored module
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
     handlers_modules::test::handle_test_command(
@@ -1195,6 +1383,14 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             // Note: registry parameter ignored for now - using cargo's default (crates.io)
             add::handle_add_command(&package, version.as_deref(), dev, false)
         }
+        crate::Commands::Bench {
+            file,
+            iterations,
+            warmup,
+            format,
+            output,
+            verbose,
+        } => handle_bench_command(&file, iterations, warmup, &format, output.as_deref(), verbose),
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");

@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[ISSUE-100] ruchy bench command implementation**
+  - Implemented performance benchmarking command with warmup support
+  - Features: customizable iterations, warmup runs, multiple output formats
+  - Output formats: text (default), JSON, CSV
+  - Statistics: min/max/average/stddev timing measurements
+  - File output: save results with `--output` flag
+  - Verbose mode: shows individual iteration timings
+  - 11 comprehensive tests covering all functionality
+  - Complexity: handle_bench_command: 6 (A+ standard: ≤10)
+  - Fixes GitHub Issue #100 (enhancement - user-requested feature)
+  - Files: src/bin/handlers/mod.rs (+187 lines), tests/issue_100_bench_command.rs (NEW, 191 lines, 11 tests)
+
 ## [3.153.0] - 2025-10-31
 
 ### Added
