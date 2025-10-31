@@ -788,7 +788,7 @@ impl Formatter {
             }
             ExprKind::ModuleDeclaration { name } => {
                 // ISSUE-106: External module declaration (mod name;)
-                format!("mod {};", name)
+                format!("mod {name};")
             }
             ExprKind::Import { module, items } => {
                 if let Some(item_list) = items {
