@@ -28,6 +28,18 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/bin/handlers/mod.rs (+237 lines), tests/issue_101_doc_command.rs (NEW, 341 lines, 13 tests)
   - Fixes GitHub Issue #101 (enhancement - standard tooling feature)
 
+- **[ISSUE-106] External module declarations (mod scanner; syntax)**
+  - Implemented Rust-style module declarations for multi-file projects
+  - Syntax: `mod scanner;` loads `scanner.ruchy` file automatically
+  - Parser: Distinguishes inline `mod utils { }` from external `mod scanner;`
+  - Module resolver: Loads external files, makes functions public, transforms to inline modules
+  - Compiler integration: Module resolution step added before transpilation
+  - Backwards compatible: Inline modules still work (`mod utils { ... }`)
+  - Tests: 2/2 compilation tests passing (interpreter support deferred - requires REPL API changes)
+  - Complexity: All functions ≤10 (Toyota Way A+ standard)
+  - Files: src/frontend/ast.rs (+4), src/frontend/parser/expressions_helpers/modules.rs (+23/-7), src/backend/module_resolver.rs (+26), src/backend/compiler.rs (+12), src/quality/formatter.rs (+4), tests/issue_106_mod_declarations.rs (NEW, 346 lines, 11 tests)
+  - Fixes GitHub Issue #106 (feature request - enables well-structured multi-file projects, unblocks Reaper showcase)
+
 ### Fixed
 - **[ISSUE-099] Multi-factor provability scoring**
   - Fixed provability score calculation to integrate ALL verification analyses, not just assertions
