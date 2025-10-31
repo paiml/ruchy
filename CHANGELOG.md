@@ -5,6 +5,17 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[PARSER-DEFECT-018] Dictionary literals with keyword keys in function calls**
+  - Fixed parser failing with "Expected RightBrace" when dict literals used keywords as keys
+  - Root cause: is_object_literal() only checked Token::Identifier, not keyword tokens like Token::Type
+  - Impact: CRITICAL - Blocked examples/21_concurrency.ruchy and real-world patterns like `transactions.append({ type: "deposit", amount: 100 })`
+  - Solution: Added can_be_object_key() helper to detect keywords as valid object keys
+  - Tests: 4/4 parser tests passing (dict in calls, multi-line, keywords, expressions)
+  - Library tests: 4028/4028 passing (zero regressions)
+  - Complexity: can_be_object_key() = 5 (well under A+ standard ≤10)
+  - Files: src/frontend/parser/collections.rs (+23 lines), tests/parser_defect_018_dict_in_function_call.rs (NEW, 115 lines, 4 tests)
+  - Real-world impact: Unblocks all dict literal patterns with keywords as keys
+
 - **[TRANSPILER-DEFECT-005] Namespaced types in function parameters cause panic**
   - Fixed transpiler crash: "'trace::Sampler' is not a valid Ident" when using namespaced types
   - Root cause: transpile_named_type() used format_ident! on full string containing "::"
