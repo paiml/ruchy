@@ -808,10 +808,9 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         use super::type_inference::infer_return_type_from_builtin_call;
 
-        // FIRST CHECK: Override for test functions
-        if name.starts_with("test_") {
-            return Ok(quote! {});
-        }
+        // ISSUE-103: Removed incorrect name-based test check
+        // Test functions are already handled by attribute check in transpile_function (line 1273)
+        // Name-based check caused false positives for regular functions starting with "test_"
         if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             Ok(quote! { -> #ty_tokens })
@@ -995,16 +994,13 @@ impl Transpiler {
 
     /// Compute final return type (test functions have unit type)
     /// Complexity: 1 (within Toyota Way limits)
+    /// ISSUE-103: Removed test_ prefix check - already handled by #[test] attribute check
     fn compute_final_return_type(
         &self,
-        fn_name: &proc_macro2::Ident,
+        _fn_name: &proc_macro2::Ident,
         return_type_tokens: &TokenStream,
     ) -> TokenStream {
-        if fn_name.to_string().starts_with("test_") {
-            quote! {}
-        } else {
-            return_type_tokens.clone()
-        }
+        return_type_tokens.clone()
     }
 
     /// Generate visibility token
@@ -1209,9 +1205,7 @@ impl Transpiler {
         return_type: Option<&Type>,
         body: &Expr,
     ) -> Result<TokenStream> {
-        if name.starts_with("test_") {
-            return Ok(quote! {});
-        }
+        // ISSUE-103: Removed test_ prefix check - already handled by #[test] attribute check
         if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type_with_lifetime(ty)?;
             Ok(quote! { -> #ty_tokens })

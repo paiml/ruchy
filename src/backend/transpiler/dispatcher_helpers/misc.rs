@@ -41,11 +41,13 @@ impl Transpiler {
                 Ok(Self::make_break_continue(false, label.as_ref()))
             }
             ExprKind::Return { value } => {
+                // ISSUE-103: Don't add semicolon - will be added by statement context
+                // In match arms, return is an expression and shouldn't have trailing semicolon
                 if let Some(val_expr) = value {
                     let val_tokens = self.transpile_expr(val_expr)?;
-                    Ok(quote! { return #val_tokens; })
+                    Ok(quote! { return #val_tokens })
                 } else {
-                    Ok(quote! { return; })
+                    Ok(quote! { return })
                 }
             }
             _ => unreachable!(),
