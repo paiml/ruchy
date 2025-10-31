@@ -1,6 +1,6 @@
 [package]
 name = "ruchy-wasm"
-version = "3.155.0"
+version = "3.156.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ categories = ["wasm", "compilers", "web-programming"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ruchy = { path = "..", version = "3.155.0", default-features = false, features = ["wasm-compile"] }
+ruchy = { path = "..", version = "3.156.0", default-features = false, features = ["wasm-compile"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
