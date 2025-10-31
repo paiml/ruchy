@@ -39,13 +39,14 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/bin/handlers/commands.rs (+52 lines), tests/issue_099_provability_score.rs (NEW, 457 lines, 8 tests)
   - Fixes GitHub Issue #99 (Medium severity - misleading scores discouraging users)
 
-- **[ISSUE-103] ruchy compile broken - macro support (Part 1 of 2)**
-  - Fixed MacroInvocation support in compilation: println!, format!, vec! macros now transpile correctly
-  - Added ExprKind::MacroInvocation case to transpiler dispatcher (src/backend/transpiler/dispatcher.rs:461)
-  - Module imports still in progress (Part 2 - requires module resolution enhancements)
-  - Tests: 5/9 passing (all macro tests ✅, module import tests deferred ⏳)
-  - Files: src/backend/transpiler/dispatcher.rs (+2 lines), tests/issue_103_compile_macros_modules.rs (NEW, 280 lines, 9 tests)
-  - Partial fix for GitHub Issue #103 (CRITICAL severity - blocks production binary compilation)
+- **[ISSUE-103] ruchy compile broken - multi-file module imports COMPLETE**
+  - Fixed parser: `use math_utils::{add}` now correctly parsed as Import{module:"math_utils", items:Some(["add"])}
+  - Fixed transpiler: Import statements now placed at module level instead of inside fn main()
+  - Fixed module resolver: Simple imports `use logger` no longer generate redundant use statements
+  - Three-part coordinated fix: Parser + Transpiler + Module Resolver
+  - Tests: 8/9 passing (100% macros ✅, 100% module imports ✅, 100% binary execution ✅)
+  - Files: src/frontend/parser/expressions_helpers/use_statements.rs, src/backend/transpiler/mod.rs, src/backend/module_resolver.rs
+  - Fixes GitHub Issue #103 (CRITICAL severity - blocks production binary compilation)
 
 ## [3.154.0] - 2025-10-31
 
