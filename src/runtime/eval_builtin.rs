@@ -1370,8 +1370,16 @@ fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
-            Ok(content) => Ok(Value::from_string(content)),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {e}"))),
+            Ok(content) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::from_string(content)]),
+            }),
+            Err(e) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Err".to_string(),
+                data: Some(vec![Value::from_string(e.to_string())]),
+            }),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_read() expects a string argument".to_string(),
@@ -1381,15 +1389,24 @@ fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Evaluate `fs_write()` builtin function
 /// Writes content to file
-/// Complexity: 3 (within Toyota Way limits)
+/// Returns Result enum to match Rust API (RUNTIME-096)
+/// Complexity: 4 (within Toyota Way limits)
 fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("fs_write", args, 2)?;
 
     match (&args[0], &args[1]) {
         (Value::String(path), Value::String(content)) => {
             match std::fs::write(path.as_ref(), content.as_ref()) {
-                Ok(()) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {e}"))),
+                Ok(()) => Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Ok".to_string(),
+                    data: Some(vec![Value::Nil]),
+                }),
+                Err(e) => Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Err".to_string(),
+                    data: Some(vec![Value::from_string(e.to_string())]),
+                }),
             }
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -1450,14 +1467,23 @@ fn eval_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Evaluate `fs_create_dir()` builtin function
 /// Creates directory (including parent directories)
-/// Complexity: 3 (within Toyota Way limits)
+/// Returns Result enum to match Rust API (RUNTIME-096)
+/// Complexity: 4 (within Toyota Way limits)
 fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("fs_create_dir", args, 1)?;
 
     match &args[0] {
         Value::String(path) => match std::fs::create_dir_all(path.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {e}"))),
+            Ok(()) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::Nil]),
+            }),
+            Err(e) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Err".to_string(),
+                data: Some(vec![Value::from_string(e.to_string())]),
+            }),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_create_dir() expects a string argument".to_string(),
@@ -1467,15 +1493,28 @@ fn eval_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Evaluate `fs_remove_file()` builtin function
 /// Removes a file
-/// Complexity: 3 (within Toyota Way limits)
+/// Returns Result enum to match Rust API (RUNTIME-096)
+/// Complexity: 5 (within Toyota Way limits)
 fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("fs_remove_file", args, 1)?;
 
     match &args[0] {
         Value::String(path) => match std::fs::remove_file(path.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Value::Nil), // Idempotent: OK if already deleted
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {e}"))),
+            Ok(()) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::Nil]),
+            }),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::Nil]),
+            }), // Idempotent: OK if already deleted
+            Err(e) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Err".to_string(),
+                data: Some(vec![Value::from_string(e.to_string())]),
+            }),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_remove_file() expects a string argument".to_string(),
@@ -1485,14 +1524,23 @@ fn eval_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Evaluate `fs_remove_dir()` builtin function
 /// Removes a directory
-/// Complexity: 3 (within Toyota Way limits)
+/// Returns Result enum to match Rust API (RUNTIME-096)
+/// Complexity: 4 (within Toyota Way limits)
 fn eval_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("fs_remove_dir", args, 1)?;
 
     match &args[0] {
         Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {e}"))),
+            Ok(()) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::Nil]),
+            }),
+            Err(e) => Ok(Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Err".to_string(),
+                data: Some(vec![Value::from_string(e.to_string())]),
+            }),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_remove_dir() expects a string argument".to_string(),

@@ -4,7 +4,21 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.158.0] - 2025-10-31
+
 ### Fixed
+- **[Issue #90] std::fs operations return Result enum instead of Nil (RUNTIME-096)**
+  - Fixed runtime error: "No match arm matched the value" when matching on std::fs operation results
+  - Root cause: std::fs functions (write, read, create_dir, remove_file, remove_dir) returned Value::Nil instead of Result::Ok enum variant
+  - Impact: CRITICAL - std::fs module unusable with pattern matching (all error handling failed)
+  - Solution: Changed 5 std::fs functions to return Value::EnumVariant with enum_name: "Result", variant_name: "Ok"/"Err"
+  - Tests: 4/4 Issue #90 tests passing (write_basic, read_to_string, exists, with_result_handling)
+  - Property tests: 2 property tests with 200+ random inputs passing (NEVER panics, ALWAYS matchable)
+  - Library tests: 4028/4028 passing (zero regressions)
+  - Complexity: eval_fs_write/read/create_dir/remove_dir = 4-5 (within Toyota Way limits ≤10)
+  - Files: src/runtime/eval_builtin.rs (~50 lines changed across 5 functions), tests/issue_090_std_fs_runtime.rs (NEW, 196 lines, 4 tests + 2 property tests)
+  - Real-world impact: std::fs module now fully functional with Rust-style Result error handling
+
 - **[PARSER-DEFECT-018] Dictionary literals with keyword keys in function calls**
   - Fixed parser failing with "Expected RightBrace" when dict literals used keywords as keys
   - Root cause: is_object_literal() only checked Token::Identifier, not keyword tokens like Token::Type
