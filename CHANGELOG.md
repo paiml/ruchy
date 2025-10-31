@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[TRANSPILER-DEFECT-005] Namespaced types in function parameters cause panic**
+  - Fixed transpiler crash: "'trace::Sampler' is not a valid Ident" when using namespaced types
+  - Root cause: transpile_named_type() used format_ident! on full string containing "::"
+  - Impact: CRITICAL - Could not use std::Result, std::Option, or any namespaced types in parameters/return types
+  - Solution: Split "::" paths into segments, build with `quote! { #(#segments)::* }`
+  - Tests: 4/4 transpiler tests passing (std::result::Result, std::option::Option, MyModule::MyType, Vec<T>)
+  - Library tests: 4028/4028 passing (zero regressions)
+  - Complexity: transpile_named_type() remains ≤5 (well under A+ standard ≤10)
+  - Files: src/backend/transpiler/types.rs (+8 lines), tests/transpiler_defect_005_namespaced_types.rs (NEW, 126 lines, 4 tests)
+  - Real-world impact: Unblocks 32_logging_monitoring.ruchy and similar complex examples
+
 ## [3.155.0] - 2025-10-31
 
 ### Added
