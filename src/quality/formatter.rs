@@ -786,6 +786,10 @@ impl Formatter {
             ExprKind::Module { name, body } => {
                 format!("mod {} {}", name, self.format_expr(body, indent))
             }
+            ExprKind::ModuleDeclaration { name } => {
+                // ISSUE-106: External module declaration (mod name;)
+                format!("mod {};", name)
+            }
             ExprKind::Import { module, items } => {
                 if let Some(item_list) = items {
                     format!("import {}::{{{}}}", module, item_list.join(", "))

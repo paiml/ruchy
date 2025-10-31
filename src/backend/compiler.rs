@@ -130,10 +130,23 @@ pub fn compile_source_to_binary_with_context(
     let needs_json = uses_json(&ast);
     let needs_http = uses_http(&ast);
 
+    // ISSUE-106: Resolve module declarations (mod name;) before transpilation
+    let resolved_ast = if let Some(path) = source_path {
+        use crate::backend::module_resolver::ModuleResolver;
+        let mut resolver = ModuleResolver::new();
+        // Add the source file's directory to the module search path
+        if let Some(parent_dir) = path.parent() {
+            resolver.add_search_path(parent_dir);
+        }
+        resolver.resolve_imports(ast).compile_context("resolve module declarations")?
+    } else {
+        ast
+    };
+
     // Transpile with file context for module resolution (ISSUE-103)
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler
-        .transpile_to_program_with_context(&ast, source_path)
+        .transpile_to_program_with_context(&resolved_ast, source_path)
         .compile_context("transpile to Rust")?;
 
     if needs_polars || needs_json || needs_http {
