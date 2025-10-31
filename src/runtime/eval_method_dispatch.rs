@@ -228,6 +228,28 @@ fn eval_object_method(
             ))),
         }
     } else {
+        // Issue #96: Fallback for module functions (std::env, std::fs, etc.)
+        // Module objects contain builtin string markers as field values
+        // Example: env.args() where env.args = "__builtin_env_args__"
+        if let Some(Value::String(builtin_marker)) = obj.get(method) {
+            // Check if this is a builtin function marker
+            if builtin_marker.starts_with("__builtin_") {
+                // Dispatch to builtin function with args
+                // Use eval_builtin to handle the call
+                match crate::runtime::eval_builtin::eval_builtin_function(
+                    builtin_marker,
+                    arg_values,
+                )? {
+                    Some(value) => return Ok(value),
+                    None => {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Unknown builtin function: {}", builtin_marker
+                        )))
+                    }
+                }
+            }
+        }
+
         Err(InterpreterError::RuntimeError(
             "Object is missing __type marker".to_string()
         ))

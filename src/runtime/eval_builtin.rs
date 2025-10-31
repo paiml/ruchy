@@ -1234,18 +1234,34 @@ fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Evaluate `env_var()` builtin function
-/// Returns environment variable value by key
-/// Complexity: 3 (within Toyota Way limits)
+/// Returns Result enum: Ok(value) or Err(NotFound)
+/// Issue #96: Match Rust std::env::var() API (returns Result)
+/// Complexity: 5 (within Toyota Way limits)
 fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("env_var", args, 1)?;
 
     match &args[0] {
-        Value::String(key) => match std::env::var(key.as_ref()) {
-            Ok(val) => Ok(Value::from_string(val)),
-            Err(_) => Err(InterpreterError::RuntimeError(
-                format!("Environment variable '{key}' not found"),
-            )),
-        },
+        Value::String(key) => {
+            // Return Result enum to match Rust API
+            match std::env::var(key.as_ref()) {
+                Ok(val) => {
+                    // Ok(value)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::from_string(val)]),
+                    })
+                }
+                Err(_) => {
+                    // Err(NotFound)
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Err".to_string(),
+                        data: Some(vec![Value::from_string("NotFound".to_string())]),
+                    })
+                }
+            }
+        }
         _ => Err(InterpreterError::RuntimeError(
             "env_var() expects a string argument".to_string(),
         )),

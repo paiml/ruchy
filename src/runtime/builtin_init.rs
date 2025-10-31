@@ -486,10 +486,11 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     fs_module.insert("metadata".to_string(), Value::from_string("__builtin_fs_metadata__".to_string()));
     fs_module.insert("read_dir".to_string(), Value::from_string("__builtin_fs_read_dir__".to_string()));
 
-    // Create env module object (Issue #92)
+    // Create env module object (Issue #92, Issue #96)
     // Environment access with Rust std::env API compatibility
     let mut env_module = HashMap::new();
     env_module.insert("args".to_string(), Value::from_string("__builtin_env_args__".to_string()));
+    env_module.insert("var".to_string(), Value::from_string("__builtin_env_var__".to_string()));
 
     // Create std namespace object
     let mut std_namespace = HashMap::new();
