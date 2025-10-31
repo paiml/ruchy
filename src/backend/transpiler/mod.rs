@@ -938,7 +938,7 @@ impl Transpiler {
             ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
                 functions.push(self.transpile_struct_expr(expr)?);
             }
-            ExprKind::Class { .. } | ExprKind::Actor { .. } => {
+            ExprKind::Enum { .. } | ExprKind::Class { .. } | ExprKind::Actor { .. } => {
                 functions.push(self.transpile_expr(expr)?);
             }
             ExprKind::Import { .. }
