@@ -61,7 +61,7 @@ fn test_runtime_002_struct_field_access_y() {
 
 /// Test 4: Struct value semantics (copy on assignment)
 #[test]
-#[ignore = RED: Will fail until GREEN phase
+#[ignore = "RED: Will fail until GREEN phase"]
 fn test_runtime_002_struct_value_semantics_copy() {
     ruchy_cmd()
         .arg("-e")
@@ -147,7 +147,7 @@ mod property_tests {
     /// Property test: Struct field access always returns the correct value
     /// Validates: Field access preserves values across any valid integers
     #[test]
-    #[ignore = Run manually: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run manually: cargo test property_tests -- --ignored --nocapture"]
     fn prop_struct_field_access_preserves_values() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(

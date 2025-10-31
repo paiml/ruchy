@@ -41,7 +41,7 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::Path
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long for regular CI
+#[ignore = "Fuzz testing takes too long for regular CI"]
 fn cli_fuzz_valid_program_runs() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\n");
@@ -100,7 +100,7 @@ fn cli_fuzz_syntax_error_fails() {
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_custom_iterations() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "iter_test.ruchy", "let x = 42\n");
@@ -133,7 +133,7 @@ fn cli_fuzz_invalid_iterations_format() {
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_custom_timeout() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "timeout_test.ruchy", "let x = 42\n");
@@ -168,7 +168,7 @@ fn cli_fuzz_invalid_timeout_format() {
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_text_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "text_test.ruchy", "let x = 42\n");
@@ -197,7 +197,7 @@ fn cli_fuzz_text_format() {
 }
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_json_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "json_test.ruchy", "let x = 42\n");
@@ -229,7 +229,7 @@ fn cli_fuzz_json_format() {
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_output_to_file() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
@@ -287,7 +287,7 @@ fn cli_fuzz_syntax_error_writes_stderr() {
 // ============================================================================
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
@@ -322,7 +322,7 @@ fn cli_fuzz_empty_file_fails() {
 }
 
 #[test]
-#[ignore = Fuzz testing takes too long
+#[ignore = "Fuzz testing takes too long"]
 fn cli_fuzz_complex_program() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
@@ -369,7 +369,7 @@ fn cli_fuzz_help_flag() {
 // ============================================================================
 
 #[test]
-#[ignore = Edge case testing
+#[ignore = "Edge case testing"]
 fn cli_fuzz_zero_iterations() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "zero_iter.ruchy", "let x = 42\n");
@@ -385,7 +385,7 @@ fn cli_fuzz_zero_iterations() {
 }
 
 #[test]
-#[ignore = Edge case testing
+#[ignore = "Edge case testing"]
 fn cli_fuzz_very_large_iterations() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "large_iter.ruchy", "let x = 42\n");

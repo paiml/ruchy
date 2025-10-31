@@ -10,7 +10,7 @@
 use assert_cmd::Command;
 
 #[test]
-#[ignore = RED phase: Will hang indefinitely
+#[ignore = "RED phase: Will hang indefinitely"]
 fn test_runtime_090_01_command_output_simple() {
     // Minimal reproduction: Case 1 from Issue #75
     let ruchy_script = r#"
@@ -45,7 +45,7 @@ println("Done!")
 }
 
 #[test]
-#[ignore = RED phase: Will hang indefinitely
+#[ignore = "RED phase: Will hang indefinitely"]
 fn test_runtime_090_02_command_output_with_args() {
     // Case 2 from Issue #75: Command with arguments
     let ruchy_script = r#"
@@ -79,7 +79,7 @@ println("Done!")
 }
 
 #[test]
-#[ignore = RED phase: Will hang indefinitely
+#[ignore = "RED phase: Will hang indefinitely"]
 fn test_runtime_090_03_command_output_in_function() {
     // Case 3 from Issue #75: Command in function wrapper
     let ruchy_script = r#"
@@ -118,7 +118,7 @@ println("Done!")
 }
 
 #[test]
-#[ignore = RED phase: Will hang indefinitely
+#[ignore = "RED phase: Will hang indefinitely"]
 fn test_runtime_090_04_command_output_full_conversion() {
     // Case 4 from Issue #75: Full system-command.ts conversion (simplified)
     let ruchy_script = r#"

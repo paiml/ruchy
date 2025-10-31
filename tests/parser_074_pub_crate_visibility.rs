@@ -146,7 +146,7 @@ println("{}", config.timeout)
 
 // Test 7: pub(crate) in tuple struct - if supported
 #[test]
-#[ignore = May not be supported initially
+#[ignore = "May not be supported initially"]
 fn test_parser_074_tuple_struct_visibility() {
     let code = r#"
 struct Point(pub(crate) f64, pub(crate) f64)
