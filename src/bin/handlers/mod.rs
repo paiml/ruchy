@@ -336,6 +336,10 @@ pub fn handle_run_command(file: &Path, verbose: bool, vm_mode: VmMode) -> Result
         }
     };
 
+    // TODO ISSUE-106: Add module resolution for interpreter path
+    // Currently, mod declarations work for compilation but not interpretation
+    // The REPL API needs to support AST-based evaluation for this to work cleanly
+
     match vm_mode {
         VmMode::Ast => {
             // CLI-UNIFY-002: Use interpreter (like handle_file_execution), not compiler

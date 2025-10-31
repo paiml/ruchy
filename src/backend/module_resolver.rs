@@ -125,6 +125,10 @@ impl ModuleResolver {
             ExprKind::Module { name, body } => {
                 self.resolve_module_expr(name.clone(), body.as_ref().clone(), expr.span)
             }
+            ExprKind::ModuleDeclaration { name } => {
+                // ISSUE-106: Load external module file and transform to inline module
+                self.resolve_module_declaration(name.clone(), expr.span)
+            }
             ExprKind::Function {
                 name,
                 type_params,
@@ -414,6 +418,34 @@ impl ModuleResolver {
             span,
         ))
     }
+
+    /// Resolve external module declaration (ISSUE-106)
+    ///
+    /// Loads an external module file and transforms it into an inline module.
+    /// For `mod scanner;`, this loads `scanner.ruchy` and returns `mod scanner { ... }`
+    fn resolve_module_declaration(&mut self, name: String, span: Span) -> Result<Expr> {
+        // Load the external module file
+        let parsed_module = self
+            .module_loader
+            .load_module(&name)
+            .module_context("resolve module declaration", &name)?;
+
+        // Recursively resolve imports in the loaded module
+        let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
+
+        // ISSUE-106: Make all functions in loaded module public (same as use imports)
+        let public_ast = self.make_functions_public(resolved_module_ast);
+
+        // Transform to inline module
+        Ok(Expr::new(
+            ExprKind::Module {
+                name,
+                body: Box::new(public_ast),
+            },
+            span,
+        ))
+    }
+
     /// Resolve function expressions
     fn resolve_function_expr(
         &mut self,

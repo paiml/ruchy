@@ -708,6 +708,11 @@ pub enum ExprKind {
         name: String,
         body: Box<Expr>,
     },
+    /// ISSUE-106: External module declaration (mod name;)
+    /// Represents a module that should be loaded from an external file
+    ModuleDeclaration {
+        name: String,
+    },
     Break {
         label: Option<String>,
         value: Option<Box<Expr>>,

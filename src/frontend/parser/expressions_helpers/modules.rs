@@ -33,9 +33,11 @@ use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 
-/// Parse module declaration: mod name { body }
+/// Parse module declaration: mod name { body } or mod name;
 ///
-/// Syntax: `mod name { body }` or `module name { body }`
+/// Syntax:
+/// - Inline module: `mod name { body }` or `module name { body }`
+/// - External module: `mod name;` (ISSUE-106)
 pub(in crate::frontend::parser) fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
     // Accept both 'mod' and 'module' keywords
     let start_span = if matches!(state.tokens.peek(), Some((Token::Mod, _))) {
@@ -57,10 +59,22 @@ pub(in crate::frontend::parser) fn parse_module_declaration(state: &mut ParserSt
         }
         _ => bail!("Expected module name after 'mod' or 'module'"),
     };
-    // Parse module body with visibility support
-    state.tokens.expect(&Token::LeftBrace)?;
-    let body = Box::new(parse_module_body(state)?);
-    Ok(Expr::new(ExprKind::Module { name, body }, start_span))
+
+    // ISSUE-106: Check for semicolon (external module) or left brace (inline module)
+    match state.tokens.peek() {
+        Some((Token::Semicolon, _)) => {
+            // External module declaration: mod name;
+            state.tokens.advance(); // consume semicolon
+            Ok(Expr::new(ExprKind::ModuleDeclaration { name }, start_span))
+        }
+        Some((Token::LeftBrace, _)) => {
+            // Inline module: mod name { body }
+            state.tokens.advance(); // consume left brace
+            let body = Box::new(parse_module_body(state)?);
+            Ok(Expr::new(ExprKind::Module { name, body }, start_span))
+        }
+        _ => bail!("Expected '{{' or ';' after module name"),
+    }
 }
 
 /// Parse module body with support for visibility modifiers (pub)
