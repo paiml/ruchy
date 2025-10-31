@@ -43,9 +43,18 @@ impl Transpiler {
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else {
-                    // Nested struct field access like rect.top_left.x - use . syntax
+                    // Nested struct field access like rect.top_left.x or o.status.success
+                    // TYPE-INFERENCE-001: Check for known methods like .success()
+                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
                     let field_ident = format_ident!("{}", field);
-                    Ok(quote! { #obj_tokens.#field_ident })
+
+                    if known_methods.contains(&field) {
+                        // Known method - add () for method call
+                        Ok(quote! { #obj_tokens.#field_ident() })
+                    } else {
+                        // Regular field access
+                        Ok(quote! { #obj_tokens.#field_ident })
+                    }
                 }
             }
             ExprKind::Identifier(name) if name.contains("::") => {
@@ -79,9 +88,18 @@ impl Transpiler {
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else {
-                    // Regular struct field access
+                    // TYPE-INFERENCE-001: Known stdlib methods need () for method calls
+                    // ExitStatus::success, Path::exists, String::is_empty, etc.
+                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
                     let field_ident = format_ident!("{}", field);
-                    Ok(quote! { #obj_tokens.#field_ident })
+
+                    if known_methods.contains(&field) {
+                        // Known method - add () for method call
+                        Ok(quote! { #obj_tokens.#field_ident() })
+                    } else {
+                        // Regular struct field access
+                        Ok(quote! { #obj_tokens.#field_ident })
+                    }
                 }
             }
         }
