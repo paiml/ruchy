@@ -2,13 +2,71 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.84"
+  version: "3.85"
   last_updated: "2025-10-31"
-  current_sprint: "✅ COMPLETE - 3 Critical Compilation Blockers Fixed"
-  latest_release: "v3.160.0"
-  latest_commit_message: "[MODULE-RESOLUTION-001, TRANSPILER-DEFECT-007, TYPE-INFERENCE-001] Fix 3 critical compilation blockers"
-  latest_commit_hash: "075a59d6"
-  next_phase: "🎯 READY - Issue #87 (Additional Language Features) OR v4.0.0 Planning"
+  current_sprint: "✅ COMPLETE - Issue #87 (Enum scoping fix)"
+  latest_release: "v3.161.0"
+  latest_commit_message: "[Issue #87 / TRANSPILER-DEFECT-008] Fix enum declarations placed inside main()"
+  latest_commit_hash: "7cf203f4"
+  next_phase: "🎯 READY - v4.0.0 Planning OR Additional Language Features"
+
+  session_summary_2025_10_31_issue_087_enum_scoping:
+    date: "2025-10-31"
+    accomplishments:
+      - "✅ ISSUE #87 FIXED - Enum declarations placed at top-level (not inside main)"
+      - "✅ v3.161.0 RELEASED - Both ruchy and ruchy-wasm published to crates.io"
+      - "🎯 EXTREME TDD: RED → GENCHI GENBUTSU → GREEN → REFACTOR"
+      - "📊 Tests: 4 comprehensive enum scoping tests + manual verification"
+      - "🚀 Real-world impact: Enums in function signatures now work correctly"
+    defect:
+      id: "Issue #87 / TRANSPILER-DEFECT-008"
+      severity: "CRITICAL"
+      status: "FIXED"
+    implementation:
+      problem: "Enum declarations placed inside main() body instead of file top-level, causing 'cannot find type' errors"
+      root_cause: "categorize_single_expression() missing ExprKind::Enum case, enums fell through to _ and categorized as statements"
+      impact: "Enums not in scope for function signatures - real-world code blocked"
+      extreme_tdd_phases:
+        red: "Created minimal failing test - enum inside main() causing type not found"
+        genchi_genbutsu: "Examined mod.rs:938-951, found ExprKind::Enum missing from categorization"
+        green: "Added ExprKind::Enum to functions vector (line 941), enum now at top-level"
+        refactor: "Created 4 comprehensive tests, verified transpile/compile/run end-to-end"
+      solution:
+        - "src/backend/transpiler/mod.rs:941 - Added ExprKind::Enum to top-level categorization"
+        - "tests/transpiler_defect_008_enum_scoping.rs - 4 tests for enum placement"
+      files_changed:
+        - "src/backend/transpiler/mod.rs: 1 line added (ExprKind::Enum case)"
+        - "tests/transpiler_defect_008_enum_scoping.rs: NEW (165 lines, 4 tests)"
+    test_results:
+      manual_verification:
+        transpile: "✅ Enum at lines 1-5 (top-level, before functions)"
+        compile: "✅ Rust compiles successfully"
+        run: "✅ Binary executes correctly (Got: 42)"
+      regression_tests:
+        total: 4
+        tests:
+          - "test_transpiler_defect_008_enum_at_top_level - Enum before main"
+          - "test_transpiler_defect_008_enum_used_in_function_signature - Compiles successfully"
+          - "test_transpiler_defect_008_multiple_enums_at_top_level - Multiple enums top-level"
+          - "test_transpiler_defect_008_enum_with_struct_fields - Enum + struct both top-level"
+    toyota_way_principles:
+      extreme_tdd: "RED test → GENCHI GENBUTSU root cause → GREEN minimal fix → REFACTOR tests"
+      genchi_genbutsu: "Examined actual transpiler code to find missing categorization"
+      root_cause_fix: "Fixed categorization logic, not transpiled output"
+      quantify: "Verified: transpile shows correct placement, compile succeeds, binary runs"
+    release:
+      version: "v3.161.0"
+      crates_io:
+        - "ruchy v3.161.0 - Published ✅"
+        - "ruchy-wasm v3.161.0 - Published ✅"
+      github:
+        - "Commit: 7cf203f4"
+        - "Pushed to main"
+        - "Closes: Issue #87"
+    real_world_impact:
+      - "Enum declarations now work like Rust (top-level by default)"
+      - "Enums usable in function signatures without errors"
+      - "Unblocks all real-world Ruchy code using enums in type annotations"
 
   session_summary_2025_10_31_compilation_blockers:
     date: "2025-10-31"
