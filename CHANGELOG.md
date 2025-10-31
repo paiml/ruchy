@@ -17,6 +17,16 @@ All notable changes to the Ruchy programming language will be documented in this
   - Fixes GitHub Issue #101 (enhancement - standard tooling feature)
 
 ### Fixed
+- **[ISSUE-099] Multi-factor provability scoring**
+  - Fixed provability score calculation to integrate ALL verification analyses, not just assertions
+  - Scoring model: Purity (20pts) + Safety (20pts) + Termination (20pts) + Bounds (20pts) + Assertions (20pts) = 100pts max
+  - Assertion scoring: 1 assertion = 10pts, 2 = 15pts, 3+ = 20pts (generous weighting)
+  - AST traversal fixes: Added Function, Let, and MacroInvocation handling to count assertions
+  - Pure code without assertions now scores 80/100 (not 0.0/100 ❌)
+  - Tests: 8/8 passing (100% success rate)
+  - Files: src/bin/handlers/commands.rs (+52 lines), tests/issue_099_provability_score.rs (NEW, 457 lines, 8 tests)
+  - Fixes GitHub Issue #99 (Medium severity - misleading scores discouraging users)
+
 - **[ISSUE-103] ruchy compile broken - macro support (Part 1 of 2)**
   - Fixed MacroInvocation support in compilation: println!, format!, vec! macros now transpile correctly
   - Added ExprKind::MacroInvocation case to transpiler dispatcher (src/backend/transpiler/dispatcher.rs:461)
