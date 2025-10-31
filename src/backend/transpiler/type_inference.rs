@@ -259,6 +259,8 @@ fn check_call_for_return_type(func: &Expr) -> Option<&'static str> {
 pub fn infer_return_type_from_builtin_call(expr: &Expr) -> Option<&'static str> {
     match &expr.kind {
         ExprKind::Call { func, .. } => check_call_for_return_type(func),
+        // ISSUE-103 FIX: Handle macro invocations (println!, format!, etc.)
+        ExprKind::MacroInvocation { name, .. } => get_builtin_return_type(name),
         ExprKind::Block(exprs) => exprs.last().and_then(infer_return_type_from_builtin_call),
         ExprKind::If { then_branch, .. } => infer_return_type_from_builtin_call(then_branch),
         ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {

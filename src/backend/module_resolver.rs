@@ -669,33 +669,24 @@ mod tests {
         );
         // Resolve the import
         let resolved_expr = resolver.resolve_imports(import_expr)?;
-        // Should be converted to a Block with Module declaration and use statement
+        // ISSUE-103: Simple wildcard imports (items=None) now return just Module, not Block
+        // For specific imports (items=Some), it returns Block([Module, Import])
         match resolved_expr.kind {
-            ExprKind::Block(exprs) => {
-                assert_eq!(exprs.len(), 2);
-                // First should be Module declaration
-                match &exprs[0].kind {
-                    ExprKind::Module { name, .. } => {
-                        assert_eq!(name, "math");
+            ExprKind::Module { name, body } => {
+                // Wildcard import returns inline module only
+                assert_eq!(name, "math");
+                // Verify the module body contains the function
+                match &body.kind {
+                    ExprKind::Function { name: func_name, .. } => {
+                        assert_eq!(func_name, "add");
                     }
-                    _ => unreachable!(
-                        "Expected first element to be Module, got {:?}",
-                        exprs[0].kind
-                    ),
-                }
-                // Second should be use statement
-                match &exprs[1].kind {
-                    ExprKind::Import { module, items } => {
-                        assert_eq!(module, "math");
-                        assert!(items.is_none()); // Wildcard import
-                    }
-                    _ => unreachable!(
-                        "Expected second element to be Import, got {:?}",
-                        exprs[1].kind
-                    ),
+                    _ => panic!("Expected function in module body, got {:?}", body.kind),
                 }
             }
-            _ => unreachable!("Expected Block expression, got {:?}", resolved_expr.kind),
+            _ => panic!(
+                "Expected Module expression for wildcard import, got {:?}",
+                resolved_expr.kind
+            ),
         }
         Ok(())
     }

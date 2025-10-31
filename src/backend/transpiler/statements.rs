@@ -669,6 +669,9 @@ impl Transpiler {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => true,
             // Void function calls
             crate::frontend::ast::ExprKind::Call { .. } if self.is_void_function_call(expr) => true,
+            // ISSUE-103 FIX: Check macro invocations (println!, etc.)
+            crate::frontend::ast::ExprKind::MacroInvocation { name, .. }
+                if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") => true,
             // Assignments are void
             crate::frontend::ast::ExprKind::Assign { .. }
             | crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
