@@ -86,8 +86,16 @@ impl Transpiler {
             "()" => quote! { () },       // Unit type
             "_" | "Any" => quote! { _ }, // Use Rust type inference
             _ => {
-                let type_ident = format_ident!("{}", name);
-                quote! { #type_ident }
+                // TRANSPILER-DEFECT-005: Handle namespaced types (e.g., trace::Sampler, std::io::Error)
+                if name.contains("::") {
+                    // Split into path segments and build path token
+                    let segments: Vec<_> = name.split("::").map(|seg| format_ident!("{}", seg)).collect();
+                    quote! { #(#segments)::* }
+                } else {
+                    // Simple identifier
+                    let type_ident = format_ident!("{}", name);
+                    quote! { #type_ident }
+                }
             }
         };
         Ok(rust_type)
