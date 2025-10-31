@@ -132,8 +132,12 @@ fn transpile_single_file(ruchy_file: &Path, source_dir: &Path, output_dir: &Path
         .transpile_to_program(&ast)
         .with_context(|| format!("Transpilation failed for file: {}", ruchy_file.display()))?;
 
-    // Format the Rust code
-    let rust_code = rust_tokens.to_string();
+    // Format the Rust code with prettyplease for proper multi-line output
+    // TRANSPILER-DEFECT-009: build_transpiler was outputting single-line code
+    // Solution: Use prettyplease like the CLI does
+    let syntax_tree: syn::File = syn::parse2(rust_tokens)
+        .with_context(|| format!("Failed to parse generated tokens as Rust syntax for file: {}", ruchy_file.display()))?;
+    let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Ensure output directory exists
     if let Some(parent) = rs_file.parent() {
@@ -214,5 +218,177 @@ mod tests {
         let should_skip = should_skip_transpilation(&ruchy_file, &rs_file).expect("Should succeed");
 
         assert!(should_skip, "Should skip when .rs is newer than .ruchy");
+    }
+
+    #[test]
+    fn test_transpiler_defect_009_formatted_output() {
+        // TRANSPILER-DEFECT-009: build_transpiler should output formatted multi-line code
+        // RED phase test - this will fail until we add prettyplease formatting
+
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let src_dir = temp_dir.path().join("src");
+        fs::create_dir(&src_dir).expect("Failed to create src dir");
+
+        // Create test file with enum and struct
+        let ruchy_file = src_dir.join("test.ruchy");
+        fs::write(
+            &ruchy_file,
+            r#"
+enum Priority {
+    High,
+    Medium,
+    Low,
+}
+
+struct Task {
+    name: String,
+    priority: Priority,
+}
+
+fun main() {
+    println!("Test");
+}
+"#,
+        )
+        .expect("Failed to write test file");
+
+        // Transpile
+        transpile_all(
+            src_dir.to_str().unwrap(),
+            "**/*.ruchy",
+            src_dir.to_str().unwrap(),
+        )
+        .expect("Transpilation should succeed");
+
+        // Read generated .rs file
+        let rs_file = src_dir.join("test.rs");
+        let generated_code = fs::read_to_string(&rs_file).expect("Failed to read generated file");
+
+        // Verify: Should NOT be single-line
+        let line_count = generated_code.lines().count();
+        assert!(
+            line_count > 5,
+            "Generated code should be multi-line (got {} lines), not single-line",
+            line_count
+        );
+
+        // Verify: Enum should appear at top
+        let first_100_chars = &generated_code[..100.min(generated_code.len())];
+        assert!(
+            first_100_chars.contains("enum") || generated_code.lines().nth(0).unwrap_or("").contains("#[derive"),
+            "Enum declaration should appear near the top of file (first 100 chars: '{}')",
+            first_100_chars
+        );
+
+        // Verify: Should be properly formatted (check for newlines after braces)
+        assert!(
+            generated_code.contains("}\n") || generated_code.contains("}\r\n"),
+            "Code should have newlines after closing braces (proper formatting)"
+        );
+    }
+
+    // Property-based tests for EXTREME TDD
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn property_transpiled_code_always_multiline(
+            enum_count in 1usize..5,
+            struct_count in 0usize..5
+        ) {
+            // Property: ALL transpiled code must be multi-line (not single-line)
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let src_dir = temp_dir.path().join("src");
+            fs::create_dir(&src_dir).expect("Failed to create src dir");
+
+            // Generate test file with varying enums/structs
+            let mut code = String::new();
+            for i in 0..enum_count {
+                code.push_str(&format!("enum Enum{} {{ Variant1, Variant2 }}\n", i));
+            }
+            for i in 0..struct_count {
+                code.push_str(&format!("struct Struct{} {{ field: i32 }}\n", i));
+            }
+            code.push_str("fun main() { println!(\"Test\"); }");
+
+            let ruchy_file = src_dir.join("test.ruchy");
+            fs::write(&ruchy_file, &code).expect("Failed to write test file");
+
+            // Transpile
+            transpile_all(
+                src_dir.to_str().unwrap(),
+                "**/*.ruchy",
+                src_dir.to_str().unwrap(),
+            )
+            .expect("Transpilation should succeed");
+
+            // Verify property: MUST be multi-line
+            let rs_file = src_dir.join("test.rs");
+            let generated_code = fs::read_to_string(&rs_file).expect("Failed to read generated file");
+            let line_count = generated_code.lines().count();
+
+            prop_assert!(
+                line_count > 5,
+                "Generated code MUST be multi-line (got {} lines)",
+                line_count
+            );
+
+            // Property: MUST have newlines (not single-line)
+            prop_assert!(
+                generated_code.contains('\n'),
+                "Generated code MUST contain newlines"
+            );
+        }
+
+        #[test]
+        fn property_enums_always_at_top(
+            enum_name in "[A-Z][a-z]{2,8}",
+            variant_count in 1usize..5
+        ) {
+            // Property: Enum declarations ALWAYS appear before main()
+            let temp_dir = TempDir::new().expect("Failed to create temp dir");
+            let src_dir = temp_dir.path().join("src");
+            fs::create_dir(&src_dir).expect("Failed to create src dir");
+
+            // Generate enum
+            let mut code = format!("enum {} {{\n", enum_name);
+            for i in 0..variant_count {
+                code.push_str(&format!("    Variant{},\n", i));
+            }
+            code.push_str("}\n\nfun main() { println!(\"Test\"); }");
+
+            let ruchy_file = src_dir.join("test.ruchy");
+            fs::write(&ruchy_file, &code).expect("Failed to write test file");
+
+            // Transpile
+            transpile_all(
+                src_dir.to_str().unwrap(),
+                "**/*.ruchy",
+                src_dir.to_str().unwrap(),
+            )
+            .expect("Transpilation should succeed");
+
+            // Verify property: enum BEFORE main()
+            let rs_file = src_dir.join("test.rs");
+            let generated_code = fs::read_to_string(&rs_file).expect("Failed to read generated file");
+
+            let enum_pos = generated_code.find(&format!("enum {}", enum_name));
+            let main_pos = generated_code.find("fn main()");
+
+            prop_assert!(
+                enum_pos.is_some() && main_pos.is_some(),
+                "Both enum and main() must exist in generated code"
+            );
+
+            let enum_idx = enum_pos.unwrap();
+            let main_idx = main_pos.unwrap();
+
+            prop_assert!(
+                enum_idx < main_idx,
+                "Enum declaration MUST appear before main() (enum at {}, main at {})",
+                enum_idx,
+                main_idx
+            );
+        }
     }
 }
