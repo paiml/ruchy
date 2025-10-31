@@ -68,7 +68,7 @@ impl Default for CompileOptions {
 pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result<PathBuf> {
     // Read source file
     let source = fs::read_to_string(source_path).file_context("read", source_path)?;
-    compile_source_to_binary(&source, options)
+    compile_source_to_binary_with_context(&source, options, Some(source_path))
 }
 /// Compile Ruchy source code to a standalone binary
 ///
@@ -96,6 +96,33 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
+    compile_source_to_binary_with_context(source, options, None)
+}
+
+/// Compile Ruchy source code to a standalone binary with file context for module resolution
+///
+/// # Arguments
+/// * `source` - The Ruchy source code
+/// * `options` - Compilation options
+/// * `source_path` - Optional source file path for module resolution
+///
+/// # Errors
+/// Returns an error if parsing, transpilation, or rustc compilation fails
+///
+/// # Examples
+/// ```no_run
+/// use ruchy::backend::{compile_source_to_binary_with_context, CompileOptions};
+/// use std::path::Path;
+///
+/// let source = r#"println!("Hello")"#;
+/// let options = CompileOptions::default();
+/// let result = compile_source_to_binary_with_context(source, &options, Some(Path::new("app.ruchy")));
+/// ```
+pub fn compile_source_to_binary_with_context(
+    source: &str,
+    options: &CompileOptions,
+    source_path: Option<&Path>,
+) -> Result<PathBuf> {
     // Parse to check for DataFrame, JSON, and HTTP usage
     let mut parser = Parser::new(source);
     let ast = parser.parse().parse_context("Ruchy source")?;
@@ -103,10 +130,10 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
     let needs_json = uses_json(&ast);
     let needs_http = uses_http(&ast);
 
-    // Transpile
+    // Transpile with file context for module resolution (ISSUE-103)
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler
-        .transpile_to_program(&ast)
+        .transpile_to_program_with_context(&ast, source_path)
         .compile_context("transpile to Rust")?;
 
     if needs_polars || needs_json || needs_http {
