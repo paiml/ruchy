@@ -243,7 +243,7 @@ fn eval_object_method(
                     Some(value) => return Ok(value),
                     None => {
                         return Err(InterpreterError::RuntimeError(format!(
-                            "Unknown builtin function: {}", builtin_marker
+                            "Unknown builtin function: {builtin_marker}"
                         )))
                     }
                 }
@@ -259,7 +259,7 @@ fn eval_object_method(
 /// Evaluate methods on Command objects (RUNTIME-090, Issue #75)
 ///
 /// # Complexity
-/// Helper: Build std::process::Command from Command object
+/// Helper: Build `std::process::Command` from Command object
 /// Cyclomatic complexity: 3 (A+ standard)
 #[cfg(not(target_arch = "wasm32"))]
 fn build_command_from_obj(

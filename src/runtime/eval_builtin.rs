@@ -1235,7 +1235,7 @@ fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Evaluate `env_var()` builtin function
 /// Returns Result enum: Ok(value) or Err(NotFound)
-/// Issue #96: Match Rust std::env::var() API (returns Result)
+/// Issue #96: Match Rust `std::env::var()` API (returns Result)
 /// Complexity: 5 (within Toyota Way limits)
 fn eval_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("env_var", args, 1)?;

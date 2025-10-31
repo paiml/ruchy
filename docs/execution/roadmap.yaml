@@ -2,13 +2,77 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.81"
+  version: "3.82"
   last_updated: "2025-10-31"
-  current_sprint: "✅ COMPLETE - TRANSPILER-DEFECT-005 (namespaced types fix)"
-  latest_release: "v3.156.0"
-  latest_commit_message: "[TRANSPILER-DEFECT-005] Fix namespaced types in function parameters"
-  latest_commit_hash: "af547de2"
-  next_phase: "🎯 READY - Next priority: Issue #87 investigation OR ruchy-book validation"
+  current_sprint: "✅ COMPLETE - PARSER-DEFECT-018 (dict literals with keywords)"
+  latest_release: "v3.157.0"
+  latest_commit_message: "[PARSER-DEFECT-018] Fix dictionary literals with keyword keys in function calls"
+  latest_commit_hash: "7ae91d1c"
+  next_phase: "🎯 READY - examples/21_concurrency.ruchy still needs parser work OR Issue #87"
+
+  session_summary_2025_10_31_parser_defect_018:
+    date: "2025-10-31"
+    accomplishments:
+      - "✅ PARSER-DEFECT-018 FIXED - Dictionary literals with keyword keys"
+      - "✅ v3.157.0 RELEASED - Both ruchy and ruchy-wasm published to crates.io"
+      - "🎯 EXTREME TDD: RED (4 tests) → GENCHI GENBUTSU → GREEN (fix) → REFACTOR (PMAT)"
+      - "📊 Tests: 4/4 parser tests passing, 4028/4028 library tests (100% pass rate)"
+      - "🚀 Unblocked dict literal pattern: { type: 'deposit', amount: 100 }"
+    defect:
+      id: "PARSER-DEFECT-018"
+      severity: "CRITICAL"
+      status: "FIXED"
+    implementation:
+      problem: "Parser failed with 'Expected RightBrace' when dict literals used keywords as keys"
+      root_cause: "is_object_literal() only checked Token::Identifier, not keyword tokens like Token::Type"
+      impact: "Blocked examples/21_concurrency.ruchy and real-world patterns"
+      extreme_tdd_phases:
+        red: "Created 4 failing tests (dict in calls, multi-line, keywords, expressions)"
+        genchi_genbutsu: "Found keywords tokenized as Token::Type not Token::Identifier"
+        green: "Added can_be_object_key() helper to detect keywords as valid keys"
+        refactor: "Verified 4028/4028 library tests passing (zero regressions)"
+      solution:
+        - "src/frontend/parser/collections.rs:332 - Added can_be_object_key() helper"
+        - "check_for_object_key_separator(): Uses can_be_object_key() for detection"
+        - "Accepts identifiers, strings, AND all keyword tokens"
+      files_changed:
+        - "src/frontend/parser/collections.rs: +23 lines (can_be_object_key helper)"
+        - "tests/parser_defect_018_dict_in_function_call.rs: NEW (115 lines, 4 tests)"
+    test_results:
+      parser_defect_018:
+        total: 4
+        passing: 4
+        failed: 0
+        coverage: "100% - all keyword patterns working"
+        patterns_tested:
+          - "Simple dict in call: append({ name: 'test' })"
+          - "Multi-line dict: append({ type: 'x', amount: 100 })"
+          - "Multiple dicts in sequence"
+          - "Dict with computed expressions"
+      library_tests:
+        total: 4028
+        passing: 4028
+        failed: 0
+        coverage: "100% - zero regressions"
+    complexity:
+      can_be_object_key: "5 (well under A+ standard of ≤10)"
+    toyota_way_principles:
+      extreme_tdd: "RED test first → GENCHI GENBUTSU root cause → GREEN minimal fix → REFACTOR quality"
+      genchi_genbutsu: "Examined actual parser code to find keyword detection gap"
+      root_cause_fix: "Fixed parser logic, not workarounds"
+      quantify: "Measured: 1/4 passing → 4/4 passing, 4028/4028 regression-free"
+    release:
+      version: "v3.157.0"
+      crates_io:
+        - "ruchy v3.157.0 - Published ✅"
+        - "ruchy-wasm v3.157.0 - Published ✅"
+      github:
+        - "Release tag: v3.157.0"
+        - "Commits: [PARSER-DEFECT-018], [RELEASE-3.157.0]"
+    real_world_impact:
+      - "Unblocks dict literals with keywords: { type: 'x', status: 'y' }"
+      - "Examples: transactions.append({ type: 'deposit', amount: 100 })"
+      - "Partial fix for examples/21_concurrency.ruchy (still has other parser issues)"
 
   session_summary_2025_10_31_transpiler_defect_005:
     date: "2025-10-31"

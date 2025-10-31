@@ -1,16 +1,17 @@
 # Ruchy Project Status Report
 **Generated**: 2025-10-31
-**Version**: v3.156.0
-**Roadmap**: v3.81
+**Version**: v3.157.0
+**Roadmap**: v3.82
 **Status**: ✅ Production Ready
 
 ---
 
 ## Executive Summary
 
-Ruchy is a systems scripting language that transpiles to idiomatic Rust with extreme quality engineering. The project has reached a major milestone with **v3.156.0**, featuring complete multi-file project support, comprehensive macro compilation, and namespaced type support.
+Ruchy is a systems scripting language that transpiles to idiomatic Rust with extreme quality engineering. The project has reached a major milestone with **v3.157.0**, featuring complete multi-file project support, comprehensive macro compilation, namespaced type support, and dictionary literals with keywords.
 
-### Key Achievements (v3.156.0)
+### Key Achievements (v3.157.0)
+- ✅ **PARSER-DEFECT-018 FIXED**: Dictionary literals with keyword keys (4/4 tests passing)
 - ✅ **TRANSPILER-DEFECT-005 FIXED**: Namespaced types in function parameters (4/4 tests passing)
 - ✅ **Issue #103 COMPLETE**: Macro return type inference fixed (9/9 tests passing)
 - ✅ **Issue #106 COMPLETE**: External module declarations (`mod scanner;` syntax)
@@ -22,18 +23,18 @@ Ruchy is a systems scripting language that transpiles to idiomatic Rust with ext
 
 ## Release Information
 
-### Current Release: v3.156.0 (2025-10-31)
+### Current Release: v3.157.0 (2025-10-31)
 
 **Published Crates**:
-- [`ruchy v3.156.0`](https://crates.io/crates/ruchy) - Main compiler and tooling
-- [`ruchy-wasm v3.156.0`](https://crates.io/crates/ruchy-wasm) - WebAssembly bindings
+- [`ruchy v3.157.0`](https://crates.io/crates/ruchy) - Main compiler and tooling
+- [`ruchy-wasm v3.157.0`](https://crates.io/crates/ruchy-wasm) - WebAssembly bindings
 
-**GitHub Release**: https://github.com/paiml/ruchy/releases/tag/v3.156.0
+**GitHub Release**: https://github.com/paiml/ruchy/releases/tag/v3.157.0
 
 **Installation**:
 ```bash
-cargo install ruchy --version 3.156.0
-cargo install ruchy-wasm --version 3.156.0
+cargo install ruchy --version 3.157.0
+cargo install ruchy-wasm --version 3.157.0
 ```
 
 ---
@@ -59,6 +60,30 @@ Issue #106:        2/2 compilation tests passed
 ---
 
 ## Recent Accomplishments (Last 7 Days)
+
+### PARSER-DEFECT-018: Dictionary Literals with Keyword Keys ✅
+**Problem**: Parser failed with "Expected RightBrace, found [token]" when dict literals used keywords as keys
+
+**Root Cause**: `is_object_literal()` only checked for `Token::Identifier`, not keyword tokens like `Token::Type`
+
+**Solution**:
+1. **Added Helper Function**: `can_be_object_key()` checks identifiers, strings, AND keywords
+2. **Modified Detection**: `check_for_object_key_separator()` uses new helper
+3. **Backward Compatible**: All existing code continues to work
+
+**Impact**:
+- Tests: **4/4 passing** (dict in calls, multi-line, keywords, expressions)
+- Library: **4028/4028 passing** (zero regressions)
+- Real-world: Unblocks `{ type: "deposit", amount: 100 }` pattern
+- Examples: Partially fixes examples/21_concurrency.ruchy (still has other issues)
+
+**Files Modified**:
+- `src/frontend/parser/collections.rs` (+23 lines)
+- `tests/parser_defect_018_dict_in_function_call.rs` (NEW, 115 lines, 4 tests)
+
+**Complexity**: can_be_object_key() = 5 (well under A+ standard ≤10)
+
+---
 
 ### TRANSPILER-DEFECT-005: Namespaced Types in Function Parameters ✅
 **Problem**: Transpiler crashed with `"trace::Sampler" is not a valid Ident` when using namespaced types

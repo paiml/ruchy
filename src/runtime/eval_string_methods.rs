@@ -246,7 +246,7 @@ fn eval_string_chars(s: &str) -> Result<Value, InterpreterError> {
 /// Convert string to array of UTF-8 byte values
 ///
 /// # Feature #89
-/// Implements string.as_bytes() method for binary data handling
+/// Implements `string.as_bytes()` method for binary data handling
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
