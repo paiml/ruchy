@@ -283,13 +283,40 @@ impl ModuleResolver {
     }
 
     fn create_inline_module(&self, name: &str, resolved_ast: Expr, span: Span) -> Expr {
+        // ISSUE-103: Make all functions in imported modules public
+        let public_ast = self.make_functions_public(resolved_ast);
         Expr::new(
             ExprKind::Module {
                 name: name.to_string(),
-                body: Box::new(resolved_ast),
+                body: Box::new(public_ast),
             },
             span,
         )
+    }
+
+    /// Make all functions in an expression tree public (ISSUE-103)
+    fn make_functions_public(&self, expr: Expr) -> Expr {
+        match expr.kind {
+            ExprKind::Function { name, type_params, params, body, is_async, return_type, .. } => {
+                Expr::new(
+                    ExprKind::Function {
+                        name,
+                        type_params,
+                        params,
+                        body,
+                        is_async,
+                        return_type,
+                        is_pub: true,  // Force all module functions to be public
+                    },
+                    expr.span,
+                )
+            }
+            ExprKind::Block(exprs) => {
+                let public_exprs = exprs.into_iter().map(|e| self.make_functions_public(e)).collect();
+                Expr::new(ExprKind::Block(public_exprs), expr.span)
+            }
+            _ => expr,
+        }
     }
 
     fn create_use_statement(&self, module: &str, items: Option<&[String]>, span: Span) -> Expr {

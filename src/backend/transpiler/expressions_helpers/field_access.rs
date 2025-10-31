@@ -58,6 +58,12 @@ impl Transpiler {
                 let field_ident = format_ident!("{}", field);
                 Ok(quote! { #obj_tokens::#field_ident })
             }
+            ExprKind::Identifier(name) if self.module_names.contains(name) => {
+                // ISSUE-103: Module name - use :: syntax for module::function()
+                // Examples: helper::get_message(), logger::log_info()
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
             ExprKind::Identifier(name) if name.chars().next().is_some_and(char::is_uppercase) => {
                 // TRANSPILER-065: Type name (PascalCase) - use :: for associated functions/constructors
                 // Examples: String::from(), Result::Ok(), Vec::new()
