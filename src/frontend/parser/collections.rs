@@ -307,10 +307,11 @@ fn is_spread_operator(state: &mut ParserState) -> bool {
 }
 
 fn check_for_object_key_separator(state: &mut ParserState) -> bool {
-    match state.tokens.peek() {
-        Some((Token::Identifier(_) | Token::String(_) | Token::RawString(_), _)) => {
+    // PARSER-DEFECT-018: Check if token can be an object key (including keywords)
+    if let Some((token, _)) = state.tokens.peek() {
+        if can_be_object_key(token) {
             let saved_pos = state.tokens.position();
-            state.tokens.advance(); // skip identifier/string
+            state.tokens.advance(); // skip key token
 
             let has_separator = matches!(
                 state.tokens.peek(),
@@ -322,10 +323,23 @@ fn check_for_object_key_separator(state: &mut ParserState) -> bool {
                 && lookahead_for_comprehension(state);
 
             state.tokens.set_position(saved_pos);
-            has_separator && !is_dict_comprehension
+            return has_separator && !is_dict_comprehension;
         }
-        _ => false,
     }
+    false
+}
+
+/// Check if a token can be used as an object key (PARSER-DEFECT-018)
+/// This includes identifiers, strings, and keywords
+fn can_be_object_key(token: &Token) -> bool {
+    matches!(
+        token,
+        Token::Identifier(_) | Token::String(_) | Token::RawString(_)
+    ) || control_flow_token_to_key(token).is_some()
+        || declaration_token_to_key(token).is_some()
+        || type_token_to_key(token).is_some()
+        || module_token_to_key(token).is_some()
+        || async_error_token_to_key(token).is_some()
 }
 
 fn lookahead_for_comprehension(state: &mut ParserState) -> bool {
