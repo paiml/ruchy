@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.154.0] - 2025-10-31
+
 ### Added
 - **[ISSUE-100] ruchy bench command implementation**
   - Implemented performance benchmarking command with warmup support
