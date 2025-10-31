@@ -48,6 +48,7 @@ enum VarType {
     Function,      // Function definitions (not checked for unused)
     LoopVariable,
     MatchBinding,
+    TypeName,      // Enum/Struct type names (Issue #107 fix)
 }
 impl Scope {
     fn new() -> Self {
@@ -554,6 +555,16 @@ impl Linter {
                     self.analyze_expr(arg, scope, issues);
                 }
             }
+            ExprKind::Enum { name, .. } => {
+                // Issue #107 FIX: Register enum type name in scope
+                // This prevents "undefined variable" false positives for enum types
+                scope.define(name.clone(), 1, 1, VarType::TypeName);
+            }
+            ExprKind::Struct { name, .. } => {
+                // Issue #107 FIX: Register struct type name in scope
+                // This prevents "undefined variable" false positives for struct types
+                scope.define(name.clone(), 1, 1, VarType::TypeName);
+            }
             _ => {
                 // Handle other expression types as needed
             }
@@ -714,6 +725,11 @@ impl Linter {
                             continue;
                         }
                     }
+                    VarType::TypeName => {
+                        // Issue #107: Type names (enum/struct) are not checked for unused
+                        // They are part of type system, not runtime values
+                        continue;
+                    }
                 };
                 issues.push(LintIssue {
                     line: info.defined_at.0,
@@ -729,6 +745,7 @@ impl Linter {
                             VarType::Function => "function", // Unreachable (functions skip check)
                             VarType::LoopVariable => "loop variable",
                             VarType::MatchBinding => "match binding",
+                            VarType::TypeName => "type", // Unreachable (types skip check)
                         }
                     ),
                     issue_type: rule_type.to_string(),
