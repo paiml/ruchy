@@ -139,6 +139,14 @@ pub fn compile_source_to_binary_with_context(
             // Add the source file's directory to the module search path
             if let Some(parent_dir) = path.parent() {
                 resolver.add_search_path(parent_dir);
+
+                // MODULE-RESOLUTION-001: Also search in standard project layout directories
+                // If compiling project/bin/main.ruchy, also search project/src/, project/lib/
+                if let Some(project_root) = parent_dir.parent() {
+                    resolver.add_search_path(project_root.join("src"));
+                    resolver.add_search_path(project_root.join("lib"));
+                    resolver.add_search_path(project_root.join("modules"));
+                }
             }
             resolver.resolve_imports(ast).compile_context("resolve module declarations")?
         } else {
@@ -372,9 +380,10 @@ fn is_http_function(name: &str) -> bool {
     )
 }
 
-/// Check if AST contains any external module declarations (mod name;)
+/// Check if AST contains any external module declarations (mod name;) or file imports (use name;)
 ///
 /// ISSUE-106: Used to determine if module resolution is needed in compiler.
+/// MODULE-RESOLUTION-001: Also check for Import statements that might be file imports.
 /// This prevents double-resolution with transpiler's import handling (ISSUE-103).
 fn contains_module_declaration(ast: &crate::frontend::ast::Expr) -> bool {
     use crate::frontend::ast::ExprKind;
@@ -382,6 +391,7 @@ fn contains_module_declaration(ast: &crate::frontend::ast::Expr) -> bool {
     fn check_expr(expr: &crate::frontend::ast::Expr) -> bool {
         match &expr.kind {
             ExprKind::ModuleDeclaration { .. } => true,
+            ExprKind::Import { module, .. } => !module.contains("::"), // File import (no ::)
             ExprKind::Block(exprs) => exprs.iter().any(check_expr),
             ExprKind::Function { body, .. } => check_expr(body),
             ExprKind::Let { value, body, .. } => check_expr(value) || check_expr(body),

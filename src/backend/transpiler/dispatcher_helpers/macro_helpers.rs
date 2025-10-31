@@ -72,8 +72,9 @@ impl Transpiler {
         }
 
         // Check if first argument is a format string (contains {})
+        // TRANSPILER-DEFECT-007 FIX: Also recognize {:?}, {:#?}, {:x}, etc. as format strings
         let first_is_format_string = match &args[0].kind {
-            ExprKind::Literal(Literal::String(s)) => s.contains("{}"),
+            ExprKind::Literal(Literal::String(s)) => s.contains('{') && s.contains('}'),
             _ => false,
         };
 
