@@ -130,15 +130,20 @@ pub fn compile_source_to_binary_with_context(
     let needs_json = uses_json(&ast);
     let needs_http = uses_http(&ast);
 
-    // ISSUE-106: Resolve module declarations (mod name;) before transpilation
+    // ISSUE-106: Resolve module declarations (mod name;) ONLY if AST contains them
+    // This prevents double-resolution with transpiler's existing import handling (ISSUE-103)
     let resolved_ast = if let Some(path) = source_path {
-        use crate::backend::module_resolver::ModuleResolver;
-        let mut resolver = ModuleResolver::new();
-        // Add the source file's directory to the module search path
-        if let Some(parent_dir) = path.parent() {
-            resolver.add_search_path(parent_dir);
+        if contains_module_declaration(&ast) {
+            use crate::backend::module_resolver::ModuleResolver;
+            let mut resolver = ModuleResolver::new();
+            // Add the source file's directory to the module search path
+            if let Some(parent_dir) = path.parent() {
+                resolver.add_search_path(parent_dir);
+            }
+            resolver.resolve_imports(ast).compile_context("resolve module declarations")?
+        } else {
+            ast
         }
-        resolver.resolve_imports(ast).compile_context("resolve module declarations")?
     } else {
         ast
     };
@@ -365,6 +370,26 @@ fn is_http_function(name: &str) -> bool {
         name,
         "http_get" | "http_post" | "http_put" | "http_delete"
     )
+}
+
+/// Check if AST contains any external module declarations (mod name;)
+///
+/// ISSUE-106: Used to determine if module resolution is needed in compiler.
+/// This prevents double-resolution with transpiler's import handling (ISSUE-103).
+fn contains_module_declaration(ast: &crate::frontend::ast::Expr) -> bool {
+    use crate::frontend::ast::ExprKind;
+
+    fn check_expr(expr: &crate::frontend::ast::Expr) -> bool {
+        match &expr.kind {
+            ExprKind::ModuleDeclaration { .. } => true,
+            ExprKind::Block(exprs) => exprs.iter().any(check_expr),
+            ExprKind::Function { body, .. } => check_expr(body),
+            ExprKind::Let { value, body, .. } => check_expr(value) || check_expr(body),
+            _ => false,
+        }
+    }
+
+    check_expr(ast)
 }
 
 /// Generate Cargo.toml with polars dependency (complexity: 2)

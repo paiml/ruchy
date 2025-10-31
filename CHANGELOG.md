@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.155.0] - 2025-10-31
+
 ### Added
 - **[ISSUE-102] ruchy optimize command implementation**
   - Implemented hardware-aware optimization analysis command with multi-format support
@@ -33,11 +35,13 @@ All notable changes to the Ruchy programming language will be documented in this
   - Syntax: `mod scanner;` loads `scanner.ruchy` file automatically
   - Parser: Distinguishes inline `mod utils { }` from external `mod scanner;`
   - Module resolver: Loads external files, makes functions public, transforms to inline modules
-  - Compiler integration: Module resolution step added before transpilation
+  - Compiler integration: Module resolution step added before transpilation (conditional to prevent double-resolution)
   - Backwards compatible: Inline modules still work (`mod utils { ... }`)
   - Tests: 2/2 compilation tests passing (interpreter support deferred - requires REPL API changes)
   - Complexity: All functions ≤10 (Toyota Way A+ standard)
-  - Files: src/frontend/ast.rs (+4), src/frontend/parser/expressions_helpers/modules.rs (+23/-7), src/backend/module_resolver.rs (+26), src/backend/compiler.rs (+12), src/quality/formatter.rs (+4), tests/issue_106_mod_declarations.rs (NEW, 346 lines, 11 tests)
+  - Files: src/frontend/ast.rs (+4), src/frontend/parser/expressions_helpers/modules.rs (+23/-7), src/backend/module_resolver.rs (+26), src/backend/compiler.rs (+37), src/quality/formatter.rs (+4), tests/issue_106_mod_declarations.rs (NEW, 346 lines, 11 tests)
+  - **REGRESSION FIX**: Prevented double-resolution of `use` statements (Issue #103 tests: 6/9 → 8/9 passing)
+  - Added `contains_module_declaration()` helper to only resolve when `ModuleDeclaration` present
   - Fixes GitHub Issue #106 (feature request - enables well-structured multi-file projects, unblocks Reaper showcase)
 
 ### Fixed
