@@ -1603,6 +1603,18 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
+        // ISSUE-103: Check if this is a module function call (e.g., helper.get_message())
+        if let ExprKind::Identifier(name) = &object.kind {
+            if self.module_names.contains(name) {
+                // Module function call - use :: syntax
+                let module_ident = format_ident!("{}", name);
+                let method_ident = format_ident!("{}", method);
+                let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                let arg_tokens = arg_tokens?;
+                return Ok(quote! { #module_ident::#method_ident(#(#arg_tokens),*) });
+            }
+        }
+
         let obj_tokens = self.transpile_expr(object)?;
         let method_ident = format_ident!("{}", method);
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();

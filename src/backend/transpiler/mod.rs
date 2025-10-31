@@ -128,6 +128,10 @@ pub struct Transpiler {
     ///
     /// Maps function names to their parameter types for proper type conversion.
     pub function_signatures: std::collections::HashMap<String, FunctionSignature>,
+    /// Module names that have been imported/defined (Issue #103).
+    ///
+    /// Tracks module identifiers so field access can use :: syntax for module paths.
+    pub module_names: std::collections::HashSet<String>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -150,6 +154,7 @@ impl Transpiler {
             in_async_context: false,
             mutable_vars: std::collections::HashSet::new(),
             function_signatures: std::collections::HashMap::new(),
+            module_names: std::collections::HashSet::new(),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
@@ -231,6 +236,44 @@ impl Transpiler {
     pub fn collect_function_signatures(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.collect_signatures_from_expr(expr);
+        }
+    }
+
+    /// Collects module names from the AST (Issue #103).
+    ///
+    /// Scans the AST for module declarations and records their names
+    /// so field access can use :: syntax for module paths.
+    ///
+    /// # Arguments
+    ///
+    /// * `exprs` - The expressions to scan for module declarations
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut transpiler = Transpiler::new();
+    /// transpiler.collect_module_names(&ast_expressions);
+    /// // Now the transpiler knows which identifiers are modules
+    /// ```
+    pub fn collect_module_names(&mut self, exprs: &[Expr]) {
+        for expr in exprs {
+            self.collect_module_names_from_expr(expr);
+        }
+    }
+
+    /// Helper to recursively collect module names from an expression
+    fn collect_module_names_from_expr(&mut self, expr: &Expr) {
+        match &expr.kind {
+            ExprKind::Module { name, body } => {
+                self.module_names.insert(name.clone());
+                self.collect_module_names_from_expr(body);
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_module_names_from_expr(e);
+                }
+            }
+            _ => {}
         }
     }
     fn collect_signatures_from_expr(&mut self, expr: &Expr) {
@@ -625,13 +668,15 @@ impl Transpiler {
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&mut self, expr: &Expr) -> Result<TokenStream> {
-        // First analyze the entire program to detect mutable variables and function signatures
+        // First analyze the entire program to detect mutable variables, function signatures, and modules
         if let ExprKind::Block(exprs) = &expr.kind {
             self.analyze_mutability(exprs);
             self.collect_function_signatures(exprs);
+            self.collect_module_names(exprs);
         } else {
             self.analyze_expr_mutability(expr);
             self.collect_signatures_from_expr(expr);
+            self.collect_module_names_from_expr(expr);
         }
         let result = self.transpile_to_program_with_context(expr, None);
         if let Ok(ref token_stream) = result {
@@ -650,14 +695,16 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
-        // CRITICAL: Analyze mutability BEFORE transpiling (like transpile_to_program does)
-        // This populates self.mutable_vars which is checked during Let transpilation
+        // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
+        // This populates self.mutable_vars, function_signatures, and module_names
         if let ExprKind::Block(exprs) = &resolved_expr.kind {
             self.analyze_mutability(exprs);
             self.collect_function_signatures(exprs);
+            self.collect_module_names(exprs);
         } else {
             self.analyze_expr_mutability(&resolved_expr);
             self.collect_signatures_from_expr(&resolved_expr);
+            self.collect_module_names_from_expr(&resolved_expr);
         }
 
         let needs_polars = Self::contains_dataframe(&resolved_expr);
