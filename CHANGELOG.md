@@ -5,6 +5,18 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[ISSUE-102] ruchy optimize command implementation**
+  - Implemented hardware-aware optimization analysis command with multi-format support
+  - Features: Cache behavior, branch prediction, vectorization, abstraction costs, hardware benchmarking
+  - Hardware profiles: detect, intel, amd, arm (auto-detection + platform-specific)
+  - Analysis depths: quick, standard, deep (configurable thoroughness)
+  - Formats: text (human-readable), json (machine-readable), html (styled reports)
+  - Options: --cache, --branches, --vectorization, --abstractions, --benchmark, --verbose, --threshold
+  - Tests: 27/27 passing (100% success rate)
+  - Complexity: All functions ≤10 (Toyota Way A+ standard)
+  - Files: src/bin/handlers/mod.rs (+284 lines), tests/issue_102_optimize_command.rs (NEW, 578 lines, 27 tests)
+  - Fixes GitHub Issue #102 (enhancement - competitive feature parity with Rust profilers)
+
 - **[ISSUE-101] ruchy doc command implementation**
   - Implemented documentation generation command with multi-format support
   - Features: Extract doc comments from AST, generate HTML/Markdown/JSON output
