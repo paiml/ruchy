@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[ISSUE-101] ruchy doc command implementation**
+  - Implemented documentation generation command with multi-format support
+  - Features: Extract doc comments from AST, generate HTML/Markdown/JSON output
+  - Formats: HTML (styled web docs), Markdown (simple format), JSON (structured data for tooling)
+  - Options: --private (include undocumented items), --verbose (progress messages)
+  - Doc comment extraction: Supports ///, /** */, and inline comments
+  - Tests: 12/13 passing (92.3% success rate)
+  - Complexity: All functions ≤10 (Toyota Way A+ standard)
+  - Files: src/bin/handlers/mod.rs (+237 lines), tests/issue_101_doc_command.rs (NEW, 341 lines, 13 tests)
+  - Fixes GitHub Issue #101 (enhancement - standard tooling feature)
+
 ### Fixed
 - **[ISSUE-103] ruchy compile broken - macro support (Part 1 of 2)**
   - Fixed MacroInvocation support in compilation: println!, format!, vec! macros now transpile correctly
