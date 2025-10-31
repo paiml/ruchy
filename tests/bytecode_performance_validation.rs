@@ -51,7 +51,7 @@ fn benchmark_code(name: &str, code: &str, iterations: u32) {
 }
 
 #[test]
-#[ignore = Run with --ignored --nocapture
+#[ignore = "Run with --ignored --nocapture"]
 fn test_opt_021_basic_arithmetic() {
     benchmark_code(
         "Basic Arithmetic (OPT-001)",

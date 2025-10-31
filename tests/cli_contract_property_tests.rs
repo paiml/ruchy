@@ -40,7 +40,7 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::Path
 // ============================================================================
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_valid_file() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\n");
@@ -86,7 +86,7 @@ fn cli_property_tests_syntax_error_exits_nonzero() {
 // ============================================================================
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_custom_cases() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "cases_test.ruchy", "let x = 42\n");
@@ -114,7 +114,7 @@ fn cli_property_tests_invalid_cases_format() {
 }
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_with_seed() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "seed_test.ruchy", "let x = 42\n");
@@ -134,7 +134,7 @@ fn cli_property_tests_with_seed() {
 // ============================================================================
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_text_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "text_format.ruchy", "let x = 42\n");
@@ -150,7 +150,7 @@ fn cli_property_tests_text_format() {
 }
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_json_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "json_format.ruchy", "let x = 42\n");
@@ -166,7 +166,7 @@ fn cli_property_tests_json_format() {
 }
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_markdown_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "markdown_format.ruchy", "let x = 42\n");
@@ -186,7 +186,7 @@ fn cli_property_tests_markdown_format() {
 // ============================================================================
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_output_to_file() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
@@ -244,7 +244,7 @@ fn cli_property_tests_syntax_error_writes_stderr() {
 // ============================================================================
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
@@ -278,7 +278,7 @@ fn cli_property_tests_empty_file_fails() {
 }
 
 #[test]
-#[ignore = Property testing takes time
+#[ignore = "Property testing takes time"]
 fn cli_property_tests_complex_program() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
@@ -328,7 +328,7 @@ fn cli_property_tests_help_flag() {
 // ============================================================================
 
 #[test]
-#[ignore = Edge case testing
+#[ignore = "Edge case testing"]
 fn cli_property_tests_zero_cases() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "zero_cases.ruchy", "let x = 42\n");
@@ -344,7 +344,7 @@ fn cli_property_tests_zero_cases() {
 }
 
 #[test]
-#[ignore = Edge case testing
+#[ignore = "Edge case testing"]
 fn cli_property_tests_very_large_cases() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "large_cases.ruchy", "let x = 42\n");

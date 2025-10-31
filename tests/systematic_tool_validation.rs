@@ -283,7 +283,7 @@ fun test_fail() {
 }
 
 #[test]
-#[ignore = KNOWN LIMITATION: Test runner only detects first @test function (parser issue)
+#[ignore = "KNOWN LIMITATION: Test runner only detects first @test function (parser issue)"]
 fn tool_05_test_runs_multiple_tests() {
     // Parser limitation with multiple top-level @test decorators
     // Only first function is detected in extract_test_functions()
@@ -465,14 +465,14 @@ fn tool_09_wasm_example_validation() {
 // ============================================================================
 
 #[test]
-#[ignore = Notebook requires server setup
+#[ignore = "Notebook requires server setup"]
 fn tool_10_notebook_smoke_test() {
     // Notebook server requires async runtime
     // See integration tests for full validation
 }
 
 #[test]
-#[ignore = Notebook acceptance tests require server setup and are long-running
+#[ignore = "Notebook acceptance tests require server setup and are long-running"]
 fn tool_10_notebook_example_validation() {
     // Notebook acceptance tests spawn a server and run async tests
     // These are validated separately in integration test suite

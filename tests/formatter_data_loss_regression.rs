@@ -105,7 +105,7 @@ fun test() {
 }
 
 #[test]
-#[ignore = TODO: Parser doesn't attach top-level comments to AST - separate issue
+#[ignore = "TODO: Parser doesn't attach top-level comments to AST - separate issue"]
 fn test_formatter_data_loss_04_comments_preserved() {
     // Bug: Formatter deletes comments
     let code = r"

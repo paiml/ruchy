@@ -61,7 +61,7 @@ proptest! {
     ///
     /// Invariant: For all valid range strings r, parse(r) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore = Run with: cargo test property_range -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_range -- --ignored --nocapture"]
     fn prop_parse_range_never_panics(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ let r = {range_expr}; }}");
         let result = std::panic::catch_unwind(|| {
