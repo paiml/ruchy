@@ -4,6 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.159.0] - 2025-10-31
+
+### Fixed
+- **[Issue #103] Match arms with early return generate invalid Rust syntax (TRANSPILER-DEFECT-006)**
+  - Fixed transpiler generating invalid Rust code: `Err(e) => return Err(e); ,` (semicolon before comma)
+  - Root cause 1: transpile_control_misc_expr() added semicolons unconditionally to return expressions (misc.rs:46)
+  - Root cause 2: generate_return_type_tokens() had redundant `test_` prefix check (statements.rs:812)
+  - Root cause 3: compute_final_return_type() also checked `test_` prefix (statements.rs:1002)
+  - Root cause 4: generate_return_type_tokens_with_lifetime() also checked `test_` prefix (statements.rs:1211)
+  - Impact: CRITICAL - Match arms with early return produced invalid Rust syntax, blocking ubuntu-diag.ruchy compilation
+  - Solution:
+    1. Removed semicolons from return expression transpilation (semicolons added by statement context)
+    2. Removed 3 redundant `test_` prefix checks (already handled by #[test] attribute check at line 1273)
+  - Tests: 5/5 Issue #103 tests passing (minimal, multiple returns, nested, test_ prefix, transpiled syntax)
+  - Library tests: 4028/4028 passing (zero regressions)
+  - Complexity: All modified functions remain ≤10 (Toyota Way A+ standard)
+  - Files: src/backend/transpiler/dispatcher_helpers/misc.rs (lines 43-52), src/backend/transpiler/statements.rs (lines 811-813, 997-1004, 1208-1213), tests/issue_103_match_return.rs (NEW, 202 lines, 5 tests)
+  - Real-world impact: Unblocks ubuntu-diag.ruchy and all match-with-return patterns
+  - Discovered via: GENCHI GENBUTSU (Go and See) - examined generated Rust code directly
+
 ## [3.158.0] - 2025-10-31
 
 ### Fixed
