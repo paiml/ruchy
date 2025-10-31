@@ -2,13 +2,50 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.72"
+  version: "3.73"
   last_updated: "2025-10-31"
-  current_sprint: "🔄 IN_PROGRESS - Phase 4 Week 3: Performance Benchmarking + Debugger Enhancement"
-  latest_release: "v3.152.0"
-  latest_commit_message: "[RUNTIME-097] Implement Try operator (?) with EXTREME TDD + Five Whys (Issue #97)"
-  latest_commit_hash: "13245ee8"
+  current_sprint: "✅ COMPLETE - v3.153.0 Released (std::env + Try operator)"
+  latest_release: "v3.153.0"
+  latest_commit_message: "[RELEASE-3.153.0] Version bump + CHANGELOG for Issues #96 and #97"
+  latest_commit_hash: "f58af1a7"
   next_phase: "Ready for next roadmap task or user feedback"
+  session_summary_2025_10_31_release_v3_153_0:
+    date: "2025-10-31"
+    accomplishments:
+      - "🚀 RELEASE v3.153.0 - Published to crates.io (ruchy + ruchy-wasm)"
+      - "📝 Updated CHANGELOG.md with Issues #96 and #97"
+      - "✅ Version bump: 3.152.0 → 3.153.0"
+      - "🔧 Fixed 15 test files with malformed #[ignore] attributes"
+    github_issues:
+      release_includes:
+        - "#96: std::env module with callable functions (RUNTIME-096)"
+        - "#97: Try operator (?) for error propagation (RUNTIME-097)"
+      status: "RELEASED - Both issues now available to all users"
+    release_details:
+      ruchy_version: "3.153.0"
+      ruchy_wasm_version: "3.153.0"
+      crates_io_published: true
+      git_tag: "v3.153.0"
+      dual_release_protocol: "✅ Followed (30s wait between crates)"
+    changes:
+      version_files:
+        - "Cargo.toml: workspace.package.version = '3.153.0'"
+        - "ruchy-wasm/Cargo.toml: version = '3.153.0'"
+      documentation:
+        - "CHANGELOG.md: Added comprehensive entries for #96 and #97"
+      quality_fixes:
+        - "Fixed #[ignore] syntax in 15 test files (missing quotes)"
+    verification:
+      build: "✅ cargo check --lib passes"
+      tests: "✅ All library tests passing"
+      clippy: "✅ Zero warnings"
+      pmat_tdg: "✅ No quality regressions"
+    commit_info:
+      commit_hash: "f58af1a7"
+      commit_message: "[RELEASE-3.153.0] Version bump + CHANGELOG for Issues #96 and #97"
+      files_modified: 18
+      lines_added: 91
+      lines_removed: 67
   session_summary_2025_10_31_issue_95_complete:
     date: "2025-10-31"
     accomplishments:
