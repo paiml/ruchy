@@ -1209,13 +1209,51 @@ impl Interpreter {
                 // - stdlib imports (std::*): Already available in global environment, no file to load
                 // - file modules (mylib): Load from mylib.ruchy file
                 //
-                // Example: `use std::process::Command;` → No-op (already available)
+                // Example: `use std::env;` → Import env module into current scope
                 // Example: `use mylib;` → Load mylib.ruchy file
 
                 // Check if this is a stdlib import
                 if module.starts_with("std::") {
-                    // Stdlib types are already registered in global environment via builtin_init
-                    // No file to load - stdlib imports are just syntax sugar for qualified names
+                    // Issue #96: stdlib imports must make the module available in current scope
+                    // Example: "use std::env;" should make "env" accessible
+                    let parts: Vec<&str> = module.split("::").collect();
+
+                    // Navigate through nested objects to find the symbol
+                    let mut current_value: Option<Value> = None;
+                    if let Some(first_part) = parts.first() {
+                        // Access global environment (first element of env_stack)
+                        if let Some(global_env) = self.env_stack.first() {
+                            if let Some(root) = global_env.get(*first_part) {
+                                current_value = Some(root.clone());
+
+                                // Navigate through remaining parts
+                                for &part in parts.iter().skip(1) {
+                                    if let Some(Value::Object(obj)) = current_value {
+                                        if let Some(next_val) = obj.get(part) {
+                                            current_value = Some(next_val.clone());
+                                        } else {
+                                            current_value = None;
+                                            break;
+                                        }
+                                    } else {
+                                        current_value = None;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Import the module into current environment
+                    if let Some(value) = current_value {
+                        let import_name = parts.last().unwrap_or(&"").to_string();
+
+                        // Add to global environment
+                        if let Some(global_env) = self.env_stack.first_mut() {
+                            global_env.insert(import_name, value);
+                        }
+                    }
+
                     return Ok(Value::Nil);
                 }
 
