@@ -2,13 +2,13 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.91"
+  version: "3.92"
   last_updated: "2025-11-01"
-  current_sprint: "✅ COMPLETE - v3.169.0 Release (TOOL-FEATURE-001 + DEBUGGER-043 Integration)"
-  latest_release: "v3.169.0"
-  latest_commit_message: "[DEBUGGER-043] Add ruchydbg v1.13.0 regression testing to CLAUDE.md"
-  latest_commit_hash: "931effd0"
-  next_phase: "🎯 READY - Issue #111 remaining errors (E0308 × 7, E0382 × 1) OR Property Testing OR PMAT Enforcement"
+  current_sprint: "✅ COMPLETE - v3.170.0 P0 BLOCKER FIX (ruchy publish actually publishes to crates.io)"
+  latest_release: "v3.170.0"
+  latest_commit_message: "[TOOL-FEATURE-001 P0 BLOCKER] Fix ruchy publish to actually invoke cargo publish"
+  latest_commit_hash: "TBD"
+  next_phase: "🎯 READY - Version bump v3.170.0 + publish to crates.io"
 
   session_summary_2025_11_01_debugger_043_regression_testing:
     date: "2025-11-01"

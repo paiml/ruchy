@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.170.0] - 2025-11-01
+
+### Fixed
+- **[TOOL-FEATURE-001 / P0 BLOCKER] ruchy publish now actually publishes to crates.io**
+  - Fixed ruchy publish only validating but not publishing (line 4788: "Publishing to registry is not yet implemented")
+  - Root cause: Implementation stopped at validation, never invoked cargo publish
+  - Impact: CRITICAL P0 BLOCKER - Required for Reaper v1.0.0 publication workflow
+  - Example BEFORE: `ruchy publish` → Only shows "⚠️ Publishing to registry is not yet implemented."
+  - Example AFTER: `ruchy publish` → Validates Ruchy.toml, then executes `cargo publish` to publish to crates.io
+  - Solution: Added std::process::Command invocation of cargo publish with proper flag forwarding
+  - Code changes:
+    - src/bin/handlers/mod.rs:4785-4814: Replaced stub with actual cargo publish invocation (+30 lines)
+    - Supports: --verbose flag forwarding, --allow-dirty flag forwarding, proper error handling
+  - Validation: 5/5 TOOL-FEATURE-001 tests passing, 5/5 validation scenarios passing (Reaper project validated)
+  - Files: src/bin/handlers/mod.rs (modified, +30 lines actual implementation replacing 6-line stub)
+  - Toyota Way: STOP THE LINE - P0 blocker halted all work until fixed, EXTREME TDD verification
+
+## [3.169.0] - 2025-11-01
+
+### Added
+- Published ruchy v3.169.0 and ruchy-wasm v3.169.0 to crates.io
+- Created git tag v3.169.0
+- Integrated DEBUGGER-043 regression testing documentation in CLAUDE.md
+- Regression testing: 78/78 examples pass determinism testing (780 total executions)
+
 ## [3.168.0] - 2025-11-01
 
 ### Added
