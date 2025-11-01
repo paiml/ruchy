@@ -1,0 +1,210 @@
+# Ruchy Language Compiler - Strategic Roadmap
+# Single Source of Truth for project planning and tracking
+# Format: YAML (machine-readable, programmatically accessible)
+
+meta:
+  project: "Ruchy Programming Language Compiler"
+  version: "3.168.0"
+  last_updated: "2025-11-01"
+  status: "PRODUCTION"
+  repository: "https://github.com/paiml/ruchy"
+
+milestones:
+  - id: "MILESTONE-001"
+    name: "Issue #111 Resolution - Reaper Compilation"
+    status: "COMPLETED"
+    date_completed: "2025-11-01"
+    version: "v3.168.0"
+    impact: "Reaper project (5,100 LOC) compiles with 0 errors"
+    tickets:
+      - TRANSPILER-DEFECT-015
+      - TRANSPILER-DEFECT-016
+      - TRANSPILER-DEFECT-016-B
+      - TRANSPILER-DEFECT-016-C
+      - TRANSPILER-DEFECT-017
+      - TRANSPILER-DEFECT-018
+
+current_sprint:
+  id: "SPRINT-089"
+  name: "Post-Release Quality & Next Features"
+  start_date: "2025-11-01"
+  end_date: "2025-11-08"
+  goals:
+    - "Establish PMAT quality gates"
+    - "Set up roadmap.yaml workflow"
+    - "Plan next language features"
+  
+completed_sprints:
+  - id: "SPRINT-088"
+    name: "Issue #111 Final Resolution"
+    status: "COMPLETED"
+    date_completed: "2025-11-01"
+    metrics:
+      errors_fixed: 4
+      tests_added: 18
+      smoke_tests: 4
+      reaper_errors: "15 → 0"
+
+tickets:
+  # COMPLETED: Issue #111 Transpiler Defects
+  - id: "TRANSPILER-DEFECT-015"
+    title: "Mutable string inference not working in function scope"
+    status: "COMPLETED"
+    priority: "CRITICAL"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "7 errors eliminated in reaper (15 → 8)"
+    files_modified:
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 9
+    test_file: "tests/transpiler_defect_015_mutable_string_function_scope_RED.rs"
+    
+  - id: "TRANSPILER-DEFECT-016"
+    title: "String field borrowing in concatenation"
+    status: "COMPLETED"
+    priority: "CRITICAL"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "4 errors eliminated in reaper (8 → 4)"
+    files_modified:
+      - "src/backend/transpiler/mod.rs"
+      - "src/backend/transpiler/expressions.rs"
+      - "src/backend/transpiler/expressions_helpers/binary_ops.rs"
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 6
+    test_file: "tests/transpiler_defect_016_string_field_borrowing_RED.rs"
+    
+  - id: "TRANSPILER-DEFECT-016-B"
+    title: "Function call String results not tracked for auto-borrowing"
+    status: "COMPLETED"
+    priority: "HIGH"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "1 error eliminated in reaper (2 → 1)"
+    files_modified:
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 4
+    test_file: "tests/transpiler_defect_016_b_function_call_string_RED.rs"
+    
+  - id: "TRANSPILER-DEFECT-016-C"
+    title: "Match arm string literals not auto-converted to String"
+    status: "COMPLETED"
+    priority: "HIGH"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "1 error eliminated in reaper (3 → 2)"
+    files_modified:
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 5
+    test_file: "tests/transpiler_defect_016_c_match_arm_string_RED.rs"
+    
+  - id: "TRANSPILER-DEFECT-017"
+    title: "Array literal to Vec conversion missing .to_vec()"
+    status: "COMPLETED"
+    priority: "HIGH"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "1 error eliminated in reaper (4 → 3)"
+    files_modified:
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 6
+    test_file: "tests/transpiler_defect_017_array_to_vec_RED.rs"
+    
+  - id: "TRANSPILER-DEFECT-018"
+    title: "Moved value in loop - auto-clone function parameters"
+    status: "COMPLETED"
+    priority: "CRITICAL"
+    sprint: "SPRINT-088"
+    version: "v3.168.0"
+    impact: "Final error eliminated (1 → 0, 100% reduction)"
+    files_modified:
+      - "src/backend/transpiler/mod.rs"
+      - "src/backend/transpiler/statements.rs"
+    tests_added: 3
+    test_file: "tests/transpiler_defect_018_moved_value_loop_RED.rs"
+    smoke_tested: true
+    ruchydbg_verified: true
+
+  # QUALITY INFRASTRUCTURE
+  - id: "QUALITY-PMAT-001"
+    title: "Convert to roadmap.yaml and establish PMAT quality gates"
+    status: "IN_PROGRESS"
+    priority: "HIGH"
+    sprint: "SPRINT-089"
+    assignee: "Claude"
+    description: "Migrate from roadmap.md to roadmap.yaml, set up PMAT quality gates"
+    tasks:
+      - task: "Create docs/execution/roadmap.yaml"
+        status: "IN_PROGRESS"
+      - task: "Initialize PMAT quality gates"
+        status: "PENDING"
+      - task: "Set up pre-commit hooks"
+        status: "PENDING"
+      - task: "Configure TDG thresholds"
+        status: "PENDING"
+
+quality_standards:
+  code_quality:
+    min_grade: "A-"
+    min_score: 85
+    max_cyclomatic_complexity: 10
+    max_cognitive_complexity: 10
+    max_function_lines: 30
+    satd_tolerance: 0
+    
+  test_coverage:
+    unit_tests: 100  # For new functions
+    property_tests: 80  # Percentage of modules
+    mutation_coverage: 75  # Minimum CAUGHT/MISSED ratio
+    
+  pre_commit_gates:
+    - "TDG quality check (A- minimum)"
+    - "Complexity analysis (≤10)"
+    - "SATD detection (zero tolerance)"
+    - "Basic REPL smoke test"
+    - "bashrs validation (shell scripts)"
+    - "Book validation (Ch01-05)"
+
+  pre_release_gates:
+    - "RuchyRuchy smoke testing (mandatory)"
+    - "Individual fix tests"
+    - "Integration tests"
+    - "Pathological input detection"
+    - "End-to-end verification"
+    - "Smoke test report generation"
+
+release_history:
+  - version: "v3.168.0"
+    date: "2025-11-01"
+    milestone: "MILESTONE-001"
+    highlights:
+      - "Issue #111 RESOLVED"
+      - "Reaper project compiles with 0 errors"
+      - "4 transpiler defects fixed"
+      - "18 new tests added (100% passing)"
+      - "RuchyRuchy smoke testing protocol established"
+    published:
+      crates_io: true
+      github_release: true
+    links:
+      release: "https://github.com/paiml/ruchy/releases/tag/v3.168.0"
+      crates_io: "https://crates.io/crates/ruchy/3.168.0"
+
+next_priorities:
+  - id: "PRIORITY-001"
+    title: "Establish PMAT-driven development workflow"
+    description: "Integrate PMAT quality gates into daily development"
+    
+  - id: "PRIORITY-002"
+    title: "Property-based testing expansion"
+    description: "Achieve 80% property test coverage across transpiler modules"
+    
+  - id: "PRIORITY-003"
+    title: "Mutation testing validation"
+    description: "≥75% mutation coverage on critical transpiler functions"
+
+notes:
+  - "Single source of truth: This file replaces roadmap.md"
+  - "Machine-readable: YAML format enables programmatic access"
+  - "PMAT integration: Quality gates enforced via pmat commands"
+  - "Toyota Way: Jidoka (quality built-in) via automated gates"
