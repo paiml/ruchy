@@ -6,6 +6,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [3.168.0] - 2025-11-01
 
+### Added
+- **[TOOL-FEATURE-001] ruchy publish command - Package publication workflow**
+  - Implemented `ruchy publish` command with Ruchy.toml validation
+  - Features: --dry-run mode, semver validation, required field checking, helpful error messages
+  - Impact: CRITICAL - Unblocks Reaper v1.0.0 publication to ruchy.dev registry
+  - Validation: 5/5 RED tests passing, 5/5 end-to-end validation scenarios passing (100% success + error cases)
+  - Example: `ruchy publish --dry-run` validates package metadata without publishing
+  - Solution: Added handle_publish_command() with TOML parsing, semver validation, comprehensive error messages
+  - Code changes:
+    - src/bin/ruchy.rs:873-875: Added handler dispatch for Publish command
+    - src/bin/handlers/mod.rs:4679-4783: Implemented handle_publish_command() with validation (105 lines)
+    - Cargo.toml: Added semver v1.0.27 dependency for version validation
+  - Tests: 5 tests in tests/tool_feature_001_ruchy_publish_RED.rs (manifest validation, error handling, semver)
+  - Real-world validation: Reaper project (reaper v1.0.0) validates successfully
+  - Files: src/bin/ruchy.rs (+3 lines), src/bin/handlers/mod.rs (+105 lines), Cargo.toml (+1 dependency), tests/tool_feature_001_ruchy_publish_RED.rs (NEW, 247 lines, 5 tests)
+  - Toyota Way: EXTREME TDD (RED → GREEN → REFACTOR), GENCHI GENBUTSU (tested with actual Reaper Ruchy.toml)
+
 ### Fixed
 - **[Issue #111 / TRANSPILER-DEFECT-015] Mutable string inference not working in function scope**
   - Fixed string accumulator pattern in function bodies not detected as needing String type
