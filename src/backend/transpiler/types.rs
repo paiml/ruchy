@@ -207,8 +207,14 @@ impl Transpiler {
             quote! {}
         };
 
+        // DEFECT-014: Auto-add Clone to derives for Vec indexing support
+        let mut extended_derives = derives.to_vec();
+        if !extended_derives.contains(&"Clone".to_string()) {
+            extended_derives.push("Clone".to_string());
+        }
+
         // Generate derive attributes using helper (PARSER-077 fix)
-        let derive_attrs = self.generate_derive_attributes(derives);
+        let derive_attrs = self.generate_derive_attributes(&extended_derives);
 
         // Generate tuple struct definition
         let struct_def = if type_params.is_empty() {
@@ -321,8 +327,14 @@ impl Transpiler {
             quote! {}
         };
 
+        // DEFECT-014: Auto-add Clone to derives for Vec indexing support
+        let mut extended_derives = derives.to_vec();
+        if !extended_derives.contains(&"Clone".to_string()) {
+            extended_derives.push("Clone".to_string());
+        }
+
         // Generate derive attributes using helper (PARSER-077 fix)
-        let derive_attrs = self.generate_derive_attributes(derives);
+        let derive_attrs = self.generate_derive_attributes(&extended_derives);
 
         // Generate struct definition
         let struct_def = if effective_type_params.is_empty() {

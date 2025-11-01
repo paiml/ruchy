@@ -4814,6 +4814,8 @@ dependencies = [
 [[package]]
 name = "ruchyruchy"
 version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0071bbd809f1e8d296586e698eea6f4d6d8f315a795a6fab3696bf1248484e66"
 dependencies = [
  "chrono",
  "serde",

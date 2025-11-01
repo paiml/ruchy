@@ -125,8 +125,9 @@ impl Transpiler {
                     .cloned()
                     .unwrap_or_else(|| panic!("Key not found"))
             }),
-            // Numeric and other keys use array indexing
-            _ => Ok(quote! { #obj_tokens[#index_tokens as usize] }),
+            // Numeric and other keys use array indexing with clone for non-Copy types
+            // DEFECT-014: Auto-clone to prevent E0507 (cannot move out of index)
+            _ => Ok(quote! { #obj_tokens[#index_tokens as usize].clone() }),
         }
     }
     /// Transpiles slice access `(array[start:end])`
