@@ -128,20 +128,25 @@ tickets:
   # QUALITY INFRASTRUCTURE
   - id: "QUALITY-PMAT-001"
     title: "Convert to roadmap.yaml and establish PMAT quality gates"
-    status: "IN_PROGRESS"
+    status: "COMPLETED"
     priority: "HIGH"
     sprint: "SPRINT-089"
     assignee: "Claude"
+    date_completed: "2025-11-01"
     description: "Migrate from roadmap.md to roadmap.yaml, set up PMAT quality gates"
     tasks:
       - task: "Create docs/execution/roadmap.yaml"
-        status: "IN_PROGRESS"
-      - task: "Initialize PMAT quality gates"
-        status: "PENDING"
+        status: "COMPLETED"
+      - task: "Initialize PMAT quality gates (.pmat-gates.toml)"
+        status: "COMPLETED"
       - task: "Set up pre-commit hooks"
-        status: "PENDING"
-      - task: "Configure TDG thresholds"
-        status: "PENDING"
+        status: "COMPLETED"
+      - task: "Configure TDG thresholds (A- minimum, max complexity 10)"
+        status: "COMPLETED"
+    metrics:
+      tdg_baseline: "91.1/100 (A grade)"
+      pmat_version: "v2.189.0"
+      quality_gates: "clippy strict, tests, coverage ≥80%, complexity ≤10"
 
 quality_standards:
   code_quality:
