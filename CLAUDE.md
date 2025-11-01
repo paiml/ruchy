@@ -202,11 +202,40 @@ ruchydbg run test.ruchy --trace
 # Output: TRACE: → square(5: integer), TRACE: ← square = 25: integer
 ```
 
+**Stack Depth Profiler (RuchyRuchy v1.11.0+ - DEBUGGER-041)**:
+```bash
+# Profile recursion depth and function hotspots
+ruchydbg profile --stack recursive_code.ruchy
+
+# Example output:
+# === Stack Depth Profile ===
+# Max depth: 10 (deepest call stack)
+# Total calls: 77
+# Call counts:
+#   fibonacci: 67 calls ← HOTSPOT (exponential recursion)
+#   factorial: 10 calls
+# Deepest call stack: Shows full call chain at max depth
+```
+
+**Use Cases**:
+- **Find recursion issues BEFORE stack overflow** (catches depth > 30 early)
+- **Identify hotspots** (fibonacci with 67 calls vs factorial with 10)
+- **Debug deep recursion patterns** (view exact call chain at max depth)
+- **Performance**: <1% overhead, zero overhead when disabled
+
+**Real-World Example**:
+```bash
+# Before fix: test_deep_recursion_within_limit crashed (stack overflow at depth 150)
+# After profiling: Detected max_depth=10 for factorial(10)
+# Used profile data to set safe MAX_CALL_DEPTH=30 (prevents Rust stack overflow)
+```
+
 **Resources**:
 - Installation: `cargo install ruchyruchy` (includes ruchydbg CLI)
 - Integration Guide: `../ruchyruchy/INTEGRATION_GUIDE.md` (comprehensive usage)
 - Quick Start: `../ruchyruchy/QUICK_START_FOR_RUCHY_DEVS.md` (10-minute tutorial)
 - Bug Patterns: `../ruchyruchy/WHACK_A_MOLE_BUG_HUNTERS_GUIDE.md` (1,200+ lines)
+- Stack Profiler: `../ruchyruchy/book/src/phase4_debugger/debugger-041-stack-profiler.md` (DEBUGGER-041)
 - Repository: https://github.com/paiml/ruchyruchy
 
 **Success Story - Issue #79 (2025-10-29)**:
