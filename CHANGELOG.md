@@ -43,6 +43,21 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: mod.rs (+6 lines), expressions.rs (+6 lines modified), binary_ops.rs (+2 lines modified), statements.rs (+2 lines modified), tests/transpiler_defect_016_string_field_borrowing_RED.rs (NEW, 6 tests)
   - Toyota Way: Used GENCHI GENBUTSU - examined actual transpiled Rust code to find code path bypass
 
+- **[Issue #111 / TRANSPILER-DEFECT-017] Array literal to Vec conversion missing .to_vec()**
+  - Fixed array literals assigned to Vec-typed variables not auto-converting with .to_vec()
+  - Root cause: Type annotation transpiler converts [T] → Vec<T>, but value transpiler emits raw array literal without .to_vec() conversion
+  - Impact: 1 error eliminated in reaper project (4 → 3, -25% reduction)
+  - Example BEFORE: `let processes: [Process] = [current_process];` → transpiles to `let processes: Vec<Process> = [current_process];` → E0308: expected Vec, found array
+  - Example AFTER: `let processes: [Process] = [current_process];` → transpiles to `let processes: Vec<Process> = [current_process].to_vec();` → compiles successfully
+  - Solution: Pattern match `ExprKind::List` with `TypeKind::List` in Let statement transpilation and append `.to_vec()`
+  - Code changes:
+    - src/backend/transpiler/statements.rs:385-396: Added pattern match in `transpile_let_with_type()` to detect array literal with Vec annotation and append `.to_vec()`
+    - src/backend/transpiler/statements.rs:1276-1287: Added same pattern in `generate_body_tokens_with_string_conversion()` for function-scope Let statements
+  - Tests: 6 tests in tests/transpiler_defect_017_array_to_vec_RED.rs (4 array-to-vec tests, 2 baseline tests)
+  - Real-world impact: Reaper project errors: 4 → 3 (-25% reduction), line 972 (processes array) now compiles
+  - Files: src/backend/transpiler/statements.rs (+22 lines modified at 2 locations), tests/transpiler_defect_017_array_to_vec_RED.rs (NEW, 6 tests, all passing)
+  - Toyota Way: Used GENCHI GENBUTSU - ran `ruchy ast` to discover [T] is parsed as TypeKind::List, not TypeKind::Array
+
 ## [3.167.0] - 2025-11-01
 
 ### Fixed
