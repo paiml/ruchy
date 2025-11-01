@@ -382,7 +382,19 @@ impl Transpiler {
                 // Mutable variable with string literal (no type annotation) - use String::from()
                 quote! { String::from(#s) }
             }
-            _ => self.transpile_expr(value)?,
+            // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
+            (
+                crate::frontend::ast::ExprKind::List(_),
+                Some(type_ann),
+            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::List(_)) =>
+            {
+                // Array literal with Vec type annotation - add .to_vec()
+                // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List, not Array)
+                // Transpiled: let processes: Vec<Process> = [current].to_vec();
+                let list_tokens = self.transpile_expr(value)?;
+                quote! { #list_tokens.to_vec() }
+            }
+            _ => self.transpile_expr(value)?
         };
 
         // Generate type annotation if present
@@ -1260,6 +1272,18 @@ impl Transpiler {
                                 // DEFECT-016 FIX: Track this as a string variable
                                 self.string_vars.borrow_mut().insert(name.clone());
                                 quote! { String::from(#s) }
+                            }
+                            // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
+                            (
+                                crate::frontend::ast::ExprKind::List(_),
+                                Some(type_ann),
+                            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::List(_)) =>
+                            {
+                                // Array literal with Vec type annotation - add .to_vec()
+                                // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List)
+                                // Transpiled: let processes: Vec<Process> = [current].to_vec();
+                                let list_tokens = self.transpile_expr(value)?;
+                                quote! { #list_tokens.to_vec() }
                             }
                             _ => self.transpile_expr(value)?,
                         };
