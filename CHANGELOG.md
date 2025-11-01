@@ -58,6 +58,22 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/backend/transpiler/statements.rs (+22 lines modified at 2 locations), tests/transpiler_defect_017_array_to_vec_RED.rs (NEW, 6 tests, all passing)
   - Toyota Way: Used GENCHI GENBUTSU - ran `ruchy ast` to discover [T] is parsed as TypeKind::List, not TypeKind::Array
 
+- **[Issue #111 / TRANSPILER-DEFECT-016-C] Match arm string literals not auto-converted to String**
+  - Fixed match expressions returning String not auto-adding .to_string() to string literal arms
+  - Root cause: Match transpilation emitted raw string literals in arms when function return type is String
+  - Impact: 1 error eliminated in reaper project (3 → 2, -33% reduction)
+  - Example BEFORE: `Priority::High => "high"` in function returning String → E0308: expected String, found &str
+  - Example AFTER: `Priority::High => "high".to_string()` → compiles successfully
+  - Solution: Added Match expression handling in `generate_body_tokens_with_string_conversion()` to detect string literal arms and append .to_string()
+  - Code changes:
+    - src/backend/transpiler/statements.rs:1193-1196: Added Match case to `body_needs_string_conversion()` to detect match with string literal arms
+    - src/backend/transpiler/statements.rs:1320-1352: Added Match handling in single-expression Block case to convert string literal arms
+    - src/backend/transpiler/statements.rs:1361-1393: Added Match handling in default case (for non-Block match expressions)
+  - Tests: 5 tests in tests/transpiler_defect_016_c_match_arm_string_RED.rs (4 match string tests, 1 integer baseline)
+  - Real-world impact: Reaper project errors: 3 → 2 (-33% reduction), line 402 (priority_to_string match) now compiles
+  - Files: src/backend/transpiler/statements.rs (+45 lines modified at 3 locations), tests/transpiler_defect_016_c_match_arm_string_RED.rs (NEW, 5 tests, all passing)
+  - Toyota Way: Applied GENCHI GENBUTSU - examined actual function transpilation flow to find where Match needed special handling
+
 ## [3.167.0] - 2025-11-01
 
 ### Fixed

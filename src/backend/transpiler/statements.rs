@@ -1189,6 +1189,11 @@ impl Transpiler {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::Identifier(_) => true,  // Could be &str variable
             ExprKind::IndexAccess { .. } => true,  // DEFECT-013: Vec/array indexing may return &str
+            // DEFECT-016-C: Match expressions may have string literal arms
+            ExprKind::Match { arms, .. } => {
+                // Check if any arm has a string literal body
+                arms.iter().any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
+            }
             ExprKind::Block(exprs) if !exprs.is_empty() => {
                 self.body_needs_string_conversion(exprs.last().unwrap())
             }
@@ -1311,12 +1316,80 @@ impl Transpiler {
                             }
                         })
                     }
+                    // DEFECT-016-C: Handle Match expression in single-expression block
+                    ExprKind::Match { expr, arms } => {
+                        let expr_tokens = self.transpile_expr(expr)?;
+                        let mut arm_tokens = Vec::new();
+                        for arm in arms {
+                            let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
+
+                            // Check if arm body is a string literal - if so, add .to_string()
+                            let body_tokens = match &arm.body.kind {
+                                ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
+                                    // String literal in match arm - auto-convert to String
+                                    quote! { #s.to_string() }
+                                }
+                                _ => self.transpile_expr(&arm.body)?
+                            };
+
+                            // Handle pattern guards if present
+                            if let Some(guard_expr) = &arm.guard {
+                                let guard_tokens = self.transpile_expr(guard_expr)?;
+                                arm_tokens.push(quote! {
+                                    #pattern_tokens if #guard_tokens => #body_tokens
+                                });
+                            } else {
+                                arm_tokens.push(quote! {
+                                    #pattern_tokens => #body_tokens
+                                });
+                            }
+                        }
+                        Ok(quote! {
+                            match #expr_tokens {
+                                #(#arm_tokens,)*
+                            }
+                        })
+                    }
                     _ => {
                         // Not a Let - wrap entire expression
                         let expr_tokens = self.transpile_expr(&exprs[0])?;
                         Ok(quote! { (#expr_tokens).to_string() })
                     }
                 }
+            }
+            // DEFECT-016-C FIX: Match expressions returning String need .to_string() on string literal arms
+            ExprKind::Match { expr, arms } => {
+                let expr_tokens = self.transpile_expr(expr)?;
+                let mut arm_tokens = Vec::new();
+                for arm in arms {
+                    let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
+
+                    // Check if arm body is a string literal - if so, add .to_string()
+                    let body_tokens = match &arm.body.kind {
+                        ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
+                            // String literal in match arm - auto-convert to String
+                            quote! { #s.to_string() }
+                        }
+                        _ => self.transpile_expr(&arm.body)?
+                    };
+
+                    // Handle pattern guards if present
+                    if let Some(guard_expr) = &arm.guard {
+                        let guard_tokens = self.transpile_expr(guard_expr)?;
+                        arm_tokens.push(quote! {
+                            #pattern_tokens if #guard_tokens => #body_tokens
+                        });
+                    } else {
+                        arm_tokens.push(quote! {
+                            #pattern_tokens => #body_tokens
+                        });
+                    }
+                }
+                Ok(quote! {
+                    match #expr_tokens {
+                        #(#arm_tokens,)*
+                    }
+                })
             }
             _ => {
                 // Single expression or simple body - wrap entire body
