@@ -394,6 +394,13 @@ impl Transpiler {
                 let list_tokens = self.transpile_expr(value)?;
                 quote! { #list_tokens.to_vec() }
             }
+            // DEFECT-016-B FIX: Track function call results that might return String
+            (crate::frontend::ast::ExprKind::Call { .. }, _) => {
+                // Function call - optimistically track in string_vars for auto-borrowing
+                // The Rust compiler will validate if it's actually a String
+                self.string_vars.borrow_mut().insert(name.to_string());
+                self.transpile_expr(value)?
+            }
             _ => self.transpile_expr(value)?
         };
 
@@ -1289,6 +1296,12 @@ impl Transpiler {
                                 // Transpiled: let processes: Vec<Process> = [current].to_vec();
                                 let list_tokens = self.transpile_expr(value)?;
                                 quote! { #list_tokens.to_vec() }
+                            }
+                            // DEFECT-016-B FIX: Track function call results that might return String
+                            (crate::frontend::ast::ExprKind::Call { .. }, _) => {
+                                // Function call - optimistically track in string_vars for auto-borrowing
+                                self.string_vars.borrow_mut().insert(name.to_string());
+                                self.transpile_expr(value)?
                             }
                             _ => self.transpile_expr(value)?,
                         };
