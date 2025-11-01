@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.167.0] - 2025-11-01
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-014] Vec indexing with non-Copy types generates E0507 (cannot move out of index)**
+  - Fixed Vec indexing causing E0507 errors when trying to move non-Copy types (structs with String fields) out of containers
+  - Root cause: `configs[0]` transpiled to `configs[0 as usize]` which tries to MOVE the value, but Rust forbids moving out of index for non-Copy types
+  - Impact: CRITICAL - 2 E0507 errors in reaper project (Issue #111)
+  - Example BEFORE: `let first = configs[0]` → E0507: cannot move out of index of Vec<Config>
+  - Example AFTER: `let first = configs[0]` → transpiles to `configs[0 as usize].clone()` with auto-derived Clone → compiles successfully
+  - Solution: Auto-add `.clone()` to Vec indexing AND auto-derive Clone for all structs/tuple structs
+  - Code changes:
+    - src/backend/transpiler/expressions_helpers/field_access.rs:128-130: Added `.clone()` to index access for non-Copy types
+    - src/backend/transpiler/types.rs:210-217: Auto-derive Clone for tuple structs
+    - src/backend/transpiler/types.rs:330-337: Auto-derive Clone for structs
+  - Tests: 4 tests in tests/transpiler_defect_014_ownership_clone_RED.rs (2 RED Vec indexing tests, 2 baseline tests)
+  - Quality: field_access.rs: A grade (91.2/100), all 4,031 library tests passing
+  - Real-world impact: Fixes 2 remaining E0507 errors in reaper project
+  - Files: src/backend/transpiler/expressions_helpers/field_access.rs (+2 lines), src/backend/transpiler/types.rs (+12 lines), tests/transpiler_defect_014_ownership_clone_RED.rs (NEW, 4 tests)
+
 ## [3.166.0] - 2025-10-31
 
 ### Fixed
