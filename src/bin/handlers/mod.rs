@@ -4783,11 +4783,34 @@ pub fn handle_publish_command(
         println!("\n✨ Would publish package (skipped in dry-run mode)");
         Ok(())
     } else {
-        // Future: Actually publish to registry
-        println!("Publishing {} v{}...", manifest.package.name, manifest.package.version);
-        println!("⚠️  Publishing to registry is not yet implemented.");
-        println!("   For now, use --dry-run to validate your package.");
-        Ok(())
+        // Actually publish to crates.io via cargo publish
+        println!("📦 Publishing {} v{}...", manifest.package.name, manifest.package.version);
+
+        use std::process::Command;
+
+        // Build cargo publish command
+        let mut cargo_cmd = Command::new("cargo");
+        cargo_cmd.arg("publish");
+
+        if verbose {
+            cargo_cmd.arg("--verbose");
+        }
+
+        if _allow_dirty {
+            cargo_cmd.arg("--allow-dirty");
+        }
+
+        // Execute cargo publish
+        let status = cargo_cmd.status()
+            .context("Failed to execute 'cargo publish'. Ensure cargo is installed.")?;
+
+        if status.success() {
+            println!("✅ Successfully published {} v{} to crates.io",
+                manifest.package.name, manifest.package.version);
+            Ok(())
+        } else {
+            bail!("cargo publish failed with exit code: {}", status);
+        }
     }
 }
 

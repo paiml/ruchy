@@ -4713,7 +4713,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "3.169.0"
+version = "3.170.0"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -4799,7 +4799,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-wasm"
-version = "3.169.0"
+version = "3.170.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
@@ -4814,9 +4814,9 @@ dependencies = [
 
 [[package]]
 name = "ruchyruchy"
-version = "1.10.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0071bbd809f1e8d296586e698eea6f4d6d8f315a795a6fab3696bf1248484e66"
+checksum = "d5287d652ada91437710c9aac22bd3c8405e43e598dd6555479d5ca202872087"
 dependencies = [
  "chrono",
  "serde",
