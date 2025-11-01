@@ -733,6 +733,158 @@ git commit  # Should block if violations exist
 
 **Toyota Way**: Temporary bypasses become permanent. Fix root causes, never mask symptoms.
 
+### 🚨 MANDATORY: RuchyRuchy Smoke Testing Protocol (Pre-Release)
+
+**SACRED RULE**: NEVER release without RuchyRuchy smoke testing. All transpiler fixes MUST be verified end-to-end.
+
+**Reference**: Issue #111 (v3.168.0) - Smoke testing caught 0 regressions, verified all 4 fixes
+
+**MANDATORY PROTOCOL** (Before EVERY Release):
+
+**Prerequisites**:
+```bash
+# Install ruchydbg (if not already installed)
+cargo install ruchyruchy  # Provides ruchydbg CLI
+ruchydbg --version  # Verify v1.12.0+
+```
+
+**Step 1: Create Smoke Tests for Each Fix**
+
+For EACH transpiler/runtime fix in the release, create a smoke test file:
+
+```bash
+# Example: DEFECT-018 (moved value in loop)
+cat > /tmp/smoke_defect_018.ruchy << 'EOF'
+// SMOKE TEST: DEFECT-018 - Auto-clone in nested loops
+struct Process { pid: i32, name: String }
+struct Rule { id: i32, enabled: bool }
+
+fun rule_matches(rule: Rule, proc: Process) -> bool {
+    rule.enabled && proc.pid > 0
+}
+
+fun find_matches() -> i32 {
+    let procs = vec![Process { pid: 1, name: "init" }];
+    let rules = vec![Rule { id: 1, enabled: true }];
+    let mut i = 0;
+    let mut matches = 0;
+
+    while i < procs.len() {
+        let proc = procs[i];
+        let mut j = 0;
+        while j < rules.len() {
+            let rule = rules[j];
+            if rule_matches(rule, proc) {  // Auto-clone test
+                matches = matches + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    matches
+}
+
+println(find_matches());
+EOF
+```
+
+**Step 2: Run Individual Fix Smoke Tests**
+
+```bash
+# Test each fix individually with timeout detection + tracing
+ruchydbg run /tmp/smoke_defect_018.ruchy --timeout 5000 --trace
+
+# Expected output:
+# ✅ SUCCESS
+# ⏱️  Execution time: <10ms
+# 🔍 Type-aware tracing: enabled
+# Correct output verified
+```
+
+**Step 3: Create Integration Test (All Fixes Combined)**
+
+```bash
+# Combine all fixes into one comprehensive test
+cat > /tmp/smoke_integration.ruchy << 'EOF'
+// INTEGRATION TEST: All fixes from this release
+// Include patterns from EACH fix combined
+EOF
+
+ruchydbg run /tmp/smoke_integration.ruchy --timeout 5000 --trace
+```
+
+**Step 4: Pathological Input Detection**
+
+```bash
+# Check for performance regressions
+ruchydbg detect /tmp/smoke_integration.ruchy --threshold 15
+
+# ⚠️ If pathological input detected:
+# - Verify it's expected algorithmic complexity (O(n²) is OK for nested loops)
+# - Ensure execution completes (no hangs)
+# - Performance should be <1s for smoke tests
+```
+
+**Step 5: End-to-End Verification with Real Project**
+
+```bash
+# Test with actual user project (e.g., reaper, ruchy-book examples)
+timeout 60 ruchy compile /path/to/real/project/main.ruchy
+
+# Verify:
+# ✅ Compiles with 0 errors
+# ✅ Binary executes correctly
+# ✅ No regressions in existing functionality
+```
+
+**Step 6: Generate Smoke Test Report**
+
+```bash
+cat > /tmp/ruchydbg_smoke_test_report.md << 'EOF'
+# RuchyRuchy Smoke Test Report
+## Version: vX.Y.Z
+
+### Individual Fix Tests
+- ✅ DEFECT-XXX: [description] - SUCCESS (Xms)
+- ✅ DEFECT-YYY: [description] - SUCCESS (Xms)
+
+### Integration Test
+- ✅ All fixes combined: SUCCESS (Xms)
+
+### Performance Analysis
+- ⚠️ Pathological inputs: [analysis]
+
+### End-to-End Verification
+- ✅ Project: [name] - Compiles + Executes
+
+### Summary
+ALL SMOKE TESTS PASSED ✅
+EOF
+```
+
+**MANDATORY Checklist** (Before Publishing):
+- [ ] Individual smoke tests created for each fix
+- [ ] All smoke tests pass with ruchydbg
+- [ ] Integration test passes
+- [ ] Performance analysis complete (no unexpected regressions)
+- [ ] End-to-end verification with real project
+- [ ] Smoke test report generated
+
+**FORBIDDEN RESPONSES**:
+- ❌ "The fix looks good, let's skip smoke testing"
+- ❌ "We already have unit tests, smoke tests are redundant"
+- ❌ "This is a small fix, doesn't need smoke testing"
+- ❌ "Let's smoke test after release"
+
+**Toyota Way**: Smoke testing is GATE 0 for releases. No smoke tests = no release.
+
+**Success Metrics** (v3.168.0):
+- 3 individual smoke tests: ALL PASSED (3-4ms each)
+- 1 integration test: PASSED (4ms)
+- Pathological detection: Expected O(n²), no hangs
+- Reaper (5,100 LOC): 0 errors, executes correctly
+- Time investment: ~15 minutes vs hours of debugging production issues
+
 ### DUAL-RELEASE PUBLISHING PROTOCOL
 **After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
 **Checklist**: Tests pass, CHANGELOG updated, git commit/push, both crates build
