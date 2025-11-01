@@ -1,6 +1,6 @@
 [package]
 name = "ruchy-wasm"
-version = "3.165.0"
+version = "3.166.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"

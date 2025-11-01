@@ -1171,11 +1171,12 @@ impl Transpiler {
         matches!(&ty.kind, TypeKind::Named(name) if name == "String")
     }
 
-    /// DEFECT-012: Check if expression body needs .to_string() conversion
+    /// DEFECT-012/013: Check if expression body needs .to_string() conversion
     fn body_needs_string_conversion(&self, body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::Identifier(_) => true,  // Could be &str variable
+            ExprKind::IndexAccess { .. } => true,  // DEFECT-013: Vec/array indexing may return &str
             ExprKind::Block(exprs) if !exprs.is_empty() => {
                 self.body_needs_string_conversion(exprs.last().unwrap())
             }
