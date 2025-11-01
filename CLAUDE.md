@@ -217,6 +217,30 @@ ruchydbg profile --stack recursive_code.ruchy
 # Deepest call stack: Shows full call chain at max depth
 ```
 
+**Pathological Performance Detector (DEBUGGER-042 - Documented, Integration Pending)**:
+```bash
+# NOTE: Book chapter complete, CLI integration pending
+# Will be available in future ruchydbg version
+# ruchydbg profile --pathological code.ruchy
+
+# Example output:
+# === Pathological Performance Analysis ===
+# Baseline (n=10): 0.15ms
+# Scaled (n=100): 245.32ms
+# Performance cliff detected! 16,354x slowdown (expected ~100x for O(n²))
+#
+# Likely causes:
+# - Algorithmic complexity worse than O(n²)
+# - Nested loops with exponential growth
+# - Memory allocation churn
+
+# Use cases:
+# ✓ Find performance cliffs (fuzzing finds crashes, this finds slowdowns)
+# ✓ Validate algorithmic complexity matches expectations
+# ✓ Detect accidental exponential behavior
+# ✓ Complement benchmarking (average-case) with worst-case analysis
+```
+
 **Use Cases**:
 - **Find recursion issues BEFORE stack overflow** (catches depth > 30 early)
 - **Identify hotspots** (fibonacci with 67 calls vs factorial with 10)
