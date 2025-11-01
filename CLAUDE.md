@@ -149,14 +149,19 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 - **Mutation Tests**: ≥75% coverage via cargo-mutants (prove tests catch real bugs)
 - **Regression Tests**: Every GitHub issue gets specific test case
 
-### 🚀 DEBUGGING TOOLKIT (RuchyRuchy v1.9.0+ - PRODUCTION READY)
+### 🚀 DEBUGGING TOOLKIT (RuchyRuchy v1.13.0+ - PRODUCTION READY)
 
 **✅ NOW AVAILABLE**: Comprehensive debugging tools via ruchydbg CLI (installed via `cargo install ruchyruchy`)
 
-**What EXISTS Now (v1.9.0)**:
+**What EXISTS Now (v1.13.0)**:
 - ✅ RuchyRuchy repository: https://github.com/paiml/ruchyruchy
 - ✅ `ruchydbg run` - Timeout detection + type-aware tracing (Ruchy v3.149.0+)
 - ✅ `ruchydbg validate` - Validates debugging infrastructure
+- ✅ **`ruchydbg regression`** - **NEW in v1.13.0**: Systematic regression detection (DEBUGGER-043)
+  - `snapshot`: Compare behavior across versions (catches output changes)
+  - `determinism`: Verify N-run consistency (finds non-determinism bugs)
+  - `state`: Detect variable leakage between runs (REPL state pollution)
+  - `perf`: Find performance regressions >2x slowdown
 - ✅ Bug discovery: Property tests, differential tests, fuzz tests, code churn analysis
 - ✅ Bug replication: Delta debugging, git bisection, test generation
 - ✅ Bug reporting: GitHub integration, Five-Whys analysis
@@ -192,6 +197,39 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    ```
 
 **Time Savings**: Manual (30+ min/bug) → ruchydbg + tracing (2-5 min/bug) = **6-15x faster**
+
+**Regression Testing Protocol (v1.13.0+ - DEBUGGER-043)**:
+```bash
+# 1. Verify determinism (catches non-deterministic bugs)
+ruchydbg regression determinism test.ruchy --runs 10
+# Exit 0 = deterministic, Exit 1 = non-determinism detected
+# Use case: REPL state pollution, random number generators, timestamp bugs
+
+# 2. Check for state pollution (catches variable leakage)
+ruchydbg regression state define_global.ruchy use_global.ruchy
+# Exit 0 = no leakage, Exit 1 = state pollution detected
+# Use case: Global variable persistence between script runs
+
+# 3. Detect performance regressions (catches O(n²) bugs)
+ruchydbg regression perf baseline.ruchy current.ruchy --threshold 2.0
+# Exit 0 = no regression, Exit 1 = >2x slowdown detected
+# Use case: Algorithmic complexity regressions, memory leaks
+
+# 4. Compare behavioral changes (catches output regressions)
+ruchydbg regression snapshot v1.0.ruchy v2.0.ruchy
+# Exit 0 = identical output, Exit 1 = behavior changed
+# Use case: Breaking changes between versions, output format changes
+```
+
+**CI/CD Integration**:
+```yaml
+# Add to .github/workflows/ci.yml
+- name: Regression Testing
+  run: |
+    cargo install ruchyruchy
+    ruchydbg regression determinism examples/**/*.ruchy --runs 10
+    ruchydbg regression state tests/state/*.ruchy
+```
 
 **Type-Aware Tracing (Ruchy v3.149.0+)**:
 ```bash
