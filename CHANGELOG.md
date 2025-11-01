@@ -4,6 +4,22 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.166.0] - 2025-10-31
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-013] Vec/Array indexing with String return type generates E0308**
+  - Fixed functions with `-> String` return type that return Vec/Array index expressions, causing E0308: expected String, found &str
+  - Root cause: Vec/Array indexing (e.g., `data[0]`) returns `&str` when element type is `&str`, but function return type conversion wasn't applied
+  - Impact: HIGH - Additional E0308 errors in code using Vec indexing with String return types
+  - Example BEFORE: `fun get() -> String { items[0] }` → E0308: expected String, found &str
+  - Example AFTER: `fun get() -> String { items[0] }` → transpiles to `(items[0 as usize]).to_string()` → compiles successfully
+  - Solution: Extended body_needs_string_conversion() to detect ExprKind::IndexAccess expressions
+  - Code changes:
+    - src/backend/transpiler/statements.rs:1179: Added `ExprKind::IndexAccess { .. } => true` to body_needs_string_conversion()
+  - Tests: 3 tests in tests/transpiler_defect_013_vec_index_string_RED.rs (direct index, variable with index, String::from baseline)
+  - Real-world impact: Fixes additional E0308 errors in code using Vec/Array indexing patterns
+  - Files: src/backend/transpiler/statements.rs (+1 line), tests/transpiler_defect_013_vec_index_string_RED.rs (NEW, 3 tests)
+
 ## [3.165.0] - 2025-10-31
 
 ### Fixed
