@@ -2264,7 +2264,13 @@ impl Transpiler {
         body: &Expr,
     ) -> Result<TokenStream> {
         let iter_tokens = self.transpile_expr(iter)?;
+
+        // DEFECT-018 FIX: Set loop context flag to enable auto-cloning in function calls
+        let was_in_loop = self.in_loop_context.get();
+        self.in_loop_context.set(true);
         let body_tokens = self.transpile_expr(body)?;
+        self.in_loop_context.set(was_in_loop);
+
         // If we have a pattern, use it for destructuring
         if let Some(pat) = pattern {
             let pattern_tokens = self.transpile_pattern(pat)?;
@@ -2286,7 +2292,13 @@ impl Transpiler {
     /// Transpiles while loops
     pub fn transpile_while(&self, condition: &Expr, body: &Expr) -> Result<TokenStream> {
         let cond_tokens = self.transpile_expr(condition)?;
+
+        // DEFECT-018 FIX: Set loop context flag to enable auto-cloning in function calls
+        let was_in_loop = self.in_loop_context.get();
+        self.in_loop_context.set(true);
         let body_tokens = self.transpile_expr(body)?;
+        self.in_loop_context.set(was_in_loop);
+
         Ok(quote! {
             while #cond_tokens {
                 #body_tokens
@@ -4941,7 +4953,16 @@ impl Transpiler {
                 args.iter()
                     .enumerate()
                     .map(|(i, arg)| {
-                        let base_tokens = self.transpile_expr(arg)?;
+                        let mut base_tokens = self.transpile_expr(arg)?;
+
+                        // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                        // to prevent "use of moved value" errors on subsequent iterations
+                        if self.in_loop_context.get() {
+                            if matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
+                                base_tokens = quote! { #base_tokens.clone() };
+                            }
+                        }
+
                         // Apply String/&str coercion if needed
                         if let Some(expected_type) = signature.param_types.get(i) {
                             self.apply_string_coercion(arg, &base_tokens, expected_type)
@@ -4952,7 +4973,18 @@ impl Transpiler {
                     .collect()
             } else {
                 // No signature info - transpile as-is
-                args.iter().map(|a| self.transpile_expr(a)).collect()
+                args.iter().map(|arg| {
+                    let mut base_tokens = self.transpile_expr(arg)?;
+
+                    // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                    if self.in_loop_context.get() {
+                        if matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
+                            base_tokens = quote! { #base_tokens.clone() };
+                        }
+                    }
+
+                    Ok(base_tokens)
+                }).collect()
             };
         let arg_tokens = arg_tokens?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })

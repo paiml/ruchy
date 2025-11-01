@@ -120,6 +120,12 @@ pub struct Transpiler {
     ///
     /// This affects how await expressions and async blocks are generated.
     pub in_async_context: bool,
+    /// Whether the current code generation is within a loop context (DEFECT-018 fix).
+    ///
+    /// This affects whether function call arguments need to be cloned to prevent
+    /// "use of moved value" errors in loop iterations.
+    /// Uses Cell for interior mutability since transpiler methods take &self.
+    pub in_loop_context: std::cell::Cell<bool>,
     /// Set of variable names that require mutable bindings.
     ///
     /// Populated during mutability analysis to automatically infer `mut`.
@@ -158,6 +164,7 @@ impl Transpiler {
     pub fn new() -> Self {
         Self {
             in_async_context: false,
+            in_loop_context: std::cell::Cell::new(false),
             mutable_vars: std::collections::HashSet::new(),
             function_signatures: std::collections::HashMap::new(),
             module_names: std::collections::HashSet::new(),

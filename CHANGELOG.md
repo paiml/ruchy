@@ -74,6 +74,41 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: src/backend/transpiler/statements.rs (+45 lines modified at 3 locations), tests/transpiler_defect_016_c_match_arm_string_RED.rs (NEW, 5 tests, all passing)
   - Toyota Way: Applied GENCHI GENBUTSU - examined actual function transpilation flow to find where Match needed special handling
 
+- **[Issue #111 / TRANSPILER-DEFECT-016-B] Function call String results not tracked for auto-borrowing**
+  - Fixed variables assigned from function calls returning String not tracked in string_vars, causing E0308 errors in concatenation
+  - Root cause: string_vars tracking only handled string literals and String::from(), not function call results
+  - Impact: 1 error eliminated in reaper project (2 → 1, -50% reduction)
+  - Example BEFORE: `let priority_str = priority_to_string(p); result = result + priority_str;` → E0308: expected &str, found String
+  - Example AFTER: `result = format!("{}{}", result, &priority_str);` → compiles (auto-borrow applied)
+  - Solution: Optimistically track all function call results in string_vars - Rust compiler validates if actually String
+  - Code changes:
+    - src/backend/transpiler/statements.rs:397-403: Track function call results in string_vars during Let transpilation
+    - src/backend/transpiler/statements.rs:1300-1305: Track function call results in function-scope Let statements
+  - Tests: 4 tests in tests/transpiler_defect_016_b_function_call_string_RED.rs (2 function call tests, 2 baseline tests)
+  - Real-world impact: Reaper project errors: 2 → 1 (-50% reduction), line 731 (format_rule function) now compiles
+  - Files: src/backend/transpiler/statements.rs (+9 lines modified at 2 locations), tests/transpiler_defect_016_b_function_call_string_RED.rs (NEW, 4 tests, all passing)
+  - Toyota Way: Used GENCHI GENBUTSU - examined actual reaper code pattern to identify missing tracking case
+
+- **[Issue #111 / TRANSPILER-DEFECT-018] Moved value in loop - auto-clone function parameters**
+  - Fixed variables from outer loop scopes moved when passed to functions in inner loops, causing E0382 errors on subsequent iterations
+  - Root cause: Function calls inside loops move ownership of arguments, but Ruchy didn't auto-clone to allow reuse in loop iterations
+  - Impact: FINAL error eliminated in reaper project (1 → 0, **100% reduction - ALL ERRORS FIXED**)
+  - Example BEFORE (nested loops): `while j < rules.len() { if rule_matches_process(rule, proc) { break; } j = j + 1; }` → E0382: use of moved value: `proc`
+  - Example AFTER: `if rule_matches_process(rule, proc.clone())` → compiles (auto-clone prevents move)
+  - Solution: Track loop context with `in_loop_context: Cell<bool>` field, set flag in While/For loop bodies, auto-clone Identifier arguments in function calls
+  - Code changes:
+    - src/backend/transpiler/mod.rs:123-128: Added `in_loop_context: Cell<bool>` field with interior mutability
+    - src/backend/transpiler/mod.rs:167: Initialize `in_loop_context` in new() method
+    - src/backend/transpiler/statements.rs:2268-2272: Set loop context flag in transpile_for()
+    - src/backend/transpiler/statements.rs:2290-2294: Set loop context flag in transpile_while()
+    - src/backend/transpiler/statements.rs:4958-4964: Auto-clone Identifier arguments when in_loop_context is true (signature path)
+    - src/backend/transpiler/statements.rs:4976-4984: Auto-clone Identifier arguments when in_loop_context is true (no-signature path)
+  - Tests: 3 tests in tests/transpiler_defect_018_moved_value_loop_RED.rs (2 loop moved-value tests, 1 baseline test, all passing)
+  - Real-world impact: **Reaper project errors: 1 → 0 (100% reduction) - ALL TRANSPILER ERRORS ELIMINATED**, line 1313 (nested loop) now compiles
+  - Files: src/backend/transpiler/mod.rs (+6 lines), statements.rs (+21 lines modified at 4 locations), tests/transpiler_defect_018_moved_value_loop_RED.rs (NEW, 3 tests, all passing)
+  - Toyota Way: Applied GENCHI GENBUTSU - examined actual reaper nested loop pattern (line 1305-1318) to identify moved value issue
+  - **MILESTONE**: Issue #111 RESOLVED - Reaper project (5,100 LOC) now compiles successfully with 0 errors
+
 ## [3.167.0] - 2025-11-01
 
 ### Fixed
