@@ -870,6 +870,9 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: Vm
         Some(Commands::Repl { record }) => handle_repl_command(record),
         Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
         Some(Commands::Build { release }) => handlers::build::handle_build_command(release, verbose),
+        Some(Commands::Publish { registry, version, dry_run, allow_dirty }) => {
+            handlers::handle_publish_command(&registry, version.as_deref(), dry_run, allow_dirty, verbose)
+        }
         None => handle_repl_command(None),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile {

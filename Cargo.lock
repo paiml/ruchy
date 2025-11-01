@@ -4768,6 +4768,7 @@ dependencies = [
  "rexpect",
  "ruchyruchy",
  "rustyline",
+ "semver",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

@@ -315,6 +315,7 @@ wasmparser = { version = "0.239.0", optional = true }
 wasmtime = { version = "38.0.2", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
+semver = "1.0.27"
 
 # Platform-specific dependencies for non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
