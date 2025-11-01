@@ -1233,10 +1233,40 @@ impl Transpiler {
                     ExprKind::Let { name, type_annotation, value, body: let_body, is_mutable, .. } => {
                         // Transpile let statement parts
                         let name_ident = format_ident!("{}", name);
-                        let value_tokens = self.transpile_expr(value)?;
+
+                        // DEFECT-015 FIX: Check if this is a mutable variable for string literal detection
+                        let is_mutable_var = *is_mutable
+                            || self.mutable_vars.contains(name.as_str())
+                            || Self::is_variable_mutated(name, let_body);
+
+                        // DEFECT-015 FIX: Auto-convert string literals to String for mutable variables
+                        let value_tokens = match (&value.kind, type_annotation) {
+                            (
+                                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                                Some(type_ann),
+                            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::Named(name) if name == "String") =>
+                            {
+                                // String literal with String type annotation - add .to_string()
+                                // DEFECT-016 FIX: Track this as a string variable
+                                self.string_vars.borrow_mut().insert(name.clone());
+                                quote! { #s.to_string() }
+                            }
+                            (
+                                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                                None,
+                            ) if is_mutable_var =>
+                            {
+                                // Mutable variable with string literal (no type annotation) - use String::from()
+                                // DEFECT-016 FIX: Track this as a string variable
+                                self.string_vars.borrow_mut().insert(name.clone());
+                                quote! { String::from(#s) }
+                            }
+                            _ => self.transpile_expr(value)?,
+                        };
+
                         let let_body_tokens = self.transpile_expr(let_body)?;
 
-                        let mutability = if *is_mutable {
+                        let mutability = if is_mutable_var {
                             quote! { mut }
                         } else {
                             quote! {}

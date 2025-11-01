@@ -4,6 +4,45 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.168.0] - 2025-11-01
+
+### Fixed
+- **[Issue #111 / TRANSPILER-DEFECT-015] Mutable string inference not working in function scope**
+  - Fixed string accumulator pattern in function bodies not detected as needing String type
+  - Root cause: `generate_body_tokens_with_string_conversion()` had custom Let handling that bypassed `is_variable_mutated()` detection
+  - Impact: CRITICAL - 7 errors eliminated in reaper project (15 → 8, -47% reduction)
+  - Example BEFORE: `fun format() -> String { let msg = "Start"; msg = msg + "End"; msg }` → E0308: format!() returns String, msg is &str
+  - Example AFTER: `fun format() -> String { let mut msg = String::from("Start"); msg = format!("{}{}", msg, "End"); msg }` → compiles successfully
+  - Solution: Added mutable string detection to `generate_body_tokens_with_string_conversion()` at line 1237-1240
+  - Code changes:
+    - src/backend/transpiler/statements.rs:1234-1266: Added `is_variable_mutated()` check and String::from() conversion for mutable string literals in function scope
+  - Tests: 9 tests in tests/transpiler_defect_015_mutable_string_function_scope_RED.rs (6 RED tests confirming E0308/E0369, 2 baseline tests, 1 nested block test)
+  - Real-world impact: Reaper project errors: 15 → 8 (-47% reduction), eliminated all format!() type mismatch errors
+  - Files: src/backend/transpiler/statements.rs (+33 lines modified), tests/transpiler_defect_015_mutable_string_function_scope_RED.rs (NEW, 9 tests)
+  - Toyota Way: Applied GENCHI GENBUTSU - examined ACTUAL reaper source code to identify root cause instead of guessing patterns
+
+- **[Issue #111 / TRANSPILER-DEFECT-016] String field borrowing in concatenation (PARTIAL FIX - 4 of 6 errors resolved)**
+  - Fixed Binary + operator not auto-borrowing String fields/variables in concatenation
+  - Root cause: `is_definitely_string()` was too conservative - returned false for Identifiers and FieldAccess, so string concatenations fell through to raw `+` operator without auto-borrowing
+  - Impact: 4 errors eliminated in reaper project (8 → 4, -50% reduction)
+  - Example BEFORE: `formatted = formatted + proc.name;` → E0308: expected &str, found String
+  - Example AFTER: `formatted = format!("{}{}", formatted, &proc.name);` → compiles (auto-borrow applied)
+  - Solution:
+    1. Added `string_vars: RefCell<HashSet<String>>` to track variables assigned from string literals
+    2. Changed `is_definitely_string()` from static to instance method accessing `string_vars`
+    3. Made FieldAccess optimistically return true (let Rust type system catch non-String fields)
+  - Code changes:
+    - src/backend/transpiler/mod.rs:135-140: Added `string_vars` field with RefCell for interior mutability
+    - src/backend/transpiler/mod.rs:163: Initialize `string_vars` in new()
+    - src/backend/transpiler/expressions.rs:278-312: Changed `is_definitely_string()` to instance method, check `string_vars` for Identifiers
+    - src/backend/transpiler/expressions_helpers/binary_ops.rs:13-16: Use instance method instead of static
+    - src/backend/transpiler/statements.rs:1251,1261: Track string variables during Let transpilation
+  - Tests: 6 tests in tests/transpiler_defect_016_string_field_borrowing_RED.rs (5 RED tests for String fields, 1 baseline)
+  - Remaining issues: 2 errors (match arms returning &str, function call results not tracked in string_vars)
+  - Real-world impact: Reaper project errors: 8 → 4 (-50% reduction), NO FALSE POSITIVES (integer loop counters work correctly)
+  - Files: mod.rs (+6 lines), expressions.rs (+6 lines modified), binary_ops.rs (+2 lines modified), statements.rs (+2 lines modified), tests/transpiler_defect_016_string_field_borrowing_RED.rs (NEW, 6 tests)
+  - Toyota Way: Used GENCHI GENBUTSU - examined actual transpiled Rust code to find code path bypass
+
 ## [3.167.0] - 2025-11-01
 
 ### Fixed

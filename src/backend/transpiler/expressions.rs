@@ -274,8 +274,8 @@ impl Transpiler {
         Ok(quote! { vec![#value_tokens; #size_tokens as usize] })
     }
 
-    /// Check if an expression is definitely a string (conservative detection)
-    fn is_definitely_string(expr: &Expr) -> bool {
+    /// Check if an expression is definitely a string (less conservative detection for DEFECT-016)
+    fn is_definitely_string(&self, expr: &Expr) -> bool {
         match &expr.kind {
             // String literals are definitely strings
             ExprKind::Literal(Literal::String(_)) => true,
@@ -286,7 +286,7 @@ impl Transpiler {
                 op: BinaryOp::Add,
                 left,
                 right,
-            } => Self::is_definitely_string(left) || Self::is_definitely_string(right),
+            } => self.is_definitely_string(left) || self.is_definitely_string(right),
             // Method calls on strings that return strings
             ExprKind::MethodCall {
                 receiver, method, ..
@@ -294,11 +294,16 @@ impl Transpiler {
                 matches!(
                     method.as_str(),
                     "to_string" | "trim" | "to_uppercase" | "to_lowercase"
-                ) || Self::is_definitely_string(receiver)
+                ) || self.is_definitely_string(receiver)
             }
-            // Variables could be strings, but we can't be sure without type info
-            // For now, be conservative and don't assume variables are strings
-            ExprKind::Identifier(_) => false,
+            // DEFECT-016 FIX: Identifiers that are tracked string variables ARE strings
+            ExprKind::Identifier(name) => {
+                // Check if this identifier is a known string variable (not just any mutable var)
+                self.string_vars.borrow().contains(name.as_str())
+            }
+            // DEFECT-016 FIX: Field access MIGHT be a String field - be less conservative
+            // Assume field access could be String (let Rust type system catch errors if not)
+            ExprKind::FieldAccess { .. } => true,
             // Function calls are NOT definitely strings - they could return any type
             ExprKind::Call { .. } => false,
             // Other expressions are not strings
@@ -308,10 +313,24 @@ impl Transpiler {
     /// Transpile string concatenation using proper Rust string operations
     fn transpile_string_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {
         let left_tokens = self.transpile_expr(left)?;
+
+        // DEFECT-016 FIX: Auto-borrow String types on right side
+        // When right operand is a String type (FieldAccess, Identifier, Call), wrap with & to borrow
         let right_tokens = self.transpile_expr(right)?;
+        let right_final = match &right.kind {
+            // String fields need borrowing: rule.name → &rule.name
+            ExprKind::FieldAccess { .. } => quote! { &#right_tokens },
+            // String identifiers need borrowing: name → &name
+            ExprKind::Identifier(_) => quote! { &#right_tokens },
+            // Function calls returning String need borrowing: to_string() → &to_string()
+            ExprKind::Call { .. } | ExprKind::MethodCall { .. } => quote! { &#right_tokens },
+            // String literals and other expressions don't need borrowing
+            _ => right_tokens,
+        };
+
         // Use format! with proper string handling - convert both to strings to avoid type mismatches
         // This avoids the String + String issue in Rust by using format! exclusively
-        Ok(quote! { format!("{}{}", #left_tokens, #right_tokens) })
+        Ok(quote! { format!("{}{}", #left_tokens, #right_final) })
     }
 
     /// Helper to detect if an expression looks like it belongs in a real set literal

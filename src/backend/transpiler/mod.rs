@@ -132,6 +132,12 @@ pub struct Transpiler {
     ///
     /// Tracks module identifiers so field access can use :: syntax for module paths.
     pub module_names: std::collections::HashSet<String>,
+    /// Variable names that hold String values (DEFECT-016 fix).
+    ///
+    /// Populated during transpilation to track which mutable variables are Strings.
+    /// Used to distinguish string concatenation from numeric addition.
+    /// Uses RefCell for interior mutability since transpiler methods take &self.
+    pub string_vars: std::cell::RefCell<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -155,6 +161,7 @@ impl Transpiler {
             mutable_vars: std::collections::HashSet::new(),
             function_signatures: std::collections::HashMap::new(),
             module_names: std::collections::HashSet::new(),
+            string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
