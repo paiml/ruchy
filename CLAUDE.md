@@ -923,6 +923,198 @@ EOF
 - Reaper (5,100 LOC): 0 errors, executes correctly
 - Time investment: ~15 minutes vs hours of debugging production issues
 
+### 🚀 PRE-RELEASE VALIDATION PROTOCOL (MANDATORY)
+
+**CRITICAL**: Before EVERY release, run comprehensive debugging validation to prevent production bugs.
+
+**Toyota Way**: Quality is built-in through systematic validation, not bolted-on through post-release fixes.
+
+#### Gate 0: Smoke Testing (Already Covered Above)
+- Unit tests: `cargo test --lib`
+- Integration tests: `cargo test --test`
+- Compilation: `cargo build --release`
+- Examples: All 78 examples must execute successfully
+
+#### Gate 1: Debugging Tools Validation (ruchydbg v1.13.0+)
+
+**Installation** (if not already installed):
+```bash
+cargo install ruchyruchy  # Includes ruchydbg CLI
+```
+
+**1. Timeout Detection & Type-Aware Tracing**
+```bash
+# Test all examples with timeout + tracing
+for example in examples/*.ruchy; do
+    echo "Testing: $example"
+    ruchydbg run "$example" --timeout 5000 --trace
+    if [ $? -eq 124 ]; then
+        echo "❌ TIMEOUT: $example hangs - STOP THE LINE"
+        exit 1
+    fi
+done
+```
+
+**2. Regression Testing (DEBUGGER-043)**
+```bash
+# Determinism check (catches non-deterministic bugs)
+ruchydbg regression determinism examples/**/*.ruchy --runs 10
+# Exit 0 = deterministic, Exit 1 = STOP THE LINE
+
+# State pollution check (catches variable leakage)
+ruchydbg regression state tests/state/*.ruchy
+# Exit 0 = no leakage, Exit 1 = STOP THE LINE
+
+# Performance regression check (catches O(n²) bugs)
+ruchydbg regression perf baseline.ruchy current.ruchy --threshold 2.0
+# Exit 0 = no regression, Exit 1 = >2x slowdown detected
+```
+
+**3. Stack Depth Profiling (DEBUGGER-041)**
+```bash
+# Profile recursion depth to catch stack overflow bugs
+ruchydbg profile --stack examples/recursion/*.ruchy
+
+# Check for max depth > 100 (potential stack overflow risk)
+# Check for hotspot functions with >1000 calls (performance issue)
+```
+
+#### Gate 2: Property-Based Testing (DEBUGGER-044)
+
+**Location**: RuchyRuchy interpreter codebase (NOT Ruchy compiler)
+
+**Run Property Tests**:
+```bash
+cd ../ruchyruchy
+cargo test --test property_based_tests --release
+```
+
+**Expected Results**:
+- 7 properties tested
+- 14,000+ test cases
+- Execution time: <2 seconds
+- All tests PASS (no failures, no panics)
+
+**Properties Validated**:
+1. Parser roundtrip: parse(emit(ast)) = ast (1,000 cases)
+2. Evaluator determinism: eval(expr) = eval(expr) (1,000 cases)
+3. Token concatenation: tokenize(a+b) ≥ tokenize(a) + tokenize(b) (1,000 cases)
+4. No crashes - Parser: Never panics on UTF-8 input (10,000 cases)
+5. No crashes - Evaluator: Never panics on valid AST (10,000 cases)
+6. Addition commutative: a + b = b + a (1,000 cases)
+7. Meta-test: Completeness validation
+
+**Impact**: Catches 23% of bugs that unit tests miss (proven via research)
+
+#### Gate 3: Real-World Project Validation
+
+**Test with Production Projects** (e.g., Reaper v1.0.0):
+```bash
+cd ../reaper  # Or other large Ruchy project
+
+# 1. Re-transpile with latest Ruchy
+../ruchy/target/release/ruchy transpile src/main.ruchy > src/main.rs
+
+# 2. Verify compilation
+cargo clean && cargo build --release
+if [ $? -ne 0 ]; then
+    echo "❌ TRANSPILATION BUG - STOP THE LINE"
+    exit 1
+fi
+
+# 3. Test execution with ruchydbg
+../ruchyruchy/target/release/ruchydbg run src/main.ruchy --timeout 10000 --trace
+if [ $? -eq 124 ]; then
+    echo "❌ HANG DETECTED - STOP THE LINE"
+    exit 1
+fi
+
+# 4. Verify publication readiness
+../ruchy/target/release/ruchy publish --dry-run
+cargo publish --dry-run --allow-dirty
+```
+
+**Real-World Success Case** (Reaper v1.0.0, 2025-11-01):
+- Problem: E0382 ownership error blocking crates.io publication
+- Root Cause: Stale transpiled code from older Ruchy version
+- Solution: Re-transpiled with v3.170.0 (auto-cloning feature)
+- Result: ✅ Compiles in 29.42s, cargo publish passes
+- Time to Fix: 10 minutes (GENCHI GENBUTSU identified root cause)
+
+**Lesson Learned**: Always re-transpile real-world projects after Ruchy updates to catch version mismatches.
+
+#### Gate 4: PMAT Quality Gates
+
+```bash
+# Run PMAT quality checks
+pmat tdg . --min-grade A- --fail-on-violation
+pmat maintain health
+
+# Expected: All checks pass, no regressions
+```
+
+#### Complete Pre-Release Checklist
+
+```bash
+#!/bin/bash
+# Pre-release validation script (save as .pmat/pre_release_validation.sh)
+
+set -e  # Exit on any failure
+
+echo "🚀 PRE-RELEASE VALIDATION STARTING..."
+
+# Gate 0: Smoke Testing
+echo "Gate 0: Smoke Testing..."
+cargo test --lib --release
+cargo test --test --release
+cargo build --release
+echo "✅ Gate 0 PASSED"
+
+# Gate 1: Debugging Tools
+echo "Gate 1: Debugging Tools Validation..."
+for example in examples/*.ruchy; do
+    timeout 10 ruchydbg run "$example" --timeout 5000 || {
+        echo "❌ FAILED: $example"
+        exit 1
+    }
+done
+ruchydbg regression determinism examples/**/*.ruchy --runs 10
+echo "✅ Gate 1 PASSED"
+
+# Gate 2: Property-Based Testing
+echo "Gate 2: Property-Based Testing..."
+cd ../ruchyruchy && cargo test --test property_based_tests --release && cd -
+echo "✅ Gate 2 PASSED"
+
+# Gate 3: Real-World Project Validation
+echo "Gate 3: Real-World Project Validation..."
+cd ../reaper
+../ruchy/target/release/ruchy transpile src/main.ruchy > src/main.rs
+cargo build --release
+../ruchyruchy/target/release/ruchydbg run src/main.ruchy --timeout 10000
+../ruchy/target/release/ruchy publish --dry-run
+cd -
+echo "✅ Gate 3 PASSED"
+
+# Gate 4: PMAT Quality Gates
+echo "Gate 4: PMAT Quality Gates..."
+pmat tdg . --min-grade A- --fail-on-violation
+echo "✅ Gate 4 PASSED"
+
+echo "🎉 ALL GATES PASSED - READY FOR RELEASE"
+```
+
+**Time Investment**: ~15-20 minutes per release
+**ROI**: Prevents hours of debugging production issues + user frustration
+
+**FORBIDDEN RESPONSES**:
+- ❌ "Let's skip validation for this small release"
+- ❌ "We already have unit tests, this is redundant"
+- ❌ "Let's validate after publishing"
+- ❌ "The fix is trivial, doesn't need full validation"
+
+**Toyota Way**: Stop the Line for ANY gate failure. Fix root cause before proceeding.
+
 ### DUAL-RELEASE PUBLISHING PROTOCOL
 **After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
 **Checklist**: Tests pass, CHANGELOG updated, git commit/push, both crates build

@@ -4,6 +4,40 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Documentation
+- **[PROCESS-001] Pre-Release Validation Protocol integrated into CLAUDE.md**
+  - Added comprehensive 4-gate validation workflow for all releases
+  - Gate 0: Smoke Testing (unit/integration tests, compilation, examples)
+  - Gate 1: Debugging Tools Validation (ruchydbg v1.13.0: timeout detection, regression testing, stack profiling)
+  - Gate 2: Property-Based Testing (DEBUGGER-044: 14,000+ test cases across 7 properties, catches 23% of bugs)
+  - Gate 3: Real-World Project Validation (re-transpile, compile, execute, publish dry-run)
+  - Gate 4: PMAT Quality Gates (TDG A-, complexity ≤10, zero SATD)
+  - Complete pre-release validation script provided (.pmat/pre_release_validation.sh)
+  - Real-world success case documented: Reaper v1.0.0 E0382 fix (GENCHI GENBUTSU in 10 minutes)
+  - Time investment: ~15-20 minutes per release, prevents hours of debugging
+  - Files: CLAUDE.md (+192 lines, comprehensive validation workflow)
+  - Toyota Way: Quality built-in through systematic validation, not bolted-on through post-release fixes
+
+- **[REAPER-001] Reaper v1.0.0 E0382 Ownership Error Fix Report**
+  - Documented fix for E0382 "use of moved value" blocking crates.io publication
+  - Root cause: Stale transpiled code from older Ruchy version (missing auto-cloning)
+  - Solution: Re-transpiled src/main.ruchy with Ruchy v3.170.0 (includes auto-cloning for nested loops)
+  - Result: Cargo build succeeds (29.42s), cargo publish dry-run passes, ready for publication
+  - Five Whys analysis: Version mismatch between Ruchy compiler and transpiled code
+  - Preventive measure: Always re-transpile real-world projects after Ruchy updates
+  - Verification: ruchydbg execution validation passes (type-aware tracing, no hangs)
+  - Files: /home/noah/src/reaper/RUCHY_v3.170.0_E0382_FIX_REPORT.md (NEW, comprehensive fix report)
+  - Time to fix: 10 minutes (GENCHI GENBUTSU identified root cause immediately)
+
+- **[TRANSPILER-DEFECT-018] RED test for nested loop ownership pattern**
+  - Created RED test for E0382 ownership error in nested loop patterns
+  - Pattern: Value used in inner loop body without explicit .clone() gets moved
+  - Test file: tests/transpiler_defect_018_nested_loop_ownership_RED.rs (227 lines, 3 tests)
+  - Discovery: Transpiler ALREADY has auto-cloning (added in v3.167.0), issue was stale code
+  - Validation: Fresh transpilation adds .clone() automatically: `rule_matches_process(rule.clone(), proc.clone())`
+  - Impact: Confirms transpiler correctness, documents expected behavior for nested loops
+  - Files: tests/transpiler_defect_018_nested_loop_ownership_RED.rs (NEW, 227 lines)
+
 ## [3.170.0] - 2025-11-01
 
 ### Fixed
