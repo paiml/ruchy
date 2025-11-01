@@ -10,8 +10,9 @@ impl Transpiler {
     pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         // Special handling for string concatenation
         // Only treat as string concatenation if at least one operand is definitely a string
+        // DEFECT-016 FIX: Use instance method to access mutable_vars context
         if op == BinaryOp::Add
-            && (Self::is_definitely_string(left) || Self::is_definitely_string(right))
+            && (self.is_definitely_string(left) || self.is_definitely_string(right))
         {
             return self.transpile_string_concatenation(left, right);
         }
