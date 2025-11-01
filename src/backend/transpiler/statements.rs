@@ -3,7 +3,7 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
 use super::*;
-use crate::frontend::ast::{CatchClause, Expr, Literal, Param, Pattern, PipelineStage, UnaryOp};
+use crate::frontend::ast::{BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -775,6 +775,98 @@ impl Transpiler {
         }
     }
 
+    /// Check if function body returns a boolean value (ISSUE-113)
+    /// Detects: true, false, comparison expressions, return statements with booleans
+    fn returns_boolean(&self, body: &Expr) -> bool {
+        match &body.kind {
+            // Direct boolean literals
+            ExprKind::Literal(Literal::Bool(_)) => true,
+
+            // Comparison operators return bool
+            ExprKind::Binary { op, .. } => matches!(
+                op,
+                BinaryOp::Less | BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual
+                | BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::And | BinaryOp::Or
+            ),
+
+            // Return statement with boolean value
+            ExprKind::Return { value: Some(val) } => self.returns_boolean(val),
+
+            // Block - check last expression AND all return statements
+            ExprKind::Block(exprs) => {
+                // Check if any expression is a return with boolean
+                let has_boolean_return = exprs.iter().any(|e| {
+                    matches!(&e.kind, ExprKind::Return { value: Some(val) }
+                        if matches!(&val.kind, ExprKind::Literal(Literal::Bool(_))))
+                });
+
+                // Check last expression
+                let last_is_boolean = exprs.last().is_some_and(|e| self.returns_boolean(e));
+
+                has_boolean_return || last_is_boolean
+            }
+
+            // If expression - check both branches
+            ExprKind::If { then_branch, else_branch, .. } => {
+                self.returns_boolean(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| self.returns_boolean(e))
+            }
+
+            // Unary not operator on boolean
+            ExprKind::Unary { op: UnaryOp::Not, .. } => true,
+
+            _ => false,
+        }
+    }
+
+    /// Check if function body returns a Vec/array (ISSUE-113)
+    /// Detects: [], array.push(), array literals
+    fn returns_vec(&self, body: &Expr) -> bool {
+        match &body.kind {
+            // Array literal []
+            ExprKind::List(_) => true,
+
+            // Return statement with vec
+            ExprKind::Return { value: Some(val) } => self.returns_vec(val),
+
+            // Block - check last expression
+            ExprKind::Block(exprs) => {
+                exprs.last().is_some_and(|e| {
+                    // Last expression is array literal
+                    matches!(&e.kind, ExprKind::List(_))
+                    // OR last expression is identifier that was created from array
+                    || self.expr_creates_or_returns_vec(e, exprs)
+                })
+            }
+
+            // Identifier - check if it was assigned from array
+            ExprKind::Identifier(name) => {
+                // This is a simplification - we'd need full dataflow analysis
+                // For now, we can't determine this without context
+                // Return false here, rely on block analysis above
+                _ = name;
+                false
+            }
+
+            _ => false,
+        }
+    }
+
+    /// Helper: Check if expression in a block creates or returns a Vec
+    fn expr_creates_or_returns_vec(&self, expr: &Expr, block_exprs: &[Expr]) -> bool {
+        if let ExprKind::Identifier(name) = &expr.kind {
+            // Search backwards for let binding that creates array
+            for e in block_exprs.iter().rev() {
+                if let ExprKind::Let { name: let_name, value, .. } = &e.kind {
+                    if let_name == name && matches!(&value.kind, ExprKind::List(_)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
@@ -872,6 +964,12 @@ impl Transpiler {
                 "()" => Ok(quote! {}),
                 _ => Ok(quote! { -> i32 }) // Fallback for unknown types
             }
+        // ISSUE-113 FIX: Check for boolean return type BEFORE numeric fallback
+        } else if self.returns_boolean(body) {
+            Ok(quote! { -> bool })
+        // ISSUE-113 FIX: Check for Vec return type BEFORE numeric fallback
+        } else if self.returns_vec(body) {
+            Ok(quote! { -> Vec<i32> })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if self.returns_string_literal(body) {

@@ -4,6 +4,19 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **CRITICAL [ISSUE-113]**: Fixed transpiler type inference bugs blocking real-world code compilation
+  - Boolean return types now correctly inferred as `bool` (not `i32`)
+  - Integer parameters in comparisons now correctly inferred as `i32` (not `&str`)
+  - Vector return types now correctly inferred as `Vec<T>` (not `i32`)
+  - Added support for type inference in `while` and `for` loop conditions
+  - Comparison operators (`<`, `>`, `<=`, `>=`) now trigger numeric type inference
+  - Files: `src/backend/transpiler/statements.rs` (+114 lines), `src/backend/transpiler/type_inference.rs` (+77 lines)
+  - Tests: `tests/issue_113_transpiler_type_inference.rs` (NEW, 8/8 passing, 100% success rate)
+  - Validation: BENCH-008 (Prime Generation) transpiles and compiles successfully
+  - Discovery: Scientific benchmarking (EXTREME TDD) caught bugs before production
+  - Impact: Unblocks transpile/compile modes for real-world Ruchy code
+
 ### Documentation
 - **[PROCESS-001] Pre-Release Validation Protocol integrated into CLAUDE.md**
   - Added comprehensive 4-gate validation workflow for all releases

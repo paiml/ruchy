@@ -145,6 +145,16 @@ pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
         ExprKind::Call { args, .. } => check_call_numeric_usage(param_name, args),
         // DEFECT-CLOSURE-RETURN FIX: Check inside lambda bodies for captured variables
         ExprKind::Lambda { body, .. } => is_param_used_numerically(param_name, body),
+        // ISSUE-113 FIX: Check while loop conditions and bodies for numeric usage
+        ExprKind::While { condition, body, .. } => {
+            is_param_used_numerically(param_name, condition)
+                || is_param_used_numerically(param_name, body)
+        }
+        // ISSUE-113 FIX: Check for loop conditions and bodies
+        ExprKind::For { iter, body, .. } => {
+            is_param_used_numerically(param_name, iter)
+                || is_param_used_numerically(param_name, body)
+        }
         _ => false,
     }
 }
@@ -161,6 +171,7 @@ fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, righ
     is_param_used_numerically(param_name, left) || is_param_used_numerically(param_name, right)
 }
 /// Check if operator is numeric (complexity: 1)
+/// ISSUE-113 FIX: Include comparison operators for numeric type inference
 fn is_numeric_operator(op: &BinaryOp) -> bool {
     matches!(
         op,
@@ -169,6 +180,11 @@ fn is_numeric_operator(op: &BinaryOp) -> bool {
             | BinaryOp::Multiply
             | BinaryOp::Divide
             | BinaryOp::Modulo
+            // ISSUE-113: Comparison operators also indicate numeric usage
+            | BinaryOp::Less
+            | BinaryOp::Greater
+            | BinaryOp::LessEqual
+            | BinaryOp::GreaterEqual
     )
 }
 /// Check if param is in operation (complexity: 2)
@@ -618,6 +634,40 @@ mod tests {
                     // name should NOT be considered numeric in string concatenation
                     assert!(!is_param_used_numerically("name", body));
                     assert!(!is_param_used_as_function("name", body));
+                }
+            }
+        }
+    }
+
+    // ISSUE-113: Test numeric inference for comparison operators
+    #[test]
+    fn test_param_in_comparison_is_numeric() {
+        let code = "fun test(count) { let x = 0; while x < count { x = x + 1 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    // count should BE considered numeric in comparison
+                    assert!(is_param_used_numerically("count", body),
+                        "Parameter 'count' in 'x < count' should be detected as numeric");
+                }
+            }
+        }
+    }
+
+    // ISSUE-113: Test numeric inference for .len() comparison
+    #[test]
+    fn test_param_compared_with_len_is_numeric() {
+        let code = "fun test(count) { let arr = []; while arr.len() < count { arr.push(1) } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    // count should BE considered numeric when compared with .len()
+                    assert!(is_param_used_numerically("count", body),
+                        "Parameter 'count' in 'arr.len() < count' should be detected as numeric");
                 }
             }
         }
