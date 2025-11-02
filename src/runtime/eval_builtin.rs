@@ -56,6 +56,9 @@ pub fn eval_builtin_function(
     if let Some(result) = try_eval_json_function(name, args)? {
         return Ok(Some(result));
     }
+    if let Some(result) = try_eval_file_function(name, args)? {
+        return Ok(Some(result));
+    }
 
     // HTTP functions - not available in WASM
     #[cfg(not(target_arch = "wasm32"))]
@@ -2794,6 +2797,51 @@ fn try_eval_json_function(
         }
     }
     Ok(None)
+}
+
+// ==============================================================================
+// File Builtin Functions (ISSUE-116)
+// ==============================================================================
+
+/// Dispatcher for File namespace methods
+/// Complexity: 2
+fn try_eval_file_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "File_open" => Ok(Some(eval_file_open(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// ISSUE-116: File.open(path) - Opens file and returns File object
+/// Complexity: 4
+fn eval_file_open(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("File.open", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => {
+            // Read entire file into lines
+            let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
+                InterpreterError::RuntimeError(format!("Failed to open file '{}': {}", path, e))
+            })?;
+
+            let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+
+            // Create File object with state
+            let mut file_obj = std::collections::HashMap::new();
+            file_obj.insert("__type".to_string(), Value::from_string("File".to_string()));
+            file_obj.insert("path".to_string(), Value::from_string(path.to_string()));
+            file_obj.insert("lines".to_string(), Value::Array(Arc::from(
+                lines.into_iter().map(Value::from_string).collect::<Vec<_>>()
+            )));
+            file_obj.insert("position".to_string(), Value::Integer(0));
+            file_obj.insert("closed".to_string(), Value::Bool(false));
+
+            Ok(Value::ObjectMut(Arc::new(std::sync::Mutex::new(file_obj))))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "File.open() expects a string argument".to_string(),
+        )),
+    }
 }
 
 // ==============================================================================
