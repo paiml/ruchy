@@ -1,0 +1,269 @@
+// PERF-002-C: Dead Code Elimination (DCE) Optimization
+// EXTREME TDD Protocol: RED → GREEN → REFACTOR → VALIDATE
+// GitHub Issue: #125
+// Spec: ../ruchyruchy/docs/specifications/compiler-transpiler-optimization-spec.md (OPT-CODEGEN-003)
+// Target: 5-15% code size reduction
+// Dependencies: PERF-002-A (constant folding), PERF-002-B (constant propagation) complete
+
+use assert_cmd::Command;
+use predicates::prelude::*;
+
+/// RED PHASE: These tests WILL FAIL until DCE is implemented
+/// Acceptance: Dead code is removed from transpiled output
+
+// ============================================================================
+// TEST GROUP 1: Unreachable Code After Return
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_after_return() {
+    // Pattern: Code after return statement is unreachable
+    let code = r#"
+        fun example() -> i32 {
+            return 42;
+            let x = 5;  // Dead code
+            println(x);  // Dead code
+            return 99;  // Dead code
+        }
+        println(example());
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Should NOT contain dead code after return
+        .stdout(predicate::str::contains("let x = 5").not())
+        .stdout(predicate::str::contains("println(x)").not())
+        .stdout(predicate::str::contains("return 99").not());
+}
+
+#[test]
+fn test_perf_002c_dce_multiple_returns() {
+    // Pattern: Only first return path is reachable
+    let code = r#"
+        fun check(n: i32) -> i32 {
+            if n > 10 {
+                return n;
+            }
+            return 0;
+            let unreachable = 42;  // Dead code
+        }
+        println(check(5));
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("unreachable").not());
+}
+
+// ============================================================================
+// TEST GROUP 2: Dead Branches from Constant Folding
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_false_branch() {
+    // Pattern: if false { ... } entire branch is dead
+    let code = r#"
+        let x = if false {
+            println("Dead branch");
+            42
+        } else {
+            println("Live branch");
+            0
+        };
+        println(x);
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Dead branch should be eliminated
+        .stdout(predicate::str::contains("Dead branch").not());
+}
+
+#[test]
+fn test_perf_002c_dce_true_branch_no_else() {
+    // Pattern: if true { A } (no else) → just A
+    let code = r#"
+        if true {
+            println("Always executes");
+        }
+        let dead = 5;  // Not actually dead, for now
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Should fold to just the then-branch content
+        .stdout(predicate::str::contains("Always executes"));
+}
+
+// ============================================================================
+// TEST GROUP 3: Unused Variable Bindings
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_unused_variable() {
+    // Pattern: Variable defined but never used
+    let code = r#"
+        let unused = 42;
+        let used = 10;
+        println(used);
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Should eliminate unused variable binding
+        .stdout(predicate::str::contains("let unused").not());
+}
+
+#[test]
+fn test_perf_002c_dce_unused_computation() {
+    // Pattern: Computation result never used (pure expression)
+    let code = r#"
+        let x = 5;
+        let unused_result = x + 10;  // Never used
+        println(x);
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("unused_result").not());
+}
+
+// ============================================================================
+// TEST GROUP 4: Unreachable Code After Break/Continue
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_after_break() {
+    // Pattern: Code after break in loop is unreachable
+    let code = r#"
+        let mut i = 0;
+        while true {
+            if i > 5 {
+                break;
+                let dead = 42;  // Dead code
+                println(dead);   // Dead code
+            }
+            i = i + 1;
+        }
+        println(i);
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("let dead").not());
+}
+
+#[test]
+fn test_perf_002c_dce_after_continue() {
+    // Pattern: Code after continue in loop is unreachable
+    let code = r#"
+        let mut sum = 0;
+        let mut i = 0;
+        while i < 10 {
+            i = i + 1;
+            if i == 5 {
+                continue;
+                let dead = 42;  // Dead code
+            }
+            sum = sum + i;
+        }
+        println(sum);
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("let dead").not());
+}
+
+// ============================================================================
+// TEST GROUP 5: Empty Blocks After DCE
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_empty_block_cleanup() {
+    // Pattern: Block becomes empty after DCE, should be removed
+    let code = r#"
+        {
+            let unused = 42;  // Only thing in block, unused
+        }
+        println("After empty block");
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Empty block should not appear in output
+        .stdout(predicate::str::contains("let unused").not());
+}
+
+// ============================================================================
+// TEST GROUP 6: Integration with Constant Propagation
+// ============================================================================
+
+#[test]
+fn test_perf_002c_dce_with_constant_propagation() {
+    // Pattern: Constant propagation creates dead branch, DCE removes it
+    let code = r#"
+        let flag = false;
+        if flag {
+            println("Dead code via propagation");
+            let x = 42;
+            println(x);
+        } else {
+            println("Live code");
+        }
+    "#;
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // Dead branch eliminated via propagation + DCE
+        .stdout(predicate::str::contains("Dead code via propagation").not());
+}
+
+// ============================================================================
+// Property Test Placeholder (VALIDATE phase)
+// ============================================================================
+
+// Note: Property tests will be added in VALIDATE phase
+// - prop_dce_preserves_semantics: verify original == optimized behavior
+// - prop_no_used_code_eliminated: verify live code is never removed
+// - prop_idempotent: DCE(DCE(code)) == DCE(code)
