@@ -4,7 +4,7 @@
 // Complexity target: ≤10 per function
 
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 #[cfg(test)]
 use crate::frontend::ast::Span;
 
@@ -167,12 +167,75 @@ fn fold_integer_comparison(a: i64, op: BinaryOp, b: i64) -> Option<Literal> {
 /// # Returns
 /// Expression with dead code removed
 ///
+/// Collect all function names that are called in the expression tree
+///
+/// # Complexity
+/// Cyclomatic: 7 (≤10 target)
+fn collect_used_functions(expr: &Expr) -> HashSet<String> {
+    let mut used = HashSet::new();
+    collect_used_functions_rec(expr, &mut used);
+    used
+}
+
+/// Recursive helper to collect used function names
+///
+/// # Complexity
+/// Cyclomatic: 6 (≤10 target)
+fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
+    match &expr.kind {
+        ExprKind::Call { func, args } => {
+            // If this is a simple function call, record the name
+            if let ExprKind::Identifier(func_name) = &func.kind {
+                used.insert(func_name.clone());
+            }
+            // Recursively check func and args
+            collect_used_functions_rec(func, used);
+            for arg in args {
+                collect_used_functions_rec(arg, used);
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for e in exprs {
+                collect_used_functions_rec(e, used);
+            }
+        }
+        ExprKind::Function { body, .. } => {
+            collect_used_functions_rec(body, used);
+        }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            collect_used_functions_rec(condition, used);
+            collect_used_functions_rec(then_branch, used);
+            if let Some(else_expr) = else_branch {
+                collect_used_functions_rec(else_expr, used);
+            }
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_used_functions_rec(left, used);
+            collect_used_functions_rec(right, used);
+        }
+        ExprKind::Let { value, body, .. } => {
+            collect_used_functions_rec(value, used);
+            collect_used_functions_rec(body, used);
+        }
+        _ => {
+            // Other expressions: no function calls to track
+        }
+    }
+}
+
 /// # Complexity
 /// Cyclomatic: 6 (≤10 target)
 pub fn eliminate_dead_code(expr: Expr) -> Expr {
     match expr.kind {
         ExprKind::Block(exprs) => {
-            let cleaned = remove_dead_statements(exprs);
+            // First, collect all used function names in the entire block
+            let used_functions = {
+                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span.clone());
+                collect_used_functions(&temp_expr)
+            };
+
+            // Then remove dead statements AND unused function definitions
+            let cleaned = remove_dead_statements_and_unused_functions(exprs, &used_functions);
             Expr::new(ExprKind::Block(cleaned), expr.span)
         }
         ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
@@ -225,6 +288,36 @@ fn remove_dead_statements(exprs: Vec<Expr>) -> Vec<Expr> {
     let mut result = Vec::new();
 
     for expr in exprs {
+        // Recursively eliminate dead code in child expressions
+        let cleaned = eliminate_dead_code(expr);
+
+        result.push(cleaned.clone());
+
+        // Stop processing after early exit (return/break/continue)
+        if has_early_exit(&cleaned) {
+            break;
+        }
+    }
+
+    result
+}
+
+/// Remove dead statements AND unused function definitions from a block
+///
+/// # Complexity
+/// Cyclomatic: 6 (≤10 target)
+fn remove_dead_statements_and_unused_functions(exprs: Vec<Expr>, used_functions: &HashSet<String>) -> Vec<Expr> {
+    let mut result = Vec::new();
+
+    for expr in exprs {
+        // Skip unused function definitions (inlined and no longer called)
+        if let ExprKind::Function { name, .. } = &expr.kind {
+            if !used_functions.contains(name) && name != "main" {
+                // Skip this function - it's unused
+                continue;
+            }
+        }
+
         // Recursively eliminate dead code in child expressions
         let cleaned = eliminate_dead_code(expr);
 
