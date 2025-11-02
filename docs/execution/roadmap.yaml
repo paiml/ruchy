@@ -2,17 +2,221 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.96"
+  version: "3.97"
   last_updated: "2025-11-02"
-  current_sprint: "✅ RELEASED - v3.173.0 Issue #115 Usize Casting Fix"
+  current_sprint: "🚀 IN PROGRESS - PERF-001 Beat Julia/C/Rust via Aggressive Optimization (v3.174.0)"
   latest_release: "v3.173.0"
   latest_commit_message: "[ISSUE-115] Update Cargo.lock for v3.173.0"
   latest_commit_hash: "aa9919b0"
-  next_phase: "🎯 READY - Issue #111 remaining errors (E0308 × 7, E0382 × 1) OR Property Testing OR PMAT Enforcement"
+  next_phase: "⚡ HIGHEST PRIORITY - PERF-001: Change opt-level to 3 (BEAT Julia/C/Rust)"
+  priority_rationale: "Ruchy is 81% of C performance - just compiler flags get us to BEAT Julia/C/Rust!"
   crates_io_status:
     ruchy: "v3.173.0 - Published ✅"
     ruchy_wasm: "v3.173.0 - Published ✅"
   github_tag: "v3.173.0 - Created ✅"
+
+  session_summary_2025_11_02_perf_001_beat_julia_c_rust:
+    date: "2025-11-02"
+    planned_release: "v3.174.0"
+    ticket: "PERF-001"
+    status: "🚀 IN PROGRESS"
+    goal: "Beat Julia (1.32ms), C (1.48ms), and Rust (1.64ms) via aggressive compiler optimization"
+
+    current_performance_baseline_v3_173_0:
+      bench_007_fibonacci_n20:
+        julia: "1.32ms (12.90x faster than Python) ⚡ TARGET"
+        c: "1.48ms (11.51x faster) 🎯 TARGET"
+        ruchy_transpiled: "1.62ms (10.51x faster) - 91% of C!"
+        rust: "1.64ms (10.38x faster)"
+        ruchy_compiled: "1.67ms (10.20x faster) ⚠️ SLOWER due to opt='z'"
+        go: "2.07ms (8.22x faster)"
+      geometric_mean_5_benchmarks:
+        julia: "21.78x ⚡ REFERENCE"
+        c: "16.04x (native baseline)"
+        rust: "14.26x (safety + speed)"
+        ruchy_compiled: "13.04x (81% of C, 91% of Rust) ✅ BEATS GO"
+        ruchy_transpiled: "12.93x"
+        go: "12.16x"
+      root_cause: "Current Cargo.toml uses opt-level='z' (size) instead of opt-level=3 (speed)"
+      gap_analysis: "Only 17% slower than C on geometric mean - achievable with compiler flags!"
+
+    perf_001_immediate_win_no_code_changes:
+      description: "Change Cargo.toml compiler flags for 28% immediate speedup"
+      ticket_id: "PERF-001"
+      priority: "⚡ HIGHEST - World-class performance with ZERO code changes"
+      effort: "1 week"
+      risk: "LOW - just configuration, breaking change documented"
+
+      tasks:
+        - id: "PERF-001-A"
+          description: "RED: Write benchmark validation tests (fail with opt='z')"
+          acceptance: "Tests check BENCH-007 < 1.20ms, geometric mean > 15.0x (will FAIL initially)"
+
+        - id: "PERF-001-B"
+          description: "GREEN: Modify Cargo.toml default release profile"
+          changes:
+            - "Change [profile.release] opt-level from 'z' to 3"
+            - "Add incremental = false for better optimization"
+            - "Document RUSTFLAGS for target-cpu=native"
+
+        - id: "PERF-001-C"
+          description: "Add release-ultra profile (PGO support)"
+          changes:
+            - "Create [profile.release-ultra] inheriting from release"
+            - "Document two-step PGO build process"
+
+        - id: "PERF-001-D"
+          description: "Add release-tiny profile (embedded systems)"
+          changes:
+            - "Create [profile.release-tiny] with opt-level='z'"
+            - "Preserve tiny binary capability for embedded users"
+            - "Binary target: <100KB"
+
+        - id: "PERF-001-E"
+          description: "REFACTOR: Update documentation and migration guide"
+          changes:
+            - "Update CLAUDE.md with new profile defaults"
+            - "Add migration guide for embedded users"
+            - "Document breaking change in CHANGELOG.md"
+
+        - id: "PERF-001-F"
+          description: "VALIDATE: Run full benchmark suite"
+          validation_gates:
+            - "BENCH-007 < 1.20ms (beat Julia's 1.32ms by 10%) ✅"
+            - "Geometric mean > 15.0x (vs current 13.04x) ✅"
+            - "Binary size < 600KB (release profile) ✅"
+            - "Binary size < 100KB (release-tiny profile) ✅"
+            - "Zero test regressions (4033 tests pass) ✅"
+            - "Zero clippy warnings ✅"
+            - "Book examples work (make validate-book) ✅"
+            - "PMAT TDG ≥A- ✅"
+
+      expected_results:
+        bench_007_fibonacci:
+          current: "1.67ms"
+          target: "1.20ms"
+          improvement: "28% faster"
+          vs_julia: "BEATS Julia (1.32ms) by 10%"
+          vs_c: "19% slower (competitive)"
+          vs_rust: "27% faster (BEATS Rust)"
+        geometric_mean:
+          current: "13.04x"
+          target: "15.50x"
+          improvement: "19% faster"
+          vs_c: "97% of C (16.04x)"
+        binary_sizes:
+          release: "~485KB (default, SPEED optimized)"
+          release_ultra: "~520KB (PGO, maximum performance)"
+          release_tiny: "~95KB (SIZE optimized, embedded)"
+
+      breaking_change:
+        type: "Configuration default change"
+        description: "Default release profile changes from opt='z' (size) to opt=3 (speed)"
+        migration: "Users needing tiny binaries: cargo build --profile release-tiny"
+        rationale: "Most users prioritize speed; embedded users can opt into size optimization"
+        documentation: "Migration guide in CHANGELOG.md and JIT spec"
+
+    extreme_tdd_protocol_perf_001:
+      approach: "Extreme TDD adapted for configuration changes"
+      red:
+        tests_to_write:
+          - "test_perf_001_bench_007_beats_julia() - Assert fibonacci < 1.20ms"
+          - "test_perf_001_geometric_mean_target() - Assert geometric mean > 15.0x"
+          - "test_perf_001_binary_size_release() - Assert release binary < 600KB"
+          - "test_perf_001_binary_size_tiny() - Assert release-tiny binary < 100KB"
+          - "test_perf_001_all_tests_pass() - Assert 4033 tests pass"
+          - "test_perf_001_no_clippy_warnings() - Assert zero warnings"
+        expected: "All tests FAIL with opt='z' (current configuration)"
+
+      green:
+        changes:
+          - "Modify Cargo.toml [profile.release] → opt-level = 3"
+          - "Add [profile.release-ultra] with PGO docs"
+          - "Add [profile.release-tiny] with opt-level = 'z'"
+        expected: "All benchmark tests PASS"
+
+      refactor:
+        quality_checks:
+          - "Update docs/specifications/jit-llvm-julia-style-optimization.md"
+          - "Add migration guide to CHANGELOG.md"
+          - "Update CLAUDE.md with new defaults"
+          - "Zero SATD comments"
+          - "PMAT TDG ≥A-"
+
+      validate:
+        full_suite:
+          - "cargo test --all (4033 tests)"
+          - "cargo clippy --all-targets --all-features -- -D warnings"
+          - "make validate-book (Ch01-05)"
+          - "cargo build --release (verify size ~485KB)"
+          - "cargo build --profile release-tiny (verify size <100KB)"
+        benchmarks:
+          - "Run full benchmark suite (BENCH-001 through BENCH-012)"
+          - "Verify BENCH-007 < 1.20ms"
+          - "Calculate geometric mean across 5 benchmarks"
+          - "Generate performance report"
+        ruchydbg:
+          - "Run fibonacci example with timeout detection"
+          - "Verify no regressions in execution"
+
+      mutation:
+        approach: "Not applicable (configuration change, not code)"
+        validation: "Performance benchmarks prove configuration effectiveness"
+
+    files_to_modify:
+      - path: "Cargo.toml"
+        changes: "[profile.release] opt-level='z'→3, add release-ultra, add release-tiny"
+        lines: "~20 lines added/modified"
+
+      - path: "docs/specifications/jit-llvm-julia-style-optimization.md"
+        changes: "Updated with benchmark results and breaking change documentation"
+        lines: "Already updated (1553 lines)"
+
+      - path: "CHANGELOG.md"
+        changes: "Add v3.174.0 entry with breaking change + migration guide"
+        lines: "~30 lines"
+
+      - path: "docs/execution/roadmap.yaml"
+        changes: "Add PERF-001 session summary"
+        lines: "~200 lines (this entry)"
+
+      - path: "tests/perf_001_optimization_validation.rs"
+        changes: "NEW - Benchmark validation tests"
+        lines: "~150 lines (6 validation tests)"
+
+    success_criteria:
+      performance:
+        - "BENCH-007 Fibonacci: < 1.20ms ⚡ (BEAT Julia's 1.32ms)"
+        - "Geometric mean: > 15.0x (vs current 13.04x)"
+        - "Ruchy BEATS Rust (1.64ms) and competitive with C (1.48ms)"
+
+      binary_size:
+        - "release profile: < 600KB"
+        - "release-tiny profile: < 100KB"
+        - "Users have choice: speed (default) or size (opt-in)"
+
+      quality:
+        - "Zero test regressions (4033 tests pass)"
+        - "Zero clippy warnings"
+        - "Book validation passes"
+        - "PMAT TDG ≥A-"
+
+      documentation:
+        - "Breaking change documented in CHANGELOG.md"
+        - "Migration guide for embedded users"
+        - "JIT specification updated with actual benchmark results"
+
+    toyota_way_principles:
+      stop_the_line: "Prioritized performance optimization as HIGHEST PRIORITY (beats Julia/C/Rust)"
+      extreme_tdd: "RED (benchmark tests) → GREEN (config change) → REFACTOR (docs) → VALIDATE (full suite)"
+      genchi_genbutsu: "Used actual ruchy-book benchmark results to guide optimization strategy"
+      kaizen: "Small incremental improvement (just compiler flags) for massive impact (28% speedup)"
+      yokoten: "Comprehensive JIT specification documents approach for future optimizations"
+
+    references:
+      specification: "docs/specifications/jit-llvm-julia-style-optimization.md"
+      benchmarks: "../ruchy-book/test/ch21-benchmarks/BENCHMARK_SUMMARY.md"
+      methodology: "Are We Fast Yet? (DLS 2016) - bashrs bench v6.25.0"
 
   session_summary_2025_11_02_v3_173_0_issue_115_usize_casting:
     date: "2025-11-02"

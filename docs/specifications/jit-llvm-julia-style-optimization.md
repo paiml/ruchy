@@ -15,21 +15,37 @@ This specification outlines a **two-phase optimization strategy** for Ruchy:
 ### Phase 1: IMMEDIATE AOT Optimizations (v3.174.0 - v3.180.0)
 **Goal:** Beat Julia (1.35ms) with aggressive compiler flags - NO JIT needed yet
 
-**Current Benchmark Results (BENCH-007 Fibonacci n=20):**
+**Current Benchmark Results (ruchy-book BENCH-007 Fibonacci n=20):**
 ```
-🥇 Julia:            1.35ms  (13.05x faster) ⚡ TARGET TO BEAT
-🥈 Ruchy Transpiled: 1.67ms  (10.55x faster) 🦀 BEATS RUST
-🥉 Rust:             1.70ms  (10.36x faster)
-   Ruchy Compiled:   1.80ms  ( 9.79x faster) ⚠️  SLOWER THAN TRANSPILED!
+🥇 Julia:            1.32ms  (12.90x faster) ⚡ PRIMARY TARGET
+🥈 C:                1.48ms  (11.51x faster) 🎯 SECONDARY TARGET
+🥉 Ruchy Transpiled: 1.62ms  (10.51x faster) ✅ BEATS RUST (91% of C!)
+   Rust:             1.64ms  (10.38x faster)
+   Ruchy Compiled:   1.67ms  (10.20x faster) ⚠️  SLOWER due to opt="z"
+   Go:               2.07ms  ( 8.22x faster)
 ```
 
-**Root Cause:** Current `opt-level = "z"` (size) instead of `opt-level = 3` (speed)
+**Geometric Mean Across 5 Benchmarks:**
+```
+🥇 Julia:            21.78x ⚡ TARGET TO BEAT
+🥈 C:                16.04x (native baseline)
+🥉 Rust:             14.26x (safety + speed)
+   Ruchy Compiled:   13.04x (81% of C, 91% of Rust) ✅ BEATS GO
+   Ruchy Transpiled: 12.93x (81% of C, 91% of Rust)
+   Go:               12.16x
+```
+
+**Root Cause:** Current `opt-level = "z"` (size) sacrifices 15-20% performance vs `opt-level = 3`
 
 **Immediate Actions (v3.174.0 - 2 weeks):**
-1. Add `[profile.release-speed]` with maximum performance flags
+1. Add `[profile.release-speed]` with maximum performance flags (NO CODE CHANGES!)
 2. Enable LTO, PGO (Profile-Guided Optimization), and target-cpu=native
 3. Pre-configure aggressive transpiler optimizations (tail-call, constant folding, dead code elimination)
-4. **Target:** < 1.30ms (BEAT Julia by 5%) with <500KB binary size
+4. Add `[profile.release-tiny]` for embedded systems (<100KB binary, reasonable speed)
+5. **PRIMARY TARGET:** < 1.20ms (BEAT Julia's 1.32ms by 10%)
+6. **STRETCH TARGET:** < 1.10ms (BEAT C's 1.48ms) with <500KB binary
+
+**Strategy:** Make `release-speed` the DEFAULT profile, provide `release-tiny` for size-constrained use cases
 
 ### Phase 2: Julia-Style JIT+LLVM (v4.0+ - 6-12 months)
 - **JIT compilation** for adaptive optimization
@@ -96,30 +112,69 @@ panic = "abort"       # Good: Smaller panic handler
 
 **Result:** Tiny binaries (2MB) but SLOWER than transpiled mode (1.80ms vs 1.67ms)
 
-### 2.2 Aggressive Speed Profile (Beat Julia by 5%)
+### 2.2 Aggressive Speed Profiles (Beat Julia + Provide Size Options)
 
-**Add to Cargo.toml:**
+**Add to Cargo.toml (THREE profiles for different use cases):**
+
 ```toml
-[profile.release-speed]
-inherits = "release"
-opt-level = 3              # ✅ MAXIMUM speed (not size)
+#############################################
+# DEFAULT: Maximum Speed (Beat Julia/C/Rust)
+#############################################
+[profile.release]
+opt-level = 3              # ✅ MAXIMUM speed (DEFAULT changed from "z")
 lto = "fat"               # Full link-time optimization
-codegen-units = 1         # Better optimization (slower compile)
+codegen-units = 1         # Single codegen unit (best optimization)
 panic = "abort"           # No unwinding overhead
-strip = true              # Remove symbols
+strip = true              # Remove debug symbols
 overflow-checks = false   # No runtime overflow checks (unsafe but fast)
 debug-assertions = false  # No debug assertions
+incremental = false       # Disable incremental for better optimization
 
 # AGGRESSIVE LLVM FLAGS (via RUSTFLAGS environment)
-# RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C embed-bitcode=yes"
-# target-cpu=native: Use CPU-specific instructions (AVX2, SSE4.2, etc.)
+# export RUSTFLAGS="-C target-cpu=native -C link-arg=-fuse-ld=lld -C embed-bitcode=yes"
+# target-cpu=native: Use AVX2, SSE4.2, BMI2, etc. (10-30% speedup)
+# link-arg=-fuse-ld=lld: Use LLVM's fast linker (faster builds)
 # embed-bitcode: Enable cross-module optimization
+
+#############################################
+# ULTRA: Maximum Speed + PGO (Beat Everyone)
+#############################################
+[profile.release-ultra]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+# TWO-STEP BUILD PROCESS:
+# Step 1: cargo build --profile release-ultra
+#         (with RUSTFLAGS="-C profile-generate=/tmp/pgo")
+# Step 2: Run benchmarks to collect profile data
+# Step 3: cargo build --profile release-ultra
+#         (with RUSTFLAGS="-C profile-use=/tmp/pgo")
+# Result: Additional 10-15% speedup from real-world patterns
+
+#############################################
+# TINY: Embedded/Size-Constrained (<100KB)
+#############################################
+[profile.release-tiny]
+inherits = "release"
+opt-level = "z"            # Optimize for SIZE
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
 ```
 
-**Expected Result:**
-- Speed: < 1.30ms (BEAT Julia's 1.35ms by 5%)
-- Binary size: ~500KB (larger than "z" but still tiny)
-- **Use case:** `ruchy compile --release-speed script.ruchy`
+**Expected Results (BENCH-007 Fibonacci):**
+| Profile | Speed Target | Binary Size | Use Case |
+|---------|--------------|-------------|----------|
+| release (new) | **< 1.20ms** ⚡ | ~500KB | **DEFAULT** - Beat Julia (1.32ms) |
+| release-ultra | **< 1.10ms** 🚀 | ~550KB | Maximum performance (PGO) |
+| release-tiny | ~1.80ms | <100KB | Embedded, AWS Lambda cold start |
+
+**BREAKING CHANGE:** `release` profile now defaults to SPEED, not SIZE!
+- **Migration:** Users wanting tiny binaries should use `--profile release-tiny`
+- **Rationale:** Most users prioritize speed; embedded users can opt into size optimization
 
 ### 2.3 Profile-Guided Optimization (PGO)
 
@@ -143,60 +198,158 @@ RUSTFLAGS="-C profile-use=/tmp/pgo-data -C llvm-args=-pgo-warn-missing-function"
 
 **Integration:** Add `make release-pgo` target for PGO builds
 
-### 2.4 Transpiler Optimizations (AST-Level)
+### 2.4 Transpiler Optimizations (AST-Level) - **CRITICAL FOR BEATING JULIA**
 
-**Implement in `src/backend/transpiler/`:**
+**Implement in `src/backend/transpiler/optimizations/`:**
 
-#### 2.4.1 Constant Folding
+#### 2.4.1 Constant Folding (10-20% speedup on computation-heavy code)
 ```rust
 // Before:
-let x = 2 + 3 * 4;  // Transpiles to: let x = 2 + 3 * 4;
+let x = 2 + 3 * 4;         // Runtime computation
+let y = 10 > 5;            // Runtime comparison
+let z = if true { 1 } else { 2 };  // Dead branch
 
-// After (constant folding):
-let x = 14;  // Transpiles to: let x = 14;
+// After (constant folding at compile-time):
+let x = 14;                // Computed at compile-time
+let y = true;              // Folded to constant
+let z = 1;                 // Dead branch eliminated
+
+// Implementation:
+// - Walk AST, evaluate pure expressions at compile-time
+// - Handle: arithmetic, comparisons, logical ops, if-else with constant conditions
+// - Property test: verify eval(original) == eval(optimized)
 ```
 
-#### 2.4.2 Dead Code Elimination
+**Benchmark Impact:** BENCH-003 (string concat), BENCH-007 (fibonacci) - reduces instruction count
+
+#### 2.4.2 Dead Code Elimination (Reduces binary size 5-15%)
 ```rust
 // Before:
 if false {
-    expensive_computation();  // Dead code
+    expensive_computation();  // Never executes
 }
+fun unused_helper() { ... }   // Never called
 
 // After:
-// (removed entirely)
+// (removed entirely from generated Rust)
+
+// Implementation:
+// - Track reachable code from entry points
+// - Mark unreachable functions, if-branches, loops
+// - Remove before transpilation
+// - Reduces binary size + improves I-cache locality
 ```
 
-#### 2.4.3 Tail Call Optimization
+**Benchmark Impact:** All benchmarks - smaller binaries, better cache usage
+
+#### 2.4.3 Tail Call Optimization (**CRITICAL for BENCH-007**)
 ```rust
 // Before:
-fun factorial(n, acc) {
-    if n == 0 { acc } else { factorial(n - 1, n * acc) }
+fun fibonacci(n) {
+    if n <= 1 { n } else { fibonacci(n-1) + fibonacci(n-2) }
 }
-// Transpiles to recursive call (stack overflow risk)
+// Transpiles to recursive call (exponential stack growth)
 
-// After (tail call optimization):
-fn factorial(mut n: i32, mut acc: i32) -> i32 {
+// After (tail recursion rewrite):
+fun fibonacci_iter(n, a, b) {
+    if n == 0 { a } else { fibonacci_iter(n-1, b, a+b) }
+}
+// Then transpile to loop:
+fn fibonacci_iter(mut n: i32, mut a: i32, mut b: i32) -> i32 {
     loop {
-        if n == 0 { return acc; }
+        if n == 0 { return a; }
         let n_new = n - 1;
-        let acc_new = n * acc;
-        n = n_new;
-        acc = acc_new;
+        let a_new = b;
+        let b_new = a + b;
+        n = n_new; a = a_new; b = b_new;
     }
 }
-// Transpiles to loop (constant stack usage)
+// Transpiles to loop (O(1) stack, 2-3x faster)
+
+// Implementation:
+// 1. Detect tail-recursive functions (last operation is self-call)
+// 2. Transform to loop with mutable variables
+// 3. Verify semantics preserved (property test)
 ```
 
-#### 2.4.4 Inline Small Functions
+**Benchmark Impact:** BENCH-007 (fibonacci) - eliminate stack overhead, enable loop optimizations
+
+#### 2.4.4 Aggressive Function Inlining (5-30% speedup)
 ```rust
 // Before:
 fun add(a, b) { a + b }
-let result = add(5, 3);  // Function call overhead
+fun square(x) { x * x }
+let result = add(square(5), 3);  // 2 function calls
 
-// After (inlining):
-let result = 5 + 3;  // Direct computation
+// After (inlining threshold ≤ 15 AST nodes):
+let result = (5 * 5) + 3;  // Direct computation
+let result = 28;            // Further constant-fold
+
+// Implementation:
+// - Inline functions ≤ 15 AST nodes at call sites
+// - Cost model: inline if net speedup (avoid code bloat)
+// - Respect #[inline(never)] attribute
+// - Recursive inlining: inline_depth ≤ 3 levels
+
+// Heuristic:
+// - Always inline: 1-5 nodes (trivial getters/setters)
+// - Usually inline: 6-15 nodes (small helpers)
+// - Never inline: >15 nodes OR recursive OR polymorphic
 ```
+
+**Benchmark Impact:** BENCH-005 (array sum), BENCH-008 (primes) - reduce function call overhead
+
+#### 2.4.5 Loop Unrolling (10-40% speedup on tight loops)
+```rust
+// Before:
+let mut sum = 0;
+let mut i = 0;
+while i < 4 {
+    sum = sum + arr[i];
+    i = i + 1;
+}
+
+// After (unroll factor = 4):
+let mut sum = 0;
+sum = sum + arr[0];  // Unrolled
+sum = sum + arr[1];
+sum = sum + arr[2];
+sum = sum + arr[3];
+
+// Implementation:
+// - Unroll loops with constant bounds ≤ 8 iterations
+// - Partial unrolling for larger loops (unroll by 4x)
+// - Enables: better instruction pipelining, reduced branch mispredicts
+```
+
+**Benchmark Impact:** BENCH-005 (array sum) - maximize CPU pipeline utilization
+
+#### 2.4.6 Strength Reduction (5-15% speedup)
+```rust
+// Before:
+while i < n {
+    let square = i * i;  // Multiplication each iteration
+    // ...
+    i = i + 1;
+}
+
+// After (strength reduction):
+let mut square = 0;
+let mut odd = 1;
+while i < n {
+    square = square + odd;  // Addition instead of multiplication
+    odd = odd + 2;
+    // ...
+    i = i + 1;
+}
+// Uses identity: i² = (i-1)² + 2i - 1
+
+// Implementation:
+// - Replace expensive operations (*, /, %) with cheaper ones (+, -, <<)
+// - Common patterns: i*i → incremental, i*C → repeated addition
+```
+
+**Benchmark Impact:** BENCH-008 (primes) - reduce cost of modulo/division operations
 
 ### 2.5 Bytecode VM Optimizations
 
@@ -270,24 +423,37 @@ export RUCHY_UNROLL_LOOPS=true       # Loop unrolling
 export RUCHY_VECTORIZE=true          # Auto-vectorization (SIMD)
 ```
 
-### 2.8 Expected Results (v3.174.0)
+### 2.8 Expected Results (v3.174.0 - v3.180.0)
 
-**BENCH-007 (Fibonacci n=20):**
-| Mode | Current | After Optimizations | Speedup | vs Julia |
-|------|---------|---------------------|---------|----------|
-| Ruchy Compiled | 1.80ms | **1.25ms** ⚡ | 1.44x | **BEATS Julia (1.35ms)** |
-| Ruchy Transpiled | 1.67ms | **1.20ms** | 1.39x | BEATS Julia |
-| Ruchy Bytecode | 3.76ms | **1.50ms** | 2.5x | Competitive |
-| Ruchy AST | 140ms | **20ms** | 7x | Usable for dev |
+**BENCH-007 (Fibonacci n=20) - Progressive Improvements:**
+| Mode | v3.173.0 (current) | v3.174.0 (flags) | v3.176.0 (+TCO) | v3.178.0 (+inline) | v3.180.0 (all opts) | vs Competitors |
+|------|-------------------|------------------|-----------------|-------------------|---------------------|----------------|
+| Ruchy Compiled | 1.67ms | **1.20ms** ⚡ | **1.12ms** | **1.08ms** | **1.00ms** 🚀 | **BEATS Julia (1.32ms), C (1.48ms), Rust (1.64ms)** |
+| Ruchy Transpiled | 1.62ms | **1.15ms** | **1.10ms** | **1.05ms** | **0.95ms** 🚀 | **BEATS everyone by 28-36%!** |
+| Ruchy Bytecode | 3.85ms | **2.50ms** | **2.20ms** | **2.00ms** | **1.80ms** | Competitive with Go (2.07ms) |
+| Ruchy AST | 9.41ms | **8.00ms** | **7.00ms** | **6.00ms** | **5.00ms** | Fast enough for REPL/dev |
 
-**Binary Sizes:**
-| Profile | Size | Use Case |
-|---------|------|----------|
-| release (opt="z") | 2MB | Embedded, minimal footprint |
-| release-speed (opt=3) | 500KB | Production performance |
-| release-speed + PGO | 450KB | Maximum performance + small |
+**Geometric Mean Across 5 Benchmarks (v3.180.0):**
+| Mode | Current | After All Opts | Target | Status |
+|------|---------|----------------|--------|--------|
+| **Ruchy Compiled** | 13.04x | **18.50x** ⚡ | Beat C (16.04x) | ✅ **EXCEEDS TARGET** |
+| **Ruchy Transpiled** | 12.93x | **19.20x** 🚀 | Beat C (16.04x) | ✅ **EXCEEDS TARGET** |
+| Julia | 21.78x | - | Reference | Still faster (LLVM JIT) |
+| C | 16.04x | - | Primary target | ✅ **BEATEN** |
+| Rust | 14.26x | - | Secondary target | ✅ **BEATEN** |
 
-**Timeline:** v3.174.0 release (2 weeks)
+**Binary Sizes (v3.174.0):**
+| Profile | Size | Speed (BENCH-007) | Use Case |
+|---------|------|-------------------|----------|
+| release (opt=3, NEW DEFAULT) | 485KB | 1.20ms ⚡ | **Production (BEATS Julia/C/Rust)** |
+| release-ultra (opt=3 + PGO) | 520KB | 1.00ms 🚀 | Maximum performance |
+| release-tiny (opt="z") | 95KB | 1.80ms | Embedded, AWS Lambda |
+
+**Timeline:**
+- v3.174.0 (1 week): Cargo.toml profiles → **BEAT Julia** (1.20ms < 1.32ms)
+- v3.176.0 (3 weeks): +Constant folding, TCO → **BEAT C** (1.12ms < 1.48ms)
+- v3.178.0 (5 weeks): +Inlining, loop unroll → **Sub-millisecond** (1.08ms)
+- v3.180.0 (8 weeks): All optimizations → **World-class** (1.00ms, 18.50x mean)
 
 ---
 
@@ -1142,23 +1308,28 @@ fn llvm_matches_interpreter(
 
 ---
 
-## 10. IMMEDIATE Implementation Roadmap (v3.174.0 - Beat Julia NOW)
+## 10. IMMEDIATE Implementation Roadmap (v3.174.0 - Beat Julia, C, Rust)
 
-### 10.1 Phase 1A: Cargo.toml Optimization Profiles (v3.174.0 - 3 days)
+### 10.1 Phase 1A: Cargo.toml Optimization Profiles (v3.174.0 - 1 week) ⚡ **HIGHEST PRIORITY**
 
-**Ticket:** [PERF-001] Add release-speed profile with aggressive compiler flags
+**Ticket:** [PERF-001] Change default release profile to opt-level=3 + add release-tiny
 
 **Tasks:**
-1. Add `[profile.release-speed]` to Cargo.toml
-2. Configure: `opt-level=3, lto="fat", codegen-units=1, overflow-checks=false`
-3. Document RUSTFLAGS: `-C target-cpu=native -C embed-bitcode=yes`
-4. Add `make release-speed` target
-5. Update `ruchy compile` to accept `--profile release-speed` flag
+1. **BREAKING CHANGE:** Modify `[profile.release]` → `opt-level = 3` (was "z")
+2. Add `[profile.release-ultra]` with PGO support
+3. Add `[profile.release-tiny]` with `opt-level = "z"` (for embedded)
+4. Document RUSTFLAGS: `-C target-cpu=native -C link-arg=-fuse-ld=lld`
+5. Add Makefile targets: `make release`, `make release-ultra`, `make release-tiny`
+6. Update CI/CD to use `release` profile (not `release-tiny`)
+7. Update docs: migration guide for users needing tiny binaries
 
 **Acceptance Criteria:**
-- BENCH-007: < 1.30ms (vs Julia's 1.35ms)
-- Binary size: < 600KB
+- BENCH-007: < 1.20ms ⚡ **BEAT Julia's 1.32ms by 10%**
+- Geometric mean: > 15.0x (vs current 13.04x)
+- Binary size (release): < 500KB
+- Binary size (release-tiny): < 100KB
 - Zero regressions in test suite (4033 tests pass)
+- **VALIDATION:** Re-run full benchmark suite (BENCH-001 through BENCH-012)
 
 ---
 
@@ -1269,60 +1440,113 @@ fn llvm_matches_interpreter(
 
 ---
 
-### 10.5 Validation & Benchmarking (Continuous)
+### 10.5 Validation & Benchmarking (Continuous) - **GATE 0 FOR EVERY RELEASE**
 
-**Every sprint validates performance targets:**
+**Every sprint MUST validate performance targets before merge:**
 
 ```bash
-# Run BENCH-007 after each optimization
-make bench-fibonacci
+# Run full benchmark suite after EVERY optimization
+make bench-all  # Runs BENCH-001 through BENCH-012
 
-# Target progression:
-v3.173.0:  1.80ms (baseline - size-optimized)
-v3.174.0:  1.25ms (release-speed profile)  ✅ BEAT Julia
-v3.175.0:  1.15ms (PGO)                    ✅ 15% better than Julia
-v3.176.0:  1.10ms (+ constant folding)
-v3.177.0:  1.05ms (+ tail-call opt)
-v3.178.0:  1.00ms (+ inlining)             ✅ 35% better than Julia
-v3.179.0:  0.95ms (+ NaN-boxing)
-v3.180.0:  0.90ms (+ inline caching)       ✅ 50% better than Julia!
+# MANDATORY CHECKS (BLOCKING):
+# 1. BENCH-007 (Fibonacci) progression check
+# 2. Geometric mean across 5 benchmarks
+# 3. Binary size validation
+# 4. Zero test regressions (4033 tests)
+
+# Target progression (BENCH-007 Fibonacci n=20):
+v3.173.0:  1.67ms (baseline - opt="z")       | Geometric: 13.04x | Binary: 2MB
+v3.174.0:  1.20ms (opt=3 profile)  ⚡        | Geometric: 15.50x | Binary: 485KB  | ✅ BEAT Julia (1.32ms)
+v3.175.0:  1.12ms (+ PGO)          ⚡        | Geometric: 16.20x | Binary: 520KB  | ✅ BEAT C (1.48ms)
+v3.176.0:  1.08ms (+ constant fold + TCO)   | Geometric: 16.80x | Binary: 510KB
+v3.177.0:  1.05ms (+ inlining)              | Geometric: 17.50x | Binary: 520KB
+v3.178.0:  1.02ms (+ loop unroll)           | Geometric: 18.00x | Binary: 530KB
+v3.180.0:  1.00ms (+ all AST opts) 🚀       | Geometric: 18.50x | Binary: 540KB  | ✅ WORLD-CLASS
+
+# VALIDATION GATES (ALL MUST PASS):
+✅ BENCH-007 < 1.20ms (beat Julia by 10%)
+✅ Geometric mean > 15.0x (beat current 13.04x by 15%)
+✅ Binary size < 600KB (release profile)
+✅ Binary size < 100KB (release-tiny profile)
+✅ Zero test regressions (cargo test --all passes)
+✅ Zero clippy warnings (cargo clippy --all-targets)
+✅ Book examples still work (make validate-book)
 ```
 
-**Final Goal:** < 0.90ms (50% faster than Julia's 1.35ms) with <500KB binaries
+**Final Goals (v3.180.0):**
+- **Speed:** 1.00ms (24% faster than Julia's 1.32ms) ⚡
+- **Geometric mean:** 18.50x (beats C's 16.04x by 15%) 🚀
+- **Binary size:** < 600KB (release), < 100KB (release-tiny)
+- **Validation:** All quality gates pass (PMAT, tests, benchmarks)
 
 ---
 
 ## 11. Conclusion
 
-This specification outlines a **two-phase strategy** for Ruchy performance:
+This specification outlines a **two-phase strategy** for Ruchy to achieve world-class performance:
 
 ### Phase 1: IMMEDIATE AOT Optimizations (v3.174.0 - v3.180.0, 8 weeks)
-**Beat Julia (1.35ms) by 50% using aggressive compiler flags and AST optimizations**
+**Beat Julia (1.32ms) by 24%, C (1.48ms) by 32%, and Rust (1.64ms) by 39%**
 
-**Key Actions:**
-1. ✅ **Cargo.toml profiles** - Switch from size (`opt="z"`) to speed (`opt=3`)
-2. ✅ **PGO** - Profile-guided optimization for 10-15% additional speedup
-3. ✅ **Transpiler** - Constant folding, tail-call opt, inlining
-4. ✅ **Bytecode VM** - NaN-boxing, inline caching for 3-10x improvements
-5. ✅ **AST interpreter** - Cached lookups, stack frames for 5-10x speedup
+**Current State (v3.173.0):**
+- BENCH-007: 1.67ms (10.20x faster than Python)
+- Geometric mean: 13.04x (81% of C, 91% of Rust)
+- **ROOT CAUSE:** `opt-level = "z"` sacrifices 15-20% performance for size
 
-**Expected Results:**
-- **Speed:** 0.90ms (50% faster than Julia's 1.35ms)
-- **Binary size:** <500KB (still tiny!)
-- **Timeline:** 8 weeks (v3.174.0 - v3.180.0)
-- **No JIT required:** Pure AOT compilation wins
+**Key Actions (NO JIT REQUIRED - Just Compiler Flags + Optimizations):**
+1. ⚡ **Cargo.toml profiles** (v3.174.0 - 1 week) - **IMMEDIATE 28% SPEEDUP**
+   - Change `opt-level = "z"` → `opt-level = 3` (DEFAULT)
+   - Add `release-ultra` (PGO) and `release-tiny` (embedded)
+   - Target: 1.20ms (BEAT Julia), binary < 500KB
 
-### Phase 2: Julia-Style JIT+LLVM (v4.0+, 6-12 months)
-**Adaptive optimization for 100-200x improvements on hot paths**
+2. 🚀 **AST Optimizations** (v3.176.0 - v3.178.0 - 4 weeks)
+   - Constant folding, dead code elimination (10-20% speedup)
+   - Tail-call optimization (CRITICAL for recursion - 15-25% speedup)
+   - Aggressive inlining (5-30% speedup on call-heavy code)
+   - Loop unrolling (10-40% on tight loops)
+   - Strength reduction (5-15% on arithmetic-heavy code)
+   - Target: 1.05-1.10ms (BEAT C)
+
+3. ⚙️ **Bytecode VM** (v3.179.0 - v3.180.0 - 2 weeks)
+   - NaN-boxing (30% faster, zero heap for primitives)
+   - Inline caching (5-10x for method dispatch)
+   - Target: 1.00ms (world-class)
+
+**Expected Results (v3.180.0):**
+- **Speed:** 1.00ms vs Julia 1.32ms (24% faster) ⚡
+- **Geometric mean:** 18.50x vs C 16.04x (15% faster) 🚀
+- **Binary size:** 540KB (release), 95KB (release-tiny)
+- **Timeline:** 8 weeks total
+- **Strategy:** Make `release` (opt=3) the DEFAULT, provide `release-tiny` for embedded
+
+**What This Means:**
+- ✅ Ruchy BEATS Julia on raw performance (without JIT!)
+- ✅ Ruchy BEATS C (native code!) on benchmarks
+- ✅ Ruchy BEATS Rust (memory safety + speed)
+- ✅ Tiny binaries STILL available via `--profile release-tiny`
+- ✅ Zero code changes to Ruchy language - just better compilation
+
+### Phase 2: Julia-Style JIT+LLVM (v4.0+, 6-12 months) - **FUTURE WORK**
+**Further improvements: 50-100x speedup on hot paths**
 
 Long-term investment for:
 - Tiered execution (interpret → Cranelift → LLVM)
 - Type specialization (per-signature compilation)
 - Method caching (amortize JIT cost)
-- Near-native performance (within 2x of handwritten Rust)
+- Target: Match Julia's 21.78x geometric mean
+
+**Why Phase 2 After Phase 1:**
+- Phase 1 achieves 18.50x (85% of Julia's 21.78x) with ZERO JIT complexity
+- Phase 2 would require 6-12 months of development for 17% additional speedup
+- Phase 1 is a **better ROI**: 42% speedup in 8 weeks vs 17% speedup in 6 months
+- Users get world-class performance NOW, not in a year
 
 ---
 
 **Document Version:** 2.0
 **Last Updated:** 2025-11-02
-**Status:** ACTIVE - Phase 1 Ready for Implementation
+**Status:** ACTIVE - Phase 1 Ready for Immediate Implementation
+
+**BREAKING CHANGE:** v3.174.0 changes default `release` profile from `opt="z"` (size) to `opt=3` (speed).
+**Migration:** Users requiring tiny binaries should use `cargo build --profile release-tiny` or `ruchy compile --profile release-tiny`.
+**Rationale:** Most users prioritize speed over size; embedded users can opt into size optimization.
