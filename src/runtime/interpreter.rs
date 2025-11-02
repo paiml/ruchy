@@ -2482,6 +2482,17 @@ impl Interpreter {
             }
         }
 
+        // ISSUE-117: Handle JSON global object
+        if name == "JSON" {
+            // Return a marker object that has parse and stringify methods
+            let mut json_obj = HashMap::new();
+            json_obj.insert(
+                "__type".to_string(),
+                Value::from_string("JSON".to_string()),
+            );
+            return Ok(Value::Object(Arc::new(json_obj)));
+        }
+
         // Normal variable lookup
         for env in self.env_stack.iter().rev() {
             if let Some(value) = env.get(name) {
@@ -3009,6 +3020,90 @@ impl Interpreter {
         crate::runtime::eval_control_flow_new::eval_range_expr(start, end, inclusive, |e| {
             self.eval_expr(e)
         })
+    }
+
+    /// ISSUE-117: Parse JSON string into Value (complexity: 8)
+    fn json_parse(&self, json_str: &str) -> Result<Value, InterpreterError> {
+        let json_value: serde_json::Value = serde_json::from_str(json_str).map_err(|e| {
+            InterpreterError::RuntimeError(format!("JSON.parse() failed: {}", e))
+        })?;
+        Self::serde_to_value(&json_value)
+    }
+
+    /// ISSUE-117: Stringify Value to JSON string (complexity: 4)
+    fn json_stringify(&self, value: &Value) -> Result<Value, InterpreterError> {
+        let json_value = Self::value_to_serde(value)?;
+        let json_str = serde_json::to_string(&json_value).map_err(|e| {
+            InterpreterError::RuntimeError(format!("JSON.stringify() failed: {}", e))
+        })?;
+        Ok(Value::from_string(json_str))
+    }
+
+    /// Convert serde_json::Value to interpreter Value (complexity: 9)
+    fn serde_to_value(json: &serde_json::Value) -> Result<Value, InterpreterError> {
+        match json {
+            serde_json::Value::Null => Ok(Value::Nil),
+            serde_json::Value::Bool(b) => Ok(Value::Bool(*b)),
+            serde_json::Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    Ok(Value::Integer(i))
+                } else if let Some(f) = n.as_f64() {
+                    Ok(Value::Float(f))
+                } else {
+                    Err(InterpreterError::RuntimeError(
+                        "JSON number out of range".to_string(),
+                    ))
+                }
+            }
+            serde_json::Value::String(s) => Ok(Value::from_string(s.clone())),
+            serde_json::Value::Array(arr) => {
+                let values: Result<Vec<Value>, InterpreterError> =
+                    arr.iter().map(Self::serde_to_value).collect();
+                Ok(Value::Array(Arc::from(values?.into_boxed_slice())))
+            }
+            serde_json::Value::Object(obj) => {
+                let mut map = HashMap::new();
+                for (key, val) in obj {
+                    map.insert(key.clone(), Self::serde_to_value(val)?);
+                }
+                Ok(Value::Object(Arc::new(map)))
+            }
+        }
+    }
+
+    /// Convert interpreter Value to serde_json::Value (complexity: 8)
+    fn value_to_serde(value: &Value) -> Result<serde_json::Value, InterpreterError> {
+        match value {
+            Value::Nil => Ok(serde_json::Value::Null),
+            Value::Bool(b) => Ok(serde_json::Value::Bool(*b)),
+            Value::Integer(i) => Ok(serde_json::Value::Number((*i).into())),
+            Value::Float(f) => {
+                if let Some(n) = serde_json::Number::from_f64(*f) {
+                    Ok(serde_json::Value::Number(n))
+                } else {
+                    Err(InterpreterError::RuntimeError(
+                        "Invalid float for JSON".to_string(),
+                    ))
+                }
+            }
+            Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
+            Value::Array(arr) => {
+                let json_arr: Result<Vec<serde_json::Value>, InterpreterError> =
+                    arr.iter().map(Self::value_to_serde).collect();
+                Ok(serde_json::Value::Array(json_arr?))
+            }
+            Value::Object(obj) => {
+                let mut json_obj = serde_json::Map::new();
+                for (key, val) in obj.as_ref() {
+                    json_obj.insert(key.clone(), Self::value_to_serde(val)?);
+                }
+                Ok(serde_json::Value::Object(json_obj))
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Cannot convert {:?} to JSON",
+                value
+            ))),
+        }
     }
 
     /// Helper function for testing - evaluate a string expression via parser
@@ -7160,6 +7255,30 @@ impl Interpreter {
                     }
                     // Vec::new() → empty array
                     return Ok(Value::Array(Arc::from([])));
+                }
+
+                // ISSUE-117: JSON.parse() and JSON.stringify() methods
+                if type_name == "JSON" {
+                    if field == "parse" {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "JSON.parse() requires exactly 1 argument, got {}",
+                                args.len()
+                            )));
+                        }
+                        let json_str_val = self.eval_expr(&args[0])?;
+                        let json_str = json_str_val.to_string();
+                        return self.json_parse(&json_str);
+                    } else if field == "stringify" {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "JSON.stringify() requires exactly 1 argument, got {}",
+                                args.len()
+                            )));
+                        }
+                        let value = self.eval_expr(&args[0])?;
+                        return self.json_stringify(&value);
+                    }
                 }
 
                 // REGRESSION-077: Check for user-defined struct impl methods

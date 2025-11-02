@@ -2718,11 +2718,11 @@ fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], value: serd
 /// Dispatch JSON functions - Part 1 (functions 1-5)
 /// Complexity: 5
 /// Dispatch JSON functions - Part 1a (parse/stringify)
-/// Complexity: 3 (reduced by splitting dispatcher)
+/// Complexity: 5 (added ISSUE-117 namespace patterns)
 fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
-        "__builtin_json_parse__" => Ok(Some(eval_json_parse(args)?)),
-        "__builtin_json_stringify__" => Ok(Some(eval_json_stringify(args)?)),
+        "__builtin_json_parse__" | "JSON_parse" => Ok(Some(eval_json_parse(args)?)),
+        "__builtin_json_stringify__" | "JSON_stringify" => Ok(Some(eval_json_stringify(args)?)),
         "__builtin_json_pretty__" => Ok(Some(eval_json_pretty(args)?)),
         _ => Ok(None),
     }
