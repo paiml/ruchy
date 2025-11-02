@@ -190,7 +190,7 @@ fn estimate_body_size(body: &Expr) -> usize {
     match &body.kind {
         ExprKind::Block(exprs) => {
             // Recursively sum sizes of all expressions in block
-            exprs.iter().map(|e| estimate_body_size(e)).sum()
+            exprs.iter().map(estimate_body_size).sum()
         }
         ExprKind::Let { body, .. } => 1 + estimate_body_size(body),
         ExprKind::If { then_branch, else_branch, .. } => {
@@ -219,7 +219,7 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
         ExprKind::If { condition, then_branch, else_branch } => {
             check_recursion(func_name, condition)
                 || check_recursion(func_name, then_branch)
-                || else_branch.as_ref().map_or(false, |e| check_recursion(func_name, e))
+                || else_branch.as_ref().is_some_and(|e| check_recursion(func_name, e))
         }
         ExprKind::Let { value, body, .. } => {
             check_recursion(func_name, value) || check_recursion(func_name, body)
