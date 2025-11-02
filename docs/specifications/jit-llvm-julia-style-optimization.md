@@ -1,27 +1,41 @@
 # Julia-Style JIT+LLVM Optimization for Ruchy
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2025-11-02
-**Status:** DRAFT - Long-term Roadmap (v4.0+)
+**Status:** ACTIVE - Immediate + Long-term Roadmap
 **Authors:** Ruchy Core Team
-**References:** BENCH-008 Performance Analysis, Julia Language Design
+**References:** BENCH-007 Results (Fibonacci), Julia Language Design
 
 ---
 
 ## Executive Summary
 
-This specification outlines a **Julia-style JIT+LLVM optimization strategy** for Ruchy, combining:
-- **JIT compilation** for fast startup and runtime adaptability
-- **LLVM backend** for world-class optimizations and multi-platform support
+This specification outlines a **two-phase optimization strategy** for Ruchy:
+
+### Phase 1: IMMEDIATE AOT Optimizations (v3.174.0 - v3.180.0)
+**Goal:** Beat Julia (1.35ms) with aggressive compiler flags - NO JIT needed yet
+
+**Current Benchmark Results (BENCH-007 Fibonacci n=20):**
+```
+🥇 Julia:            1.35ms  (13.05x faster) ⚡ TARGET TO BEAT
+🥈 Ruchy Transpiled: 1.67ms  (10.55x faster) 🦀 BEATS RUST
+🥉 Rust:             1.70ms  (10.36x faster)
+   Ruchy Compiled:   1.80ms  ( 9.79x faster) ⚠️  SLOWER THAN TRANSPILED!
+```
+
+**Root Cause:** Current `opt-level = "z"` (size) instead of `opt-level = 3` (speed)
+
+**Immediate Actions (v3.174.0 - 2 weeks):**
+1. Add `[profile.release-speed]` with maximum performance flags
+2. Enable LTO, PGO (Profile-Guided Optimization), and target-cpu=native
+3. Pre-configure aggressive transpiler optimizations (tail-call, constant folding, dead code elimination)
+4. **Target:** < 1.30ms (BEAT Julia by 5%) with <500KB binary size
+
+### Phase 2: Julia-Style JIT+LLVM (v4.0+ - 6-12 months)
+- **JIT compilation** for adaptive optimization
+- **LLVM backend** for multi-platform support
 - **Type specialization** based on runtime observations
-
-**Expected Impact:**
-- 50-100x performance improvement for hot code paths
-- Maintain fast REPL startup (<100ms)
-- Near-native performance for production workloads
-- Multi-platform support (x86_64, ARM, WebAssembly)
-
-**Timeline:** v4.0+ (6-12 months of focused development)
+- **Target:** 50-100x improvement for hot paths + <100ms REPL startup
 
 ---
 
@@ -66,9 +80,220 @@ From BENCH-008 (Prime Generation - 10,000 primes):
 
 ---
 
-## 2. Julia-Style Architecture
+## 2. IMMEDIATE AOT Optimizations (v3.174.0 - NO JIT REQUIRED)
 
-### 2.1 How Julia Achieves Near-Native Performance
+### 2.1 The Problem: Size vs Speed Trade-off
+
+**Current Cargo.toml:**
+```toml
+[profile.release]
+opt-level = "z"        # ⚠️  Optimize for SIZE not SPEED
+lto = "fat"           # Good: Full link-time optimization
+codegen-units = 1     # Good: Single codegen unit
+strip = true          # Good: Remove debug symbols
+panic = "abort"       # Good: Smaller panic handler
+```
+
+**Result:** Tiny binaries (2MB) but SLOWER than transpiled mode (1.80ms vs 1.67ms)
+
+### 2.2 Aggressive Speed Profile (Beat Julia by 5%)
+
+**Add to Cargo.toml:**
+```toml
+[profile.release-speed]
+inherits = "release"
+opt-level = 3              # ✅ MAXIMUM speed (not size)
+lto = "fat"               # Full link-time optimization
+codegen-units = 1         # Better optimization (slower compile)
+panic = "abort"           # No unwinding overhead
+strip = true              # Remove symbols
+overflow-checks = false   # No runtime overflow checks (unsafe but fast)
+debug-assertions = false  # No debug assertions
+
+# AGGRESSIVE LLVM FLAGS (via RUSTFLAGS environment)
+# RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C embed-bitcode=yes"
+# target-cpu=native: Use CPU-specific instructions (AVX2, SSE4.2, etc.)
+# embed-bitcode: Enable cross-module optimization
+```
+
+**Expected Result:**
+- Speed: < 1.30ms (BEAT Julia's 1.35ms by 5%)
+- Binary size: ~500KB (larger than "z" but still tiny)
+- **Use case:** `ruchy compile --release-speed script.ruchy`
+
+### 2.3 Profile-Guided Optimization (PGO)
+
+**Two-step compilation for 10-15% additional speedup:**
+
+```bash
+# Step 1: Instrument build (collect profiling data)
+RUSTFLAGS="-C profile-generate=/tmp/pgo-data" \
+  cargo build --profile release-speed
+
+# Step 2: Run benchmarks to collect data
+./target/release-speed/ruchy compile benchmarks/bench-007-fibonacci.ruchy
+./target/release-speed/ruchy compile benchmarks/bench-008-primes.ruchy
+
+# Step 3: Optimize build using collected data
+RUSTFLAGS="-C profile-use=/tmp/pgo-data -C llvm-args=-pgo-warn-missing-function" \
+  cargo build --profile release-speed
+
+# Result: Additional 10-15% speedup from real-world usage patterns
+```
+
+**Integration:** Add `make release-pgo` target for PGO builds
+
+### 2.4 Transpiler Optimizations (AST-Level)
+
+**Implement in `src/backend/transpiler/`:**
+
+#### 2.4.1 Constant Folding
+```rust
+// Before:
+let x = 2 + 3 * 4;  // Transpiles to: let x = 2 + 3 * 4;
+
+// After (constant folding):
+let x = 14;  // Transpiles to: let x = 14;
+```
+
+#### 2.4.2 Dead Code Elimination
+```rust
+// Before:
+if false {
+    expensive_computation();  // Dead code
+}
+
+// After:
+// (removed entirely)
+```
+
+#### 2.4.3 Tail Call Optimization
+```rust
+// Before:
+fun factorial(n, acc) {
+    if n == 0 { acc } else { factorial(n - 1, n * acc) }
+}
+// Transpiles to recursive call (stack overflow risk)
+
+// After (tail call optimization):
+fn factorial(mut n: i32, mut acc: i32) -> i32 {
+    loop {
+        if n == 0 { return acc; }
+        let n_new = n - 1;
+        let acc_new = n * acc;
+        n = n_new;
+        acc = acc_new;
+    }
+}
+// Transpiles to loop (constant stack usage)
+```
+
+#### 2.4.4 Inline Small Functions
+```rust
+// Before:
+fun add(a, b) { a + b }
+let result = add(5, 3);  // Function call overhead
+
+// After (inlining):
+let result = 5 + 3;  // Direct computation
+```
+
+### 2.5 Bytecode VM Optimizations
+
+**Current:** Stack-based VM with boxed Values (slow)
+
+**Immediate Improvements:**
+1. **Register-based VM:** Reduce push/pop overhead (2-3x speedup)
+2. **Inline caching:** Cache method lookups (5-10x speedup for hot paths)
+3. **Type-tagged Values:** Use NaN-boxing or tagged unions (30% faster)
+4. **Specialized bytecode:** Different opcodes for i32 vs f64 addition
+
+**Implementation:** `src/runtime/vm/bytecode.rs`
+```rust
+// Current: Slow boxed values
+pub enum Value {
+    Integer(i32),  // Heap allocated
+    Float(f64),    // Heap allocated
+    Bool(bool),    // Heap allocated
+    String(String),// Heap allocated
+}
+
+// Optimized: NaN-boxing (fits in 64 bits)
+pub struct Value(u64);  // Stack allocated, no heap!
+
+impl Value {
+    // Encode i32 in lower 32 bits
+    fn from_i32(n: i32) -> Self { Value(n as u64) }
+
+    // Encode f64 using NaN-boxing
+    fn from_f64(f: f64) -> Self { Value(f.to_bits()) }
+
+    // Fast type checks (bit pattern matching)
+    fn is_i32(&self) -> bool { self.0 & TAG_MASK == TAG_I32 }
+    fn is_f64(&self) -> bool { self.0 & TAG_MASK == TAG_F64 }
+}
+```
+
+### 2.6 AST Interpreter Optimizations
+
+**Current:** Recursive tree-walking (slow)
+
+**Immediate Improvements:**
+1. **Cached variable lookups:** HashMap → Vec indexing (10x faster)
+2. **Pre-computed operator dispatch:** Virtual method table (2x faster)
+3. **Stack frames instead of heap:** Reduce allocations (3x faster)
+4. **Specialization hints:** Track monomorphic call sites
+
+**Expected Result:** 5-10x AST interpreter speedup (1,588ms → 200-300ms)
+
+### 2.7 Compile-Time Configuration (Environment Variables)
+
+**Add to `ruchy compile` command:**
+```bash
+# Maximum speed (beat Julia)
+RUCHY_OPT_LEVEL=max ruchy compile --profile release-speed script.ruchy
+
+# Balanced (default)
+ruchy compile script.ruchy
+
+# Minimum size (embedded systems)
+ruchy compile --profile release script.ruchy
+```
+
+**Environment variables:**
+```bash
+export RUCHY_OPT_LEVEL=max           # 0, 1, 2, 3, max
+export RUCHY_TARGET_CPU=native       # native, generic, specific (e.g., haswell)
+export RUCHY_ENABLE_PGO=true         # Profile-guided optimization
+export RUCHY_INLINE_THRESHOLD=1000   # Aggressive inlining
+export RUCHY_UNROLL_LOOPS=true       # Loop unrolling
+export RUCHY_VECTORIZE=true          # Auto-vectorization (SIMD)
+```
+
+### 2.8 Expected Results (v3.174.0)
+
+**BENCH-007 (Fibonacci n=20):**
+| Mode | Current | After Optimizations | Speedup | vs Julia |
+|------|---------|---------------------|---------|----------|
+| Ruchy Compiled | 1.80ms | **1.25ms** ⚡ | 1.44x | **BEATS Julia (1.35ms)** |
+| Ruchy Transpiled | 1.67ms | **1.20ms** | 1.39x | BEATS Julia |
+| Ruchy Bytecode | 3.76ms | **1.50ms** | 2.5x | Competitive |
+| Ruchy AST | 140ms | **20ms** | 7x | Usable for dev |
+
+**Binary Sizes:**
+| Profile | Size | Use Case |
+|---------|------|----------|
+| release (opt="z") | 2MB | Embedded, minimal footprint |
+| release-speed (opt=3) | 500KB | Production performance |
+| release-speed + PGO | 450KB | Maximum performance + small |
+
+**Timeline:** v3.174.0 release (2 weeks)
+
+---
+
+## 3. Julia-Style JIT Architecture (Long-term)
+
+### 3.1 How Julia Achieves Near-Native Performance
 
 ```
 Julia Execution Flow:
@@ -94,7 +319,7 @@ Julia Execution Flow:
    add(5, 3) → Lookup cache → Execute native code
 ```
 
-### 2.2 Key Principles
+### 3.2 Key Principles
 
 1. **Lazy Compilation:** Only compile what's executed
 2. **Type Specialization:** Generate different native code for different type combinations
@@ -106,9 +331,9 @@ Julia Execution Flow:
 
 ---
 
-## 3. Ruchy JIT+LLVM Design
+## 4. Ruchy JIT+LLVM Design
 
-### 3.1 High-Level Architecture
+### 4.1 High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -150,9 +375,9 @@ Julia Execution Flow:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Core Components
+### 4.2 Core Components
 
-#### 3.2.1 Execution Engine
+#### 4.2.1 Execution Engine
 
 ```rust
 pub struct RuchyExecutionEngine {
@@ -190,7 +415,7 @@ pub struct JITConfig {
 }
 ```
 
-#### 3.2.2 Type Specialization
+#### 4.2.2 Type Specialization
 
 ```rust
 /// Type signature for method specialization
@@ -220,7 +445,7 @@ pub enum ConcreteType {
 /// - add(String, String) -> String  (different LLVM function)
 ```
 
-#### 3.2.3 Method Cache
+#### 4.2.3 Method Cache
 
 ```rust
 pub struct MethodCache {
@@ -249,7 +474,7 @@ struct CompiledMethod {
 }
 ```
 
-#### 3.2.4 Runtime Profiler
+#### 4.2.4 Runtime Profiler
 
 ```rust
 pub struct RuntimeProfiler {
@@ -291,9 +516,9 @@ impl RuntimeProfiler {
 
 ---
 
-## 4. LLVM Integration (inkwell)
+## 5. LLVM Integration (inkwell)
 
-### 4.1 LLVM IR Generation
+### 5.1 LLVM IR Generation
 
 ```rust
 use inkwell::*;
@@ -492,7 +717,7 @@ impl<'ctx> LLVMCodegen<'ctx> {
 }
 ```
 
-### 4.2 Optimized BENCH-008 Example
+### 5.2 Optimized BENCH-008 Example
 
 ```rust
 // Ruchy source
@@ -560,9 +785,9 @@ return_true:
 
 ---
 
-## 5. Performance Targets
+## 6. Performance Targets
 
-### 5.1 Expected Performance (BENCH-008)
+### 6.1 Expected Performance (BENCH-008)
 
 | Tier | Mode | Expected Time | vs Current | Implementation |
 |------|------|--------------|------------|----------------|
@@ -571,7 +796,7 @@ return_true:
 | 2 | LLVM Optimized | ~10ms | 150x faster | 🔧 High effort |
 | - | Transpile (reference) | ~5ms | 300x faster | ✅ Current |
 
-### 5.2 Tiered Execution Benefits
+### 6.2 Tiered Execution Benefits
 
 ```
 Example: BENCH-008 with tiered execution
@@ -598,7 +823,7 @@ Compared to:
 
 ---
 
-## 6. Implementation Roadmap
+## 7. Implementation Roadmap (JIT - Long-term)
 
 ### 6.1 Phase 1: Foundation (v3.180.0) - 2 months
 
@@ -917,37 +1142,187 @@ fn llvm_matches_interpreter(
 
 ---
 
-## 10. Conclusion
+## 10. IMMEDIATE Implementation Roadmap (v3.174.0 - Beat Julia NOW)
 
-The **Julia-style JIT+LLVM optimization** represents a long-term strategic investment in Ruchy's performance. By combining:
+### 10.1 Phase 1A: Cargo.toml Optimization Profiles (v3.174.0 - 3 days)
 
-1. **Fast startup** via tiered execution (interpret → quick JIT → LLVM)
-2. **Type specialization** for near-native performance
-3. **LLVM backend** for world-class optimizations
-4. **Method caching** to amortize compilation cost
+**Ticket:** [PERF-001] Add release-speed profile with aggressive compiler flags
 
-We can achieve:
-- **100-200x speedup** for hot code paths (1,588ms → 10ms)
-- **Near-native performance** (within 2x of Rust)
-- **Maintain fast REPL** (<100ms startup)
-- **Production-ready** for real-world workloads
+**Tasks:**
+1. Add `[profile.release-speed]` to Cargo.toml
+2. Configure: `opt-level=3, lto="fat", codegen-units=1, overflow-checks=false`
+3. Document RUSTFLAGS: `-C target-cpu=native -C embed-bitcode=yes`
+4. Add `make release-speed` target
+5. Update `ruchy compile` to accept `--profile release-speed` flag
 
-**Timeline:** v4.0 target (6-12 months of focused development)
-
-**Current Status:** v3.171.0 provides excellent foundation with:
-- ✅ Working transpile mode for production (near-native perf)
-- ✅ Stable interpreter for development (acceptable perf)
-- ✅ Type inference system (basis for specialization)
-- ✅ Comprehensive test suite (validation infrastructure)
-
-**Next Steps:**
-1. Validate specification with stakeholders
-2. Build prototype of Tier 1 (Cranelift JIT)
-3. Benchmark and iterate on design
-4. Proceed with phased implementation
+**Acceptance Criteria:**
+- BENCH-007: < 1.30ms (vs Julia's 1.35ms)
+- Binary size: < 600KB
+- Zero regressions in test suite (4033 tests pass)
 
 ---
 
-**Document Version:** 1.0
+### 10.2 Phase 1B: Profile-Guided Optimization (v3.175.0 - 1 week)
+
+**Ticket:** [PERF-002] Implement PGO workflow for release builds
+
+**Tasks:**
+1. Create `make release-pgo` target with 3-step build
+2. Add benchmark corpus for PGO training (BENCH-001 through BENCH-010)
+3. Automate: instrument → train → optimize workflow
+4. Document PGO usage in CLAUDE.md
+
+**Acceptance Criteria:**
+- Additional 10-15% speedup over release-speed
+- BENCH-007: < 1.20ms (10% better than Julia)
+- Automated PGO in CI/CD pipeline
+
+---
+
+### 10.3 Phase 2: Transpiler AST Optimizations (v3.176.0 - v3.178.0 - 3 weeks)
+
+#### 10.3.1 Constant Folding & Dead Code Elimination (v3.176.0)
+
+**Ticket:** [TRANSPILER-PERF-001] Implement constant folding pass
+
+**Tasks:**
+1. Add `ConstantFolder` visitor in `src/backend/transpiler/optimizations/`
+2. Fold arithmetic: `2 + 3 * 4` → `14`
+3. Fold comparisons: `5 > 3` → `true`
+4. Remove dead code: `if false { ... }` → (removed)
+5. Add property tests: verify semantics preserved
+
+**Acceptance Criteria:**
+- All constant expressions folded at compile-time
+- Dead code eliminated from generated Rust
+- Zero correctness regressions (validated by property tests)
+
+---
+
+#### 10.3.2 Tail Call Optimization (v3.177.0)
+
+**Ticket:** [TRANSPILER-PERF-002] Convert tail-recursive functions to loops
+
+**Tasks:**
+1. Detect tail-recursive functions in AST
+2. Transform to loop with mutable variables
+3. Preserve semantics (validated by equivalence tests)
+4. Add tests: factorial, fibonacci, list recursion
+
+**Acceptance Criteria:**
+- Tail-recursive functions compile to loops (constant stack)
+- BENCH-007 (tail-recursive fibonacci): 0% stack growth
+- Stack overflow eliminated for tail-recursive code
+
+---
+
+#### 10.3.3 Function Inlining (v3.178.0)
+
+**Ticket:** [TRANSPILER-PERF-003] Inline small functions (≤10 lines)
+
+**Tasks:**
+1. Detect small functions (threshold: 10 AST nodes)
+2. Inline at call sites (copy-paste with variable renaming)
+3. Respect `#[inline(never)]` annotation
+4. Add cost model: inline only if net speedup
+
+**Acceptance Criteria:**
+- Functions ≤10 nodes inlined automatically
+- Zero correctness regressions
+- Benchmark: 5-10% speedup on function-call-heavy code
+
+---
+
+### 10.4 Phase 3: Bytecode VM Optimizations (v3.179.0 - v3.180.0 - 2 weeks)
+
+#### 10.4.1 NaN-Boxing for Value Representation (v3.179.0)
+
+**Ticket:** [VM-PERF-001] Implement NaN-boxed Value type
+
+**Tasks:**
+1. Replace `enum Value` with `struct Value(u64)`
+2. Encode i32, f64, bool, pointers in 64 bits
+3. Implement fast type checks (bit masking)
+4. Add comprehensive tests (all value types)
+
+**Acceptance Criteria:**
+- Zero heap allocations for i32/f64/bool
+- 30% faster arithmetic operations
+- All tests pass (4033 library tests)
+
+---
+
+#### 10.4.2 Inline Caching for Method Lookups (v3.180.0)
+
+**Ticket:** [VM-PERF-002] Implement inline caches for method dispatch
+
+**Tasks:**
+1. Add `InlineCache` struct to bytecode instructions
+2. Cache method pointers after first lookup
+3. Invalidate on type change (polymorphic detection)
+4. Benchmark hot loop performance
+
+**Acceptance Criteria:**
+- Method lookups: O(1) for monomorphic sites (vs O(log n))
+- 5-10x speedup for method-call-heavy code
+- Graceful degradation for polymorphic sites
+
+---
+
+### 10.5 Validation & Benchmarking (Continuous)
+
+**Every sprint validates performance targets:**
+
+```bash
+# Run BENCH-007 after each optimization
+make bench-fibonacci
+
+# Target progression:
+v3.173.0:  1.80ms (baseline - size-optimized)
+v3.174.0:  1.25ms (release-speed profile)  ✅ BEAT Julia
+v3.175.0:  1.15ms (PGO)                    ✅ 15% better than Julia
+v3.176.0:  1.10ms (+ constant folding)
+v3.177.0:  1.05ms (+ tail-call opt)
+v3.178.0:  1.00ms (+ inlining)             ✅ 35% better than Julia
+v3.179.0:  0.95ms (+ NaN-boxing)
+v3.180.0:  0.90ms (+ inline caching)       ✅ 50% better than Julia!
+```
+
+**Final Goal:** < 0.90ms (50% faster than Julia's 1.35ms) with <500KB binaries
+
+---
+
+## 11. Conclusion
+
+This specification outlines a **two-phase strategy** for Ruchy performance:
+
+### Phase 1: IMMEDIATE AOT Optimizations (v3.174.0 - v3.180.0, 8 weeks)
+**Beat Julia (1.35ms) by 50% using aggressive compiler flags and AST optimizations**
+
+**Key Actions:**
+1. ✅ **Cargo.toml profiles** - Switch from size (`opt="z"`) to speed (`opt=3`)
+2. ✅ **PGO** - Profile-guided optimization for 10-15% additional speedup
+3. ✅ **Transpiler** - Constant folding, tail-call opt, inlining
+4. ✅ **Bytecode VM** - NaN-boxing, inline caching for 3-10x improvements
+5. ✅ **AST interpreter** - Cached lookups, stack frames for 5-10x speedup
+
+**Expected Results:**
+- **Speed:** 0.90ms (50% faster than Julia's 1.35ms)
+- **Binary size:** <500KB (still tiny!)
+- **Timeline:** 8 weeks (v3.174.0 - v3.180.0)
+- **No JIT required:** Pure AOT compilation wins
+
+### Phase 2: Julia-Style JIT+LLVM (v4.0+, 6-12 months)
+**Adaptive optimization for 100-200x improvements on hot paths**
+
+Long-term investment for:
+- Tiered execution (interpret → Cranelift → LLVM)
+- Type specialization (per-signature compilation)
+- Method caching (amortize JIT cost)
+- Near-native performance (within 2x of handwritten Rust)
+
+---
+
+**Document Version:** 2.0
 **Last Updated:** 2025-11-02
-**Status:** DRAFT - Awaiting Review
+**Status:** ACTIVE - Phase 1 Ready for Implementation
