@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.172.0] - 2025-11-02
+
 ### Fixed
 - **CRITICAL [ISSUE-114]**: Fixed transpiler String return type inference blocking BENCH-003
   - String return types now correctly inferred as `String` for mutable string variables
