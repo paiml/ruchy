@@ -19,12 +19,13 @@ All notable changes to the Ruchy programming language will be documented in this
   - Tests: 10/10 integration tests passing (basic, nested, roundtrip, error handling)
   - Files: `src/runtime/eval_builtin.rs` (JSON dispatcher), `src/runtime/interpreter.rs` (namespace handling)
   - Pattern: Follows namespace dispatch architecture for builtin objects
-- **[ISSUE-116]** File object methods (`File.open()`, `.read_line()`, `.close()`)
+- **[ISSUE-116]** File object methods (`File.open()`, `.read()`, `.read_line()`, `.close()`)
   - Python/Ruby-style file I/O API
   - File.open(path) - opens file, reads into lines array
+  - .read() - returns entire file content (all lines joined with newline)
   - .read_line() - returns current line, advances position, handles EOF
   - .close() - marks file as closed, prevents further reads
-  - Tests: 5/5 manual validation scenarios passing
+  - Tests: 6/6 integration tests passing
   - Files: `src/runtime/eval_builtin.rs` (File dispatcher + eval_file_open), `src/runtime/interpreter.rs` (File global + method handlers)
   - Bug fixes: String extraction (pattern matching vs to_string), __type marker, namespace dispatch
 
