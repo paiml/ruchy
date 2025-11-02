@@ -4799,7 +4799,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-wasm"
-version = "3.171.0"
+version = "3.172.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
