@@ -81,13 +81,13 @@ pub fn fold_constants(expr: Expr) -> Expr {
                 if b {
                     // Condition is true: return then-branch
                     return (*folded_then).clone();
-                } else if let Some(else_expr) = folded_else {
+                }
+                if let Some(else_expr) = folded_else {
                     // Condition is false: return else-branch
                     return (*else_expr).clone();
-                } else {
-                    // Condition is false, no else: return unit (empty block)
-                    return Expr::new(ExprKind::Block(vec![]), expr.span);
                 }
+                // Condition is false, no else: return unit (empty block)
+                return Expr::new(ExprKind::Block(vec![]), expr.span);
             }
 
             // Condition not constant: return with folded children
