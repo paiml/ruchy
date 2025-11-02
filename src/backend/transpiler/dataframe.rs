@@ -554,22 +554,22 @@ mod property_tests_dataframe {
         let transpiler = super::Transpiler::new();
 
         // Test with empty columns (common edge case)
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _ = transpiler.transpile_dataframe(&[]);
-        });
+        }));
         assert!(
             result.is_ok(),
             "transpile_dataframe should not panic on empty input"
         );
 
         // Test with malformed column data (should handle gracefully)
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let bad_columns = vec![DataFrameColumn {
                 name: String::new(), // Empty name
                 values: vec![],      // Empty values
             }];
             let _ = transpiler.transpile_dataframe(&bad_columns);
-        });
+        }));
         assert!(
             result.is_ok(),
             "transpile_dataframe should handle malformed data gracefully"

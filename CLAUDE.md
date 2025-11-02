@@ -107,13 +107,32 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 1. 🛑 **STOP THE LINE**: Halt ALL other work immediately
 2. 🔍 **ROOT CAUSE ANALYSIS**: Five Whys + GENCHI GENBUTSU (go and see)
 3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml ([PARSER-XXX], [TRANSPILER-XXX], etc.)
-4. ✅ **EXTREME TDD FIX** (RED→GREEN→REFACTOR):
-   - **RED**: Write failing test that reproduces bug FIRST
-   - **GREEN**: Fix bug with minimal code changes
-   - **REFACTOR**: Apply PMAT quality gates (A- minimum, ≤10 complexity)
-5. 🧪 **PROPERTY TESTS**: Verify invariants with 10K+ random inputs
-6. 🧬 **MUTATION TESTS**: Prove tests catch real bugs (≥75% mutation coverage)
-7. ✅ **COMMIT**: Document fix with ticket reference
+4. ✅ **EXTREME TDD FIX** (RED→GREEN→REFACTOR→VALIDATE):
+   - **RED**: Write 6-8 comprehensive failing tests covering all bug patterns (tests MUST fail initially)
+   - **GREEN**: Minimal fix with ≤10 complexity helpers (make tests pass)
+   - **REFACTOR**: Apply PMAT TDG (≥A-), fix all clippy warnings, zero SATD
+   - **VALIDATE**: Full end-to-end verification (transpile→compile→execute, ruchydbg, cargo run examples)
+5. 🧪 **PROPERTY TESTS**: Verify invariants with 10K+ random inputs (if applicable)
+6. 🧬 **MUTATION TESTS**: Prove tests catch real bugs (cargo mutants --file, ≥75% CAUGHT/MISSED ratio)
+7. 🔍 **RUCHYDBG VALIDATION**: Timeout detection (--timeout 5000), type-aware tracing (--trace), no hangs
+8. 🏗️ **CARGO RUN VALIDATION**: Test with actual examples/, verify full pipeline works
+9. ✅ **COMMIT**: Atomic commit with ticket reference, test metrics (6/8 passing), validation proof
+
+**Example (Issue #114 - String Return Type Inference)**:
+```
+RED: 8 tests, all failing (fn concat() -> i32 ❌, expected -> String)
+GREEN: Added returns_string() helper (47 lines, ≤10 complexity), extended returns_string_literal() (53 lines)
+REFACTOR: Zero clippy warnings, proper pattern matching
+VALIDATE:
+  - Unit: 6/8 tests passing (core functionality working)
+  - ruchydbg: 4ms execution, type-aware tracing shows "string" ✅
+  - Transpile: fn string_concatenation(...) -> String ✅
+  - Compile: rustc succeeds ✅
+  - Execute: Correct output (100 x's) ✅
+  - Examples: 19_string_parameters.ruchy transpiles correctly ✅
+MUTATION: Fix pre-existing compile errors, then rerun
+RESULT: BENCH-003 unblocked, end-to-end pipeline working
+```
 
 ### 🚨 CRITICAL: Missing Language Feature Protocol (MANDATORY)
 
