@@ -126,9 +126,37 @@ impl Transpiler {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
-        let target_tokens = self.transpile_expr(target)?;
         let value_tokens = self.transpile_expr(value)?;
-        Ok(quote! { #target_tokens = #value_tokens })
+
+        // BUG-003: Handle IndexAccess specially for lvalue (no .clone())
+        match &target.kind {
+            ExprKind::IndexAccess { .. } => {
+                let target_tokens = self.transpile_index_lvalue(target)?;
+                Ok(quote! { #target_tokens = #value_tokens })
+            }
+            _ => {
+                let target_tokens = self.transpile_expr(target)?;
+                Ok(quote! { #target_tokens = #value_tokens })
+            }
+        }
+    }
+
+    /// Transpile IndexAccess as an lvalue (no .clone())
+    /// Handles nested cases like matrix[i][j]
+    fn transpile_index_lvalue(&self, expr: &Expr) -> Result<TokenStream> {
+        match &expr.kind {
+            ExprKind::IndexAccess { object, index } => {
+                // Recursively handle nested IndexAccess
+                let obj_tokens = if matches!(object.kind, ExprKind::IndexAccess { .. }) {
+                    self.transpile_index_lvalue(object)?
+                } else {
+                    self.transpile_expr(object)?
+                };
+                let idx_tokens = self.transpile_expr(index)?;
+                Ok(quote! { #obj_tokens[#idx_tokens as usize] })
+            }
+            _ => self.transpile_expr(expr),
+        }
     }
     /// Transpiles compound assignment
     /// # Examples
