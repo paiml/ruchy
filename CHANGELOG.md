@@ -21,7 +21,7 @@ All notable changes to the Ruchy programming language will be documented in this
   - Tests: 6/6 passing + property test validated
   - Files: `src/runtime/interpreter.rs`, `src/backend/transpiler/expressions.rs`
 
-## [3.174.0] - 2025-11-02 (PLANNED)
+## [3.174.0] - 2025-11-02
 
 ### ⚡ BREAKING CHANGE: Default Release Profile Now Optimizes for Speed
 
