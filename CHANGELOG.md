@@ -51,6 +51,25 @@ All notable changes to the Ruchy programming language will be documented in this
   - Impact: Confirms transpiler correctness, documents expected behavior for nested loops
   - Files: tests/transpiler_defect_018_nested_loop_ownership_RED.rs (NEW, 227 lines)
 
+- **[PERF-SPEC-001] Julia-style JIT+LLVM optimization specification (v4.0+ roadmap)**
+  - Created comprehensive 954-line specification for long-term performance improvements
+  - Performance baseline documented: BENCH-008 (1,588ms AST vs 5ms transpile, 318x slower than native)
+  - Architecture design: Tiered execution (Tier 0: Interpret, Tier 1: Cranelift JIT, Tier 2: LLVM)
+  - Performance targets: 100-200x speedup for hot code (1,588ms → 10ms)
+  - Implementation roadmap: 4 phases spanning 6-12 months
+    - Phase 1 (v3.180.0): Foundation - profiler, method cache, type signatures (2 months)
+    - Phase 2 (v3.200.0): Tier 1 JIT with Cranelift - 5-10x speedup (3 months)
+    - Phase 3 (v4.0.0): LLVM backend - 100-200x speedup (4 months)
+    - Phase 4 (v4.5.0): Production hardening - <10ms target (3 months)
+  - Core components: RuchyExecutionEngine, TypeSignature, MethodCache, RuntimeProfiler
+  - Type specialization: Generate specialized native code per type signature
+  - Technical challenges addressed: compilation latency, type instability, memory overhead, debugging
+  - Validation strategy: micro-benchmarks, macro-benchmarks, property tests, regression tests
+  - Complete LLVM IR generation examples with inkwell
+  - References: Julia language design, LLVM optimization guides, JIT compilation patterns
+  - Files: docs/specifications/jit-llvm-julia-style-optimization.md (NEW, 954 lines)
+  - Toyota Way: GENCHI GENBUTSU - based on actual BENCH-008 measurements, not speculation
+
 ## [3.170.0] - 2025-11-01
 
 ### Fixed
