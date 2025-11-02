@@ -39,6 +39,7 @@
 mod actors;
 pub mod codegen_minimal;
 pub mod constant_folder; // PERF-002-A: Constant folding optimization
+pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod dataframe;
 #[cfg(feature = "dataframe")]
 // mod dataframe_arrow; // Temporarily disabled until proper implementation
@@ -710,9 +711,14 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
-        // PERF-002-A/B/C: Apply constant folding + constant propagation + dead code elimination
+        // PERF-002-A/B: Apply constant folding + constant propagation
         let after_propagation = constant_folder::propagate_constants(resolved_expr);
-        let optimized_expr = constant_folder::eliminate_dead_code(after_propagation);
+
+        // OPT-CODEGEN-004: Inline small, non-recursive functions
+        let after_inlining = inline_expander::inline_small_functions(after_propagation);
+
+        // PERF-002-C: Dead code elimination (removes unused inlined functions)
+        let optimized_expr = constant_folder::eliminate_dead_code(after_inlining);
 
         // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
         // This populates self.mutable_vars, function_signatures, and module_names
