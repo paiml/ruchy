@@ -188,7 +188,10 @@ fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
 /// Cyclomatic: 5 (≤10 target)
 fn estimate_body_size(body: &Expr) -> usize {
     match &body.kind {
-        ExprKind::Block(exprs) => exprs.len(),
+        ExprKind::Block(exprs) => {
+            // Recursively sum sizes of all expressions in block
+            exprs.iter().map(|e| estimate_body_size(e)).sum()
+        }
         ExprKind::Let { body, .. } => 1 + estimate_body_size(body),
         ExprKind::If { then_branch, else_branch, .. } => {
             1 + estimate_body_size(then_branch)
