@@ -3856,8 +3856,132 @@ impl Interpreter {
                     )),
                 }
             }
+            // BUG-003: Support array index assignment (arr[i] = value)
+            ExprKind::IndexAccess { object, index } => {
+                self.eval_index_assign(object, index, val)
+            }
             _ => Err(InterpreterError::RuntimeError(
                 "Invalid assignment target".to_string(),
+            )),
+        }
+    }
+
+    /// BUG-003: Evaluate array/vector index assignment (arr[i] = value, matrix[i][j] = value)
+    ///
+    /// Handles both simple (arr[0] = 99) and nested (matrix[0][1] = 99) index assignment.
+    /// Complexity: 8 (≤10 target)
+    fn eval_index_assign(
+        &mut self,
+        object: &Expr,
+        index: &Expr,
+        val: Value,
+    ) -> Result<Value, InterpreterError> {
+        match &object.kind {
+            ExprKind::Identifier(arr_name) => {
+                // Simple case: arr[i] = value
+                let idx_val = self.eval_expr(index)?;
+                let idx = match idx_val {
+                    Value::Integer(i) => i as usize,
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Array index must be an integer".to_string(),
+                        ))
+                    }
+                };
+
+                let arr = self.lookup_variable(arr_name)?;
+                match arr {
+                    Value::Array(ref vec) => {
+                        let mut new_vec = vec.to_vec();
+                        if idx < new_vec.len() {
+                            new_vec[idx] = val.clone();
+                            self.set_variable(arr_name, Value::Array(Arc::from(new_vec)));
+                            Ok(val)
+                        } else {
+                            Err(InterpreterError::RuntimeError(format!(
+                                "Index {} out of bounds for array of length {}",
+                                idx,
+                                new_vec.len()
+                            )))
+                        }
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "Cannot index non-array value".to_string(),
+                    )),
+                }
+            }
+            ExprKind::IndexAccess {
+                object: nested_obj,
+                index: nested_idx,
+            } => {
+                // Nested case: matrix[i][j] = value
+                // Get the outer index first
+                let outer_idx_val = self.eval_expr(nested_idx)?;
+                let outer_idx = match outer_idx_val {
+                    Value::Integer(i) => i as usize,
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Array index must be an integer".to_string(),
+                        ))
+                    }
+                };
+
+                // Get the root array name (only handle Identifier for now)
+                if let ExprKind::Identifier(arr_name) = &nested_obj.kind {
+                    let arr = self.lookup_variable(arr_name)?;
+
+                    // Get inner array and update it
+                    if let Value::Array(ref outer_vec) = arr {
+                        let mut new_outer = outer_vec.to_vec();
+                        if outer_idx < new_outer.len() {
+                            // Get inner array
+                            if let Value::Array(ref inner_vec) = new_outer[outer_idx] {
+                                let inner_idx_val = self.eval_expr(index)?;
+                                let inner_idx = match inner_idx_val {
+                                    Value::Integer(i) => i as usize,
+                                    _ => {
+                                        return Err(InterpreterError::RuntimeError(
+                                            "Array index must be an integer".to_string(),
+                                        ))
+                                    }
+                                };
+
+                                let mut new_inner = inner_vec.to_vec();
+                                if inner_idx < new_inner.len() {
+                                    new_inner[inner_idx] = val.clone();
+                                    new_outer[outer_idx] = Value::Array(Arc::from(new_inner));
+                                    self.set_variable(arr_name, Value::Array(Arc::from(new_outer)));
+                                    Ok(val)
+                                } else {
+                                    Err(InterpreterError::RuntimeError(format!(
+                                        "Inner index {} out of bounds",
+                                        inner_idx
+                                    )))
+                                }
+                            } else {
+                                Err(InterpreterError::RuntimeError(
+                                    "Cannot index non-array value".to_string(),
+                                ))
+                            }
+                        } else {
+                            Err(InterpreterError::RuntimeError(format!(
+                                "Outer index {} out of bounds",
+                                outer_idx
+                            )))
+                        }
+                    } else {
+                        Err(InterpreterError::RuntimeError(
+                            "Cannot index non-array value".to_string(),
+                        ))
+                    }
+                } else {
+                    Err(InterpreterError::RuntimeError(
+                        "Complex nested index assignment not yet supported".to_string(),
+                    ))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(
+                "Complex array assignment targets not yet supported".to_string(),
             )),
         }
     }
