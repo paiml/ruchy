@@ -38,6 +38,7 @@
 #![allow(clippy::too_many_lines)]
 mod actors;
 pub mod codegen_minimal;
+pub mod constant_folder; // PERF-002-A: Constant folding optimization
 mod dataframe;
 #[cfg(feature = "dataframe")]
 // mod dataframe_arrow; // Temporarily disabled until proper implementation
