@@ -12,6 +12,16 @@ All notable changes to the Ruchy programming language will be documented in this
   - Target: 10-20% speedup on compute-heavy workloads
   - Tests: 5/5 integration + 2/2 unit tests passing
   - File: `src/backend/transpiler/constant_folder.rs` (189 lines, ≤10 complexity)
+- **[PERF-002-B]** Constant propagation optimization (Julia-inspired, GitHub #124)
+  - Simple propagation: `let x = 5; x + 1` → `6`
+  - Chained: `let x = 5; let y = x; y + 3` → `8`
+  - Arithmetic: `let a = 2; let b = 3; a * b` → `6`
+  - Dead branch elimination: `if true { 42 } else { 0 }` → `{ 42 }`
+  - Conservative: Don't propagate mutable variables or across control flow
+  - Target: 10-20% speedup on compute-heavy workloads (per DEBUGGER-051 spec)
+  - Tests: 10/10 integration tests passing
+  - Files: `src/backend/transpiler/constant_folder.rs` (+137 lines), `src/backend/transpiler/mod.rs` (integration)
+  - Spec: `../ruchyruchy/docs/specifications/performance-profiling-compiler-tooling.md` (Nov 2, 2025)
 
 ### Fixed
 - **[BUG-003]** Array index assignment now supported (interpreter + transpiler)

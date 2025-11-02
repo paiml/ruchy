@@ -710,8 +710,8 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
-        // PERF-002-A: Apply constant folding optimization (compile-time evaluation)
-        let optimized_expr = constant_folder::fold_constants(resolved_expr);
+        // PERF-002-A/B: Apply constant folding + constant propagation (Julia-inspired)
+        let optimized_expr = constant_folder::propagate_constants(resolved_expr);
 
         // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
         // This populates self.mutable_vars, function_signatures, and module_names
