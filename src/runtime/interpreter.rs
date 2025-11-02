@@ -4849,6 +4849,47 @@ impl Interpreter {
 
                 Ok(line)
             }
+            "read" => {
+                // Check args
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "read() takes no arguments".to_string(),
+                    ));
+                }
+
+                let obj = file_obj.lock().unwrap();
+
+                // Check if closed
+                if let Some(Value::Bool(true)) = obj.get("closed") {
+                    return Err(InterpreterError::RuntimeError(
+                        "Cannot read from closed file".to_string(),
+                    ));
+                }
+
+                // Get lines array
+                let lines = if let Some(Value::Array(lines)) = obj.get("lines") {
+                    lines.clone()
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "File object corrupted: missing lines".to_string(),
+                    ));
+                };
+
+                // Join all lines with newline
+                let content: String = lines
+                    .iter()
+                    .filter_map(|v| {
+                        if let Value::String(s) = v {
+                            Some(s.to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                Ok(Value::from_string(content))
+            }
             "close" => {
                 // Check args
                 if !arg_values.is_empty() {
