@@ -13,7 +13,7 @@ metadata:
   crates_io_status:
     ruchy: "v3.174.0 - Published ✅"
     ruchy_wasm: "v3.174.0 - Published ✅"
-  github_tag: "v3.174.0 - Pending 🔄"
+  github_tag: "v3.174.0 - Created ✅"
 
   session_summary_2025_11_02_perf_001_beat_julia_c_rust:
     date: "2025-11-02"
