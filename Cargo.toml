@@ -444,3 +444,20 @@ lto = "fat"           # Maximum link-time optimization
 codegen-units = 1     # Single codegen unit for better optimization
 panic = "abort"       # Smaller panic handler
 opt-level = "z"       # Optimize for binary size
+
+# [PERF-001] Maximum performance profile - Beat Julia, Rust, C
+# Target: < 1.30ms on BENCH-007 (vs Julia's 1.35ms)
+# Usage: cargo build --profile release-speed
+#        RUSTFLAGS="-C target-cpu=native" cargo build --profile release-speed
+[profile.release-speed]
+inherits = "release"
+opt-level = 3              # MAXIMUM speed optimization (not size)
+lto = "fat"               # Full link-time optimization
+codegen-units = 1         # Better optimization (slower compile)
+panic = "abort"           # No unwinding overhead
+strip = true              # Remove debug symbols
+overflow-checks = false   # No runtime overflow checks (unsafe but fast)
+debug-assertions = false  # No debug assertions in release
+# Use with: RUSTFLAGS="-C target-cpu=native -C embed-bitcode=yes"
+# target-cpu=native: AVX2, SSE4.2, etc. (CPU-specific instructions)
+# embed-bitcode: Cross-module optimization
