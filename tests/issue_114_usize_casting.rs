@@ -15,6 +15,82 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use std::io::Write;
 
+#[cfg(test)]
+mod property_tests {
+    use assert_cmd::Command;
+
+    #[test]
+    #[ignore] // Run with: cargo test --test issue_114_usize_casting property_tests -- --ignored --nocapture
+    fn property_all_comparison_operators_generate_usize_cast() {
+        // Property: For ANY comparison operator, .len() comparisons should cast to usize
+        let operators = vec!["<", ">", "<=", ">=", "==", "!="];
+
+        for op in &operators {
+            let input = format!(r#"
+fun test(n) {{
+    let items = []
+    items.len() {} n
+}}
+"#, op);
+
+            let output = Command::cargo_bin("ruchy")
+                .unwrap()
+                .arg("transpile")
+                .arg("-")
+                .write_stdin(input.as_bytes())
+                .assert()
+                .success()
+                .get_output()
+                .stdout
+                .clone();
+
+            let rust_code = String::from_utf8(output).unwrap();
+            assert!(
+                rust_code.contains(&format!("items.len() {} n as usize", op))
+                    || rust_code.contains(&format!("items.len() {} (n as usize)", op)),
+                "Operator {} missing usize cast", op
+            );
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn property_all_collection_types_get_usize_cast() {
+        // Property: Vec, String, and any .len() call should get usize casting
+        let collection_types = vec![
+            ("[]", "vec![]"),
+            (r#""""#, r#"String::from("")"#),
+        ];
+
+        for (ruchy_init, _rust_init) in collection_types {
+            let input = format!(r#"
+fun test(max) {{
+    let collection = {}
+    collection.len() < max
+}}
+"#, ruchy_init);
+
+            let output = Command::cargo_bin("ruchy")
+                .unwrap()
+                .arg("transpile")
+                .arg("-")
+                .write_stdin(input.as_bytes())
+                .assert()
+                .success()
+                .get_output()
+                .stdout
+                .clone();
+
+            let rust_code = String::from_utf8(output).unwrap();
+            assert!(
+                rust_code.contains("collection.len() < max as usize")
+                    || rust_code.contains("collection.len() < (max as usize)"),
+                "Collection type {:?} missing usize cast", ruchy_init
+            );
+        }
+    }
+}
+
 #[test]
 fn test_issue_114_usize_bench_008_pattern() {
     // BENCH-008 pattern: while primes.len() < count
