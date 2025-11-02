@@ -22,6 +22,17 @@ All notable changes to the Ruchy programming language will be documented in this
   - Tests: 10/10 integration tests passing
   - Files: `src/backend/transpiler/constant_folder.rs` (+137 lines), `src/backend/transpiler/mod.rs` (integration)
   - Spec: `../ruchyruchy/docs/specifications/performance-profiling-compiler-tooling.md` (Nov 2, 2025)
+- **[OPT-CODEGEN-004]** Inline expansion optimization - REFACTOR phase (GitHub #126)
+  - Two-pass algorithm: collect inlineable functions → replace call sites with bodies
+  - Size heuristic: Functions ≤10 LOC eligible for inlining
+  - Safety: Recursive functions never inlined (prevents infinite loops)
+  - Parameter substitution via HashMap-based mapping
+  - Integration: AFTER constant propagation, BEFORE dead code elimination
+  - Target: 10-25% runtime speedup via reduced function call overhead
+  - Tests: 7/10 integration tests passing (70% GREEN phase complete)
+  - Quality: PMAT TDG 92.8/100 (A grade), all functions ≤10 complexity, zero clippy warnings
+  - Files: `src/backend/transpiler/inline_expander.rs` (NEW, 436 lines), `src/backend/transpiler/constant_folder.rs` (+95 lines DCE extension)
+  - Spec: `../ruchyruchy/docs/specifications/compiler-transpiler-optimization-spec.md` line 372
 
 ### Fixed
 - **[BUG-003]** Array index assignment now supported (interpreter + transpiler)

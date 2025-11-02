@@ -110,6 +110,48 @@ metadata:
       - "Remaining work (unused variables) requires liveness analysis infrastructure"
       - "Same pattern as PERF-002-B (mutation testing pending due to build issues)"
 
+  session_summary_2025_11_02_opt_codegen_004_inline_expansion:
+    date: "2025-11-02"
+    ticket: "OPT-CODEGEN-004 (GitHub #126)"
+    status: "🔄 REFACTOR COMPLETE - GREEN 70%, VALIDATE pending"
+    goal: "Inline small functions for 10-25% runtime speedup (compiler self-hosting)"
+    spec_reference: "compiler-transpiler-optimization-spec.md line 372 (OPT-CODEGEN-004)"
+
+    implementation:
+      - "Two-pass algorithm: collect candidates → inline call sites"
+      - "Size heuristic: ≤10 LOC functions eligible"
+      - "Safety: Recursive functions never inlined (correctness risk)"
+      - "Parameter substitution: HashMap-based mapping"
+      - "Integration: AFTER const propagation, BEFORE DCE"
+
+    test_coverage:
+      integration_tests: "7/10 passing (70%)"
+      unit_tests: "3/3 passing (inline_expander module)"
+      failing_tests: "3/10 - nested inlining chain + integration scenarios"
+
+    extreme_tdd_phases:
+      red: "✅ 10/10 tests created, 7/10 failing (e2bcacba)"
+      green: "✅ 7/10 passing (60c6352a - size estimation bug fix)"
+      refactor: "✅ PMAT TDG 92.8/100 (A), clippy warnings fixed (5f97b552)"
+      validate: "⏳ PENDING - Property tests (25K+), Fuzz tests (250K+), Mutation tests"
+
+    quality_metrics:
+      pmat_tdg: "92.8/100 (A grade)"
+      complexity: "All functions ≤10 (max: 7)"
+      regressions: "Zero (PERF-002-A/B/C: ALL PASSING)"
+      clippy: "Zero warnings"
+      files_modified:
+        - "src/backend/transpiler/inline_expander.rs (NEW, 436 lines)"
+        - "src/backend/transpiler/constant_folder.rs (+95 lines DCE extension)"
+        - "src/backend/transpiler/mod.rs (lines 717-721 integration)"
+        - "tests/opt_codegen_004_inline_expansion.rs (NEW, 320 lines)"
+
+    commits:
+      - "e2bcacba: RED + GREEN checkpoint 1 (function bodies bug)"
+      - "952e372d: GREEN checkpoint 2 (DCE unused functions)"
+      - "60c6352a: GREEN checkpoint 3 (size estimation fix, 70% passing)"
+      - "5f97b552: REFACTOR phase (clippy fixes, quality gates)"
+
   session_summary_2025_11_02_perf_001_beat_julia_c_rust:
     date: "2025-11-02"
     actual_release: "v3.174.0"
