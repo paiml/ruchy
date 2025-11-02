@@ -22,16 +22,16 @@ use crate::frontend::ast::Span;
 /// # Complexity
 /// Cyclomatic: 6 (≤10 target)
 pub fn fold_constants(expr: Expr) -> Expr {
-    match &expr.kind {
+    match expr.kind {
         ExprKind::Binary { left, op, right } => {
             // Recursively fold children first
-            let left_folded = fold_constants((**left).clone());
-            let right_folded = fold_constants((**right).clone());
+            let left_folded = fold_constants((*left).clone());
+            let right_folded = fold_constants((*right).clone());
 
             // Try to fold if both are literals
             if let (ExprKind::Literal(l), ExprKind::Literal(r)) =
                 (&left_folded.kind, &right_folded.kind) {
-                if let Some(result) = fold_binary_op(l, *op, r) {
+                if let Some(result) = fold_binary_op(l, op, r) {
                     return Expr::new(ExprKind::Literal(result), expr.span);
                 }
             }
@@ -40,13 +40,35 @@ pub fn fold_constants(expr: Expr) -> Expr {
             Expr::new(
                 ExprKind::Binary {
                     left: Box::new(left_folded),
-                    op: *op,
+                    op,
                     right: Box::new(right_folded),
                 },
                 expr.span,
             )
         }
-        _ => expr, // Other expressions: no folding yet
+        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
+            // Fold the value expression
+            let folded_value = Box::new(fold_constants((*value).clone()));
+            let folded_body = Box::new(fold_constants((*body).clone()));
+            let folded_else = else_block.map(|e| Box::new(fold_constants((*e).clone())));
+            Expr::new(
+                ExprKind::Let {
+                    name,
+                    type_annotation,
+                    value: folded_value,
+                    body: folded_body,
+                    is_mutable,
+                    else_block: folded_else,
+                },
+                expr.span,
+            )
+        }
+        ExprKind::Block(exprs) => {
+            // Fold all expressions in block
+            let folded_exprs = exprs.into_iter().map(fold_constants).collect();
+            Expr::new(ExprKind::Block(folded_exprs), expr.span)
+        }
+        _ => expr, // Other expressions: return unchanged
     }
 }
 
