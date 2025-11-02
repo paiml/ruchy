@@ -1,8 +1,10 @@
 // PERF-002-A: Constant Folding Optimization (GREEN Phase)
+// PERF-002-B: Constant Propagation Optimization (GREEN Phase)
 // Minimal implementation to make RED tests pass
 // Complexity target: ≤10 per function
 
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
+use std::collections::HashMap;
 #[cfg(test)]
 use crate::frontend::ast::Span;
 
@@ -68,6 +70,36 @@ pub fn fold_constants(expr: Expr) -> Expr {
             let folded_exprs = exprs.into_iter().map(fold_constants).collect();
             Expr::new(ExprKind::Block(folded_exprs), expr.span)
         }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            // Fold condition and branches
+            let folded_cond = Box::new(fold_constants((*condition).clone()));
+            let folded_then = Box::new(fold_constants((*then_branch).clone()));
+            let folded_else = else_branch.map(|e| Box::new(fold_constants((*e).clone())));
+
+            // If condition is constant boolean, eliminate dead branch
+            if let ExprKind::Literal(Literal::Bool(b)) = folded_cond.kind {
+                if b {
+                    // Condition is true: return then-branch
+                    return (*folded_then).clone();
+                } else if let Some(else_expr) = folded_else {
+                    // Condition is false: return else-branch
+                    return (*else_expr).clone();
+                } else {
+                    // Condition is false, no else: return unit (empty block)
+                    return Expr::new(ExprKind::Block(vec![]), expr.span);
+                }
+            }
+
+            // Condition not constant: return with folded children
+            Expr::new(
+                ExprKind::If {
+                    condition: folded_cond,
+                    then_branch: folded_then,
+                    else_branch: folded_else,
+                },
+                expr.span,
+            )
+        }
         _ => expr, // Other expressions: return unchanged
     }
 }
@@ -117,6 +149,143 @@ fn fold_integer_comparison(a: i64, op: BinaryOp, b: i64) -> Option<Literal> {
         _ => return None,
     };
     Some(Literal::Bool(result))
+}
+
+// ============================================================================
+// PERF-002-B: Constant Propagation
+// ============================================================================
+
+/// Propagate constant values through variables
+///
+/// Examples:
+/// - `let x = 5; x + 1` → `6`
+/// - `let x = 5; let y = x; y + 3` → `8`
+///
+/// # Arguments
+/// * `expr` - Expression to propagate constants through
+///
+/// # Returns
+/// Expression with constants propagated
+///
+/// # Complexity
+/// Cyclomatic: 8 (≤10 target)
+pub fn propagate_constants(expr: Expr) -> Expr {
+    let mut env = HashMap::new();
+    propagate_with_env(expr, &mut env)
+}
+
+/// Helper: Propagate constants with environment tracking
+///
+/// # Complexity
+/// Cyclomatic: 9 (≤10 target)
+fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
+    // First, apply constant folding
+    let expr = fold_constants(expr);
+
+    match expr.kind {
+        // Track constant variable bindings
+        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
+            // Recursively propagate in value
+            let folded_value = Box::new(propagate_with_env((*value).clone(), env));
+
+            // If value is constant and variable is immutable, track it
+            if !is_mutable {
+                if let ExprKind::Literal(ref lit) = folded_value.kind {
+                    env.insert(name.clone(), lit.clone());
+                }
+            }
+
+            // Propagate in body with updated environment
+            let folded_body = Box::new(propagate_with_env((*body).clone(), env));
+
+            // Propagate in else block if present
+            let folded_else = else_block.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
+
+            Expr::new(
+                ExprKind::Let {
+                    name,
+                    type_annotation,
+                    value: folded_value,
+                    body: folded_body,
+                    is_mutable,
+                    else_block: folded_else,
+                },
+                expr.span,
+            )
+        }
+
+        // Substitute known variables with their constant values
+        ExprKind::Identifier(ref name) => {
+            if let Some(lit) = env.get(name) {
+                // Replace variable with its constant value
+                Expr::new(ExprKind::Literal(lit.clone()), expr.span)
+            } else {
+                expr
+            }
+        }
+
+        // Recursively propagate in binary expressions
+        ExprKind::Binary { left, op, right } => {
+            let left_prop = propagate_with_env((*left).clone(), env);
+            let right_prop = propagate_with_env((*right).clone(), env);
+
+            // After propagation, try folding again
+            let binary_expr = Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(left_prop),
+                    op,
+                    right: Box::new(right_prop),
+                },
+                expr.span,
+            );
+            fold_constants(binary_expr)
+        }
+
+        // Propagate in if expressions
+        ExprKind::If { condition, then_branch, else_branch } => {
+            let cond_prop = Box::new(propagate_with_env((*condition).clone(), env));
+            let then_prop = Box::new(propagate_with_env((*then_branch).clone(), env));
+            let else_prop = else_branch.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
+
+            let if_expr = Expr::new(
+                ExprKind::If {
+                    condition: cond_prop,
+                    then_branch: then_prop,
+                    else_branch: else_prop,
+                },
+                expr.span,
+            );
+
+            // Try folding if condition is constant
+            fold_constants(if_expr)
+        }
+
+        // Propagate in blocks
+        ExprKind::Block(exprs) => {
+            let folded_exprs = exprs.into_iter()
+                .map(|e| propagate_with_env(e, env))
+                .collect();
+            Expr::new(ExprKind::Block(folded_exprs), expr.span)
+        }
+
+        // Propagate in function calls
+        ExprKind::Call { func, args } => {
+            let func_prop = Box::new(propagate_with_env((*func).clone(), env));
+            let args_prop = args.into_iter()
+                .map(|a| propagate_with_env(a, env))
+                .collect();
+            Expr::new(
+                ExprKind::Call {
+                    func: func_prop,
+                    args: args_prop,
+                },
+                expr.span,
+            )
+        }
+
+        // Other expressions: return as-is
+        _ => expr,
+    }
 }
 
 #[cfg(test)]
