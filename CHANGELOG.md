@@ -4,6 +4,14 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[BUG-003]** Array index assignment now supported (interpreter + transpiler)
+  - Simple: `arr[0] = 99`
+  - Nested: `matrix[i][j] = value`
+  - Unblocks BENCH-002 (matrix multiplication) and all array algorithms
+  - Tests: 6/6 passing + property test validated
+  - Files: `src/runtime/interpreter.rs`, `src/backend/transpiler/expressions.rs`
+
 ## [3.174.0] - 2025-11-02 (PLANNED)
 
 ### ⚡ BREAKING CHANGE: Default Release Profile Now Optimizes for Speed
