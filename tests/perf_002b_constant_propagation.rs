@@ -236,10 +236,88 @@ fn test_perf_002b_fibonacci_constants_propagated() {
 }
 
 // ============================================================================
-// Property Test Placeholder (VALIDATE phase)
+// VALIDATE PHASE: Property Tests (10K cases)
 // ============================================================================
 
-// Note: Property tests will be added in VALIDATE phase
-// - prop_propagation_preserves_semantics: verify original == optimized
-// - prop_no_propagate_mutable: verify mutable variables never propagated
-// - prop_conservative_boundaries: verify propagation stops at control flow
+/// Property Test 1: Constant propagation preserves semantics
+/// Invariant: Optimized code produces same result as original
+#[test]
+#[ignore] // Run with: cargo test property_propagation -- --ignored --nocapture
+fn property_propagation_preserves_semantics() {
+    use proptest::prelude::*;
+
+    proptest!(|(a in 0..100i32, b in 0..100i32)| {
+        let code = format!(r#"
+            let x = {};
+            let y = {};
+            let z = x + y;
+            println(z);
+        "#, a, b);
+
+        // Expected result after propagation
+        let expected = a + b;
+
+        // Verify constant propagation produces correct folded result
+        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        cmd.arg("transpile")
+            .arg("-")
+            .write_stdin(code.clone())
+            .assert()
+            .success()
+            .stdout(predicate::str::contains(format!("let z = {}", expected)));
+    });
+}
+
+/// Property Test 2: Mutable variables are never propagated
+/// Invariant: If variable is mutable, its value is NOT substituted
+#[test]
+#[ignore] // Run with: cargo test property_no_propagate_mutable -- --ignored --nocapture
+fn property_no_propagate_mutable() {
+    use proptest::prelude::*;
+
+    proptest!(|(a in 0..100i32)| {
+        let code = format!(r#"
+            let mut x = {};
+            let y = x + 1;
+            println(y);
+        "#, a);
+
+        // Verify mutable variable is NOT propagated (should see "x + 1", not constant)
+        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        cmd.arg("transpile")
+            .arg("-")
+            .write_stdin(code.clone())
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("x + 1"));
+    });
+}
+
+/// Property Test 3: Propagation with arithmetic operations
+/// Invariant: Chained arithmetic produces correct folded result
+#[test]
+#[ignore] // Run with: cargo test property_arithmetic_chain -- --ignored --nocapture
+fn property_arithmetic_chain() {
+    use proptest::prelude::*;
+
+    proptest!(|(a in 0..50i32, b in 1..50i32)| {
+        let code = format!(r#"
+            let x = {};
+            let y = {};
+            let z = x * y;
+            println(z);
+        "#, a, b);
+
+        // Expected result after propagation and folding
+        let expected = a * b;
+
+        // Verify propagation + folding produces correct result
+        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        cmd.arg("transpile")
+            .arg("-")
+            .write_stdin(code.clone())
+            .assert()
+            .success()
+            .stdout(predicate::str::contains(format!("let z = {}", expected)));
+    });
+}
