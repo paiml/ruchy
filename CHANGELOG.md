@@ -12,6 +12,21 @@ All notable changes to the Ruchy programming language will be documented in this
   - Target: 10-20% speedup on compute-heavy workloads
   - Tests: 5/5 integration + 2/2 unit tests passing
   - File: `src/backend/transpiler/constant_folder.rs` (189 lines, ≤10 complexity)
+- **[ISSUE-117]** JSON parsing and stringification (`JSON.parse()` + `JSON.stringify()`)
+  - JavaScript-style JSON API with namespace dispatch
+  - Parse JSON strings to Ruchy values: `JSON.parse('{"name": "Alice"}')`
+  - Stringify Ruchy values to JSON: `JSON.stringify(obj)`
+  - Tests: 10/10 integration tests passing (basic, nested, roundtrip, error handling)
+  - Files: `src/runtime/eval_builtin.rs` (JSON dispatcher), `src/runtime/interpreter.rs` (namespace handling)
+  - Pattern: Follows namespace dispatch architecture for builtin objects
+- **[ISSUE-116]** File object methods (`File.open()`, `.read_line()`, `.close()`)
+  - Python/Ruby-style file I/O API
+  - File.open(path) - opens file, reads into lines array
+  - .read_line() - returns current line, advances position, handles EOF
+  - .close() - marks file as closed, prevents further reads
+  - Tests: 5/5 manual validation scenarios passing
+  - Files: `src/runtime/eval_builtin.rs` (File dispatcher + eval_file_open), `src/runtime/interpreter.rs` (File global + method handlers)
+  - Bug fixes: String extraction (pattern matching vs to_string), __type marker, namespace dispatch
 
 ### Fixed
 - **[BUG-003]** Array index assignment now supported (interpreter + transpiler)
