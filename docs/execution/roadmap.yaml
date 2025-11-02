@@ -2,18 +2,18 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.98"
+  version: "3.99"
   last_updated: "2025-11-02"
-  current_sprint: "✅ COMPLETE - v3.174.0 Released: PERF-001 + PERF-002-A + BUG-003"
-  latest_release: "v3.174.0"
-  latest_commit_message: "[RELEASE] v3.174.0 - Performance optimizations + bug fixes"
-  latest_commit_hash: "4fe22b7d"
+  current_sprint: "✅ COMPLETE - v3.175.0 Released: ISSUE-116 (File I/O) + ISSUE-117 (JSON)"
+  latest_release: "v3.175.0"
+  latest_commit_message: "[RELEASE] v3.175.0 - ISSUE-116 (File I/O) + ISSUE-117 (JSON)"
+  latest_commit_hash: "0487c46f"
   next_phase: "⚡ NEXT - Advanced optimizations (constant propagation, dead code elimination)"
-  priority_rationale: "v3.174.0 achieved aggressive optimization + constant folding + array operations"
+  priority_rationale: "v3.175.0 completed benchmark blockers (File I/O + JSON parsing)"
   crates_io_status:
-    ruchy: "v3.174.0 - Published ✅"
-    ruchy_wasm: "v3.174.0 - Published ✅"
-  github_tag: "v3.174.0 - Created ✅"
+    ruchy: "v3.175.0 - Published ✅"
+    ruchy_wasm: "v3.175.0 - Published ✅"
+  github_tag: "v3.175.0 - Created ✅"
 
   session_summary_2025_11_02_perf_001_beat_julia_c_rust:
     date: "2025-11-02"
