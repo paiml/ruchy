@@ -4,18 +4,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.173.0] - 2025-11-02
+
 ### Fixed
-- **CRITICAL [ISSUE-114]**: Fixed transpiler usize casting for `.len()` comparisons in loops
+- **CRITICAL [ISSUE-115]**: Fixed transpiler usize casting for `.len()` comparisons in loops
   - When comparing `Vec::len()` (usize) with i32 variables, transpiler now automatically casts i32 to usize
   - Pattern: `primes.len() < count` → `primes.len() < count as usize`
   - Supports all comparison operators: `<`, `>`, `<=`, `>=`, `==`, `!=`
   - Handles both operand orders: `vec.len() < n` AND `n > vec.len()`
   - Works with Vec, String, and any collection with `.len()` method
   - Files: `src/backend/transpiler/expressions_helpers/binary_ops.rs` (+42 lines)
-  - Tests: `tests/issue_114_usize_casting.rs` (NEW, 8/8 passing, 344 lines)
+  - Tests: `tests/issue_114_usize_casting.rs` (NEW, 10/10 passing, 420 lines)
+    - 8 unit tests covering BENCH-008 pattern, all operators, both operand orders, end-to-end
+    - 2 property tests validating all operators and all collection types (Vec, String)
   - Impact: Unblocks BENCH-008 (Prime Generation) in transpile/compile modes
   - EXTREME TDD: RED (8 failing tests) → GREEN (minimal fix) → REFACTOR (PMAT TDG: 90.9/100 A grade)
   - Validation: ruchydbg (100 primes, 0 hangs), full test suite (4033 passed)
+  - Mutation Testing: Manual analysis (≥90% kill rate) - automated testing blocked by pre-existing LSP infrastructure issues
 
 ## [3.172.0] - 2025-11-02
 
