@@ -710,23 +710,26 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
+        // PERF-002-A: Apply constant folding optimization (compile-time evaluation)
+        let optimized_expr = constant_folder::fold_constants(resolved_expr);
+
         // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
         // This populates self.mutable_vars, function_signatures, and module_names
-        if let ExprKind::Block(exprs) = &resolved_expr.kind {
+        if let ExprKind::Block(exprs) = &optimized_expr.kind {
             self.analyze_mutability(exprs);
             self.collect_function_signatures(exprs);
             self.collect_module_names(exprs);
         } else {
-            self.analyze_expr_mutability(&resolved_expr);
-            self.collect_signatures_from_expr(&resolved_expr);
-            self.collect_module_names_from_expr(&resolved_expr);
+            self.analyze_expr_mutability(&optimized_expr);
+            self.collect_signatures_from_expr(&optimized_expr);
+            self.collect_module_names_from_expr(&optimized_expr);
         }
 
-        let needs_polars = Self::contains_dataframe(&resolved_expr);
-        let needs_hashmap = Self::contains_hashmap(&resolved_expr);
-        match &resolved_expr.kind {
+        let needs_polars = Self::contains_dataframe(&optimized_expr);
+        let needs_hashmap = Self::contains_hashmap(&optimized_expr);
+        match &optimized_expr.kind {
             ExprKind::Function { name, .. } => {
-                self.transpile_single_function(&resolved_expr, name, needs_polars, needs_hashmap)
+                self.transpile_single_function(&optimized_expr, name, needs_polars, needs_hashmap)
             }
             ExprKind::Block(exprs) => {
                 self.transpile_program_block(exprs, needs_polars, needs_hashmap)
@@ -735,7 +738,7 @@ impl Transpiler {
             | ExprKind::ImportAll { .. }
             | ExprKind::ImportDefault { .. } => {
                 // Single import - handle as top-level
-                let import_tokens = self.transpile_expr(&resolved_expr)?;
+                let import_tokens = self.transpile_expr(&optimized_expr)?;
                 match (needs_polars, needs_hashmap) {
                     (true, true) => Ok(quote! {
                         use polars::prelude::*;
@@ -759,7 +762,7 @@ impl Transpiler {
                     }),
                 }
             }
-            _ => self.transpile_expression_program(&resolved_expr, needs_polars, needs_hashmap),
+            _ => self.transpile_expression_program(&optimized_expr, needs_polars, needs_hashmap),
         }
     }
     fn transpile_single_function(

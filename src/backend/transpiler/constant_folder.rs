@@ -2,7 +2,9 @@
 // Minimal implementation to make RED tests pass
 // Complexity target: ≤10 per function
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
+#[cfg(test)]
+use crate::frontend::ast::Span;
 
 /// Fold constant expressions at compile-time
 ///
@@ -54,12 +56,7 @@ pub fn fold_constants(expr: Expr) -> Expr {
 /// Cyclomatic: 8 (≤10 target)
 fn fold_binary_op(left: &Literal, op: BinaryOp, right: &Literal) -> Option<Literal> {
     match (left, right) {
-        // Integer arithmetic
-        (Literal::Integer(a, None), Literal::Integer(b, None)) => {
-            fold_integer_arithmetic(*a, op, *b)
-        }
-
-        // Integer comparison
+        // Integer operations (both arithmetic and comparison)
         (Literal::Integer(a, None), Literal::Integer(b, None)) => {
             fold_integer_comparison(*a, op, *b).or_else(|| fold_integer_arithmetic(*a, op, *b))
         }
