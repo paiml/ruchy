@@ -16,6 +16,28 @@ impl Transpiler {
         {
             return self.transpile_string_concatenation(left, right);
         }
+
+        // ISSUE-114 FIX: Handle usize casting for .len() comparisons
+        // When comparing .len() (usize) with i32, cast i32 to usize
+        if Self::is_comparison_op(op) {
+            let left_is_len = Self::is_len_call(left);
+            let right_is_len = Self::is_len_call(right);
+
+            if left_is_len && !right_is_len {
+                // left.len() < right → left.len() < right as usize
+                let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
+                let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
+                let casted_right = quote! { #right_tokens as usize };
+                return Ok(Self::transpile_binary_op(left_tokens, op, casted_right));
+            } else if right_is_len && !left_is_len {
+                // left > right.len() → left as usize > right.len()
+                let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
+                let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
+                let casted_left = quote! { #left_tokens as usize };
+                return Ok(Self::transpile_binary_op(casted_left, op, right_tokens));
+            }
+        }
+
         // Transpile operands with precedence-aware parentheses
         let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
         let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
@@ -176,5 +198,27 @@ impl Transpiler {
             BinaryOp::RightShift => quote! { #left >> #right },
             _ => unreachable!("Invalid shift operation: {:?}", op),
         }
+    }
+
+    /// Check if an expression is a .len() method call (ISSUE-114)
+    /// Returns true for: vec.len(), string.len(), etc.
+    fn is_len_call(expr: &Expr) -> bool {
+        matches!(
+            &expr.kind,
+            ExprKind::MethodCall { method, .. } if method == "len"
+        )
+    }
+
+    /// Check if operator is a comparison operator (ISSUE-114)
+    fn is_comparison_op(op: BinaryOp) -> bool {
+        matches!(
+            op,
+            BinaryOp::Less
+                | BinaryOp::LessEqual
+                | BinaryOp::Greater
+                | BinaryOp::GreaterEqual
+                | BinaryOp::Equal
+                | BinaryOp::NotEqual
+        )
     }
 }
