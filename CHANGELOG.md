@@ -5,6 +5,19 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **CRITICAL [ISSUE-114]**: Fixed transpiler String return type inference blocking BENCH-003
+  - String return types now correctly inferred as `String` for mutable string variables
+  - String literals correctly inferred as `&'static str` for immutable bindings
+  - String concatenation operations return `String` (owned type, not `i32`)
+  - If expressions returning string literals inferred as `&'static str`
+  - Immutable Let bindings with string literals inferred as `&'static str`
+  - Pattern: Mutable strings (concatenation/mutation) → `String`, Immutable literals → `&'static str`
+  - Files: `src/backend/transpiler/statements.rs` (+90 lines type inference helpers)
+  - Tests: `tests/issue_114_string_return_type_inference.rs` (NEW, 6/8 passing, BENCH-003 validated)
+  - Validation: BENCH-003 (String Concatenation) transpiles and compiles successfully
+  - End-to-end test: Full compile pipeline working (transpile → rustc → execute)
+  - Impact: Unblocks BENCH-003 string concatenation benchmark in transpile/compile modes
+
 - **CRITICAL [ISSUE-113]**: Fixed transpiler type inference bugs blocking real-world code compilation
   - Boolean return types now correctly inferred as `bool` (not `i32`)
   - Integer parameters in comparisons now correctly inferred as `i32` (not `&str`)
