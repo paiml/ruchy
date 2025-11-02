@@ -2493,6 +2493,17 @@ impl Interpreter {
             return Ok(Value::Object(Arc::new(json_obj)));
         }
 
+        // ISSUE-116: Handle File global object
+        if name == "File" {
+            // Return a marker object with __type for namespace dispatch
+            let mut file_obj = HashMap::new();
+            file_obj.insert(
+                "__type".to_string(),
+                Value::from_string("File".to_string()),
+            );
+            return Ok(Value::Object(Arc::new(file_obj)));
+        }
+
         // Normal variable lookup
         for env in self.env_stack.iter().rev() {
             if let Some(value) = env.get(name) {
@@ -4405,6 +4416,15 @@ impl Interpreter {
                         base_method,
                         arg_values,
                     )
+                }
+                // ISSUE-116: Check if this is a File object
+                else if let Some(Value::String(type_name)) = obj.get("__type") {
+                    if type_name.as_ref() == "File" {
+                        drop(obj); // Release borrow before recursive call
+                        return self.eval_file_method_mut(cell_rc, base_method, arg_values);
+                    }
+                    drop(obj); // Release borrow before recursive call
+                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
                 } else {
                     drop(obj); // Release borrow before recursive call
                     self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
@@ -4771,6 +4791,81 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         let instance = cell_rc.lock().unwrap();
         self.eval_struct_instance_method(&instance, struct_name, method, arg_values)
+    }
+
+    /// ISSUE-116: Evaluate File object methods (.read_line(), .close())
+    /// Complexity: 6
+    fn eval_file_method_mut(
+        &mut self,
+        file_obj: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        match method {
+            "read_line" => {
+                // Check args
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "read_line() takes no arguments".to_string(),
+                    ));
+                }
+
+                let mut obj = file_obj.lock().unwrap();
+
+                // Check if closed
+                if let Some(Value::Bool(true)) = obj.get("closed") {
+                    return Err(InterpreterError::RuntimeError(
+                        "Cannot read from closed file".to_string(),
+                    ));
+                }
+
+                // Get current position
+                let position = if let Some(Value::Integer(pos)) = obj.get("position") {
+                    *pos
+                } else {
+                    0
+                };
+
+                // Get lines array
+                let lines = if let Some(Value::Array(lines)) = obj.get("lines") {
+                    lines.clone()
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "File object corrupted: missing lines".to_string(),
+                    ));
+                };
+
+                // Check if EOF
+                if position >= lines.len() as i64 {
+                    // Return empty string at EOF
+                    return Ok(Value::from_string("".to_string()));
+                }
+
+                // Get the line
+                let line = lines[position as usize].clone();
+
+                // Advance position
+                obj.insert("position".to_string(), Value::Integer(position + 1));
+
+                Ok(line)
+            }
+            "close" => {
+                // Check args
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError(
+                        "close() takes no arguments".to_string(),
+                    ));
+                }
+
+                let mut obj = file_obj.lock().unwrap();
+                obj.insert("closed".to_string(), Value::Bool(true));
+                Ok(Value::Nil)
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown method '{}' on File object",
+                method
+            ))),
+        }
     }
 
     fn eval_object_method_mut(
@@ -7278,6 +7373,29 @@ impl Interpreter {
                         }
                         let value = self.eval_expr(&args[0])?;
                         return self.json_stringify(&value);
+                    }
+                }
+
+                // ISSUE-116: File.open() method
+                if type_name == "File" {
+                    if field == "open" {
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError(format!(
+                                "File.open() requires exactly 1 argument, got {}",
+                                args.len()
+                            )));
+                        }
+                        let path_val = self.eval_expr(&args[0])?;
+                        // Call builtin File_open through eval_builtin_function
+                        return crate::runtime::eval_builtin::eval_builtin_function(
+                            "File_open",
+                            &[path_val],
+                        )?
+                        .ok_or_else(|| {
+                            InterpreterError::RuntimeError(
+                                "File_open builtin not found".to_string(),
+                            )
+                        });
                     }
                 }
 
