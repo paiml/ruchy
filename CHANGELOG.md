@@ -4,6 +4,15 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[PERF-002-A]** Constant folding optimization (transpiler)
+  - Arithmetic: `2 + 3` → `5` (compile-time evaluation)
+  - Comparison: `10 > 5` → `true` (compile-time evaluation)
+  - Nested: `(10 - 2) * (3 + 1)` → `32`
+  - Target: 10-20% speedup on compute-heavy workloads
+  - Tests: 5/5 integration + 2/2 unit tests passing
+  - File: `src/backend/transpiler/constant_folder.rs` (189 lines, ≤10 complexity)
+
 ### Fixed
 - **[BUG-003]** Array index assignment now supported (interpreter + transpiler)
   - Simple: `arr[0] = 99`
