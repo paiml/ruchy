@@ -30,16 +30,16 @@ impl Transpiler {
             let right_is_len = Self::is_len_call(right);
 
             if left_is_len && !right_is_len {
-                // left.len() < right → left.len() < right as usize
+                // left.len() < right → left.len() < (right as usize)
                 let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
                 let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
-                let casted_right = quote! { #right_tokens as usize };
+                let casted_right = quote! { (#right_tokens as usize) };
                 return Ok(Self::transpile_binary_op(left_tokens, op, casted_right));
             } else if right_is_len && !left_is_len {
-                // left > right.len() → left as usize > right.len()
+                // left > right.len() → (left as usize) > right.len()
                 let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
                 let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
-                let casted_left = quote! { #left_tokens as usize };
+                let casted_left = quote! { (#left_tokens as usize) };
                 return Ok(Self::transpile_binary_op(casted_left, op, right_tokens));
             }
         }
