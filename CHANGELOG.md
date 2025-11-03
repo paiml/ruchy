@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.186.0] - 2025-11-03
+
+### Fixed
+- **[TRANSPILER-005]** Vector concatenation now generates valid Rust
+  - **PROBLEM**: `vec + [item]` transpiled to invalid Rust (`cannot add [T; N] to Vec<_>`)
+  - **SYMPTOMS**: BENCH-008 failing with "cannot add [i32; 1] to Vec<_>"
+  - **EXAMPLE**:
+    ```ruchy
+    primes = primes + [candidate]  // ❌ compile: cannot add [i32; 1] to Vec<_>
+    ```
+  - **ROOT CAUSE ANALYSIS** (Five Whys):
+    1. Why compile error? → Rust's Vec doesn't implement Add<[T; N]>
+    2. Why that error? → Transpiler generates `primes = primes + [candidate]` (invalid)
+    3. Why invalid Rust? → Rust requires `.push()` mutation or `.concat()` for vec concatenation
+    4. Why transpiler generates `+`? → binary_ops.rs only handles string concat, not vec concat
+    5. **ROOT CAUSE**: Missing handler for vector + array concatenation pattern
+  - **SOLUTION** (26 lines in binary_ops.rs):
+    - Added `is_vec_array_concat()` helper - detects vec + array pattern (complexity: 2)
+    - Added `transpile_vec_concatenation()` - generates `[vec.as_slice(), &[item]].concat()` (complexity: 3)
+    - Pattern: `primes + [candidate]` → `[primes.as_slice(), &[candidate]].concat()`
+    - Works for all vec + array combinations
+  - **FILES**:
+    - `src/backend/transpiler/expressions_helpers/binary_ops.rs` (+27 lines: lines 20-24, 237-260)
+  - **VALIDATION**:
+    - ✅ Simple test: `numbers + [i]` → `[numbers.as_slice(), &[i]].concat()` transpiles correctly
+    - ✅ Compile test: Generates valid Rust that compiles successfully
+    - ✅ Execution test: Binary outputs correct result `[0, 1, 2, 3, 4]`
+    - ✅ BENCH-008: Vec concatenation now works (separate vec![] type hint bug remains)
+  - **IMPACT**: Unblocks vec concatenation pattern used throughout benchmarks
+  - **COMPLEXITY**: is_vec_array_concat: 2, transpile_vec_concatenation: 3 (both ≤10 ✅)
+  - **Testing**: Manual validation (comprehensive test suite needed)
+
 ## [3.185.0] - 2025-11-03
 
 ### Fixed
