@@ -1,0 +1,24 @@
+// BENCH-006: File Processing Benchmark
+// Validates Issue #121 fix - read_file() returns unwrapped string (not Result enum)
+// Pattern: Direct string return from read_file() for immediate use
+
+// First, create a test file
+let test_content = "Line 1: Hello World\nLine 2: Ruchy Language\nLine 3: File Processing\n"
+fs_write("/tmp/bench_006_test.txt", test_content)
+
+// Read file using unwrapped read_file() (Issue #121 fix)
+// This MUST return string directly, NOT Result::Ok(string)
+let contents = read_file("/tmp/bench_006_test.txt")
+
+// Process file contents - len() works because contents is a string, not Result
+let char_count = len(contents)
+
+println("File processing result:")
+println("Characters: " + char_count)
+
+// Verify correctness (expected: 67 characters)
+if char_count >= 60 {
+    println("✅ BENCH-006 PASSED - read_file() returns unwrapped string!")
+} else {
+    println("❌ BENCH-006 FAILED - Expected ≥60 chars, got " + char_count)
+}

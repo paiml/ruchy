@@ -1,0 +1,50 @@
+// BENCH-008: Prime Generation Benchmark
+// Validates Issue #115 fix - usize casting for .len() comparisons in loops
+// Pattern: Sieve of Eratosthenes algorithm
+
+// Generate first N prime numbers
+fun generate_primes(count) {
+    let mut primes = []
+    let mut candidate = 2
+
+    // Issue #115 test: while loop with .len() < count comparison
+    // This MUST automatically cast count to usize for comparison
+    while len(primes) < count {
+        let mut is_prime = true
+        let mut i = 0
+
+        // Check if candidate is divisible by any existing prime
+        while i < len(primes) {
+            if candidate % primes[i] == 0 {
+                is_prime = false
+                i = len(primes)  // Break early
+            } else {
+                i = i + 1
+            }
+        }
+
+        // Add prime to list
+        if is_prime {
+            primes = primes + [candidate]
+        }
+
+        candidate = candidate + 1
+    }
+
+    primes
+}
+
+// Generate first 10 primes
+let primes = generate_primes(10)
+
+println("Prime generation result:")
+println("Count: " + len(primes))
+println("First prime: " + primes[0])
+println("Last prime: " + primes[len(primes) - 1])
+
+// Verify correctness (first 10 primes: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
+if len(primes) == 10 && primes[0] == 2 && primes[len(primes) - 1] == 29 {
+    println("✅ BENCH-008 PASSED - Prime generation correct!")
+} else {
+    println("❌ BENCH-008 FAILED - Incorrect primes")
+}

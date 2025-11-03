@@ -1,0 +1,25 @@
+// BENCH-009: JSON Parsing Benchmark
+// Validates Issue #117 (JSON parsing) + Issue #121 (read_file unwrapped)
+// Pattern: Parse JSON data and extract values
+
+// Create a JSON file for testing
+let json_data = "{\"name\": \"Alice\", \"age\": 30, \"city\": \"Boston\"}"
+fs_write("/tmp/bench_009_test.json", json_data)
+
+// Read file using unwrapped read_file() (Issue #121)
+let file_contents = read_file("/tmp/bench_009_test.json")
+
+// Parse JSON using plain function API (Issue #117)
+let data = parse_json(file_contents)
+
+println("JSON parsing result:")
+println("Name: " + data["name"])
+println("Age: " + data["age"])
+println("City: " + data["city"])
+
+// Verify correctness
+if data["name"] == "Alice" && data["age"] == 30 && data["city"] == "Boston" {
+    println("✅ BENCH-009 PASSED - JSON parsing with file I/O correct!")
+} else {
+    println("❌ BENCH-009 FAILED - Incorrect data")
+}
