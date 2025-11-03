@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.183.0] - 2025-11-03
+
+### Fixed
+- **[TRANSPILER-001]** Inline expander no longer inlines functions accessing global variables
+  - **PROBLEM**: Functions that access module-level variables were being inlined, causing scope errors
+  - **SYMPTOMS**: Transpiled Rust code had `cannot find value 'global_var' in this scope` errors
+  - **EXAMPLE**:
+    ```ruchy
+    let mut result = []
+    fun modify_global(value) { result = result + [value] }
+    modify_global(42)  // Would inline, breaking scope
+    ```
+  - **ROOT CAUSE ANALYSIS** (Five Whys):
+    1. Why undefined variables? → Function inlined but variables not in scope
+    2. Why function inlined? → `inline_small_functions()` doesn't check global state access
+    3. Why no global state check? → Inline expander missing this safety check
+    4. Why missing? → Original implementation only checked size (≤10 LOC) and recursion
+    5. Why no test? → No validation that functions with global access aren't inlined
+  - **ROOT CAUSE**: Inline expander too aggressive - inlined functions accessing globals without verifying scope
+  - **SOLUTION** (2 helper functions, ≤10 complexity each):
+    - `accesses_global_variables(params, body)` - Detects non-parameter variable access (complexity: 7)
+    - `check_for_external_refs(expr, allowed)` - Recursively finds external references (complexity: 9)
+    - Modified `collect_inline_candidates()` to skip functions accessing globals
+  - **FILES**:
+    - `src/backend/transpiler/inline_expander.rs` (+53 lines: +1 import, +3 condition, +49 helpers)
+  - **VALIDATION** (EXTREME TDD Protocol):
+    - **RED**: Created `test_transpiler_global_state.ruchy` (15 lines), verified 3 rustc errors
+    - **GREEN**: Added safety checks, functions no longer inlined when accessing globals
+    - **REFACTOR**: Both helpers ≤10 complexity, zero clippy warnings
+  - **IMPACT**: Prevents invalid Rust code generation from aggressive inlining
+  - **COMPLEXITY**: accesses_global_variables: 7 (≤10 ✅), check_for_external_refs: 9 (≤10 ✅)
+  - **LIMITATION**: Module-level mutable variables still placed in main() (see TRANSPILER-002)
+
 ## [3.182.0] - 2025-11-03
 
 ### Fixed
