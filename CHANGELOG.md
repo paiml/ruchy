@@ -4,6 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.192.0] - 2025-11-03
+
+### Fixed
+- **[OPT-CODEGEN-004]** Function inlining regression - Let-bound variables incorrectly flagged as globals
+  - **PROBLEM**: 2 integration tests failing (5/10 → 7/10 regression), functions with local variables not being inlined
+  - **ROOT CAUSE**: `check_for_external_refs()` did not track Let-bound variables, only function parameters
+  - **EXAMPLE**: `fun f(x) { let a = x + 1; a }` - variable "a" flagged as external reference, blocked inlining
+  - **SOLUTION**: Updated `check_for_external_refs()` to add Let-bound variables to allowed set when checking body
+  - **FILES**:
+    - `src/backend/transpiler/inline_expander.rs` (+10 lines: Let binding tracking in external ref check)
+    - `tests/opt_codegen_004_property_tests.rs` (+3 lines: tuple destructuring for new return type)
+    - `tests/wasm_repl_evaluation_test.rs` (+1 line: fixed #[ignore] attribute syntax)
+  - **VALIDATION**:
+    - ✅ RED: 5/10 integration tests passing (2 regressions: inline_after_dce, inline_small_threshold)
+    - ✅ GREEN: 7/10 integration tests passing (both regressions fixed)
+    - ✅ REFACTOR: Complexity ≤10 maintained (check_for_external_refs: 9)
+    - ✅ VALIDATE: 4038 library tests passing (zero regressions), 3/3 property tests passing (55,808 cases)
+  - **IMPACT**: Functions with local variables now correctly eligible for inlining
+  - **Test Coverage**: 7/10 integration tests passing (70% → same as original baseline), 3/3 property tests passing
+
 ## [3.191.0] - 2025-11-03
 
 ### Fixed

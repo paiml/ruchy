@@ -85,10 +85,10 @@ fn property_inline_idempotent() {
         );
 
         // Apply inline expansion once
-        let once = inline_small_functions(block.clone());
+        let (once, _) = inline_small_functions(block.clone());
 
         // Apply inline expansion twice
-        let twice = inline_small_functions(once.clone());
+        let (twice, _) = inline_small_functions(once.clone());
 
         // Convert to strings for comparison (semantic equivalence)
         let once_str = format!("{:?}", once);
@@ -164,7 +164,7 @@ fn property_recursive_never_inlined() {
             Span::default(),
         );
 
-        let result = inline_small_functions(block);
+        let (result, _) = inline_small_functions(block);
 
         // Verify factorial function definition still exists (not inlined)
         if let ExprKind::Block(exprs) = result.kind {
@@ -254,7 +254,7 @@ fn property_large_functions_not_inlined() {
             Span::default(),
         );
 
-        let result = inline_small_functions(block);
+        let (result, _) = inline_small_functions(block);
 
         // Verify call still exists (not inlined)
         if let ExprKind::Block(exprs) = &result.kind {
