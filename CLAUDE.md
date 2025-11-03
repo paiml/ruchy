@@ -35,38 +35,15 @@
 4. ✅ **Lint frontend**: `make lint-frontend` passes
 5. ✅ **Visual check**: Manually verify in browser (Genchi Genbutsu)
 
-### 🚨 CRITICAL: Phantom UI Prevention Protocol (DEFECT-E2E-PHANTOM-UI Response)
+### 🚨 CRITICAL: Phantom UI Prevention Protocol
 
-**ROOT CAUSE LEARNED**: E2E tests were written for non-existent UI elements, causing 100% test failure rate.
+**ROOT CAUSE**: E2E tests written for non-existent UI elements (100% failure rate).
 
-**Reference**: `docs/issues/DEFECT-E2E-PHANTOM-UI.md`
-
-**MANDATORY PROTOCOL** (Before Writing ANY E2E Test):
-
-1. 🔍 **GENCHI GENBUTSU**: Read actual HTML file BEFORE writing tests
-   - Example: Read `static/notebook.html` to see real element IDs
-   - NEVER assume UI elements exist based on planned/future designs
-
+**MANDATORY PROTOCOL**:
+1. 🔍 **GENCHI GENBUTSU**: Read actual HTML before writing tests
 2. ✅ **Selector Validation**: Verify EVERY selector exists in actual HTML
-   ```typescript
-   // ❌ FORBIDDEN: Writing tests for phantom UI
-   await page.locator('#status').toHaveClass(/status-ready/); // Element doesn't exist!
-
-   // ✅ CORRECT: Use actual notebook UI elements
-   await page.waitForSelector('#notebook-cells', { timeout: 10000 });
-   await expect(page.locator('.CodeMirror').first()).toBeVisible();
-   ```
-
-3. 🚫 **No Phantom UI**: NEVER write tests for planned/future UI elements
-   - Tests describe CURRENT reality, not future plans
-   - If UI doesn't exist yet, don't write E2E tests for it
-
-4. ✅ **Manual Verification**: View page in browser to confirm elements exist
-   - Open `static/notebook.html` in browser
-   - Use DevTools to inspect actual element IDs and classes
-   - Take screenshot if needed for reference
-
-**Toyota Way**: GENCHI GENBUTSU - Go and see what's actually there, don't test phantom UI
+3. 🚫 **No Phantom UI**: Tests describe CURRENT reality, not future plans
+4. ✅ **Manual Verification**: View page in browser, inspect with DevTools
 
 ## 🚨 CRITICAL: A+ Code Standard (From paiml-mcp-agent-toolkit)
 
@@ -525,408 +502,72 @@ Closes: TICKET-ID
 
 **Make Lint Contract**: `cargo clippy --all-targets --all-features -- -D warnings` (EVERY warning = error)
 
-### 🚨 CRITICAL: Pre-commit Hook Management (PMAT-Generated)
+### 🚨 CRITICAL: Pre-commit Hook Management
 
 **ABSOLUTE PROHIBITION**: Quality gate checks MUST NEVER be "temporarily disabled"
 
-**Reference Issue**: `docs/issues/PMAT-HOOK-DISABLED-CHECKS.md` - Comprehensive Five Whys analysis
+**Problem**: PMAT hooks may have commented-out checks (violates "Stop the Line")
 
-**Problem**: PMAT-generated pre-commit hooks (`.git/hooks/pre-commit`) may contain commented-out checks with "⚠️ (temporarily disabled)" warnings. This violates Toyota Way "Stop the Line" principle.
-
-**Toyota Way Violation**:
-```bash
-# ❌ FORBIDDEN PATTERN (found in auto-generated hooks)
-# 1. Complexity analysis (TEMPORARILY DISABLED for PARSER-055 commit)
-# TODO: Re-enable after fixing cognitive complexity violations
-echo -n "  Complexity check... "
-echo "⚠️  (temporarily disabled)"
-```
-
-**Correct Approach (MANDATORY)**:
+**Correct Approach**:
 1. 🛑 **STOP THE LINE**: If quality gate fails, halt work immediately
-2. 🔍 **FIVE WHYS**: Perform root cause analysis (documented in tracking issue)
-3. 🔧 **FIX VIOLATIONS**: Refactor code to meet quality standards (≤10 complexity, zero SATD)
-4. ✅ **RE-ENABLE CHECKS**: Use `pmat hooks refresh` to regenerate with checks enabled
-5. 📝 **VERIFY**: Test commit to confirm gates block violations
-
-**When Pre-commit Hook Shows Disabled Checks**:
-```bash
-# 1. Identify disabled checks
-grep "temporarily disabled" .git/hooks/pre-commit
-
-# 2. Document issue (if not already tracked)
-# Create docs/issues/PMAT-HOOK-DISABLED-CHECKS-<DATE>.md
-
-# 3. Fix underlying violations
-pmat analyze complexity --max-cyclomatic 10  # Find violations
-pmat analyze satd                             # Find SATD comments
-# Refactor files until all violations fixed
-
-# 4. Regenerate hooks (after PMAT upstream fix)
-pmat hooks refresh
-
-# 5. Verify gates work
-git commit  # Should block if violations exist
-```
-
-**If PMAT Not Yet Fixed** (Temporary Workaround):
-1. Create tracking issue in PMAT repository
-2. Manually uncomment checks in `.git/hooks/pre-commit`
-3. Add header comment: `# TEMPORARY FIX: Re-enabled until PMAT upstream fix`
-4. Fix all violations before committing
-5. Document in commit message why manual hook edit was necessary
-
-**FORBIDDEN RESPONSES**:
-- ❌ "Let's just disable the check for now"
-- ❌ "We'll fix it later"
-- ❌ "Use `--no-verify` to bypass"
-- ❌ "It's only temporary"
+2. 🔍 **FIVE WHYS**: Perform root cause analysis
+3. 🔧 **FIX VIOLATIONS**: Refactor to meet standards (≤10 complexity, zero SATD)
+4. ✅ **RE-ENABLE**: `pmat hooks refresh` to regenerate
+5. 📝 **VERIFY**: Test commit confirms gates block violations
 
 **Toyota Way**: Temporary bypasses become permanent. Fix root causes, never mask symptoms.
 
 ### 🚨 MANDATORY: RuchyRuchy Smoke Testing Protocol (Pre-Release)
 
-**SACRED RULE**: NEVER release without RuchyRuchy smoke testing. All transpiler fixes MUST be verified end-to-end.
+**SACRED RULE**: NEVER release without RuchyRuchy smoke testing.
 
-**Reference**: Issue #111 (v3.168.0) - Smoke testing caught 0 regressions, verified all 4 fixes
+**Prerequisites**: `cargo install ruchyruchy` (provides ruchydbg CLI v1.12.0+)
 
-**MANDATORY PROTOCOL** (Before EVERY Release):
+**MANDATORY Steps**:
+1. **Create smoke test for EACH fix**: Test actual bug pattern
+2. **Run individual tests**: `ruchydbg run /tmp/smoke_test.ruchy --timeout 5000 --trace`
+3. **Integration test**: Combine all fixes, run with ruchydbg
+4. **Performance check**: `ruchydbg detect /tmp/smoke_integration.ruchy --threshold 15`
+5. **Real project validation**: `timeout 60 ruchy compile /path/to/project/main.ruchy`
+6. **Generate report**: Document all test results
 
-**Prerequisites**:
-```bash
-# Install ruchydbg (if not already installed)
-cargo install ruchyruchy  # Provides ruchydbg CLI
-ruchydbg --version  # Verify v1.12.0+
-```
-
-**Step 1: Create Smoke Tests for Each Fix**
-
-For EACH transpiler/runtime fix in the release, create a smoke test file:
-
-```bash
-# Example: DEFECT-018 (moved value in loop)
-cat > /tmp/smoke_defect_018.ruchy << 'EOF'
-// SMOKE TEST: DEFECT-018 - Auto-clone in nested loops
-struct Process { pid: i32, name: String }
-struct Rule { id: i32, enabled: bool }
-
-fun rule_matches(rule: Rule, proc: Process) -> bool {
-    rule.enabled && proc.pid > 0
-}
-
-fun find_matches() -> i32 {
-    let procs = vec![Process { pid: 1, name: "init" }];
-    let rules = vec![Rule { id: 1, enabled: true }];
-    let mut i = 0;
-    let mut matches = 0;
-
-    while i < procs.len() {
-        let proc = procs[i];
-        let mut j = 0;
-        while j < rules.len() {
-            let rule = rules[j];
-            if rule_matches(rule, proc) {  // Auto-clone test
-                matches = matches + 1;
-            }
-            j = j + 1;
-        }
-        i = i + 1;
-    }
-    matches
-}
-
-println(find_matches());
-EOF
-```
-
-**Step 2: Run Individual Fix Smoke Tests**
-
-```bash
-# Test each fix individually with timeout detection + tracing
-ruchydbg run /tmp/smoke_defect_018.ruchy --timeout 5000 --trace
-
-# Expected output:
-# ✅ SUCCESS
-# ⏱️  Execution time: <10ms
-# 🔍 Type-aware tracing: enabled
-# Correct output verified
-```
-
-**Step 3: Create Integration Test (All Fixes Combined)**
-
-```bash
-# Combine all fixes into one comprehensive test
-cat > /tmp/smoke_integration.ruchy << 'EOF'
-// INTEGRATION TEST: All fixes from this release
-// Include patterns from EACH fix combined
-EOF
-
-ruchydbg run /tmp/smoke_integration.ruchy --timeout 5000 --trace
-```
-
-**Step 4: Pathological Input Detection**
-
-```bash
-# Check for performance regressions
-ruchydbg detect /tmp/smoke_integration.ruchy --threshold 15
-
-# ⚠️ If pathological input detected:
-# - Verify it's expected algorithmic complexity (O(n²) is OK for nested loops)
-# - Ensure execution completes (no hangs)
-# - Performance should be <1s for smoke tests
-```
-
-**Step 5: End-to-End Verification with Real Project**
-
-```bash
-# Test with actual user project (e.g., reaper, ruchy-book examples)
-timeout 60 ruchy compile /path/to/real/project/main.ruchy
-
-# Verify:
-# ✅ Compiles with 0 errors
-# ✅ Binary executes correctly
-# ✅ No regressions in existing functionality
-```
-
-**Step 6: Generate Smoke Test Report**
-
-```bash
-cat > /tmp/ruchydbg_smoke_test_report.md << 'EOF'
-# RuchyRuchy Smoke Test Report
-## Version: vX.Y.Z
-
-### Individual Fix Tests
-- ✅ DEFECT-XXX: [description] - SUCCESS (Xms)
-- ✅ DEFECT-YYY: [description] - SUCCESS (Xms)
-
-### Integration Test
-- ✅ All fixes combined: SUCCESS (Xms)
-
-### Performance Analysis
-- ⚠️ Pathological inputs: [analysis]
-
-### End-to-End Verification
-- ✅ Project: [name] - Compiles + Executes
-
-### Summary
-ALL SMOKE TESTS PASSED ✅
-EOF
-```
-
-**MANDATORY Checklist** (Before Publishing):
-- [ ] Individual smoke tests created for each fix
-- [ ] All smoke tests pass with ruchydbg
+**Checklist** (Before Publishing):
+- [ ] Individual smoke tests pass
 - [ ] Integration test passes
-- [ ] Performance analysis complete (no unexpected regressions)
-- [ ] End-to-end verification with real project
-- [ ] Smoke test report generated
+- [ ] Performance analysis complete
+- [ ] Real project validation passes
+- [ ] Report generated
 
-**FORBIDDEN RESPONSES**:
-- ❌ "The fix looks good, let's skip smoke testing"
-- ❌ "We already have unit tests, smoke tests are redundant"
-- ❌ "This is a small fix, doesn't need smoke testing"
-- ❌ "Let's smoke test after release"
+**Success Metrics**: ~15 min investment prevents hours of debugging
 
-**Toyota Way**: Smoke testing is GATE 0 for releases. No smoke tests = no release.
+### 🚀 PRE-RELEASE VALIDATION PROTOCOL (4 Gates)
 
-**Success Metrics** (v3.168.0):
-- 3 individual smoke tests: ALL PASSED (3-4ms each)
-- 1 integration test: PASSED (4ms)
-- Pathological detection: Expected O(n²), no hangs
-- Reaper (5,100 LOC): 0 errors, executes correctly
-- Time investment: ~15 minutes vs hours of debugging production issues
+**Gate 0: Smoke Testing**
+- `cargo test --lib --release`
+- `cargo test --test --release`
+- `cargo build --release`
 
-### 🚀 PRE-RELEASE VALIDATION PROTOCOL (MANDATORY)
+**Gate 1: Debugging Tools (ruchydbg v1.13.0+)**
+- Timeout detection: Test all examples with `ruchydbg run --timeout 5000 --trace`
+- Regression: `ruchydbg regression determinism examples/**/*.ruchy --runs 10`
+- Stack profiling: `ruchydbg profile --stack examples/recursion/*.ruchy`
 
-**CRITICAL**: Before EVERY release, run comprehensive debugging validation to prevent production bugs.
+**Gate 2: Property-Based Testing**
+- Location: `../ruchyruchy`
+- Run: `cargo test --test property_based_tests --release`
+- Expected: 7 properties, 14,000+ cases, all PASS
 
-**Toyota Way**: Quality is built-in through systematic validation, not bolted-on through post-release fixes.
+**Gate 3: Real-World Project**
+- Re-transpile project with latest Ruchy
+- Verify compilation: `cargo clean && cargo build --release`
+- Test execution: `ruchydbg run src/main.ruchy --timeout 10000`
+- Verify publication: `ruchy publish --dry-run`
 
-#### Gate 0: Smoke Testing (Already Covered Above)
-- Unit tests: `cargo test --lib`
-- Integration tests: `cargo test --test`
-- Compilation: `cargo build --release`
-- Examples: All 78 examples must execute successfully
+**Gate 4: PMAT Quality**
+- `pmat tdg . --min-grade A- --fail-on-violation`
+- `pmat maintain health`
 
-#### Gate 1: Debugging Tools Validation (ruchydbg v1.13.0+)
-
-**Installation** (if not already installed):
-```bash
-cargo install ruchyruchy  # Includes ruchydbg CLI
-```
-
-**1. Timeout Detection & Type-Aware Tracing**
-```bash
-# Test all examples with timeout + tracing
-for example in examples/*.ruchy; do
-    echo "Testing: $example"
-    ruchydbg run "$example" --timeout 5000 --trace
-    if [ $? -eq 124 ]; then
-        echo "❌ TIMEOUT: $example hangs - STOP THE LINE"
-        exit 1
-    fi
-done
-```
-
-**2. Regression Testing (DEBUGGER-043)**
-```bash
-# Determinism check (catches non-deterministic bugs)
-ruchydbg regression determinism examples/**/*.ruchy --runs 10
-# Exit 0 = deterministic, Exit 1 = STOP THE LINE
-
-# State pollution check (catches variable leakage)
-ruchydbg regression state tests/state/*.ruchy
-# Exit 0 = no leakage, Exit 1 = STOP THE LINE
-
-# Performance regression check (catches O(n²) bugs)
-ruchydbg regression perf baseline.ruchy current.ruchy --threshold 2.0
-# Exit 0 = no regression, Exit 1 = >2x slowdown detected
-```
-
-**3. Stack Depth Profiling (DEBUGGER-041)**
-```bash
-# Profile recursion depth to catch stack overflow bugs
-ruchydbg profile --stack examples/recursion/*.ruchy
-
-# Check for max depth > 100 (potential stack overflow risk)
-# Check for hotspot functions with >1000 calls (performance issue)
-```
-
-#### Gate 2: Property-Based Testing (DEBUGGER-044)
-
-**Location**: RuchyRuchy interpreter codebase (NOT Ruchy compiler)
-
-**Run Property Tests**:
-```bash
-cd ../ruchyruchy
-cargo test --test property_based_tests --release
-```
-
-**Expected Results**:
-- 7 properties tested
-- 14,000+ test cases
-- Execution time: <2 seconds
-- All tests PASS (no failures, no panics)
-
-**Properties Validated**:
-1. Parser roundtrip: parse(emit(ast)) = ast (1,000 cases)
-2. Evaluator determinism: eval(expr) = eval(expr) (1,000 cases)
-3. Token concatenation: tokenize(a+b) ≥ tokenize(a) + tokenize(b) (1,000 cases)
-4. No crashes - Parser: Never panics on UTF-8 input (10,000 cases)
-5. No crashes - Evaluator: Never panics on valid AST (10,000 cases)
-6. Addition commutative: a + b = b + a (1,000 cases)
-7. Meta-test: Completeness validation
-
-**Impact**: Catches 23% of bugs that unit tests miss (proven via research)
-
-#### Gate 3: Real-World Project Validation
-
-**Test with Production Projects** (e.g., Reaper v1.0.0):
-```bash
-cd ../reaper  # Or other large Ruchy project
-
-# 1. Re-transpile with latest Ruchy
-../ruchy/target/release/ruchy transpile src/main.ruchy > src/main.rs
-
-# 2. Verify compilation
-cargo clean && cargo build --release
-if [ $? -ne 0 ]; then
-    echo "❌ TRANSPILATION BUG - STOP THE LINE"
-    exit 1
-fi
-
-# 3. Test execution with ruchydbg
-../ruchyruchy/target/release/ruchydbg run src/main.ruchy --timeout 10000 --trace
-if [ $? -eq 124 ]; then
-    echo "❌ HANG DETECTED - STOP THE LINE"
-    exit 1
-fi
-
-# 4. Verify publication readiness
-../ruchy/target/release/ruchy publish --dry-run
-cargo publish --dry-run --allow-dirty
-```
-
-**Real-World Success Case** (Reaper v1.0.0, 2025-11-01):
-- Problem: E0382 ownership error blocking crates.io publication
-- Root Cause: Stale transpiled code from older Ruchy version
-- Solution: Re-transpiled with v3.170.0 (auto-cloning feature)
-- Result: ✅ Compiles in 29.42s, cargo publish passes
-- Time to Fix: 10 minutes (GENCHI GENBUTSU identified root cause)
-
-**Lesson Learned**: Always re-transpile real-world projects after Ruchy updates to catch version mismatches.
-
-#### Gate 4: PMAT Quality Gates
-
-```bash
-# Run PMAT quality checks
-pmat tdg . --min-grade A- --fail-on-violation
-pmat maintain health
-
-# Expected: All checks pass, no regressions
-```
-
-#### Complete Pre-Release Checklist
-
-```bash
-#!/bin/bash
-# Pre-release validation script (save as .pmat/pre_release_validation.sh)
-
-set -e  # Exit on any failure
-
-echo "🚀 PRE-RELEASE VALIDATION STARTING..."
-
-# Gate 0: Smoke Testing
-echo "Gate 0: Smoke Testing..."
-cargo test --lib --release
-cargo test --test --release
-cargo build --release
-echo "✅ Gate 0 PASSED"
-
-# Gate 1: Debugging Tools
-echo "Gate 1: Debugging Tools Validation..."
-for example in examples/*.ruchy; do
-    timeout 10 ruchydbg run "$example" --timeout 5000 || {
-        echo "❌ FAILED: $example"
-        exit 1
-    }
-done
-ruchydbg regression determinism examples/**/*.ruchy --runs 10
-echo "✅ Gate 1 PASSED"
-
-# Gate 2: Property-Based Testing
-echo "Gate 2: Property-Based Testing..."
-cd ../ruchyruchy && cargo test --test property_based_tests --release && cd -
-echo "✅ Gate 2 PASSED"
-
-# Gate 3: Real-World Project Validation
-echo "Gate 3: Real-World Project Validation..."
-cd ../reaper
-../ruchy/target/release/ruchy transpile src/main.ruchy > src/main.rs
-cargo build --release
-../ruchyruchy/target/release/ruchydbg run src/main.ruchy --timeout 10000
-../ruchy/target/release/ruchy publish --dry-run
-cd -
-echo "✅ Gate 3 PASSED"
-
-# Gate 4: PMAT Quality Gates
-echo "Gate 4: PMAT Quality Gates..."
-pmat tdg . --min-grade A- --fail-on-violation
-echo "✅ Gate 4 PASSED"
-
-echo "🎉 ALL GATES PASSED - READY FOR RELEASE"
-```
-
-**Time Investment**: ~15-20 minutes per release
-**ROI**: Prevents hours of debugging production issues + user frustration
-
-**FORBIDDEN RESPONSES**:
-- ❌ "Let's skip validation for this small release"
-- ❌ "We already have unit tests, this is redundant"
-- ❌ "Let's validate after publishing"
-- ❌ "The fix is trivial, doesn't need full validation"
-
-**Toyota Way**: Stop the Line for ANY gate failure. Fix root cause before proceeding.
+**Time**: ~15-20 min per release. **ROI**: Prevents hours of debugging.
 
 ### DUAL-RELEASE PUBLISHING PROTOCOL
 **After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
