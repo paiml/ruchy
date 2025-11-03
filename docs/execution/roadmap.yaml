@@ -4,21 +4,66 @@
 metadata:
   version: "3.99"
   last_updated: "2025-11-03"
-  current_sprint: "✅ COMPLETE - v3.177.0 Released: ISSUE-119 (Global Mutable State) + Benchmark Validation Suite"
-  latest_release: "v3.177.0"
-  latest_commit_message: "[ISSUE-119] Fix test code for Rc<RefCell<HashMap>> pattern"
-  latest_commit_hash: "7eec4cd2"
-  current_work: "✅ COMPLETE - ISSUE-119 (global mutable state) + 5/5 benchmark validation (BENCH-002/003/006/008/009)"
+  current_sprint: "✅ COMPLETE - v3.182.0 Released: ISSUE-131 (parse_json alias) + BENCH-009 unblocked"
+  latest_release: "v3.182.0"
+  latest_commit_message: "[CLIPPY] Fix format string and closure warnings"
+  latest_commit_hash: "c1c07ca8"
+  current_work: "✅ COMPLETE - ISSUE-131 (parse_json alias registration) - BENCH-009 now functional (75% benchmark coverage)"
   next_phase: "Continue optimization work (PERF-002-C: DCE liveness analysis) OR implement additional benchmarks"
-  benchmark_validation_status: "✅ COMPLETE - ALL 5 BENCHMARKS VALIDATED (Issues #113/114/115/117/119/121 fixed)"
+  benchmark_validation_status: "✅ 9/12 BENCHMARKS WORKING (75%) - BENCH-009 unblocked by ISSUE-131"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
-  priority_rationale: "Benchmark validation complete - all blocking issues resolved"
+  priority_rationale: "BENCH-009 unblocked with one-line fix - 9/12 benchmarks now functional"
   debugger_051_status: "✅ COMPLETE - performance-profiling-compiler-tooling.md (1436 LOC Julia analysis)"
   compiler_optimization_spec: "✅ NEW SPEC - compiler-transpiler-optimization-spec.md (72KB, Nov 2, 2025, 12 peer-reviewed papers)"
   crates_io_status:
-    ruchy: "v3.177.0 - Published ✅"
-    ruchy_wasm: "v3.177.0 - Published ✅"
-  github_tag: "v3.177.0 - Created ✅"
+    ruchy: "v3.182.0 - Published ✅"
+    ruchy_wasm: "v3.182.0 - Published ✅"
+  github_tag: "v3.182.0 - Ready ✅"
+
+  session_summary_2025_11_03_issue_131_parse_json_alias:
+    date: "2025-11-03"
+    ticket: "ISSUE-131"
+    status: "✅ COMPLETE"
+    goal: "Fix parse_json() returning Message type instead of parsed JSON - unblock BENCH-009"
+    root_cause: "Missing alias registration - only json_parse registered, not parse_json"
+
+    implementation:
+      - "ONE LINE FIX: Added parse_json registration to builtin_init.rs:429"
+      - "Dispatcher already handled both names, only registration missing"
+      - "Pattern: parse_json('{}') now returns parsed object, not Message"
+
+    test_coverage:
+      unit_tests: "6/6 passing (tests/issue_131_parse_json_alias.rs)"
+      property_tests: "7/7 passing, 700+ random cases (tests/issue_131_property_tests.rs)"
+      example: "examples/parse_json_demo.ruchy works (6 test patterns)"
+      total_tests: "13/13 passing (6 unit + 7 property)"
+
+    extreme_tdd_phases:
+      red: "✅ 5/6 failing tests (parse_json returned Message)"
+      green: "✅ One-line fix, 6/6 tests passing"
+      refactor: "✅ Zero complexity increase (registration only)"
+      validate: "✅ Property tests 700+ cases, example works"
+
+    quality_metrics:
+      lines_changed: "1 line (+1 registration in builtin_init.rs)"
+      test_coverage: "13/13 passing (100%)"
+      benchmark_impact: "BENCH-009 unblocked → 9/12 benchmarks (75%)"
+      time_to_fix: "~30 minutes (with comprehensive testing)"
+
+    impact:
+      - "BENCH-009 (JSON Parsing) UNBLOCKED ✅"
+      - "Benchmark coverage: 8/12 (67%) → 9/12 (75%)"
+      - "JSON field access now works: data['users'][0]['name']"
+
+    commits:
+      - "c268ebaa: [ISSUE-131] Fix parse_json() alias registration"
+      - "c1c07ca8: [CLIPPY] Fix format string and closure warnings"
+
+    files:
+      - "src/runtime/builtin_init.rs (+1 line)"
+      - "tests/issue_131_parse_json_alias.rs (NEW, 161 lines)"
+      - "tests/issue_131_property_tests.rs (NEW, 305 lines)"
+      - "examples/parse_json_demo.ruchy (NEW, 48 lines)"
 
   session_summary_2025_11_03_issue_119_global_mutable_state:
     date: "2025-11-03"
