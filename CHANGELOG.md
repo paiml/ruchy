@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.185.0] - 2025-11-03
+
+### Fixed
+- **[TRANSPILER-004]** Extended usize casting to detect `len()` function calls (not just `.len()` methods)
+  - **PROBLEM**: ISSUE-115 fix only detected `.len()` method calls, missed `len(x)` function calls
+  - **SYMPTOMS**: BENCH-008 failing with `primes.len() < count` (usize vs i32) even after ISSUE-115 fix
+  - **EXAMPLE**:
+    ```ruchy
+    while len(primes) < count {  // ❌ compile: expected usize, found i32
+    ```
+  - **ROOT CAUSE ANALYSIS** (GENCHI GENBUTSU):
+    1. BENCH-008 uses `len(primes)` function call syntax
+    2. TRANSPILER-003 converts `len(x)` → `x.len()` in statements.rs
+    3. But ISSUE-115's `is_len_call()` only checked for `.len()` method calls
+    4. Usize casting happens BEFORE function → method conversion
+    5. So `len()` functions never got usize casts applied
+  - **ROOT CAUSE**: Order of operations - usize casting check runs before `len()` → `.len()` conversion
+  - **SOLUTION** (13 lines in binary_ops.rs):
+    - Extended `is_len_call()` to detect BOTH patterns:
+      - Method calls: `vec.len()` (original ISSUE-115)
+      - Function calls: `len(vec)` (TRANSPILER-004 addition)
+    - Pattern matching: `ExprKind::Call { func: "len", args.len() == 1 }`
+    - Complexity: 4 (within ≤10 limit ✅)
+  - **FILES**:
+    - `src/backend/transpiler/expressions_helpers/binary_ops.rs` (+13 lines: lines 203-216)
+  - **VALIDATION**:
+    - ✅ Simple test: `while len(primes) < count` → `while primes.len() < count as usize`
+    - ✅ BENCH-008: All 3 len comparisons get usize casts applied
+    - ⚠️  BENCH-008 still fails due to SEPARATE bug (vec![] type inference)
+  - **IMPACT**: Completes ISSUE-115 fix for both function AND method syntax
+  - **COMPLEXITY**: is_len_call: 4 (within ≤10 limit ✅)
+  - **Testing**: Manual validation (comprehensive test suite needed)
+
 ## [3.184.0] - 2025-11-03
 
 ### Fixed
