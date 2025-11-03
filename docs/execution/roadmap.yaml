@@ -3,21 +3,21 @@
 
 metadata:
   version: "3.99"
-  last_updated: "2025-11-02"
-  current_sprint: "✅ COMPLETE - v3.175.0 Released: ISSUE-116 (File I/O) + ISSUE-117 (JSON)"
-  latest_release: "v3.175.0"
-  latest_commit_message: "[RELEASE] v3.175.0 - ISSUE-116 (File I/O) + ISSUE-117 (JSON)"
-  latest_commit_hash: "0487c46f"
-  current_work: "✅ COMPLETE - OPT-CODEGEN-004: Inline Expansion (7/10 tests, 55K+ property tests)"
-  next_phase: "OPT-GLOBAL-001: Profile-guided optimization (compiler self-hosting)"
+  last_updated: "2025-11-03"
+  current_sprint: "✅ COMPLETE - v3.176.0 Released: ISSUE-117 (JSON Functions) + ISSUE-121 (read_file Unwrapping)"
+  latest_release: "v3.176.0"
+  latest_commit_message: "[RELEASE] v3.176.0 - Benchmark unblocking fixes (ISSUE-117 + ISSUE-121)"
+  latest_commit_hash: "53f6f7b0"
+  current_work: "✅ COMPLETE - ISSUE-117 (parse_json/stringify_json) + ISSUE-121 (read_file unwrapped)"
+  next_phase: "Benchmarking suite - BENCH-006 (file-processing) + BENCH-009 (json-parsing)"
   perf_002c_status: "✅ PARTIALLY COMPLETE - Core DCE working (7/10 tests), unused vars need liveness analysis"
-  priority_rationale: "Compiler optimization via self-hosting (compiler-transpiler-optimization-spec.md)"
+  priority_rationale: "Unblock benchmarking infrastructure (BENCH-006, BENCH-009)"
   debugger_051_status: "✅ COMPLETE - performance-profiling-compiler-tooling.md (1436 LOC Julia analysis)"
   compiler_optimization_spec: "✅ NEW SPEC - compiler-transpiler-optimization-spec.md (72KB, Nov 2, 2025, 12 peer-reviewed papers)"
   crates_io_status:
-    ruchy: "v3.175.0 - Published ✅"
-    ruchy_wasm: "v3.175.0 - Published ✅"
-  github_tag: "v3.175.0 - Created ✅"
+    ruchy: "v3.176.0 - Published ✅"
+    ruchy_wasm: "v3.176.0 - Published ✅"
+  github_tag: "v3.176.0 - Created ✅"
 
   session_summary_2025_11_02_perf_002b_constant_propagation:
     date: "2025-11-02"
@@ -156,6 +156,66 @@ metadata:
       - "5f97b552: REFACTOR phase (clippy fixes, quality gates)"
       - "e9ab233a: REFACTOR phase (roadmap + changelog updates)"
       - "3ec87150: VALIDATE phase (property tests 55,808 cases)"
+
+  session_summary_2025_11_03_benchmark_unblocking:
+    date: "2025-11-03"
+    actual_release: "v3.176.0"
+    tickets: "ISSUE-117 (GitHub #117) + ISSUE-121 (GitHub #121)"
+    status: "✅ COMPLETE - Published to crates.io"
+    goal: "Unblock BENCH-006 (file-processing) and BENCH-009 (json-parsing) benchmarks"
+
+    implementation:
+      issue_117_json_plain_functions:
+        - "ROOT CAUSE: Function calls created Message objects before checking builtin functions"
+        - "FIX: Modified eval_function_call() to check builtins FIRST (src/runtime/interpreter.rs:7456-7467)"
+        - "Pattern: parse_json('{\"name\": \"Alice\"}') now works (not just JSON.parse())"
+        - "Also added: stringify_json() function alongside JSON.stringify()"
+      issue_121_read_file_unwrapping:
+        - "ROOT CAUSE: eval_fs_read() returned Result::Ok(string) but benchmarks expect plain string"
+        - "FIX: Created eval_read_file_unwrapped() helper (src/runtime/eval_builtin.rs:1393-1412, 20 lines)"
+        - "Pattern: let contents = read_file(path) returns string directly (not Result enum)"
+        - "Note: fs_read() still returns Result enum for error handling use cases"
+
+    test_coverage:
+      issue_117: "6/6 integration tests passing (simple, array, stringify, roundtrip, nested)"
+      issue_121: "6/6 integration tests passing (simple, JSON integration, string ops, multiline, BENCH-006 pattern)"
+      validation: "Manual BENCH-009 pattern: read_file() + parse_json() + nested access → 'London' ✅"
+      total: "12/12 tests passing"
+
+    extreme_tdd_phases:
+      red: "✅ 12/12 failing tests (tests/issue_117_json_parsing.rs + tests/issue_121_read_file_unwrapped.rs)"
+      green: "✅ Issue #117: 19 lines in interpreter.rs, Issue #121: 20 lines in eval_builtin.rs"
+      refactor: "✅ Both functions ≤10 complexity (Toyota Way), zero clippy warnings"
+      validate: "✅ Manual validation: BENCH-009 pattern works end-to-end"
+
+    quality_metrics:
+      complexity: "All functions ≤10 (eval_read_file_unwrapped: 2, dispatch: 6)"
+      regressions: "Zero (all existing tests pass)"
+      clippy: "Zero warnings"
+      files_modified:
+        - "src/runtime/interpreter.rs (lines 7456-7467, 19 lines)"
+        - "src/runtime/eval_builtin.rs (lines 1393-1412 + 2094, 20 lines)"
+        - "tests/issue_117_json_parsing.rs (NEW, 117 lines, 6/6 passing)"
+        - "tests/issue_121_read_file_unwrapped.rs (NEW, 160 lines, 6/6 passing)"
+        - "CHANGELOG.md (lines 72-87, v3.176.0 release notes)"
+        - "Cargo.toml + ruchy-wasm/Cargo.toml (version bump to 3.176.0)"
+
+    commits:
+      - "aa9919b0: [ISSUE-117 + ISSUE-121] Fix benchmark blockers (parse_json + read_file)"
+      - "b36dbe2c: [CHANGELOG] Update for v3.176.0 release"
+      - "53f6f7b0: [VERSION] Bump to v3.176.0 (DUAL-RELEASE protocol)"
+
+    publication:
+      - "Git tag v3.176.0 created and pushed ✅"
+      - "ruchy v3.176.0 published to crates.io (34.72s compile) ✅"
+      - "ruchy-wasm v3.176.0 published to crates.io (14.95s compile, 30s wait) ✅"
+      - "DUAL-RELEASE protocol followed: cargo publish ruchy → wait 30s → cargo publish ruchy-wasm"
+
+    impact:
+      - "✅ BENCH-006 (file-processing) unblocked: read_file() returns plain string"
+      - "✅ BENCH-009 (json-parsing) unblocked: parse_json() + read_file() pattern works"
+      - "✅ Manual validation: Nested JSON access works (data['users'][2]['profile']['location']['city'] → 'London')"
+      - "⏭️ Next: Run BENCH-006 and BENCH-009 benchmarks with unblocked APIs"
 
   session_summary_2025_11_02_perf_001_beat_julia_c_rust:
     date: "2025-11-02"
