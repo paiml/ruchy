@@ -282,7 +282,7 @@ impl GlobalRegistry {
             } => {
                 let mut size = 128; // Base closure size
                 size += params.len() * 32; // Parameter names
-                size += env.len() * 64; // Environment size estimate
+                size += env.borrow().len() * 64; // ISSUE-119: Environment size estimate (borrow from RefCell)
                 size
             }
             Value::DataFrame { columns } => {

@@ -8,8 +8,9 @@
 use crate::frontend::ast::{Expr, Pattern};
 use crate::runtime::eval_pattern::match_pattern;
 use crate::runtime::{InterpreterError, Value};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell}; // ISSUE-119: Add RefCell for environment wrapping
 use std::collections::HashMap;
+use std::rc::Rc; // ISSUE-119: Add Rc for shared ownership
 use std::sync::Arc;
 
 // ============================================================================
@@ -139,7 +140,7 @@ where
             })
             .collect(),
         body: Arc::new(closure.body),
-        env: Arc::new(closure.captured_env),
+        env: Rc::new(RefCell::new(closure.captured_env)), // ISSUE-119: Wrap HashMap in Rc<RefCell>
     })
 }
 
@@ -168,7 +169,7 @@ where
             })
             .collect(),
         body: Arc::new(closure.body),
-        env: Arc::new(closure.captured_env),
+        env: Rc::new(RefCell::new(closure.captured_env)), // ISSUE-119: Wrap HashMap in Rc<RefCell>
     })
 }
 
@@ -208,7 +209,7 @@ where
 fn eval_closure_call_direct<F>(
     params: &[String],
     body: &Expr,
-    env: &HashMap<String, Value>,
+    env: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Accept Rc<RefCell<HashMap>>
     args: &[Value],
     mut eval_with_env: F,
 ) -> Result<Value, InterpreterError>
@@ -229,7 +230,7 @@ where
         }
 
         // Create call environment with captured environment
-        let mut call_env = env.clone();
+        let mut call_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell then clone
 
         // Bind parameters to arguments
         for (param, arg) in params.iter().zip(args.iter()) {
@@ -271,7 +272,7 @@ where
     }
 
     // Start with captured environment
-    let mut call_env = closure.captured_env.clone();
+    let mut call_env = closure.captured_env.clone(); // Clone HashMap from internal Closure struct
 
     // Add self-reference for recursive functions
     if let Some(ref name) = closure.name {
@@ -285,7 +286,7 @@ where
                 })
                 .collect(),
             body: Arc::new(closure.body.clone()),
-            env: Arc::new(closure.captured_env.clone()),
+            env: Rc::new(RefCell::new(closure.captured_env.clone())), // ISSUE-119: Wrap HashMap in Rc<RefCell>
         };
         call_env.insert(name.clone(), closure_value);
     }
@@ -406,7 +407,7 @@ pub fn create_partial_application(
                     .map(|name| Pattern::Identifier(name.clone()))
                     .collect(),
                 body: body.as_ref().clone(),
-                captured_env: env.as_ref().clone(),
+                captured_env: env.borrow().clone(), // ISSUE-119: Borrow from RefCell then clone HashMap
                 name: None,
             };
             if partial_args.len() >= closure.params.len() {
@@ -437,7 +438,7 @@ pub fn create_partial_application(
                     })
                     .collect(),
                 body: Arc::new(partial_closure.body),
-                env: Arc::new(partial_closure.captured_env),
+                env: Rc::new(RefCell::new(partial_closure.captured_env)), // ISSUE-119: Wrap HashMap in Rc<RefCell>
             })
         }
         _ => Err(InterpreterError::TypeError(

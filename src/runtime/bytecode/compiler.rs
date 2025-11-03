@@ -15,7 +15,9 @@ use super::instruction::Instruction;
 use super::opcode::OpCode;
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, UnaryOp};
 use crate::runtime::Value;
+use std::cell::RefCell; // ISSUE-119: For shared mutable environment
 use std::collections::HashMap;
+use std::rc::Rc; // ISSUE-119: For shared mutable environment
 use std::sync::Arc;
 
 /// Bytecode function chunk
@@ -592,7 +594,7 @@ impl Compiler {
         let closure = Value::Closure {
             params: param_names,
             body: Arc::new(body.clone()),
-            env: Arc::new(HashMap::new()),
+            env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Wrap in Rc<RefCell>
         };
 
         // Add closure to constant pool

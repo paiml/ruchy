@@ -496,7 +496,7 @@ impl VM {
                 self.interpreter.push_scope();
 
                 // Bind captured environment variables
-                for (name, value) in env.iter() {
+                for (name, value) in env.borrow().iter() { // ISSUE-119: Borrow from RefCell
                     self.interpreter.set_variable(name, value.clone());
                 }
 
@@ -742,7 +742,7 @@ impl VM {
 
                 // Capture current environment from interpreter
                 // This is the key to closures - we snapshot the current scope
-                let env = Arc::new(self.interpreter.current_env().clone());
+                let env = self.interpreter.current_env().clone(); // ISSUE-119: Rc::clone (shallow copy)
 
                 // Create closure value
                 let closure = Value::Closure {
