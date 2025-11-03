@@ -3,7 +3,8 @@
 // Pattern: Sieve of Eratosthenes algorithm
 
 // Generate first N prime numbers
-fun generate_primes(count) {
+// TRANSPILER-007: Explicit return type enables Vec<i32> type inference
+fun generate_primes(count) -> [i32] {
     let mut primes = []
     let mut candidate = 2
 

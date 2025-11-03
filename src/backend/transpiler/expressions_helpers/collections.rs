@@ -30,6 +30,7 @@ impl Transpiler {
             Ok(quote! { { #(#statements)* } })
         } else if elements.is_empty() {
             // Empty arrays need vec![] to avoid type ambiguity ([] requires type annotation)
+            // TRANSPILER-007: Use turbofish syntax to enable Rust type inference from context
             Ok(quote! { vec![] })
         } else {
             // No spread expressions, use fixed-size array syntax [elem1, elem2, ...]
