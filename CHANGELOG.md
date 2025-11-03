@@ -10,7 +10,8 @@ All notable changes to the Ruchy programming language will be documented in this
   - **SOLUTION**: Changed `Value::Closure.env` from `Arc<HashMap>` to `Rc<RefCell<HashMap>>` for shared mutable state
   - Changed `Interpreter::env_stack` from `Vec<HashMap>` to `Vec<Rc<RefCell<HashMap>>>`
   - Function calls now push shared environment onto stack (mutations visible to caller)
-  - Tests: 8/8 passing (was 0/8 before fix)
+  - Tests: 8/8 integration + 3/3 property tests = 11/11 passing (was 0/8 before fix)
+  - Property tests: 768 total cases validating invariants across random inputs
   - Files: `src/runtime/interpreter.rs` (25+ locations), `src/runtime/eval_func.rs`, `src/runtime/eval_function.rs`, `src/runtime/bytecode/*`, `src/wasm/shared_session.rs`
   - Unblocks: BENCH-002 (Matrix Multiplication benchmark)
   - Quality: eval_function.rs TDG 94.7/100 (A grade)
