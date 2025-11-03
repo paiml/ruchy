@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[ISSUE-119]** Global mutable state not persisting across function calls
+  - **ROOT CAUSE**: Triple-clone bug - environments cloned at function definition, function call, and parameter binding
+  - **SOLUTION**: Changed `Value::Closure.env` from `Arc<HashMap>` to `Rc<RefCell<HashMap>>` for shared mutable state
+  - Changed `Interpreter::env_stack` from `Vec<HashMap>` to `Vec<Rc<RefCell<HashMap>>>`
+  - Function calls now push shared environment onto stack (mutations visible to caller)
+  - Tests: 8/8 passing (was 0/8 before fix)
+  - Files: `src/runtime/interpreter.rs` (25+ locations), `src/runtime/eval_func.rs`, `src/runtime/eval_function.rs`, `src/runtime/bytecode/*`, `src/wasm/shared_session.rs`
+  - Unblocks: BENCH-002 (Matrix Multiplication benchmark)
+  - Quality: eval_function.rs TDG 94.7/100 (A grade)
+
 ## [3.176.0] - 2025-11-03
 
 ### Added

@@ -6,7 +6,9 @@
 
 use crate::frontend::ast::{Expr, Param};
 use crate::runtime::{InterpreterError, Value};
+use std::cell::RefCell; // ISSUE-119: Added for RefCell
 use std::collections::HashMap;
+use std::rc::Rc; // ISSUE-119: Added for Rc
 use std::sync::Arc;
 
 /// Evaluate a function definition
@@ -17,7 +19,7 @@ pub fn eval_function(
     name: &str,
     params: &[Param],
     body: &Expr,
-    current_env: &HashMap<String, Value>,
+    current_env_ref: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from &HashMap
     mut env_set: impl FnMut(String, Value),
 ) -> Result<Value, InterpreterError> {
     let param_names: Vec<String> = params
@@ -28,7 +30,7 @@ pub fn eval_function(
     let closure = Value::Closure {
         params: param_names,
         body: Arc::new(body.clone()),
-        env: Arc::new(current_env.clone()),
+        env: current_env_ref.clone(), // ISSUE-119: ROOT CAUSE #1 FIX - Rc::clone (shallow copy, no data clone)
     };
 
     // Bind function name in environment for recursion
@@ -43,7 +45,7 @@ pub fn eval_function(
 pub fn eval_lambda(
     params: &[Param],
     body: &Expr,
-    current_env: &HashMap<String, Value>,
+    current_env_ref: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from &HashMap
 ) -> Result<Value, InterpreterError> {
     let param_names: Vec<String> = params
         .iter()
@@ -53,7 +55,7 @@ pub fn eval_lambda(
     let closure = Value::Closure {
         params: param_names,
         body: Arc::new(body.clone()),
-        env: Arc::new(current_env.clone()),
+        env: current_env_ref.clone(), // ISSUE-119: ROOT CAUSE #1 FIX - Rc::clone for lambdas
     };
 
     Ok(closure)

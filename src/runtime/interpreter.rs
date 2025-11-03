@@ -2678,16 +2678,18 @@ impl Interpreter {
                     )));
                 }
 
-                // Create new environment with captured environment as base
-                let mut new_env = env.as_ref().clone();
+                // ISSUE-119: ROOT CAUSE #3 FIX - Push captured environment first
+                // This allows variable lookups to find captured variables
+                self.env_stack.push(env.clone()); // Push captured environment (Rc::clone)
 
-                // Bind parameters to arguments
+                // Create NEW empty HashMap for function's local scope (parameters)
+                let mut local_env = HashMap::new();
                 for (param, arg) in params.iter().zip(args) {
-                    new_env.insert(param.clone(), arg.clone());
+                    local_env.insert(param.clone(), arg.clone());
                 }
 
-                // Push new environment
-                self.env_push(new_env);
+                // Push local scope on top (parameters shadow outer variables)
+                self.env_push(local_env);
 
                 // Evaluate function body
                 // Catch InterpreterError::Return and extract value (early return support)
@@ -2696,8 +2698,9 @@ impl Interpreter {
                     other => other,
                 };
 
-                // Pop environment
-                self.env_pop();
+                // ISSUE-119: Pop BOTH environments (local scope + captured environment)
+                self.env_pop(); // Pop local scope
+                self.env_pop(); // Pop captured environment
 
                 // [RUNTIME-001] ALWAYS DECREMENT, EVEN ON ERROR
                 crate::runtime::eval_function::decrement_depth();
@@ -3476,7 +3479,7 @@ impl Interpreter {
         &mut self,
         params: Vec<String>,
         body: Arc<Expr>,
-        env: Arc<HashMap<String, Value>>,
+        env: Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from Arc<HashMap>
     ) -> Value {
         let closure_value = Value::Closure { params, body, env };
         self.gc.track_object(closure_value.clone());
@@ -3490,7 +3493,7 @@ impl Interpreter {
     /// Get all bindings from the global environment (for `SharedSession` state persistence)
     pub fn get_global_bindings(&self) -> HashMap<String, Value> {
         if let Some(global_env) = self.env_stack.first() {
-            global_env.clone()
+            global_env.borrow().clone() // ISSUE-119: Borrow from RefCell, then clone HashMap
         } else {
             HashMap::new()
         }
@@ -3498,23 +3501,23 @@ impl Interpreter {
 
     /// Set a binding in the global environment (for `SharedSession` state restoration)
     pub fn set_global_binding(&mut self, name: String, value: Value) {
-        if let Some(global_env) = self.env_stack.first_mut() {
-            global_env.insert(name, value);
+        if let Some(global_env) = self.env_stack.first() { // ISSUE-119: Use first() not first_mut()
+            global_env.borrow_mut().insert(name, value); // ISSUE-119: Mutable borrow from RefCell
         }
     }
 
     /// Clear all user variables from global environment, keeping only builtins
     pub fn clear_user_variables(&mut self) {
-        if let Some(global_env) = self.env_stack.first_mut() {
+        if let Some(global_env) = self.env_stack.first() { // ISSUE-119: Use first() not first_mut()
             // Keep only builtin functions (those starting with "__builtin_") and nil
-            global_env.retain(|name, _| name.starts_with("__builtin_") || name == "nil");
+            global_env.borrow_mut().retain(|name, _| name.starts_with("__builtin_") || name == "nil"); // ISSUE-119
         }
     }
 
     /// Get all bindings from the current environment (for `SharedSession` extraction)
     pub fn get_current_bindings(&self) -> HashMap<String, Value> {
         if let Some(current_env) = self.env_stack.last() {
-            current_env.clone()
+            current_env.borrow().clone() // ISSUE-119: Borrow from RefCell, then clone HashMap
         } else {
             HashMap::new()
         }
@@ -5081,7 +5084,7 @@ impl Interpreter {
                                                             {
                                                                 // Push a new environment for handler execution
                                                                 let mut handler_env =
-                                                                    (**env).clone();
+                                                                    env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                                                                 // Bind message parameters
                                                                 for (i, param_name) in
@@ -5236,7 +5239,7 @@ impl Interpreter {
                                 handler_obj.get("body")
                             {
                                 // Create a new environment for handler execution
-                                let mut handler_env = (**env).clone();
+                                let mut handler_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                                 // Bind message parameters
                                 for (i, param_name) in params.iter().enumerate() {
@@ -5257,7 +5260,7 @@ impl Interpreter {
                                     .insert("self".to_string(), Value::Object(Arc::new(self_obj)));
 
                                 // Execute the handler body
-                                self.env_stack.push(handler_env);
+                                self.env_stack.push(Rc::new(RefCell::new(handler_env))); // ISSUE-119: Wrap in Rc<RefCell>
                                 let result = self.eval_expr(body);
                                 self.env_stack.pop();
 
@@ -5383,7 +5386,7 @@ impl Interpreter {
                                 }
 
                                 // Create a new environment for handler execution
-                                let mut handler_env = (*env_clone).clone();
+                                let mut handler_env = env_clone.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                                 // Bind message parameters
                                 for (i, param_name) in params_clone.iter().enumerate() {
@@ -5400,7 +5403,7 @@ impl Interpreter {
                                 );
 
                                 // Execute the handler body
-                                self.env_stack.push(handler_env);
+                                self.env_stack.push(Rc::new(RefCell::new(handler_env))); // ISSUE-119: Wrap in Rc<RefCell>
                                 let result = self.eval_expr(&body_clone);
                                 self.env_stack.pop();
 
@@ -5444,7 +5447,7 @@ impl Interpreter {
                 }
 
                 // Create new environment with method's captured environment as base
-                let mut new_env = (*env).clone();
+                let mut new_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                 // Bind self parameter (first parameter)
                 // RUNTIME-094: Bind as Value::Struct to preserve struct type for nested method calls
@@ -5467,7 +5470,7 @@ impl Interpreter {
                 }
 
                 // Execute method body with new environment
-                self.env_stack.push(new_env);
+                self.env_stack.push(Rc::new(RefCell::new(new_env))); // ISSUE-119: Wrap in Rc<RefCell>
                 let result = self.eval_expr(&body);
                 self.env_stack.pop();
 
@@ -5629,7 +5632,7 @@ impl Interpreter {
                 Value::Closure {
                     params: param_names,
                     body: Arc::new(*handler.body.clone()),
-                    env: Arc::new(self.current_env().clone()),
+                    env: self.current_env().clone(), // ISSUE-119: Rc::clone (shallow copy)
                 },
             );
 
@@ -6008,7 +6011,7 @@ impl Interpreter {
             let ctor_closure = Value::Closure {
                 params: param_names,
                 body: Arc::new((*constructor.body).clone()),
-                env: Arc::new(HashMap::new()), // Empty env for now
+                env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty env for now
             };
 
             constructor_info.insert(ctor_name, ctor_closure);
@@ -6025,7 +6028,7 @@ impl Interpreter {
             let default_constructor = Value::Closure {
                 params: Vec::new(), // No parameters
                 body: Arc::new(default_body),
-                env: Arc::new(HashMap::new()),
+                env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty environment
             };
 
             constructor_info.insert("new".to_string(), default_constructor);
@@ -6056,7 +6059,7 @@ impl Interpreter {
             let method_closure = Value::Closure {
                 params: param_names,
                 body: Arc::new((*method.body).clone()),
-                env: Arc::new(HashMap::new()),
+                env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty environment
             };
 
             // Store method with metadata
@@ -6133,7 +6136,7 @@ impl Interpreter {
             let closure = Value::Closure {
                 params: param_names,
                 body: Arc::new(*method.body.clone()),
-                env: Arc::new(HashMap::new()),
+                env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty environment
             };
             impl_methods.insert(method.name.clone(), closure);
         }
@@ -6290,7 +6293,7 @@ impl Interpreter {
                         }
 
                         // Push constructor environment
-                        self.env_stack.push(ctor_env);
+                        self.env_stack.push(Rc::new(RefCell::new(ctor_env))); // ISSUE-119: Wrap in Rc<RefCell>
 
                         // Execute constructor body
                         let _result = self.eval_expr(body)?;
@@ -6417,7 +6420,7 @@ impl Interpreter {
                         }
 
                         // Push constructor environment
-                        self.env_stack.push(ctor_env);
+                        self.env_stack.push(Rc::new(RefCell::new(ctor_env))); // ISSUE-119: Wrap in Rc<RefCell>
 
                         // Execute constructor body
                         let _result = self.eval_expr(body)?;
@@ -6753,7 +6756,7 @@ impl Interpreter {
                         }
 
                         // Push the method environment
-                        self.env_stack.push(method_env);
+                        self.env_stack.push(Rc::new(RefCell::new(method_env))); // ISSUE-119: Wrap in Rc<RefCell>
 
                         // Execute the method body
                         let result = self.eval_expr(body);
@@ -7356,7 +7359,7 @@ impl Interpreter {
         let closure = Value::Closure {
             params: param_names,
             body: Arc::new(body.clone()),
-            env: Arc::new(self.current_env().clone()),
+            env: self.current_env().clone(), // ISSUE-119: Rc::clone (shallow copy, already wrapped)
         };
 
         // Bind function name in environment for recursion
@@ -7594,7 +7597,7 @@ impl Interpreter {
     pub fn get_variable(&self, name: &str) -> Option<Value> {
         // Search from innermost to outermost scope
         for env in self.env_stack.iter().rev() {
-            if let Some(value) = env.get(name) {
+            if let Some(value) = env.borrow().get(name) { // ISSUE-119: Borrow from RefCell
                 return Some(value.clone());
             }
         }
