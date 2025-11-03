@@ -165,11 +165,16 @@ impl Transpiler {
             is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
         // Convert string literals to String type at variable declaration time
         // This ensures string variables are String, not &str, making function calls work
-        let value_tokens = match &value.kind {
+        // TRANSPILER-007: Detect empty list literals that need type hints
+        let (value_tokens, needs_vec_type_hint) = match &value.kind {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
-                quote! { #s.to_string() }
+                (quote! { #s.to_string() }, false)
             }
-            _ => self.transpile_expr(value)?,
+            crate::frontend::ast::ExprKind::List(items) if items.is_empty() => {
+                // Empty vec![] needs : Vec<_> for Rust type inference
+                (self.transpile_expr(value)?, true)
+            }
+            _ => (self.transpile_expr(value)?, false),
         };
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(
@@ -178,7 +183,13 @@ impl Transpiler {
         ) {
             // Standalone let statement - no wrapping needed
             if effective_mutability {
-                Ok(quote! { let mut #name_ident = #value_tokens; })
+                if needs_vec_type_hint {
+                    Ok(quote! { let mut #name_ident: Vec<_> = #value_tokens; })
+                } else {
+                    Ok(quote! { let mut #name_ident = #value_tokens; })
+                }
+            } else if needs_vec_type_hint {
+                Ok(quote! { let #name_ident: Vec<_> = #value_tokens; })
             } else {
                 Ok(quote! { let #name_ident = #value_tokens; })
             }
@@ -190,7 +201,13 @@ impl Transpiler {
                 let mut statements = Vec::new();
                 // Add the current let statement
                 if effective_mutability {
-                    statements.push(quote! { let mut #name_ident = #value_tokens; });
+                    if needs_vec_type_hint {
+                        statements.push(quote! { let mut #name_ident: Vec<_> = #value_tokens; });
+                    } else {
+                        statements.push(quote! { let mut #name_ident = #value_tokens; });
+                    }
+                } else if needs_vec_type_hint {
+                    statements.push(quote! { let #name_ident: Vec<_> = #value_tokens; });
                 } else {
                     statements.push(quote! { let #name_ident = #value_tokens; });
                 }
@@ -232,7 +249,13 @@ impl Transpiler {
                 let mut statements = Vec::new();
                 // Add the current let statement
                 if effective_mutability {
-                    statements.push(quote! { let mut #name_ident = #value_tokens; });
+                    if needs_vec_type_hint {
+                        statements.push(quote! { let mut #name_ident: Vec<_> = #value_tokens; });
+                    } else {
+                        statements.push(quote! { let mut #name_ident = #value_tokens; });
+                    }
+                } else if needs_vec_type_hint {
+                    statements.push(quote! { let #name_ident: Vec<_> = #value_tokens; });
                 } else {
                     statements.push(quote! { let #name_ident = #value_tokens; });
                 }
@@ -245,9 +268,25 @@ impl Transpiler {
                 // Traditional let-in expression with proper scoping
                 let body_tokens = self.transpile_expr(body)?;
                 if effective_mutability {
+                    if needs_vec_type_hint {
+                        Ok(quote! {
+                            {
+                                let mut #name_ident: Vec<_> = #value_tokens;
+                                #body_tokens
+                            }
+                        })
+                    } else {
+                        Ok(quote! {
+                            {
+                                let mut #name_ident = #value_tokens;
+                                #body_tokens
+                            }
+                        })
+                    }
+                } else if needs_vec_type_hint {
                     Ok(quote! {
                         {
-                            let mut #name_ident = #value_tokens;
+                            let #name_ident: Vec<_> = #value_tokens;
                             #body_tokens
                         }
                     })
@@ -365,14 +404,15 @@ impl Transpiler {
 
         // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
         // DEFECT-010 FIX: Also auto-convert string literals to String for mutable variables (no annotation)
-        let value_tokens = match (&value.kind, type_annotation) {
+        // TRANSPILER-007 FIX: Add Vec<_> type hint for empty lists without type annotation
+        let (value_tokens, needs_vec_type_hint) = match (&value.kind, type_annotation) {
             (
                 crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
                 Some(type_ann),
             ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::Named(name) if name == "String") =>
             {
                 // String literal with String type annotation - add .to_string()
-                quote! { #s.to_string() }
+                (quote! { #s.to_string() }, false)
             }
             (
                 crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
@@ -380,7 +420,7 @@ impl Transpiler {
             ) if is_mutable_var =>
             {
                 // Mutable variable with string literal (no type annotation) - use String::from()
-                quote! { String::from(#s) }
+                (quote! { String::from(#s) }, false)
             }
             // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
             (
@@ -392,22 +432,54 @@ impl Transpiler {
                 // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List, not Array)
                 // Transpiled: let processes: Vec<Process> = [current].to_vec();
                 let list_tokens = self.transpile_expr(value)?;
-                quote! { #list_tokens.to_vec() }
+                (quote! { #list_tokens.to_vec() }, false)
+            }
+            // TRANSPILER-007: Empty list without type annotation needs Vec<_> hint
+            (
+                crate::frontend::ast::ExprKind::List(elements),
+                None,
+            ) if elements.is_empty() =>
+            {
+                // Empty vec![] without type annotation - flag for type hint
+                (self.transpile_expr(value)?, true)
             }
             // DEFECT-016-B FIX: Track function call results that might return String
             (crate::frontend::ast::ExprKind::Call { .. }, _) => {
                 // Function call - optimistically track in string_vars for auto-borrowing
                 // The Rust compiler will validate if it's actually a String
                 self.string_vars.borrow_mut().insert(name.to_string());
-                self.transpile_expr(value)?
+                (self.transpile_expr(value)?, false)
             }
-            _ => self.transpile_expr(value)?
+            _ => (self.transpile_expr(value)?, false)
         };
 
-        // Generate type annotation if present
+        // Generate type annotation if present, or inject Vec<T> for empty lists
         let type_tokens = if let Some(type_ann) = type_annotation {
             let type_part = self.transpile_type(type_ann)?;
             quote! { : #type_part }
+        } else if needs_vec_type_hint {
+            // TRANSPILER-007: Use function return type to infer concrete Vec<T>
+            if let Some(ret_type) = self.current_function_return_type.borrow().as_ref() {
+                // Extract inner type from Vec<T> return type
+                // Handle both TypeKind::List and TypeKind::Generic { base: "Vec", ... }
+                match &ret_type.kind {
+                    crate::frontend::ast::TypeKind::List(inner_type) => {
+                        let inner_tokens = self.transpile_type(inner_type)?;
+                        quote! { : Vec<#inner_tokens> }
+                    }
+                    crate::frontend::ast::TypeKind::Generic { base, params } if base == "Vec" && params.len() == 1 => {
+                        let inner_tokens = self.transpile_type(&params[0])?;
+                        quote! { : Vec<#inner_tokens> }
+                    }
+                    _ => {
+                        // Return type is not Vec, fall back to Vec<_>
+                        quote! { : Vec<_> }
+                    }
+                }
+            } else {
+                // No function context, use Vec<_>
+                quote! { : Vec<_> }
+            }
         } else {
             quote! {}
         };
@@ -1757,6 +1829,9 @@ impl Transpiler {
             return_type
         };
 
+        // TRANSPILER-007: Set current function return type for empty vec type inference
+        self.current_function_return_type.replace(effective_return_type.cloned());
+
         // DEFECT-012 FIX: Generate body tokens with special handling for String return type
         let body_tokens = if let Some(ret_type) = effective_return_type {
             if self.is_string_type(ret_type) && self.body_needs_string_conversion(body) {
@@ -1767,6 +1842,9 @@ impl Transpiler {
         } else {
             self.generate_body_tokens(body, is_async)?
         };
+
+        // TRANSPILER-007: Clear current function return type after body transpilation
+        self.current_function_return_type.replace(None);
 
         let return_type_tokens = if needs_lifetime {
             self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?

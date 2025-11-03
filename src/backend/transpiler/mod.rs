@@ -146,6 +146,12 @@ pub struct Transpiler {
     /// Used to distinguish string concatenation from numeric addition.
     /// Uses RefCell for interior mutability since transpiler methods take &self.
     pub string_vars: std::cell::RefCell<std::collections::HashSet<String>>,
+    /// Current function return type (TRANSPILER-007 fix).
+    ///
+    /// Tracks the return type of the function currently being transpiled.
+    /// Used to generate concrete type hints for empty vec initializations.
+    /// Uses RefCell for interior mutability since transpiler methods take &self.
+    pub current_function_return_type: std::cell::RefCell<Option<crate::frontend::ast::Type>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -171,6 +177,7 @@ impl Transpiler {
             function_signatures: std::collections::HashMap::new(),
             module_names: std::collections::HashSet::new(),
             string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
+            current_function_return_type: std::cell::RefCell::new(None),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
