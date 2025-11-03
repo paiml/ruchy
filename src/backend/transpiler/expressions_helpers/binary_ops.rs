@@ -200,13 +200,19 @@ impl Transpiler {
         }
     }
 
-    /// Check if an expression is a .len() method call (ISSUE-114)
-    /// Returns true for: vec.len(), string.len(), etc.
+    /// Check if an expression is a .len() method call OR len() function call (ISSUE-115)
+    /// Returns true for: vec.len(), string.len(), len(vec), len(string), etc.
+    /// TRANSPILER-004: Extended to detect len() function calls for usize casting
     fn is_len_call(expr: &Expr) -> bool {
-        matches!(
-            &expr.kind,
-            ExprKind::MethodCall { method, .. } if method == "len"
-        )
+        match &expr.kind {
+            // Method call: vec.len()
+            ExprKind::MethodCall { method, .. } if method == "len" => true,
+            // Function call: len(vec) - TRANSPILER-004 fix
+            ExprKind::Call { func, args } if args.len() == 1 => {
+                matches!(&func.kind, ExprKind::Identifier(name) if name == "len")
+            }
+            _ => false,
+        }
     }
 
     /// Check if operator is a comparison operator (ISSUE-114)
