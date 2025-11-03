@@ -60,6 +60,7 @@ impl Transpiler {
             Self::handle_input_functions,
             Self::handle_assert_functions,
             Self::handle_type_conversions,
+            Self::handle_collection_methods,
             Self::handle_collection_constructors,
             Self::handle_dataframe_functions,
             Self::handle_environment_functions,
@@ -136,6 +137,27 @@ impl Transpiler {
         match name {
             "int" | "float" | "str" | "bool" | "char" => {
                 self.try_transpile_type_conversion(name, args)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Handle collection methods (len, push, pop, etc.) - Complexity: 3
+    /// TRANSPILER-003: Convert len(x) → x.len() for compile mode
+    fn handle_collection_methods(
+        &self,
+        name: &str,
+        _func_tokens: &TokenStream,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match name {
+            "len" => {
+                if args.len() == 1 {
+                    let arg_tokens = self.transpile_expr(&args[0])?;
+                    Ok(Some(quote! { #arg_tokens.len() }))
+                } else {
+                    Ok(None)
+                }
             }
             _ => Ok(None),
         }

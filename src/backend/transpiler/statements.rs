@@ -1902,6 +1902,11 @@ impl Transpiler {
             if let Some(result) = self.try_transpile_print_macro(&func_tokens, base_name, args)? {
                 return Ok(result);
             }
+            // TRANSPILER-003: Convert len(x) → x.len() for compile mode
+            if base_name == "len" && args.len() == 1 {
+                let arg_tokens = self.transpile_expr(&args[0])?;
+                return Ok(quote! { #arg_tokens.len() });
+            }
             if let Some(result) = self.try_transpile_math_function(base_name, args)? {
                 return Ok(result);
             }

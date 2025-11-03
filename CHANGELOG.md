@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.184.0] - 2025-11-03
+
+### Fixed
+- **[TRANSPILER-003]** Convert `len(x)` → `x.len()` for compile mode
+  - **PROBLEM**: `len()` function calls not transpiled to Rust `.len()` method
+  - **SYMPTOMS**: Compile mode fails with `cannot find function 'len' in this scope`
+  - **EXAMPLE**:
+    ```ruchy
+    let s = "hello"
+    let n = len(s)  // ❌ compile: cannot find function 'len'
+    ```
+  - **ROOT CAUSE**: `transpile_call()` in statements.rs missing handler for `len()`
+  - **SOLUTION** (4 lines):
+    - Added check in `transpile_call()` before math function handlers
+    - Pattern: `len(x) → x.len()` for single-argument len() calls
+    - Works with strings, arrays, vectors, and all collection types
+  - **FILES**:
+    - `src/backend/transpiler/statements.rs` (+4 lines: lines 1905-1909)
+  - **VALIDATION**:
+    - ✅ Manual test: `len(s) → s.len()` transpilation verified
+    - ✅ BENCH-003 (string concatenation): compile mode now works
+    - ✅ Binary executes correctly, outputs correct result
+  - **IMPACT**: **BENCH-003 UNBLOCKED** - First benchmark working in compile mode!
+  - **COMPLEXITY**: Zero complexity increase (simple conditional check)
+  - **Testing**: Manual validation only (no unit tests added yet)
+
 ## [3.183.0] - 2025-11-03
 
 ### Fixed
