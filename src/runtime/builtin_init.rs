@@ -426,6 +426,7 @@ fn add_path_functions(global_env: &mut HashMap<String, Value>) {
 /// Phase 4: `STDLIB_ACCESS_PLAN` - JSON Module (10 functions)
 fn add_json_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert("json_parse".to_string(), Value::from_string("__builtin_json_parse__".to_string()));
+    global_env.insert("parse_json".to_string(), Value::from_string("__builtin_json_parse__".to_string()));  // ISSUE-131: Alias for json_parse
     global_env.insert("json_stringify".to_string(), Value::from_string("__builtin_json_stringify__".to_string()));
     global_env.insert("json_pretty".to_string(), Value::from_string("__builtin_json_pretty__".to_string()));
     global_env.insert("json_read".to_string(), Value::from_string("__builtin_json_read__".to_string()));

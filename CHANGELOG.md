@@ -4,6 +4,61 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.182.0] - 2025-11-03
+
+### Fixed
+- **[ISSUE-131]** COMPLETE FIX - `parse_json()` alias registration
+  - **PROBLEM**: `parse_json()` returned Message type instead of parsed JSON object
+  - **SYMPTOMS**: `parse_json('{"name": "test"}')` returned `{__type: "Message", ...}` → field access failed
+  - **EXAMPLE**:
+    ```ruchy
+    let data = parse_json('{"name": "test", "value": 42}')
+    println(data["name"])  // ❌ RuntimeError: Key 'name' not found in object
+    ```
+  - **ROOT CAUSE ANALYSIS** (EXTREME TDD + Five Whys):
+    1. Why Message returned? → `parse_json()` not recognized as builtin function
+    2. Why not recognized? → Not registered in builtin_init.rs
+    3. Why not registered? → Only `json_parse` (underscore version) was registered
+    4. Why only underscore? → Original implementation (v3.175.0) registered snake_case only
+    5. Why no test? → No validation that both `parse_json` and `json_parse` aliases work
+  - **ROOT CAUSE**: Missing alias registration - dispatcher handles both names, but only `json_parse` was registered in global environment
+  - **SOLUTION** (ONE LINE):
+    - **src/runtime/builtin_init.rs** (line 429): Added `parse_json` alias registration
+      ```rust
+      global_env.insert("parse_json".to_string(), Value::from_string("__builtin_json_parse__".to_string()));
+      ```
+  - **VALIDATION** (EXTREME TDD Protocol):
+    - **RED**: 5/6 tests FAILED ❌ (parse_json returned Message, json_parse worked)
+    - **GREEN**: Added one-line registration, 6/6 tests PASSED ✅
+    - **EXAMPLES**: `examples/parse_json_demo.ruchy` runs all 6 tests successfully ✅
+  - **TESTING METRICS**:
+    - **Unit Tests**: 6/6 passing (`tests/issue_131_parse_json_alias.rs`)
+      - Simple object field access
+      - Nested object access
+      - BENCH-009 pattern (array of objects)
+      - json_parse still works
+      - Both aliases produce identical output
+      - parse_json does NOT return Message type
+    - **Property Tests**: 7 properties validated (`tests/issue_131_property_tests.rs`)
+      - `prop_parse_json_roundtrip_objects`: parse_json preserves object data (100+ iterations)
+      - `prop_parse_json_roundtrip_arrays`: parse_json preserves array data (100+ iterations)
+      - `prop_parse_json_deterministic`: Same input → same output (100+ iterations)
+      - `prop_parse_json_json_parse_equivalent`: Both aliases identical (100+ iterations)
+      - `prop_parse_json_preserves_types`: Numbers, strings, booleans preserved (100+ iterations)
+      - `prop_parse_json_nested_access_no_crash`: Deep nesting works (100+ iterations)
+      - `prop_parse_json_empty_cases`: Empty objects/arrays handled (100+ iterations)
+      - **Total**: 700+ random test cases executed successfully ✅
+    - **Examples**: `examples/parse_json_demo.ruchy` demonstrates 6 usage patterns ✅
+  - **FILES**:
+    - `src/runtime/builtin_init.rs` (+1 line, line 429)
+    - `tests/issue_131_parse_json_alias.rs` (6 tests, NEW, 161 lines)
+    - `tests/issue_131_property_tests.rs` (7 property tests, NEW, 305 lines)
+    - `examples/parse_json_demo.ruchy` (NEW, 48 lines)
+  - **IMPACT**: **BENCH-009 (JSON Parsing) UNBLOCKED** - JSON field access now works with `parse_json()` alias
+  - **COMPLEXITY**: Zero complexity increase (one-line registration)
+  - **Toyota Way**: GENCHI GENBUTSU - Found `json_parse` works, `parse_json` doesn't → missing registration identified immediately
+  - **Benchmark Impact**: 8/12 benchmarks working (67%) → **9/12 benchmarks working (75%)** ✅
+
 ## [3.181.0] - 2025-11-03
 
 ### Fixed

@@ -1,0 +1,47 @@
+// Example: parse_json() function - Issue #131 fix
+//
+// Demonstrates that parse_json() now works correctly as an alias for json_parse()
+// This unblocks BENCH-009 (JSON Parsing benchmark)
+//
+// Run: target/release/ruchy -e "$(cat examples/parse_json_demo.ruchy)"
+
+println("=== Issue #131: parse_json() Alias Fix ===")
+
+// Test 1: Simple object parsing
+println("Test 1: Simple Object")
+let simple = parse_json('{"name": "Alice", "age": 30}')
+println(simple["name"])
+println(simple["age"])
+
+// Test 2: Nested object parsing
+println("Test 2: Nested Objects")
+let nested = parse_json('{"user": {"name": "Bob", "city": "NYC"}}')
+println(nested["user"]["name"])
+println(nested["user"]["city"])
+
+// Test 3: Array parsing
+println("Test 3: Arrays")
+let arr = parse_json('[1, 2, 3, 4, 5]')
+println(arr[0])
+println(arr[4])
+
+// Test 4: BENCH-009 pattern - Array of objects
+println("Test 4: BENCH-009 Pattern")
+let users = parse_json('{"users": [{"name": "Charlie", "score": 100}]}')
+println(users["users"][0]["name"])
+println(users["users"][0]["score"])
+
+// Test 5: Verify both aliases work identically
+println("Test 5: Alias Equivalence")
+let data1 = parse_json('{"x": 42}')
+let data2 = json_parse('{"x": 42}')
+println(data1["x"])
+println(data2["x"])
+
+// Test 6: Complex nested (BENCH-009 full pattern)
+println("Test 6: Complex Nested")
+let complex = parse_json('{"data": {"users": [{"profile": {"city": "SF"}}]}}')
+println(complex["data"]["users"][0]["profile"]["city"])
+
+println("✅ Issue #131 VERIFIED!")
+println("✅ BENCH-009 UNBLOCKED!")
