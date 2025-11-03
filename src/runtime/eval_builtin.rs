@@ -1402,7 +1402,7 @@ fn eval_read_file_unwrapped(args: &[Value]) -> Result<Value, InterpreterError> {
             std::fs::read_to_string(path.as_ref())
                 .map(Value::from_string)
                 .map_err(|e| InterpreterError::RuntimeError(
-                    format!("Failed to read file '{}': {}", path, e)
+                    format!("Failed to read file '{path}': {e}")
                 ))
         },
         _ => Err(InterpreterError::RuntimeError(
@@ -2844,10 +2844,10 @@ fn eval_file_open(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(path) => {
             // Read entire file into lines
             let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-                InterpreterError::RuntimeError(format!("Failed to open file '{}': {}", path, e))
+                InterpreterError::RuntimeError(format!("Failed to open file '{path}': {e}"))
             })?;
 
-            let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+            let lines: Vec<String> = content.lines().map(std::string::ToString::to_string).collect();
 
             // Create File object with state
             let mut file_obj = std::collections::HashMap::new();
@@ -2889,8 +2889,7 @@ fn eval_open(args: &[Value]) -> Result<Value, InterpreterError> {
     // Validate mode (currently only "r" read mode supported)
     if mode != "r" {
         return Err(InterpreterError::RuntimeError(format!(
-            "open() mode '{}' not supported. Only 'r' (read) is currently supported.",
-            mode
+            "open() mode '{mode}' not supported. Only 'r' (read) is currently supported."
         )));
     }
 
