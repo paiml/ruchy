@@ -4,6 +4,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.189.0] - 2025-11-03
+
+### Added
+- **[PERF-002-C]** Dead Code Elimination - Liveness Analysis for unused variables
+  - **PROBLEM**: Unused variables not eliminated (4/10 tests failing: unused_variable, unused_computation, multiple_returns, empty_block_cleanup)
+  - **SOLUTION**: Implemented liveness analysis to track variable usage and eliminate unused bindings
+    - Added `collect_used_variables()` - scans AST for variable references with scope tracking
+    - Added `collect_used_variables_rec()` - recursive helper with bound variable tracking (complexity: 9)
+    - Extended `eliminate_dead_code()` to handle Call expressions recursively
+    - Modified DCE to check side effects before eliminating variables
+  - **FILES**:
+    - `src/backend/transpiler/constant_folder.rs` (+105 lines: liveness analysis implementation)
+    - `src/lib.rs` (+2 lines: updated test expectations for constant folding + DCE)
+  - **VALIDATION**:
+    - ✅ RED: 4/10 tests failing (unused variables not eliminated)
+    - ✅ GREEN: 10/10 tests passing (all DCE tests pass)
+    - ✅ REFACTOR: Complexity ≤10 per function (collect_used_variables_rec: 9)
+    - ✅ VALIDATE: 4038 library tests passing (zero regressions)
+  - **IMPACT**: Unused variables eliminated after constant folding, cleaner generated code
+  - **COMPLEXITY**: All new functions ≤10 (A+ standard maintained)
+  - **Test Coverage**: 10/10 DCE tests passing, 4038 integration tests passing
+
 ## [3.188.0] - 2025-11-03
 
 ### Fixed

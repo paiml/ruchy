@@ -256,12 +256,13 @@ mod tests {
     }
     #[test]
     fn test_compile_binary_ops() {
-        // PERF-002-A: Constant folding may optimize literals, so just verify it compiles
+        // PERF-002-A/C: Constant folding + DCE may optimize literals and remove unused variables
         let result = compile("let a = 1; let b = 2; a + b * 3 - a / 2").unwrap();
-        // Just verify it produces valid Rust code with variable operations
-        assert!(result.contains("let a"));
-        assert!(result.contains("let b"));
+        // After constant folding (1 + 2*3 - 1/2 = 1 + 6 - 0 = 7) and DCE, variables are eliminated
+        // Just verify it produces valid Rust code
         assert!(result.contains("fn main"));
+        // Result should be constant-folded to 7
+        assert!(result.contains("7"));
     }
     #[test]
     fn test_compile_comparison_ops() {
