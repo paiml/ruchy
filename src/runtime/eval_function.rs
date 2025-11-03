@@ -590,7 +590,7 @@ mod tests {
         let function_value = Value::Closure {
             params: vec![],
             body: Arc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
-            env: Arc::new(HashMap::new()),
+            env: Rc::new(RefCell::new(HashMap::new())),
         };
         assert!(is_callable(&function_value));
 
@@ -607,7 +607,7 @@ mod tests {
         let function_value = Value::Closure {
             params: vec!["x".to_string(), "y".to_string()],
             body: Arc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
-            env: Arc::new(HashMap::new()),
+            env: Rc::new(RefCell::new(HashMap::new())),
         };
 
         assert_eq!(get_arity(&function_value).unwrap(), 2);
