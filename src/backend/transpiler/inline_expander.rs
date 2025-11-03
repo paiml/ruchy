@@ -2,7 +2,7 @@
 // GREEN Phase: Minimal implementation to make tests pass
 // Complexity target: ≤10 per function
 
-use crate::frontend::ast::{Expr, ExprKind, Param};
+use crate::frontend::ast::{Expr, ExprKind, Param, Pattern};
 use std::collections::HashMap;
 
 /// Inline small, non-recursive functions into their call sites
@@ -51,8 +51,11 @@ fn collect_inline_candidates(expr: &Expr, functions: &mut HashMap<String, Functi
             // Check if function is small enough to inline (≤10 LOC heuristic)
             let body_size = estimate_body_size(body);
             let is_recursive = check_recursion(name, body);
+            let accesses_globals = accesses_global_variables(params, body);
 
-            if body_size <= 10 && !is_recursive {
+            // TRANSPILER-001: Don't inline functions that access global variables
+            // Inlining them breaks scope - global vars are not accessible where inlined
+            if body_size <= 10 && !is_recursive && !accesses_globals {
                 functions.insert(
                     name.clone(),
                     FunctionDef {
@@ -280,6 +283,61 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
         ExprKind::Return { value } => {
             // ISSUE-128 FIX: Check for recursion inside return expressions
             value.as_ref().map_or(false, |v| check_recursion(func_name, v))
+        }
+        _ => false,
+    }
+}
+
+/// Check if function body accesses variables outside its parameters (global variables)
+///
+/// TRANSPILER-001: Functions that access globals should not be inlined
+/// because the global variables won't be in scope at the inline site.
+///
+/// # Complexity
+/// Cyclomatic: 7 (≤10 target)
+fn accesses_global_variables(params: &[Param], body: &Expr) -> bool {
+    use std::collections::HashSet;
+
+    // Build set of parameter names
+    let param_names: HashSet<String> = params.iter()
+        .map(|p| match &p.pattern {
+            Pattern::Identifier(name) => name.clone(),
+            _ => String::new(),
+        })
+        .collect();
+
+    // Check if body references any identifiers not in params
+    check_for_external_refs(body, &param_names)
+}
+
+/// Recursively check if expression references identifiers outside the allowed set
+///
+/// # Complexity
+/// Cyclomatic: 9 (≤10 target)
+fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<String>) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier(name) => !allowed.contains(name),
+        ExprKind::Assign { target, value } => {
+            check_for_external_refs(target, allowed) || check_for_external_refs(value, allowed)
+        }
+        ExprKind::Binary { left, right, .. } => {
+            check_for_external_refs(left, allowed) || check_for_external_refs(right, allowed)
+        }
+        ExprKind::Block(exprs) => exprs.iter().any(|e| check_for_external_refs(e, allowed)),
+        ExprKind::If { condition, then_branch, else_branch } => {
+            check_for_external_refs(condition, allowed)
+                || check_for_external_refs(then_branch, allowed)
+                || else_branch.as_ref().map_or(false, |e| check_for_external_refs(e, allowed))
+        }
+        ExprKind::Let { value, body, .. } => {
+            check_for_external_refs(value, allowed) || check_for_external_refs(body, allowed)
+        }
+        ExprKind::Return { value } => {
+            value.as_ref().map_or(false, |v| check_for_external_refs(v, allowed))
+        }
+        ExprKind::Call { func, args } => {
+            check_for_external_refs(func, allowed)
+                || args.iter().any(|a| check_for_external_refs(a, allowed))
         }
         _ => false,
     }
