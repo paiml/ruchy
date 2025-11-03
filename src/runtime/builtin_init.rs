@@ -366,6 +366,11 @@ fn add_stdlib003_functions(global_env: &mut HashMap<String, Value>) {
         "delete_file".to_string(),
         Value::from_string("__builtin_delete_file__".to_string()),
     );
+    // ISSUE-116: File open() function for reading files with methods
+    global_env.insert(
+        "open".to_string(),
+        Value::from_string("__builtin_open__".to_string()),
+    );
 }
 
 /// Register STDLIB-005: Multi-Threaded Directory Walking + Text Search + Hashing

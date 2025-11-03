@@ -1,0 +1,20 @@
+// Example: Issue #128 - Recursive Fibonacci with return statements
+//
+// Demonstrates that recursive functions with return expressions work correctly
+// after the fix to inline_expander.rs (handles ExprKind::Return and ExprKind::Binary)
+
+fun fib(n) {
+    if n <= 1 {
+        return n
+    } else {
+        return fib(n - 1) + fib(n - 2)
+    }
+}
+
+// Test cases
+println("=== Issue #128: Recursive Fibonacci ===")
+println("fib(0) = " + fib(0).to_string())   // 0
+println("fib(1) = " + fib(1).to_string())   // 1
+println("fib(5) = " + fib(5).to_string())   // 5
+println("fib(10) = " + fib(10).to_string()) // 55
+println("✅ Issue #128 VERIFIED: Recursive functions with return statements work!")

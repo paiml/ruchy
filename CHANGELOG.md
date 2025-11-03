@@ -4,6 +4,58 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.181.0] - 2025-11-03
+
+### Fixed
+- **[ISSUE-116]** COMPLETE FIX - File `open()` builtin function
+  - **PROBLEM**: `open(path, mode)` standalone function returned Message error
+  - **SYMPTOMS**: `open("/path/file.txt", "r")` failed with "Unknown object type: Message"
+  - **EXAMPLE**:
+    ```ruchy
+    let file = open("test.txt", "r")  // ❌ RuntimeError: Unknown object type: Message
+    let line = file.read_line()  // Never reached
+    ```
+  - **ROOT CAUSE ANALYSIS** (EXTREME TDD + Five Whys):
+    1. Why Message error? → `open()` not recognized as builtin function
+    2. Why not recognized? → Not registered in builtin dispatcher (`try_eval_file_function`)
+    3. Why not registered? → Only `File.open()` static method existed, not standalone `open()`
+    4. Why missing? → Original implementation focused on method syntax only
+    5. Why no test? → File I/O tests used only method syntax `File.open()`
+  - **ROOT CAUSE**: Missing registration - `open()` function not in builtin_init.rs or eval_builtin.rs dispatcher
+  - **SOLUTION** (3 files modified):
+    1. **src/runtime/eval_builtin.rs** (lines 2869-2898): Created `eval_open(path, mode)` function
+       - Validates 2 arguments (path: String, mode: String)
+       - Validates mode (only "r" read mode currently supported)
+       - Delegates to `eval_file_open()` which creates File object
+    2. **src/runtime/eval_builtin.rs** (lines 2830-2836): Updated `try_eval_file_function()` dispatcher
+       - Added `"__builtin_open__" => Ok(Some(eval_open(args)?))`
+    3. **src/runtime/builtin_init.rs** (lines 369-373): Registered in global environment
+       - Added `global_env.insert("open".to_string(), Value::from_string("__builtin_open__"))`
+  - **VALIDATION** (EXTREME TDD Protocol):
+    - **RED**: test_issue_116_open_function_with_file_methods FAILS ❌ (Message error)
+    - **GREEN**: All fixes applied, test PASSES ✅
+    - **EXAMPLES**: `examples/issue_116_file_open.ruchy` reads 3 lines successfully ✅
+    - **VALIDATE**: User-provided tests pass (ruchy-book/test/verify-issue-116-fixed.ruchy)
+  - **TESTING METRICS**:
+    - **Unit Tests**: 2/2 passing (`tests/issue_116_file_open.rs`)
+    - **Property Tests**: 5 properties created (`tests/issue_116_property_tests.rs`)
+      - `prop_open_valid_files`: Open + read arbitrary file content
+      - `prop_open_invalid_mode_fails`: Reject "w", "a", "x" modes
+      - `prop_file_methods_functional`: Verify File methods work after open()
+      - `prop_open_nonexistent_file`: Graceful error handling
+      - `prop_multiple_open_calls_independent`: Multiple files work independently
+    - **Examples**: `examples/issue_116_file_open.ruchy` reads 3 lines ✅
+    - **Mutation Tests**: Running (inline_expander.rs)
+  - **FILES**:
+    - `src/runtime/eval_builtin.rs` (+31 lines for eval_open, +1 dispatcher)
+    - `src/runtime/builtin_init.rs` (+5 lines registration)
+    - `tests/issue_116_file_open.rs` (2 tests, 95 lines)
+    - `tests/issue_116_property_tests.rs` (5 property tests, 160 lines)
+    - `examples/issue_116_file_open.ruchy` (25 lines)
+  - **IMPACT**: File I/O now supports both syntaxes: `open(path, mode)` and `File.open(path)`
+  - **COMPLEXITY**: eval_open: 5 (within ≤10 limit ✅), dispatcher: 3
+  - **Toyota Way**: GENCHI GENBUTSU (tested with actual file reads) + Five Whys found exact root cause
+
 ## [3.180.0] - 2025-11-03
 
 ### Fixed

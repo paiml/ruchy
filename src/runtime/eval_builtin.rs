@@ -2826,10 +2826,11 @@ fn try_eval_json_function(
 // ==============================================================================
 
 /// Dispatcher for File namespace methods
-/// Complexity: 2
+/// Complexity: 3 (increased from 2 for ISSUE-116)
 fn try_eval_file_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "File_open" => Ok(Some(eval_file_open(args)?)),
+        "__builtin_open__" => Ok(Some(eval_open(args)?)),
         _ => Ok(None),
     }
 }
@@ -2864,6 +2865,37 @@ fn eval_file_open(args: &[Value]) -> Result<Value, InterpreterError> {
             "File.open() expects a string argument".to_string(),
         )),
     }
+}
+
+/// ISSUE-116: open(path, mode) - Standalone function for opening files
+/// Complexity: 5 (validation + mode handling + File.open call)
+fn eval_open(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("open", args, 2)?;
+
+    let path = match &args[0] {
+        Value::String(s) => s.as_ref(),
+        _ => return Err(InterpreterError::RuntimeError(
+            "open() expects first argument to be a string (path)".to_string(),
+        )),
+    };
+
+    let mode = match &args[1] {
+        Value::String(s) => s.as_ref(),
+        _ => return Err(InterpreterError::RuntimeError(
+            "open() expects second argument to be a string (mode)".to_string(),
+        )),
+    };
+
+    // Validate mode (currently only "r" read mode supported)
+    if mode != "r" {
+        return Err(InterpreterError::RuntimeError(format!(
+            "open() mode '{}' not supported. Only 'r' (read) is currently supported.",
+            mode
+        )));
+    }
+
+    // Delegate to eval_file_open() which creates the File object
+    eval_file_open(&[Value::from_string(path.to_string())])
 }
 
 // ==============================================================================
