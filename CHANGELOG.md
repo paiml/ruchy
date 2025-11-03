@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.187.0] - 2025-11-03
+
+### Fixed
+- **[TRANSPILER-006]** Fixed cast precedence in comparisons (turbofish parsing error)
+  - **PROBLEM**: `i as usize < primes.len()` failed with "expected `,`" syntax error
+  - **SYMPTOMS**: BENCH-008 failing with `syn::parse2` error during transpilation
+  - **EXAMPLE**:
+    ```ruchy
+    while i < len(primes) {  // ❌ transpile: expected `,` (turbofish parsing)
+    ```
+  - **ROOT CAUSE ANALYSIS** (Five Whys + GENCHI GENBUTSU):
+    1. Why syntax error? → Rust interprets `i as usize < primes.len()` as turbofish generics
+    2. Why turbofish? → Rust parser sees `usize <` and assumes generic type parameter `usize<...>`
+    3. Why no parentheses? → TRANSPILER-004 added usize casts but didn't wrap them
+    4. Why not wrapped? → `transpile_binary()` in binary_ops.rs generates raw cast without checking context
+    5. **ROOT CAUSE**: When applying usize casts to comparison operands, transpiler didn't add disambiguating parentheses
+  - **SOLUTION** (2-char change per line in binary_ops.rs):
+    - Modified `quote! { #tokens as usize }` → `quote! { (#tokens as usize) }`
+    - Applied to both left and right operand cast generation (lines 36, 42)
+    - Pattern: `i as usize < X` → `(i as usize) < X` (prevents turbofish interpretation)
+  - **FILES**:
+    - `src/backend/transpiler/expressions_helpers/binary_ops.rs` (2 lines: 36, 42)
+    - `src/bin/handlers/mod.rs` (temporary debug output added/removed)
+  - **VALIDATION**:
+    - ✅ RED: Test case failed with "expected `,`" error
+    - ✅ GREEN: Added parentheses, test passes (transpiles successfully)
+    - ✅ Compile: `while (i as usize) < primes.len()` generates valid Rust
+    - ✅ BENCH-008: Now transpiles without syntax errors (vec![] type hint issue remains)
+  - **IMPACT**: Unblocks all code patterns using cast in comparison operators
+  - **COMPLEXITY**: Zero complexity increase (cosmetic parentheses addition)
+  - **Testing**: GENCHI GENBUTSU debugging via temporary debug output (removed after fix)
+
 ## [3.186.0] - 2025-11-03
 
 ### Fixed
