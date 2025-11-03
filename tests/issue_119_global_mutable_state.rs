@@ -252,3 +252,125 @@ fn test_issue_119_08_multiple_globals() {
         .stdout(predicate::str::contains("1"))
         .stdout(predicate::str::contains("2"));
 }
+
+// ============================================================================
+// Property-Based Tests (VALIDATE Phase)
+// ============================================================================
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Property 1: Global mutations are visible after function returns
+    proptest! {
+        #[test]
+        fn prop_global_mutation_visible(initial_value in 0i32..100, increment in 1i32..10) {
+            let code = format!(
+                r#"
+                let mut counter = {}
+                fun add_value() {{
+                    counter = counter + {}
+                }}
+                add_value()
+                println(counter)
+                "#,
+                initial_value, increment
+            );
+
+            let output = Command::cargo_bin("ruchy")
+                .unwrap()
+                .arg("-e")
+                .arg(&code)
+                .output()
+                .unwrap();
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let expected = initial_value + increment;
+            prop_assert!(
+                stdout.contains(&expected.to_string()),
+                "Expected {} but got: {}",
+                expected,
+                stdout
+            );
+        }
+    }
+
+    // Property 2: Multiple function calls accumulate correctly
+    proptest! {
+        #[test]
+        fn prop_multiple_calls_accumulate(num_calls in 1usize..10, increment_per_call in 1i32..5) {
+            let code = format!(
+                r#"
+                let mut sum = 0
+                fun add() {{
+                    sum = sum + {}
+                }}
+                {}
+                println(sum)
+                "#,
+                increment_per_call,
+                "add()\n".repeat(num_calls)
+            );
+
+            let output = Command::cargo_bin("ruchy")
+                .unwrap()
+                .arg("-e")
+                .arg(&code)
+                .output()
+                .unwrap();
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let expected = (num_calls as i32) * increment_per_call;
+            prop_assert!(
+                stdout.contains(&expected.to_string()),
+                "Expected {} ({}×{}) but got: {}",
+                expected,
+                num_calls,
+                increment_per_call,
+                stdout
+            );
+        }
+    }
+
+    // Property 3: State persists across arbitrary sequences of operations
+    proptest! {
+        #[test]
+        fn prop_state_persistence(operations in prop::collection::vec(0i32..10, 1..5)) {
+            let calls = operations
+                .iter()
+                .map(|op| format!("add({})", op))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let code = format!(
+                r#"
+                let mut total = 0
+                fun add(n) {{
+                    total = total + n
+                }}
+                {}
+                println(total)
+                "#,
+                calls
+            );
+
+            let output = Command::cargo_bin("ruchy")
+                .unwrap()
+                .arg("-e")
+                .arg(&code)
+                .output()
+                .unwrap();
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let expected: i32 = operations.iter().sum();
+            prop_assert!(
+                stdout.contains(&expected.to_string()),
+                "Expected {} (sum of {:?}) but got: {}",
+                expected,
+                operations,
+                stdout
+            );
+        }
+    }
+}
