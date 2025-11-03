@@ -69,6 +69,23 @@ All notable changes to the Ruchy programming language will be documented in this
   - Tests: 6/6 passing + property test validated
   - Files: `src/runtime/interpreter.rs`, `src/backend/transpiler/expressions.rs`
 
+- **[ISSUE-117]** JSON plain function API (parse_json/stringify_json) - BENCH-009 BLOCKER
+  - ROOT CAUSE: Function calls created Message objects before checking builtin functions
+  - FIX: Modified `eval_function_call()` to check builtin functions BEFORE variable lookup
+  - Pattern: `parse_json('{"name": "Alice"}')` now works (not just `JSON.parse()`)
+  - Files: `src/runtime/interpreter.rs` (lines 7456-7467, 19 lines)
+  - Tests: 6/6 integration tests passing (simple, array, stringify, roundtrip, nested)
+  - Impact: Unblocks BENCH-009 (json-parsing benchmark)
+
+- **[ISSUE-121]** read_file() returns unwrapped string (not Result enum) - BENCH-006/009 BLOCKER
+  - ROOT CAUSE: `eval_fs_read()` returned `Result::Ok(string)` but benchmarks expect plain string
+  - FIX: Created `eval_read_file_unwrapped()` helper that returns plain string
+  - Pattern: `let contents = read_file(path)` returns string directly (not Result enum)
+  - Files: `src/runtime/eval_builtin.rs` (lines 1393-1412 + 2094, 20 lines)
+  - Tests: 6/6 integration tests passing (simple, JSON integration, string ops, multiline, BENCH-006 pattern)
+  - Impact: Unblocks BENCH-006 (file-processing) and BENCH-009 (json-parsing)
+  - Note: `fs_read()` still returns Result enum for error handling use cases
+
 ## [3.175.0] - 2025-11-02
 
 ### Added
