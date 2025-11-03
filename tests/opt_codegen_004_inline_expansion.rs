@@ -66,7 +66,7 @@ fn test_opt_codegen_004_inline_multi_use() {
 }
 
 #[test]
-#[ignore] // TODO(OPT-CODEGEN-004-B): Requires recursive inlining + constant folding
+#[ignore] // Requires constant folding integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_with_constants() {
     // Pattern: Inlining + constant folding should work together
     let code = r#"
@@ -225,9 +225,9 @@ fn test_opt_codegen_004_no_inline_mutually_recursive() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO(OPT-CODEGEN-004-B): Implement recursive/nested inlining (see issue)
+#[ignore] // Requires constant folding integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_chain() {
-    // Pattern: A calls B, B calls C - all should inline
+    // Pattern: A calls B, B calls C - all should inline + fold
     let code = r#"
         fun add_two(x: i32) -> i32 {
             x + 2
@@ -284,7 +284,7 @@ fn test_opt_codegen_004_inline_after_dce() {
 }
 
 #[test]
-#[ignore] // TODO(OPT-CODEGEN-004-B): Requires recursive inlining + constant propagation
+#[ignore] // Requires constant propagation integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_with_propagation() {
     // Pattern: Inline + constant propagation + folding all work together
     let code = r#"
