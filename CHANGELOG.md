@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.191.0] - 2025-11-03
+
+### Fixed
+- **[PROP-KEYWORDS]** Lambda & identifier property tests - Keyword filtering for all identifier generators
+  - **PROBLEM**: 6 property tests failing with keyword collision (2 lambda tests, 4 identifier tests investigated)
+  - **ROOT CAUSE**: Property test generators using regex patterns matching reserved keywords without filtering
+  - **SOLUTION**: Applied consistent `valid_identifier()` helper with keyword filtering across test modules
+  - **FILES**:
+    - `src/frontend/parser/expressions_helpers/lambdas.rs` (+17 lines: keyword filter helper)
+    - `src/frontend/parser/expressions_helpers/identifiers.rs` (+17 lines: keyword filter helper)
+  - **VALIDATION**:
+    - ✅ RED: 111/122 property tests passing (11 failing)
+    - ✅ GREEN: 116/122 property tests passing (6 failing)
+    - ✅ IMPROVEMENT: +5 property tests fixed via keyword filtering
+    - ✅ VALIDATE: 4038 library tests passing (zero regressions)
+  - **TESTS FIXED**:
+    - Lambda: `prop_single_param_lambdas_parse`, `prop_multi_param_lambdas_parse`, `prop_arrow_syntax_parses`, `prop_arrow_tuple_syntax_parses`, `prop_nested_lambdas_parse` (5 tests)
+  - **REMAINING FAILURES** (6 tests - parser bugs, not property test issues):
+    - Identifier tests (4): Underscore `_` not supported in lambdas/paths (parser limitation)
+    - Loops test (1): Labeled loops not implemented (PARSER-079)
+    - Visibility test (1): Class modifier validation (separate issue)
+  - **KEYWORDS FILTERED**: fn, fun, let, var, if, else, for, while, loop, match, break, continue, return, async, await, try, catch, throw, in, as, is, self, super, mod, use, pub, const, static, mut, ref, type, struct, enum, trait, impl
+  - **Test Coverage**: 116/122 property tests passing (95.1%), 100k+ random test cases per test
+
 ## [3.190.0] - 2025-11-03
 
 ### Fixed

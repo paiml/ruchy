@@ -4,5 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 3c3cda26136e3c0644a667a61dfb994a22c32cffcdffcb2afe17ca9d1fe4da60 # shrinks to param = "a", val = 0
-cc 16cd123e9245120e532be503705c62affee161292457eed7831261cb7532d78e # shrinks to name = "fn", param = "a"
+cc ee76b0afa8462716d32cccb4257b8e4eb7a2e446b914ea306a819525799f7b41 # shrinks to total = 1, concurrency = 1

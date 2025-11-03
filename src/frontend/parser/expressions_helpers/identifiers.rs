@@ -326,9 +326,23 @@ mod tests {
         use super::*;
         use proptest::prelude::*;
 
-        // Generate valid identifier strings (alphanumeric + underscore, not starting with digit)
+        /// Helper: Generate valid identifiers (not keywords)
+        ///
+        /// Keywords like "fn", "if", "let" would cause parser failures.
+        /// This strategy filters them out for property test validity.
         fn valid_identifier() -> impl Strategy<Value = String> {
-            prop::string::string_regex("[a-zA-Z_][a-zA-Z0-9_]*").unwrap()
+            prop::string::string_regex("[a-zA-Z_][a-zA-Z0-9_]*")
+                .unwrap()
+                .prop_filter("Must not be a keyword", |s| {
+                    !matches!(
+                        s.as_str(),
+                        "fn" | "fun" | "let" | "var" | "if" | "else" | "for" | "while"
+                            | "loop" | "match" | "break" | "continue" | "return" | "async"
+                            | "await" | "try" | "catch" | "throw" | "in" | "as" | "is"
+                            | "self" | "super" | "mod" | "use" | "pub" | "const" | "static"
+                            | "mut" | "ref" | "type" | "struct" | "enum" | "trait" | "impl"
+                    )
+                })
         }
 
         proptest! {
