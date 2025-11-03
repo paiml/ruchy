@@ -329,8 +329,17 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
                 || check_for_external_refs(then_branch, allowed)
                 || else_branch.as_ref().map_or(false, |e| check_for_external_refs(e, allowed))
         }
-        ExprKind::Let { value, body, .. } => {
-            check_for_external_refs(value, allowed) || check_for_external_refs(body, allowed)
+        ExprKind::Let { name, value, body, .. } => {
+            // Check value first (binding not yet available)
+            if check_for_external_refs(value, allowed) {
+                return true;
+            }
+
+            // Add bound variable to allowed set for checking body
+            // OPT-CODEGEN-004 FIX: Track Let bindings to avoid false "global access" detection
+            let mut allowed_with_binding = allowed.clone();
+            allowed_with_binding.insert(name.clone());
+            check_for_external_refs(body, &allowed_with_binding)
         }
         ExprKind::Return { value } => {
             value.as_ref().map_or(false, |v| check_for_external_refs(v, allowed))
