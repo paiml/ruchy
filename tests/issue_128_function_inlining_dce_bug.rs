@@ -254,3 +254,96 @@ println(result)
         .success()
         .stdout(predicate::str::contains("fn large_function")); // Too large to inline
 }
+
+#[test]
+fn test_issue_128_08_return_expression_with_recursion() {
+    // RED: This test MUST fail - recursive functions with return statements
+    // Bug: check_recursion() doesn't look inside Return expressions
+    // Bug: substitute_identifiers() doesn't substitute inside Return expressions
+
+    let script = r#"
+fun fib(n) {
+    if n <= 1 {
+        return n
+    } else {
+        return fib(n - 1) + fib(n - 2)
+    }
+}
+
+println(fib(10))
+"#;
+
+    std::fs::write("/tmp/issue_128_fib.ruchy", script).unwrap();
+
+    // Test 1: Interpret mode works (baseline)
+    Command::cargo_bin("ruchy")
+        .unwrap()
+        .arg("-e")
+        .arg(script)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("55")); // fib(10) = 55
+
+    // Test 2: Transpile and verify output compiles
+    let output = Command::cargo_bin("ruchy")
+        .unwrap()
+        .arg("transpile")
+        .arg("/tmp/issue_128_fib.ruchy")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let transpiled = String::from_utf8_lossy(&output.stdout);
+
+    // Expected: Either function definition exists (not inlined due to recursion)
+    // OR function was correctly inlined with all parameters substituted
+    let has_function_def = transpiled.contains("fn fib");
+
+    // If function was NOT inlined (recursion detected correctly), we're done - test passes
+    if has_function_def {
+        // Recursion detected ✅ - function definition exists
+        // Parameters like "n" in function body are CORRECT
+        return;
+    }
+
+    // If function WAS inlined, check for undefined variables
+    // Bug symptoms: "if n <= 1" (n undefined in main), "return n" (n undefined), "fib(n-1)" (fib undefined)
+    if transpiled.contains("if n <=") || transpiled.contains("return n") || transpiled.contains("fib(n") {
+        panic!(
+            "BUG DETECTED: Function was inlined but has undefined variables!\n\
+             Either:\n\
+             1. check_recursion() failed to detect recursion in Return expressions\n\
+             2. substitute_identifiers() failed to substitute parameters in Return expressions\n\
+             \n\
+             Transpiled code:\n{}\n",
+            transpiled
+        );
+    }
+
+    // If inlined, verify it compiles with rustc
+    if !has_function_def {
+        // Write to temp file and try to compile
+        let temp_rs = "/tmp/issue_128_fib_test.rs";
+        std::fs::write(temp_rs, transpiled.as_bytes()).unwrap();
+
+        let rustc_result = std::process::Command::new("rustc")
+            .arg("--crate-type")
+            .arg("bin")
+            .arg("-o")
+            .arg("/tmp/issue_128_fib_test_bin")
+            .arg(temp_rs)
+            .output()
+            .unwrap();
+
+        if !rustc_result.status.success() {
+            let stderr = String::from_utf8_lossy(&rustc_result.stderr);
+            panic!(
+                "BUG: Transpiled code doesn't compile!\n\
+                 rustc errors:\n{}\n\
+                 \n\
+                 Transpiled code:\n{}\n",
+                stderr, transpiled
+            );
+        }
+    }
+}

@@ -173,7 +173,7 @@ fn substitute_params(body: &Expr, params: &[Param], args: &[Expr]) -> Expr {
 /// Replace identifiers with their substituted values
 ///
 /// # Complexity
-/// Cyclomatic: 7 (≤10 target)
+/// Cyclomatic: 8 (≤10 target)
 fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
     match &expr.kind {
         ExprKind::Identifier(name) => {
@@ -218,6 +218,15 @@ fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
                 expr.span,
             )
         }
+        ExprKind::Return { value } => {
+            // ISSUE-128 FIX: Substitute identifiers inside return expressions
+            Expr::new(
+                ExprKind::Return {
+                    value: value.as_ref().map(|v| Box::new(substitute_identifiers((**v).clone(), subs)))
+                },
+                expr.span,
+            )
+        }
         _ => expr, // Other expressions: return as-is
     }
 }
@@ -244,7 +253,7 @@ fn estimate_body_size(body: &Expr) -> usize {
 /// Check if function body calls itself (recursion detection)
 ///
 /// # Complexity
-/// Cyclomatic: 6 (≤10 target)
+/// Cyclomatic: 8 (≤10 target)
 fn check_recursion(func_name: &str, body: &Expr) -> bool {
     match &body.kind {
         ExprKind::Call { func, .. } => {
@@ -255,6 +264,10 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
             }
             false
         }
+        ExprKind::Binary { left, right, .. } => {
+            // ISSUE-128 FIX: Check for recursion inside binary expressions (e.g., fib(n-1) + fib(n-2))
+            check_recursion(func_name, left) || check_recursion(func_name, right)
+        }
         ExprKind::Block(exprs) => exprs.iter().any(|e| check_recursion(func_name, e)),
         ExprKind::If { condition, then_branch, else_branch } => {
             check_recursion(func_name, condition)
@@ -263,6 +276,10 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
         }
         ExprKind::Let { value, body, .. } => {
             check_recursion(func_name, value) || check_recursion(func_name, body)
+        }
+        ExprKind::Return { value } => {
+            // ISSUE-128 FIX: Check for recursion inside return expressions
+            value.as_ref().map_or(false, |v| check_recursion(func_name, v))
         }
         _ => false,
     }

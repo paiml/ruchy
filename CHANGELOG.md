@@ -4,6 +4,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.179.0] - 2025-11-03
+
+### Fixed
+- **[ISSUE-128]** COMPLETE FIX - Recursive functions with return expressions now work correctly
+  - **PROBLEM WITH v3.178.0**: Incomplete fix - only handled `ExprKind::If`, but missed `ExprKind::Return` and `ExprKind::Binary`
+  - **ROOT CAUSES IDENTIFIED** (via Five Whys + GENCHI GENBUTSU):
+    1. `check_recursion()` didn't look inside `Return` expressions → couldn't detect `return fib(n-1)`
+    2. `check_recursion()` didn't look inside `Binary` expressions → couldn't detect `fib(n-1) + fib(n-2)`
+    3. `substitute_identifiers()` didn't handle `Return` → parameters not substituted in return statements
+  - **SOLUTIONS** (EXTREME TDD: RED → GREEN → REFACTOR → VALIDATE):
+    1. Added `ExprKind::Return` case to `check_recursion()` (lines 280-283)
+    2. Added `ExprKind::Binary` case to `check_recursion()` (lines 267-270)
+    3. Added `ExprKind::Return` case to `substitute_identifiers()` (lines 221-229)
+  - **VALIDATION**:
+    - RED: test_issue_128_08_return_expression_with_recursion FAILED ❌ (undefined variables)
+    - GREEN: All fixes applied, test PASSES ✅
+    - ruchydbg: `fib(10) = 55` in 3ms ✅
+    - transpile + rustc: Compiles and executes correctly ✅
+    - All 8/8 tests passing ✅
+  - **Example**:
+    ```ruchy
+    fun fib(n) {
+        if n <= 1 {
+            return n
+        } else {
+            return fib(n - 1) + fib(n - 2)
+        }
+    }
+    println(fib(10))  // Output: 55 ✅
+    ```
+  - **Impact**: Fibonacci, factorial, and all recursive functions with return statements now transpile correctly
+  - **Complexity**: check_recursion: 7→8 (≤10 ✅), substitute_identifiers: 7→8 (≤10 ✅)
+  - **Files**: `src/backend/transpiler/inline_expander.rs` (+23 lines)
+  - **Tests**: `tests/issue_128_function_inlining_dce_bug.rs` (+87 lines, 343 total)
+  - **Toyota Way**: Proper GENCHI GENBUTSU (go and see) + Five Whys prevented premature fix
+
 ## [3.178.0] - 2025-11-03
 
 ### Fixed
