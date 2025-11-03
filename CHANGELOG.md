@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.178.0] - 2025-11-03
+
+### Fixed
+- **[ISSUE-128]** Parameter substitution in if-else expressions during inline optimization
+  - **ROOT CAUSE**: `substitute_identifiers()` didn't handle `ExprKind::If` expressions
+  - **PROBLEM**: When inlining functions with if-else, parameters weren't substituted → `if a > b` (undefined vars)
+  - **SOLUTION**: Added If expression case to `substitute_identifiers()` - recursively substitute in condition, then_branch, else_branch
+  - Files: `src/backend/transpiler/inline_expander.rs` (+11 lines, lines 210-220)
+  - Tests: 7/7 passing (`tests/issue_128_function_inlining_dce_bug.rs`, 260 lines)
+  - Impact: Functions with if-else now inline correctly with proper parameter substitution
+  - Example: `fun max(a, b) { if a > b { a } else { b } }; max(5, 3)` → `if 5 > 3 { 5 } else { 3 }` ✅
+
 ## [3.177.0] - 2025-11-03
 
 ### Added
