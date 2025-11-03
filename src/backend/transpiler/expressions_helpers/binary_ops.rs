@@ -17,6 +17,12 @@ impl Transpiler {
             return self.transpile_string_concatenation(left, right);
         }
 
+        // TRANSPILER-005: Handle vector + array concatenation
+        // Pattern: vec + [item] → [vec, vec![item]].concat()
+        if op == BinaryOp::Add && Self::is_vec_array_concat(left, right) {
+            return self.transpile_vec_concatenation(left, right);
+        }
+
         // ISSUE-114 FIX: Handle usize casting for .len() comparisons
         // When comparing .len() (usize) with i32, cast i32 to usize
         if Self::is_comparison_op(op) {
@@ -226,5 +232,29 @@ impl Transpiler {
                 | BinaryOp::Equal
                 | BinaryOp::NotEqual
         )
+    }
+
+    /// Check if this is a vector + array concatenation pattern (TRANSPILER-005)
+    /// Returns true for: vec + [item], vec + [item1, item2], etc.
+    /// Complexity: 2 (within ≤10 limit ✅)
+    fn is_vec_array_concat(_left: &Expr, right: &Expr) -> bool {
+        // Right side must be an array literal
+        let right_is_array = matches!(&right.kind, ExprKind::List(_));
+
+        // Left side should be a vec-like expression (identifier, method call, etc.)
+        // We use a conservative check: if right is array, assume left might be vec
+        right_is_array
+    }
+
+    /// Transpile vector concatenation to valid Rust (TRANSPILER-005)
+    /// Pattern: vec + [item] → [vec.as_slice(), &[item]].concat()
+    /// Complexity: 3 (within ≤10 limit ✅)
+    fn transpile_vec_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {
+        let left_tokens = self.transpile_expr(left)?;
+        let right_tokens = self.transpile_expr(right)?;
+
+        // Generate: [left.as_slice(), &right].concat()
+        // This works for Vec + array and handles ownership correctly
+        Ok(quote! { [#left_tokens.as_slice(), &#right_tokens].concat() })
     }
 }
