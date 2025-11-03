@@ -1390,6 +1390,27 @@ fn eval_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
+/// Evaluate `read_file()` builtin function (ISSUE-121)
+/// Unwrapping helper for benchmarks - returns plain string instead of Result enum
+/// Panics on file read errors (benchmarks expect success)
+/// Complexity: 2 (within Toyota Way limits)
+fn eval_read_file_unwrapped(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("read_file", args, 1)?;
+
+    match &args[0] {
+        Value::String(path) => {
+            std::fs::read_to_string(path.as_ref())
+                .map(Value::from_string)
+                .map_err(|e| InterpreterError::RuntimeError(
+                    format!("Failed to read file '{}': {}", path, e)
+                ))
+        },
+        _ => Err(InterpreterError::RuntimeError(
+            "read_file() expects a string argument".to_string(),
+        )),
+    }
+}
+
 /// Evaluate `fs_write()` builtin function
 /// Writes content to file
 /// Returns Result enum to match Rust API (RUNTIME-096)
@@ -2068,12 +2089,13 @@ fn try_eval_fs_part3(name: &str, args: &[Value]) -> Result<Option<Value>, Interp
 /// Complexity: 6 (within Toyota Way limits of 10)
 fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
-        // User-friendly aliases for file I/O
-        "__builtin_read_file__" => Ok(Some(eval_fs_read(args)?)),
-        "__builtin_write_file__" => Ok(Some(eval_fs_write(args)?)),
-        "__builtin_file_exists__" => Ok(Some(eval_fs_exists(args)?)),
-        "__builtin_delete_file__" => Ok(Some(eval_fs_remove_file(args)?)),
-        "__builtin_append_file__" => Ok(Some(eval_append_file(args)?)),
+        // User-friendly aliases for file I/O (ISSUE-117 pattern: add plain function names)
+        // ISSUE-121: read_file() returns unwrapped string (not Result enum) for benchmark compatibility
+        "__builtin_read_file__" | "read_file" => Ok(Some(eval_read_file_unwrapped(args)?)),
+        "__builtin_write_file__" | "write_file" => Ok(Some(eval_fs_write(args)?)),
+        "__builtin_file_exists__" | "file_exists" => Ok(Some(eval_fs_exists(args)?)),
+        "__builtin_delete_file__" | "delete_file" => Ok(Some(eval_fs_remove_file(args)?)),
+        "__builtin_append_file__" | "append_file" => Ok(Some(eval_append_file(args)?)),
         _ => Ok(None),
     }
 }
@@ -2724,8 +2746,8 @@ fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], value: serd
 /// Complexity: 5 (added ISSUE-117 namespace patterns)
 fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
-        "__builtin_json_parse__" | "JSON_parse" => Ok(Some(eval_json_parse(args)?)),
-        "__builtin_json_stringify__" | "JSON_stringify" => Ok(Some(eval_json_stringify(args)?)),
+        "__builtin_json_parse__" | "JSON_parse" | "parse_json" => Ok(Some(eval_json_parse(args)?)),
+        "__builtin_json_stringify__" | "JSON_stringify" | "stringify_json" => Ok(Some(eval_json_stringify(args)?)),
         "__builtin_json_pretty__" => Ok(Some(eval_json_pretty(args)?)),
         _ => Ok(None),
     }

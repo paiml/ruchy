@@ -7453,6 +7453,19 @@ impl Interpreter {
             }
         }
 
+        // ISSUE-117: Check builtin functions BEFORE variable lookup
+        // This ensures parse_json(), stringify_json(), open(), etc. work as functions
+        if let ExprKind::Identifier(name) = &func.kind {
+            // Try builtin function first
+            let arg_vals: Result<Vec<Value>, InterpreterError> =
+                args.iter().map(|arg| self.eval_expr(arg)).collect();
+            let arg_vals = arg_vals?;
+
+            if let Ok(Some(result)) = crate::runtime::eval_builtin::eval_builtin_function(name, &arg_vals) {
+                return Ok(result);
+            }
+        }
+
         // Try to evaluate the function normally
         let func_val_result = self.eval_expr(func);
 
