@@ -40,6 +40,18 @@ All notable changes to the Ruchy programming language will be documented in this
   - Files: `src/backend/transpiler/inline_expander.rs` (NEW, 436 lines), `src/backend/transpiler/constant_folder.rs` (+95 lines DCE extension)
   - Spec: `../ruchyruchy/docs/specifications/compiler-transpiler-optimization-spec.md` line 372
   - Next: OPT-CODEGEN-004-B will implement recursive/nested inlining
+- **[OPT-GLOBAL-001]** Profile-Guided Optimization (PGO) infrastructure - GREEN PHASE
+  - PGO workflow script: `scripts/run-pgo.sh` (4-step automation)
+  - Step 1: Instrument build with `-Cprofile-generate`
+  - Step 2: Collect profile data from representative workload (all examples/*.ruchy)
+  - Step 3: Merge .profraw files with llvm-profdata
+  - Step 4: Optimize build with `-Cprofile-use`
+  - Usage: `./scripts/run-pgo.sh full` (complete workflow)
+  - Target: 15-30% speedup over release profile (per MAXIMUM RIGOR spec)
+  - Tests: 7 tests created (`tests/opt_global_001_pgo.rs`)
+  - Quality: bashrs validated (0 errors, 38 warnings non-blocking)
+  - Files: `scripts/run-pgo.sh` (NEW, 206 lines), `tests/opt_global_001_pgo.rs` (NEW, 206 lines)
+  - Next: GREEN phase complete, REFACTOR phase TBD (statistical validation helpers)
 
 ### Fixed
 - **[BUG-003]** Array index assignment now supported (interpreter + transpiler)
