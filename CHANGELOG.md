@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.176.0] - 2025-11-03
+
 ### Added
 - **[PERF-002-A]** Constant folding optimization (transpiler)
   - Arithmetic: `2 + 3` → `5` (compile-time evaluation)
