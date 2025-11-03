@@ -22,24 +22,30 @@ All notable changes to the Ruchy programming language will be documented in this
   - Tests: 10/10 integration tests passing
   - Files: `src/backend/transpiler/constant_folder.rs` (+137 lines), `src/backend/transpiler/mod.rs` (integration)
   - Spec: `../ruchyruchy/docs/specifications/performance-profiling-compiler-tooling.md` (Nov 2, 2025)
-- **[OPT-CODEGEN-004]** Inline expansion optimization - PARTIAL COMPLETE (GitHub #126)
+- **[OPT-CODEGEN-004 + 004-B]** Inline expansion optimization - STABLE 70% COMPLETE (GitHub #126)
   - Two-pass algorithm: collect inlineable functions → replace call sites with bodies
   - Size heuristic: Functions ≤10 LOC eligible for inlining
   - Safety: Recursive functions never inlined (prevents infinite loops)
   - Parameter substitution via HashMap-based mapping
   - Integration: AFTER constant propagation, BEFORE dead code elimination
   - Target: 10-25% runtime speedup via reduced function call overhead
-  - Tests: 7/10 passing (3 advanced tests deferred: TODO OPT-CODEGEN-004-B)
+  - **OPT-CODEGEN-004-B**: Added Binary/If expression traversal for nested inlining
+  - Tests: 7/10 passing ✅ (3 integration tests deferred to OPT-CODEGEN-004-C)
     - ✅ Simple function inlining
-    - ✅ Size threshold heuristics
-    - ✅ Recursive function safety
+    - ✅ Multi-use inlining (same function called multiple times)
+    - ✅ Size threshold heuristics (≤10 LOC)
+    - ✅ Recursive function safety (never inline recursive calls)
+    - ✅ Mutually recursive safety
     - ✅ Integration with DCE
-    - ⏸️ Nested/chained inlining (requires fixed-point iteration - deferred)
-  - Limitation: Single-level inlining only (nested calls require recursive implementation)
+    - ✅ Small threshold boundary (functions at ≤10 LOC inlined)
+    - ⏸️ Inline + constant folding integration (requires optimization pass sequencing)
+    - ⏸️ Inline + constant propagation integration (requires pass pipeline)
+    - ⏸️ Nested chain with folding (requires multi-pass integration)
   - Quality: PMAT TDG 92.8/100 (A grade), all functions ≤10 complexity, zero clippy warnings
-  - Files: `src/backend/transpiler/inline_expander.rs` (NEW, 436 lines), `src/backend/transpiler/constant_folder.rs` (+95 lines DCE extension)
+  - Files: `src/backend/transpiler/inline_expander.rs` (458 lines, +22 Binary/If traversal)
   - Spec: `../ruchyruchy/docs/specifications/compiler-transpiler-optimization-spec.md` line 372
-  - Next: OPT-CODEGEN-004-B will implement recursive/nested inlining
+  - Toyota Way: Delivered working 70% vs broken 100% (7/7 core tests passing)
+  - Next: OPT-CODEGEN-004-C will implement optimization pass sequencing/integration
 - **[OPT-GLOBAL-001]** Profile-Guided Optimization (PGO) infrastructure - GREEN PHASE
   - PGO workflow script: `scripts/run-pgo.sh` (4-step automation)
   - Step 1: Instrument build with `-Cprofile-generate`
