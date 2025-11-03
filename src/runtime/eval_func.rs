@@ -94,7 +94,7 @@ mod tests {
             )),
             crate::frontend::ast::Span::default(),
         );
-        let env = HashMap::new();
+        let env = Rc::new(RefCell::new(HashMap::new()));
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
