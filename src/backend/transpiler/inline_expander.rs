@@ -119,6 +119,28 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
                 expr.span,
             )
         }
+        ExprKind::Binary { left, op, right } => {
+            // Recursively inline calls in binary expressions (critical for nested inlining)
+            Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(inline_function_calls(*left, functions)),
+                    op,
+                    right: Box::new(inline_function_calls(*right, functions)),
+                },
+                expr.span,
+            )
+        }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            // Recursively inline calls in if expressions
+            Expr::new(
+                ExprKind::If {
+                    condition: Box::new(inline_function_calls(*condition, functions)),
+                    then_branch: Box::new(inline_function_calls(*then_branch, functions)),
+                    else_branch: else_branch.map(|e| Box::new(inline_function_calls(*e, functions))),
+                },
+                expr.span,
+            )
+        }
         _ => expr,
     }
 }
