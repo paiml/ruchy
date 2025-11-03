@@ -629,8 +629,10 @@ mod tests {
         // Integer module: Integer (contains Integer.to_string - GitHub Issue #77)
         // chrono namespace: chrono (contains chrono::Utc - Issue #82)
         // Utc direct: Utc (convenience import - Issue #82)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer + 1 chrono + 1 Utc = 114
-        assert_eq!(env.len(), 114);
+        // parse_json alias: parse_json (Issue #131 - v3.182.0)
+        // open() function: open (Issue #116 - v3.181.0)
+        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer + 1 chrono + 1 Utc + 1 parse_json + 1 open = 116
+        assert_eq!(env.len(), 116);
     }
 
     #[test]
