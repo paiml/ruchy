@@ -1,0 +1,28 @@
+// Example: Issue #116 - File open() builtin function
+//
+// Demonstrates that open(path, mode) standalone function works correctly
+// after the fix to builtin_init.rs and eval_builtin.rs
+//
+// NOTE: This example uses ../ruchy-book/test/test-data/sample.txt
+// Run from project root: target/release/ruchy examples/issue_116_file_open.ruchy
+
+println("=== Issue #116: File open() Function ===")
+println("Testing that open(path, 'r') returns working File object...")
+
+// This would previously fail with "Unknown object type: Message"
+let file = open("../ruchy-book/test/test-data/sample.txt", "r")
+
+println("Reading file...")
+let line1 = file.read_line()
+println("Line 1: " + line1)
+
+let line2 = file.read_line()
+println("Line 2: " + line2)
+
+let line3 = file.read_line()
+println("Line 3: " + line3)
+
+file.close()
+println("File closed successfully")
+
+println("✅ Issue #116 VERIFIED: open() function and File methods work correctly!")

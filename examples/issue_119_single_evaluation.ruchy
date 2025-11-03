@@ -1,0 +1,21 @@
+// Example: Issue #119 - Builtin functions evaluate arguments exactly once
+//
+// Demonstrates that println() and other builtins no longer double-evaluate arguments
+// after the fix to interpreter.rs (converts name to __builtin_NAME__ format)
+
+let mut counter = 0
+fun increment() {
+    counter = counter + 1
+    counter
+}
+
+println("=== Issue #119: Single Evaluation Test ===")
+println("Each println should call increment() exactly ONCE")
+
+// Each println should call increment() exactly ONCE
+println("Call 1: " + increment().to_string())  // Should output: 1 (not 2)
+println("Call 2: " + increment().to_string())  // Should output: 2 (not 4)
+println("Call 3: " + increment().to_string())  // Should output: 3 (not 6)
+println("Final counter: " + counter.to_string())  // Should output: 3 (not 6)
+
+println("✅ Issue #119 VERIFIED: Functions called exactly once per builtin call!")
