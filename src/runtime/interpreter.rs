@@ -24,7 +24,9 @@ use crate::frontend::ast::{
 };
 use crate::frontend::Param;
 use smallvec::{smallvec, SmallVec};
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 /// Control flow for loop iterations or error
@@ -80,7 +82,7 @@ pub enum Value {
     Closure {
         params: Vec<String>,
         body: Arc<Expr>,
-        env: Arc<HashMap<String, Value>>, // Captured environment
+        env: Rc<RefCell<HashMap<String, Value>>>, // Shared mutable reference (ISSUE-119)
     },
     /// `DataFrame` value
     DataFrame { columns: Vec<DataFrameColumn> },
@@ -215,8 +217,8 @@ pub struct Interpreter {
     /// Tagged pointer values for fast operation
     stack: Vec<Value>,
 
-    /// Environment stack for lexical scoping
-    env_stack: Vec<HashMap<std::string::String, Value>>,
+    /// Environment stack for lexical scoping (ISSUE-119: Rc<RefCell> for shared mutable state)
+    env_stack: Vec<Rc<RefCell<HashMap<std::string::String, Value>>>>,
 
     /// Call frame for function calls
     #[allow(dead_code)]
@@ -835,7 +837,7 @@ impl Interpreter {
 
         Self {
             stack: Vec::with_capacity(1024), // Pre-allocate stack
-            env_stack: vec![global_env],     // Start with global environment containing builtins
+            env_stack: vec![Rc::new(RefCell::new(global_env))], // ISSUE-119: Shared mutable environment
             frames: Vec::new(),
             execution_counts: HashMap::new(),
             field_caches: HashMap::new(),
@@ -1161,7 +1163,8 @@ impl Interpreter {
                 let mut current_value: Option<Value> = None;
                 if let Some(first_part) = parts.first() {
                     // Access global environment (first element of env_stack)
-                    if let Some(global_env) = self.env_stack.first() {
+                    if let Some(global_env_ref) = self.env_stack.first() {
+                        let global_env = global_env_ref.borrow(); // ISSUE-119: Borrow from RefCell
                         if let Some(root) = global_env.get(*first_part) {
                             current_value = Some(root.clone());
 
@@ -1197,8 +1200,8 @@ impl Interpreter {
 
                     // Add to global environment (first element of env_stack)
                     // This makes imports available across all scopes
-                    if let Some(global_env) = self.env_stack.first_mut() {
-                        global_env.insert(import_name, value);
+                    if let Some(global_env_ref) = self.env_stack.first() {
+                        global_env_ref.borrow_mut().insert(import_name, value); // ISSUE-119: Mutable borrow
                     }
                 }
 
@@ -1222,7 +1225,8 @@ impl Interpreter {
                     let mut current_value: Option<Value> = None;
                     if let Some(first_part) = parts.first() {
                         // Access global environment (first element of env_stack)
-                        if let Some(global_env) = self.env_stack.first() {
+                        if let Some(global_env_ref) = self.env_stack.first() {
+                            let global_env = global_env_ref.borrow(); // ISSUE-119: Borrow from RefCell
                             if let Some(root) = global_env.get(*first_part) {
                                 current_value = Some(root.clone());
 
@@ -1249,8 +1253,8 @@ impl Interpreter {
                         let import_name = parts.last().unwrap_or(&"").to_string();
 
                         // Add to global environment
-                        if let Some(global_env) = self.env_stack.first_mut() {
-                            global_env.insert(import_name, value);
+                        if let Some(global_env_ref) = self.env_stack.first() {
+                            global_env_ref.borrow_mut().insert(import_name, value); // ISSUE-119: Mutable borrow
                         }
                     }
 
@@ -1266,27 +1270,29 @@ impl Interpreter {
                     ))?;
 
                 // Create a new environment scope for the module
-                let mut module_env = HashMap::new();
+                // ISSUE-119: Wrap in Rc<RefCell> for shared mutable access
+                let module_env_ref = Rc::new(RefCell::new(HashMap::new()));
 
                 // Evaluate the module AST to execute its definitions
                 // We need to push a new environment, evaluate, then pop
-                self.env_stack.push(module_env.clone());
+                self.env_stack.push(Rc::clone(&module_env_ref));
                 let eval_result = self.eval_expr(&parsed_module.ast);
-                module_env = self.env_stack.pop().unwrap();
+                self.env_stack.pop();
 
                 // Check for evaluation errors
                 eval_result?;
 
                 // Create a module namespace object containing all exported symbols
+                // Borrow the module environment to read its contents
                 let mut module_object = std::collections::HashMap::new();
-                for (name, value) in module_env {
-                    module_object.insert(name, value);
+                for (name, value) in module_env_ref.borrow().iter() {
+                    module_object.insert(name.clone(), value.clone());
                 }
 
                 // Add the module object to global environment
                 // This allows `mylib::add` to work via field access
-                if let Some(global_env) = self.env_stack.first_mut() {
-                    global_env.insert(module.clone(), Value::Object(module_object.into()));
+                if let Some(global_env_ref) = self.env_stack.first() {
+                    global_env_ref.borrow_mut().insert(module.clone(), Value::Object(module_object.into())); // ISSUE-119: Mutable borrow
                 }
 
                 Ok(Value::Nil)
@@ -2428,8 +2434,8 @@ impl Interpreter {
                 let method_name = parts[1];
 
                 // Look up the class or struct
-                for env in self.env_stack.iter().rev() {
-                    if let Some(value) = env.get(type_name) {
+                for env_ref in self.env_stack.iter().rev() {
+                    if let Some(value) = env_ref.borrow().get(type_name) { // ISSUE-119: Borrow from RefCell
                         if let Value::Object(ref info) = value {
                             // Check if it's a class or struct
                             if let Some(Value::String(ref type_str)) = info.get("__type") {
@@ -2505,8 +2511,8 @@ impl Interpreter {
         }
 
         // Normal variable lookup
-        for env in self.env_stack.iter().rev() {
-            if let Some(value) = env.get(name) {
+        for env_ref in self.env_stack.iter().rev() {
+            if let Some(value) = env_ref.borrow().get(name) { // ISSUE-119: Borrow from RefCell
                 return Ok(value.clone());
             }
         }
@@ -2517,7 +2523,8 @@ impl Interpreter {
 
     /// Get the current (innermost) environment
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
-    pub fn current_env(&self) -> &HashMap<String, Value> {
+    // ISSUE-119: Returns reference to Rc<RefCell<HashMap>> instead of plain HashMap
+    pub fn current_env(&self) -> &Rc<RefCell<HashMap<String, Value>>> {
         self.env_stack
             .last()
             .expect("Environment stack should never be empty")
@@ -2539,11 +2546,11 @@ impl Interpreter {
 
         // ALWAYS create in current scope - `let` bindings shadow outer scopes
         // Do NOT search parent scopes (that's for reassignments without `let`)
-        let env = self
+        let env_ref = self
             .env_stack
-            .last_mut()
+            .last()
             .expect("Environment stack should never be empty");
-        env.insert(name, value);
+        env_ref.borrow_mut().insert(name, value); // ISSUE-119: Mutable borrow
     }
 
     /// Set a mutable variable in the environment
@@ -2557,8 +2564,8 @@ impl Interpreter {
         self.record_variable_assignment_feedback(&name, &value);
 
         // Search from innermost to outermost scope for existing variable
-        for env in self.env_stack.iter_mut().rev() {
-            if let std::collections::hash_map::Entry::Occupied(mut e) = env.entry(name.clone()) {
+        for env_ref in self.env_stack.iter().rev() { // ISSUE-119: Use iter() not iter_mut()
+            if let std::collections::hash_map::Entry::Occupied(mut e) = env_ref.borrow_mut().entry(name.clone()) {
                 // Found existing variable - mutate it in place
                 e.insert(value);
                 return;
@@ -2566,20 +2573,22 @@ impl Interpreter {
         }
 
         // Variable doesn't exist in any scope - create new binding in current scope
-        let env = self
+        let env_ref = self
             .env_stack
-            .last_mut()
+            .last()
             .expect("Environment stack should never be empty");
-        env.insert(name, value);
+        env_ref.borrow_mut().insert(name, value); // ISSUE-119: Mutable borrow
     }
 
     /// Push a new environment onto the stack
+    // ISSUE-119: Wrap environment in Rc<RefCell> for shared mutable access
     fn env_push(&mut self, env: HashMap<String, Value>) {
-        self.env_stack.push(env);
+        self.env_stack.push(Rc::new(RefCell::new(env)));
     }
 
     /// Pop the current environment from the stack
-    fn env_pop(&mut self) -> Option<HashMap<String, Value>> {
+    // ISSUE-119: Returns Rc<RefCell<HashMap>> instead of plain HashMap
+    fn env_pop(&mut self) -> Option<Rc<RefCell<HashMap<String, Value>>>> {
         if self.env_stack.len() > 1 {
             // Keep at least the global environment
             self.env_stack.pop()
