@@ -232,7 +232,7 @@ mod property_tests {
 
     /// Property test: All valid integers should evaluate correctly
     #[test]
-    #[ignore = Run with: cargo test property_tests -- --ignored
+    #[ignore = "Run with: cargo test property_tests -- --ignored"]
     fn proptest_integer_evaluation() {
         #[cfg(not(target_arch = "wasm32"))]
         {
