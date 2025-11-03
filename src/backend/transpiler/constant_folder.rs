@@ -225,7 +225,7 @@ fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
 
 /// # Complexity
 /// Cyclomatic: 6 (≤10 target)
-pub fn eliminate_dead_code(expr: Expr) -> Expr {
+pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::HashSet<String>) -> Expr {
     match expr.kind {
         ExprKind::Block(exprs) => {
             // First, collect all used function names in the entire block
@@ -235,11 +235,13 @@ pub fn eliminate_dead_code(expr: Expr) -> Expr {
             };
 
             // Then remove dead statements AND unused function definitions
-            let cleaned = remove_dead_statements_and_unused_functions(exprs, &used_functions);
+            // ISSUE-128 FIX: Preserve functions that weren't successfully inlined
+            let cleaned = remove_dead_statements_and_unused_functions(exprs, &used_functions, &inlined_functions);
             Expr::new(ExprKind::Block(cleaned), expr.span)
         }
         ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
-            let cleaned_body = Box::new(eliminate_dead_code((*body).clone()));
+            // For nested functions, pass empty set (no inlining at this level)
+            let cleaned_body = Box::new(eliminate_dead_code((*body).clone(), std::collections::HashSet::new()));
             Expr::new(
                 ExprKind::Function {
                     name,
@@ -254,8 +256,8 @@ pub fn eliminate_dead_code(expr: Expr) -> Expr {
             )
         }
         ExprKind::If { condition, then_branch, else_branch } => {
-            let cleaned_then = Box::new(eliminate_dead_code((*then_branch).clone()));
-            let cleaned_else = else_branch.map(|e| Box::new(eliminate_dead_code((*e).clone())));
+            let cleaned_then = Box::new(eliminate_dead_code((*then_branch).clone(), std::collections::HashSet::new()));
+            let cleaned_else = else_branch.map(|e| Box::new(eliminate_dead_code((*e).clone(), std::collections::HashSet::new())));
             Expr::new(
                 ExprKind::If {
                     condition,
@@ -266,7 +268,7 @@ pub fn eliminate_dead_code(expr: Expr) -> Expr {
             )
         }
         ExprKind::While { condition, body, label } => {
-            let cleaned_body = Box::new(eliminate_dead_code((*body).clone()));
+            let cleaned_body = Box::new(eliminate_dead_code((*body).clone(), std::collections::HashSet::new()));
             Expr::new(
                 ExprKind::While {
                     condition,
@@ -289,7 +291,7 @@ fn remove_dead_statements(exprs: Vec<Expr>) -> Vec<Expr> {
 
     for expr in exprs {
         // Recursively eliminate dead code in child expressions
-        let cleaned = eliminate_dead_code(expr);
+        let cleaned = eliminate_dead_code(expr, std::collections::HashSet::new());
 
         result.push(cleaned.clone());
 
@@ -304,22 +306,40 @@ fn remove_dead_statements(exprs: Vec<Expr>) -> Vec<Expr> {
 
 /// Remove dead statements AND unused function definitions from a block
 ///
+/// ISSUE-128 FIX: Preserve functions that weren't successfully inlined
+///
 /// # Complexity
-/// Cyclomatic: 6 (≤10 target)
-fn remove_dead_statements_and_unused_functions(exprs: Vec<Expr>, used_functions: &HashSet<String>) -> Vec<Expr> {
+/// Cyclomatic: 7 (≤10 target)
+fn remove_dead_statements_and_unused_functions(
+    exprs: Vec<Expr>,
+    used_functions: &HashSet<String>,
+    inlined_functions: &std::collections::HashSet<String>
+) -> Vec<Expr> {
     let mut result = Vec::new();
 
     for expr in exprs {
-        // Skip unused function definitions (inlined and no longer called)
+        // ISSUE-128 FIX: Only remove functions that were BOTH inlined AND no longer used
         if let ExprKind::Function { name, .. } = &expr.kind {
-            if !used_functions.contains(name) && name != "main" {
-                // Skip this function - it's unused
+            // Keep function if:
+            // 1. It's main (always preserve)
+            // 2. It's still called somewhere (in used_functions)
+            // 3. It wasn't inlined (not in inlined_functions, so preserve it)
+            //
+            // Remove function only if:
+            // - It was marked for inlining AND
+            // - It's no longer called anywhere
+            let should_remove = inlined_functions.contains(name)
+                && !used_functions.contains(name)
+                && name != "main";
+
+            if should_remove {
+                // Skip this function - successfully inlined and no longer called
                 continue;
             }
         }
 
         // Recursively eliminate dead code in child expressions
-        let cleaned = eliminate_dead_code(expr);
+        let cleaned = eliminate_dead_code(expr, std::collections::HashSet::new());
 
         result.push(cleaned.clone());
 

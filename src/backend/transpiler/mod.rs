@@ -715,10 +715,11 @@ impl Transpiler {
         let after_propagation = constant_folder::propagate_constants(resolved_expr);
 
         // OPT-CODEGEN-004: Inline small, non-recursive functions
-        let after_inlining = inline_expander::inline_small_functions(after_propagation);
+        let (after_inlining, inlined_functions) = inline_expander::inline_small_functions(after_propagation);
 
         // PERF-002-C: Dead code elimination (removes unused inlined functions)
-        let optimized_expr = constant_folder::eliminate_dead_code(after_inlining);
+        // Pass inlined function names so DCE can preserve functions that weren't inlined
+        let optimized_expr = constant_folder::eliminate_dead_code(after_inlining, inlined_functions);
 
         // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
         // This populates self.mutable_vars, function_signatures, and module_names

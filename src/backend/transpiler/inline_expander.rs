@@ -16,17 +16,24 @@ use std::collections::HashMap;
 /// * `expr` - Expression tree to optimize
 ///
 /// # Returns
-/// Expression with eligible functions inlined
+/// Tuple of (optimized expression, set of inlined function names)
 ///
 /// # Complexity
 /// Cyclomatic: 4 (≤10 target)
-pub fn inline_small_functions(expr: Expr) -> Expr {
+pub fn inline_small_functions(expr: Expr) -> (Expr, std::collections::HashSet<String>) {
+    use std::collections::HashSet;
+
     // First pass: collect inline candidates (small, non-recursive functions)
     let mut functions = HashMap::new();
     collect_inline_candidates(&expr, &mut functions);
 
+    // Track which functions are candidates for inlining
+    let inline_candidates: HashSet<String> = functions.keys().cloned().collect();
+
     // Second pass: replace function calls with inlined bodies
-    inline_function_calls(expr, &functions)
+    let optimized = inline_function_calls(expr, &functions);
+
+    (optimized, inline_candidates)
 }
 
 /// Collect functions that are candidates for inlining
@@ -200,6 +207,17 @@ fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
                 expr.span,
             )
         }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            // ISSUE-128 FIX: Substitute in if-else expressions
+            Expr::new(
+                ExprKind::If {
+                    condition: Box::new(substitute_identifiers((**condition).clone(), subs)),
+                    then_branch: Box::new(substitute_identifiers((**then_branch).clone(), subs)),
+                    else_branch: else_branch.as_ref().map(|e| Box::new(substitute_identifiers((**e).clone(), subs))),
+                },
+                expr.span,
+            )
+        }
         _ => expr, // Other expressions: return as-is
     }
 }
@@ -319,7 +337,7 @@ mod tests {
             Span::default(),
         );
 
-        let result = inline_small_functions(block);
+        let (result, _inlined) = inline_small_functions(block);
 
         // Should inline: call replaced with body
         if let ExprKind::Block(exprs) = result.kind {
@@ -401,7 +419,7 @@ mod tests {
             Span::default(),
         );
 
-        let result = inline_small_functions(block);
+        let (result, _inlined) = inline_small_functions(block);
 
         // Verify result
         if let ExprKind::Block(exprs) = &result.kind {
