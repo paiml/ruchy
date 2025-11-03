@@ -5,3 +5,6 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc a6b2e4956113c17f33ab2ca74b8ae5fd0c8cb580be633ab4d2a55f871571baa8 # shrinks to keyword = "as"
+cc 22e6ac19c0a0e991eb1e72f4539e80dfe6275a0ef7800e5979bd0d4074d72f24 # shrinks to param = "_"
+cc 402c2545fd0370b8adfb040a4a3da29a78690b1d149bc78cc2ebab7e2d9d6a65 # shrinks to mod1 = "_", mod2 = "A", mod3 = "_"
+cc 60c8768c0a4165cc278eb819bc8c056940ad50a50f8d21b0885eac8f96617467 # shrinks to mod1 = "_", mod2 = "_"

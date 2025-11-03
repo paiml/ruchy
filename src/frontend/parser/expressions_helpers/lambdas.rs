@@ -204,6 +204,24 @@ mod tests {
         use super::*;
         use proptest::prelude::*;
 
+        /// Helper: Generate valid identifiers (not keywords)
+        ///
+        /// Keywords like "fn", "if", "let" would cause parser failures.
+        /// This strategy filters them out for property test validity.
+        fn valid_identifier() -> impl Strategy<Value = String> {
+            "[a-z]+"
+                .prop_filter("Must not be a keyword", |s| {
+                    !matches!(
+                        s.as_str(),
+                        "fn" | "fun" | "let" | "var" | "if" | "else" | "for" | "while"
+                            | "loop" | "match" | "break" | "continue" | "return" | "async"
+                            | "await" | "try" | "catch" | "throw" | "in" | "as" | "is"
+                            | "self" | "super" | "mod" | "use" | "pub" | "const" | "static"
+                            | "mut" | "ref" | "type" | "struct" | "enum" | "trait" | "impl"
+                    )
+                })
+        }
+
         proptest! {
             #[test]
             #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
@@ -215,7 +233,7 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_single_param_lambdas_parse(param in "[a-z]+") {
+            fn prop_single_param_lambdas_parse(param in valid_identifier()) {
                 let code = format!("|{param}| {param}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -223,7 +241,7 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_multi_param_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
+            fn prop_multi_param_lambdas_parse(p1 in valid_identifier(), p2 in valid_identifier()) {
                 let code = format!("|{p1}, {p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -231,7 +249,7 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_arrow_syntax_parses(param in "[a-z]+") {
+            fn prop_arrow_syntax_parses(param in valid_identifier()) {
                 let code = format!("{param} => {param} * 2");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -239,7 +257,7 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_arrow_tuple_syntax_parses(p1 in "[a-z]+", p2 in "[a-z]+") {
+            fn prop_arrow_tuple_syntax_parses(p1 in valid_identifier(), p2 in valid_identifier()) {
                 let code = format!("({p1}, {p2}) => {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
@@ -255,7 +273,7 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_nested_lambdas_parse(p1 in "[a-z]+", p2 in "[a-z]+") {
+            fn prop_nested_lambdas_parse(p1 in valid_identifier(), p2 in valid_identifier()) {
                 let code = format!("|{p1}| |{p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());

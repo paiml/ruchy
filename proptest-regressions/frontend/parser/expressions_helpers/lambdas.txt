@@ -4,5 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 3c3cda26136e3c0644a667a61dfb994a22c32cffcdffcb2afe17ca9d1fe4da60 # shrinks to param = "a", val = 0
-cc 16cd123e9245120e532be503705c62affee161292457eed7831261cb7532d78e # shrinks to name = "fn", param = "a"
+cc c601b93ef1b50f572afec6416d65a13bd537bd202f86a567ce311aa58b29259d # shrinks to p1 = "fn", p2 = "a"
