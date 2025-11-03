@@ -223,20 +223,115 @@ fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
     }
 }
 
+/// Collect all variable names that are used (read) in the expression tree
+///
+/// PERF-002-C: Liveness analysis for unused variable elimination
+///
+/// # Complexity
+/// Cyclomatic: 1 (≤10 target)
+fn collect_used_variables(expr: &Expr) -> HashSet<String> {
+    let mut used = HashSet::new();
+    collect_used_variables_rec(expr, &mut used, &HashSet::new());
+    used
+}
+
+/// Recursive helper to collect used variable names
+///
+/// # Arguments
+/// * `expr` - Expression to scan
+/// * `used` - Set to accumulate used variable names
+/// * `bound` - Set of variables currently in scope (to distinguish from function calls)
+///
+/// # Complexity
+/// Cyclomatic: 9 (≤10 target)
+fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &HashSet<String>) {
+    match &expr.kind {
+        ExprKind::Identifier(name) => {
+            // Only count as variable use if it's bound (not a function name)
+            if bound.contains(name) {
+                used.insert(name.clone());
+            }
+        }
+        ExprKind::Let { name, value, body, else_block, .. } => {
+            // First scan the value (before name is bound)
+            collect_used_variables_rec(value, used, bound);
+
+            // Then scan body with name added to bound set
+            let mut new_bound = bound.clone();
+            new_bound.insert(name.clone());
+            collect_used_variables_rec(body, used, &new_bound);
+
+            // Scan else block if present
+            if let Some(else_expr) = else_block {
+                collect_used_variables_rec(else_expr, used, bound);
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for e in exprs {
+                collect_used_variables_rec(e, used, bound);
+            }
+        }
+        ExprKind::Function { body, .. } => {
+            // Functions create new scope - don't propagate outer bindings
+            collect_used_variables_rec(body, used, &HashSet::new());
+        }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            collect_used_variables_rec(condition, used, bound);
+            collect_used_variables_rec(then_branch, used, bound);
+            if let Some(else_expr) = else_branch {
+                collect_used_variables_rec(else_expr, used, bound);
+            }
+        }
+        ExprKind::While { condition, body, .. } => {
+            collect_used_variables_rec(condition, used, bound);
+            collect_used_variables_rec(body, used, bound);
+        }
+        ExprKind::Binary { left, right, .. } => {
+            collect_used_variables_rec(left, used, bound);
+            collect_used_variables_rec(right, used, bound);
+        }
+        ExprKind::Call { func, args } => {
+            collect_used_variables_rec(func, used, bound);
+            for arg in args {
+                collect_used_variables_rec(arg, used, bound);
+            }
+        }
+        ExprKind::Return { value } => {
+            if let Some(val) = value {
+                collect_used_variables_rec(val, used, bound);
+            }
+        }
+        _ => {
+            // Other expressions: no variable uses to track
+        }
+    }
+}
+
 /// # Complexity
 /// Cyclomatic: 6 (≤10 target)
 pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::HashSet<String>) -> Expr {
     match expr.kind {
         ExprKind::Block(exprs) => {
-            // First, collect all used function names in the entire block
+            // PERF-002-C: Collect all used function names in the entire block
             let used_functions = {
                 let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span.clone());
                 collect_used_functions(&temp_expr)
             };
 
-            // Then remove dead statements AND unused function definitions
+            // PERF-002-C: Collect all used variable names for liveness analysis
+            let used_variables = {
+                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span.clone());
+                collect_used_variables(&temp_expr)
+            };
+
+            // Remove dead statements, unused functions, AND unused variables
             // ISSUE-128 FIX: Preserve functions that weren't successfully inlined
-            let cleaned = remove_dead_statements_and_unused_functions(exprs, &used_functions, &inlined_functions);
+            let cleaned = remove_dead_statements_and_unused_functions_and_variables(
+                exprs,
+                &used_functions,
+                &inlined_functions,
+                &used_variables,
+            );
             Expr::new(ExprKind::Block(cleaned), expr.span)
         }
         ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
@@ -278,6 +373,21 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
                 expr.span,
             )
         }
+        ExprKind::Call { func, args } => {
+            // PERF-002-C: Recursively eliminate dead code in function arguments
+            let cleaned_func = Box::new(eliminate_dead_code((*func).clone(), inlined_functions.clone()));
+            let cleaned_args: Vec<Expr> = args
+                .into_iter()
+                .map(|arg| eliminate_dead_code(arg, inlined_functions.clone()))
+                .collect();
+            Expr::new(
+                ExprKind::Call {
+                    func: cleaned_func,
+                    args: cleaned_args,
+                },
+                expr.span,
+            )
+        }
         _ => expr, // Other expressions: no DCE needed
     }
 }
@@ -304,16 +414,18 @@ fn remove_dead_statements(exprs: Vec<Expr>) -> Vec<Expr> {
     result
 }
 
-/// Remove dead statements AND unused function definitions from a block
+/// Remove dead statements, unused function definitions, AND unused variables from a block
 ///
 /// ISSUE-128 FIX: Preserve functions that weren't successfully inlined
+/// PERF-002-C: Remove unused variable bindings via liveness analysis
 ///
 /// # Complexity
-/// Cyclomatic: 7 (≤10 target)
-fn remove_dead_statements_and_unused_functions(
+/// Cyclomatic: 9 (≤10 target)
+fn remove_dead_statements_and_unused_functions_and_variables(
     exprs: Vec<Expr>,
     used_functions: &HashSet<String>,
-    inlined_functions: &std::collections::HashSet<String>
+    inlined_functions: &std::collections::HashSet<String>,
+    used_variables: &HashSet<String>,
 ) -> Vec<Expr> {
     let mut result = Vec::new();
 
@@ -338,6 +450,25 @@ fn remove_dead_statements_and_unused_functions(
             }
         }
 
+        // PERF-002-C: Remove unused variable bindings
+        if let ExprKind::Let { name, value, body, .. } = &expr.kind {
+            // Skip this let binding if the variable is never used
+            // BUT keep it if the value has side effects (like function calls)
+            if !used_variables.contains(name) && !has_side_effects(value) {
+                // Variable is unused and value has no side effects - eliminate it
+                // Continue with the body instead
+                let cleaned_body = eliminate_dead_code((**body).clone(), std::collections::HashSet::new());
+
+                // If body is a block, unwrap it
+                if let ExprKind::Block(inner_exprs) = cleaned_body.kind {
+                    result.extend(inner_exprs);
+                } else {
+                    result.push(cleaned_body);
+                }
+                continue;
+            }
+        }
+
         // Recursively eliminate dead code in child expressions
         let cleaned = eliminate_dead_code(expr, std::collections::HashSet::new());
 
@@ -350,6 +481,21 @@ fn remove_dead_statements_and_unused_functions(
     }
 
     result
+}
+
+/// Check if expression has side effects (prevents DCE)
+///
+/// Side effects include:
+/// - Function calls (may have I/O, mutations, etc.)
+/// - Assignments
+///
+/// # Complexity
+/// Cyclomatic: 3 (≤10 target)
+fn has_side_effects(expr: &Expr) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Call { .. } | ExprKind::Assign { .. }
+    )
 }
 
 /// Check if expression causes early exit
