@@ -4,6 +4,45 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.180.0] - 2025-11-03
+
+### Fixed
+- **[ISSUE-119]** COMPLETE FIX - Double-evaluation bug in builtin function calls
+  - **PROBLEM**: Function arguments with side-effects evaluated TWICE per call
+  - **SYMPTOMS**: `println(inc())` where `inc()` has side-effects called `inc()` twice
+  - **EXAMPLE**:
+    ```ruchy
+    let mut counter = 0
+    fun increment() { counter = counter + 1; counter }
+    println(increment())  // Expected: 1, Actual: 2 ❌
+    println(increment())  // Expected: 2, Actual: 4 ❌
+    println(increment())  // Expected: 3, Actual: 6 ❌
+    ```
+  - **ROOT CAUSE ANALYSIS** (EXTREME TDD + Five Whys + GENCHI GENBUTSU):
+    1. Why double-evaluation? → Args evaluated at line 7476 AND line 7510
+    2. Why twice? → Line 7476 tries builtin with "println", Line 7510 evaluates for normal call
+    3. Why not early-return? → `eval_builtin_function("println")` returns `Ok(None)` (expects "__builtin_println__")
+    4. Why mismatch? → Line 7476 passes bare name, builtin expects marker format
+    5. Why no test? → No test for side-effects in function arguments
+  - **ROOT CAUSE**: Name mismatch - `eval_builtin_function("println", args)` expects `"__builtin_println__"` but receives `"println"`
+  - **SOLUTION** (lines 7471-7473):
+    ```rust
+    // Convert name to builtin marker format (__builtin_NAME__)
+    let builtin_name = format!("__builtin_{}__", name);
+    if let Ok(Some(result)) = eval_builtin_function(&builtin_name, &arg_vals) {
+        return Ok(result);  // Early return prevents second evaluation
+    }
+    ```
+  - **VALIDATION** (EXTREME TDD Protocol):
+    - **RED**: test_issue_119_println_side_effects_evaluated_once FAILS ❌ (output: 2,4,6,6)
+    - **GREEN**: Added builtin marker conversion, test PASSES ✅ (output: 1,2,3,3)
+    - **VALIDATE**: All tests pass (2/2 Issue #119, 8/8 Issue #128, 20/20 interpreter)
+  - **FILES**: `src/runtime/interpreter.rs` (+3 lines at 7471-7473)
+  - **TESTS**: `tests/issue_119_double_evaluation.rs` (2 tests, 98 lines)
+  - **IMPACT**: All builtin functions (println, print, dbg, len, etc.) now evaluate arguments exactly once
+  - **COMPLEXITY**: No increase (simple string formatting)
+  - **Toyota Way**: GENCHI GENBUTSU (go and see actual evaluation) + Five Whys found exact root cause
+
 ## [3.179.0] - 2025-11-03
 
 ### Fixed
