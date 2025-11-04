@@ -204,6 +204,20 @@ impl Transpiler {
                 Ok(quote! { *__guard })
             }
             ExprKind::Binary { left, op, right } => {
+                // TRANSPILER-TYPE FIX: Handle vec + array concatenation in guard context
+                // Pattern: *__guard + [item] → [(*__guard).as_slice(), &[item]].concat()
+                if *op == BinaryOp::Add && matches!(right.kind, ExprKind::List(_)) {
+                    let left_tokens = self.transpile_expr_for_guard(left, var_name)?;
+                    let right_tokens = self.transpile_expr_for_guard(right, var_name)?;
+                    // Wrap left in parens if needed for method call precedence
+                    let left_wrapped = if matches!(left.kind, ExprKind::Binary { .. }) {
+                        quote! { (#left_tokens) }
+                    } else {
+                        left_tokens
+                    };
+                    return Ok(quote! { [#left_wrapped.as_slice(), &#right_tokens].concat() });
+                }
+
                 let left_tokens = self.transpile_expr_for_guard(left, var_name)?;
                 let right_tokens = self.transpile_expr_for_guard(right, var_name)?;
 
