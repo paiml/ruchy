@@ -5,6 +5,22 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.195.0] - 2025-11-04
 
 ### Fixed
+- **[ASYNC-AWAIT]** Fixed dead code elimination removing async functions called via .await (GitHub Issue #133)
+  - **PROBLEM**: `async fun fetch_data()` transpiled to empty output - function was eliminated as "unused"
+  - **ROOT CAUSE**: `collect_used_functions_rec()` in constant_folder.rs didn't handle `ExprKind::Await`
+    - When code does `await fetch_data()`, the Await wraps the Call expression
+    - DCE only checked Call, Block, Function, If, Binary, Let - hit catch-all `_` case for Await
+    - Didn't recurse into Await's inner expression to find the actual function call
+  - **SOLUTION**: Added cases for `Await { expr }`, `AsyncBlock { body }`, `Spawn { actor }` to recurse into async expressions
+  - **FILES**:
+    - src/backend/transpiler/constant_folder.rs:220-229 (added 3 async cases)
+    - tests/perf_002c_dead_code_elimination.rs:372-439 (2 new tests)
+  - **TEST RESULTS**: 2/2 new async tests passing, 9/12 DCE tests passing (3 pre-existing failures)
+  - **VALIDATION**:
+    - Single async function with await: `async fn fetch_data()` ✅ preserved
+    - Multiple async functions chained: fetch_user, fetch_data, process_data ✅ all preserved
+  - **UNBLOCKS**: ruchy-lambda pure Ruchy runtime rewrite (Issue #133 requirement)
+
 - **[TRANSPILER-TYPE]** Fixed empty array type inference for global mutable variables (TRANSPILER-DEFECT-015)
   - **PROBLEM**: Empty arrays (`let mut result = []`) inferred as `i32` instead of `Vec<i32>`, causing compile failures
   - **ROOT CAUSE**:

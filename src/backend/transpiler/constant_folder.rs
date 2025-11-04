@@ -217,6 +217,16 @@ fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
             collect_used_functions_rec(value, used);
             collect_used_functions_rec(body, used);
         }
+        // ASYNC-AWAIT: Handle await expressions to prevent DCE from removing async functions
+        ExprKind::Await { expr } => {
+            collect_used_functions_rec(expr, used);
+        }
+        ExprKind::AsyncBlock { body } => {
+            collect_used_functions_rec(body, used);
+        }
+        ExprKind::Spawn { actor } => {
+            collect_used_functions_rec(actor, used);
+        }
         _ => {
             // Other expressions: no function calls to track
         }
