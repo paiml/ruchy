@@ -886,6 +886,7 @@ impl Transpiler {
                 needs_polars,
                 needs_hashmap,
                 &imports,
+                &globals,
             )
         } else {
             self.transpile_block_with_functions(
@@ -1295,6 +1296,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
         imports: &[TokenStream],
+        globals: &[TokenStream],
     ) -> Result<TokenStream> {
         if statements.is_empty() && main_expr.is_some() {
             self.transpile_functions_only_mode(
@@ -1304,6 +1306,7 @@ impl Transpiler {
                 needs_polars,
                 needs_hashmap,
                 imports,
+                globals,
             )
         } else {
             self.transpile_with_top_level_statements(
@@ -1314,6 +1317,7 @@ impl Transpiler {
                 needs_polars,
                 needs_hashmap,
                 imports,
+                globals,
             )
         }
     }
@@ -1328,6 +1332,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
         imports: &[TokenStream],
+        globals: &[TokenStream],
     ) -> Result<TokenStream> {
         let main_tokens = if let Some(main) = main_expr {
             self.transpile_expr(main)?
@@ -1339,6 +1344,7 @@ impl Transpiler {
         Ok(quote! {
             #use_statements
             #(#imports)*
+            #(#globals)*
             #(#modules)*
             #(#functions)*
             #main_tokens
@@ -1360,6 +1366,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
         imports: &[TokenStream],
+        globals: &[TokenStream],
     ) -> Result<TokenStream> {
         // DEFECT-COMPILE-MAIN-CALL: If we have both main function AND module-level statements,
         // we need to rename the user's main to avoid collision with Rust's entry point
@@ -1378,6 +1385,7 @@ impl Transpiler {
         Ok(quote! {
             #use_statements
             #(#imports)*
+            #(#globals)*
             #(#modules)*
             #(#functions)*
             #user_main_function

@@ -206,6 +206,19 @@ impl Transpiler {
             ExprKind::Binary { left, op, right } => {
                 let left_tokens = self.transpile_expr_for_guard(left, var_name)?;
                 let right_tokens = self.transpile_expr_for_guard(right, var_name)?;
+
+                // Wrap nested Binary expressions in parentheses to preserve precedence
+                let left_wrapped = if matches!(left.kind, ExprKind::Binary { .. }) {
+                    quote! { ( #left_tokens ) }
+                } else {
+                    left_tokens
+                };
+                let right_wrapped = if matches!(right.kind, ExprKind::Binary { .. }) {
+                    quote! { ( #right_tokens ) }
+                } else {
+                    right_tokens
+                };
+
                 // Inline binary operator generation
                 let op_token = match op {
                     BinaryOp::Add => quote! { + },
@@ -229,7 +242,7 @@ impl Transpiler {
                     BinaryOp::RightShift => quote! { >> },
                     _ => quote! { /* unsupported op */ },
                 };
-                Ok(quote! { #left_tokens #op_token #right_tokens })
+                Ok(quote! { #left_wrapped #op_token #right_wrapped })
             }
             ExprKind::Unary { op, operand } => {
                 let operand_tokens = self.transpile_expr_for_guard(operand, var_name)?;
