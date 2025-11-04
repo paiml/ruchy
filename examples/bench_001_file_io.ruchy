@@ -1,0 +1,39 @@
+// BENCH-001: File I/O Benchmark - Large File Read
+// Tests file I/O performance with large text file
+// Pattern: read_file() returns unwrapped string (Issue #121 fix)
+
+// Create a test file with repeated content (simple and fast)
+let line_template = "The quick brown fox jumps over the lazy dog. This is line content for benchmarking file I/O performance.\n"
+let repeat_count = 1000  // 1K lines (quick test, increase for real benchmark)
+
+// Build file content by repeating template
+println("Generating test file...")
+let mut content = ""
+let mut i = 0
+while i < repeat_count {
+    content = content + line_template
+    i = i + 1
+}
+
+// Write test file
+fs_write("/tmp/bench_001_large.txt", content)
+let original_size = len(content)
+println("Test file created: " + original_size + " bytes")
+
+// Benchmark: Read the file back
+println("Reading file...")
+let file_contents = read_file("/tmp/bench_001_large.txt")
+
+// Measure results
+let bytes_read = len(file_contents)
+
+println("\n=== BENCH-001 Results ===")
+println("Bytes written: " + original_size)
+println("Bytes read: " + bytes_read)
+
+// Verification (exact match)
+if bytes_read == original_size {
+    println("\n✅ BENCH-001 PASSED - File I/O working correctly!")
+} else {
+    println("\n❌ BENCH-001 FAILED - Size mismatch!")
+}

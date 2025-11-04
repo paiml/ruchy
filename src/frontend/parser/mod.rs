@@ -393,9 +393,13 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
             }
         }
         Some(Token::LeftBracket) => {
-            // PARSER-081 FIX: Don't treat `[` as array indexing after literals or struct literals
-            // This prevents `let y = 2 [x, y]` and `let p = Point{...} [x]` from being parsed as indexing
-            if matches!(left.kind, ExprKind::Literal(_) | ExprKind::StructLiteral { .. }) {
+            // PARSER-081 FIX: Don't treat `[` as array indexing after literals, struct literals, let statements, or standalone function calls
+            // This prevents `let y = 2 [x, y]`, `let p = Point{...} [x]`, and `let result = foo() [1, 2]` from being parsed as indexing
+            // PARSER-086: Extended to fix block-level let with function call followed by array literal
+            if matches!(
+                left.kind,
+                ExprKind::Literal(_) | ExprKind::StructLiteral { .. } | ExprKind::Let { .. } | ExprKind::Call { .. }
+            ) {
                 Ok(None) // Not array indexing, `[...]` is a separate expression
             } else {
                 Ok(Some(handle_array_indexing(state, left)?))

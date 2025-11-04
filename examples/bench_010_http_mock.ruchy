@@ -1,0 +1,76 @@
+// BENCH-010: HTTP Mock Benchmark - Request/Response Processing
+// Tests string manipulation and data processing similar to HTTP handling
+// Pattern: Simulates 1K HTTP-like request/response cycles
+
+// Simulate request processing (simple string operations)
+// Returns: [status_code, response_body]
+fun get_status_and_body(path) {
+    if path == "/api/users" {
+        [200, "users_list"]
+    } else {
+        if path == "/api/health" {
+            [200, "ok"]
+        } else {
+            [404, "not_found"]
+        }
+    }
+}
+
+fun process_request(id, method, path) {
+    let result = get_status_and_body(path)
+    [id, result[0], result[1]]
+}
+
+// Run benchmark: Process 1K requests
+let request_count = 1000
+let mut responses = []
+let mut status_200_count = 0
+let mut status_404_count = 0
+
+println("Processing " + request_count + " mock HTTP requests...")
+
+let mut i = 0
+while i < request_count {
+    // Vary paths to simulate different routes
+    let mut path = "/api/users"
+    if i % 3 == 1 {
+        path = "/api/health"
+    } else {
+        if i % 3 == 2 {
+            path = "/api/unknown"
+        }
+    }
+
+    let response = process_request(i, "GET", path)
+    responses = responses + [response]
+
+    let status = response[1]
+    if status == 200 {
+        status_200_count = status_200_count + 1
+    } else {
+        status_404_count = status_404_count + 1
+    }
+
+    i = i + 1
+}
+
+// Validate results
+let response_count = len(responses)
+
+println("\n=== BENCH-010 Results ===")
+println("Requests processed: " + response_count)
+println("200 responses: " + status_200_count)
+println("404 responses: " + status_404_count)
+
+// Verification (expect ~667 200s, ~333 404s from pattern)
+let passed = if response_count == request_count {
+    status_200_count > 600 && status_404_count > 300
+} else {
+    false
+}
+
+if passed {
+    println("\n✅ BENCH-010 PASSED - HTTP mock processing working correctly!")
+} else {
+    println("\n❌ BENCH-010 FAILED - Response validation failed")
+}

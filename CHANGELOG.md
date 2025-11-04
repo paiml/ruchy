@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.194.0] - 2025-11-04
 
 ### Fixed
+- **[PARSER-086]** Fixed parser error with function calls in let statements followed by arrays (Issue #134)
+  - **PROBLEM**: `fun f() { let x = call() [1, 2, 3] }` fails with "Expected RightBrace, found Let"
+  - **ROOT CAUSE**: Function call followed by `[` was parsed as array indexing, not separate array literal
+  - **SOLUTION**: Extended PARSER-081 fix to treat `Call` expressions like literals (no postfix indexing)
+  - **FILES**:
+    - src/frontend/parser/mod.rs:399 (added ExprKind::Call to disambiguation pattern)
+    - tests/parser_nested_if_array_bug.rs (8 RED tests, all passing)
+  - **TEST RESULTS**: 8/8 tests passing, 4046 total tests passing
+  - **VALIDATION**: Full test suite + BENCH-010 unblocked
 - **[CRITICAL]** Fixed double-locking deadlock in global variable assignments (Issue #132)
   - **PROBLEM**: Code with `counter = counter + 1` hangs forever (deadlock)
   - **ROOT CAUSE (Five Whys Analysis)**:

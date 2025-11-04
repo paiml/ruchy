@@ -8253,6 +8253,142 @@ next_sprint:
         - "tests/parser_081_array_literals_with_identifiers.rs - Created 10 comprehensive tests"
 
   # ---------------------------------------------------------------------------
+  # PARSER-086: Nested If-Else with Array Returns
+  # ---------------------------------------------------------------------------
+
+  parser_086_plan:
+    ticket: "PARSER-086"
+    title: "Parser fails on nested if-else returning arrays with string literals"
+    priority: "HIGH"
+    impact: "Blocks BENCH-010 (HTTP mock benchmark) and any code with nested if-else + arrays + strings"
+    github_issue: "#134"
+
+    root_cause_analysis:
+      current_state: "Parser handles simple if-else with arrays, and nested if-else without arrays"
+      bug: "Parser fails with 'Expected RightBrace, found Let' when first function has nested if-else returning arrays with strings, followed by second function using let"
+      proof: "BENCH-010 fails, minimal reproduction created in /tmp/test_array_bug.ruchy"
+      five_whys:
+        1_why: "Why does parser fail?"
+        1_because: "Parser expects RightBrace but finds Let keyword"
+        2_why: "Why does parser expect RightBrace at that position?"
+        2_because: "Parser thinks it's still parsing the first function's body"
+        3_why: "Why does parser think it's still in first function?"
+        3_because: "Parser didn't properly close the function after the nested if-else expression"
+        4_why: "Why didn't parser close the function properly?"
+        4_because: "The nested if-else with array literals containing strings confuses the brace-counting logic"
+        5_why: "Why does nested if-else with array/string confuse brace counting?"
+        5_root_cause: "String literals in array expressions may be interfering with the parser's ability to properly track braces when used as the final expression in a nested if-else that's the return value of a function"
+
+    minimal_reproduction: |
+      fun foo(path) {
+          if path == "/api/users" {
+              [200, "users"]
+          } else {
+              if path == "/api/health" {
+                  [200, "ok"]
+              } else {
+                  [404, "not_found"]
+              }
+          }
+      }
+
+      fun bar(id, path) {
+          let result = foo(path)  // ← ERROR: Expected RightBrace, found Let
+          [id, result[0], result[1]]
+      }
+
+    evidence_pattern:
+      works:
+        - "✅ Nested if-else without arrays"
+        - "✅ Arrays with integers only [200, 201]"
+        - "✅ Single if-else with arrays and strings"
+        - "✅ Simple nested if-else with integers"
+      fails:
+        - "❌ Nested if-else + arrays + strings as function return"
+        - "❌ Only when second function follows with let binding"
+
+    extreme_tdd_phases:
+
+      red_phase:
+        description: "Write failing tests demonstrating nested if-else array bugs"
+        test_file: "tests/parser_nested_if_array_bug.rs"
+        test_sections:
+          - section: "Section 1: Core Bug Patterns (RED)"
+            tests:
+              - "test_parser_xxx_nested_if_array_simple - Minimal reproduction"
+              - "test_parser_xxx_nested_if_three_branches - BENCH-010 pattern (FAILS)"
+              - "test_parser_xxx_with_trailing_code - Trailing code after functions (FAILS)"
+          - section: "Section 2: Control Tests (GREEN - should pass)"
+            tests:
+              - "test_parser_xxx_without_strings_works - Arrays with integers"
+              - "test_parser_xxx_single_if_with_strings_works - Single if-else"
+          - section: "Section 3: Extended Patterns (RED)"
+            tests:
+              - "test_parser_xxx_multiple_functions_with_let - Three functions chained"
+              - "test_parser_xxx_array_index_access - Array indexing in second function"
+              - "test_parser_xxx_deeply_nested - 4-level nested if-else"
+        expected_result: "8 tests total: 6 passing (control tests), 2 failing (bug tests)"
+        actual_result: "✅ RED PHASE COMPLETE - 6 passed, 2 failed as expected"
+        time_estimate: "30 minutes"
+        actual_time: "45 minutes"
+
+      green_phase:
+        description: "Fix parser brace tracking for nested if-else with arrays"
+        target_files:
+          - "src/frontend/parser/expressions_helpers/patterns.rs (parse_if_expression)"
+          - "src/frontend/parser/expressions_helpers/arrays.rs (parse_array_element)"
+          - "src/frontend/parser/functions.rs (parse_function)"
+        implementation_plan:
+          - step: "Use Genchi Genbutsu - examine actual parser code for brace tracking"
+          - step: "Identify where if-else parsing closes its braces"
+          - step: "Identify where array parsing handles string literals"
+          - step: "Find interaction between nested if-else brace tracking and array/string parsing"
+          - step: "Implement minimal fix to properly track braces through nested constructs"
+          - step: "Verify all 8 tests pass (2 failing tests should turn green)"
+        root_cause_fix: "TBD - Will be determined via Genchi Genbutsu code examination"
+        expected_complexity: "≤10 (Toyota Way compliant)"
+        expected_result: "8/8 tests passing"
+        time_estimate: "1-2 hours"
+
+      refactor_phase:
+        description: "Apply quality gates and property testing"
+        tasks:
+          - "Verify complexity ≤10 via pmat analyze"
+          - "Ensure TDG score ≥A- (85+)"
+          - "Run cargo clippy --all-targets -- -D warnings"
+          - "Add property tests for nested if-else depth (1-5 levels)"
+          - "Add property tests for array elements (0-10 elements)"
+          - "Test with ruchydbg for timeout detection"
+        property_tests:
+          - "prop_parser086_nested_if_depth(depth: 1..5)"
+          - "prop_parser086_array_elements(count: 0..10)"
+          - "prop_parser086_string_in_arrays()"
+        expected_result: "10K+ property test cases pass, complexity ≤10, TDG ≥A-"
+        time_estimate: "30 minutes"
+
+      validate_phase:
+        description: "Full validation with ruchydbg and real benchmarks"
+        tasks:
+          - "Run full test suite: cargo test"
+          - "Test BENCH-010 with fixed parser"
+          - "Validate with ruchydbg run --timeout 5000 --trace"
+          - "Run all examples/ to ensure no regressions"
+        expected_result: "BENCH-010 unblocked, all tests passing, no regressions"
+        time_estimate: "20 minutes"
+
+    acceptance_criteria:
+      - "✅ All 8 RED phase tests pass (including 2 that initially failed)"
+      - "✅ BENCH-010 (HTTP mock) works correctly"
+      - "✅ Complexity ≤10 (Toyota Way)"
+      - "✅ TDG score ≥A- (85+)"
+      - "✅ Zero clippy warnings"
+      - "✅ Full test suite passing"
+      - "✅ ruchydbg validation complete"
+
+    estimated_time: "3 hours"
+    status: "🚧 IN PROGRESS - RED phase complete, GREEN phase starting"
+
+  # ---------------------------------------------------------------------------
   # EVALUATOR-002: Method Chaining with Array Indexing
   # ---------------------------------------------------------------------------
 
