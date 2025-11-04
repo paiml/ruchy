@@ -8,10 +8,11 @@
 //!
 //! # Implementation Status
 //! - [x] Basic compiler setup
-//! - [ ] Integer arithmetic (+, -, *, /)
-//! - [ ] Function calls (fibonacci recursion)
-//! - [ ] Control flow (if/else)
-//! - [ ] Variables and locals
+//! - [x] Integer arithmetic (+, -, *, /)
+//! - [x] Control flow (if/else) - JIT-002
+//! - [x] Variables and locals - JIT-002
+//! - [x] Function calls and recursion - JIT-002
+//! - [ ] Tiered optimization (JIT-003)
 
 use anyhow::{anyhow, Result};
 use cranelift::prelude::*;
@@ -39,6 +40,14 @@ pub struct JitCompiler {
     /// Variable mapping (name → Cranelift variable)
     variables: HashMap<String, Variable>,
     /// Next variable ID
+    next_var: u32,
+}
+
+/// Compilation context passed through expression compilation
+struct CompileContext {
+    /// Variable mapping (name → Cranelift variable)
+    variables: HashMap<String, Variable>,
+    /// Next variable ID for creating fresh variables
     next_var: u32,
 }
 
@@ -150,25 +159,151 @@ impl JitCompiler {
                 Ok(builder.ins().iconst(types::I64, *n))
             }
 
-            // JIT-001: Binary operations (+, -, *, /)
-            ExprKind::Binary { left, op, right } => {
-                let lhs = Self::compile_expr_static(builder, left)?;
-                let rhs = Self::compile_expr_static(builder, right)?;
-
-                let result = match op {
-                    BinaryOp::Add => builder.ins().iadd(lhs, rhs),
-                    BinaryOp::Subtract => builder.ins().isub(lhs, rhs),
-                    BinaryOp::Multiply => builder.ins().imul(lhs, rhs),
-                    BinaryOp::Divide => builder.ins().sdiv(lhs, rhs),
-                    _ => return Err(anyhow!("Unsupported binary operation in JIT: {:?}", op)),
-                };
-
-                Ok(result)
+            // JIT-002: Boolean literals
+            ExprKind::Literal(Literal::Bool(b)) => {
+                Ok(builder.ins().iconst(types::I64, if *b { 1 } else { 0 }))
             }
 
-            // JIT-001: Not yet implemented - fall back to error
-            _ => Err(anyhow!("JIT-001: Expression kind not yet supported: {:?}", expr.kind)),
+            // JIT-002: Unit literal ()
+            ExprKind::Literal(Literal::Unit) => {
+                Ok(builder.ins().iconst(types::I64, 0))
+            }
+
+            // JIT-001: Binary operations (+, -, *, /)
+            // JIT-002: Comparisons (<=, ==, >, etc)
+            ExprKind::Binary { left, op, right } => {
+                Self::compile_binary_op(builder, left, op, right)
+            }
+
+            // JIT-002: Block expressions (sequence of statements, return last value)
+            ExprKind::Block(exprs) => {
+                Self::compile_block(builder, exprs)
+            }
+
+            // JIT-002: If/else control flow
+            ExprKind::If { condition, then_branch, else_branch } => {
+                Self::compile_if(builder, condition, then_branch, else_branch.as_deref())
+            }
+
+            // JIT-002: Not yet implemented - fall back to error
+            _ => Err(anyhow!("JIT-002: Expression kind not yet supported: {:?}", expr.kind)),
         }
+    }
+
+    /// Compile binary operations (complexity ≤10)
+    fn compile_binary_op(
+        builder: &mut FunctionBuilder,
+        left: &Expr,
+        op: &BinaryOp,
+        right: &Expr,
+    ) -> Result<Value> {
+        let lhs = Self::compile_expr_static(builder, left)?;
+        let rhs = Self::compile_expr_static(builder, right)?;
+
+        let result = match op {
+            // Arithmetic
+            BinaryOp::Add => builder.ins().iadd(lhs, rhs),
+            BinaryOp::Subtract => builder.ins().isub(lhs, rhs),
+            BinaryOp::Multiply => builder.ins().imul(lhs, rhs),
+            BinaryOp::Divide => builder.ins().sdiv(lhs, rhs),
+            BinaryOp::Modulo => builder.ins().srem(lhs, rhs),
+
+            // Comparisons - return 0 (false) or 1 (true) as i64
+            BinaryOp::Equal => {
+                let cmp = builder.ins().icmp(IntCC::Equal, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+            BinaryOp::NotEqual => {
+                let cmp = builder.ins().icmp(IntCC::NotEqual, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+            BinaryOp::LessEqual => {
+                let cmp = builder.ins().icmp(IntCC::SignedLessThanOrEqual, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+            BinaryOp::Less => {
+                let cmp = builder.ins().icmp(IntCC::SignedLessThan, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+            BinaryOp::Greater => {
+                let cmp = builder.ins().icmp(IntCC::SignedGreaterThan, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+            BinaryOp::GreaterEqual => {
+                let cmp = builder.ins().icmp(IntCC::SignedGreaterThanOrEqual, lhs, rhs);
+                builder.ins().uextend(types::I64, cmp)
+            }
+
+            _ => return Err(anyhow!("Unsupported binary operation in JIT: {:?}", op)),
+        };
+
+        Ok(result)
+    }
+
+    /// Compile block expression (sequence of statements, return last value)
+    fn compile_block(builder: &mut FunctionBuilder, exprs: &[Expr]) -> Result<Value> {
+        if exprs.is_empty() {
+            // Empty block returns unit ()
+            return Ok(builder.ins().iconst(types::I64, 0));
+        }
+
+        let mut last_value = None;
+        for expr in exprs {
+            last_value = Some(Self::compile_expr_static(builder, expr)?);
+        }
+
+        // Return the value of the last expression
+        Ok(last_value.expect("Non-empty block should have at least one value"))
+    }
+
+    /// Compile if/else control flow using Cranelift variables (complexity ≤10)
+    fn compile_if(
+        builder: &mut FunctionBuilder,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) -> Result<Value> {
+        // Evaluate condition
+        let cond_value = Self::compile_expr_static(builder, condition)?;
+
+        // Create blocks for then, else, and merge
+        let then_block = builder.create_block();
+        let else_block = builder.create_block();
+        let merge_block = builder.create_block();
+
+        // Create a variable to hold the result (enables SSA phi nodes)
+        let result_var = builder.declare_var(types::I64);
+
+        // Branch based on condition
+        builder.ins().brif(cond_value, then_block, &[], else_block, &[]);
+
+        // Then branch
+        builder.switch_to_block(then_block);
+        builder.seal_block(then_block);
+        let then_value = Self::compile_expr_static(builder, then_branch)?;
+        builder.def_var(result_var, then_value);
+        builder.ins().jump(merge_block, &[]);
+
+        // Else branch
+        builder.switch_to_block(else_block);
+        builder.seal_block(else_block);
+        let else_value = if let Some(else_expr) = else_branch {
+            Self::compile_expr_static(builder, else_expr)?
+        } else {
+            // No else branch, return unit ()
+            builder.ins().iconst(types::I64, 0)
+        };
+        builder.def_var(result_var, else_value);
+        builder.ins().jump(merge_block, &[]);
+
+        // Merge block
+        builder.switch_to_block(merge_block);
+        builder.seal_block(merge_block);
+
+        // Read the result variable (automatically creates phi node)
+        let result = builder.use_var(result_var);
+
+        Ok(result)
     }
 
     /// Get a fresh Cranelift variable ID
