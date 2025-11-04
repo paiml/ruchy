@@ -6,26 +6,74 @@ metadata:
   last_updated: "2025-11-04"
   current_sprint: "✅ COMPLETE - TRANSPILER-SCOPE + Issue #132 (globals emission fixed)"
   latest_release: "v3.194.0"
-  latest_commit_message: "[RELEASE] v3.194.0 - Issue #132 completely fixed"
-  latest_commit_hash: "9fb11f88"
-  current_work: "✅ COMPLETE - TRANSPILER-SCOPE + Issue #132: 3-line fix unblocked transpile/compile modes (0% → 100%)"
-  next_phase: "Check roadmap for next priority item"
+  latest_commit_message: "[POLICY] Establish Friday-only crates.io release schedule"
+  latest_commit_hash: "300bfff8"
+  current_work: "✅ COMPLETE - v3.194.0 shipped (Issue #132 + TRANSPILER-SCOPE), Friday-only release policy established"
+  next_phase: "Development work continues, next crates.io publish: Friday 2025-11-08"
   benchmark_validation_status: "✅ 9/12 BENCHMARKS WORKING (75%) - BENCH-009 unblocked by ISSUE-131"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
-  priority_rationale: "BENCH-009 unblocked with one-line fix - 9/12 benchmarks now functional"
+  priority_rationale: "Focus on remaining 3 benchmarks (BENCH-010, BENCH-011, BENCH-012) and property test coverage (80% target)"
   debugger_051_status: "✅ COMPLETE - performance-profiling-compiler-tooling.md (1436 LOC Julia analysis)"
   compiler_optimization_spec: "✅ NEW SPEC - compiler-transpiler-optimization-spec.md (72KB, Nov 2, 2025, 12 peer-reviewed papers)"
   crates_io_status:
-    ruchy: "v3.194.0 - Ready for publication 🚀"
-    ruchy_wasm: "v3.194.0 - Ready for publication 🚀"
-  github_tag: "v3.194.0 - Committed, ready to push ✅"
+    ruchy: "v3.194.0 - Tagged, awaiting Friday 2025-11-08 for crates.io publish 📅"
+    ruchy_wasm: "v3.194.0 - Tagged, awaiting Friday 2025-11-08 for crates.io publish 📅"
+  github_tag: "v3.194.0 - Pushed ✅"
+  release_policy: "📅 FRIDAYS ONLY - See CLAUDE.md section: CRATES.IO RELEASE SCHEDULE"
 
-  session_summary_2025_11_04_transpiler_scope_investigation:
+  technical_debt_inventory:
+    last_audit: "2025-11-04"
+    total_items: 5
+    policy: "Zero tolerance - All TODO/FIXME/HACK comments must have corresponding tickets"
+    items:
+      - id: "DEBT-001"
+        type: "TODO"
+        location: "src/bin/handlers/mod.rs:339"
+        description: "Add module resolution for interpreter path"
+        ticket: "ISSUE-106"
+        priority: "Medium"
+        status: "Open"
+
+      - id: "DEBT-002"
+        type: "TODO"
+        location: "src/runtime/interpreter.rs:1301"
+        description: "Implement ImportDefault variant"
+        ticket: "None (needs ticket creation)"
+        priority: "Low"
+        status: "Open"
+
+      - id: "DEBT-003"
+        type: "TODO"
+        location: "src/runtime/bytecode/compiler.rs:261"
+        description: "Track line numbers from AST"
+        ticket: "None (needs ticket creation)"
+        priority: "Medium"
+        status: "Open"
+
+      - id: "DEBT-004"
+        type: "TODO"
+        location: "src/runtime/bytecode/compiler.rs:576"
+        description: "Implement proper lifetime analysis for register allocation"
+        ticket: "None (needs ticket creation)"
+        priority: "Low"
+        status: "Open"
+
+      - id: "DEBT-005"
+        type: "TODO + #[allow(unsafe_code)]"
+        location: "src/runtime/bytecode/vm.rs:125"
+        description: "Refactor CallFrame to avoid 'static lifetime requirement"
+        ticket: "None (needs ticket creation)"
+        priority: "Medium"
+        status: "Open"
+        note: "Currently using unsafe code - should be refactored to safe alternative"
+
+  session_summary_2025_11_04_issue_132_transpiler_scope_complete:
     date: "2025-11-04"
-    tickets: ["PARSER-079", "TRANSPILER-SCOPE"]
-    status: "🔬 INVESTIGATED"
-    goal: "Fix transpiler scope bug - top-level let mut + functions compilation failure"
-    method: "Genchi Genbutsu + ruchydbg v1.24.0 + EXTREME TDD (RED phase complete)"
+    tickets: ["ISSUE-132", "TRANSPILER-SCOPE", "PARSER-079"]
+    status: "✅ COMPLETE"
+    goal: "Fix Issue #132 deadlock + transpile/compile modes + TRANSPILER-SCOPE"
+    method: "Five Whys + EXTREME TDD (RED→GREEN→REFACTOR→VALIDATE) + ruchydbg v1.24.0"
+    version: "v3.194.0"
 
     bug_status:
       parser_079: "✅ FIXED - { break 'outer } parses correctly"
