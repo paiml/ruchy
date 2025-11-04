@@ -158,7 +158,7 @@ assertions_on_constants = "allow"  # Tests assert expected constants
 overly_complex_bool_expr = "allow"  # Tests can have complex conditions
 
 [workspace.package]
-version = "3.195.0"
+version = "3.196.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -185,6 +185,15 @@ syn = { version = "2.0", features = ["full", "extra-traits", "visit-mut"] }
 quote = "1.0"
 proc-macro2 = "1.0"
 prettyplease = "0.2"
+
+# JIT Compilation (Cranelift) - JIT-001
+cranelift = "0.125"
+cranelift-codegen = "0.125"
+cranelift-frontend = "0.125"
+cranelift-jit = "0.125"
+cranelift-module = "0.125"
+cranelift-native = "0.125"
+target-lexicon = "0.12"
 
 # REPL
 rustyline = "17.0"
@@ -234,6 +243,8 @@ stub_tests = []  # Enable stub tests for incomplete features (development only)
 notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
 wasm-compile = []  # WASM compilation is always available via wasm-encoder
+# JIT Compilation feature (JIT-001) - CRITICAL P0
+jit = ["dep:cranelift", "dep:cranelift-codegen", "dep:cranelift-frontend", "dep:cranelift-jit", "dep:cranelift-module", "dep:cranelift-native", "dep:target-lexicon"]
 # Optional features for minimal builds (DEPENDENCY-CLEANUP Sprint v3.109.0)
 http-client = ["dep:reqwest"]
 markdown = ["dep:pulldown-cmark"]
@@ -280,6 +291,14 @@ serde-wasm-bindgen = "0.6"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["console"] }
 console_error_panic_hook = "0.1"
+# JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
+cranelift = { workspace = true, optional = true }
+cranelift-codegen = { workspace = true, optional = true }
+cranelift-frontend = { workspace = true, optional = true }
+cranelift-jit = { workspace = true, optional = true }
+cranelift-module = { workspace = true, optional = true }
+cranelift-native = { workspace = true, optional = true }
+target-lexicon = { workspace = true, optional = true }
 # Hardware detection
 num_cpus = "1.17"
 # MCP Integration (optional for WASM compatibility)
