@@ -320,6 +320,10 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
         ExprKind::Assign { target, value } => {
             check_for_external_refs(target, allowed) || check_for_external_refs(value, allowed)
         }
+        ExprKind::CompoundAssign { target, value, .. } => {
+            // FIX: Detect globals in compound assignments (total += x)
+            check_for_external_refs(target, allowed) || check_for_external_refs(value, allowed)
+        }
         ExprKind::Binary { left, right, .. } => {
             check_for_external_refs(left, allowed) || check_for_external_refs(right, allowed)
         }

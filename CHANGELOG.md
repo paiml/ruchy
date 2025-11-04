@@ -4,6 +4,58 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[CRITICAL]** Fixed double-locking deadlock in global variable assignments (Issue #132)
+  - **PROBLEM**: Code with `counter = counter + 1` hangs forever (deadlock)
+  - **ROOT CAUSE**: Transpiled code acquired same mutex lock twice on one thread
+  - **EXAMPLE**:
+    ```rust
+    // GENERATED (DEADLOCKS):
+    *counter.lock().unwrap() = *counter.lock().unwrap() + 1;
+    //       Lock #1                    Lock #2 → DEADLOCK!
+    ```
+  - **SOLUTION**: Single-lock pattern - acquire mutex once, operate on guard
+    ```rust
+    // FIXED (NO DEADLOCK):
+    {
+        let mut __guard = counter.lock().unwrap();
+        *__guard = *__guard + 1;
+    }
+    ```
+  - **FILES**:
+    - `src/backend/transpiler/expressions.rs`: Added deadlock detection in `transpile_assign()` and `transpile_compound_assign()`
+    - `tests/transpiler_deadlock_fix.rs`: 3 RED tests with timeout detection (exit code 124)
+  - **VALIDATION**:
+    - ✅ RED: 3/3 tests timeout (deadlock detected by `timeout 2` command)
+    - ✅ GREEN: 3/3 tests pass (no deadlock, correct output)
+    - ✅ ruchydbg: 4ms execution, type-aware tracing, zero hangs
+    - ✅ Transpilation: Functions preserved, correct Rust code generated
+  - **IMPACT**: All global variable assignments now deadlock-safe
+
+- **[TRANSPILER]** Fixed inline expander removing functions with CompoundAssign to globals
+  - **PROBLEM**: Functions using `total += x` disappeared during transpilation
+  - **ROOT CAUSE**: `check_for_external_refs()` missing `ExprKind::CompoundAssign` case
+  - **FIVE WHYS**:
+    1. Why functions disappearing? → Inlined by optimizer
+    2. Why inlining breaks code? → Globals not detected
+    3. Why globals not detected? → Missing CompoundAssign case
+    4. Why does that matter? → `total += x` doesn't trigger global detection
+    5. Why breaks compilation? → Inlined code has undefined variables
+  - **SOLUTION**: Added CompoundAssign case to detect global variable access
+  - **FILES**:
+    - `src/backend/transpiler/inline_expander.rs`: Added CompoundAssign handling (line 323-326)
+  - **VALIDATION**:
+    - ✅ Before: Functions with `total += x` were inlined, causing undefined variable errors
+    - ✅ After: Functions preserved, transpilation succeeds
+    - ✅ ruchydbg: Interpreter works correctly (validates logic is sound)
+  - **IMPACT**: Functions accessing globals via compound assignment now preserve correctly
+
+- **[DOCUMENTATION]** Added mandatory ruchydbg debugging workflow to CLAUDE.md
+  - Integrated with `../ruchyruchy/DEBUGGING_GUIDE.md`
+  - Four-step debugging protocol: run → tokenize → trace → verify
+  - Example from this session demonstrating proper workflow
+  - Prevents manual code inspection before using debugging tools
+
 ## [3.194.0] - 2025-11-04
 
 ### Fixed

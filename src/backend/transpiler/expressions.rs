@@ -4,11 +4,11 @@
 use super::Transpiler;
 use crate::frontend::ast::{
     BinaryOp::{self},
-    Expr, ExprKind, Literal, StringPart,
+    Expr, ExprKind, Literal, StringPart, UnaryOp,
 };
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 
 #[path = "expressions_helpers/mod.rs"]
 mod expressions_helpers;
@@ -126,6 +126,21 @@ impl Transpiler {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
+        // DEADLOCK FIX (Issue #132): Check if assigning to a global that's also in value
+        // If so, use single-lock pattern to avoid deadlock
+        if let ExprKind::Identifier(target_name) = &target.kind {
+            if self.global_vars.read().unwrap().contains(target_name) {
+                // Target is a global - check if value also references it
+                if self.expr_references_var(value, target_name) {
+                    // DEADLOCK SCENARIO: counter = counter + 1
+                    // Generate single-lock pattern:
+                    //   { let mut guard = counter.lock().unwrap(); *guard = *guard + 1; }
+                    return self.transpile_assign_global_self_ref(target_name, value);
+                }
+            }
+        }
+
+        // Standard assignment (no deadlock risk)
         let value_tokens = self.transpile_expr(value)?;
 
         // BUG-003: Handle IndexAccess specially for lvalue (no .clone())
@@ -137,6 +152,99 @@ impl Transpiler {
             _ => {
                 let target_tokens = self.transpile_expr(target)?;
                 Ok(quote! { #target_tokens = #value_tokens })
+            }
+        }
+    }
+
+    /// Check if an expression references a specific variable name
+    fn expr_references_var(&self, expr: &Expr, var_name: &str) -> bool {
+        match &expr.kind {
+            ExprKind::Identifier(name) => name == var_name,
+            ExprKind::Binary { left, right, .. } => {
+                self.expr_references_var(left, var_name) || self.expr_references_var(right, var_name)
+            }
+            ExprKind::Unary { operand, .. } => self.expr_references_var(operand, var_name),
+            ExprKind::Call { func, args } => {
+                self.expr_references_var(func, var_name)
+                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+            }
+            ExprKind::MethodCall { receiver, args, .. } => {
+                self.expr_references_var(receiver, var_name)
+                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+            }
+            ExprKind::IndexAccess { object, index } => {
+                self.expr_references_var(object, var_name) || self.expr_references_var(index, var_name)
+            }
+            _ => false,
+        }
+    }
+
+    /// Transpile assignment to global that references itself (single-lock pattern)
+    /// Prevents deadlock: counter = counter + 1
+    fn transpile_assign_global_self_ref(&self, var_name: &str, value: &Expr) -> Result<TokenStream> {
+        let var_ident = format_ident!("{}", var_name);
+
+        // Transpile value, but temporarily disable global wrapping
+        // We'll manually wrap with guard access
+        let value_tokens = self.transpile_expr_for_guard(value, var_name)?;
+
+        Ok(quote! {
+            {
+                let mut __guard = #var_ident.lock().unwrap();
+                *__guard = #value_tokens;
+            }
+        })
+    }
+
+    /// Transpile expression replacing global var access with guard deref
+    fn transpile_expr_for_guard(&self, expr: &Expr, var_name: &str) -> Result<TokenStream> {
+        match &expr.kind {
+            ExprKind::Identifier(name) if name == var_name => {
+                // Replace global access with guard deref
+                Ok(quote! { *__guard })
+            }
+            ExprKind::Binary { left, op, right } => {
+                let left_tokens = self.transpile_expr_for_guard(left, var_name)?;
+                let right_tokens = self.transpile_expr_for_guard(right, var_name)?;
+                // Inline binary operator generation
+                let op_token = match op {
+                    BinaryOp::Add => quote! { + },
+                    BinaryOp::Subtract => quote! { - },
+                    BinaryOp::Multiply => quote! { * },
+                    BinaryOp::Divide => quote! { / },
+                    BinaryOp::Modulo => quote! { % },
+                    BinaryOp::Power => quote! { .pow },
+                    BinaryOp::Equal => quote! { == },
+                    BinaryOp::NotEqual => quote! { != },
+                    BinaryOp::Less => quote! { < },
+                    BinaryOp::LessEqual => quote! { <= },
+                    BinaryOp::Greater => quote! { > },
+                    BinaryOp::GreaterEqual => quote! { >= },
+                    BinaryOp::And => quote! { && },
+                    BinaryOp::Or => quote! { || },
+                    BinaryOp::BitwiseAnd => quote! { & },
+                    BinaryOp::BitwiseOr => quote! { | },
+                    BinaryOp::BitwiseXor => quote! { ^ },
+                    BinaryOp::LeftShift => quote! { << },
+                    BinaryOp::RightShift => quote! { >> },
+                    _ => quote! { /* unsupported op */ },
+                };
+                Ok(quote! { #left_tokens #op_token #right_tokens })
+            }
+            ExprKind::Unary { op, operand } => {
+                let operand_tokens = self.transpile_expr_for_guard(operand, var_name)?;
+                let op_token = match op {
+                    UnaryOp::Not | UnaryOp::BitwiseNot => quote! { ! },
+                    UnaryOp::Negate => quote! { - },
+                    UnaryOp::Reference => quote! { & },
+                    UnaryOp::MutableReference => quote! { &mut },
+                    UnaryOp::Deref => quote! { * },
+                };
+                Ok(quote! { #op_token #operand_tokens })
+            }
+            _ => {
+                // For other expressions, use standard transpilation
+                self.transpile_expr(expr)
             }
         }
     }
@@ -173,6 +281,25 @@ impl Transpiler {
         op: BinaryOp,
         value: &Expr,
     ) -> Result<TokenStream> {
+        // DEADLOCK FIX: Compound assignments ALWAYS reference target on both sides
+        // Example: total += x is really total = total + x
+        // So if target is a global, we need single-lock pattern
+        if let ExprKind::Identifier(target_name) = &target.kind {
+            if self.global_vars.read().unwrap().contains(target_name) {
+                let var_ident = format_ident!("{}", target_name);
+                let value_tokens = self.transpile_expr(value)?;
+                let op_tokens = Self::get_compound_op_token(op)?;
+
+                return Ok(quote! {
+                    {
+                        let mut __guard = #var_ident.lock().unwrap();
+                        *__guard #op_tokens #value_tokens
+                    }
+                });
+            }
+        }
+
+        // Standard compound assignment (non-global)
         let target_tokens = self.transpile_expr(target)?;
         let value_tokens = self.transpile_expr(value)?;
         let op_tokens = Self::get_compound_op_token(op)?;
