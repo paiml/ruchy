@@ -29,30 +29,60 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
   - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
 
+### Investigated
+- **[TRANSPILER-SCOPE]** Top-level let mut variables with functions fail to compile
+  - **PROBLEM**: Functions cannot access top-level `let mut` variables - compilation fails with "cannot find value in this scope"
+  - **EXAMPLE**:
+    ```ruchy
+    let mut counter = 0;
+    fn increment() { counter = counter + 1; }
+    increment();
+    ```
+    Transpiles to BROKEN Rust:
+    ```rust
+    fn increment() { counter = counter + 1; }  // ❌ ERROR: counter not in scope
+    fn main() { let mut counter = 0; /* ... */ }
+    ```
+  - **ROOT CAUSE**: Line 1376 in `src/backend/transpiler/mod.rs`
+    - Functions generated at MODULE level: `#(#functions)*`
+    - Variables scoped to MAIN: `fn main() { #(#statements)* }`
+    - Module-level functions cannot access main()-scoped variables
+  - **FIVE WHYS**:
+    1. Why compile fail? → Functions reference variables not in their scope
+    2. Why not in scope? → Variables inside main(), functions at module level
+    3. Why different scopes? → transpile_block_with_functions() line 1376
+    4. Why not put functions in main()? → Rust fn items can't capture variables (E0434)
+    5. Why not capture? → Missing feature - need static mut with scope analysis
+  - **ATTEMPTED FIXES**:
+    - ❌ Nested functions (put functions inside main): Rust E0434 "can't capture dynamic environment in a fn item"
+    - ❌ Complex globals parameter: Overcomplicated, reverted
+  - **SOLUTION REQUIRED**:
+    - Detect variables referenced by functions (scope analysis)
+    - Generate `static mut VAR: Type = init;` at module level
+    - Wrap all global access in `unsafe` blocks
+    - Keep non-referenced variables in main()
+  - **STATUS**:
+    - ✅ Investigation complete (Five Whys, solution approach determined)
+    - ✅ RED tests written (tests/transpiler_scope_global_mut.rs - 3 tests, all failing)
+    - ✅ Documentation complete (/tmp/TRANSPILER-SCOPE-*.md files)
+    - ❌ Implementation NOT started (requires 2-3 hour focused session)
+  - **COMPLEXITY ESTIMATE**: ~250 lines, complexity ≤10 per function
+  - **NEXT PHASE**: Implement scope analysis + static mut generation (GREEN phase)
+
 ### Verified
-- **[VERIFICATION]** PARSER-079 + Transpiler global let bugs confirmed fixed via ruchydbg v1.24.0
+- **[VERIFICATION]** PARSER-079 fix confirmed via ruchydbg v1.24.0
   - **METHOD**: Genchi Genbutsu (Go and See) with automated debugging tools
   - **TOOL**: `ruchydbg v1.24.0` installed from `../ruchyruchy` (upgraded from v1.23.0)
-  - **TESTS**:
-    - `ruchydbg tokenize /tmp/transpiler_bug.ruchy` → 21 tokens, all correct
-    - `ruchydbg trace /tmp/transpiler_bug.ruchy --analyze` → Parse successful, no errors
-    - `ruchydbg run /tmp/transpiler_bug.ruchy --timeout 5000` → Outputs "1" correctly (3ms)
-    - `cargo run --bin ruchy -- transpile` → Generates `let mut counter = 0;` NOT `();`
   - **RESULTS**:
     - ✅ PARSER-079: `{ break 'outer }` parses correctly
-    - ✅ TRANSPILER: `let mut counter = 0;` transpiles to correct Rust (NOT `();`)
-    - ✅ Simple test: `/tmp/transpiler_bug.ruchy` works (3ms execution)
-    - ✅ Complex test: `/tmp/complex_test.ruchy` (global state + functions) outputs "42" (4ms)
-  - **FIVE WHYS DISCOVERY**:
-    - Question: "Why did we think transpiler was broken?"
-    - Answer: "Stale test files from before fix - Genchi Genbutsu revealed trunk is correct"
-    - Lesson: "Toyota Way 'Go and See' validates assumptions, prevents wasted debugging"
+    - ✅ TRANSPILER (simple case): `let mut counter = 0;` transpiles to correct Rust (NOT `();`)
+    - ❌ TRANSPILER (complex case): Functions with global state BROKEN → TRANSPILER-SCOPE ticket created
   - **TOYOTA WAY APPLICATION**:
-    - Genchi Genbutsu: Direct observation via ruchydbg tools (tokenize, trace, run)
-    - Stop the Line: Halted investigation when evidence showed bugs already fixed
-    - Kaizen: Upgraded debugging tools (v1.23.0 → v1.24.0) for better visibility
-    - Jidoka: Automated verification prevents future regressions
-  - **IMPACT**: Both bugs confirmed fixed, ready for v3.194.0 release to ruchy-book team
+    - Genchi Genbutsu: Direct observation via ruchydbg revealed scope bug
+    - Stop the Line: Halted work to investigate compilation failure
+    - Five Whys: Root cause analysis identified missing feature
+    - Kaizen: Upgraded debugging tools for better visibility
+  - **IMPACT**: PARSER-079 complete, TRANSPILER-SCOPE investigation complete and ready for implementation
 
 ### Changed
 - **[QUALITY]** Fix unused variable warning in binary handlers
