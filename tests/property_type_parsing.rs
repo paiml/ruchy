@@ -117,7 +117,7 @@ proptest! {
     ///
     /// Invariant: For all valid type strings t, parse_type(t) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore = Run with: cargo test property_type -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_type -- --ignored --nocapture"]
     fn prop_parse_type_never_panics(type_str in arb_type_expr()) {
         let code = format!("fun f(x: {type_str}) {{}}");
         let result = std::panic::catch_unwind(|| {
