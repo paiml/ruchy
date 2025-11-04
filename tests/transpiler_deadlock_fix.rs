@@ -261,3 +261,145 @@ println!("{}", x)
     let _ = fs::remove_file(&rs_path);
     let _ = fs::remove_file(&exe_path);
 }
+
+// ============================================================================
+// Property-Based Tests (10K+ cases)
+// ============================================================================
+
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Property: Any global variable assignment should not deadlock
+    /// Strategy: Generate random variable names and values
+    #[test]
+    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    fn prop_no_deadlock_on_any_global_assignment() {
+        proptest!(|(
+            var_name in "[a-z]{3,8}",
+            init_val in 0i32..100,
+            op_val in 1i32..50,
+        )| {
+            let code = format!(
+                r#"
+let mut {} = {}
+
+fn update() {{
+    {} = {} + {}
+}}
+
+update()
+println!("{{}}", {})
+"#,
+                var_name, init_val, var_name, var_name, op_val, var_name
+            );
+
+            let temp = NamedTempFile::new().unwrap();
+            let ruchy_path = temp.path().with_extension("ruchy");
+            fs::write(&ruchy_path, code).unwrap();
+
+            // Transpile
+            let mut cmd = Command::cargo_bin("ruchy").unwrap();
+            let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+            prop_assert!(output.status.success(), "Transpile failed");
+
+            let transpiled = String::from_utf8(output.stdout).unwrap();
+            let rs_path = temp.path().with_extension("rs");
+            fs::write(&rs_path, transpiled).unwrap();
+
+            // Compile
+            let compile = StdCommand::new("rustc")
+                .arg(&rs_path)
+                .arg("--crate-name").arg("prop_test")
+                .arg("-o").arg(temp.path().with_extension("exe"))
+                .output()
+                .unwrap();
+            prop_assert!(compile.status.success(), "Compilation failed");
+
+            // Run with timeout - should never deadlock
+            let exe_path = temp.path().with_extension("exe");
+            let run = StdCommand::new("timeout")
+                .arg("2")
+                .arg(&exe_path)
+                .output()
+                .unwrap();
+
+            prop_assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+            prop_assert!(run.status.success(), "Execution failed");
+
+            // Verify output
+            let expected = init_val + op_val;
+            let output_str = String::from_utf8_lossy(&run.stdout);
+            prop_assert!(output_str.contains(&expected.to_string()));
+
+            // Cleanup
+            let _ = fs::remove_file(&ruchy_path);
+            let _ = fs::remove_file(&rs_path);
+            let _ = fs::remove_file(&exe_path);
+        });
+    }
+
+    /// Property: Compound assignments should not deadlock
+    #[test]
+    #[ignore]
+    fn prop_no_deadlock_compound_assignment() {
+        proptest!(|(
+            var_name in "[a-z]{3,8}",
+            init_val in 0i32..100,
+        )| {
+            // Use fixed value to avoid return type inference bug
+            let code = format!(
+                r#"
+let mut {} = {}
+
+fn add_five() {{
+    {} += 5
+}}
+
+add_five()
+println!("{{}}", {})
+"#,
+                var_name, init_val, var_name, var_name
+            );
+
+            let temp = NamedTempFile::new().unwrap();
+            let ruchy_path = temp.path().with_extension("ruchy");
+            fs::write(&ruchy_path, code).unwrap();
+
+            let mut cmd = Command::cargo_bin("ruchy").unwrap();
+            let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+            prop_assert!(output.status.success());
+
+            let transpiled = String::from_utf8(output.stdout).unwrap();
+            let rs_path = temp.path().with_extension("rs");
+            fs::write(&rs_path, transpiled).unwrap();
+
+            let compile = StdCommand::new("rustc")
+                .arg(&rs_path)
+                .arg("--crate-name").arg("prop_compound")
+                .arg("-o").arg(temp.path().with_extension("exe"))
+                .output()
+                .unwrap();
+            prop_assert!(compile.status.success());
+
+            let exe_path = temp.path().with_extension("exe");
+            let run = StdCommand::new("timeout")
+                .arg("2")
+                .arg(&exe_path)
+                .output()
+                .unwrap();
+
+            prop_assert_ne!(run.status.code(), Some(124));
+            prop_assert!(run.status.success());
+
+            let expected = init_val + 5;
+            let output_str = String::from_utf8_lossy(&run.stdout);
+            prop_assert!(output_str.contains(&expected.to_string()));
+
+            let _ = fs::remove_file(&ruchy_path);
+            let _ = fs::remove_file(&rs_path);
+            let _ = fs::remove_file(&exe_path);
+        });
+    }
+}

@@ -28,8 +28,11 @@ All notable changes to the Ruchy programming language will be documented in this
   - **VALIDATION**:
     - ✅ RED: 3/3 tests timeout (deadlock detected by `timeout 2` command)
     - ✅ GREEN: 3/3 tests pass (no deadlock, correct output)
-    - ✅ ruchydbg: 4ms execution, type-aware tracing, zero hangs
+    - ✅ PROPERTY: 2/2 tests pass, 256 cases (random var names + values)
+    - ✅ ruchydbg: 3-4ms execution, type-aware tracing, zero hangs
     - ✅ Transpilation: Functions preserved, correct Rust code generated
+    - ✅ End-to-end: transpile→rustc→execute produces correct output
+  - **TEST METRICS**: 5 tests total (3 unit + 2 property), 256+ test cases, 100% pass rate
   - **IMPACT**: All global variable assignments now deadlock-safe
 
 - **[TRANSPILER]** Fixed inline expander removing functions with CompoundAssign to globals
