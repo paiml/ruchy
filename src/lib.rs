@@ -58,6 +58,8 @@ pub mod debugger;
 pub mod docs;
 pub mod error_recovery_enhanced;
 pub mod frontend;
+#[cfg(feature = "jit")]
+pub mod jit;
 pub mod lints;
 #[cfg(feature = "mcp")]
 pub mod lsp;
