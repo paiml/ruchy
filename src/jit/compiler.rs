@@ -49,6 +49,8 @@ struct CompileContext {
     variables: HashMap<String, Variable>,
     /// Next variable ID for creating fresh variables
     next_var: u32,
+    /// Function table (name → FuncRef) for call resolution
+    functions: HashMap<String, cranelift_codegen::ir::FuncRef>,
 }
 
 impl JitCompiler {
@@ -111,18 +113,25 @@ impl JitCompiler {
     ///
     /// Creates a function with signature: `fn() -> i64`
     fn compile_expr_as_function(&mut self, ast: &Expr) -> Result<FuncId> {
-        // Create function signature: fn() -> i64
+        // Pre-scan for function definitions and declare them all
+        let mut function_table = HashMap::new();
+        self.collect_and_declare_functions(ast, &mut function_table)?;
+
+        // Create main function signature: fn() -> i64
         let mut sig = self.module.make_signature();
         sig.returns.push(AbiParam::new(types::I64));
 
-        // Declare function
-        let func_id = self.module.declare_function(
+        // Declare main function
+        let main_func_id = self.module.declare_function(
             "main",
             Linkage::Export,
             &sig,
         )?;
 
-        // Define function
+        // Compile all nested functions first (so they're available for calls)
+        self.compile_declared_functions(ast, &function_table)?;
+
+        // Now compile main function body
         self.ctx.func.signature = sig;
 
         {
@@ -133,10 +142,18 @@ impl JitCompiler {
             builder.switch_to_block(entry_block);
             builder.seal_block(entry_block);
 
-            // Create compilation context for variable tracking
+            // Import all functions as FuncRefs for this function
+            let mut func_refs = HashMap::new();
+            for (name, func_id) in &function_table {
+                let func_ref = self.module.declare_func_in_func(*func_id, &mut builder.func);
+                func_refs.insert(name.clone(), func_ref);
+            }
+
+            // Create compilation context with function refs
             let mut ctx = CompileContext {
                 variables: HashMap::new(),
                 next_var: 0,
+                functions: func_refs,
             };
 
             // Compile expression
@@ -148,11 +165,113 @@ impl JitCompiler {
             builder.finalize();
         }
 
-        // JIT compile
+        // JIT compile main
+        self.module.define_function(main_func_id, &mut self.ctx)?;
+        self.module.clear_context(&mut self.ctx);
+
+        Ok(main_func_id)
+    }
+
+    /// Collect all function definitions and declare them (get FuncIds)
+    fn collect_and_declare_functions(&mut self, expr: &Expr, table: &mut HashMap<String, FuncId>) -> Result<()> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    if let ExprKind::Function { name, params, .. } = &e.kind {
+                        // Create signature: (i64, i64, ...) -> i64
+                        let mut sig = self.module.make_signature();
+                        for _ in params {
+                            sig.params.push(AbiParam::new(types::I64));
+                        }
+                        sig.returns.push(AbiParam::new(types::I64));
+
+                        // Declare function
+                        let func_id = self.module.declare_function(
+                            name,
+                            Linkage::Local,
+                            &sig,
+                        )?;
+
+                        table.insert(name.clone(), func_id);
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Compile all declared functions
+    fn compile_declared_functions(&mut self, expr: &Expr, table: &HashMap<String, FuncId>) -> Result<()> {
+        if let ExprKind::Block(exprs) = &expr.kind {
+            for e in exprs {
+                if let ExprKind::Function { name, params, body, .. } = &e.kind {
+                    let func_id = *table.get(name).unwrap();
+                    self.compile_function_body(func_id, params, body, table)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Compile a single function body
+    fn compile_function_body(
+        &mut self,
+        func_id: FuncId,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+        function_table: &HashMap<String, FuncId>,
+    ) -> Result<()> {
+        // Set up function context
+        self.ctx.func.signature = self.module.declarations().get_function_decl(func_id).signature.clone();
+
+        {
+            let mut builder = FunctionBuilder::new(&mut self.ctx.func, &mut self.builder_context);
+
+            // Create entry block
+            let entry_block = builder.create_block();
+            builder.append_block_params_for_function_params(entry_block);
+            builder.switch_to_block(entry_block);
+            builder.seal_block(entry_block);
+
+            // Import all functions as FuncRefs (for recursion)
+            let mut func_refs = HashMap::new();
+            for (name, func_id) in function_table {
+                let func_ref = self.module.declare_func_in_func(*func_id, &mut builder.func);
+                func_refs.insert(name.clone(), func_ref);
+            }
+
+            // Create context with parameters as variables
+            let mut ctx = CompileContext {
+                variables: HashMap::new(),
+                next_var: 0,
+                functions: func_refs,
+            };
+
+            // Map parameters to Cranelift variables
+            let block_params = builder.block_params(entry_block).to_vec();
+            for (i, param) in params.iter().enumerate() {
+                if let crate::frontend::ast::Pattern::Identifier(param_name) = &param.pattern {
+                    let var = builder.declare_var(types::I64);
+                    builder.def_var(var, block_params[i]);
+                    ctx.variables.insert(param_name.clone(), var);
+                }
+            }
+
+            // Compile function body
+            let result = Self::compile_expr(&mut builder, &mut ctx, body)?;
+
+            // Return result
+            builder.ins().return_(&[result]);
+
+            builder.finalize();
+        }
+
+        // Define the function
         self.module.define_function(func_id, &mut self.ctx)?;
         self.module.clear_context(&mut self.ctx);
 
-        Ok(func_id)
+        Ok(())
     }
 
     /// Compile a Ruchy expression to Cranelift IR with variable context
@@ -199,6 +318,17 @@ impl JitCompiler {
             // JIT-002: Identifier (variable lookup)
             ExprKind::Identifier(name) => {
                 Self::compile_identifier(builder, ctx, name)
+            }
+
+            // JIT-002: Function definition (skip in expression context - handled by Block)
+            ExprKind::Function { .. } => {
+                // Functions are declarations, not values - return unit
+                Ok(builder.ins().iconst(types::I64, 0))
+            }
+
+            // JIT-002: Call expression (function invocation)
+            ExprKind::Call { func, args } => {
+                Self::compile_call(builder, ctx, func, args)
             }
 
             // JIT-002: Not yet implemented - fall back to error
@@ -365,6 +495,37 @@ impl JitCompiler {
 
         // Read variable value (Cranelift handles SSA)
         Ok(builder.use_var(*var))
+    }
+
+    /// Compile call expression (function invocation) - complexity ≤10
+    fn compile_call(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        func: &Expr,
+        args: &[Expr],
+    ) -> Result<Value> {
+        // Extract function name from identifier
+        let func_name = match &func.kind {
+            ExprKind::Identifier(name) => name,
+            _ => return Err(anyhow!("JIT-002: Only direct function calls supported")),
+        };
+
+        // Lookup function reference in table (copy it to avoid borrow issues)
+        let func_ref = *ctx.functions.get(func_name)
+            .ok_or_else(|| anyhow!("Undefined function: {}", func_name))?;
+
+        // Evaluate arguments
+        let mut arg_values = Vec::new();
+        for arg in args {
+            arg_values.push(Self::compile_expr(builder, ctx, arg)?);
+        }
+
+        // Emit call instruction
+        let call_inst = builder.ins().call(func_ref, &arg_values);
+
+        // Get return value (first result of call)
+        let results = builder.inst_results(call_inst);
+        Ok(results[0])
     }
 
     /// Get a fresh Cranelift variable ID
