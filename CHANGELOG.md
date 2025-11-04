@@ -2,6 +2,32 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.196.0] - 2025-11-04
+
+### Fixed
+- **[TRANSPILER-136]** Fixed transpiler eliminating `pub fun` definitions instead of preserving them (GitHub Issue #136)
+  - **PROBLEM**: Public functions (`pub fun`) were being inlined and eliminated, breaking library crates
+    - `pub fun hello() -> String { ... }` transpiled to empty output - function completely missing
+    - Library crates couldn't export functions (all `pub fun` disappeared)
+    - ruchy-lambda runtime-pure blocked (needs pub fun for API exports)
+  - **ROOT CAUSE**: `inline_expander.rs:collect_inline_candidates()` didn't check `is_pub` field
+    - Pattern match used `..` which ignored visibility
+    - Condition checked size (≤10 LOC), recursion, globals but NOT visibility
+    - Therefore public functions were inlined just like private ones
+    - Dead Code Elimination then removed "inlined" functions from output
+  - **SOLUTION**: Added `is_pub` check to inlining condition (line 60: `&& !is_pub`)
+    - Public functions now NEVER inlined - always preserved as `pub fn` in output
+    - Private functions still inlined (existing optimization preserved)
+  - **FILES**:
+    - src/backend/transpiler/inline_expander.rs:45-68 (added `is_pub` check)
+    - tests/transpiler_pub_fun_preservation.rs (3 new tests: simple, library, private)
+  - **TEST RESULTS**: 3/3 new tests passing, all 4046 existing tests passing
+  - **VALIDATION**:
+    - Simple pub fun: `pub fn hello()` ✅ preserved in output
+    - Library crate: `pub fn get_endpoint()` + `pub fn next_event()` ✅ both preserved
+    - Private fun: `fun helper()` ✅ still inlined (existing behavior maintained)
+  - **UNBLOCKS**: ruchy-lambda runtime-pure, library crate development, multi-file projects
+
 ## [3.195.0] - 2025-11-04
 
 ### Fixed

@@ -46,6 +46,7 @@ fn collect_inline_candidates(expr: &Expr, functions: &mut HashMap<String, Functi
             name,
             params,
             body,
+            is_pub,
             ..
         } => {
             // Check if function is small enough to inline (≤10 LOC heuristic)
@@ -55,7 +56,8 @@ fn collect_inline_candidates(expr: &Expr, functions: &mut HashMap<String, Functi
 
             // TRANSPILER-001: Don't inline functions that access global variables
             // Inlining them breaks scope - global vars are not accessible where inlined
-            if body_size <= 10 && !is_recursive && !accesses_globals {
+            // TRANSPILER-136: Don't inline pub fun - they must be preserved for library exports
+            if body_size <= 10 && !is_recursive && !accesses_globals && !is_pub {
                 functions.insert(
                     name.clone(),
                     FunctionDef {
