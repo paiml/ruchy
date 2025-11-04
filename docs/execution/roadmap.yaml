@@ -4,12 +4,12 @@
 metadata:
   version: "3.99"
   last_updated: "2025-11-04"
-  current_sprint: "✅ VERIFIED - PARSER-079 + Transpiler bugs confirmed fixed via ruchydbg v1.24.0"
+  current_sprint: "🚧 IN PROGRESS - TRANSPILER-SCOPE (top-level let mut + functions)"
   latest_release: "v3.182.0"
-  latest_commit_message: "[VERIFICATION] PARSER-079 + transpiler global let bugs both fixed"
-  latest_commit_hash: "68eb77f8"
-  current_work: "✅ VERIFIED - Both bugs confirmed fixed with ruchydbg tokenize/trace/run validation"
-  next_phase: "Ready for v3.194.0 release with dual bug fix confirmation"
+  latest_commit_message: "[TRANSPILER-SCOPE] Investigation complete - requires static mut implementation"
+  latest_commit_hash: "74e416b1"
+  current_work: "🔬 INVESTIGATED - TRANSPILER-SCOPE root cause identified, RED tests written, awaiting implementation"
+  next_phase: "Implement TRANSPILER-SCOPE with scope analysis + static mut (2-3 hour task)"
   benchmark_validation_status: "✅ 9/12 BENCHMARKS WORKING (75%) - BENCH-009 unblocked by ISSUE-131"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
   priority_rationale: "BENCH-009 unblocked with one-line fix - 9/12 benchmarks now functional"
@@ -20,39 +20,64 @@ metadata:
     ruchy_wasm: "v3.182.0 - Published ✅"
   github_tag: "v3.182.0 - Ready ✅"
 
-  session_summary_2025_11_04_verification_both_bugs_fixed:
+  session_summary_2025_11_04_transpiler_scope_investigation:
     date: "2025-11-04"
-    tickets: ["PARSER-079", "TRANSPILER-GLOBAL-LET"]
-    status: "✅ VERIFIED"
-    goal: "Verify both PARSER-079 and transpiler global let bugs are fixed"
-    method: "Genchi Genbutsu + ruchydbg v1.24.0 debugging tools"
+    tickets: ["PARSER-079", "TRANSPILER-SCOPE"]
+    status: "🔬 INVESTIGATED"
+    goal: "Fix transpiler scope bug - top-level let mut + functions compilation failure"
+    method: "Genchi Genbutsu + ruchydbg v1.24.0 + EXTREME TDD (RED phase complete)"
 
-    verification_protocol:
-      tool: "ruchydbg v1.24.0 (upgraded from v1.23.0)"
-      install: "cargo install --path ../ruchyruchy"
-      tests:
-        - "ruchydbg tokenize /tmp/transpiler_bug.ruchy (21 tokens, all correct)"
-        - "ruchydbg trace /tmp/transpiler_bug.ruchy --analyze (parse successful)"
-        - "ruchydbg run /tmp/transpiler_bug.ruchy --timeout 5000 (outputs '1' correctly)"
-        - "cargo run --bin ruchy -- transpile (generates 'let mut counter = 0;' NOT '();')"
-
-    results:
+    bug_status:
       parser_079: "✅ FIXED - { break 'outer } parses correctly"
-      transpiler: "✅ FIXED - let mut counter = 0; transpiles correctly (NOT '();')"
-      simple_test: "✅ PASS - /tmp/transpiler_bug.ruchy transpiles and executes correctly"
-      complex_test: "✅ PASS - /tmp/complex_test.ruchy (global state + functions) works"
-      execution_time: "3-4ms per test"
+      constant_folder: "✅ FIXED - Prevents let mut elimination to (;)"
+      transpiler_scope: "❌ NOT FIXED - Functions can't access top-level let mut variables"
 
-    five_whys_discovery:
-      question: "Why did we think transpiler was broken?"
-      answer: "Stale test files from before fix - Genchi Genbutsu revealed trunk is correct"
-      lesson: "Toyota Way - 'Go and See' validates assumptions, prevents wasted effort"
+    investigation_results:
+      simple_case: "✅ WORKS - No functions, everything in main()"
+      complex_case: "❌ BROKEN - Functions at module level can't access main() variables"
+      root_cause: "Line 1376 mod.rs: #(#functions)* at module level, #(#statements)* inside main()"
+
+    five_whys_analysis:
+      1_why: "Why rustc compilation error?"
+      1_because: "Function can't find variable global_state"
+      2_why: "Why not in scope?"
+      2_because: "Variable in main(), function at module level"
+      3_why: "Why separate?"
+      3_because: "transpile_block_with_functions() generates: #(#functions)* fn main() { #(#statements)* }"
+      4_why: "Why this architecture?"
+      4_because: "No mechanism to share state between module-level functions and main()"
+      5_root_cause: "Missing feature: top-level let mut → static mut conversion with scope analysis"
+
+    attempted_fixes:
+      nested_functions: "❌ FAILED - Rust fn items can't capture variables (E0434)"
+      rust_limitation: "Only closures can capture, but we need named functions for recursion"
+
+    solution_required:
+      approach: "static mut with scope analysis"
+      steps:
+        - "Detect which let mut variables are referenced by functions"
+        - "Generate static mut VAR: Type = init; at module level"
+        - "Wrap access in unsafe blocks"
+        - "Keep non-referenced variables in main()"
+      complexity: "~250 lines, 2-3 hours"
+      files: "/tmp/TRANSPILER-SCOPE-fix-plan.md, /tmp/TRANSPILER-SCOPE-why-nested-fn-fails.md"
+
+    test_coverage:
+      red_tests: "tests/transpiler_scope_global_mut.rs (3 tests, all FAILING as expected)"
+      test_1: "test_transpiler_scope_global_mut_used_by_function"
+      test_2: "test_transpiler_scope_compile_command"
+      test_3: "test_transpiler_scope_run_command"
+
+    documentation:
+      fix_plan: "/tmp/TRANSPILER-SCOPE-fix-plan.md"
+      why_nested_fn_fails: "/tmp/TRANSPILER-SCOPE-why-nested-fn-fails.md"
+      five_whys: "/tmp/five_whys_scope_bug.md"
 
     toyota_way_application:
-      genchi_genbutsu: "Used ruchydbg tools to directly observe tokenization, parsing, transpilation"
-      stop_the_line: "Halted investigation when evidence showed bugs already fixed"
-      kaizen: "Upgraded ruchydbg v1.23.0 → v1.24.0 for better debugging"
-      jidoka: "Automated verification via ruchydbg prevents future regressions"
+      genchi_genbutsu: "Examined actual transpiled output, confirmed scope issue"
+      stop_the_line: "Discovered bug affects compilation, not just runtime"
+      kaizen: "Documented three solution approaches, chose optimal path"
+      jidoka: "RED tests written, ready for GREEN phase implementation"
 
   session_summary_2025_11_04_parser_079_lifetime_tokenization:
     date: "2025-11-04"
