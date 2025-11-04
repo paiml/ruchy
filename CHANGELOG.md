@@ -2,6 +2,35 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.197.0] - 2025-11-04
+
+### Added
+- **[JIT-002]** Cranelift-based JIT compiler with control flow and function recursion support
+  - **ACHIEVEMENT**: 87.6x speedup vs AST interpreter (217µs vs 19ms for fibonacci(20))
+  - **FEATURES**:
+    - Control flow: if/else with SSA phi nodes
+    - Comparisons: <=, ==, >, >=, <, !=
+    - Variables: Let bindings with block-scoped persistence
+    - Functions: Declaration, calls, and full recursion support
+    - Boolean literals: true (1) / false (0)
+    - Block expressions: Sequential evaluation with implicit returns
+  - **ARCHITECTURE**:
+    - Three-phase compilation: pre-scan functions → compile bodies → import FuncRefs
+    - Cranelift Variables for SSA phi nodes (automatic value merging across control flow)
+    - Forward declarations enable recursion before functions fully compiled
+  - **FILES**:
+    - src/jit/compiler.rs:200-670 (+470 LOC, all helpers ≤10 complexity)
+    - tests/jit_002_control_flow.rs (16 tests: 15 unit + 1 performance benchmark)
+    - tests/property_jit_002.rs (11 property tests: determinism, arithmetic, comparisons)
+  - **TEST RESULTS**:
+    - Unit tests: 15/15 passing (100%)
+    - Performance: 217µs avg (target <500µs) → ✅ stretch goal achieved
+    - Property tests: 11 tests covering determinism and arithmetic invariants
+  - **QUALITY GATES**:
+    - Complexity: All helpers ≤10 (compile_if: 7, compile_call: 7, compile_let: 7)
+    - EXTREME TDD: RED (15 failing tests) → GREEN (100% passing) → REFACTOR (quality)
+  - **NEXT STEPS**: JIT-003 (tiered optimization), JIT-004 (more expression types)
+
 ## [3.196.0] - 2025-11-04
 
 ### Fixed

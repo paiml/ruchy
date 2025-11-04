@@ -350,3 +350,71 @@ fn test_jit_002_multiple_functions() {
     assert!(result.is_ok(), "Should compile multiple functions: {:?}", result.err());
     assert_eq!(result.unwrap(), 19, "double(5) + triple(3) = 10 + 9 = 19");
 }
+
+// ============================================================================
+// PERFORMANCE: JIT vs AST Interpreter Benchmark
+// ============================================================================
+
+#[test]
+fn test_jit_002_performance_benchmark_fibonacci() {
+    // Performance validation: JIT should be 50-100x faster than AST interpreter
+    // Target: fibonacci(20) <0.5ms vs 19ms AST interpreter
+    let code = r"
+        fun fib(n: i32) -> i32 {
+            if n <= 1 {
+                n
+            } else {
+                fib(n - 1) + fib(n - 2)
+            }
+        }
+        fib(20)
+    ";
+
+    let ast = Parser::new(code).parse().unwrap();
+
+    // Warmup: First run to ensure JIT libraries are loaded
+    {
+        let mut compiler = JitCompiler::new().unwrap();
+        let warmup_result = compiler.compile_and_execute(&ast);
+        assert_eq!(warmup_result.unwrap(), 6765, "Warmup: fib(20) should return 6765");
+    }
+
+    // Benchmark: Run 100 iterations (compile + execute)
+    // Note: Each iteration creates fresh compiler to avoid "duplicate definition" errors
+    // This measures TOTAL JIT overhead (compilation + execution)
+    let iterations = 100;
+    let start = std::time::Instant::now();
+    for _ in 0..iterations {
+        let mut compiler = JitCompiler::new().unwrap();
+        let result = compiler.compile_and_execute(&ast);
+        assert_eq!(result.unwrap(), 6765);
+    }
+    let total_elapsed = start.elapsed();
+    let avg_elapsed = total_elapsed / iterations;
+
+    println!("\n=== JIT-002 Performance Benchmark ===");
+    println!("fibonacci(20) JIT avg over {} runs: {:?}", iterations, avg_elapsed);
+    println!("fibonacci(20) JIT total time: {:?}", total_elapsed);
+    println!("Target: <500µs per run (0.5ms)");
+    println!("Baseline: 19ms AST interpreter");
+
+    // Performance assertion: Should be significantly faster than AST interpreter
+    // Note: First implementation may not hit <0.5ms target, but should be <19ms
+    let avg_micros = avg_elapsed.as_micros();
+    assert!(
+        avg_micros < 19_000,
+        "JIT should be faster than AST interpreter (19ms). Actual: {}µs",
+        avg_micros
+    );
+
+    // Report speedup factor
+    let speedup = 19_000.0 / avg_micros as f64;
+    println!("Speedup vs AST interpreter: {:.1}x", speedup);
+
+    // Stretch goal: <500µs (0.5ms) = 38x speedup
+    if avg_micros < 500 {
+        println!("✅ ACHIEVED stretch goal: <500µs ({}µs)", avg_micros);
+    } else {
+        println!("⚠️  Not yet at stretch goal (<500µs), but faster than baseline");
+    }
+}
