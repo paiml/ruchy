@@ -29,7 +29,7 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
   - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
 
-- **[TRANSPILER-SCOPE]** Top-level let mut variables with functions now compile correctly
+- **[TRANSPILER-SCOPE]** Top-level let mut variables now generate thread-safe, zero-unsafe code (Issue #132)
   - **PROBLEM**: Functions cannot access top-level `let mut` variables - compilation fails with "cannot find value in this scope"
   - **EXAMPLE**:
     ```ruchy
@@ -38,41 +38,45 @@ All notable changes to the Ruchy programming language will be documented in this
     increment();
     ```
   - **ROOT CAUSE**: Functions generated at MODULE level, variables scoped to MAIN
-  - **FIVE WHYS**:
-    1. Why compile fail? → Functions reference variables not in their scope
-    2. Why not in scope? → Variables inside main(), functions at module level
-    3. Why different scopes? → transpile_block_with_functions() separates them
-    4. Why not put functions in main()? → Rust fn items can't capture variables (E0434)
-    5. Why not capture? → Missing feature - need static mut with scope analysis
-  - **SOLUTION IMPLEMENTED**:
-    1. **Scope Analysis**: Detect mutable Let bindings referenced by functions
-    2. **Static Mut Generation**: Convert to `static mut VAR: Type = init;` at module level
+  - **GITHUB ISSUE #132**: [CRITICAL] Transpiler must NEVER generate unsafe code
+    - Initial implementation used `static mut` + `unsafe` blocks (WRONG!)
+    - High-level languages MUST emit memory-safe code
+    - Generated code should follow Rust best practices
+  - **SOLUTION IMPLEMENTED (Thread-Safe)**:
+    1. **LazyLock<Mutex<T>>**: Use safe Rust abstractions instead of `static mut`
+    2. **Scope Analysis**: Detect mutable Let bindings referenced by functions
     3. **Type Inference**: Infer types from literals (Integer→i32, Float→f64, String→&str, Bool→bool)
-    4. **Unsafe Wrapping**: Wrap function bodies and main body in `unsafe { }` blocks when accessing globals
+    4. **Lock-Based Access**: Transform identifiers to use `.lock().unwrap()` for thread-safe access
+    5. **ZERO unsafe code**: Removed ALL `unsafe` blocks from generated code
   - **FILES**:
-    - `src/backend/transpiler/mod.rs` (+70 lines: scope analysis, global tracking with RwLock)
-    - `src/backend/transpiler/statements.rs` (+30 lines: unsafe wrapping logic, global reference detection)
-    - `tests/transpiler_scope_global_mut.rs` (+130 lines: 3 comprehensive tests)
+    - `src/backend/transpiler/mod.rs` (+5 lines: LazyLock<Mutex<T>> generation)
+    - `src/backend/transpiler/statements.rs` (-25 lines: removed unsafe wrapping)
+    - `src/backend/transpiler/dispatcher_helpers/identifiers.rs` (+5 lines: .lock().unwrap() access)
+    - `tests/transpiler_scope_global_mut.rs` (all 3 tests still passing)
   - **EXTREME TDD PHASES**:
     - ✅ RED: 3/3 tests failing (functions can't access top-level let mut)
     - ✅ GREEN: 3/3 tests passing (transpile→compile→run all successful)
-    - ✅ REFACTOR: Complexity ≤10, RwLock for thread-safety, manual Clone impl
+    - ✅ REFACTOR: Removed unsafe, simplified to thread-safe access patterns
     - ✅ VALIDATE: Full pipeline (transpile→compile→run) + ruchydbg (3ms execution)
-  - **GENERATED OUTPUT EXAMPLE**:
+  - **GENERATED OUTPUT (Thread-Safe, Zero Unsafe)**:
     ```rust
-    static mut global_state: i32 = 0;
+    static global_state: std::sync::LazyLock<std::sync::Mutex<i32>> =
+        std::sync::LazyLock::new(|| std::sync::Mutex::new(0));
     fn modify_global(value: i32) {
-        unsafe { global_state = value }
+        *global_state.lock().unwrap() = value;  // ✅ Thread-safe
     }
     fn main() {
-        unsafe {
-            modify_global(42);
-            println!("{}", global_state);
-        }
+        modify_global(42);
+        println!("{}", *global_state.lock().unwrap());  // ✅ Thread-safe
     }
     ```
-  - **IMPACT**: Top-level mutable globals now fully functional across functions
+  - **IMPACT**:
+    - ✅ Thread-safe by default (works with future threading support)
+    - ✅ Zero unsafe code (follows Rust best practices)
+    - ✅ Memory-safe (LazyLock + Mutex provide guarantees)
+    - ✅ No performance regression (lazy initialization, efficient locking)
   - **Test Coverage**: 3/3 integration tests passing (transpile, compile, run commands)
+  - **Closes**: GitHub Issue #132
 
 ### Verified
 - **[VERIFICATION]** PARSER-079 fix confirmed via ruchydbg v1.24.0

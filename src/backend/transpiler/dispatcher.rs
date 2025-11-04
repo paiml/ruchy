@@ -23,7 +23,7 @@ impl Transpiler {
     pub(super) fn transpile_basic_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
-            ExprKind::Identifier(name) => Ok(Self::transpile_identifier(name)),
+            ExprKind::Identifier(name) => Ok(self.transpile_identifier(name)),
             ExprKind::QualifiedName { module, name } => {
                 Ok(Self::transpile_qualified_name(module, name))
             }

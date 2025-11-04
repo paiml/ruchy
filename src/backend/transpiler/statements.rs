@@ -1216,8 +1216,8 @@ impl Transpiler {
 
     /// Generate body tokens with async support
     fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
-        // TRANSPILER-SCOPE: Check if body references globals (needs unsafe wrapping)
-        let needs_unsafe = !is_async && self.references_globals(body);
+        // Issue #132: No unsafe wrapping needed with LazyLock<Mutex<T>>
+        // Access is thread-safe via .lock().unwrap()
 
         let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
@@ -1306,12 +1306,8 @@ impl Transpiler {
             }
         };
 
-        // TRANSPILER-SCOPE: Wrap in unsafe block if body references globals
-        if needs_unsafe {
-            Ok(quote! { unsafe { #body_tokens } })
-        } else {
-            Ok(body_tokens)
-        }
+        // Issue #132: No unsafe wrapping needed - LazyLock<Mutex<T>> is thread-safe
+        Ok(body_tokens)
     }
     /// Generate type parameter tokens with trait bound support
     fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
