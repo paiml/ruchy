@@ -349,6 +349,14 @@ impl JitCompiler {
         op: &BinaryOp,
         right: &Expr,
     ) -> Result<Value> {
+        // JIT-004: Logical operators require short-circuit evaluation
+        match op {
+            BinaryOp::And => return Self::compile_logical_and(builder, ctx, left, right),
+            BinaryOp::Or => return Self::compile_logical_or(builder, ctx, left, right),
+            _ => {} // Fall through to standard evaluation
+        }
+
+        // Standard evaluation: both operands always evaluated
         let lhs = Self::compile_expr(builder, ctx, left)?;
         let rhs = Self::compile_expr(builder, ctx, right)?;
 
@@ -418,6 +426,100 @@ impl JitCompiler {
         };
 
         Ok(result)
+    }
+
+    /// Compile logical AND with short-circuit evaluation - complexity ≤10
+    ///
+    /// Semantics: left && right
+    /// - If left is false (0), return false without evaluating right
+    /// - If left is true (1), evaluate and return right
+    fn compile_logical_and(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        left: &Expr,
+        right: &Expr,
+    ) -> Result<Value> {
+        // Evaluate left operand
+        let left_value = Self::compile_expr(builder, ctx, left)?;
+
+        // Create blocks for short-circuit logic
+        let eval_right_block = builder.create_block();
+        let short_circuit_block = builder.create_block();
+        let merge_block = builder.create_block();
+
+        // Create variable to hold result
+        let result_var = builder.declare_var(types::I64);
+
+        // If left is true (non-zero), evaluate right; else short-circuit to false
+        builder.ins().brif(left_value, eval_right_block, &[], short_circuit_block, &[]);
+
+        // Left is true - evaluate right operand
+        builder.switch_to_block(eval_right_block);
+        builder.seal_block(eval_right_block);
+        let right_value = Self::compile_expr(builder, ctx, right)?;
+        builder.def_var(result_var, right_value);
+        builder.ins().jump(merge_block, &[]);
+
+        // Left is false - short-circuit to false (0)
+        builder.switch_to_block(short_circuit_block);
+        builder.seal_block(short_circuit_block);
+        let false_val = builder.ins().iconst(types::I64, 0);
+        builder.def_var(result_var, false_val);
+        builder.ins().jump(merge_block, &[]);
+
+        // Merge both paths
+        builder.switch_to_block(merge_block);
+        builder.seal_block(merge_block);
+
+        // Return result
+        Ok(builder.use_var(result_var))
+    }
+
+    /// Compile logical OR with short-circuit evaluation - complexity ≤10
+    ///
+    /// Semantics: left || right
+    /// - If left is true (1), return true without evaluating right
+    /// - If left is false (0), evaluate and return right
+    fn compile_logical_or(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        left: &Expr,
+        right: &Expr,
+    ) -> Result<Value> {
+        // Evaluate left operand
+        let left_value = Self::compile_expr(builder, ctx, left)?;
+
+        // Create blocks for short-circuit logic
+        let short_circuit_block = builder.create_block();
+        let eval_right_block = builder.create_block();
+        let merge_block = builder.create_block();
+
+        // Create variable to hold result
+        let result_var = builder.declare_var(types::I64);
+
+        // If left is true (non-zero), short-circuit to true; else evaluate right
+        builder.ins().brif(left_value, short_circuit_block, &[], eval_right_block, &[]);
+
+        // Left is true - short-circuit to true (1)
+        builder.switch_to_block(short_circuit_block);
+        builder.seal_block(short_circuit_block);
+        let true_val = builder.ins().iconst(types::I64, 1);
+        builder.def_var(result_var, true_val);
+        builder.ins().jump(merge_block, &[]);
+
+        // Left is false - evaluate right operand
+        builder.switch_to_block(eval_right_block);
+        builder.seal_block(eval_right_block);
+        let right_value = Self::compile_expr(builder, ctx, right)?;
+        builder.def_var(result_var, right_value);
+        builder.ins().jump(merge_block, &[]);
+
+        // Merge both paths
+        builder.switch_to_block(merge_block);
+        builder.seal_block(merge_block);
+
+        // Return result
+        Ok(builder.use_var(result_var))
     }
 
     /// Compile block expression (sequence of statements, return last value)

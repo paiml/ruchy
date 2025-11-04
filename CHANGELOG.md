@@ -2,6 +2,37 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.199.0] - 2025-11-04
+
+### Added
+- **[JIT-004]** Logical operators (AND/OR) with short-circuit evaluation in JIT compiler
+  - **NEW FEATURES**:
+    - Logical AND (`&&`): Short-circuit evaluation (right not evaluated if left is false)
+    - Logical OR (`||`): Short-circuit evaluation (right not evaluated if left is true)
+    - Complex conditions: Nested AND/OR expressions with proper precedence
+    - Range validation: `(x >= min) && (x <= max)` patterns
+  - **IMPLEMENTATION**:
+    - Short-circuit semantics via Cranelift control flow blocks
+    - AND: if left false, return false without evaluating right
+    - OR: if left true, return true without evaluating right
+    - Uses SSA variables for result merging across control flow paths
+  - **FILES**:
+    - src/jit/compiler.rs:352-356 (compile_binary_op dispatch to logical ops)
+    - src/jit/compiler.rs:431-523 (compile_logical_and + compile_logical_or, 93 LOC total)
+    - tests/jit_004_logical_operators.rs (NEW, 411 LOC, 19 tests: 100% passing)
+  - **TEST RESULTS**:
+    - Logical AND (`&&`): 7/7 tests passing (truth tables + comparisons)
+    - Logical OR (`||`): 7/7 tests passing (truth tables + comparisons)
+    - Short-circuit evaluation: 4/4 tests passing (both AND and OR)
+    - Complex conditions: 3/3 tests passing (nested AND/OR)
+    - Range validation: 2/2 tests passing (common use case)
+  - **QUALITY GATES**:
+    - compile_logical_and complexity: ≤10 (control flow pattern)
+    - compile_logical_or complexity: ≤10 (control flow pattern)
+    - All tests passing: 19/19 (100%)
+    - No regressions: JIT-002 (16/16) + JIT-003 (16/16) still passing
+  - **NEXT STEPS**: JIT-005 (arrays + heap allocation), JIT-006 (loops)
+
 ## [3.198.0] - 2025-11-04
 
 ### Added
