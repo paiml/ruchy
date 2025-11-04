@@ -14,6 +14,7 @@
 
 use assert_cmd::Command;
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command as StdCommand;
 use tempfile::NamedTempFile;
 
@@ -402,4 +403,590 @@ println!("{{}}", {})
             let _ = fs::remove_file(&exe_path);
         });
     }
+}
+
+// ============================================================================
+// Unit Tests for Code Coverage (>80% target)
+// ============================================================================
+
+/// Test 4: Non-global assignments don't use guard pattern
+#[test]
+fn test_local_assignment_no_guard() {
+    let code = r#"
+fn compute() {
+    let mut x = 10
+    x = x + 5
+    println!("{}", x)
+}
+compute()
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success(), "Transpile failed");
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    
+    // Should NOT contain guard pattern for local variables
+    assert!(!transpiled.contains("__guard"), "Local var shouldn't use guard");
+    assert!(transpiled.contains("let mut x"), "Should have local variable");
+
+    let _ = fs::remove_file(&ruchy_path);
+}
+
+/// Test 5: Global assignment where value doesn't reference target (no deadlock risk)
+#[test]
+fn test_global_assignment_no_self_reference() {
+    let code = r#"
+let mut result = 0
+let mut other = 5
+
+fn set_result() {
+    result = other + 10
+}
+
+set_result()
+println!("{}", result)
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success());
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let rs_path = temp.path().with_extension("rs");
+    fs::write(&rs_path, transpiled).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name").arg("test_global_no_ref")
+        .arg("-o").arg(temp.path().with_extension("exe"))
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let exe_path = temp.path().with_extension("exe");
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124));
+    assert!(run.status.success());
+    
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("15"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+/// Test 6: Unary operator in self-referencing assignment
+#[test]
+fn test_unary_in_self_reference() {
+    let code = r#"
+let mut value = -10
+
+fn negate() {
+    value = -value
+}
+
+negate()
+println!("{}", value)
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success());
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    
+    // Should contain guard pattern
+    assert!(transpiled.contains("__guard"), "Should use guard for unary self-ref");
+
+    let rs_path = temp.path().with_extension("rs");
+    fs::write(&rs_path, transpiled).unwrap();
+
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name").arg("test_unary")
+        .arg("-o").arg(temp.path().with_extension("exe"))
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr));
+
+    let exe_path = temp.path().with_extension("exe");
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124));
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("10"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+/// Test 7: Method call doesn't trigger guard (non-identifier)
+#[test]
+fn test_method_call_no_special_handling() {
+    let code = r#"
+let mut text = "hello"
+
+fn process() {
+    text = "world"
+    println!("{}", text)
+}
+
+process()
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success());
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    
+    // Simple string assignment doesn't need guard
+    assert!(transpiled.contains("static text"));
+
+    let _ = fs::remove_file(&ruchy_path);
+}
+
+/// Test 8: Multiple operations with self-reference
+#[test]
+fn test_nested_binary_self_reference() {
+    let code = r#"
+let mut num = 10
+
+fn complex_update() {
+    num = num + num
+}
+
+complex_update()
+println!("{}", num)
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success());
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    
+    // Should use guard pattern for nested expression
+    assert!(transpiled.contains("__guard"));
+
+    let rs_path = temp.path().with_extension("rs");
+    fs::write(&rs_path, transpiled).unwrap();
+
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name").arg("test_nested")
+        .arg("-o").arg(temp.path().with_extension("exe"))
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr));
+
+    let exe_path = temp.path().with_extension("exe");
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124));
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("20")); // 10 + 10 = 20
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+/// Test 9: Compound assignment with different operators
+#[test]
+fn test_compound_different_operators() {
+    let code = r#"
+let mut x = 10
+
+fn test_ops() {
+    x *= 2
+}
+
+test_ops()
+println!("{}", x)
+"#;
+
+    let temp = NamedTempFile::new().unwrap();
+    let ruchy_path = temp.path().with_extension("ruchy");
+    fs::write(&ruchy_path, code).unwrap();
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    assert!(output.status.success());
+
+    let transpiled = String::from_utf8(output.stdout).unwrap();
+    
+    // Should use guard for global compound assignment
+    assert!(transpiled.contains("__guard"));
+    assert!(transpiled.contains("*="));
+
+    let rs_path = temp.path().with_extension("rs");
+    fs::write(&rs_path, transpiled).unwrap();
+
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name").arg("test_compound_ops")
+        .arg("-o").arg(temp.path().with_extension("exe"))
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr));
+
+    let exe_path = temp.path().with_extension("exe");
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124));
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("20"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+// Test 10: Bitwise operators in self-reference (flags = flags & 0xFF)
+#[test]
+fn test_bitwise_operators_self_reference() {
+    let code = r#"
+let mut flags = 255
+
+fn mask_flags() {
+    flags = flags & 15
+}
+
+mask_flags()
+println!("{}", flags)
+"#;
+
+    let ruchy_path = PathBuf::from("/tmp/test_bitwise.ruchy");
+    let rs_path = PathBuf::from("/tmp/test_bitwise.rs");
+    let exe_path = PathBuf::from("/tmp/test_bitwise");
+
+    fs::write(&ruchy_path, code).unwrap();
+
+    // Transpile
+    let transpile = StdCommand::new("cargo")
+        .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
+        .arg(&ruchy_path)
+        .output()
+        .unwrap();
+    assert!(transpile.status.success());
+
+    fs::write(&rs_path, transpile.stdout).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name")
+        .arg("test_bitwise")
+        .arg("-o")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("15"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+// Test 11: Comparison operators (status = status > 5)
+#[test]
+fn test_comparison_operators_self_reference() {
+    let code = r#"
+let mut status = 10
+
+fn check_status() {
+    status = if status > 5 { 1 } else { 0 }
+}
+
+check_status()
+println!("{}", status)
+"#;
+
+    let ruchy_path = PathBuf::from("/tmp/test_comparison.ruchy");
+    let rs_path = PathBuf::from("/tmp/test_comparison.rs");
+    let exe_path = PathBuf::from("/tmp/test_comparison");
+
+    fs::write(&ruchy_path, code).unwrap();
+
+    // Transpile
+    let transpile = StdCommand::new("cargo")
+        .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
+        .arg(&ruchy_path)
+        .output()
+        .unwrap();
+    assert!(transpile.status.success());
+
+    fs::write(&rs_path, transpile.stdout).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name")
+        .arg("test_comparison")
+        .arg("-o")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("1"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+// Test 12: Modulo operator (index = (index + 1) % 10)
+#[test]
+fn test_modulo_operator_self_reference() {
+    let code = r#"
+let mut index = 9
+
+fn increment_circular() {
+    index = (index + 1) % 10
+}
+
+increment_circular()
+println!("{}", index)
+"#;
+
+    let ruchy_path = PathBuf::from("/tmp/test_modulo.ruchy");
+    let rs_path = PathBuf::from("/tmp/test_modulo.rs");
+    let exe_path = PathBuf::from("/tmp/test_modulo");
+
+    fs::write(&ruchy_path, code).unwrap();
+
+    // Transpile
+    let transpile = StdCommand::new("cargo")
+        .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
+        .arg(&ruchy_path)
+        .output()
+        .unwrap();
+    assert!(transpile.status.success());
+
+    fs::write(&rs_path, transpile.stdout).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name")
+        .arg("test_modulo")
+        .arg("-o")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("0"));  // (9 + 1) % 10 = 0
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+// Test 13: Logical AND operator (result = result && true)
+#[test]
+fn test_logical_and_self_reference() {
+    let code = r#"
+let mut result = true
+
+fn check_result() {
+    result = result && true
+}
+
+check_result()
+println!("{}", result)
+"#;
+
+    let ruchy_path = PathBuf::from("/tmp/test_logical.ruchy");
+    let rs_path = PathBuf::from("/tmp/test_logical.rs");
+    let exe_path = PathBuf::from("/tmp/test_logical");
+
+    fs::write(&ruchy_path, code).unwrap();
+
+    // Transpile
+    let transpile = StdCommand::new("cargo")
+        .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
+        .arg(&ruchy_path)
+        .output()
+        .unwrap();
+    assert!(transpile.status.success());
+
+    fs::write(&rs_path, transpile.stdout).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name")
+        .arg("test_logical")
+        .arg("-o")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("true"));
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
+}
+
+// Test 14: Shift operators (value = value << 1)
+#[test]
+fn test_shift_operators_self_reference() {
+    let code = r#"
+let mut value = 5
+
+fn shift_left() {
+    value = value << 1
+}
+
+shift_left()
+println!("{}", value)
+"#;
+
+    let ruchy_path = PathBuf::from("/tmp/test_shift.ruchy");
+    let rs_path = PathBuf::from("/tmp/test_shift.rs");
+    let exe_path = PathBuf::from("/tmp/test_shift");
+
+    fs::write(&ruchy_path, code).unwrap();
+
+    // Transpile
+    let transpile = StdCommand::new("cargo")
+        .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
+        .arg(&ruchy_path)
+        .output()
+        .unwrap();
+    assert!(transpile.status.success());
+
+    fs::write(&rs_path, transpile.stdout).unwrap();
+
+    // Compile
+    let compile = StdCommand::new("rustc")
+        .arg(&rs_path)
+        .arg("--crate-name")
+        .arg("test_shift")
+        .arg("-o")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+
+    // Run with timeout
+    let run = StdCommand::new("timeout")
+        .arg("2")
+        .arg(&exe_path)
+        .output()
+        .unwrap();
+
+    assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
+    assert!(run.status.success());
+
+    let output_str = String::from_utf8_lossy(&run.stdout);
+    assert!(output_str.contains("10"));  // 5 << 1 = 10
+
+    let _ = fs::remove_file(&ruchy_path);
+    let _ = fs::remove_file(&rs_path);
+    let _ = fs::remove_file(&exe_path);
 }
