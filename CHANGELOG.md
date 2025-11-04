@@ -2,6 +2,49 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.200.0] - 2025-11-04
+
+### Added
+- **[JIT-005]** Loop support (while, for, break) in JIT compiler
+  - **NEW FEATURES**:
+    - While loops: `while condition { body }` with native JIT compilation
+    - For loops: `for i in start..end { body }` (desugared to while with range iteration)
+    - For loops (inclusive): `for i in start..=end { body }` (inclusive upper bound)
+    - Break statements: `break` to exit loops early
+    - Assignment statements: `x = value` for updating loop variables
+    - Nested loops: Full support for arbitrary loop nesting depth
+  - **IMPLEMENTATION**:
+    - While loops: Cranelift control flow with loop_block, body_block, merge_block
+    - For loops: Desugared to while loops with automatic counter increment
+    - Break: Jumps directly to loop's merge block
+    - Block termination tracking: `ctx.block_terminated` flag prevents invalid instruction insertion
+    - If statement fix: Handles break in one branch correctly (doesn't terminate merge block)
+  - **FILES**:
+    - src/jit/compiler.rs:47-58 (CompileContext with loop_merge_block + block_terminated fields)
+    - src/jit/compiler.rs:343-361 (Expression dispatch for While, For, Break, Assign)
+    - src/jit/compiler.rs:556-601 (compile_while function, 46 LOC, complexity ≤10)
+    - src/jit/compiler.rs:607-677 (compile_for function, 71 LOC, complexity ≤10)
+    - src/jit/compiler.rs:680-696 (compile_break function, 17 LOC, complexity ≤5)
+    - src/jit/compiler.rs:701-721 (compile_assign function, 21 LOC, complexity ≤5)
+    - src/jit/compiler.rs:746-810 (compile_if updated to handle block_terminated, 33 LOC added)
+    - tests/jit_005_loops.rs (NEW, 402 LOC, 15 tests: 100% passing)
+  - **TEST RESULTS**:
+    - While loops (basic): 3/3 tests passing (countdown, accumulator, conditional)
+    - While with break: 2/2 tests passing (simple break, search pattern)
+    - For loops: 3/3 tests passing (simple range, inclusive range, conditional)
+    - For with break: 1/1 tests passing (search pattern)
+    - Nested loops: 2/2 tests passing (2D iteration, while inside while)
+    - Iterative algorithms: 3/3 tests passing (factorial, fibonacci, sum_range)
+    - Performance: 1/1 tests passing (sum 1..1000 <1ms including compilation)
+  - **QUALITY GATES**:
+    - compile_while complexity: ≤10 (SSA block sealing + control flow)
+    - compile_for complexity: ≤10 (desugaring + range iteration)
+    - compile_break complexity: ≤5 (simple jump)
+    - compile_assign complexity: ≤5 (variable update)
+    - All tests passing: 15/15 (100%)
+    - No regressions: JIT-002 (16/16) + JIT-003 (16/16) + JIT-004 (19/19) still passing
+  - **NEXT STEPS**: JIT-006 (arrays + heap allocation), JIT-007 (strings)
+
 ## [3.199.0] - 2025-11-04
 
 ### Added

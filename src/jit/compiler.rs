@@ -51,6 +51,10 @@ struct CompileContext {
     next_var: u32,
     /// Function table (name → FuncRef) for call resolution
     functions: HashMap<String, cranelift_codegen::ir::FuncRef>,
+    /// JIT-005: Current loop's merge block (for break statements)
+    loop_merge_block: Option<cranelift_codegen::ir::Block>,
+    /// JIT-005: Track if current block is terminated (by break)
+    block_terminated: bool,
 }
 
 impl JitCompiler {
@@ -154,6 +158,8 @@ impl JitCompiler {
                 variables: HashMap::new(),
                 next_var: 0,
                 functions: func_refs,
+                loop_merge_block: None,
+                block_terminated: false,
             };
 
             // Compile expression
@@ -246,6 +252,8 @@ impl JitCompiler {
                 variables: HashMap::new(),
                 next_var: 0,
                 functions: func_refs,
+                loop_merge_block: None,
+                block_terminated: false,
             };
 
             // Map parameters to Cranelift variables
@@ -334,6 +342,26 @@ impl JitCompiler {
             // JIT-003: Unary operations (negation, boolean NOT)
             ExprKind::Unary { op, operand } => {
                 Self::compile_unary_op(builder, ctx, op, operand)
+            }
+
+            // JIT-005: While loops
+            ExprKind::While { condition, body, .. } => {
+                Self::compile_while(builder, ctx, condition, body)
+            }
+
+            // JIT-005: For loops (desugar to while)
+            ExprKind::For { var, iter, body, .. } => {
+                Self::compile_for(builder, ctx, var, iter, body)
+            }
+
+            // JIT-005: Break statement
+            ExprKind::Break { .. } => {
+                Self::compile_break(builder, ctx)
+            }
+
+            // JIT-005: Assignment (for loop variables)
+            ExprKind::Assign { target, value } => {
+                Self::compile_assign(builder, ctx, target, value)
             }
 
             // JIT-002: Not yet implemented - fall back to error
@@ -522,6 +550,182 @@ impl JitCompiler {
         Ok(builder.use_var(result_var))
     }
 
+    /// Compile while loop - complexity ≤10
+    ///
+    /// Structure: loop_block → check condition → body_block or merge_block
+    fn compile_while(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        condition: &Expr,
+        body: &Expr,
+    ) -> Result<Value> {
+        // Create blocks for loop control flow
+        let loop_block = builder.create_block();
+        let body_block = builder.create_block();
+        let merge_block = builder.create_block();
+
+        // Save previous loop context (for nested loops)
+        let prev_loop = ctx.loop_merge_block;
+        ctx.loop_merge_block = Some(merge_block);
+
+        // Jump to loop block
+        builder.ins().jump(loop_block, &[]);
+
+        // Loop block: Evaluate condition
+        builder.switch_to_block(loop_block);
+        let cond_value = Self::compile_expr(builder, ctx, condition)?;
+        builder.ins().brif(cond_value, body_block, &[], merge_block, &[]);
+
+        // Body block: Execute loop body
+        builder.switch_to_block(body_block);
+        builder.seal_block(body_block);
+        Self::compile_expr(builder, ctx, body)?;
+        // Only jump back if block isn't already terminated (e.g., by break)
+        if !ctx.block_terminated {
+            builder.ins().jump(loop_block, &[]);
+        }
+        ctx.block_terminated = false; // Reset for next block
+
+        // Now seal loop_block (all predecessors known)
+        builder.seal_block(loop_block);
+
+        // Merge block: After loop
+        builder.switch_to_block(merge_block);
+        builder.seal_block(merge_block);
+
+        // Restore previous loop context
+        ctx.loop_merge_block = prev_loop;
+
+        // Loops return unit ()
+        Ok(builder.ins().iconst(types::I64, 0))
+    }
+
+    /// Compile for loop - complexity ≤10
+    ///
+    /// Desugar: for i in start..end { body } →
+    ///   let mut i = start; while i < end { body; i = i + 1; }
+    fn compile_for(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        var_name: &str,
+        iter: &Expr,
+        body: &Expr,
+    ) -> Result<Value> {
+        // Extract range start/end from iterator
+        let (start, end, inclusive) = match &iter.kind {
+            crate::frontend::ast::ExprKind::Range { start, end, inclusive } => (start, end, *inclusive),
+            _ => return Err(anyhow!("JIT-005: For loop requires range iterator")),
+        };
+
+        // Evaluate range bounds
+        let start_val = Self::compile_expr(builder, ctx, start)?;
+        let end_val = Self::compile_expr(builder, ctx, end)?;
+
+        // Create loop variable
+        let loop_var = builder.declare_var(types::I64);
+        builder.def_var(loop_var, start_val);
+        ctx.variables.insert(var_name.to_string(), loop_var);
+
+        // Create blocks for loop control flow
+        let loop_block = builder.create_block();
+        let body_block = builder.create_block();
+        let merge_block = builder.create_block();
+
+        // Save previous loop context (for nested loops)
+        let prev_loop = ctx.loop_merge_block;
+        ctx.loop_merge_block = Some(merge_block);
+
+        // Jump to loop block
+        builder.ins().jump(loop_block, &[]);
+
+        // Loop block: Check i < end (or i <= end for inclusive)
+        builder.switch_to_block(loop_block);
+        let current_val = builder.use_var(loop_var);
+        let cond = if inclusive {
+            builder.ins().icmp(cranelift_codegen::ir::condcodes::IntCC::SignedLessThanOrEqual, current_val, end_val)
+        } else {
+            builder.ins().icmp(cranelift_codegen::ir::condcodes::IntCC::SignedLessThan, current_val, end_val)
+        };
+        builder.ins().brif(cond, body_block, &[], merge_block, &[]);
+
+        // Body block: Execute body + increment
+        builder.switch_to_block(body_block);
+        builder.seal_block(body_block);
+        Self::compile_expr(builder, ctx, body)?;
+        // Only continue if block isn't already terminated (e.g., by break)
+        if !ctx.block_terminated {
+            let current_val = builder.use_var(loop_var);
+            let one = builder.ins().iconst(types::I64, 1);
+            let next_val = builder.ins().iadd(current_val, one);
+            builder.def_var(loop_var, next_val);
+            builder.ins().jump(loop_block, &[]);
+        }
+        ctx.block_terminated = false; // Reset for next block
+
+        // Now seal loop_block (all predecessors known)
+        builder.seal_block(loop_block);
+
+        // Merge block: After loop
+        builder.switch_to_block(merge_block);
+        builder.seal_block(merge_block);
+
+        // Restore previous loop context
+        ctx.loop_merge_block = prev_loop;
+
+        // Loops return unit ()
+        Ok(builder.ins().iconst(types::I64, 0))
+    }
+
+    /// Compile break statement - complexity ≤5
+    ///
+    /// Jump to current loop's merge block
+    fn compile_break(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+    ) -> Result<Value> {
+        match ctx.loop_merge_block {
+            Some(merge_block) => {
+                // Create dummy value BEFORE terminating block
+                let dummy = builder.ins().iconst(types::I64, 0);
+                // Jump to merge block (terminates current block)
+                builder.ins().jump(merge_block, &[]);
+                // Mark block as terminated so caller doesn't try to add more instructions
+                ctx.block_terminated = true;
+                Ok(dummy)
+            }
+            None => Err(anyhow!("JIT-005: Break outside of loop")),
+        }
+    }
+
+    /// Compile assignment - complexity ≤5
+    ///
+    /// Update variable value: x = value
+    fn compile_assign(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        target: &Expr,
+        value: &Expr,
+    ) -> Result<Value> {
+        // Get target variable name
+        let var_name = match &target.kind {
+            crate::frontend::ast::ExprKind::Identifier(name) => name,
+            _ => return Err(anyhow!("JIT-005: Assignment target must be identifier")),
+        };
+
+        // Evaluate new value
+        let new_val = Self::compile_expr(builder, ctx, value)?;
+
+        // Look up variable
+        let var = ctx.variables.get(var_name)
+            .ok_or_else(|| anyhow!("JIT-005: Undefined variable: {}", var_name))?;
+
+        // Update variable
+        builder.def_var(*var, new_val);
+
+        // Assignment returns unit ()
+        Ok(builder.ins().iconst(types::I64, 0))
+    }
+
     /// Compile block expression (sequence of statements, return last value)
     fn compile_block(builder: &mut FunctionBuilder, ctx: &mut CompileContext, exprs: &[Expr]) -> Result<Value> {
         if exprs.is_empty() {
@@ -564,8 +768,13 @@ impl JitCompiler {
         builder.switch_to_block(then_block);
         builder.seal_block(then_block);
         let then_value = Self::compile_expr(builder, ctx, then_branch)?;
-        builder.def_var(result_var, then_value);
-        builder.ins().jump(merge_block, &[]);
+        // Only add instructions if block wasn't terminated (e.g., by break)
+        if !ctx.block_terminated {
+            builder.def_var(result_var, then_value);
+            builder.ins().jump(merge_block, &[]);
+        }
+        let then_terminated = ctx.block_terminated;
+        ctx.block_terminated = false; // Reset for else branch
 
         // Else branch
         builder.switch_to_block(else_block);
@@ -576,17 +785,28 @@ impl JitCompiler {
             // No else branch, return unit ()
             builder.ins().iconst(types::I64, 0)
         };
-        builder.def_var(result_var, else_value);
-        builder.ins().jump(merge_block, &[]);
+        // Only add instructions if block wasn't terminated (e.g., by break)
+        if !ctx.block_terminated {
+            builder.def_var(result_var, else_value);
+            builder.ins().jump(merge_block, &[]);
+        }
+        let else_terminated = ctx.block_terminated;
+        ctx.block_terminated = false; // Reset for merge block
 
         // Merge block
         builder.switch_to_block(merge_block);
         builder.seal_block(merge_block);
 
-        // Read the result variable (automatically creates phi node)
-        let result = builder.use_var(result_var);
-
-        Ok(result)
+        // If both branches terminated, mark context as terminated
+        if then_terminated && else_terminated {
+            ctx.block_terminated = true;
+            // Return dummy value (won't be used since control jumped away)
+            Ok(builder.ins().iconst(types::I64, 0))
+        } else {
+            // Read the result variable (automatically creates phi node)
+            let result = builder.use_var(result_var);
+            Ok(result)
+        }
     }
 
     /// Compile let binding (variable declaration and initialization) - complexity ≤10
