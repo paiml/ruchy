@@ -1150,10 +1150,10 @@ fn extract_docs_recursive(expr: &ruchy::frontend::ast::Expr, docs: &mut Vec<DocI
             // Extract leading doc comments from Comment structs
             let doc_comment = expr.leading_comments
                 .iter()
-                .filter_map(|c| match &c.kind {
+                .map(|c| match &c.kind {
                     ruchy::frontend::ast::CommentKind::Line(text) |
                     ruchy::frontend::ast::CommentKind::Block(text) |
-                    ruchy::frontend::ast::CommentKind::Doc(text) => Some(text.clone()),
+                    ruchy::frontend::ast::CommentKind::Doc(text) => text.clone(),
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -1551,7 +1551,7 @@ fn generate_dataflow_debug_interactive(
         output.push_str(&format!("Breakpoints: {:?}\n", breakpoints));
     }
 
-    output.push_str("\n");
+    output.push('\n');
     output.push_str("════════════════════════════════════════════════════════════════\n");
     output.push_str("Status: No active DataFrame pipeline detected\n\n");
     output.push_str("To debug pipelines, start a Ruchy program with DataFrame operations.\n");
@@ -1803,7 +1803,7 @@ fn generate_actor_observe_interactive(
         output.push('\n');
     }
 
-    output.push_str("\n");
+    output.push('\n');
     output.push_str("════════════════════════════════════════════════════════════════\n");
     output.push_str("Status: No active actor system detected\n\n");
     output.push_str("To observe actors, start a Ruchy program with actor system support.\n");
@@ -1867,7 +1867,7 @@ pub fn handle_optimize_command(
     // Generate analysis based on format
     let content = match format {
         "text" => generate_optimize_text(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
-        "json" => generate_optimize_json(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold)?,
+        "json" => generate_optimize_json(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
         "html" => generate_optimize_html(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
         _ => unreachable!(),
     };
@@ -1959,7 +1959,7 @@ fn generate_optimize_json(
     abstractions: bool,
     benchmark: bool,
     threshold: f64,
-) -> Result<String> {
+) -> String {
     let mut json = String::new();
     json.push_str("{\n");
     json.push_str(&format!("  \"file\": \"{}\",\n", file.display()));
@@ -1993,7 +1993,7 @@ fn generate_optimize_json(
     json.push_str("    \"Profile-guided optimization recommended\"\n");
     json.push_str("  ]\n");
     json.push_str("}\n");
-    Ok(json)
+    json
 }
 
 /// Generate HTML format optimization analysis

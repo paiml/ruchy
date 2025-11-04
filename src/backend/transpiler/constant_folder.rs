@@ -314,13 +314,13 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
         ExprKind::Block(exprs) => {
             // PERF-002-C: Collect all used function names in the entire block
             let used_functions = {
-                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span.clone());
+                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span);
                 collect_used_functions(&temp_expr)
             };
 
             // PERF-002-C: Collect all used variable names for liveness analysis
             let used_variables = {
-                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span.clone());
+                let temp_expr = Expr::new(ExprKind::Block(exprs.clone()), expr.span);
                 collect_used_variables(&temp_expr)
             };
 

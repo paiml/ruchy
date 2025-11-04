@@ -846,15 +846,14 @@ impl Transpiler {
             }
             // Let expression returning immutable string literal
             ExprKind::Let { name, value, body: let_body, is_mutable, .. } => {
-                if !is_mutable {
-                    if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
+                if !is_mutable
+                    && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
                         if let ExprKind::Identifier(ident) = &let_body.kind {
                             if ident == name {
                                 return true;
                             }
                         }
                     }
-                }
                 false
             }
             // If expression - check if both branches return string literals
@@ -916,7 +915,7 @@ impl Transpiler {
     }
 
     /// Check if function body returns a Vec/array (ISSUE-113)
-    /// Detects: [], array.push(), array literals
+    /// Detects: [], `array.push()`, array literals
     fn returns_vec(&self, body: &Expr) -> bool {
         match &body.kind {
             // Array literal []
@@ -950,7 +949,7 @@ impl Transpiler {
 
     /// Check if function body returns an owned String (ISSUE-114)
     /// Detects: string concatenation, string variables, string mutations
-    /// Note: This is for owned String, not &'static str (use returns_string_literal for that)
+    /// Note: This is for owned String, not &'static str (use `returns_string_literal` for that)
     fn returns_string(&self, body: &Expr) -> bool {
         match &body.kind {
             // String concatenation with + operator returns owned String
@@ -968,7 +967,7 @@ impl Transpiler {
                     // If last expression is an identifier, check if it was bound to a mutable string
                     if let ExprKind::Identifier(name) = &last.kind {
                         // Search for mutable Let binding with string value
-                        for expr in exprs.iter() {
+                        for expr in exprs {
                             if let ExprKind::Let { name: let_name, value, is_mutable, .. } = &expr.kind {
                                 if let_name == name && *is_mutable {
                                     // Check if initial value is string
@@ -1027,7 +1026,7 @@ impl Transpiler {
     /// Check if identifier in block was assigned a string value
     fn identifier_is_string(&self, name: &str, block_exprs: &[Expr]) -> bool {
         // Search for let binding that creates string
-        for e in block_exprs.iter() {
+        for e in block_exprs {
             if let ExprKind::Let { name: let_name, value, .. } = &e.kind {
                 if let_name == name {
                     // Check if initial value is string literal
@@ -1068,12 +1067,44 @@ impl Transpiler {
     /// Infer parameter type based on usage in function body
     fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
         use super::type_inference::{
-            infer_param_type_from_builtin_usage, is_param_used_as_function,
-            is_param_used_numerically,
+            infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_function,
+            is_param_used_as_index, is_param_used_numerically, is_param_used_with_len,
         };
 
-        // Check built-in function signatures first to get precise type information
-        // for stdlib functions. Built-in signatures are more reliable than heuristics.
+        // Check for function parameters first (higher-order functions)
+        if is_param_used_as_function(&param.name(), body) {
+            return quote! { impl Fn(i32) -> i32 };
+        }
+
+        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an array (indexed)
+        // This must come before builtin usage check because len() works on both arrays and strings
+        if is_param_used_as_array(&param.name(), body) {
+            // Parameter accessed with indexing like param[i] should be slice
+            // Using &[i32] is most flexible - works with Vec, arrays, and slices
+            return quote! { &[i32] };
+        }
+
+        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used with len()
+        // Since len() works on both arrays and strings, default to array type
+        if is_param_used_with_len(&param.name(), body) {
+            return quote! { &[i32] };
+        }
+
+        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an index
+        if is_param_used_as_index(&param.name(), body) {
+            // Parameter used as index should be integer type
+            return quote! { i32 };
+        }
+
+        // Check if used numerically
+        if is_param_used_numerically(&param.name(), body)
+            || self.looks_like_numeric_function(func_name)
+        {
+            return quote! { i32 };
+        }
+
+        // Check built-in function signatures for string-specific operations
+        // This comes AFTER array/index checks to avoid false positives with len(), etc.
         if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
             if type_hint == "&str" {
                 return quote! { &str };
@@ -1081,19 +1112,8 @@ impl Transpiler {
             // Future: Add more types as needed (String, Vec<String>, etc.)
         }
 
-        // Then check for function parameters (higher-order functions)
-        if is_param_used_as_function(&param.name(), body) {
-            quote! { impl Fn(i32) -> i32 }
-        } else if is_param_used_numerically(&param.name(), body)
-            || self.looks_like_numeric_function(func_name)
-        {
-            quote! { i32 }
-        } else {
-            // Default to &str instead of String for zero-cost string literals
-            // String literals in Rust are &str, so this avoids unnecessary allocations
-            // and matches idiomatic Rust where functions accept &str for flexibility
-            quote! { &str }
-        }
+        // Default to &str for zero-cost string literals
+        quote! { &str }
     }
     /// Generate parameter tokens with proper type inference
     fn generate_param_tokens(
@@ -1204,7 +1224,7 @@ impl Transpiler {
             ExprKind::If { condition, then_branch, else_branch } => {
                 Self::expr_references_any(condition, names)
                     || Self::expr_references_any(then_branch, names)
-                    || else_branch.as_ref().map_or(false, |e| Self::expr_references_any(e, names))
+                    || else_branch.as_ref().is_some_and(|e| Self::expr_references_any(e, names))
             }
             ExprKind::Call { func, args } => {
                 Self::expr_references_any(func, names) || args.iter().any(|a| Self::expr_references_any(a, names))
@@ -1527,7 +1547,7 @@ impl Transpiler {
         matches!(&ty.kind, TypeKind::Named(name) if name == "String")
     }
 
-    /// DEFECT-012/013: Check if expression body needs .to_string() conversion
+    /// DEFECT-012/013: Check if expression body needs .`to_string()` conversion
     fn body_needs_string_conversion(&self, body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
@@ -1549,7 +1569,7 @@ impl Transpiler {
         }
     }
 
-    /// DEFECT-012: Generate body tokens with .to_string() wrapper on last expression
+    /// DEFECT-012: Generate body tokens with .`to_string()` wrapper on last expression
     fn generate_body_tokens_with_string_conversion(
         &self,
         body: &Expr,
@@ -1637,7 +1657,7 @@ impl Transpiler {
                             // DEFECT-016-B FIX: Track function call results that might return String
                             (crate::frontend::ast::ExprKind::Call { .. }, _) => {
                                 // Function call - optimistically track in string_vars for auto-borrowing
-                                self.string_vars.borrow_mut().insert(name.to_string());
+                                self.string_vars.borrow_mut().insert(name.clone());
                                 self.transpile_expr(value)?
                             }
                             _ => self.transpile_expr(value)?,
@@ -5305,11 +5325,10 @@ impl Transpiler {
 
                         // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
                         // to prevent "use of moved value" errors on subsequent iterations
-                        if self.in_loop_context.get() {
-                            if matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
+                        if self.in_loop_context.get()
+                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
                                 base_tokens = quote! { #base_tokens.clone() };
                             }
-                        }
 
                         // Apply String/&str coercion if needed
                         if let Some(expected_type) = signature.param_types.get(i) {
@@ -5325,11 +5344,10 @@ impl Transpiler {
                     let mut base_tokens = self.transpile_expr(arg)?;
 
                     // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
-                    if self.in_loop_context.get() {
-                        if matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
+                    if self.in_loop_context.get()
+                        && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
                             base_tokens = quote! { #base_tokens.clone() };
                         }
-                    }
 
                     Ok(base_tokens)
                 }).collect()

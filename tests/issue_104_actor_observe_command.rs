@@ -2,7 +2,7 @@
 //!
 //! Tests the `ruchy actor:observe` command for live actor system introspection.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/104
+//! Reference: <https://github.com/paiml/ruchy/issues/104>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -116,7 +116,7 @@ fn test_issue_104_actor_observe_format_json() {
     // Verify it's valid JSON
     let content = fs::read_to_string(&output_file).unwrap();
     assert!(
-        content.contains("{") && content.contains("}"),
+        content.contains('{') && content.contains('}'),
         "Output should be valid JSON"
     );
 }

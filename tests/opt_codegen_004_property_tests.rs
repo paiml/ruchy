@@ -85,14 +85,14 @@ fn property_inline_idempotent() {
         );
 
         // Apply inline expansion once
-        let (once, _) = inline_small_functions(block.clone());
+        let (once, _) = inline_small_functions(block);
 
         // Apply inline expansion twice
         let (twice, _) = inline_small_functions(once.clone());
 
         // Convert to strings for comparison (semantic equivalence)
-        let once_str = format!("{:?}", once);
-        let twice_str = format!("{:?}", twice);
+        let once_str = format!("{once:?}");
+        let twice_str = format!("{twice:?}");
 
         prop_assert_eq!(once_str, twice_str,
             "Inline expansion should be idempotent: inline(inline(expr)) = inline(expr)");
@@ -160,7 +160,7 @@ fn property_recursive_never_inlined() {
         );
 
         let block = Expr::new(
-            ExprKind::Block(vec![factorial.clone(), call]),
+            ExprKind::Block(vec![factorial, call]),
             Span::default(),
         );
 
@@ -199,7 +199,7 @@ fn property_large_functions_not_inlined() {
         for i in (1..=11).rev() {
             nested_let = Expr::new(
                 ExprKind::Let {
-                    name: format!("var{}", i),
+                    name: format!("var{i}"),
                     type_annotation: None,
                     value: Box::new(Expr::new(
                         ExprKind::Literal(Literal::Integer(i, None)),
@@ -250,7 +250,7 @@ fn property_large_functions_not_inlined() {
         );
 
         let block = Expr::new(
-            ExprKind::Block(vec![large_func, call.clone()]),
+            ExprKind::Block(vec![large_func, call]),
             Span::default(),
         );
 

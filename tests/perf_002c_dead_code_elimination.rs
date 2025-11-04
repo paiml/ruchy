@@ -18,7 +18,7 @@ use predicates::prelude::*;
 #[test]
 fn test_perf_002c_dce_after_return() {
     // Pattern: Code after return statement is unreachable
-    let code = r#"
+    let code = r"
         fun example() -> i32 {
             return 42;
             let x = 5;  // Dead code
@@ -26,7 +26,7 @@ fn test_perf_002c_dce_after_return() {
             return 99;  // Dead code
         }
         println(example());
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -43,7 +43,7 @@ fn test_perf_002c_dce_after_return() {
 #[test]
 fn test_perf_002c_dce_multiple_returns() {
     // Pattern: Only first return path is reachable
-    let code = r#"
+    let code = r"
         fun check(n: i32) -> i32 {
             if n > 10 {
                 return n;
@@ -52,7 +52,7 @@ fn test_perf_002c_dce_multiple_returns() {
             let unreachable = 42;  // Dead code
         }
         println(check(5));
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -118,11 +118,11 @@ fn test_perf_002c_dce_true_branch_no_else() {
 #[test]
 fn test_perf_002c_dce_unused_variable() {
     // Pattern: Variable defined but never used
-    let code = r#"
+    let code = r"
         let unused = 42;
         let used = 10;
         println(used);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -137,11 +137,11 @@ fn test_perf_002c_dce_unused_variable() {
 #[test]
 fn test_perf_002c_dce_unused_computation() {
     // Pattern: Computation result never used (pure expression)
-    let code = r#"
+    let code = r"
         let x = 5;
         let unused_result = x + 10;  // Never used
         println(x);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -159,7 +159,7 @@ fn test_perf_002c_dce_unused_computation() {
 #[test]
 fn test_perf_002c_dce_after_break() {
     // Pattern: Code after break in loop is unreachable
-    let code = r#"
+    let code = r"
         let mut i = 0;
         while true {
             if i > 5 {
@@ -170,7 +170,7 @@ fn test_perf_002c_dce_after_break() {
             i = i + 1;
         }
         println(i);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -184,7 +184,7 @@ fn test_perf_002c_dce_after_break() {
 #[test]
 fn test_perf_002c_dce_after_continue() {
     // Pattern: Code after continue in loop is unreachable
-    let code = r#"
+    let code = r"
         let mut sum = 0;
         let mut i = 0;
         while i < 10 {
@@ -196,7 +196,7 @@ fn test_perf_002c_dce_after_continue() {
             sum = sum + i;
         }
         println(sum);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -271,14 +271,14 @@ fn property_dce_preserves_semantics() {
     use proptest::prelude::*;
 
     proptest!(|(dead_val in 0..100i32, live_val in 0..100i32)| {
-        let code = format!(r#"
+        let code = format!(r"
             fun compute() -> i32 {{
-                return {};
-                let dead = {};  // Dead code
+                return {live_val};
+                let dead = {dead_val};  // Dead code
                 dead
             }}
             println(compute());
-        "#, live_val, dead_val);
+        ");
 
         // Expected result after DCE
         let expected = live_val;
@@ -287,10 +287,10 @@ fn property_dce_preserves_semantics() {
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
-            .stdout(predicate::str::contains(format!("return {}", expected)));
+            .stdout(predicate::str::contains(format!("return {expected}")));
     });
 }
 
@@ -302,14 +302,14 @@ fn property_dce_idempotent() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..50i32, b in 0..50i32)| {
-        let code = format!(r#"
+        let code = format!(r"
             fun test() -> i32 {{
-                return {};
-                let unused1 = {};  // Dead code
+                return {a};
+                let unused1 = {b};  // Dead code
                 return 999;         // Dead code
             }}
             println(test());
-        "#, a, b);
+        ");
 
         // Run transpile twice and verify identical output
         let mut cmd1 = Command::cargo_bin("ruchy").unwrap();
@@ -326,7 +326,7 @@ fn property_dce_idempotent() {
         let mut cmd2 = Command::cargo_bin("ruchy").unwrap();
         let output2 = cmd2.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
             .get_output()
@@ -346,12 +346,12 @@ fn property_no_live_code_eliminated() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..100i32, b in 0..100i32)| {
-        let code = format!(r#"
-            let x = {};
-            let y = {};
+        let code = format!(r"
+            let x = {a};
+            let y = {b};
             let result = x + y;
             println(result);
-        "#, a, b);
+        ");
 
         // Expected: all live variables should remain
         let expected_result = a + b;
@@ -360,11 +360,11 @@ fn property_no_live_code_eliminated() {
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
             .stdout(predicate::str::contains("let x"))
             .stdout(predicate::str::contains("let y"))
-            .stdout(predicate::str::contains(format!("let result = {}", expected_result)));
+            .stdout(predicate::str::contains(format!("let result = {expected_result}")));
     });
 }

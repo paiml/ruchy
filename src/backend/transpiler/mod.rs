@@ -145,18 +145,18 @@ pub struct Transpiler {
     ///
     /// Populated during transpilation to track which mutable variables are Strings.
     /// Used to distinguish string concatenation from numeric addition.
-    /// Uses RefCell for interior mutability since transpiler methods take &self.
+    /// Uses `RefCell` for interior mutability since transpiler methods take &self.
     pub string_vars: std::cell::RefCell<std::collections::HashSet<String>>,
     /// Current function return type (TRANSPILER-007 fix).
     ///
     /// Tracks the return type of the function currently being transpiled.
     /// Used to generate concrete type hints for empty vec initializations.
-    /// Uses RefCell for interior mutability since transpiler methods take &self.
+    /// Uses `RefCell` for interior mutability since transpiler methods take &self.
     pub current_function_return_type: std::cell::RefCell<Option<crate::frontend::ast::Type>>,
     /// Global variable names that need unsafe access (TRANSPILER-SCOPE fix).
     ///
     /// Tracks which variables are static mut globals requiring unsafe blocks.
-    /// Uses RwLock for thread-safe interior mutability since transpiler is used in async contexts.
+    /// Uses `RwLock` for thread-safe interior mutability since transpiler is used in async contexts.
     pub global_vars: std::sync::RwLock<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
@@ -934,7 +934,7 @@ impl Transpiler {
         }
 
         // TRANSPILER-SCOPE: Store global variable names for use during expression transpilation
-        *self.global_vars.write().unwrap() = global_var_names.clone();
+        (*self.global_vars.write().unwrap()).clone_from(&global_var_names);
 
         // Second pass - categorize expressions, skipping main() calls and promoted globals
         for expr in exprs {

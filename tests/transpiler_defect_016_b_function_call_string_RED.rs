@@ -1,9 +1,9 @@
 //! TRANSPILER-DEFECT-016-B: Function Call String Results Not Tracked
 //!
-//! **Issue**: Variables assigned from function calls returning String are not tracked in string_vars,
+//! **Issue**: Variables assigned from function calls returning String are not tracked in `string_vars`,
 //! causing E0308 errors when used in string concatenation without auto-borrowing.
 //!
-//! **Root Cause**: The string_vars tracking only handles string literals and String::from(),
+//! **Root Cause**: The `string_vars` tracking only handles string literals and `String::from()`,
 //! but not function call results that return String.
 //!
 //! **Impact**: 1 error in reaper project (line 185/731)
@@ -77,16 +77,15 @@ println(format_msg(Priority::High));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Function call results auto-tracked and auto-borrowed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: expected &str, found String. Got:\n{}",
-            stderr
+            "Expected E0308: expected &str, found String. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Function call String concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Function call results auto-tracked and auto-borrowed");
     }
 }
 
@@ -122,16 +121,15 @@ println(format_person());
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Multiple function calls auto-tracked");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 for multiple function calls. Got:\n{}",
-            stderr
+            "Expected E0308 for multiple function calls. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Multiple function call concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Multiple function calls auto-tracked");
     }
 }
 
@@ -168,7 +166,7 @@ fn test_defect_016_b_04_integer_function_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 fun get_age() -> i32 { 42 }
 
 fun main() {
@@ -176,7 +174,7 @@ fun main() {
     let sum = age + 10;
     println(sum);
 }
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 

@@ -25,14 +25,14 @@ fn prop_parse_json_roundtrip_objects() {
     )| {
         let script = format!(r#"
 fun main() {{
-    let original = '{{"name": "{}", "value": {}}}'
+    let original = '{{"name": "{name}", "value": {value}}}'
     let parsed = parse_json(original)
     let name = parsed["name"]
     let value = parsed["value"]
     println(name)
     println(value)
 }}
-"#, name, value);
+"#);
 
         let output = Command::cargo_bin("ruchy")
             .unwrap()
@@ -59,16 +59,16 @@ fn prop_parse_json_roundtrip_arrays() {
         values in prop::collection::vec(0i32..100, 1..5)
     )| {
         let json_array = format!("[{}]", values.iter()
-            .map(|v| v.to_string())
+            .map(std::string::ToString::to_string)
             .collect::<Vec<_>>()
             .join(", "));
 
-        let script = format!(r#"
+        let script = format!(r"
 fun main() {{
-    let arr = parse_json('{}')
+    let arr = parse_json('{json_array}')
     println(arr[0])
 }}
-"#, json_array);
+");
 
         let output = Command::cargo_bin("ruchy")
             .unwrap()
@@ -97,15 +97,15 @@ fn prop_parse_json_deterministic() {
         x in 0i32..1000,
         y in 0i32..1000
     )| {
-        let json_str = format!("{{\"x\": {}, \"y\": {}}}", x, y);
+        let json_str = format!("{{\"x\": {x}, \"y\": {y}}}");
         let script = format!(r#"
 fun main() {{
-    let data1 = parse_json('{}')
-    let data2 = parse_json('{}')
+    let data1 = parse_json('{json_str}')
+    let data2 = parse_json('{json_str}')
     println(data1["x"])
     println(data2["x"])
 }}
-"#, json_str, json_str);
+"#);
 
         let output = Command::cargo_bin("ruchy")
             .unwrap()
@@ -136,21 +136,21 @@ fn prop_parse_json_json_parse_equivalent() {
         field in "[a-z]{3,8}",
         value in 0i32..1000
     )| {
-        let json_str = format!("{{\"{}\" : {}}}", field, value);
+        let json_str = format!("{{\"{field}\" : {value}}}");
 
         let script_parse_json = format!(r#"
 fun main() {{
-    let data = parse_json('{}')
-    println(data["{}"])
+    let data = parse_json('{json_str}')
+    println(data["{field}"])
 }}
-"#, json_str, field);
+"#);
 
         let script_json_parse = format!(r#"
 fun main() {{
-    let data = json_parse('{}')
-    println(data["{}"])
+    let data = json_parse('{json_str}')
+    println(data["{field}"])
 }}
-"#, json_str, field);
+"#);
 
         let output1 = Command::cargo_bin("ruchy")
             .unwrap()
@@ -189,18 +189,17 @@ fn prop_parse_json_preserves_types() {
         flag in prop::bool::ANY
     )| {
         let json_str = format!(
-            "{{\"number\": {}, \"string\": \"{}\", \"boolean\": {}}}",
-            num, text, flag
+            "{{\"number\": {num}, \"string\": \"{text}\", \"boolean\": {flag}}}"
         );
 
         let script = format!(r#"
 fun main() {{
-    let data = parse_json('{}')
+    let data = parse_json('{json_str}')
     println(data["number"])
     println(data["string"])
     println(data["boolean"])
 }}
-"#, json_str);
+"#);
 
         let output = Command::cargo_bin("ruchy")
             .unwrap()
@@ -233,17 +232,16 @@ fn prop_parse_json_nested_access_no_crash() {
         depth2_val in 0i32..100
     )| {
         let json_str = format!(
-            "{{\"level1\": {{\"level2\": {{\"value\": {}}}}}, \"array\": [{}]}}",
-            depth1_val, depth2_val
+            "{{\"level1\": {{\"level2\": {{\"value\": {depth1_val}}}}}, \"array\": [{depth2_val}]}}"
         );
 
         let script = format!(r#"
 fun main() {{
-    let data = parse_json('{}')
+    let data = parse_json('{json_str}')
     println(data["level1"]["level2"]["value"])
     println(data["array"][0])
 }}
-"#, json_str);
+"#);
 
         let output = Command::cargo_bin("ruchy")
             .unwrap()

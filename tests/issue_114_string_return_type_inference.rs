@@ -115,11 +115,11 @@ fn test_issue_114_string_concatenation_with_plus() {
     // Test 5: String concatenation with + operator
     // NOTE: This is ambiguous - we can't determine if a+b is string concat or int addition
     // without type annotations or usage context
-    let input = r#"
+    let input = r"
 fun concat_strings(a, b) {
     a + b
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -219,15 +219,13 @@ fun main() {
     // Verify return type is String
     assert!(
         rust_code.contains("fn string_concatenation(iterations: i32) -> String"),
-        "Expected 'fn string_concatenation(iterations: i32) -> String', got:\n{}",
-        rust_code
+        "Expected 'fn string_concatenation(iterations: i32) -> String', got:\n{rust_code}"
     );
 
     // Verify NOT i32
     assert!(
         !rust_code.contains("fn string_concatenation(iterations: i32) -> i32"),
-        "Should NOT contain 'fn string_concatenation(iterations: i32) -> i32', got:\n{}",
-        rust_code
+        "Should NOT contain 'fn string_concatenation(iterations: i32) -> i32', got:\n{rust_code}"
     );
 
     // Write to temp file and attempt compilation
@@ -251,13 +249,12 @@ fun main() {
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 panic!(
-                    "Compilation failed:\n{}\n\nGenerated Rust code:\n{}",
-                    stderr, rust_code
+                    "Compilation failed:\n{stderr}\n\nGenerated Rust code:\n{rust_code}"
                 );
             }
         }
         Err(e) => {
-            panic!("Failed to run rustc: {}", e);
+            panic!("Failed to run rustc: {e}");
         }
     }
 

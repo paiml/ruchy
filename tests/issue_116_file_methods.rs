@@ -7,8 +7,8 @@ use predicates::prelude::*;
 use std::fs;
 
 /// RED PHASE: These tests WILL FAIL until file methods are implemented
-/// Current Error: File objects don't have .read_line() or .close() methods
-/// Expected: Support file.read_line() and file.close() like Python/Ruby
+/// Current Error: File objects don't have .`read_line()` or .`close()` methods
+/// Expected: Support `file.read_line()` and `file.close()` like Python/Ruby
 
 // ============================================================================
 // TEST GROUP 1: read_line() Method
@@ -151,17 +151,17 @@ fn property_read_line_preserves_content() {
         let content = lines.join("\n") + "\n";
         fs::write("/tmp/test_property.txt", &content).unwrap();
 
-        let code = format!(r#"
+        let code = r#"
             let file = File.open("/tmp/test_property.txt");
             let mut count = 0;
-            while true {{
+            while true {
                 let line = file.read_line();
-                if line == "" {{ break; }}
+                if line == "" { break; }
                 count = count + 1;
-            }}
+            }
             file.close();
             println(count);
-        "#);
+        "#.to_string();
 
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         let output = cmd.arg("-e").arg(&code).output().unwrap();

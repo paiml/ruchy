@@ -2,7 +2,7 @@
 //!
 //! Tests the `ruchy doc` command for documentation generation.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/101
+//! Reference: <https://github.com/paiml/ruchy/issues/101>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -32,12 +32,12 @@ fn test_issue_101_doc_simple_function() {
     let file = create_temp_file(
         &temp,
         "simple.ruchy",
-        r#"
+        r"
 /// Adds two numbers together
 fun add(x, y) {
     x + y
 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -60,7 +60,7 @@ fn test_issue_101_doc_with_doc_comments() {
     let file = create_temp_file(
         &temp,
         "documented.ruchy",
-        r#"
+        r"
 /// Calculates the square of a number
 ///
 /// # Arguments
@@ -71,7 +71,7 @@ fn test_issue_101_doc_with_doc_comments() {
 fun square(n) {
     n * n
 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -92,7 +92,7 @@ fn test_issue_101_doc_multiple_functions() {
     let file = create_temp_file(
         &temp,
         "multi.ruchy",
-        r#"
+        r"
 /// Add two numbers
 fun add(x, y) { x + y }
 
@@ -101,7 +101,7 @@ fun sub(x, y) { x - y }
 
 /// Multiply two numbers
 fun mul(x, y) { x * y }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -126,10 +126,10 @@ fn test_issue_101_doc_markdown_format() {
     let file = create_temp_file(
         &temp,
         "test.ruchy",
-        r#"
+        r"
 /// Test function
 fun test() { 42 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -157,10 +157,10 @@ fn test_issue_101_doc_html_format() {
     let file = create_temp_file(
         &temp,
         "test.ruchy",
-        r#"
+        r"
 /// Test function
 fun test() { 42 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -188,10 +188,10 @@ fn test_issue_101_doc_json_format() {
     let file = create_temp_file(
         &temp,
         "test.ruchy",
-        r#"
+        r"
 /// Test function
 fun test() { 42 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -245,7 +245,7 @@ fun greet(name) {
     // Read generated markdown and verify content
     let md_files: Vec<_> = fs::read_dir(&output_dir)
         .unwrap()
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("md"))
         .collect();
 
@@ -264,10 +264,10 @@ fn test_issue_101_doc_json_structure() {
     let file = create_temp_file(
         &temp,
         "json_test.ruchy",
-        r#"
+        r"
 /// Test function
 fun test() { 42 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -284,7 +284,7 @@ fun test() { 42 }
     // Find and parse JSON file
     let json_files: Vec<_> = fs::read_dir(&output_dir)
         .unwrap()
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("json"))
         .collect();
 
@@ -292,7 +292,7 @@ fun test() { 42 }
 
     let content = fs::read_to_string(json_files[0].path()).unwrap();
     assert!(
-        content.contains("{") && content.contains("}"),
+        content.contains('{') && content.contains('}'),
         "JSON should be valid structure"
     );
 }
@@ -307,13 +307,13 @@ fn test_issue_101_doc_private_flag() {
     let file = create_temp_file(
         &temp,
         "private.ruchy",
-        r#"
+        r"
 /// Public function
 fun public_fn() { 1 }
 
 // Private function (no doc comment)
 fun private_fn() { 2 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 
@@ -335,10 +335,10 @@ fn test_issue_101_doc_verbose_mode() {
     let file = create_temp_file(
         &temp,
         "verbose.ruchy",
-        r#"
+        r"
 /// Test
 fun test() { 42 }
-"#,
+",
     );
     let output_dir = temp.path().join("docs");
 

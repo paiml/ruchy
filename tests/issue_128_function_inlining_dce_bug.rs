@@ -52,9 +52,7 @@ println("Result: " + result)
 
     // The transpiled code should NOT have undefined variables in if conditions
     // This was the actual bug - inlining broke parameter substitution
-    if transpiled.contains("if a > b") {
-        panic!("BUG: Parameters not substituted in if condition (Issue #128)");
-    }
+    assert!(!transpiled.contains("if a > b"), "BUG: Parameters not substituted in if condition (Issue #128)");
 }
 
 #[test]
@@ -62,7 +60,7 @@ fn test_issue_128_02_multiple_function_calls() {
     // Verify code compiles correctly with multiple function calls
     // NOTE: Small functions may be inlined - this is correct optimization
 
-    let script = r#"
+    let script = r"
 fun double(x) {
     x * 2
 }
@@ -70,7 +68,7 @@ fun double(x) {
 let a = double(5)
 let b = double(10)
 println(a + b)
-"#;
+";
 
     std::fs::write("/tmp/issue_128_multi.ruchy", script).unwrap();
 
@@ -88,7 +86,7 @@ println(a + b)
 fn test_issue_128_03_function_not_called_can_be_removed() {
     // Verify execution correctness with mixed used/unused functions
 
-    let script = r#"
+    let script = r"
 fun unused(x) {
     x + 1
 }
@@ -99,7 +97,7 @@ fun used(y) {
 
 let result = used(5)
 println(result)
-"#;
+";
 
     std::fs::write("/tmp/issue_128_unused.ruchy", script).unwrap();
 
@@ -117,14 +115,14 @@ println(result)
 fn test_issue_128_04_inlined_function_with_single_call() {
     // If function is small, inlined, AND called only once, DCE can remove definition
 
-    let script = r#"
+    let script = r"
 fun add_one(x) {
     x + 1
 }
 
 let result = add_one(5)
 println(result)
-"#;
+";
 
     std::fs::write("/tmp/issue_128_inline_once.ruchy", script).unwrap();
 
@@ -197,7 +195,7 @@ println("Result: " + result)
 fn test_issue_128_06_recursive_function_not_inlined() {
     // Recursive functions should NEVER be inlined (infinite loop risk)
 
-    let script = r#"
+    let script = r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -208,7 +206,7 @@ fun factorial(n) {
 
 let result = factorial(5)
 println(result)
-"#;
+";
 
     std::fs::write("/tmp/issue_128_recursive.ruchy", script).unwrap();
 
@@ -225,7 +223,7 @@ println(result)
 fn test_issue_128_07_large_function_not_inlined() {
     // Functions >10 LOC should NOT be inlined (size heuristic)
 
-    let script = r#"
+    let script = r"
 fun large_function(x) {
     let a = x + 1
     let b = a * 2
@@ -242,7 +240,7 @@ fun large_function(x) {
 
 let result = large_function(5)
 println(result)
-"#;
+";
 
     std::fs::write("/tmp/issue_128_large.ruchy", script).unwrap();
 
@@ -261,7 +259,7 @@ fn test_issue_128_08_return_expression_with_recursion() {
     // Bug: check_recursion() doesn't look inside Return expressions
     // Bug: substitute_identifiers() doesn't substitute inside Return expressions
 
-    let script = r#"
+    let script = r"
 fun fib(n) {
     if n <= 1 {
         return n
@@ -271,7 +269,7 @@ fun fib(n) {
 }
 
 println(fib(10))
-"#;
+";
 
     std::fs::write("/tmp/issue_128_fib.ruchy", script).unwrap();
 
@@ -308,17 +306,14 @@ println(fib(10))
 
     // If function WAS inlined, check for undefined variables
     // Bug symptoms: "if n <= 1" (n undefined in main), "return n" (n undefined), "fib(n-1)" (fib undefined)
-    if transpiled.contains("if n <=") || transpiled.contains("return n") || transpiled.contains("fib(n") {
-        panic!(
+    assert!(!(transpiled.contains("if n <=") || transpiled.contains("return n") || transpiled.contains("fib(n")), 
             "BUG DETECTED: Function was inlined but has undefined variables!\n\
              Either:\n\
              1. check_recursion() failed to detect recursion in Return expressions\n\
              2. substitute_identifiers() failed to substitute parameters in Return expressions\n\
              \n\
-             Transpiled code:\n{}\n",
-            transpiled
+             Transpiled code:\n{transpiled}\n"
         );
-    }
 
     // If inlined, verify it compiles with rustc
     if !has_function_def {
@@ -339,10 +334,9 @@ println(fib(10))
             let stderr = String::from_utf8_lossy(&rustc_result.stderr);
             panic!(
                 "BUG: Transpiled code doesn't compile!\n\
-                 rustc errors:\n{}\n\
+                 rustc errors:\n{stderr}\n\
                  \n\
-                 Transpiled code:\n{}\n",
-                stderr, transpiled
+                 Transpiled code:\n{transpiled}\n"
             );
         }
     }

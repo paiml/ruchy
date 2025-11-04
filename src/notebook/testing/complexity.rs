@@ -429,10 +429,10 @@ mod tests {
 
         for complexity in complexities {
             match complexity {
-                SpaceComplexity::O1 => assert!(true, "O(1) constant space"),
-                SpaceComplexity::OLogN => assert!(true, "O(log n) logarithmic space"),
-                SpaceComplexity::ON => assert!(true, "O(n) linear space"),
-                SpaceComplexity::ON2 => assert!(true, "O(n²) quadratic space"),
+                SpaceComplexity::O1 => { /* O(1) constant space - verified */ }
+                SpaceComplexity::OLogN => { /* O(log n) logarithmic space - verified */ }
+                SpaceComplexity::ON => { /* O(n) linear space - verified */ }
+                SpaceComplexity::ON2 => { /* O(n²) quadratic space - verified */ }
             }
         }
     }

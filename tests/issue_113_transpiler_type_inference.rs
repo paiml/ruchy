@@ -1,6 +1,6 @@
 //! ISSUE-113: Critical transpiler type inference bugs
 //!
-//! GitHub Issue: https://github.com/paiml/ruchy/issues/113
+//! GitHub Issue: <https://github.com/paiml/ruchy/issues/113>
 //! Severity: CRITICAL - Blocks transpile and compile modes for real-world code
 //!
 //! Bugs discovered through BENCH-008 (Prime Generation) scientific benchmarking:
@@ -17,7 +17,7 @@ use predicates::prelude::*;
 /// Error: E0308 - mismatched types (expected i32, found bool)
 #[test]
 fn test_issue_113_bug_1_boolean_return_type() {
-    let input = r#"
+    let input = r"
 fun is_prime(n) {
     if n < 2 {
         return false
@@ -30,7 +30,7 @@ fun is_prime(n) {
     }
     true
 }
-"#;
+";
 
     // Transpile and check the generated Rust code
     Command::cargo_bin("ruchy")
@@ -47,11 +47,11 @@ fun is_prime(n) {
 /// Bug 1 variant: Simple boolean function
 #[test]
 fn test_issue_113_bug_1_simple_boolean() {
-    let input = r#"
+    let input = r"
 fun is_even(n) {
     n % 2 == 0
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -69,7 +69,7 @@ fun is_even(n) {
 /// Error: E0308 - cannot compare usize with &str
 #[test]
 fn test_issue_113_bug_2_integer_parameter_in_comparison() {
-    let input = r#"
+    let input = r"
 fun count_up_to(limit) {
     let mut i = 0
     while i < limit {
@@ -77,7 +77,7 @@ fun count_up_to(limit) {
     }
     i
 }
-"#;
+";
 
     // Parameter `limit` is used in comparison (i < limit), should be i32
     Command::cargo_bin("ruchy")
@@ -91,10 +91,10 @@ fun count_up_to(limit) {
         .stdout(predicate::str::contains("limit: &str").not()); // Should NOT infer &str
 }
 
-/// Bug 2 variant: Parameter used in Vec.len() comparison
+/// Bug 2 variant: Parameter used in `Vec.len()` comparison
 #[test]
 fn test_issue_113_bug_2_vec_len_comparison() {
-    let input = r#"
+    let input = r"
 fun fill_array(count) {
     let mut arr = []
     while arr.len() < count {
@@ -102,7 +102,7 @@ fun fill_array(count) {
     }
     arr
 }
-"#;
+";
 
     // Parameter `count` is compared with arr.len() (usize), should infer i32/usize
     Command::cargo_bin("ruchy")
@@ -122,7 +122,7 @@ fun fill_array(count) {
 /// Error: E0308 - expected i32, found Vec<i32>
 #[test]
 fn test_issue_113_bug_3_vector_return_type() {
-    let input = r#"
+    let input = r"
 fun make_array() {
     let mut arr = []
     arr.push(1)
@@ -130,7 +130,7 @@ fun make_array() {
     arr.push(3)
     arr
 }
-"#;
+";
 
     // Function returns array literal with .push(), should be Vec<i32>
     Command::cargo_bin("ruchy")
@@ -147,11 +147,11 @@ fun make_array() {
 /// Bug 3 variant: Empty array return
 #[test]
 fn test_issue_113_bug_3_empty_array_return() {
-    let input = r#"
+    let input = r"
 fun empty_array() {
     []
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -166,7 +166,7 @@ fun empty_array() {
 /// Integration test: Full BENCH-008 prime generation reproducer
 #[test]
 fn test_issue_113_full_reproducer_bench_008() {
-    let input = r#"
+    let input = r"
 fun is_prime(n) {
     if n < 2 {
         return false
@@ -205,7 +205,7 @@ fun generate_primes(count) {
 fun main() {
     let primes = generate_primes(100)
 }
-"#;
+";
 
     // Full transpilation should succeed with correct types
     Command::cargo_bin("ruchy")
@@ -225,7 +225,7 @@ fn test_issue_113_transpiled_code_compiles() {
     use std::fs;
     use std::process::Command as StdCommand;
 
-    let input = r#"
+    let input = r"
 fun is_prime(n) {
     if n < 2 { return false }
     if n == 2 { return true }
@@ -235,7 +235,7 @@ fun is_prime(n) {
 fun main() {
     let result = is_prime(7)
 }
-"#;
+";
 
     // Transpile to Rust
     let output = Command::cargo_bin("ruchy")

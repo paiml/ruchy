@@ -368,6 +368,181 @@ pub fn infer_param_type_from_builtin_usage(param_name: &str, expr: &Expr) -> Opt
     }
 }
 
+/// Check if parameter is used as an array (indexed like param[...])
+/// TRANSPILER-PARAM-INFERENCE fix: Detect array usage patterns
+pub fn is_param_used_as_array(param_name: &str, expr: &Expr) -> bool {
+    match &expr.kind {
+        // Direct indexing: param[index]
+        ExprKind::IndexAccess { object, .. } => {
+            if let ExprKind::Identifier(name) = &object.kind {
+                if name == param_name {
+                    return true;
+                }
+            }
+            // Recursively check nested indexing
+            is_param_used_as_array(param_name, object)
+        }
+        // Check all expressions in block
+        ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_as_array(param_name, e)),
+        // Check branches
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            is_param_used_as_array(param_name, condition)
+                || is_param_used_as_array(param_name, then_branch)
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| is_param_used_as_array(param_name, e))
+        }
+        // Check let bindings
+        ExprKind::Let { value, body, .. } => {
+            is_param_used_as_array(param_name, value)
+                || is_param_used_as_array(param_name, body)
+        }
+        // Check binary operations (both sides)
+        ExprKind::Binary { left, right, .. } => {
+            is_param_used_as_array(param_name, left)
+                || is_param_used_as_array(param_name, right)
+        }
+        // Check loops
+        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+            is_param_used_as_array(param_name, condition)
+                || is_param_used_as_array(param_name, body)
+        }
+        // Check assignments
+        ExprKind::Assign { target, value } => {
+            is_param_used_as_array(param_name, target)
+                || is_param_used_as_array(param_name, value)
+        }
+        ExprKind::CompoundAssign { target, value, .. } => {
+            is_param_used_as_array(param_name, target)
+                || is_param_used_as_array(param_name, value)
+        }
+        _ => false,
+    }
+}
+
+/// Check if parameter is used with `len()` function
+/// TRANSPILER-PARAM-INFERENCE fix: Detect len(param) patterns for array inference
+pub fn is_param_used_with_len(param_name: &str, expr: &Expr) -> bool {
+    match &expr.kind {
+        // Check if param is argument to len() function
+        ExprKind::Call { func, args } => {
+            if let ExprKind::Identifier(func_name) = &func.kind {
+                if func_name == "len" {
+                    // Check if any argument is the parameter
+                    for arg in args {
+                        if let ExprKind::Identifier(arg_name) = &arg.kind {
+                            if arg_name == param_name {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            // Recursively check arguments
+            args.iter().any(|arg| is_param_used_with_len(param_name, arg))
+        }
+        // Check all expressions in block
+        ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_with_len(param_name, e)),
+        // Check branches
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            is_param_used_with_len(param_name, condition)
+                || is_param_used_with_len(param_name, then_branch)
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| is_param_used_with_len(param_name, e))
+        }
+        // Check let bindings
+        ExprKind::Let { value, body, .. } => {
+            is_param_used_with_len(param_name, value)
+                || is_param_used_with_len(param_name, body)
+        }
+        // Check binary operations
+        ExprKind::Binary { left, right, .. } => {
+            is_param_used_with_len(param_name, left)
+                || is_param_used_with_len(param_name, right)
+        }
+        // Check loops
+        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+            is_param_used_with_len(param_name, condition)
+                || is_param_used_with_len(param_name, body)
+        }
+        // Check assignments
+        ExprKind::Assign { target, value } => {
+            is_param_used_with_len(param_name, target)
+                || is_param_used_with_len(param_name, value)
+        }
+        ExprKind::CompoundAssign { target, value, .. } => {
+            is_param_used_with_len(param_name, target)
+                || is_param_used_with_len(param_name, value)
+        }
+        _ => false,
+    }
+}
+
+/// Check if parameter is used as an index (like array[param])
+/// TRANSPILER-PARAM-INFERENCE fix: Detect index usage patterns
+pub fn is_param_used_as_index(param_name: &str, expr: &Expr) -> bool {
+    match &expr.kind {
+        // Check if param is the index in array[param]
+        ExprKind::IndexAccess { object, index } => {
+            // Check if param is the index itself
+            if contains_param(param_name, index) {
+                return true;
+            }
+            // Recursively check object and index
+            is_param_used_as_index(param_name, object)
+                || is_param_used_as_index(param_name, index)
+        }
+        // Check all expressions in block
+        ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_as_index(param_name, e)),
+        // Check branches
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            is_param_used_as_index(param_name, condition)
+                || is_param_used_as_index(param_name, then_branch)
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| is_param_used_as_index(param_name, e))
+        }
+        // Check let bindings
+        ExprKind::Let { value, body, .. } => {
+            is_param_used_as_index(param_name, value)
+                || is_param_used_as_index(param_name, body)
+        }
+        // Check binary operations
+        ExprKind::Binary { left, right, .. } => {
+            is_param_used_as_index(param_name, left)
+                || is_param_used_as_index(param_name, right)
+        }
+        // Check loops
+        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+            is_param_used_as_index(param_name, condition)
+                || is_param_used_as_index(param_name, body)
+        }
+        // Check assignments
+        ExprKind::Assign { target, value } => {
+            is_param_used_as_index(param_name, target)
+                || is_param_used_as_index(param_name, value)
+        }
+        ExprKind::CompoundAssign { target, value, .. } => {
+            is_param_used_as_index(param_name, target)
+                || is_param_used_as_index(param_name, value)
+        }
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

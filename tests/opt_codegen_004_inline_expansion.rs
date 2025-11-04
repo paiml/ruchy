@@ -18,7 +18,7 @@ use predicates::prelude::*;
 #[test]
 fn test_opt_codegen_004_inline_simple_function() {
     // Pattern: Small helper function should be inlined
-    let code = r#"
+    let code = r"
         fun add_one(x: i32) -> i32 {
             x + 1
         }
@@ -27,7 +27,7 @@ fn test_opt_codegen_004_inline_simple_function() {
             let result = add_one(5);
             result
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -42,7 +42,7 @@ fn test_opt_codegen_004_inline_simple_function() {
 #[test]
 fn test_opt_codegen_004_inline_multi_use() {
     // Pattern: Function called multiple times should be inlined at each call site
-    let code = r#"
+    let code = r"
         fun double(n: i32) -> i32 {
             n * 2
         }
@@ -53,7 +53,7 @@ fn test_opt_codegen_004_inline_multi_use() {
             let c = double(7);
             a + b + c
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -69,7 +69,7 @@ fn test_opt_codegen_004_inline_multi_use() {
 #[ignore] // Requires constant folding integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_with_constants() {
     // Pattern: Inlining + constant folding should work together
-    let code = r#"
+    let code = r"
         fun square(x: i32) -> i32 {
             x * x
         }
@@ -77,7 +77,7 @@ fn test_opt_codegen_004_inline_with_constants() {
         fun main() -> i32 {
             square(4)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -97,7 +97,7 @@ fn test_opt_codegen_004_inline_with_constants() {
 #[test]
 fn test_opt_codegen_004_no_inline_large_function() {
     // Pattern: Large functions (>10 LOC) should NOT be inlined
-    let code = r#"
+    let code = r"
         fun large_computation(n: i32) -> i32 {
             let a = n + 1;
             let b = a * 2;
@@ -115,7 +115,7 @@ fn test_opt_codegen_004_no_inline_large_function() {
         fun main() -> i32 {
             large_computation(10)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -130,7 +130,7 @@ fn test_opt_codegen_004_no_inline_large_function() {
 #[test]
 fn test_opt_codegen_004_inline_small_threshold() {
     // Pattern: Functions at threshold (≤10 LOC) SHOULD be inlined
-    let code = r#"
+    let code = r"
         fun at_threshold(x: i32) -> i32 {
             let a = x + 1;
             let b = a * 2;
@@ -141,7 +141,7 @@ fn test_opt_codegen_004_inline_small_threshold() {
         fun main() -> i32 {
             at_threshold(5)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -160,7 +160,7 @@ fn test_opt_codegen_004_inline_small_threshold() {
 #[test]
 fn test_opt_codegen_004_no_inline_recursive() {
     // Pattern: Recursive functions should NEVER be inlined (correctness risk)
-    let code = r#"
+    let code = r"
         fun factorial(n: i32) -> i32 {
             if n <= 1 {
                 1
@@ -172,7 +172,7 @@ fn test_opt_codegen_004_no_inline_recursive() {
         fun main() -> i32 {
             factorial(5)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -187,7 +187,7 @@ fn test_opt_codegen_004_no_inline_recursive() {
 #[test]
 fn test_opt_codegen_004_no_inline_mutually_recursive() {
     // Pattern: Mutually recursive functions should NOT be inlined
-    let code = r#"
+    let code = r"
         fun is_even(n: i32) -> bool {
             if n == 0 {
                 true
@@ -207,7 +207,7 @@ fn test_opt_codegen_004_no_inline_mutually_recursive() {
         fun main() -> bool {
             is_even(4)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -228,7 +228,7 @@ fn test_opt_codegen_004_no_inline_mutually_recursive() {
 #[ignore] // Requires constant folding integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_chain() {
     // Pattern: A calls B, B calls C - all should inline + fold
-    let code = r#"
+    let code = r"
         fun add_two(x: i32) -> i32 {
             x + 2
         }
@@ -240,7 +240,7 @@ fn test_opt_codegen_004_inline_chain() {
         fun main() -> i32 {
             add_four(10)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -260,7 +260,7 @@ fn test_opt_codegen_004_inline_chain() {
 #[test]
 fn test_opt_codegen_004_inline_after_dce() {
     // Pattern: Inline expansion works after dead code elimination
-    let code = r#"
+    let code = r"
         fun helper(x: i32) -> i32 {
             return x * 2;
             let dead = 99;  // DCE should remove this
@@ -270,7 +270,7 @@ fn test_opt_codegen_004_inline_after_dce() {
         fun main() -> i32 {
             helper(5)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -287,7 +287,7 @@ fn test_opt_codegen_004_inline_after_dce() {
 #[ignore] // Requires constant propagation integration - deferred to OPT-CODEGEN-004-C
 fn test_opt_codegen_004_inline_with_propagation() {
     // Pattern: Inline + constant propagation + folding all work together
-    let code = r#"
+    let code = r"
         fun compute(a: i32, b: i32) -> i32 {
             a + b
         }
@@ -297,7 +297,7 @@ fn test_opt_codegen_004_inline_with_propagation() {
             let y = 20;
             compute(x, y)
         }
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")

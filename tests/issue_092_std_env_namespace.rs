@@ -15,11 +15,11 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test 1: std::env::args() returns process arguments (binary, script path, etc.)
+/// Test 1: `std::env::args()` returns process arguments (binary, script path, etc.)
 ///
 /// This test verifies the primary use case from Issue #92:
-/// - User can call std::env::args() to get command-line arguments
-/// - Result matches flat builtin env_args() for backward compatibility
+/// - User can call `std::env::args()` to get command-line arguments
+/// - Result matches flat builtin `env_args()` for backward compatibility
 /// - Returns array of strings with at least binary path and script path
 #[test]
 fn test_issue_092_std_env_args_basic() {
@@ -55,7 +55,7 @@ fun main() {
         .stdout(predicate::str::contains("✓ std::env::args() matches env_args() (backward compatible)"));
 }
 
-/// Test 2: std::env::args() array can be indexed
+/// Test 2: `std::env::args()` array can be indexed
 ///
 /// Verifies that the returned array is usable for common operations:
 /// - Access first element (binary path)
@@ -97,10 +97,10 @@ fun main() {
         .stdout(predicate::str::contains("✓ Iteration works"));
 }
 
-/// Test 3: Backward compatibility - flat builtin env_args() still works
+/// Test 3: Backward compatibility - flat builtin `env_args()` still works
 ///
-/// Ensures that adding std::env::args() doesn't break existing code
-/// that uses the flat builtin env_args()
+/// Ensures that adding `std::env::args()` doesn't break existing code
+/// that uses the flat builtin `env_args()`
 #[test]
 fn test_issue_092_backward_compatibility_flat_builtin() {
     let script_code = r#"
@@ -124,10 +124,10 @@ fun main() {
         .stdout(predicate::str::contains("✓ Flat builtin env_args() still works"));
 }
 
-/// Test 4: std::env module exists alongside other std modules
+/// Test 4: `std::env` module exists alongside other std modules
 ///
-/// Verifies that std::env is properly registered and doesn't interfere
-/// with existing std::time, std::process, std::fs modules
+/// Verifies that `std::env` is properly registered and doesn't interfere
+/// with existing `std::time`, `std::process`, `std::fs` modules
 #[test]
 fn test_issue_092_std_env_coexists_with_other_modules() {
     let script_code = r#"

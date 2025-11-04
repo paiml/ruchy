@@ -2,10 +2,10 @@
 //!
 //! Tests compilation of programs using macros (println!, format!) and module imports.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/103
+//! Reference: <https://github.com/paiml/ruchy/issues/103>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 //!
-//! **BUG 1**: Macros fail with "Unsupported expression kind: MacroInvocation"
+//! **BUG 1**: Macros fail with "Unsupported expression kind: `MacroInvocation`"
 //! **BUG 2**: Module imports fail with "Failed to resolve import module"
 
 use assert_cmd::Command;
@@ -123,7 +123,7 @@ fn test_issue_103_compile_simple_import() {
     let module_file = create_temp_file(
         &temp,
         "math_utils.ruchy",
-        r#"
+        r"
 fun add(x, y) {
     x + y
 }
@@ -131,7 +131,7 @@ fun add(x, y) {
 fun multiply(x, y) {
     x * y
 }
-"#,
+",
     );
 
     // Create main file that imports the module
@@ -167,7 +167,7 @@ fn test_issue_103_compile_import_specific_functions() {
     create_temp_file(
         &temp,
         "utils.ruchy",
-        r#"
+        r"
 fun square(n) {
     n * n
 }
@@ -175,7 +175,7 @@ fun square(n) {
 fun cube(n) {
     n * n * n
 }
-"#,
+",
     );
 
     // Create main file with specific imports
@@ -322,7 +322,7 @@ fun get_message() {
     let main_file = create_temp_file(
         &temp,
         "main.ruchy",
-        r#"
+        r"
 use helper
 
 fun main() {
@@ -331,7 +331,7 @@ fun main() {
 }
 
 main()
-"#,
+",
     );
 
     let output = temp.path().join("import_exec");

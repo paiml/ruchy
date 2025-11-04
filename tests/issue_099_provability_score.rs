@@ -3,7 +3,7 @@
 //! Tests the provability score calculation to ensure it integrates ALL verification analyses,
 //! not just assertion density.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/99
+//! Reference: <https://github.com/paiml/ruchy/issues/99>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -76,15 +76,13 @@ fun main() {
     // CRITICAL: Pure, safe, terminating code should NOT score 0.0
     assert!(
         score > 0.0,
-        "Pure, safe, terminating code should score > 0.0, got {}",
-        score
+        "Pure, safe, terminating code should score > 0.0, got {score}"
     );
 
     // Expected: At least 60/100 (purity + safety + termination = 20 + 20 + 20)
     assert!(
         score >= 60.0,
-        "Pure, safe, terminating code should score >= 60.0, got {}",
-        score
+        "Pure, safe, terminating code should score >= 60.0, got {score}"
     );
 }
 
@@ -95,7 +93,7 @@ fn test_issue_099_code_with_assertions_scores_higher() {
     let file_with_assertions = create_temp_file(
         &temp,
         "with_asserts.ruchy",
-        r#"
+        r"
 fun test_add() {
     let result = 2 + 2;
     assert_eq!(result, 4);
@@ -104,7 +102,7 @@ fun test_add() {
 fun main() {
     test_add();
 }
-"#,
+",
     );
 
     let output_with = ruchy_cmd()
@@ -122,8 +120,7 @@ fun main() {
     // Expected: ~80-100/100 (purity + safety + termination + assertions)
     assert!(
         score_with >= 80.0,
-        "Code with assertions should score >= 80.0, got {}",
-        score_with
+        "Code with assertions should score >= 80.0, got {score_with}"
     );
 }
 
@@ -134,7 +131,7 @@ fn test_issue_099_verify_flag_contributes_to_score() {
     let file = create_temp_file(
         &temp,
         "verified.ruchy",
-        r#"
+        r"
 fun pure_function(x) {
     x * 2
 }
@@ -143,7 +140,7 @@ fun main() {
     let result = pure_function(5);
     println(result);
 }
-"#,
+",
     );
 
     let output = ruchy_cmd()
@@ -168,8 +165,7 @@ fun main() {
     let score = extract_score(&stdout);
     assert!(
         score > 0.0,
-        "Verified code should score > 0.0, got {}",
-        score
+        "Verified code should score > 0.0, got {score}"
     );
 }
 
@@ -180,7 +176,7 @@ fn test_issue_099_termination_flag_contributes_to_score() {
     let file = create_temp_file(
         &temp,
         "terminates.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -192,7 +188,7 @@ fun factorial(n) {
 fun main() {
     println(factorial(5));
 }
-"#,
+",
     );
 
     let output = ruchy_cmd()
@@ -217,8 +213,7 @@ fun main() {
     let score = extract_score(&stdout);
     assert!(
         score > 0.0,
-        "Code with termination analysis should score > 0.0, got {}",
-        score
+        "Code with termination analysis should score > 0.0, got {score}"
     );
 }
 
@@ -229,7 +224,7 @@ fn test_issue_099_bounds_flag_contributes_to_score() {
     let file = create_temp_file(
         &temp,
         "bounds.ruchy",
-        r#"
+        r"
 fun safe_access(arr, i) {
     if i < arr.len() {
         arr[i]
@@ -242,7 +237,7 @@ fun main() {
     let arr = [1, 2, 3];
     println(safe_access(arr, 1));
 }
-"#,
+",
     );
 
     let output = ruchy_cmd()
@@ -267,8 +262,7 @@ fun main() {
     let score = extract_score(&stdout);
     assert!(
         score > 0.0,
-        "Code with bounds checking should score > 0.0, got {}",
-        score
+        "Code with bounds checking should score > 0.0, got {score}"
     );
 }
 
@@ -291,26 +285,25 @@ fn test_issue_099_multi_factor_score_calculation() {
     let file1 = create_temp_file(
         &temp,
         "no_asserts.ruchy",
-        r#"
+        r"
 fun pure_add(x, y) { x + y }
 fun main() { println(pure_add(1, 2)); }
-"#,
+",
     );
 
     let score1 = get_provability_score(&file1);
 
     // Expected: 80/100 (purity + safety + termination + bounds, NO assertions)
     assert!(
-        score1 >= 60.0 && score1 <= 85.0,
-        "Code without assertions should score 60-85, got {}",
-        score1
+        (60.0..=85.0).contains(&score1),
+        "Code without assertions should score 60-85, got {score1}"
     );
 
     // 2. Same code WITH assertions
     let file2 = create_temp_file(
         &temp,
         "with_asserts.ruchy",
-        r#"
+        r"
 fun pure_add(x, y) {
     let result = x + y;
     assert!(result > 0);
@@ -321,7 +314,7 @@ fun main() {
     assert_eq!(r, 3);
     println(r);
 }
-"#,
+",
     );
 
     let score2 = get_provability_score(&file2);
@@ -329,16 +322,13 @@ fun main() {
     // Expected: 100/100 (all factors present)
     assert!(
         score2 >= 90.0,
-        "Code with all factors should score >= 90, got {}",
-        score2
+        "Code with all factors should score >= 90, got {score2}"
     );
 
     // Score with assertions should be > score without
     assert!(
         score2 > score1,
-        "Code with assertions ({}) should score higher than without ({})",
-        score2,
-        score1
+        "Code with assertions ({score2}) should score higher than without ({score1})"
     );
 }
 
@@ -363,8 +353,7 @@ fn test_issue_099_empty_code_default_score() {
         let score = extract_score(&stdout);
         assert_eq!(
             score, 50.0,
-            "Minimal code should score 50.0 (neutral), got {}",
-            score
+            "Minimal code should score 50.0 (neutral), got {score}"
         );
     } else {
         // Parse error is acceptable for comment-only file
@@ -387,7 +376,7 @@ fn test_issue_099_all_flags_together() {
     let file = create_temp_file(
         &temp,
         "comprehensive.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     assert!(n >= 0);
     if n <= 1 {
@@ -402,7 +391,7 @@ fun main() {
     assert_eq!(result, 120);
     println(result);
 }
-"#,
+",
     );
 
     let output = ruchy_cmd()
@@ -432,8 +421,7 @@ fun main() {
     let score = extract_score(&stdout);
     assert!(
         score >= 90.0,
-        "Comprehensive analysis with assertions should score >= 90.0, got {}",
-        score
+        "Comprehensive analysis with assertions should score >= 90.0, got {score}"
     );
 }
 

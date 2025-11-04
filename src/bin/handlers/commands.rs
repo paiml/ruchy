@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 /// Struct to hold provability analysis configuration
 #[derive(Debug, Clone, Copy)]
+#[allow(clippy::struct_excessive_bools)]
 struct ProvabilityAnalysis {
     verify: bool,
     contracts: bool,
@@ -388,7 +389,7 @@ pub fn handle_provability_command(
         bounds,
     };
 
-    let mut output_content = generate_provability_header(file, &ast, &analysis);
+    let mut output_content = generate_provability_header(file, &ast, analysis);
     // Add requested analysis sections
     add_provability_sections(
         &mut output_content,
@@ -406,7 +407,7 @@ pub fn handle_provability_command(
 fn generate_provability_header(
     file: &Path,
     ast: &ruchy::frontend::ast::Expr,
-    analysis: &ProvabilityAnalysis,
+    analysis: ProvabilityAnalysis,
 ) -> String {
     let provability_score = calculate_provability_score(ast, analysis);
     format!(
@@ -948,7 +949,7 @@ fn calculate_ast_depth(_ast: &ruchy::frontend::ast::Expr) -> usize {
 }
 fn calculate_provability_score(
     ast: &ruchy::frontend::ast::Expr,
-    analysis: &ProvabilityAnalysis,
+    analysis: ProvabilityAnalysis,
 ) -> f64 {
     // Multi-factor provability scoring (Issue #99)
     let mut assertion_count = 0;

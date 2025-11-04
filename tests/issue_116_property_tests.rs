@@ -1,4 +1,4 @@
-//! Property tests for Issue #116 - File open() builtin function
+//! Property tests for Issue #116 - File `open()` builtin function
 //!
 //! EXTREME TDD: Verify File object behavior across various inputs
 
@@ -8,7 +8,7 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
-/// Property: open() successfully opens valid files
+/// Property: `open()` successfully opens valid files
 #[test]
 fn prop_open_valid_files() {
     proptest!(|(line_count in 1usize..100, content in "[a-zA-Z0-9 ]{1,50}")| {
@@ -19,7 +19,7 @@ fn prop_open_valid_files() {
         {
             let mut file = File::create(&file_path).expect("Failed to create file");
             for i in 0..line_count {
-                writeln!(file, "{} {}", content, i).expect("Failed to write");
+                writeln!(file, "{content} {i}").expect("Failed to write");
             }
         }
 
@@ -60,10 +60,10 @@ println(lines)
     });
 }
 
-/// Property: open() with invalid mode returns error
+/// Property: `open()` with invalid mode returns error
 #[test]
 fn prop_open_invalid_mode_fails() {
-    let invalid_modes = vec!["w", "a", "rw", "x", "invalid"];
+    let invalid_modes = ["w", "a", "rw", "x", "invalid"];
 
     proptest!(|(mode_idx in 0..invalid_modes.len())| {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -90,7 +90,7 @@ let file = open("{}", "{}")
     });
 }
 
-/// Property: File methods work after open()
+/// Property: File methods work after `open()`
 #[test]
 fn prop_file_methods_functional() {
     proptest!(|(lines_content in prop::collection::vec("[a-zA-Z0-9 ]{1,30}", 1..20))| {
@@ -101,7 +101,7 @@ fn prop_file_methods_functional() {
         {
             let mut file = File::create(&file_path).expect("Failed to create file");
             for content in &lines_content {
-                writeln!(file, "{}", content).expect("Failed to write");
+                writeln!(file, "{content}").expect("Failed to write");
             }
         }
 
@@ -128,13 +128,13 @@ file.close()
     });
 }
 
-/// Property: open() handles non-existent files gracefully
+/// Property: `open()` handles non-existent files gracefully
 #[test]
 fn prop_open_nonexistent_file() {
     proptest!(|(random_path in "[a-z]{10,20}\\.txt")| {
         let script = format!(r#"
-let file = open("/tmp/nonexistent_{}", "r")
-"#, random_path);
+let file = open("/tmp/nonexistent_{random_path}", "r")
+"#);
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")
@@ -150,7 +150,7 @@ let file = open("/tmp/nonexistent_{}", "r")
     });
 }
 
-/// Property: Multiple open() calls work independently
+/// Property: Multiple `open()` calls work independently
 #[test]
 fn prop_multiple_open_calls_independent() {
     proptest!(|(content1 in "[a-z]{5,15}", content2 in "[A-Z]{5,15}")| {
@@ -160,11 +160,11 @@ fn prop_multiple_open_calls_independent() {
         let file2_path = temp_dir.path().join("file2.txt");
 
         File::create(&file1_path)
-            .and_then(|mut f| writeln!(f, "{}", content1))
+            .and_then(|mut f| writeln!(f, "{content1}"))
             .expect("Failed to create file1");
 
         File::create(&file2_path)
-            .and_then(|mut f| writeln!(f, "{}", content2))
+            .and_then(|mut f| writeln!(f, "{content2}"))
             .expect("Failed to create file2");
 
         let script = format!(r#"

@@ -206,9 +206,9 @@ impl Transpiler {
         }
     }
 
-    /// Check if an expression is a .len() method call OR len() function call (ISSUE-115)
-    /// Returns true for: vec.len(), string.len(), len(vec), len(string), etc.
-    /// TRANSPILER-004: Extended to detect len() function calls for usize casting
+    /// Check if an expression is a .`len()` method call OR `len()` function call (ISSUE-115)
+    /// Returns true for: `vec.len()`, `string.len()`, len(vec), len(string), etc.
+    /// TRANSPILER-004: Extended to detect `len()` function calls for usize casting
     fn is_len_call(expr: &Expr) -> bool {
         match &expr.kind {
             // Method call: vec.len()
@@ -247,7 +247,7 @@ impl Transpiler {
     }
 
     /// Transpile vector concatenation to valid Rust (TRANSPILER-005)
-    /// Pattern: vec + [item] → [vec.as_slice(), &[item]].concat()
+    /// Pattern: vec + [item] → [`vec.as_slice()`, &[item]].`concat()`
     /// Complexity: 3 (within ≤10 limit ✅)
     fn transpile_vec_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {
         let left_tokens = self.transpile_expr(left)?;

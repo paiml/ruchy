@@ -2,7 +2,7 @@
 //!
 //! **Issue**: Binary + operator doesn't auto-borrow String fields/variables
 //!
-//! **Root Cause**: transpile_binary() doesn't detect when right operand is String type
+//! **Root Cause**: `transpile_binary()` doesn't detect when right operand is String type
 //! and left is &str, requiring automatic borrowing with &.
 //!
 //! **Impact**: 6 errors in reaper project (75% of remaining errors after DEFECT-015)
@@ -66,16 +66,15 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: String field auto-borrowed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: expected &str, found String. Got:\n{}",
-            stderr
+            "Expected E0308: expected &str, found String. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: String field concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: String field auto-borrowed");
     }
 }
 
@@ -115,16 +114,15 @@ println(format_config(c));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Multiple String fields auto-borrowed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 errors for multiple String fields. Got:\n{}",
-            stderr
+            "Expected E0308 errors for multiple String fields. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Multiple String field errors confirmed");
-    } else {
-        eprintln!("✅ GREEN: Multiple String fields auto-borrowed");
     }
 }
 
@@ -153,16 +151,15 @@ println(build_message("World"));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: String variable auto-borrowed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 for String parameter. Got:\n{}",
-            stderr
+            "Expected E0308 for String parameter. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: String variable concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: String variable auto-borrowed");
     }
 }
 
@@ -192,7 +189,7 @@ println(format_message());
         .success();
 }
 
-/// Test 5: Baseline - Explicit .to_string() should work
+/// Test 5: Baseline - Explicit .`to_string()` should work
 #[test]
 fn test_defect_016_05_explicit_to_string_baseline() {
     let temp_dir = TempDir::new().unwrap();
@@ -259,17 +256,16 @@ println(format_priority(Priority::High));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Function return concatenation fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         // Two errors expected: match arms + concatenation
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 errors. Got:\n{}",
-            stderr
+            "Expected E0308 errors. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Function return concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Function return concatenation fixed");
     }
 }
 

@@ -131,7 +131,7 @@ fun main() {
         .success(); // This should already work (i32 is Copy)
 }
 
-/// Test 4: Baseline - Auto-derived Clone should work with explicit .clone()
+/// Test 4: Baseline - Auto-derived Clone should work with explicit .`clone()`
 #[test]
 fn test_defect_014_baseline_explicit_clone_works() {
     let temp = temp_dir();
