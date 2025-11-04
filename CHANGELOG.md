@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.194.0] - 2025-11-04
+
+### Fixed
+- **[PARSER-079]** Lifetime tokens ('label) failed to parse when followed by punctuation
+  - **PROBLEM**: `{ break 'outer }` parse error "Expected RightBrace, found Break" - labeled break/continue unusable
+  - **ROOT CAUSE**: String token pattern (lexer.rs:156) had higher priority than Lifetime pattern, greedily matched `'outer<punct>`, failed without closing `'`, returned Bang (error token)
+  - **FIVE WHYS**:
+    1. Why parse fail? → `'outer` tokenized as Bang (error) not Lifetime
+    2. Why error token? → String pattern tries first, fails without closing `'`
+    3. Why String interfere? → String (line 156) before Lifetime (line 344), higher priority
+    4. Why PARSER-080 not help? → Only excluded `>` and `\n`, not space/`;`/`}`/`,`/`)`
+    5. Why not exclude all? → Oversight in PARSER-080 fix
+  - **SOLUTION**: Extended PARSER-080 String pattern exclusion from `[' \ > \n]` to `[' \ > \n space tab ; } , )]`
+  - **FILES**:
+    - `src/frontend/lexer.rs` (regex change line 158, +8 unit tests lines 1096-1186, +90 lines total)
+    - `src/frontend/parser/expressions_helpers/control_flow.rs` (test_break_with_label now passing)
+  - **VALIDATION**:
+    - ✅ RED: 7/8 tests failing (`'outer` with space/`;`/`}`/`,`/`)` returned Bang)
+    - ✅ GREEN: All 8 tests passing after exclusion list extension
+    - ✅ REFACTOR: Zero complexity increase, regex-only change, clear docs
+    - ✅ VALIDATE: Parse succeeds, correct runtime error "Break 'outer' outside of matching loop"
+    - ✅ ruchydbg: Regression test revealed tokenization bug (Identifier("outer") not Lifetime("'outer"))
+  - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
+  - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
+
 ## [3.193.0] - 2025-11-04
 
 ### Fixed

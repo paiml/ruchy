@@ -152,8 +152,10 @@ pub enum Token {
     })]
     // PARSER-072: Single-quoted strings (multi-char only, single-char handled by Char)
     // PARSER-080: Exclude '>' and newlines to prevent matching across lifetime boundaries
-    // Pattern: empty string ('') OR 2+ characters between single quotes (no '>', no newlines)
-    #[regex(r"'(([^'\\>\n]|\\.)([^'\\>\n]|\\.)+|)'", |lex| {
+    // PARSER-079: Extend exclusions to prevent String pattern from interfering with Lifetime tokens
+    //   Exclude: space, ;, }, ), , to allow lifetime tokens like 'outer to parse correctly
+    //   Pattern: empty string ('') OR 2+ characters between single quotes
+    #[regex(r"'(([^'\\>\n \t;},)]|\\.)([^'\\>\n \t;},)]|\\.)+|)'", |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         // Only match if it's NOT a single character (let Char handle that)
@@ -1091,6 +1093,98 @@ mod tests {
             Some(Token::Identifier("Success".to_string()))
         );
         assert_eq!(stream.next(), None);
+    }
+
+    // PARSER-079: Lifetime token tests - must tokenize correctly regardless of following character
+    #[test]
+    fn test_parser_079_lifetime_with_space() {
+        let mut stream = TokenStream::new("'outer ");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime followed by space should tokenize as Lifetime"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_with_semicolon() {
+        let mut stream = TokenStream::new("'outer;");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime followed by semicolon should tokenize as Lifetime"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_with_brace() {
+        let mut stream = TokenStream::new("'outer}");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime followed by brace should tokenize as Lifetime"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_with_comma() {
+        let mut stream = TokenStream::new("'outer,");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime followed by comma should tokenize as Lifetime"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_in_break_statement() {
+        let mut stream = TokenStream::new("break 'outer");
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Break));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "break 'outer should tokenize break then lifetime"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_in_block() {
+        let mut stream = TokenStream::new("{ break 'outer }");
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBrace));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Break));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime in block should tokenize correctly"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_in_for_loop() {
+        let code = "for x in xs { break 'outer; }";
+        let mut stream = TokenStream::new(code);
+        let tokens: Vec<Token> = std::iter::from_fn(|| stream.next().map(|(t, _)| t)).collect();
+
+        // Find the lifetime token
+        let lifetime_found = tokens.iter().any(|t| matches!(t, Token::Lifetime(_)));
+        assert!(
+            lifetime_found,
+            "for loop with labeled break should contain Lifetime token, got: {:?}",
+            tokens
+        );
+    }
+
+    #[test]
+    fn test_parser_079_multiple_lifetimes() {
+        let mut stream = TokenStream::new("'outer 'inner");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string()))
+        );
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'inner".to_string()))
+        );
     }
 
     proptest! {
