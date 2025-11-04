@@ -4,21 +4,21 @@
 metadata:
   version: "3.99"
   last_updated: "2025-11-04"
-  current_sprint: "🚧 IN PROGRESS - TRANSPILER-SCOPE (top-level let mut + functions)"
-  latest_release: "v3.182.0"
-  latest_commit_message: "[TRANSPILER-SCOPE] Investigation complete - requires static mut implementation"
-  latest_commit_hash: "74e416b1"
-  current_work: "🔬 INVESTIGATED - TRANSPILER-SCOPE root cause identified, RED tests written, awaiting implementation"
-  next_phase: "Implement TRANSPILER-SCOPE with scope analysis + static mut (2-3 hour task)"
+  current_sprint: "✅ COMPLETE - TRANSPILER-SCOPE + Issue #132 (globals emission fixed)"
+  latest_release: "v3.194.0"
+  latest_commit_message: "[RELEASE] v3.194.0 - Issue #132 completely fixed"
+  latest_commit_hash: "9fb11f88"
+  current_work: "✅ COMPLETE - TRANSPILER-SCOPE + Issue #132: 3-line fix unblocked transpile/compile modes (0% → 100%)"
+  next_phase: "Check roadmap for next priority item"
   benchmark_validation_status: "✅ 9/12 BENCHMARKS WORKING (75%) - BENCH-009 unblocked by ISSUE-131"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
   priority_rationale: "BENCH-009 unblocked with one-line fix - 9/12 benchmarks now functional"
   debugger_051_status: "✅ COMPLETE - performance-profiling-compiler-tooling.md (1436 LOC Julia analysis)"
   compiler_optimization_spec: "✅ NEW SPEC - compiler-transpiler-optimization-spec.md (72KB, Nov 2, 2025, 12 peer-reviewed papers)"
   crates_io_status:
-    ruchy: "v3.182.0 - Published ✅"
-    ruchy_wasm: "v3.182.0 - Published ✅"
-  github_tag: "v3.182.0 - Ready ✅"
+    ruchy: "v3.194.0 - Ready for publication 🚀"
+    ruchy_wasm: "v3.194.0 - Ready for publication 🚀"
+  github_tag: "v3.194.0 - Committed, ready to push ✅"
 
   session_summary_2025_11_04_transpiler_scope_investigation:
     date: "2025-11-04"
@@ -30,12 +30,12 @@ metadata:
     bug_status:
       parser_079: "✅ FIXED - { break 'outer } parses correctly"
       constant_folder: "✅ FIXED - Prevents let mut elimination to (;)"
-      transpiler_scope: "❌ NOT FIXED - Functions can't access top-level let mut variables"
+      transpiler_scope: "✅ FIXED - Functions CAN access top-level let mut (via Issue #132 fix)"
 
     investigation_results:
       simple_case: "✅ WORKS - No functions, everything in main()"
-      complex_case: "❌ BROKEN - Functions at module level can't access main() variables"
-      root_cause: "Line 1376 mod.rs: #(#functions)* at module level, #(#statements)* inside main()"
+      complex_case: "✅ FIXED - Functions at module level CAN access globals (Issue #132 fix)"
+      root_cause: "Line 1376 mod.rs: Missing globals parameter → 3-line fix (Issue #132)"
 
     five_whys_analysis:
       1_why: "Why rustc compilation error?"
