@@ -282,7 +282,7 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
         }
         ExprKind::Return { value } => {
             // ISSUE-128 FIX: Check for recursion inside return expressions
-            value.as_ref().map_or(false, |v| check_recursion(func_name, v))
+            value.as_ref().is_some_and(|v| check_recursion(func_name, v))
         }
         _ => false,
     }
@@ -331,7 +331,7 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
         ExprKind::If { condition, then_branch, else_branch } => {
             check_for_external_refs(condition, allowed)
                 || check_for_external_refs(then_branch, allowed)
-                || else_branch.as_ref().map_or(false, |e| check_for_external_refs(e, allowed))
+                || else_branch.as_ref().is_some_and(|e| check_for_external_refs(e, allowed))
         }
         ExprKind::Let { name, value, body, .. } => {
             // Check value first (binding not yet available)
@@ -346,7 +346,7 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
             check_for_external_refs(body, &allowed_with_binding)
         }
         ExprKind::Return { value } => {
-            value.as_ref().map_or(false, |v| check_for_external_refs(v, allowed))
+            value.as_ref().is_some_and(|v| check_for_external_refs(v, allowed))
         }
         ExprKind::Call { func, args } => {
             check_for_external_refs(func, allowed)

@@ -85,7 +85,7 @@ fun main() {
         .success(); // Should compile with .to_string() wrapper
 }
 
-/// Test 3: Baseline - String::from with Vec index should work
+/// Test 3: Baseline - `String::from` with Vec index should work
 #[test]
 fn test_defect_013_baseline_string_from_vec() {
     let temp = temp_dir();

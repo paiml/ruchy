@@ -15,12 +15,12 @@ fn transpile_code(code: &str) -> Result<String, String> {
     let mut parser = Parser::new(code);
     let ast = parser
         .parse()
-        .map_err(|e| format!("Parse error: {:?}", e))?;
+        .map_err(|e| format!("Parse error: {e:?}"))?;
 
     let mut transpiler = Transpiler::new();
     let tokens = transpiler
         .transpile_to_program(&ast)
-        .map_err(|e| format!("Transpile error: {:?}", e))?;
+        .map_err(|e| format!("Transpile error: {e:?}"))?;
 
     Ok(tokens.to_string())
 }
@@ -28,10 +28,10 @@ fn transpile_code(code: &str) -> Result<String, String> {
 /// Helper: Compile Ruchy code to verify it works end-to-end (transpile + verify parseable Rust)
 fn compile_code(code: &str) -> Result<(), String> {
     // Use the high-level compile() function which returns transpiled Rust
-    let rust_code = compile(code).map_err(|e| format!("Compile error: {:?}", e))?;
+    let rust_code = compile(code).map_err(|e| format!("Compile error: {e:?}"))?;
 
     // Verify it's valid Rust syntax by parsing with syn
-    syn::parse_file(&rust_code).map_err(|e| format!("Invalid Rust syntax: {:?}", e))?;
+    syn::parse_file(&rust_code).map_err(|e| format!("Invalid Rust syntax: {e:?}"))?;
 
     Ok(())
 }
@@ -43,20 +43,19 @@ fn compile_code(code: &str) -> Result<(), String> {
 #[test]
 fn test_transpiler_007_01_empty_vec_with_explicit_return_type() {
     // Test: Empty vec with explicit return type gets concrete type hint
-    let code = r#"
+    let code = r"
 fun generate_numbers() -> [i32] {
     let nums = []
     nums
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
     // Should generate Vec<i32>, not Vec<_>
     assert!(
         result.contains("Vec<i32>") || result.contains("Vec < i32 >"),
-        "Expected Vec<i32> type hint, got:\n{}",
-        result
+        "Expected Vec<i32> type hint, got:\n{result}"
     );
 
     // Verify it compiles
@@ -66,33 +65,32 @@ fun generate_numbers() -> [i32] {
 #[test]
 fn test_transpiler_007_02_empty_vec_without_return_type() {
     // Test: Empty vec without return type gets Vec<_> fallback
-    let code = r#"
+    let code = r"
 fun generate_numbers() {
     let nums = []
     nums
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
     // Without return type, should generate Vec<_>
     assert!(
         result.contains("Vec<_>") || result.contains("Vec < _ >"),
-        "Expected Vec<_> fallback, got:\n{}",
-        result
+        "Expected Vec<_> fallback, got:\n{result}"
     );
 }
 
 #[test]
 fn test_transpiler_007_03_multiple_empty_vecs_same_type() {
     // Test: Multiple empty vecs in same function get same type
-    let code = r#"
+    let code = r"
 fun generate_data() -> [i32] {
     let nums = []
     let more = []
     nums
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -100,9 +98,7 @@ fun generate_data() -> [i32] {
     let count = result.matches("Vec<i32>").count() + result.matches("Vec < i32 >").count();
     assert!(
         count >= 2,
-        "Expected at least 2 Vec<i32> type hints, got {} in:\n{}",
-        count,
-        result
+        "Expected at least 2 Vec<i32> type hints, got {count} in:\n{result}"
     );
 
     compile_code(code).expect("Generated Rust should compile");
@@ -111,12 +107,12 @@ fun generate_data() -> [i32] {
 #[test]
 fn test_transpiler_007_04_mutable_empty_vec() {
     // Test: Mutable empty vec with return type
-    let code = r#"
+    let code = r"
 fun build_list() -> [i32] {
     let mut items = []
     items
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -133,7 +129,7 @@ fun build_list() -> [i32] {
 #[test]
 fn test_transpiler_007_05_nested_function_with_vec() {
     // Test: Nested function with empty vec
-    let code = r#"
+    let code = r"
 fun outer() -> [i32] {
     fun inner() -> [i32] {
         let data = []
@@ -141,7 +137,7 @@ fun outer() -> [i32] {
     }
     inner()
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -157,19 +153,18 @@ fun outer() -> [i32] {
 #[test]
 fn test_transpiler_007_06_string_vec_return_type() {
     // Test: Return type [String] generates Vec<String>
-    let code = r#"
+    let code = r"
 fun get_names() -> [String] {
     let names = []
     names
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
     assert!(
         result.contains("Vec<String>") || result.contains("Vec < String >"),
-        "Expected Vec<String> type hint, got:\n{}",
-        result
+        "Expected Vec<String> type hint, got:\n{result}"
     );
 
     compile_code(code).expect("Generated Rust should compile");
@@ -178,7 +173,7 @@ fun get_names() -> [String] {
 #[test]
 fn test_transpiler_007_07_bench_008_pattern() {
     // Test: BENCH-008 actual pattern - empty vec accessed before adding
-    let code = r#"
+    let code = r"
 fun generate_primes(count) -> [i32] {
     let mut primes = []
     let mut candidate = 2
@@ -198,7 +193,7 @@ fun generate_primes(count) -> [i32] {
     }
     primes
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -215,12 +210,12 @@ fun generate_primes(count) -> [i32] {
 #[test]
 fn test_transpiler_007_08_non_empty_vec_no_type_hint() {
     // Test: Non-empty vec doesn't need type hint
-    let code = r#"
+    let code = r"
 fun get_numbers() -> [i32] {
     let nums = [1, 2, 3]
     nums
 }
-"#;
+";
 
     let _result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -232,7 +227,7 @@ fun get_numbers() -> [i32] {
 #[test]
 fn test_transpiler_007_09_empty_vec_in_while_loop() {
     // Test: Empty vec initialization inside while loop
-    let code = r#"
+    let code = r"
 fun process() -> [i32] {
     let mut result = []
     let mut i = 0
@@ -242,7 +237,7 @@ fun process() -> [i32] {
     }
     result
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -257,9 +252,9 @@ fun process() -> [i32] {
 #[test]
 fn test_transpiler_007_10_top_level_empty_vec() {
     // Test: Top-level empty vec without function context
-    let code = r#"
+    let code = r"
 let nums = []
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -273,12 +268,12 @@ let nums = []
 #[test]
 fn test_transpiler_007_11_f64_return_type() {
     // Test: Floating point return type
-    let code = r#"
+    let code = r"
 fun get_floats() -> [f64] {
     let values = []
     values
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -293,12 +288,12 @@ fun get_floats() -> [f64] {
 #[test]
 fn test_transpiler_007_12_bool_return_type() {
     // Test: Boolean return type
-    let code = r#"
+    let code = r"
 fun get_flags() -> [bool] {
     let flags = []
     flags
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -317,12 +312,12 @@ fun get_flags() -> [bool] {
 #[test]
 fn test_transpiler_007_edge_01_nested_vec_return() {
     // Test: Nested vec return type [[i32]]
-    let code = r#"
+    let code = r"
 fun get_matrix() -> [[i32]] {
     let matrix = []
     matrix
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -331,8 +326,7 @@ fun get_matrix() -> [[i32]] {
         result.contains("Vec<Vec<i32>>")
             || result.contains("Vec < Vec < i32 > >")
             || result.contains("Vec<Vec < i32 >>"),
-        "Expected nested Vec type, got:\n{}",
-        result
+        "Expected nested Vec type, got:\n{result}"
     );
 
     compile_code(code).expect("Nested Vec should compile");
@@ -341,13 +335,13 @@ fun get_matrix() -> [[i32]] {
 #[test]
 fn test_transpiler_007_edge_02_empty_vec_with_subsequent_operations() {
     // Test: Empty vec followed by operations that would fail without type
-    let code = r#"
+    let code = r"
 fun test() -> [i32] {
     let mut nums = []
     let first = nums[0]  // Would fail without concrete type
     nums
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -363,7 +357,7 @@ fun test() -> [i32] {
 #[test]
 fn test_transpiler_007_edge_03_multiple_functions_different_types() {
     // Test: Multiple functions with different return types
-    let code = r#"
+    let code = r"
 fun get_ints() -> [i32] {
     let nums = []
     nums
@@ -373,7 +367,7 @@ fun get_strings() -> [String] {
     let names = []
     names
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Transpilation should succeed");
 
@@ -415,13 +409,13 @@ fn test_transpiler_007_regression_01_bench_008_full_compilation() {
 #[test]
 fn test_transpiler_007_regression_02_no_return_type_still_works() {
     // Regression: Functions without return types should still work (fallback to Vec<_>)
-    let code = r#"
+    let code = r"
 fun process() {
     let mut data = []
     data = data + [42]
     data
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Should transpile");
 
@@ -435,14 +429,14 @@ fun process() {
 #[test]
 fn test_transpiler_007_regression_03_immutable_with_reassignment() {
     // Regression: Immutable vec with reassignment pattern
-    let code = r#"
+    let code = r"
 fun build() -> [i32] {
     let items = []
     let items = items + [1]
     let items = items + [2]
     items
 }
-"#;
+";
 
     let result = transpile_code(code).expect("Should transpile");
 

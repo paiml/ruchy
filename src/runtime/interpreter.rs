@@ -2680,7 +2680,7 @@ impl Interpreter {
 
                 // ISSUE-119: ROOT CAUSE #3 FIX - Push captured environment first
                 // This allows variable lookups to find captured variables
-                self.env_stack.push(env.clone()); // Push captured environment (Rc::clone)
+                self.env_stack.push(env); // Push captured environment (Rc::clone)
 
                 // Create NEW empty HashMap for function's local scope (parameters)
                 let mut local_env = HashMap::new();
@@ -3062,7 +3062,7 @@ impl Interpreter {
         Ok(Value::from_string(json_str))
     }
 
-    /// Convert serde_json::Value to interpreter Value (complexity: 9)
+    /// Convert `serde_json::Value` to interpreter Value (complexity: 9)
     fn serde_to_value(json: &serde_json::Value) -> Result<Value, InterpreterError> {
         match json {
             serde_json::Value::Null => Ok(Value::Nil),
@@ -3094,7 +3094,7 @@ impl Interpreter {
         }
     }
 
-    /// Convert interpreter Value to serde_json::Value (complexity: 8)
+    /// Convert interpreter Value to `serde_json::Value` (complexity: 8)
     fn value_to_serde(value: &Value) -> Result<serde_json::Value, InterpreterError> {
         match value {
             Value::Nil => Ok(serde_json::Value::Null),
@@ -4805,7 +4805,7 @@ impl Interpreter {
         self.eval_struct_instance_method(&instance, struct_name, method, arg_values)
     }
 
-    /// ISSUE-116: Evaluate File object methods (.read_line(), .close())
+    /// ISSUE-116: Evaluate File object methods (.`read_line()`, .`close()`)
     /// Complexity: 6
     fn eval_file_method_mut(
         &mut self,
@@ -4850,7 +4850,7 @@ impl Interpreter {
                 // Check if EOF
                 if position >= lines.len() as i64 {
                     // Return empty string at EOF
-                    return Ok(Value::from_string("".to_string()));
+                    return Ok(Value::from_string(String::new()));
                 }
 
                 // Get the line
@@ -7430,8 +7430,8 @@ impl Interpreter {
                 }
 
                 // ISSUE-116: File.open() method
-                if type_name == "File" {
-                    if field == "open" {
+                if type_name == "File"
+                    && field == "open" {
                         if args.len() != 1 {
                             return Err(InterpreterError::RuntimeError(format!(
                                 "File.open() requires exactly 1 argument, got {}",
@@ -7450,7 +7450,6 @@ impl Interpreter {
                             )
                         });
                     }
-                }
 
                 // REGRESSION-077: Check for user-defined struct impl methods
                 // impl methods are stored with qualified names like "Logger::new_with_options"

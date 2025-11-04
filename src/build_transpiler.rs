@@ -268,16 +268,14 @@ fun main() {
         let line_count = generated_code.lines().count();
         assert!(
             line_count > 5,
-            "Generated code should be multi-line (got {} lines), not single-line",
-            line_count
+            "Generated code should be multi-line (got {line_count} lines), not single-line"
         );
 
         // Verify: Enum should appear at top
         let first_100_chars = &generated_code[..100.min(generated_code.len())];
         assert!(
-            first_100_chars.contains("enum") || generated_code.lines().nth(0).unwrap_or("").contains("#[derive"),
-            "Enum declaration should appear near the top of file (first 100 chars: '{}')",
-            first_100_chars
+            first_100_chars.contains("enum") || generated_code.lines().next().unwrap_or("").contains("#[derive"),
+            "Enum declaration should appear near the top of file (first 100 chars: '{first_100_chars}')"
         );
 
         // Verify: Should be properly formatted (check for newlines after braces)
@@ -304,10 +302,10 @@ fun main() {
             // Generate test file with varying enums/structs
             let mut code = String::new();
             for i in 0..enum_count {
-                code.push_str(&format!("enum Enum{} {{ Variant1, Variant2 }}\n", i));
+                code.push_str(&format!("enum Enum{i} {{ Variant1, Variant2 }}\n"));
             }
             for i in 0..struct_count {
-                code.push_str(&format!("struct Struct{} {{ field: i32 }}\n", i));
+                code.push_str(&format!("struct Struct{i} {{ field: i32 }}\n"));
             }
             code.push_str("fun main() { println!(\"Test\"); }");
 
@@ -351,9 +349,9 @@ fun main() {
             fs::create_dir(&src_dir).expect("Failed to create src dir");
 
             // Generate enum
-            let mut code = format!("enum {} {{\n", enum_name);
+            let mut code = format!("enum {enum_name} {{\n");
             for i in 0..variant_count {
-                code.push_str(&format!("    Variant{},\n", i));
+                code.push_str(&format!("    Variant{i},\n"));
             }
             code.push_str("}\n\nfun main() { println!(\"Test\"); }");
 
@@ -372,7 +370,7 @@ fun main() {
             let rs_file = src_dir.join("test.rs");
             let generated_code = fs::read_to_string(&rs_file).expect("Failed to read generated file");
 
-            let enum_pos = generated_code.find(&format!("enum {}", enum_name));
+            let enum_pos = generated_code.find(&format!("enum {enum_name}"));
             let main_pos = generated_code.find("fn main()");
 
             prop_assert!(

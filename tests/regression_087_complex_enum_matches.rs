@@ -273,8 +273,7 @@ fun main() {
     // After GREEN phase, error should include line number
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(
-        stderr.contains("line") || stderr.contains(":"),
-        "Error message should include line number information: {}",
-        stderr
+        stderr.contains("line") || stderr.contains(':'),
+        "Error message should include line number information: {stderr}"
     );
 }

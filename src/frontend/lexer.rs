@@ -1169,8 +1169,7 @@ mod tests {
         let lifetime_found = tokens.iter().any(|t| matches!(t, Token::Lifetime(_)));
         assert!(
             lifetime_found,
-            "for loop with labeled break should contain Lifetime token, got: {:?}",
-            tokens
+            "for loop with labeled break should contain Lifetime token, got: {tokens:?}"
         );
     }
 

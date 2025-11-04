@@ -144,15 +144,12 @@ impl Transpiler {
         let value_tokens = self.transpile_expr(value)?;
 
         // BUG-003: Handle IndexAccess specially for lvalue (no .clone())
-        match &target.kind {
-            ExprKind::IndexAccess { .. } => {
-                let target_tokens = self.transpile_index_lvalue(target)?;
-                Ok(quote! { #target_tokens = #value_tokens })
-            }
-            _ => {
-                let target_tokens = self.transpile_expr(target)?;
-                Ok(quote! { #target_tokens = #value_tokens })
-            }
+        if let ExprKind::IndexAccess { .. } = &target.kind {
+            let target_tokens = self.transpile_index_lvalue(target)?;
+            Ok(quote! { #target_tokens = #value_tokens })
+        } else {
+            let target_tokens = self.transpile_expr(target)?;
+            Ok(quote! { #target_tokens = #value_tokens })
         }
     }
 
@@ -276,7 +273,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpile IndexAccess as an lvalue (no .clone())
+    /// Transpile `IndexAccess` as an lvalue (no .`clone()`)
     /// Handles nested cases like matrix[i][j]
     fn transpile_index_lvalue(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {

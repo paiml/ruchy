@@ -22,7 +22,7 @@ fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-/// RED: Test basic std::fs::write and std::fs::read_to_string
+/// RED: Test basic `std::fs::write` and `std::fs::read_to_string`
 ///
 /// This is the core Issue #90 complaint - namespace syntax doesn't work.
 #[test]
@@ -64,13 +64,11 @@ fun main() {{
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("✓ Write succeeded"),
-        "Expected write success, got: {}",
-        stdout
+        "Expected write success, got: {stdout}"
     );
     assert!(
         stdout.contains("✓ Read succeeded"),
-        "Expected read success, got: {}",
-        stdout
+        "Expected read success, got: {stdout}"
     );
 
     // Verify file was actually created
@@ -79,7 +77,7 @@ fun main() {{
     assert_eq!(content, "Hello from std::fs!");
 }
 
-/// RED: Test std::fs::create_dir and std::fs::remove_dir
+/// RED: Test `std::fs::create_dir` and `std::fs::remove_dir`
 #[test]
 fn test_issue_090_std_fs_directory_operations() {
     let temp_dir = TempDir::new().unwrap();
@@ -122,7 +120,7 @@ fun main() {{
     assert!(stdout.contains("✓ Remove dir succeeded"));
 }
 
-/// RED: Test std::fs::copy and std::fs::rename
+/// RED: Test `std::fs::copy` and `std::fs::rename`
 #[test]
 fn test_issue_090_std_fs_copy_and_rename() {
     let temp_dir = TempDir::new().unwrap();
@@ -167,7 +165,7 @@ fun main() {{
     assert!(!copied.exists(), "Original copied file should not exist after rename");
 }
 
-/// RED: Test std::fs::metadata
+/// RED: Test `std::fs::metadata`
 #[test]
 fn test_issue_090_std_fs_metadata() {
     let temp_dir = TempDir::new().unwrap();
@@ -203,7 +201,7 @@ fun main() {{
     assert!(stdout.contains("✓ Is file"));
 }
 
-/// RED: Test std::fs::read_dir
+/// RED: Test `std::fs::read_dir`
 #[test]
 fn test_issue_090_std_fs_read_dir() {
     let temp_dir = TempDir::new().unwrap();
