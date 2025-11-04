@@ -2,6 +2,31 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.195.0] - 2025-11-04
+
+### Fixed
+- **[TRANSPILER-TYPE]** Fixed empty array type inference for global mutable variables (TRANSPILER-DEFECT-015)
+  - **PROBLEM**: Empty arrays (`let mut result = []`) inferred as `i32` instead of `Vec<i32>`, causing compile failures
+  - **ROOT CAUSE**:
+    1. `categorize_block_expressions` (mod.rs:995) defaulted non-literals to `i32`
+    2. `transpile_expr_for_guard` (expressions.rs:224) bypassed vec concatenation logic by inlining `+` operator
+  - **SOLUTION**:
+    1. Added `ExprKind::List` case to infer `Vec<T>` for arrays (empty → `Vec<i32>`, non-empty infer from first element)
+    2. Added vec+array concatenation in guard context: `*__guard + [item]` → `[(*__guard).as_slice(), &[item]].concat()`
+  - **FILES**:
+    - src/backend/transpiler/mod.rs (lines 996-1014)
+    - src/backend/transpiler/expressions.rs (lines 207-219)
+    - tests/transpiler_empty_array_type_inference.rs (6 RED tests)
+  - **TEST RESULTS**: 5/6 passing (1 ignored - blocked by TRANSPILER-PARAM-INFERENCE), 4046 total tests passing
+  - **VALIDATION**: Smoke test (empty array + append) works in REPL ✅
+  - **UNBLOCKS**: BENCH-002 type inference (still blocked by parameter inference bug)
+
+### Discovered Bugs
+- **[TRANSPILER-PARAM-INFERENCE]** Function parameters incorrectly inferred as `&str` instead of array types
+  - **IMPACT**: Blocks BENCH-002 matrix multiplication compile
+  - **EXAMPLE**: `fun multiply_cell(a, b, i, j, k_max)` - `a` and `b` should be arrays, `i` and `j` should be integers
+  - **STATUS**: Open - needs separate fix
+
 ## [3.194.0] - 2025-11-04
 
 ### Fixed
