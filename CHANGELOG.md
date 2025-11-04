@@ -29,6 +29,11 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
   - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
 
+### Changed
+- **[QUALITY]** Fix unused variable warning in binary handlers
+  - `src/bin/handlers/mod.rs`: Prefix unused `refresh_interval` parameter with underscore
+  - Clean compile with zero warnings
+
 ## [3.193.0] - 2025-11-04
 
 ### Fixed
