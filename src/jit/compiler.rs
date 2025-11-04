@@ -331,6 +331,11 @@ impl JitCompiler {
                 Self::compile_call(builder, ctx, func, args)
             }
 
+            // JIT-003: Unary operations (negation, boolean NOT)
+            ExprKind::Unary { op, operand } => {
+                Self::compile_unary_op(builder, ctx, op, operand)
+            }
+
             // JIT-002: Not yet implemented - fall back to error
             _ => Err(anyhow!("JIT-002: Expression kind not yet supported: {:?}", expr.kind)),
         }
@@ -382,6 +387,34 @@ impl JitCompiler {
             }
 
             _ => return Err(anyhow!("Unsupported binary operation in JIT: {:?}", op)),
+        };
+
+        Ok(result)
+    }
+
+    /// Compile unary operations (negation, boolean NOT) - complexity ≤5
+    fn compile_unary_op(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        op: &crate::frontend::ast::UnaryOp,
+        operand: &Expr,
+    ) -> Result<Value> {
+        let operand_value = Self::compile_expr(builder, ctx, operand)?;
+
+        let result = match op {
+            crate::frontend::ast::UnaryOp::Negate => {
+                // -x: Negate the value (0 - x)
+                let zero = builder.ins().iconst(types::I64, 0);
+                builder.ins().isub(zero, operand_value)
+            }
+            crate::frontend::ast::UnaryOp::Not => {
+                // !bool: Boolean NOT
+                // In our representation: true=1, false=0
+                // !x = 1 - x (flips 0→1, 1→0)
+                let one = builder.ins().iconst(types::I64, 1);
+                builder.ins().isub(one, operand_value)
+            }
+            _ => return Err(anyhow!("JIT-003: Unsupported unary operation: {:?}", op)),
         };
 
         Ok(result)

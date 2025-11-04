@@ -2,6 +2,30 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.198.0] - 2025-11-04
+
+### Added
+- **[JIT-003]** Unary operators support in JIT compiler (negation and boolean NOT)
+  - **NEW FEATURES**:
+    - Unary negation: `-x` (integer negation via 0 - x)
+    - Boolean NOT: `!bool` (via 1 - x where true=1, false=0)
+  - **ALGORITHMS ENABLED**:
+    - GCD (Euclidean algorithm): Uses division + modulo + recursion
+    - Performance: gcd(1071, 462) = 149µs avg (includes compilation overhead)
+  - **FILES**:
+    - src/jit/compiler.rs:395-421 (compile_unary_op function, 27 LOC, complexity ≤5)
+    - tests/jit_003_operators.rs (NEW, 292 LOC, 16 tests: 100% passing)
+  - **TEST RESULTS**:
+    - Division `/`: 3/3 tests passing (already worked from JIT-002)
+    - Modulo `%`: 3/3 tests passing (already worked from JIT-002)
+    - Unary negation `-x`: 3/3 tests passing (NEW)
+    - Boolean NOT `!`: 3/3 tests passing (NEW)
+    - GCD algorithm: 4/4 tests passing (uses `/`, `%`, recursion)
+  - **QUALITY GATES**:
+    - compile_unary_op complexity: 5 (≤10 target)
+    - All tests passing: 16/16 (100%)
+  - **NEXT STEPS**: JIT-004 (arrays + strings), JIT-005 (loops)
+
 ## [3.197.0] - 2025-11-04
 
 ### Added
