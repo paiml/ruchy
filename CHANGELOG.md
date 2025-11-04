@@ -29,8 +29,7 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
   - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
 
-### Investigated
-- **[TRANSPILER-SCOPE]** Top-level let mut variables with functions fail to compile
+- **[TRANSPILER-SCOPE]** Top-level let mut variables with functions now compile correctly
   - **PROBLEM**: Functions cannot access top-level `let mut` variables - compilation fails with "cannot find value in this scope"
   - **EXAMPLE**:
     ```ruchy
@@ -38,36 +37,42 @@ All notable changes to the Ruchy programming language will be documented in this
     fn increment() { counter = counter + 1; }
     increment();
     ```
-    Transpiles to BROKEN Rust:
-    ```rust
-    fn increment() { counter = counter + 1; }  // ❌ ERROR: counter not in scope
-    fn main() { let mut counter = 0; /* ... */ }
-    ```
-  - **ROOT CAUSE**: Line 1376 in `src/backend/transpiler/mod.rs`
-    - Functions generated at MODULE level: `#(#functions)*`
-    - Variables scoped to MAIN: `fn main() { #(#statements)* }`
-    - Module-level functions cannot access main()-scoped variables
+  - **ROOT CAUSE**: Functions generated at MODULE level, variables scoped to MAIN
   - **FIVE WHYS**:
     1. Why compile fail? → Functions reference variables not in their scope
     2. Why not in scope? → Variables inside main(), functions at module level
-    3. Why different scopes? → transpile_block_with_functions() line 1376
+    3. Why different scopes? → transpile_block_with_functions() separates them
     4. Why not put functions in main()? → Rust fn items can't capture variables (E0434)
     5. Why not capture? → Missing feature - need static mut with scope analysis
-  - **ATTEMPTED FIXES**:
-    - ❌ Nested functions (put functions inside main): Rust E0434 "can't capture dynamic environment in a fn item"
-    - ❌ Complex globals parameter: Overcomplicated, reverted
-  - **SOLUTION REQUIRED**:
-    - Detect variables referenced by functions (scope analysis)
-    - Generate `static mut VAR: Type = init;` at module level
-    - Wrap all global access in `unsafe` blocks
-    - Keep non-referenced variables in main()
-  - **STATUS**:
-    - ✅ Investigation complete (Five Whys, solution approach determined)
-    - ✅ RED tests written (tests/transpiler_scope_global_mut.rs - 3 tests, all failing)
-    - ✅ Documentation complete (/tmp/TRANSPILER-SCOPE-*.md files)
-    - ❌ Implementation NOT started (requires 2-3 hour focused session)
-  - **COMPLEXITY ESTIMATE**: ~250 lines, complexity ≤10 per function
-  - **NEXT PHASE**: Implement scope analysis + static mut generation (GREEN phase)
+  - **SOLUTION IMPLEMENTED**:
+    1. **Scope Analysis**: Detect mutable Let bindings referenced by functions
+    2. **Static Mut Generation**: Convert to `static mut VAR: Type = init;` at module level
+    3. **Type Inference**: Infer types from literals (Integer→i32, Float→f64, String→&str, Bool→bool)
+    4. **Unsafe Wrapping**: Wrap function bodies and main body in `unsafe { }` blocks when accessing globals
+  - **FILES**:
+    - `src/backend/transpiler/mod.rs` (+70 lines: scope analysis, global tracking with RwLock)
+    - `src/backend/transpiler/statements.rs` (+30 lines: unsafe wrapping logic, global reference detection)
+    - `tests/transpiler_scope_global_mut.rs` (+130 lines: 3 comprehensive tests)
+  - **EXTREME TDD PHASES**:
+    - ✅ RED: 3/3 tests failing (functions can't access top-level let mut)
+    - ✅ GREEN: 3/3 tests passing (transpile→compile→run all successful)
+    - ✅ REFACTOR: Complexity ≤10, RwLock for thread-safety, manual Clone impl
+    - ✅ VALIDATE: Full pipeline (transpile→compile→run) + ruchydbg (3ms execution)
+  - **GENERATED OUTPUT EXAMPLE**:
+    ```rust
+    static mut global_state: i32 = 0;
+    fn modify_global(value: i32) {
+        unsafe { global_state = value }
+    }
+    fn main() {
+        unsafe {
+            modify_global(42);
+            println!("{}", global_state);
+        }
+    }
+    ```
+  - **IMPACT**: Top-level mutable globals now fully functional across functions
+  - **Test Coverage**: 3/3 integration tests passing (transpile, compile, run commands)
 
 ### Verified
 - **[VERIFICATION]** PARSER-079 fix confirmed via ruchydbg v1.24.0

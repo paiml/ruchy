@@ -62,7 +62,8 @@ use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 // Module exports are handled by the impl blocks in each module
-/// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
+/// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`, imports, globals)
+/// TRANSPILER-SCOPE: Added globals vector for static mut declarations
 type BlockCategorization<'a> = (
     Vec<TokenStream>, // functions
     Vec<TokenStream>, // statements
@@ -70,6 +71,7 @@ type BlockCategorization<'a> = (
     bool,             // has_main
     Option<&'a Expr>, // main_expr
     Vec<TokenStream>, // imports
+    Vec<TokenStream>, // globals (static mut declarations)
 );
 /// Function signature information used for type coercion.
 ///
@@ -116,7 +118,6 @@ pub struct FunctionSignature {
 /// // Track mutable variables
 /// transpiler.mutable_vars.insert("counter".to_string());
 /// ```
-#[derive(Clone)]
 pub struct Transpiler {
     /// Whether the current code generation is within an async context.
     ///
@@ -152,10 +153,29 @@ pub struct Transpiler {
     /// Used to generate concrete type hints for empty vec initializations.
     /// Uses RefCell for interior mutability since transpiler methods take &self.
     pub current_function_return_type: std::cell::RefCell<Option<crate::frontend::ast::Type>>,
+    /// Global variable names that need unsafe access (TRANSPILER-SCOPE fix).
+    ///
+    /// Tracks which variables are static mut globals requiring unsafe blocks.
+    /// Uses RwLock for thread-safe interior mutability since transpiler is used in async contexts.
+    pub global_vars: std::sync::RwLock<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
         Self::new()
+    }
+}
+impl Clone for Transpiler {
+    fn clone(&self) -> Self {
+        Self {
+            in_async_context: self.in_async_context,
+            in_loop_context: std::cell::Cell::new(self.in_loop_context.get()),
+            mutable_vars: self.mutable_vars.clone(),
+            function_signatures: self.function_signatures.clone(),
+            module_names: self.module_names.clone(),
+            string_vars: std::cell::RefCell::new(self.string_vars.borrow().clone()),
+            current_function_return_type: std::cell::RefCell::new(self.current_function_return_type.borrow().clone()),
+            global_vars: std::sync::RwLock::new(self.global_vars.read().unwrap().clone()),
+        }
     }
 }
 impl Transpiler {
@@ -178,6 +198,7 @@ impl Transpiler {
             module_names: std::collections::HashSet::new(),
             string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
             current_function_return_type: std::cell::RefCell::new(None),
+            global_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
@@ -840,7 +861,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
-        let (functions, statements, modules, has_main, main_expr, imports) =
+        let (functions, statements, modules, has_main, main_expr, imports, globals) =
             self.categorize_block_expressions(exprs)?;
         if functions.is_empty() && !has_main && modules.is_empty() {
             if imports.is_empty() {
@@ -853,6 +874,7 @@ impl Transpiler {
                     needs_polars,
                     needs_hashmap,
                     &imports,
+                    &globals,
                 )
             }
         } else if has_main || !modules.is_empty() {
@@ -872,6 +894,7 @@ impl Transpiler {
                 needs_polars,
                 needs_hashmap,
                 &imports,
+                &globals,
             )
         }
     }
@@ -886,23 +909,44 @@ impl Transpiler {
         let mut has_main_function = false;
         let mut main_function_expr = None;
 
-        // DEFECT-COMPILE-MAIN-CALL: First pass - detect if main function exists
-        // This prevents infinite recursion when code has both fun main() + main() call
+        // TRANSPILER-SCOPE: First pass - collect names of mutable Lets that will become globals
+        // We need to do this BEFORE categorization so we can skip them in statements
+        let mut global_var_names = std::collections::HashSet::new();
         for expr in exprs {
             if let ExprKind::Function { name, .. } = &expr.kind {
                 if name == "main" {
                     has_main_function = true;
-                    break;
                 }
             }
         }
 
-        // Second pass - categorize expressions, skipping main() calls if main exists
+        // If we have functions, collect mutable Let names to promote to globals
+        let has_functions_check = exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. })) || has_main_function;
+        if has_functions_check {
+            for expr in exprs {
+                if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+                    if *is_mutable {
+                        global_var_names.insert(name.clone());
+                    }
+                }
+            }
+        }
+
+        // TRANSPILER-SCOPE: Store global variable names for use during expression transpilation
+        *self.global_vars.write().unwrap() = global_var_names.clone();
+
+        // Second pass - categorize expressions, skipping main() calls and promoted globals
         for expr in exprs {
-            // DEFECT-COMPILE-MAIN-CALL: Skip explicit main() calls when main function exists
-            // This prevents: fn main() { main(); } infinite recursion
+            // Skip explicit main() calls when main function exists
             if has_main_function && Self::is_call_to_main(expr) {
-                continue; // Skip this expression
+                continue;
+            }
+
+            // TRANSPILER-SCOPE: Skip mutable Lets that were promoted to globals
+            if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+                if *is_mutable && global_var_names.contains(name) {
+                    continue; // Skip this Let - it's now a static mut global
+                }
             }
 
             self.categorize_single_expression(
@@ -916,6 +960,50 @@ impl Transpiler {
             )?;
         }
 
+        // TRANSPILER-SCOPE: Third pass - generate static mut declarations for globals
+        let mut globals = Vec::new();
+        if !global_var_names.is_empty() {
+            for expr in exprs {
+                if let ExprKind::Let {
+                    name,
+                    value,
+                    is_mutable,
+                    type_annotation,
+                    ..
+                } = &expr.kind
+                {
+                    if *is_mutable && global_var_names.contains(name) {
+                        // Transpile value to get initializer
+                        let value_tokens = self.transpile_expr(value)?;
+                        let var_name = format_ident!("{}", name);
+
+                        // TRANSPILER-SCOPE: Infer type from literal or use annotation
+                        // Static variables can't use `_` placeholder, need explicit type
+                        let type_token = if let Some(ref type_ann) = type_annotation {
+                            self.transpile_type(type_ann)?
+                        } else {
+                            // Simple literal type inference for MVP
+                            match &value.kind {
+                                ExprKind::Literal(lit) => match lit {
+                                    crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
+                                    crate::frontend::ast::Literal::Float(_) => quote! { f64 },
+                                    crate::frontend::ast::Literal::String(_) => quote! { &str },
+                                    crate::frontend::ast::Literal::Bool(_) => quote! { bool },
+                                    _ => quote! { i32 },  // Default fallback
+                                },
+                                _ => quote! { i32 },  // Default for non-literals
+                            }
+                        };
+
+                        // Generate static mut declaration with explicit type
+                        globals.push(quote! {
+                            static mut #var_name: #type_token = #value_tokens;
+                        });
+                    }
+                }
+            }
+        }
+
         Ok((
             functions,
             statements,
@@ -923,6 +1011,7 @@ impl Transpiler {
             has_main_function,
             main_function_expr,
             imports,
+            globals,
         ))
     }
 
@@ -1280,6 +1369,14 @@ impl Transpiler {
         };
 
         let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
+
+        // TRANSPILER-SCOPE: Wrap main body in unsafe if we have global variables
+        let main_body = if self.global_vars.read().unwrap().is_empty() {
+            quote! { #(#statements)* }
+        } else {
+            quote! { unsafe { #(#statements)* } }
+        };
+
         Ok(quote! {
             #use_statements
             #(#imports)*
@@ -1287,7 +1384,7 @@ impl Transpiler {
             #(#functions)*
             #user_main_function
             fn main() {
-                #(#statements)*
+                #main_body
             }
         })
     }
@@ -1365,32 +1462,46 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
         imports: &[TokenStream],
+        globals: &[TokenStream],
     ) -> Result<TokenStream> {
+        // TRANSPILER-SCOPE: Emit static mut globals at module level
         // No main function among extracted functions - create one for statements
+
+        // TRANSPILER-SCOPE: Wrap main body in unsafe if we have global variables
+        let main_body = if self.global_vars.read().unwrap().is_empty() {
+            quote! { #(#statements)* }
+        } else {
+            quote! { unsafe { #(#statements)* } }
+        };
+
         match (needs_polars, needs_hashmap) {
             (true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #(#imports)*
+                #(#globals)*
                 #(#functions)*
-                fn main() { #(#statements)* }
+                fn main() { #main_body }
             }),
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
                 #(#imports)*
+                #(#globals)*
                 #(#functions)*
-                fn main() { #(#statements)* }
+                fn main() { #main_body }
             }),
             (false, true) => Ok(quote! {
                 use std::collections::HashMap;
                 #(#imports)*
+                #(#globals)*
                 #(#functions)*
-                fn main() { #(#statements)* }
+                fn main() { #main_body }
             }),
             (false, false) => Ok(quote! {
                 #(#imports)*
+                #(#globals)*
                 #(#functions)*
-                fn main() { #(#statements)* }
+                fn main() { #main_body }
             }),
         }
     }

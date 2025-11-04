@@ -1181,12 +1181,48 @@ impl Transpiler {
             Ok(quote! {})
         }
     }
+    /// Check if an expression references any global variables (TRANSPILER-SCOPE)
+    fn references_globals(&self, expr: &Expr) -> bool {
+        let globals = self.global_vars.read().unwrap();
+        if globals.is_empty() {
+            return false;
+        }
+        Self::expr_references_any(expr, &globals)
+    }
+
+    /// Recursively check if expression references any of the given names
+    fn expr_references_any(expr: &Expr, names: &std::collections::HashSet<String>) -> bool {
+        match &expr.kind {
+            ExprKind::Identifier(name) => names.contains(name),
+            ExprKind::Assign { target, value } => {
+                Self::expr_references_any(target, names) || Self::expr_references_any(value, names)
+            }
+            ExprKind::Binary { left, right, .. } => {
+                Self::expr_references_any(left, names) || Self::expr_references_any(right, names)
+            }
+            ExprKind::Block(exprs) => exprs.iter().any(|e| Self::expr_references_any(e, names)),
+            ExprKind::If { condition, then_branch, else_branch } => {
+                Self::expr_references_any(condition, names)
+                    || Self::expr_references_any(then_branch, names)
+                    || else_branch.as_ref().map_or(false, |e| Self::expr_references_any(e, names))
+            }
+            ExprKind::Call { func, args } => {
+                Self::expr_references_any(func, names) || args.iter().any(|a| Self::expr_references_any(a, names))
+            }
+            ExprKind::Set(elements) => elements.iter().any(|e| Self::expr_references_any(e, names)),
+            _ => false,
+        }
+    }
+
     /// Generate body tokens with async support
     fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
-        if is_async {
+        // TRANSPILER-SCOPE: Check if body references globals (needs unsafe wrapping)
+        let needs_unsafe = !is_async && self.references_globals(body);
+
+        let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
             async_transpiler.in_async_context = true;
-            async_transpiler.transpile_expr(body)
+            async_transpiler.transpile_expr(body)?
         } else {
             // Check if body is already a block to avoid double-wrapping
             match &body.kind {
@@ -1198,7 +1234,7 @@ impl Transpiler {
                     if elements.len() == 1 {
                         // Single expression set - transpile the expression directly (like a single-expr block)
                         // BYPASS the normal Set transpiler to avoid HashSet generation
-                        self.transpile_expr(&elements[0])
+                        self.transpile_expr(&elements[0])?
                     } else {
                         // Multiple expressions - treat as block statements
                         let mut statements = Vec::new();
@@ -1210,14 +1246,14 @@ impl Transpiler {
                                 statements.push(expr_tokens);
                             }
                         }
-                        Ok(quote! { { #(#statements)* } })
+                        quote! { { #(#statements)* } }
                     }
                 }
                 ExprKind::Block(exprs) => {
                     // For function bodies that are blocks, transpile the contents directly
                     if exprs.len() == 1 {
                         // Single expression block - transpile the expression directly
-                        self.transpile_expr(&exprs[0])
+                        self.transpile_expr(&exprs[0])?
                     } else {
                         // Multiple expressions - need proper semicolons between statements
                         let mut statements = Vec::new();
@@ -1257,17 +1293,24 @@ impl Transpiler {
                             }
                         }
                         if statements.is_empty() {
-                            Ok(quote! {})
+                            quote! {}
                         } else {
-                            Ok(quote! { #(#statements)* })
+                            quote! { #(#statements)* }
                         }
                     }
                 }
                 _ => {
                     // Not a block - transpile normally
-                    self.transpile_expr(body)
+                    self.transpile_expr(body)?
                 }
             }
+        };
+
+        // TRANSPILER-SCOPE: Wrap in unsafe block if body references globals
+        if needs_unsafe {
+            Ok(quote! { unsafe { #body_tokens } })
+        } else {
+            Ok(body_tokens)
         }
     }
     /// Generate type parameter tokens with trait bound support

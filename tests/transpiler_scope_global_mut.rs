@@ -50,6 +50,8 @@ println!("{}", global_state);
         .arg(&rust_path)
         .arg("--crate-type")
         .arg("bin")
+        .arg("--crate-name")
+        .arg("transpiler_scope_test")
         .arg("-o")
         .arg(temp_file.path().with_extension("exe"))
         .output()
