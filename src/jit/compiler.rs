@@ -133,8 +133,14 @@ impl JitCompiler {
             builder.switch_to_block(entry_block);
             builder.seal_block(entry_block);
 
+            // Create compilation context for variable tracking
+            let mut ctx = CompileContext {
+                variables: HashMap::new(),
+                next_var: 0,
+            };
+
             // Compile expression
-            let result = Self::compile_expr_static(&mut builder, ast)?;
+            let result = Self::compile_expr(&mut builder, &mut ctx, ast)?;
 
             // Return result
             builder.ins().return_(&[result]);
@@ -149,10 +155,10 @@ impl JitCompiler {
         Ok(func_id)
     }
 
-    /// Compile a Ruchy expression to Cranelift IR (static method to avoid borrow checker issues)
+    /// Compile a Ruchy expression to Cranelift IR with variable context
     ///
     /// Returns the Cranelift value representing the expression result
-    fn compile_expr_static(builder: &mut FunctionBuilder, expr: &Expr) -> Result<Value> {
+    fn compile_expr(builder: &mut FunctionBuilder, ctx: &mut CompileContext, expr: &Expr) -> Result<Value> {
         match &expr.kind {
             // JIT-001: Integer literals
             ExprKind::Literal(Literal::Integer(n, _)) => {
@@ -172,17 +178,27 @@ impl JitCompiler {
             // JIT-001: Binary operations (+, -, *, /)
             // JIT-002: Comparisons (<=, ==, >, etc)
             ExprKind::Binary { left, op, right } => {
-                Self::compile_binary_op(builder, left, op, right)
+                Self::compile_binary_op(builder, ctx, left, op, right)
             }
 
             // JIT-002: Block expressions (sequence of statements, return last value)
             ExprKind::Block(exprs) => {
-                Self::compile_block(builder, exprs)
+                Self::compile_block(builder, ctx, exprs)
             }
 
             // JIT-002: If/else control flow
             ExprKind::If { condition, then_branch, else_branch } => {
-                Self::compile_if(builder, condition, then_branch, else_branch.as_deref())
+                Self::compile_if(builder, ctx, condition, then_branch, else_branch.as_deref())
+            }
+
+            // JIT-002: Let bindings (variable declaration)
+            ExprKind::Let { name, value, body, .. } => {
+                Self::compile_let(builder, ctx, name, value, body)
+            }
+
+            // JIT-002: Identifier (variable lookup)
+            ExprKind::Identifier(name) => {
+                Self::compile_identifier(builder, ctx, name)
             }
 
             // JIT-002: Not yet implemented - fall back to error
@@ -193,12 +209,13 @@ impl JitCompiler {
     /// Compile binary operations (complexity ≤10)
     fn compile_binary_op(
         builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
         left: &Expr,
         op: &BinaryOp,
         right: &Expr,
     ) -> Result<Value> {
-        let lhs = Self::compile_expr_static(builder, left)?;
-        let rhs = Self::compile_expr_static(builder, right)?;
+        let lhs = Self::compile_expr(builder, ctx, left)?;
+        let rhs = Self::compile_expr(builder, ctx, right)?;
 
         let result = match op {
             // Arithmetic
@@ -241,7 +258,7 @@ impl JitCompiler {
     }
 
     /// Compile block expression (sequence of statements, return last value)
-    fn compile_block(builder: &mut FunctionBuilder, exprs: &[Expr]) -> Result<Value> {
+    fn compile_block(builder: &mut FunctionBuilder, ctx: &mut CompileContext, exprs: &[Expr]) -> Result<Value> {
         if exprs.is_empty() {
             // Empty block returns unit ()
             return Ok(builder.ins().iconst(types::I64, 0));
@@ -249,7 +266,7 @@ impl JitCompiler {
 
         let mut last_value = None;
         for expr in exprs {
-            last_value = Some(Self::compile_expr_static(builder, expr)?);
+            last_value = Some(Self::compile_expr(builder, ctx, expr)?);
         }
 
         // Return the value of the last expression
@@ -259,12 +276,13 @@ impl JitCompiler {
     /// Compile if/else control flow using Cranelift variables (complexity ≤10)
     fn compile_if(
         builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
         condition: &Expr,
         then_branch: &Expr,
         else_branch: Option<&Expr>,
     ) -> Result<Value> {
         // Evaluate condition
-        let cond_value = Self::compile_expr_static(builder, condition)?;
+        let cond_value = Self::compile_expr(builder, ctx, condition)?;
 
         // Create blocks for then, else, and merge
         let then_block = builder.create_block();
@@ -280,7 +298,7 @@ impl JitCompiler {
         // Then branch
         builder.switch_to_block(then_block);
         builder.seal_block(then_block);
-        let then_value = Self::compile_expr_static(builder, then_branch)?;
+        let then_value = Self::compile_expr(builder, ctx, then_branch)?;
         builder.def_var(result_var, then_value);
         builder.ins().jump(merge_block, &[]);
 
@@ -288,7 +306,7 @@ impl JitCompiler {
         builder.switch_to_block(else_block);
         builder.seal_block(else_block);
         let else_value = if let Some(else_expr) = else_branch {
-            Self::compile_expr_static(builder, else_expr)?
+            Self::compile_expr(builder, ctx, else_expr)?
         } else {
             // No else branch, return unit ()
             builder.ins().iconst(types::I64, 0)
@@ -304,6 +322,49 @@ impl JitCompiler {
         let result = builder.use_var(result_var);
 
         Ok(result)
+    }
+
+    /// Compile let binding (variable declaration and initialization) - complexity ≤10
+    fn compile_let(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<Value> {
+        // Compile the value expression
+        let init_value = Self::compile_expr(builder, ctx, value)?;
+
+        // Create a Cranelift variable
+        let var = builder.declare_var(types::I64);
+
+        // Define the variable with initial value
+        builder.def_var(var, init_value);
+
+        // Store variable in context for future lookups (persists for rest of block)
+        ctx.variables.insert(name.to_string(), var);
+
+        // Compile the body expression (usually Unit in block-level let bindings)
+        let result = Self::compile_expr(builder, ctx, body)?;
+
+        // NOTE: Variable stays in scope for rest of block (block-scoped binding)
+        // It will be cleaned up when CompileContext is dropped at function end
+
+        Ok(result)
+    }
+
+    /// Compile identifier (variable lookup) - complexity ≤5
+    fn compile_identifier(
+        builder: &mut FunctionBuilder,
+        ctx: &CompileContext,
+        name: &str,
+    ) -> Result<Value> {
+        // Lookup variable in context
+        let var = ctx.variables.get(name)
+            .ok_or_else(|| anyhow!("Undefined variable: {}", name))?;
+
+        // Read variable value (Cranelift handles SSA)
+        Ok(builder.use_var(*var))
     }
 
     /// Get a fresh Cranelift variable ID
