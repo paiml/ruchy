@@ -448,6 +448,177 @@ type_of(value)                // Get type name as string
 - Source: `src/runtime/builtins.rs:register_builtins()`
 - Each function has proper error handling and type checking
 
+### 1.9 Concurrency and Parallelism
+
+**Design Principle**: Ruchy uses **exactly the same concurrency model as Rust** - no abstractions, no wrappers, direct 1:1 mapping.
+
+**ZERO UNSAFE POLICY**: All generated code MUST be thread-safe and memory-safe. The transpiler NEVER generates `unsafe` blocks or `static mut` declarations.
+
+#### Thread-Based Concurrency
+
+```rust
+// Spawn threads (identical to Rust)
+let handle = std::thread::spawn(|| {
+    println!("Hello from thread!");
+    42
+});
+let result = handle.join().unwrap();  // Returns 42
+
+// Shared state with Arc<Mutex<T>>
+use std::sync::{Arc, Mutex};
+let counter = Arc::new(Mutex::new(0));
+
+let handles: Vec<_> = (0..10).map(|_| {
+    let counter = Arc::clone(&counter);
+    std::thread::spawn(move || {
+        let mut num = counter.lock().unwrap();
+        *num += 1;
+    })
+}).collect();
+
+for handle in handles {
+    handle.join().unwrap();
+}
+
+println!("{}", *counter.lock().unwrap());  // Prints: 10
+```
+
+#### Async/Await Concurrency
+
+```rust
+// Async functions (tokio runtime)
+async fun fetch_data(url: String) -> Result<String, Error> {
+    let response = reqwest::get(url).await?;
+    response.text().await
+}
+
+// Async main
+#[tokio::main]
+async fun main() {
+    let data = fetch_data("https://api.example.com").await;
+    println!("{}", data);
+}
+
+// Concurrent async tasks
+use tokio::task;
+let tasks: Vec<_> = urls.iter().map(|url| {
+    task::spawn(fetch_data(url.clone()))
+}).collect();
+
+for task in tasks {
+    let result = task.await.unwrap();
+    println!("{}", result);
+}
+```
+
+#### Message Passing (Channels)
+
+```rust
+// MPSC (Multi-Producer Single-Consumer)
+use std::sync::mpsc;
+let (tx, rx) = mpsc::channel();
+
+std::thread::spawn(move || {
+    tx.send("Hello from thread").unwrap();
+});
+
+let message = rx.recv().unwrap();
+println!("{}", message);
+
+// Async channels (tokio)
+use tokio::sync::mpsc;
+let (tx, mut rx) = mpsc::channel(100);
+
+tokio::spawn(async move {
+    tx.send(42).await.unwrap();
+});
+
+if let Some(value) = rx.recv().await {
+    println!("{}", value);
+}
+```
+
+#### Atomics
+
+```rust
+// Atomic operations (lock-free)
+use std::sync::atomic::{AtomicUsize, Ordering};
+let counter = Arc::new(AtomicUsize::new(0));
+
+let handles: Vec<_> = (0..10).map(|_| {
+    let counter = Arc::clone(&counter);
+    std::thread::spawn(move || {
+        counter.fetch_add(1, Ordering::SeqCst);
+    })
+}).collect();
+
+for handle in handles {
+    handle.join().unwrap();
+}
+
+println!("{}", counter.load(Ordering::SeqCst));  // Prints: 10
+```
+
+#### Global Mutable State (Thread-Safe)
+
+```rust
+// Top-level mutable variables (transpiled to LazyLock<Mutex<T>>)
+let mut global_counter = 0;
+
+fun increment() {
+    global_counter = global_counter + 1;
+}
+
+// Transpiles to:
+// static GLOBAL_COUNTER: LazyLock<Mutex<i32>> = LazyLock::new(|| Mutex::new(0));
+// fn increment() {
+//     *GLOBAL_COUNTER.lock().unwrap() += 1;
+// }
+```
+
+#### Synchronization Primitives
+
+```rust
+// Mutex (exclusive access)
+use std::sync::Mutex;
+let data = Mutex::new(vec![1, 2, 3]);
+{
+    let mut d = data.lock().unwrap();
+    d.push(4);
+}  // Lock released
+
+// RwLock (read-heavy workloads)
+use std::sync::RwLock;
+let config = RwLock::new(HashMap::new());
+
+// Multiple readers OK
+let r1 = config.read().unwrap();
+let r2 = config.read().unwrap();
+
+// Single writer
+let mut w = config.write().unwrap();
+w.insert("key", "value");
+```
+
+**Safety Guarantees**:
+- ✅ All concurrency primitives are **memory-safe** (no data races)
+- ✅ Send/Sync traits enforced by Rust compiler
+- ✅ Zero unsafe code in generated output (GitHub Issue #132)
+- ✅ Thread-safe globals via `LazyLock<Mutex<T>>`
+- ✅ Async/await safety via tokio runtime
+
+**Transpiler Contract**:
+- NEVER generate `static mut` (use `LazyLock<Mutex<T>>` instead)
+- NEVER generate `unsafe` blocks in concurrency code
+- ALWAYS use standard Rust synchronization primitives
+- ALWAYS preserve Rust's ownership and borrowing rules
+
+**Implementation Status**:
+- ✅ Thread-safe globals: COMPLETE (v3.194.0)
+- ⚠️ `std::thread` syntax support: PARTIAL (needs parser work)
+- ⚠️ `async`/`await` syntax: PARTIAL (runtime exists, syntax incomplete)
+- ❌ Channel syntax sugar: NOT IMPLEMENTED (use Rust stdlib directly)
+
 ## 2. Grammar Reference
 
 ### 2.1 Formal Grammar (EBNF)
