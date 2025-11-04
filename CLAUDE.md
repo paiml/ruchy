@@ -659,6 +659,34 @@ Closes: TICKET-ID
 **After version bump**: Publish `ruchy` first, wait 30s, then `ruchy-wasm` (same version)
 **Checklist**: Tests pass, CHANGELOG updated, git commit/push, both crates build
 
+### 📅 CRATES.IO RELEASE SCHEDULE (MANDATORY)
+
+**🚨 SACRED RULE: Crates.io releases happen on FRIDAYS ONLY**
+
+**Rationale**:
+- **Weekend buffer**: Issues can be addressed before Monday
+- **User impact**: Minimal disruption to production users
+- **Quality assurance**: Full week for testing and validation
+- **Predictability**: Consistent release cadence builds trust
+
+**Workflow**:
+1. **Monday-Thursday**: Development, testing, bug fixes, quality gates
+2. **Friday Morning**: Final validation (4 gates: smoke, ruchydbg, property tests, real-world)
+3. **Friday Afternoon**: Dual-release publishing (ruchy → wait 30s → ruchy-wasm)
+4. **Weekend**: Monitor for issues, hotfix if critical
+
+**Exceptions** (RARE - require explicit justification):
+- Critical security vulnerability (CVE-level)
+- Data loss bug affecting production users
+- Compiler crash blocking all users
+
+**Version Bumps During Week**:
+- ✅ ALLOWED: Cargo.toml version bumps, git tags, CHANGELOG updates
+- ✅ ALLOWED: Development commits to main branch
+- ❌ FORBIDDEN: `cargo publish` commands (wait for Friday)
+
+**Enforcement**: Claude will remind you if you attempt to publish on non-Friday
+
 ## Language Feature Testing Protocol
 
 ### CRITICAL REQUIREMENT: Language Compatibility First
