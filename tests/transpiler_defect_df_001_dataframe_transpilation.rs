@@ -174,9 +174,9 @@ mod property_tests {
 
             if let Ok(ast) = parse_result {
                 let transpiler = Transpiler::new();
-                let result = std::panic::catch_unwind(|| {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     transpiler.transpile(&ast)
-                });
+                }));
 
                 assert!(
                     result.is_ok(),
