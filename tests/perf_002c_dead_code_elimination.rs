@@ -368,3 +368,72 @@ fn property_no_live_code_eliminated() {
             .stdout(predicate::str::contains(format!("let result = {expected_result}")));
     });
 }
+
+// ============================================================================
+// TEST GROUP 7: Async/Await Support (GitHub Issue #133)
+// ============================================================================
+
+/// ASYNC-AWAIT: DCE must not eliminate async functions called via .await
+/// Bug: collect_used_functions_rec() didn't handle ExprKind::Await
+/// Fix: Added Await, AsyncBlock, Spawn cases to recurse into expressions
+#[test]
+fn test_perf_002c_dce_async_function_not_eliminated() {
+    // Pattern: Async function called via .await should NOT be eliminated
+    let code = r"
+        async fun fetch_data() -> i32 {
+            let result = 42
+            result
+        }
+
+        fun main() {
+            let data = await fetch_data()
+            data
+        }
+    ";
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // CRITICAL: async function must NOT be eliminated by DCE
+        .stdout(predicate::str::contains("async fn fetch_data"))
+        .stdout(predicate::str::contains("fetch_data().await"));
+}
+
+#[test]
+fn test_perf_002c_dce_multiple_async_functions() {
+    // Pattern: Multiple async functions with chained .await calls
+    let code = r"
+        async fun fetch_user(id: i32) -> i32 {
+            id
+        }
+
+        async fun fetch_data() -> i32 {
+            42
+        }
+
+        async fun process_data() -> i32 {
+            let data = await fetch_data()
+            data * 2
+        }
+
+        fun main() {
+            let user = await fetch_user(1)
+            let processed = await process_data()
+            processed
+        }
+    ";
+
+    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    cmd.arg("transpile")
+        .arg("-")
+        .write_stdin(code.to_string())
+        .assert()
+        .success()
+        // All async functions must be preserved
+        .stdout(predicate::str::contains("async fn fetch_user"))
+        .stdout(predicate::str::contains("async fn fetch_data"))
+        .stdout(predicate::str::contains("async fn process_data"));
+}
