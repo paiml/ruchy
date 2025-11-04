@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.193.0] - 2025-11-04
+
+### Fixed
+- **[SYNTAX-FIX]** Test compilation errors blocking mutation testing
+  - **PROBLEM**: Mutation testing completely blocked by 3 compile errors in test files
+  - **ROOT CAUSE**:
+    - Interior mutability types (`RefCell`) can't cross `catch_unwind` boundary without `AssertUnwindSafe`
+    - `#[ignore]` attributes require quoted string literals (syntax error)
+  - **FILES**:
+    - `tests/transpiler_defect_df_001_dataframe_transpilation.rs` (+1 line: AssertUnwindSafe wrapper)
+    - `tests/property_import_parsing.rs` (+2 lines: added quotes to #[ignore] attributes)
+  - **VALIDATION**:
+    - ✅ RED: 3 compile errors blocking mutation testing
+    - ✅ GREEN: All tests compile successfully
+    - ✅ VALIDATE: 4038 library tests passing, dataframe property test now compiles
+  - **IMPACT**: Unblocked mutation testing for all transpiler modules
+  - **Test Coverage**: Zero regressions, property tests now compile correctly
+
 ## [3.192.0] - 2025-11-03
 
 ### Fixed
