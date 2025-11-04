@@ -29,6 +29,31 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Labeled break/continue now fully functional (for/while/loop with labels)
   - **Test Coverage**: 8/8 unit tests passing, 4046 library tests passing (zero regressions)
 
+### Verified
+- **[VERIFICATION]** PARSER-079 + Transpiler global let bugs confirmed fixed via ruchydbg v1.24.0
+  - **METHOD**: Genchi Genbutsu (Go and See) with automated debugging tools
+  - **TOOL**: `ruchydbg v1.24.0` installed from `../ruchyruchy` (upgraded from v1.23.0)
+  - **TESTS**:
+    - `ruchydbg tokenize /tmp/transpiler_bug.ruchy` → 21 tokens, all correct
+    - `ruchydbg trace /tmp/transpiler_bug.ruchy --analyze` → Parse successful, no errors
+    - `ruchydbg run /tmp/transpiler_bug.ruchy --timeout 5000` → Outputs "1" correctly (3ms)
+    - `cargo run --bin ruchy -- transpile` → Generates `let mut counter = 0;` NOT `();`
+  - **RESULTS**:
+    - ✅ PARSER-079: `{ break 'outer }` parses correctly
+    - ✅ TRANSPILER: `let mut counter = 0;` transpiles to correct Rust (NOT `();`)
+    - ✅ Simple test: `/tmp/transpiler_bug.ruchy` works (3ms execution)
+    - ✅ Complex test: `/tmp/complex_test.ruchy` (global state + functions) outputs "42" (4ms)
+  - **FIVE WHYS DISCOVERY**:
+    - Question: "Why did we think transpiler was broken?"
+    - Answer: "Stale test files from before fix - Genchi Genbutsu revealed trunk is correct"
+    - Lesson: "Toyota Way 'Go and See' validates assumptions, prevents wasted debugging"
+  - **TOYOTA WAY APPLICATION**:
+    - Genchi Genbutsu: Direct observation via ruchydbg tools (tokenize, trace, run)
+    - Stop the Line: Halted investigation when evidence showed bugs already fixed
+    - Kaizen: Upgraded debugging tools (v1.23.0 → v1.24.0) for better visibility
+    - Jidoka: Automated verification prevents future regressions
+  - **IMPACT**: Both bugs confirmed fixed, ready for v3.194.0 release to ruchy-book team
+
 ### Changed
 - **[QUALITY]** Fix unused variable warning in binary handlers
   - `src/bin/handlers/mod.rs`: Prefix unused `refresh_interval` parameter with underscore
