@@ -185,7 +185,55 @@ RESULT: BENCH-003 unblocked, end-to-end pipeline working
 
 ### Debugging Toolkit
 
-**Use RuchyRuchy debugging tools** (`cargo install ruchyruchy`) for timeout detection, regression testing, stack profiling, and bug analysis. See `../ruchyruchy/INTEGRATION_GUIDE.md` for complete documentation.
+**Use RuchyRuchy debugging tools** (`cargo install ruchyruchy`) for timeout detection, regression testing, stack profiling, and bug analysis. See `../ruchyruchy/INTEGRATION_GUIDE.md` and `../ruchyruchy/DEBUGGING_GUIDE.md` for complete documentation.
+
+#### Mandatory Debugging Workflow with ruchydbg
+
+**🚨 CRITICAL**: When investigating transpiler/parser bugs, ALWAYS use `ruchydbg` BEFORE manually inspecting code:
+
+**Step 1: Verify Runtime Behavior**
+```bash
+# Run with timeout detection (catches infinite loops/deadlocks)
+ruchydbg run test.ruchy --timeout 5000 --trace
+```
+
+**Step 2: Inspect Tokens (Parser Issues)**
+```bash
+# Show token stream
+ruchydbg tokenize test.ruchy
+
+# Detect pattern conflicts
+ruchydbg tokenize test.ruchy --analyze
+
+# Compare working vs broken
+ruchydbg compare working.ruchy broken.ruchy --hints
+```
+
+**Step 3: Trace Parser (AST Issues)**
+```bash
+# Parser trace with root cause analysis
+ruchydbg trace test.ruchy --analyze
+```
+
+**Step 4: Verify Fix**
+```bash
+# Run again after fix to confirm
+ruchydbg run test.ruchy --timeout 5000 --trace
+```
+
+**Example (This Session - Inline Expander Bug)**:
+```
+PROBLEM: Functions disappearing during transpilation
+❌ WRONG: Manually inspect transpiler code
+✅ CORRECT: Use ruchydbg workflow
+
+1. ruchydbg run test.ruchy → ✅ SUCCESS (works in interpreter)
+2. cargo run -- transpile test.ruchy → ❌ Function missing
+3. Five Whys: Why missing? → Inline expander
+4. Fix: Add CompoundAssign case to check_for_external_refs
+5. ruchydbg run test.ruchy → ✅ Still works
+6. cargo run -- transpile test.ruchy → ✅ Function preserved
+```
 
 ### Mutation Testing Protocol (MANDATORY - Sprint 8)
 
