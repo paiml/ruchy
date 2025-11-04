@@ -2598,7 +2598,7 @@ fn test_sqlite_366_trait_object_send_sync() {
 
 #[test] fn test_sqlite_742_attr_outer() { assert_parses("#[test] fun foo() { }"); }
 #[test] fn test_sqlite_743_attr_inner() { assert_parses("fun foo() { #![allow(unused)] }"); }
-#[test] fn test_sqlite_744_attr_multiple() { assert_parses("#[test] #[ignore = "fun foo() { }"); }"]
+#[test] fn test_sqlite_744_attr_multiple() { assert_parses("#[test] #[ignore = \"Reason\"] fun foo() { }"); }
 #[test] fn test_sqlite_745_attr_with_value() { assert_parses("#[cfg(target = \"x86\")] fun foo() { }"); }
 #[ignore = "Parser limitation: attribute with path not supported - needs [PARSER-244] ticket"]
 #[test] fn test_sqlite_746_attr_path() { assert_parses("#[some::path::attr] fun foo() { }"); }
