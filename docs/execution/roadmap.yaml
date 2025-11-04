@@ -10,9 +10,24 @@ metadata:
   latest_commit_hash: "300bfff8"
   current_work: "✅ COMPLETE - v3.194.0 shipped (Issue #132 + TRANSPILER-SCOPE), Friday-only release policy established"
   next_phase: "Development work continues, next crates.io publish: Friday 2025-11-08"
-  benchmark_validation_status: "✅ 9/12 BENCHMARKS WORKING (75%) - BENCH-009 unblocked by ISSUE-131"
+  benchmark_validation_status: "✅ 10/12 BENCHMARKS WORKING (83%) - BENCH-002, BENCH-006 unblocked by v3.194.0"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
-  priority_rationale: "Focus on remaining 3 benchmarks (BENCH-010, BENCH-011, BENCH-012) and property test coverage (80% target)"
+  priority_rationale: "Create missing 2 benchmarks (BENCH-001 File I/O, BENCH-010 HTTP mock) to achieve 12/12 (100%)"
+  benchmark_details:
+    working:
+      - "BENCH-002: Matrix multiplication (run mode ✅, transpile/compile ❌ type inference bug)"
+      - "BENCH-003: String concatenation ✅"
+      - "BENCH-004: Binary tree allocation ✅"
+      - "BENCH-005: Array sum ✅"
+      - "BENCH-006: File processing ✅ (read_file() works)"
+      - "BENCH-007: Fibonacci recursive ✅"
+      - "BENCH-008: Prime generation ✅"
+      - "BENCH-009: JSON parsing ✅ (parse_json() works)"
+      - "BENCH-011: Nested loops ✅"
+      - "BENCH-012: Startup time ✅"
+    missing:
+      - "BENCH-001: File I/O (10MB read) - needs implementation"
+      - "BENCH-010: HTTP mock (1K requests) - needs implementation"
   debugger_051_status: "✅ COMPLETE - performance-profiling-compiler-tooling.md (1436 LOC Julia analysis)"
   compiler_optimization_spec: "✅ NEW SPEC - compiler-transpiler-optimization-spec.md (72KB, Nov 2, 2025, 12 peer-reviewed papers)"
   crates_io_status:
