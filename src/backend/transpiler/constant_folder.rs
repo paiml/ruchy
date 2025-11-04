@@ -452,9 +452,16 @@ fn remove_dead_statements_and_unused_functions_and_variables(
 
         // PERF-002-C: Remove unused variable bindings
         if let ExprKind::Let { name, value, body, .. } = &expr.kind {
+            // TRANSPILER-BUG FIX: Don't eliminate Let bindings with Unit body
+            // These are top-level statements (let x = 0;) not scoped bindings (let x = 0 in expr)
+            // The variable may be used in subsequent statements outside this Let expression
+            let body_is_unit = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+
             // Skip this let binding if the variable is never used
-            // BUT keep it if the value has side effects (like function calls)
-            if !used_variables.contains(name) && !has_side_effects(value) {
+            // BUT keep it if:
+            // 1. The value has side effects (like function calls)
+            // 2. The body is Unit (top-level statement, may be used in subsequent statements)
+            if !used_variables.contains(name) && !has_side_effects(value) && !body_is_unit {
                 // Variable is unused and value has no side effects - eliminate it
                 // Continue with the body instead
                 let cleaned_body = eliminate_dead_code((**body).clone(), std::collections::HashSet::new());
