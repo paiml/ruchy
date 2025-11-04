@@ -19,6 +19,44 @@
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 **Extreme TDD means - TDD augmented by mutation + property + fuzz testing + pmat complexity, satd, tdg, entropy**
 
+## 🚨 CRITICAL: ZERO UNSAFE CODE POLICY (GitHub Issue #132)
+
+**SACRED RULE**: The Ruchy transpiler MUST NEVER generate unsafe Rust code.
+
+**Rationale**:
+1. **High-level language promise**: Ruchy is "Python syntax with Rust performance" - users expect memory safety
+2. **Rust best practices**: Generated code should follow idiomatic, safe Rust patterns
+3. **Thread safety**: Code must work correctly when threading is added
+4. **Reviewability**: Generated code should be safe without manual inspection
+
+**Forbidden Patterns**:
+- ❌ `static mut` declarations (use `LazyLock<Mutex<T>>` or `LazyLock<RwLock<T>>`)
+- ❌ `unsafe { }` blocks in generated code
+- ❌ Raw pointers (`*const`, `*mut`) without safe wrappers
+- ❌ `#[no_mangle]` or FFI without explicit user request
+
+**Required Safe Patterns**:
+- ✅ `LazyLock<Mutex<T>>` for mutable globals (thread-safe)
+- ✅ `LazyLock<RwLock<T>>` for read-heavy globals (optimized)
+- ✅ `Arc<Mutex<T>>` for shared ownership across threads
+- ✅ `std::sync::mpsc` or `tokio::sync` for message passing
+
+**Concurrency Model**:
+Ruchy supports the **exact same concurrency as Rust**:
+- ✅ **Threads**: `std::thread::spawn`, same as Rust
+- ✅ **Async/Await**: `async fn`, `tokio` runtime, same as Rust
+- ✅ **Channels**: `mpsc`, `broadcast`, `watch`, same as Rust
+- ✅ **Atomics**: `AtomicUsize`, `AtomicBool`, same as Rust
+- ✅ **Mutexes**: `Mutex`, `RwLock`, same as Rust
+- ✅ **Ownership**: Same borrow checker rules as Rust
+
+**Implementation Enforcement**:
+- Pre-commit hook: `grep -r "unsafe {" generated_code/ && exit 1`
+- Code review: REJECT any PR with unsafe in transpiled output
+- Testing: Verify all tests pass without unsafe code
+
+**Reference**: GitHub Issue #132 - [CRITICAL] Transpiler generates invalid Rust code - must use RefCell/Mutex not unsafe
+
 ## 🚨 CRITICAL: E2E Testing Protocol (DEFECT-001 Response)
 
 **SACRED RULE**: NEVER commit frontend changes without E2E tests passing.

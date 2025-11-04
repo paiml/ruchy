@@ -23,6 +23,58 @@ A modern, expressive programming language for data science and scientific comput
 - **Type System**: Bidirectional type checking with inference
 - **Package Management**: Cargo integration with 140K+ crates via `ruchy add`
 - **Quality First**: Toyota Way principles with PMAT A+ code standards
+- **Memory Safe**: Zero unsafe code in generated output - all code is thread-safe
+- **Rust Concurrency**: Full support for threads, async/await, channels - identical to Rust
+
+## Safety & Concurrency
+
+**ZERO UNSAFE POLICY**: Ruchy NEVER generates unsafe Rust code ([GitHub Issue #132](https://github.com/paiml/ruchy/issues/132)).
+
+### Thread-Safe by Default
+
+```rust
+// Top-level mutable variables are automatically thread-safe
+let mut counter = 0;
+
+fun increment() {
+    counter = counter + 1;  // ✅ Thread-safe (LazyLock<Mutex<T>>)
+}
+```
+
+### Rust-Equivalent Concurrency
+
+Ruchy supports **exactly the same concurrency as Rust** - no abstractions, direct 1:1 mapping:
+
+```rust
+// Threads (identical to Rust)
+let handle = std::thread::spawn(|| {
+    println!("Hello from thread!");
+    42
+});
+let result = handle.join().unwrap();
+
+// Async/await (tokio)
+async fun fetch_data(url: String) -> Result<String, Error> {
+    let response = reqwest::get(url).await?;
+    response.text().await
+}
+
+// Shared state (Arc<Mutex<T>>)
+use std::sync::{Arc, Mutex};
+let data = Arc::new(Mutex::new(vec![]));
+
+// Channels (mpsc)
+use std::sync::mpsc;
+let (tx, rx) = mpsc::channel();
+```
+
+**Safety Guarantees**:
+- ✅ Zero unsafe code in generated output
+- ✅ All globals use `LazyLock<Mutex<T>>` (thread-safe)
+- ✅ Memory-safe (Rust ownership + borrow checker)
+- ✅ Data-race-free (Send/Sync trait enforcement)
+
+See [`docs/CONCURRENCY.md`](docs/CONCURRENCY.md) for comprehensive documentation.
 
 ## Installation
 
