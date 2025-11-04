@@ -2,7 +2,7 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [Unreleased]
+## [3.194.0] - 2025-11-04
 
 ### Fixed
 - **[CRITICAL]** Fixed double-locking deadlock in global variable assignments (Issue #132)
