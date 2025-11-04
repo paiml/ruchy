@@ -1501,7 +1501,7 @@ fn generate_dataflow_debug_interactive(
     track_memory: bool,
     compute_diffs: bool,
     sample_rate: f64,
-    refresh_interval: u64,
+    _refresh_interval: u64,
     start_mode: &str,
     use_color: bool,
     breakpoints: &[String],
