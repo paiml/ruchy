@@ -995,9 +995,11 @@ impl Transpiler {
                             }
                         };
 
-                        // Generate static mut declaration with explicit type
+                        // Generate thread-safe global using LazyLock<Mutex<T>>
+                        // Issue #132: NEVER generate unsafe code - use safe Rust abstractions
                         globals.push(quote! {
-                            static mut #var_name: #type_token = #value_tokens;
+                            static #var_name: std::sync::LazyLock<std::sync::Mutex<#type_token>> =
+                                std::sync::LazyLock::new(|| std::sync::Mutex::new(#value_tokens));
                         });
                     }
                 }
@@ -1370,12 +1372,8 @@ impl Transpiler {
 
         let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
 
-        // TRANSPILER-SCOPE: Wrap main body in unsafe if we have global variables
-        let main_body = if self.global_vars.read().unwrap().is_empty() {
-            quote! { #(#statements)* }
-        } else {
-            quote! { unsafe { #(#statements)* } }
-        };
+        // Issue #132: No unsafe wrapping needed - LazyLock<Mutex<T>> is thread-safe
+        let main_body = quote! { #(#statements)* };
 
         Ok(quote! {
             #use_statements
@@ -1467,12 +1465,8 @@ impl Transpiler {
         // TRANSPILER-SCOPE: Emit static mut globals at module level
         // No main function among extracted functions - create one for statements
 
-        // TRANSPILER-SCOPE: Wrap main body in unsafe if we have global variables
-        let main_body = if self.global_vars.read().unwrap().is_empty() {
-            quote! { #(#statements)* }
-        } else {
-            quote! { unsafe { #(#statements)* } }
-        };
+        // Issue #132: No unsafe wrapping needed - LazyLock<Mutex<T>> is thread-safe
+        let main_body = quote! { #(#statements)* };
 
         match (needs_polars, needs_hashmap) {
             (true, true) => Ok(quote! {

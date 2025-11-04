@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
-    pub(in crate::backend::transpiler) fn transpile_identifier(name: &str) -> TokenStream {
+    pub(in crate::backend::transpiler) fn transpile_identifier(&self, name: &str) -> TokenStream {
         // Check if this is a module path like "math::add"
         if name.contains("::") {
             // Split into module path components
@@ -44,7 +44,14 @@ impl Transpiler {
                 name.to_string()
             };
             let ident = format_ident!("{}", safe_name);
-            quote! { #ident }
+
+            // Issue #132: Check if this is a global variable (LazyLock<Mutex<T>>)
+            // If so, wrap with .lock().unwrap() dereference
+            if self.global_vars.read().unwrap().contains(name) {
+                quote! { *#ident.lock().unwrap() }
+            } else {
+                quote! { #ident }
+            }
         }
     }
 
@@ -61,8 +68,12 @@ impl Transpiler {
             .iter()
             .map(|type_arg| {
                 // Handle qualified type names like std::string::String
+                // Note: Type arguments in turbofish are never globals, so we can
+                // use a simple static transpilation here
                 if type_arg.contains("::") {
-                    Self::transpile_identifier(type_arg)
+                    // For type paths, we don't need global checking
+                    let ident = format_ident!("{}", type_arg);
+                    quote! { #ident }
                 } else {
                     let ident = format_ident!("{}", type_arg);
                     quote! { #ident }
