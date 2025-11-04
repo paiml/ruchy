@@ -11,8 +11,8 @@ metadata:
   current_work: "✅ COMPLETE - v3.194.0 shipped (Issue #132 + TRANSPILER-SCOPE), Friday-only release policy established"
   next_phase: "Development work continues, next crates.io publish: Friday 2025-11-08"
   benchmark_validation_status: "✅ 12/12 BENCHMARKS WORKING (100%) - All benchmarks validated with ruchydbg v1.24.0"
-  perf_002c_status: "⏸️ PAUSED - Core DCE working (7/10 tests), awaiting liveness analysis (70% complete)"
-  priority_rationale: "All 12 benchmarks working! Next: Continue JIT-002 or property/fuzz/mutation testing"
+  perf_002c_status: "⏸️ PAUSED - Core DCE working (9/12 tests passing = 75%), liveness analysis required for completion (~800 LOC, 3-5 days)"
+  priority_rationale: "All 12 benchmarks working! RECOMMENDATION: JIT-002 (50-100x gain) > PERF-002-C (5-15% size reduction)"
   benchmark_details:
     working:
       - "BENCH-001: File I/O ✅ (105KB, 16ms, ruchydbg validated)"
