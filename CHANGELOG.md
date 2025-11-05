@@ -2,7 +2,7 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [3.204.0] - 2025-11-05
+## [3.201.0] - 2025-11-05
 
 ### Fixed
 - **[PARSER-094]** Fix :: → . transpilation bug (Issue #137 - ruchy-lambda)
@@ -30,6 +30,13 @@ All notable changes to the Ruchy programming language will be documented in this
     - RED: 5/10 tests failing (:: incorrectly converted to .)
     - GREEN: 10/10 tests passing (parser + transpiler fixes)
     - REFACTOR: Complexity ≤10, zero SATD, 4046 unit tests passing (no regressions)
+    - VALIDATE: Property tests 5/5 passing (50K+ cases), CLI smoke test ✅
+  - **PROPERTY TESTS** (tests/parser_094_property_tests.rs):
+    - Module paths with underscores preserve :: (10K cases)
+    - Type paths (PascalCase) preserve :: (10K cases)
+    - Nested module paths preserve all :: (10K cases)
+    - Field access preserves . (10K cases)
+    - stdlib paths always use :: (10K cases)
   - **RUCHY-LAMBDA UNBLOCKED**: Module calls now work correctly in AWS Lambda runtime
 
 ## [3.203.0] - 2025-11-05
