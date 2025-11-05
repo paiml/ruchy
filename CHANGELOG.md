@@ -2,7 +2,7 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [3.208.0] - 2025-11-05
+## [3.209.0] - 2025-11-05
 
 ### Added
 - **[OPTIMIZATION-001]** NASA-grade compilation optimization presets
