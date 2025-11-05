@@ -675,9 +675,14 @@ impl Transpiler {
                     }
                 } else {
                     // Regular parameter
+                    // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
                     let param_ident = format_ident!("{}", param_name);
                     let type_tokens = self.transpile_type(&param.ty)?;
-                    Ok(quote! { #param_ident: #type_tokens })
+                    if param.is_mutable {
+                        Ok(quote! { mut #param_ident: #type_tokens })
+                    } else {
+                        Ok(quote! { #param_ident: #type_tokens })
+                    }
                 }
             })
             .collect()

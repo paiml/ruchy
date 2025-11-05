@@ -1156,7 +1156,12 @@ impl Transpiler {
                 } else {
                     self.infer_param_type(p, body, func_name)
                 };
-                Ok(quote! { #param_name: #type_tokens })
+                // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
+                if p.is_mutable {
+                    Ok(quote! { mut #param_name: #type_tokens })
+                } else {
+                    Ok(quote! { #param_name: #type_tokens })
+                }
             })
             .collect()
     }
@@ -1830,7 +1835,12 @@ impl Transpiler {
                 } else {
                     self.infer_param_type(p, body, func_name)
                 };
-                Ok(quote! { #param_name: #type_tokens })
+                // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
+                if p.is_mutable {
+                    Ok(quote! { mut #param_name: #type_tokens })
+                } else {
+                    Ok(quote! { #param_name: #type_tokens })
+                }
             })
             .collect()
     }
@@ -1912,6 +1922,17 @@ impl Transpiler {
         let mut modified_type_params = type_params.to_vec();
         if needs_lifetime {
             modified_type_params.insert(0, "'a".to_string());
+        }
+
+        // TRANSPILER-004 FIX: Track String-typed parameters for proper concat transpilation
+        // Before processing function body, register all String parameters in string_vars
+        // This enables is_definitely_string() to detect them for `a + b` → `format!()` or `a + &b`
+        for param in params {
+            if let TypeKind::Named(type_name) = &param.ty.kind {
+                if type_name == "String" {
+                    self.string_vars.borrow_mut().insert(param.name().to_string());
+                }
+            }
         }
 
         let param_tokens = if needs_lifetime {
@@ -2083,6 +2104,21 @@ impl Transpiler {
             if base_name == "len" && args.len() == 1 {
                 let arg_tokens = self.transpile_expr(&args[0])?;
                 return Ok(quote! { #arg_tokens.len() });
+            }
+            // TRANSPILER-006: time_micros() builtin (GitHub Issue #139)
+            // Transpile to: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as u64
+            if base_name == "time_micros" {
+                if !args.is_empty() {
+                    bail!("time_micros() expects no arguments");
+                }
+                return Ok(quote! {
+                    {
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .expect("System time before Unix epoch")
+                            .as_micros() as u64
+                    }
+                });
             }
             if let Some(result) = self.try_transpile_math_function(base_name, args)? {
                 return Ok(result);
