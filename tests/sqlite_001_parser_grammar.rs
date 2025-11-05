@@ -3764,7 +3764,7 @@ fn test_sqlite_366_trait_object_send_sync() {
 // ============================================================================
 
 #[test] fn test_sqlite_1367_test_simple() { assert_parses("#[test] fn test_foo() { }"); }
-#[test] fn test_sqlite_1368_test_ignore() { assert_parses("#[test] #[ignore = "fn test_foo() { }"); }"]
+#[test] fn test_sqlite_1368_test_ignore() { assert_parses("#[test] #[ignore = \"reason\"] fn test_foo() { }"); }
 #[test] fn test_sqlite_1369_test_should_panic() { assert_parses("#[test] #[should_panic] fn test_foo() { }"); }
 #[test] fn test_sqlite_1370_test_should_panic_msg() { assert_parses("#[test] #[should_panic(expected = \"panic\")] fn test_foo() { }"); }
 #[test] fn test_sqlite_1371_bench() { assert_parses("#[bench] fn bench_foo(b: &mut Bencher) { }"); }

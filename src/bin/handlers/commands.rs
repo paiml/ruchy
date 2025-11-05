@@ -1753,7 +1753,14 @@ mod tests {
     fn test_generate_provability_header() {
         let temp_file = create_temp_file_with_content("test").unwrap();
         let expr = create_test_expr();
-        let result = generate_provability_header(temp_file.path(), &expr);
+        let analysis = ProvabilityAnalysis {
+            verify: true,
+            contracts: true,
+            invariants: true,
+            termination: true,
+            bounds: true,
+        };
+        let result = generate_provability_header(temp_file.path(), &expr, analysis);
         assert!(result.contains("=== Provability Analysis ==="));
         assert!(result.contains("File:"));
         assert!(result.contains("Provability Score:"));
@@ -2058,7 +2065,14 @@ mod tests {
     #[test]
     fn test_calculate_provability_score() {
         let expr = create_test_expr();
-        let score = calculate_provability_score(&expr);
+        let analysis = ProvabilityAnalysis {
+            verify: true,
+            contracts: true,
+            invariants: true,
+            termination: true,
+            bounds: true,
+        };
+        let score = calculate_provability_score(&expr, analysis);
         assert!(score >= 0.0);
         assert!(score <= 100.0);
     }
