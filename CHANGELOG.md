@@ -2,6 +2,26 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.204.0] - 2025-11-05
+
+### Validated
+- **[PARSER-095]** Grouped imports already working (Issue #137 - ruchy-lambda)
+  - **DISCOVERY**: Grouped import syntax `use std::io::{Read, Write};` already fully functional
+  - **PURPOSE**: Added comprehensive test coverage to prevent regressions
+  - **TEST RESULTS**: 8/8 validation tests passing
+    - Basic grouped imports: `use std::io::{Read, Write}` ✅
+    - Collections grouped: `use std::collections::{HashMap, HashSet}` ✅
+    - Multiple sync types: `use std::sync::{Arc, Mutex, RwLock}` ✅
+    - Multiple grouped imports in same file ✅
+    - User module grouped imports ✅
+    - Mixed single and grouped imports ✅
+    - Issue #137 ruchy-lambda pattern ✅
+    - Single-item group optimization ✅ (smart: `{Read}` → `Read`)
+  - **FILES ADDED**:
+    - tests/parser_095_grouped_imports.rs (NEW, 318 LOC, 8 tests: 100% passing)
+  - **RUCHY-LAMBDA CONFIRMED**: All import patterns work correctly, no implementation needed
+  - **NOTE**: Feature pre-existed, adding test coverage per "if it's not tested, it's broken" principle
+
 ## [3.203.0] - 2025-11-05
 
 ### Fixed
