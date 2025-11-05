@@ -2400,7 +2400,11 @@ impl Transpiler {
             // including struct methods that return primitives (causing "i32 has no method cloned()" errors)
             // Generic get() methods will now use default transpilation without .cloned()
             // For HashMap.get() that needs .cloned(), users should explicitly call it or we need type inference
-            "contains_key" | "keys" | "values" | "entry" | "items" | "update" | "add" => {
+            // TRANSPILER-007 FIX: Removed "add" from this list - it was renaming ALL add() to insert()
+            // including user-defined methods (causing "no method named insert found" errors)
+            // User-defined add() methods will now use default transpilation without renaming
+            // For HashSet.add() that needs insert(), we need proper type inference
+            "contains_key" | "keys" | "values" | "entry" | "items" | "update" => {
                 self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
             }
             // Set operations (union, intersection, difference, symmetric_difference)
@@ -2493,10 +2497,8 @@ impl Transpiler {
                 // Python dict.update(other) -> Rust HashMap.extend(other)
                 Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) })
             }
-            "add" => {
-                // Python set.add(item) -> Rust HashSet.insert(item)
-                Ok(quote! { #obj_tokens.insert(#(#arg_tokens),*) })
-            }
+            // TRANSPILER-007: "add" removed - was causing user-defined add() to become insert()
+            // For HashSet.add(), we need proper type inference instead of hardcoded renaming
             _ => unreachable!(
                 "Non-map/set method {} passed to transpile_map_set_methods",
                 method

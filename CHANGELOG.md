@@ -40,6 +40,21 @@ All notable changes to the Ruchy programming language will be documented in this
   - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+14 LOC, builtin handler)
   - **FILES ADDED**: tests/transpiler_006_time_micros.rs (NEW, 168 LOC, 4 tests: 100% passing)
 
+- **[TRANSPILER-007]** Method name mangling - add() renamed to insert() (GitHub Issue #140, ruchy-lambda BLOCKER)
+  - **BUG**: `calc.add(5)` → `calc.insert(5)` - User-defined add() methods renamed to insert()
+  - **ROOT CAUSE**: "add" hardcoded in map/set methods list (line 2403), applied to ALL objects regardless of type
+  - **IMPACT**: CRITICAL BLOCKER - ruchy-lambda fails to compile (error[E0599]: no method named insert found)
+  - **FIX**: Removed "add" from hardcoded methods list (lines 2403-2409), removed add→insert handler (lines 2500-2501)
+  - **RATIONALE**: Same pattern as TRANSPILER-002 (get/cloned fix) - need type inference, not hardcoded renaming
+  - **VALIDATION**: ✅ 3/3 tests passing, Calculator.add() compiles and executes correctly
+  - **TEST RESULTS**: 3 tests added (tests/transpiler_007_method_mangling.rs)
+    - Calculator.add() not renamed to insert() ✅
+    - Multiple user-defined methods preserved ✅
+    - DataFrame.add() unaffected ✅
+  - **KNOWN LIMITATION**: HashSet.add() will NOT be renamed to insert() (needs type inference - future work)
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+8 LOC comments, -2 "add" entries)
+  - **FILES ADDED**: tests/transpiler_007_method_mangling.rs (NEW, 226 LOC, 3/4 tests passing, 1 ignored)
+
 ## [3.206.0] - 2025-11-05
 
 ### Fixed
