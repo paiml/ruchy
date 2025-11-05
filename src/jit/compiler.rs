@@ -53,7 +53,9 @@ struct CompileContext {
     functions: HashMap<String, cranelift_codegen::ir::FuncRef>,
     /// JIT-005: Current loop's merge block (for break statements)
     loop_merge_block: Option<cranelift_codegen::ir::Block>,
-    /// JIT-005: Track if current block is terminated (by break)
+    /// JIT-005B: Current loop's continue block (for continue statements)
+    loop_continue_block: Option<cranelift_codegen::ir::Block>,
+    /// JIT-005: Track if current block is terminated (by break/continue)
     block_terminated: bool,
 }
 
@@ -159,6 +161,7 @@ impl JitCompiler {
                 next_var: 0,
                 functions: func_refs,
                 loop_merge_block: None,
+                loop_continue_block: None,
                 block_terminated: false,
             };
 
@@ -253,6 +256,7 @@ impl JitCompiler {
                 next_var: 0,
                 functions: func_refs,
                 loop_merge_block: None,
+                loop_continue_block: None,
                 block_terminated: false,
             };
 
@@ -357,6 +361,11 @@ impl JitCompiler {
             // JIT-005: Break statement
             ExprKind::Break { .. } => {
                 Self::compile_break(builder, ctx)
+            }
+
+            // JIT-005B: Continue statement
+            ExprKind::Continue { .. } => {
+                Self::compile_continue(builder, ctx)
             }
 
             // JIT-005: Assignment (for loop variables)
@@ -566,7 +575,9 @@ impl JitCompiler {
 
         // Save previous loop context (for nested loops)
         let prev_loop = ctx.loop_merge_block;
+        let prev_continue = ctx.loop_continue_block;
         ctx.loop_merge_block = Some(merge_block);
+        ctx.loop_continue_block = Some(loop_block);
 
         // Jump to loop block
         builder.ins().jump(loop_block, &[]);
@@ -595,6 +606,7 @@ impl JitCompiler {
 
         // Restore previous loop context
         ctx.loop_merge_block = prev_loop;
+        ctx.loop_continue_block = prev_continue;
 
         // Loops return unit ()
         Ok(builder.ins().iconst(types::I64, 0))
@@ -602,8 +614,8 @@ impl JitCompiler {
 
     /// Compile for loop - complexity ≤10
     ///
-    /// Desugar: for i in start..end { body } →
-    ///   let mut i = start; while i < end { body; i = i + 1; }
+    /// Structure: loop_block → body_block → incr_block → loop_block
+    /// Continue jumps to incr_block (not loop_block) to ensure increment happens
     fn compile_for(
         builder: &mut FunctionBuilder,
         ctx: &mut CompileContext,
@@ -629,11 +641,14 @@ impl JitCompiler {
         // Create blocks for loop control flow
         let loop_block = builder.create_block();
         let body_block = builder.create_block();
+        let incr_block = builder.create_block(); // JIT-005B: Separate increment block for continue
         let merge_block = builder.create_block();
 
         // Save previous loop context (for nested loops)
         let prev_loop = ctx.loop_merge_block;
+        let prev_continue = ctx.loop_continue_block;
         ctx.loop_merge_block = Some(merge_block);
+        ctx.loop_continue_block = Some(incr_block); // JIT-005B: Continue jumps to increment
 
         // Jump to loop block
         builder.ins().jump(loop_block, &[]);
@@ -648,19 +663,24 @@ impl JitCompiler {
         };
         builder.ins().brif(cond, body_block, &[], merge_block, &[]);
 
-        // Body block: Execute body + increment
+        // Body block: Execute body
         builder.switch_to_block(body_block);
         builder.seal_block(body_block);
         Self::compile_expr(builder, ctx, body)?;
-        // Only continue if block isn't already terminated (e.g., by break)
+        // Jump to increment block if not already terminated
         if !ctx.block_terminated {
-            let current_val = builder.use_var(loop_var);
-            let one = builder.ins().iconst(types::I64, 1);
-            let next_val = builder.ins().iadd(current_val, one);
-            builder.def_var(loop_var, next_val);
-            builder.ins().jump(loop_block, &[]);
+            builder.ins().jump(incr_block, &[]);
         }
         ctx.block_terminated = false; // Reset for next block
+
+        // Increment block: i = i + 1, then loop back
+        builder.switch_to_block(incr_block);
+        builder.seal_block(incr_block);
+        let current_val = builder.use_var(loop_var);
+        let one = builder.ins().iconst(types::I64, 1);
+        let next_val = builder.ins().iadd(current_val, one);
+        builder.def_var(loop_var, next_val);
+        builder.ins().jump(loop_block, &[]);
 
         // Now seal loop_block (all predecessors known)
         builder.seal_block(loop_block);
@@ -671,6 +691,7 @@ impl JitCompiler {
 
         // Restore previous loop context
         ctx.loop_merge_block = prev_loop;
+        ctx.loop_continue_block = prev_continue;
 
         // Loops return unit ()
         Ok(builder.ins().iconst(types::I64, 0))
@@ -694,6 +715,27 @@ impl JitCompiler {
                 Ok(dummy)
             }
             None => Err(anyhow!("JIT-005: Break outside of loop")),
+        }
+    }
+
+    /// Compile continue statement - complexity ≤5
+    ///
+    /// Jump to current loop's continue target (loop header or increment)
+    fn compile_continue(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+    ) -> Result<Value> {
+        match ctx.loop_continue_block {
+            Some(continue_block) => {
+                // Create dummy value BEFORE terminating block
+                let dummy = builder.ins().iconst(types::I64, 0);
+                // Jump to continue block (terminates current block)
+                builder.ins().jump(continue_block, &[]);
+                // Mark block as terminated so caller doesn't try to add more instructions
+                ctx.block_terminated = true;
+                Ok(dummy)
+            }
+            None => Err(anyhow!("JIT-005B: Continue outside of loop")),
         }
     }
 
