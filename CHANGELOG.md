@@ -39,6 +39,36 @@ All notable changes to the Ruchy programming language will be documented in this
     - stdlib paths always use :: (10K cases)
   - **RUCHY-LAMBDA UNBLOCKED**: Module calls now work correctly in AWS Lambda runtime
 
+## [3.202.0] - 2025-11-05
+
+### Added
+- **[PARSER-093]** Module declaration support (Issue #137 - ruchy-lambda)
+  - **NEW FEATURES**:
+    - External module declarations: `mod http_client;` transpiles to `mod http_client;`
+    - Public module declarations: `pub mod api;` transpiles to `pub mod api;`
+    - Restricted visibility: `pub(crate) mod internal;` transpiles to `pub(crate) mod internal;`
+  - **FILES MODIFIED**:
+    - src/backend/transpiler/dispatcher.rs:449 (Added ModuleDeclaration case to transpile_misc_expr)
+    - src/backend/transpiler/dispatcher_helpers/identifiers.rs:114-143 (Added transpile_external_mod_declaration, complexity 3)
+    - src/frontend/parser/expressions_helpers/modules.rs:120-128 (Add pub attribute for module declarations)
+    - src/frontend/parser/expressions_helpers/visibility_modifiers.rs:43-73 (capture_visibility_scope returns args)
+    - src/frontend/parser/expressions_helpers/visibility_modifiers.rs:109-140 (parse_pub_module_declaration)
+    - tests/parser_093_mod_declarations.rs (NEW, 239 LOC, 8 tests: 7/7 passing, 1 ignored)
+  - **TEST RESULTS**:
+    - Simple mod declaration: ✅
+    - Public mod declaration: ✅
+    - pub(crate) mod declaration: ✅
+    - Multiple mod declarations: ✅
+    - mod with struct: ✅
+    - mod with use: ✅
+    - Issue #137 repro (ruchy-lambda pattern): ✅
+  - **EXTREME TDD**:
+    - RED: 7/7 tests failing (Unsupported expression kind: ModuleDeclaration)
+    - GREEN: 7/7 tests passing (parser + transpiler + visibility support)
+    - REFACTOR: Complexity ≤10 (transpile_external_mod_declaration: 3, capture_visibility_scope: 4), zero SATD
+    - VALIDATE: CLI smoke test ✅ (mod, pub mod, pub(crate) mod all working)
+  - **RUCHY-LAMBDA UNBLOCKED**: Can now compose Ruchy code with external Rust modules
+
 ## [3.203.0] - 2025-11-05
 
 ### Added

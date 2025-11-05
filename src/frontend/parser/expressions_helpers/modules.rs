@@ -29,7 +29,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Expr, ExprKind, Span};
+use crate::frontend::ast::{Attribute, Expr, ExprKind, Span};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 
@@ -118,7 +118,13 @@ fn parse_module_item(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
         }
         // DEFECT-PARSER-015 FIX: Allow pub mod
         Some((Token::Mod | Token::Module, _)) if is_pub => {
-            parse_module_declaration(state)
+            let mut expr = parse_module_declaration(state)?;
+            expr.attributes.push(Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+                span: expr.span,
+            });
+            Ok(expr)
         }
         _ if is_pub => {
             bail!("'pub' can only be used with function declarations, use statements, or module declarations")
