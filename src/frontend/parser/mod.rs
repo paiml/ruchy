@@ -1173,18 +1173,23 @@ fn is_valid_macro_call_syntax(state: &mut ParserState, name: &str) -> bool {
         next_after_bang,
         Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _))
     );
-    is_macro_call || name == "df"
+    is_macro_call || name == "df" || name == "vec"
 }
 
-/// Parse macro call based on type (complexity: 5, cognitive: 5)
+/// Parse macro call based on type (complexity: 6, cognitive: 6)
 fn parse_macro_call_by_type(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
     // Handle special dataframe macro
     if let Some(df_result) = try_parse_dataframe_macro(state, name)? {
         return Ok(Some(df_result));
     }
 
-    // Consume ! token for non-df macros
-    if name != "df" {
+    // PARSER-092: Handle vec![] macro (Issue #137 - ruchy-lambda)
+    if let Some(vec_result) = try_parse_vec_macro(state, name)? {
+        return Ok(Some(vec_result));
+    }
+
+    // Consume ! token for non-df/non-vec macros
+    if name != "df" && name != "vec" {
         state.tokens.advance();
     }
 
@@ -1201,6 +1206,16 @@ fn parse_macro_call_by_type(state: &mut ParserState, name: &str) -> Result<Optio
 fn try_parse_dataframe_macro(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
     if name == "df" {
         macro_parsing::parse_dataframe_macro(state)
+    } else {
+        Ok(None)
+    }
+}
+
+/// Try to parse vec![] macro (complexity: 2, cognitive: 2)
+/// PARSER-092: Support vec![expr; size] repeat pattern from Issue #137
+fn try_parse_vec_macro(state: &mut ParserState, name: &str) -> Result<Option<Expr>> {
+    if name == "vec" {
+        macro_parsing::parse_vec_macro(state)
     } else {
         Ok(None)
     }

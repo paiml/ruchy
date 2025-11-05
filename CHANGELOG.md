@@ -2,6 +2,45 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.203.0] - 2025-11-05
+
+### Added
+- **[PARSER-092]** vec![] macro syntax support (Issue #137 - ruchy-lambda)
+  - **NEW FEATURES**:
+    - Repeat pattern: `vec![0u8; 1024]` creates vector of 1024 zeros
+    - Element list: `vec![1, 2, 3]` creates vector from elements
+    - Empty vectors: `vec![]` creates empty vector
+    - Nested vectors: `vec![vec![0; 5]; 10]` creates 2D matrix
+    - Expression elements: `vec![x * 2, y + 1, z]` computes values
+  - **RUCHY-LAMBDA UNBLOCKED**:
+    - Issue #137 repeat pattern (`vec![expr; size]`) now works
+    - Byte buffer pattern: `let mut buffer = vec![0u8; 1024];` ✅
+    - HTTP client implementation in pure Ruchy enabled
+    - AWS Lambda runtime no longer needs verbose Vec::new() + push() loops
+  - **IMPLEMENTATION**:
+    - parse_vec_macro(): Handles both repeat and element list patterns
+    - Complexity: 9 (≤10), zero SATD
+    - Integration: Added to parse_macro_call_by_type via try_parse_vec_macro
+  - **FILES**:
+    - src/frontend/parser/macro_parsing.rs:156-212 (parse_vec_macro, 57 LOC, complexity 9)
+    - src/frontend/parser/mod.rs:1176 (Added "vec" to is_valid_macro_call_syntax)
+    - src/frontend/parser/mod.rs:1186-1189 (vec! check in parse_macro_call_by_type)
+    - src/frontend/parser/mod.rs:1214-1222 (try_parse_vec_macro helper, complexity 2)
+    - tests/parser_092_vec_macro.rs (NEW, 275 LOC, 17 tests: 100% passing)
+  - **TEST RESULTS**:
+    - Repeat patterns: 3/3 tests passing (u8, i32, literal)
+    - Element lists: 3/3 tests passing (simple, single, many)
+    - Expression elements: 3/3 tests passing (variables, computed, repeat)
+    - Empty vectors: 1/1 tests passing
+    - Nested vectors: 2/2 tests passing (simple, element lists)
+    - Integration: 3/3 tests passing (functions, arguments, Issue #137 repro)
+    - Edge cases: 2/2 tests passing (trailing comma, multiline)
+  - **EXTREME TDD**:
+    - RED: 7/17 tests failing (repeat pattern not supported)
+    - GREEN: 17/17 tests passing (0→17 in one implementation)
+    - REFACTOR: Complexity ≤10, zero SATD, proper documentation
+  - **RELATED TICKETS**: PARSER-093 (mod), PARSER-094 (::), PARSER-095 (use), PARSER-096 (stubs)
+
 ## [3.202.0] - 2025-11-05
 
 ### Added
