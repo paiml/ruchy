@@ -481,6 +481,6 @@ fn test_red_phase_validation() {
 
     println!("✅ RED Phase: 5 failing tests created");
     println!("✅ Property tests: 2 tests with 10K iterations each");
-    println!("🔴 Next: Remove #[ignore = "and watch tests FAIL");"]
+    println!("🔴 Next: Remove #[ignore] and watch tests FAIL");
     println!("🟢 Then: Implement ruchy serve to make tests PASS");
 }
