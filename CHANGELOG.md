@@ -33,6 +33,30 @@ All notable changes to the Ruchy programming language will be documented in this
   - **FILES ADDED**: tests/profiling_001_binary_profiling.rs (NEW, 8 tests: 100% passing)
 
 ### Fixed
+- **[TRANSPILER-TYPE-INFER-PARAMS + TRANSPILER-TYPE-INFER-EXPR]** Complete parameter type inference including expressions (property test driven)
+  - **BUG**: Functions returning parameter values defaulted to i32 instead of parameter's type
+  - **DISCOVERY**: Property-based testing suite (35K test cases) immediately found the bug
+  - **EXAMPLES**:
+    - Before: `fun a(a: f64) { let result = a; result }` → `fn a(a: f64) -> i32` (WRONG!)
+    - Before: `fun double(x: f64) { let result = x * 2.0; result }` → `fn double(x: f64) -> i32` (WRONG!)
+    - After: Both correctly emit `-> f64` ✅
+  - **ROOT CAUSE**: `has_non_unit_expression()` always returned `-> i32` without checking parameter types
+  - **FIX**: Added 4 new methods with recursive expression type inference (all ≤10 complexity)
+    1. `infer_return_type_from_params()` - Main inference logic
+    2. `get_final_expression()` - Drills through Let/Block wrappers
+    3. `trace_param_assignments()` - Tracks variable→parameter mappings (updated to handle expressions)
+    4. `infer_expr_type_from_params()` - Recursive expression type inference (NEW, complexity 6)
+  - **WHAT WORKS**: ✅ Direct parameter returns, ✅ Variable assignments, ✅ Binary expressions (x * 2.0), ✅ All types (f64, bool, str, i32, String)
+  - **VALIDATION**:
+    - ✅ 5/5 targeted tests passing (100%, including E2E compile+execute test)
+    - ✅ Property test passes (100 cases, was failing immediately before fix)
+    - ✅ No regressions
+  - **FILES MODIFIED**:
+    - src/backend/transpiler/statements.rs (+100 LOC: 4 new methods, 1 updated)
+  - **FILES ADDED**:
+    - tests/test_transpiler_type_infer_from_params.rs (NEW, 155 lines, 5 tests)
+    - tests/transpiler_property_comprehensive.rs (NEW, 467 lines, 35K test cases)
+
 - **[TRANSPILER-SCOPE-FIX]** Fix transpiler mutability across 23 modules (82 compilation errors)
   - **BUG**: TRANSPILER-009 changed `transpile()` signature to `&mut self`, but didn't update all call sites
   - **ROOT CAUSE**: Incomplete refactoring - 82 places still used `let transpiler =` instead of `let mut transpiler =`
