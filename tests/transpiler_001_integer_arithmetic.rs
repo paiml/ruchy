@@ -247,10 +247,9 @@ impl Counter {
     }
 }
 
-/// Test 7: String concatenation - KNOWN ISSUE (TRANSPILER-004)
-/// TODO: Separate bug - string concat generates `a + b` but needs `a + &b` or `format!()`
+/// Test 7: String concatenation - FIXED (TRANSPILER-004)
+/// Verifies that String + String uses format!() or proper borrowing
 #[test]
-#[ignore = "TRANSPILER-004: String concat needs proper borrowing (a + &b) or format!()"]
 fn test_transpiler_001_07_string_concat_uses_format() {
     let code = r#"
 pub fn concat(a: String, b: String) -> String {
@@ -284,10 +283,9 @@ pub fn concat(a: String, b: String) -> String {
     }
 }
 
-/// Test 8: Assignment with arithmetic - KNOWN ISSUE (TRANSPILER-005)
-/// TODO: Separate bug - `mut` keyword not preserved in parameter transpilation
+/// Test 8: Assignment with arithmetic - FIXED (TRANSPILER-005)
+/// Verifies that mut keyword is preserved in parameter transpilation
 #[test]
-#[ignore = "TRANSPILER-005: Mutable parameter keyword not preserved (mut value → value)"]
 fn test_transpiler_001_08_assignment_with_arithmetic() {
     let code = r#"
 pub fn increment_by(mut value: i32, amount: i32) -> i32 {

@@ -2,6 +2,44 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.207.0] - 2025-11-05
+
+### Fixed
+- **[TRANSPILER-004]** String parameter concatenation (requires borrowing)
+  - **BUG**: `a + b` (String + String params) → `a + b` but Rust requires `a + &b`
+  - **ROOT CAUSE**: String parameters not tracked in `string_vars`, so `is_definitely_string()` returned false
+  - **IMPACT**: String concatenation with parameters failed compilation (error[E0308]: expected &str, found String)
+  - **FIX**: Track String-typed parameters before processing function body (lines 1917-1926)
+  - **RATIONALE**: Register String params in `string_vars` to enable proper transpilation (`format!()` or `a + &b`)
+  - **VALIDATION**: ✅ Test 07 passes, rustc compilation successful
+  - **TEST RESULTS**: 7/7 passing (tests/transpiler_001_integer_arithmetic.rs)
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+10 LOC, String tracking logic)
+
+- **[TRANSPILER-005]** Mutable parameter keyword not preserved
+  - **BUG**: `mut value: i32` → `value: i32` (mut keyword lost during transpilation)
+  - **ROOT CAUSE**: `generate_param_tokens()` and `generate_param_tokens_with_lifetime()` didn't check `param.is_mutable`
+  - **IMPACT**: Parameters with `mut` fail compilation (error[E0384]: cannot assign to immutable argument)
+  - **FIX**: Added `if p.is_mutable` checks in TWO locations (lines 1160-1164, 1839-1843)
+  - **RATIONALE**: Preserve mutability semantics from Ruchy to Rust for parameter reassignment
+  - **VALIDATION**: ✅ Test 08 passes, rustc compilation successful
+  - **TEST RESULTS**: 8/8 passing (tests/transpiler_001_integer_arithmetic.rs)
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+10 LOC in two functions)
+
+- **[TRANSPILER-006]** time_micros() builtin not implemented (GitHub Issue #139)
+  - **BUG**: `time_micros()` passed through unchanged, causing `cannot find function` errors
+  - **ROOT CAUSE**: Missing builtin function transpilation handler
+  - **IMPACT**: CRITICAL - Docker integration blocked, fibonacci benchmarks fail (GitHub #139)
+  - **FIX**: Added handler at line 2110-2122: transpile to `SystemTime::now().duration_since(UNIX_EPOCH).as_micros() as u64`
+  - **RATIONALE**: Provides microsecond timing for benchmarking (similar to existing `std::time::now_millis()`)
+  - **VALIDATION**: ✅ 4/4 tests passing, rustc compilation successful, Docker examples unblocked
+  - **TEST RESULTS**: 4 tests added (tests/transpiler_006_time_micros.rs)
+    - Basic time_micros() call ✅
+    - Time difference (benchmarking pattern) ✅
+    - Fibonacci benchmark (GitHub #139 Docker example) ✅
+    - Multiple time_micros() calls ✅
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+14 LOC, builtin handler)
+  - **FILES ADDED**: tests/transpiler_006_time_micros.rs (NEW, 168 LOC, 4 tests: 100% passing)
+
 ## [3.206.0] - 2025-11-05
 
 ### Fixed
