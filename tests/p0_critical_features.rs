@@ -313,7 +313,7 @@ fn p0_transpiler_deterministic() {
     // Transpile twice
     let mut parser1 = Parser::new(code);
     let ast1 = parser1.parse().expect("Parse failed");
-    let transpiler1 = Transpiler::new();
+    let mut transpiler1 = Transpiler::new();
     let result1 = transpiler1
         .transpile(&ast1)
         .expect("Transpile failed")
@@ -321,7 +321,7 @@ fn p0_transpiler_deterministic() {
 
     let mut parser2 = Parser::new(code);
     let ast2 = parser2.parse().expect("Parse failed");
-    let transpiler2 = Transpiler::new();
+    let mut transpiler2 = Transpiler::new();
     let result2 = transpiler2
         .transpile(&ast2)
         .expect("Transpile failed")
