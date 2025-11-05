@@ -289,8 +289,9 @@ impl crate::Transpiler {
     /// let result = transpile_with_provenance(());
     /// assert_eq!(result, Ok(()));
     /// ```
+    /// TRANSPILER-009: Changed to &mut self to match transpile() signature
     pub fn transpile_with_provenance(
-        &self,
+        &mut self,
         expr: &crate::Expr,
     ) -> (
         Result<proc_macro2::TokenStream, anyhow::Error>,
