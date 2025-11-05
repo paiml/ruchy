@@ -178,7 +178,7 @@ mod property_tests {
         /// Property: Box::new(value) should preserve the value
         /// Invariant: Box is transparent - boxing and unboxing don't change values
         #[test]
-        #[ignore = Run with: cargo test --test runtime_box_operations -- --ignored
+        #[ignore = "Run with: cargo test --test runtime_box_operations -- --ignored"]
         fn prop_box_preserves_integer_values(n in -1000i64..1000i64) {
             let code = format!(
                 r"fn main() {{ let boxed = Box::new({n}); let value = *boxed; println(value); }}"
