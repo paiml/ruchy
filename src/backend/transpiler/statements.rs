@@ -872,6 +872,119 @@ impl Transpiler {
 
     /// Check if function body returns a boolean value (ISSUE-113)
     /// Detects: true, false, comparison expressions, return statements with booleans
+    /// TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
+    /// Returns `TokenStream` for return type if body returns a parameter value
+    /// Complexity: 9 (handles blocks, lets, identifiers, variable tracing)
+    fn infer_return_type_from_params(
+        &self,
+        body: &Expr,
+        params: &[Param],
+    ) -> Result<Option<proc_macro2::TokenStream>> {
+        use quote::quote;
+        use std::collections::HashMap;
+
+        // Build a map of variable -> parameter type by tracing let bindings
+        let mut var_to_param: HashMap<String, &Type> = HashMap::new();
+
+        // Helper: check if identifier is a parameter
+        let is_param = |name: &str| -> Option<&Type> {
+            params.iter().find(|p| p.name() == name).map(|p| &p.ty)
+        };
+
+        // Trace variable assignments in body
+        self.trace_param_assignments(body, &mut var_to_param, params);
+
+        // Extract final expression from body (handle nested Let/Block structures)
+        let final_expr = self.get_final_expression(body);
+
+        if let Some(expr) = final_expr {
+            if let ExprKind::Identifier(name) = &expr.kind {
+                // Check if it's directly a parameter
+                if let Some(param_type) = is_param(name) {
+                    let type_tokens = self.transpile_type(param_type)?;
+                    return Ok(Some(quote! { -> #type_tokens }));
+                }
+
+                // Check if it's a variable that was assigned from a parameter
+                if let Some(&param_type) = var_to_param.get(name) {
+                    let type_tokens = self.transpile_type(param_type)?;
+                    return Ok(Some(quote! { -> #type_tokens }));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Helper: Get the actual final expression, drilling through Let/Block wrappers
+    /// Complexity: 3 (simple recursive pattern matching)
+    fn get_final_expression<'a>(&self, expr: &'a Expr) -> Option<&'a Expr> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => {
+                exprs.last().and_then(|e| self.get_final_expression(e))
+            }
+            ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
+                self.get_final_expression(body)
+            }
+            _ => Some(expr),
+        }
+    }
+
+    /// Helper: Trace variable assignments to find which vars hold parameter values
+    /// Complexity: 6 (recursive traversal with simple matching)
+    fn trace_param_assignments<'a>(
+        &self,
+        expr: &Expr,
+        var_to_param: &mut std::collections::HashMap<String, &'a Type>,
+        params: &'a [Param],
+    ) {
+        match &expr.kind {
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.trace_param_assignments(e, var_to_param, params);
+                }
+            }
+            ExprKind::Let { name, value, body, .. } => {
+                // Check if value is a parameter (direct assignment)
+                if let ExprKind::Identifier(value_name) = &value.kind {
+                    if let Some(param) = params.iter().find(|p| &p.name() == value_name) {
+                        var_to_param.insert(name.clone(), &param.ty);
+                    }
+                }
+                // TRANSPILER-TYPE-INFER-EXPR: Check if value is an expression involving parameters
+                else if let Some(inferred_type) = self.infer_expr_type_from_params(value, params) {
+                    var_to_param.insert(name.clone(), inferred_type);
+                }
+                self.trace_param_assignments(body, var_to_param, params);
+            }
+            _ => {}
+        }
+    }
+
+    /// TRANSPILER-TYPE-INFER-EXPR: Infer type of expressions involving parameters
+    /// Recursively analyzes expressions to find parameter types
+    /// For Binary expressions, returns the type of the parameter operand
+    /// Complexity: 6 (recursive with 3 match arms)
+    fn infer_expr_type_from_params<'a>(
+        &self,
+        expr: &Expr,
+        params: &'a [Param],
+    ) -> Option<&'a Type> {
+        match &expr.kind {
+            // If expression is an identifier, check if it's a parameter
+            ExprKind::Identifier(name) => {
+                params.iter().find(|p| &p.name() == name).map(|p| &p.ty)
+            }
+            // For binary operations, recursively check operands
+            // If either operand is a parameter, assume result has that type
+            // (Works for numeric operations: f64 * f64 = f64, i32 + i32 = i32, etc.)
+            ExprKind::Binary { left, right, .. } => self
+                .infer_expr_type_from_params(left, params)
+                .or_else(|| self.infer_expr_type_from_params(right, params)),
+            _ => None,
+        }
+    }
+
     fn returns_boolean(&self, body: &Expr) -> bool {
         match &body.kind {
             // Direct boolean literals
@@ -1202,6 +1315,7 @@ impl Transpiler {
         name: &str,
         return_type: Option<&Type>,
         body: &Expr,
+        params: &[Param],
     ) -> Result<TokenStream> {
         use super::type_inference::infer_return_type_from_builtin_call;
 
@@ -1255,6 +1369,10 @@ impl Transpiler {
         // Object literals transpile to BTreeMap, not i32
         } else if self.returns_object_literal(body) {
             Ok(quote! { -> std::collections::BTreeMap<String, String> })
+        // TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
+        // Functions returning parameter values should use parameter's type, not default to i32
+        } else if let Some(return_ty) = self.infer_return_type_from_params(body, params)? {
+            Ok(return_ty)
         } else if self.has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
@@ -2002,7 +2120,7 @@ impl Transpiler {
         let return_type_tokens = if needs_lifetime {
             self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?
         } else {
-            self.generate_return_type_tokens(name, effective_return_type, body)?
+            self.generate_return_type_tokens(name, effective_return_type, body, params)?
         };
 
         let type_param_tokens = self.generate_type_param_tokens(&modified_type_params)?;
