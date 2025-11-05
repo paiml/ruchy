@@ -2,6 +2,46 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.208.0] - 2025-11-05
+
+### Fixed
+- **[TRANSPILER-009]** Standalone functions disappearing from transpiled output
+  - **BUG**: User-defined helper functions completely vanished, leaving only main()
+  - **ROOT CAUSE**: `transpile()` called `transpile_expr()` which wraps blocks in braces; aggressive inlining+DCE optimizations eliminated user functions
+  - **IMPACT**: CRITICAL - ruchy-lambda BLOCKED (helper functions missing from output)
+  - **FIX**: Changed to `transpile_to_program()`, disabled inlining+DCE for standalone functions
+  - **VALIDATION**: ✅ 3/3 tests passing, simple_handler.ruchy compiles and executes correctly
+  - **FILES MODIFIED**: src/backend/transpiler/mod.rs (+53 LOC, routing + optimization control)
+  - **FILES ADDED**: tests/transpiler_009_standalone_functions.rs (NEW, 3 tests: 100% passing)
+
+- **[TRANSPILER-011]** Nested field access using module path syntax (::) instead of field access (.)
+  - **BUG**: `event.requestContext.requestId` → `event.requestContext::requestId` (invalid Rust, parse error)
+  - **ROOT CAUSE**: Default heuristic assumed nested field access patterns are module paths
+  - **IMPACT**: CRITICAL - ruchy-lambda BLOCKED (transpilation fails with "expected `<`")
+  - **FIX**: Added `is_variable_chain()` heuristic to detect variables (lowercase, no underscore) vs modules/types
+  - **VALIDATION**: ✅ 3/3 tests passing, hello_world.ruchy and fibonacci.ruchy transpile successfully
+  - **FILES MODIFIED**: src/backend/transpiler/expressions_helpers/field_access.rs (+48 LOC, variable chain detection)
+  - **FILES ADDED**: tests/transpiler_011_nested_field_access.rs (NEW, 3 tests: 100% passing)
+
+- **[TRANSPILER-013]** Return type inference for object literals incorrect
+  - **BUG**: Functions returning object literals inferred as `-> i32` instead of `-> BTreeMap<String, String>`
+  - **ROOT CAUSE**: `has_non_unit_expression()` fallback returned `-> i32` for ALL non-unit expressions
+  - **IMPACT**: CRITICAL - ruchy-lambda BLOCKED (type mismatch: expected i32, found BTreeMap)
+  - **FIX**: Added `returns_object_literal()` helper, check before numeric fallback
+  - **VALIDATION**: ✅ fibonacci.ruchy and hello_world.ruchy have correct return types (BTreeMap not i32)
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+35 LOC, object literal detection)
+
+### Impact
+- **ruchy-lambda UNBLOCKED**: All transpiler bugs blocking AWS Lambda integration are fixed
+- Lambda handlers transpile correctly with explicit type annotations
+- Field access syntax is correct (`.` not `::`)
+- Return types are accurate (BTreeMap not i32)
+- Standalone functions preserved in output
+
+### Documentation
+- Added comprehensive bug fix summary: `docs/bugs/TRANSPILER-BUGS-FIXED-v3.208.0.md`
+- Includes workarounds, validation commands, and team communication guide
+
 ## [3.207.0] - 2025-11-05
 
 ### Fixed
