@@ -2,6 +2,31 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.205.0] - 2025-11-05
+
+### Fixed
+- **[QUALITY-001]** Method receiver preservation (&self, &mut self, self) (Issue #137 - ruchy-lambda)
+  - **BUG**: Transpiler transformed `&self` → `self`, causing move errors (error[E0382])
+  - **ROOT CAUSE**: `generate_param_tokens` and `transpile_impl` didn't handle Rust's special receiver syntax
+  - **IMPACT**: Methods with `&self` couldn't be called multiple times (ownership moved after first call)
+  - **FIX**: Special case detection for `self` receivers in THREE locations:
+    1. `src/backend/transpiler/statements.rs:1130` - `generate_param_tokens()`
+    2. `src/backend/transpiler/statements.rs:1806` - `generate_param_tokens_with_lifetime()`
+    3. `src/backend/transpiler/types.rs:888` - `transpile_impl()`
+  - **VALIDATION**: ✅ rustc compilation successful, all receiver types correct
+  - **TEST RESULTS**: 6 tests added (tests/quality_001_self_receiver.rs)
+    - `&self` immutable reference preserved ✅
+    - `&mut self` mutable reference preserved ✅
+    - `self` owned receiver preserved ✅
+    - Multiple `&self` calls work (no move errors) ✅
+    - Mixed receiver types in same impl ✅
+    - Issue #137 ruchy-lambda pattern fixed ✅
+  - **FILES MODIFIED**:
+    - src/backend/transpiler/statements.rs (+TypeKind import, +22 LOC in two functions)
+    - src/backend/transpiler/types.rs (+TypeKind import, +10 LOC in transpile_impl)
+  - **FILES ADDED**:
+    - tests/quality_001_self_receiver.rs (NEW, 288 LOC, 6 tests)
+
 ## [3.204.0] - 2025-11-05
 
 ### Validated
