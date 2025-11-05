@@ -11,7 +11,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // Type conversion is handled internally
     /// ```
     pub fn try_transpile_type_conversion_refactored(

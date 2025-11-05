@@ -1493,7 +1493,7 @@ mod tests {
             Some(builder.string("negative")),
         );
         // Should be able to transpile
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
@@ -1513,7 +1513,7 @@ mod tests {
             ],
         );
         // Should be able to transpile even though parser can't parse this
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
@@ -1536,7 +1536,7 @@ mod tests {
                 builder.match_arm(builder.pattern_wildcard(), None, builder.string("other")),
             ],
         );
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
@@ -1868,7 +1868,7 @@ mod tests {
     #[test]
     fn test_transpilation_integration_basic() {
         let builder = AstBuilder::new();
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test that all basic expressions can be transpiled
         let expressions = vec![
@@ -1888,7 +1888,7 @@ mod tests {
     #[test]
     fn test_transpilation_integration_complex() {
         let builder = AstBuilder::new();
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test complex expression: fibonacci-style recursive structure
         let complex_expr = builder.if_expr(
@@ -1914,7 +1914,7 @@ mod tests {
     #[test]
     fn test_transpilation_integration_collections() {
         let builder = AstBuilder::new();
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test collection transpilation
         let list_expr = builder.list(vec![builder.int(1), builder.int(2), builder.int(3)]);

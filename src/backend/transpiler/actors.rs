@@ -14,7 +14,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::StructField;
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let result = transpiler.transpile_actor("TestActor", &[], &[]);
     /// assert!(result.is_ok());
     /// ```
@@ -139,7 +139,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::Expr;
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let actor = Expr::literal(42.into());
     /// let message = Expr::literal("hello".into());
     /// let result = transpiler.transpile_send(&actor, &message);
@@ -159,7 +159,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::Expr;
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let actor = Expr::literal(42.into());
     /// let message = Expr::literal("hello".into());
     /// let result = transpiler.transpile_ask(&actor, &message);
@@ -192,7 +192,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::Expr;
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let command = Expr::literal("test_command".into());
     /// let result = transpiler.transpile_command(&command);
     /// assert!(result.is_ok());
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_transpile_simple_actor() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let handlers = vec![];
 
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_actor_with_state() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         use crate::frontend::ast::Visibility;
         let state = vec![StructField {
             name: "count".to_string(),
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_actor_with_simple_handler() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let handlers = vec![ActorHandler {
             message_type: "Reset".to_string(),
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_actor_with_parameterized_handler() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let params = vec![Param {
             pattern: Pattern::Identifier("value".to_string()),
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn test_actor_with_multiple_handlers() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let handlers = vec![
             ActorHandler {
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_transpile_send() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let actor = make_ident("my_actor");
         let message = make_ident("Message");
 
@@ -356,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_transpile_ask_with_timeout() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let actor = make_ident("my_actor");
         let message = make_ident("Query");
         let timeout = Some(make_literal(Literal::Integer(10, None)));
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_transpile_ask_without_timeout() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let actor = make_ident("my_actor");
         let message = make_ident("Query");
 
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_transpile_command() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let program = "echo";
         let args = vec!["hello".to_string(), "world".to_string()];
         let env = vec![];
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_transpile_command_no_args() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let program = "ls";
         let args = vec![];
         let env = vec![];
@@ -417,7 +417,7 @@ mod tests {
 
     #[test]
     fn test_actor_with_multiple_params() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let params = vec![
             Param {
@@ -449,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_actor_struct_generation() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![
             StructField {
                 name: "value".to_string(),
@@ -482,7 +482,7 @@ mod tests {
 
     #[test]
     fn test_actor_async_methods() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let handlers = vec![];
 
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_actor_channel_creation() {
-        let transpiler = make_transpiler();
+        let mut transpiler = make_transpiler();
         let state = vec![];
         let handlers = vec![];
 

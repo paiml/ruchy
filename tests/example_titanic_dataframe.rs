@@ -119,7 +119,7 @@ fn test_dataframe_method_name_mapping() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Failed to transpile");
     let rust_code = result.to_string();
 

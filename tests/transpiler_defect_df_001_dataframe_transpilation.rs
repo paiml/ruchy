@@ -48,7 +48,7 @@ fn test_df_003_rows_method_transpiles_to_height() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Failed to transpile");
     let rust_code = result.to_string();
 
@@ -75,7 +75,7 @@ fn test_df_003_columns_method_transpiles_to_width() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Failed to transpile");
     let rust_code = result.to_string();
 
@@ -173,7 +173,7 @@ mod property_tests {
             let parse_result = parser.parse();
 
             if let Ok(ast) = parse_result {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     transpiler.transpile(&ast)
                 }));

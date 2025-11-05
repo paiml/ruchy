@@ -221,7 +221,7 @@ fn test_transpiler_output_no_hashset() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     let rust_str = rust_code.to_string();
 

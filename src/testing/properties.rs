@@ -65,7 +65,7 @@ pub fn prop_recovery_parser_always_produces_ast(input: &str) -> Result<(), TestC
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCaseError> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     // Transpilation should either succeed or fail cleanly
     if let Ok(rust_code) = transpiler.transpile(expr) {
         // The generated Rust code should not be empty
@@ -90,7 +90,7 @@ pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCas
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), TestCaseError> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_string_interpolation(parts);
     // Should either succeed or fail cleanly, never panic
     if let Ok(tokens) = result {
@@ -124,7 +124,7 @@ pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), 
 pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
     // This would require a pretty-printer, which we'll implement later
     // For now, just check that we can transpile and the result is valid
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     if let Ok(rust_code) = transpiler.transpile(expr) {
         // Check that the Rust code contains expected elements based on expr type
         let code_str = rust_code.to_string();
@@ -171,7 +171,7 @@ pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn prop_well_typed_always_transpiles(expr: &Expr) -> Result<(), TestCaseError> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     // Check if this is a simple, well-typed expression
     if is_well_typed(expr) {
         match transpiler.transpile(expr) {
@@ -423,7 +423,7 @@ mod tests {
 
         for (i, parts) in test_cases.iter().enumerate() {
             println!("Testing case {i}: {parts:?}");
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let result = transpiler.transpile_string_interpolation(parts);
             match result {
                 Ok(tokens) => {
