@@ -560,35 +560,74 @@ pub fn handle_compile_command(
     file: &Path,
     output: PathBuf,
     opt_level: String,
+    optimize: Option<&str>,
     strip: bool,
     static_link: bool,
     target: Option<String>,
+    verbose: bool,
+    json_output: Option<&Path>,
 ) -> Result<()> {
     use colored::Colorize;
     use ruchy::backend::{compile_to_binary as backend_compile, CompileOptions};
     use std::fs;
+    use std::time::Instant;
+
     // Check if rustc is available
     if let Err(e) = ruchy::backend::compiler::check_rustc_available() {
         eprintln!("{} {}", "Error:".bright_red(), e);
         eprintln!("Please install Rust toolchain from https://rustup.rs/");
         return Err(e);
     }
-    println!("{} Compiling {}...", "→".bright_blue(), file.display());
-    let options = CompileOptions {
-        output,
-        opt_level,
-        strip,
-        static_link,
-        target,
-        rustc_flags: Vec::new(),
+
+    // OPTIMIZATION-001: Map high-level optimization presets to rustc flags
+    let (final_opt_level, final_strip, rustc_flags, optimization_info) = if let Some(level) = optimize {
+        apply_optimization_preset(level)?
+    } else {
+        // Use existing flags if no --optimize specified
+        (opt_level, strip, Vec::new(), None)
     };
+
+    println!("{} Compiling {}...", "→".bright_blue(), file.display());
+
+    if let Some((opt_name, lto_mode, target_cpu)) = &optimization_info {
+        println!("{} Optimization level: {}", "ℹ".bright_blue(), opt_name);
+        if let Some(lto) = lto_mode {
+            println!("{} LTO: {}", "ℹ".bright_blue(), lto);
+        }
+        if let Some(cpu) = target_cpu {
+            println!("{} target-cpu: {}", "ℹ".bright_blue(), cpu);
+        }
+    }
+
+    // Verbose output: show all optimization flags
+    if verbose && !rustc_flags.is_empty() {
+        println!("{} Optimization flags:", "ℹ".bright_blue());
+        for flag in &rustc_flags {
+            println!("  {}", flag);
+        }
+    }
+
+    let compile_start = Instant::now();
+
+    let options = CompileOptions {
+        output: output.clone(),
+        opt_level: final_opt_level.clone(),
+        strip: final_strip,
+        static_link,
+        target: target.clone(),
+        rustc_flags,
+    };
+
     match backend_compile(file, &options) {
         Ok(binary_path) => {
+            let compile_time = compile_start.elapsed();
+
             println!(
                 "{} Successfully compiled to: {}",
                 "✓".bright_green(),
                 binary_path.display()
             );
+
             // Make the binary executable on Unix
             #[cfg(unix)]
             {
@@ -597,17 +636,162 @@ pub fn handle_compile_command(
                 perms.set_mode(0o755);
                 fs::set_permissions(&binary_path, perms)?;
             }
+
+            let binary_size = fs::metadata(&binary_path)?.len();
             println!(
                 "{} Binary size: {} bytes",
                 "ℹ".bright_blue(),
-                fs::metadata(&binary_path)?.len()
+                binary_size
             );
+
+            // JSON output for CI/CD integration
+            if let Some(json_path) = json_output {
+                generate_compilation_json(
+                    json_path,
+                    file,
+                    &binary_path,
+                    optimize,
+                    binary_size,
+                    compile_time.as_millis(),
+                    &optimization_info,
+                    &options,
+                )?;
+                println!("{} JSON report: {}", "ℹ".bright_blue(), json_path.display());
+            }
         }
         Err(e) => {
             eprintln!("{} Compilation failed: {}", "✗".bright_red(), e);
             return Err(e);
         }
     }
+    Ok(())
+}
+
+/// Apply optimization preset and return (opt_level, strip, rustc_flags, info)
+fn apply_optimization_preset(
+    level: &str,
+) -> Result<(String, bool, Vec<String>, Option<(String, Option<String>, Option<String>)>)> {
+    use anyhow::bail;
+
+    match level {
+        "none" => {
+            // Debug mode: opt-level=0, no optimizations
+            Ok((
+                "0".to_string(),
+                false,
+                vec![],
+                Some(("none".to_string(), None, None)),
+            ))
+        }
+        "balanced" => {
+            // Balanced: opt-level=2, thin LTO for reasonable compile times
+            Ok((
+                "2".to_string(),
+                false,
+                vec!["-C".to_string(), "lto=thin".to_string()],
+                Some(("balanced".to_string(), Some("thin".to_string()), None)),
+            ))
+        }
+        "aggressive" => {
+            // Aggressive: opt-level=3, fat LTO, single codegen unit, strip symbols
+            Ok((
+                "3".to_string(),
+                true,
+                vec![
+                    "-C".to_string(),
+                    "lto=fat".to_string(),
+                    "-C".to_string(),
+                    "codegen-units=1".to_string(),
+                    "-C".to_string(),
+                    "strip=symbols".to_string(),
+                ],
+                Some(("aggressive".to_string(), Some("fat".to_string()), None)),
+            ))
+        }
+        "nasa" => {
+            // NASA-grade: opt-level=3, fat LTO, single codegen unit, strip,
+            // target-cpu=native, embed-bitcode
+            Ok((
+                "3".to_string(),
+                true,
+                vec![
+                    "-C".to_string(),
+                    "lto=fat".to_string(),
+                    "-C".to_string(),
+                    "codegen-units=1".to_string(),
+                    "-C".to_string(),
+                    "strip=symbols".to_string(),
+                    "-C".to_string(),
+                    "target-cpu=native".to_string(),
+                    "-C".to_string(),
+                    "embed-bitcode=yes".to_string(),
+                    "-C".to_string(),
+                    "opt-level=3".to_string(),
+                ],
+                Some((
+                    "nasa".to_string(),
+                    Some("fat".to_string()),
+                    Some("native".to_string()),
+                )),
+            ))
+        }
+        _ => {
+            bail!(
+                "Invalid optimization level: {}\nValid levels: none, balanced, aggressive, nasa",
+                level
+            );
+        }
+    }
+}
+
+/// Generate JSON compilation report
+fn generate_compilation_json(
+    json_path: &Path,
+    source_file: &Path,
+    binary_path: &Path,
+    optimization_level: Option<&str>,
+    binary_size: u64,
+    compile_time_ms: u128,
+    optimization_info: &Option<(String, Option<String>, Option<String>)>,
+    options: &ruchy::backend::CompileOptions,
+) -> Result<()> {
+    use std::fs;
+
+    let mut json = String::from("{\n");
+    json.push_str(&format!("  \"source_file\": \"{}\",\n", source_file.display()));
+    json.push_str(&format!("  \"binary_path\": \"{}\",\n", binary_path.display()));
+    json.push_str(&format!(
+        "  \"optimization_level\": \"{}\",\n",
+        optimization_level.unwrap_or("custom")
+    ));
+    json.push_str(&format!("  \"binary_size\": {},\n", binary_size));
+    json.push_str(&format!("  \"compile_time_ms\": {},\n", compile_time_ms));
+
+    json.push_str("  \"optimization_flags\": {\n");
+    json.push_str(&format!("    \"opt_level\": \"{}\",\n", options.opt_level));
+    json.push_str(&format!("    \"strip\": {},\n", options.strip));
+    json.push_str(&format!("    \"static_link\": {},\n", options.static_link));
+
+    if let Some((_, lto, target_cpu)) = optimization_info {
+        if let Some(lto_mode) = lto {
+            json.push_str(&format!("    \"lto\": \"{}\",\n", lto_mode));
+        }
+        if let Some(cpu) = target_cpu {
+            json.push_str(&format!("    \"target_cpu\": \"{}\",\n", cpu));
+        }
+    }
+
+    // Remove trailing comma
+    if json.ends_with(",\n") {
+        json.pop();
+        json.pop();
+        json.push('\n');
+    }
+
+    json.push_str("  }\n");
+    json.push_str("}\n");
+
+    fs::write(json_path, json)?;
     Ok(())
 }
 /// Handle check command - check syntax of one or more Ruchy files

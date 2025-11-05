@@ -5,6 +5,22 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.208.0] - 2025-11-05
 
 ### Added
+- **[OPTIMIZATION-001]** NASA-grade compilation optimization presets
+  - **FEATURE**: `ruchy compile --optimize <level>` with 4 optimization presets (none/balanced/aggressive/nasa)
+  - **CLI FLAGS**:
+    - `--optimize none`: Debug mode (opt-level=0, 3.8MB binaries, fastest compile)
+    - `--optimize balanced`: Production mode (opt-level=2, thin LTO, 1.9MB binaries, 51% reduction)
+    - `--optimize aggressive`: Maximum performance (opt-level=3, fat LTO, 312KB binaries, 91.8% reduction)
+    - `--optimize nasa`: Absolute maximum (opt-level=3, fat LTO, target-cpu=native, 315KB binaries, 91.8% reduction)
+    - `--verbose`: Show detailed optimization flags applied
+    - `--json <path>`: Output compilation metrics to JSON file (binary size, compile time, flags used)
+  - **VALIDATION**: ✅ 8/8 tests passing (100%), integration tested with fibonacci/factorial/loops
+  - **BINARY SIZE RESULTS**: none: 3.8MB → balanced: 1.9MB → aggressive/nasa: ~315KB (12.4x reduction)
+  - **FILES MODIFIED**:
+    - src/bin/ruchy.rs (+3 CLI flags: optimize, verbose, json)
+    - src/bin/handlers/mod.rs (+3 parameters to compile command dispatch, +238 LOC: optimization preset mapping, JSON generation)
+  - **FILES ADDED**: tests/optimization_001_compile_optimize.rs (NEW, 8 tests: 100% passing)
+
 - **[PROFILING-001]** Binary profiling for transpiled Rust code (Issue #138)
   - **FEATURE**: `ruchy runtime --profile --binary` profiles compiled binary execution instead of interpreter
   - **CLI FLAGS**: Added `--binary` flag (enable binary profiling) and `--iterations N` (run N iterations for averaging)

@@ -123,6 +123,9 @@ enum Commands {
         /// Optimization level (0-3, or 's' for size)
         #[arg(short = 'O', long, default_value = "2")]
         opt_level: String,
+        /// High-level optimization preset (OPTIMIZATION-001)
+        #[arg(long)]
+        optimize: Option<String>,
         /// Strip debug symbols
         #[arg(long)]
         strip: bool,
@@ -132,6 +135,12 @@ enum Commands {
         /// Target triple (e.g., x86_64-unknown-linux-gnu)
         #[arg(long)]
         target: Option<String>,
+        /// Show verbose compilation details
+        #[arg(long)]
+        verbose: bool,
+        /// Output compilation metrics to JSON file
+        #[arg(long)]
+        json: Option<PathBuf>,
     },
     /// Check syntax without running
     Check {
@@ -891,10 +900,13 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: Vm
             file,
             output,
             opt_level,
+            optimize,
             strip,
             static_link,
             target,
-        }) => handle_compile_command(&file, output, opt_level, strip, static_link, target),
+            verbose,
+            json,
+        }) => handle_compile_command(&file, output, opt_level, optimize.as_deref(), strip, static_link, target, verbose, json.as_deref()),
         Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
         Some(Commands::Test {
             path,
@@ -1228,9 +1240,12 @@ mod tests {
             file: temp_file.path().to_path_buf(),
             output: PathBuf::from("test.out"),
             opt_level: "2".to_string(),
+            optimize: None,
             strip: false,
             static_link: false,
             target: None,
+            verbose: false,
+            json: None,
         };
         let result = handle_advanced_command(command);
         assert!(result.is_ok());
