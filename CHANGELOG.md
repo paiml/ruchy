@@ -55,6 +55,21 @@ All notable changes to the Ruchy programming language will be documented in this
   - **FILES MODIFIED**: src/backend/transpiler/statements.rs (+8 LOC comments, -2 "add" entries)
   - **FILES ADDED**: tests/transpiler_007_method_mangling.rs (NEW, 226 LOC, 3/4 tests passing, 1 ignored)
 
+- **[PARSER-008]** pub visibility lost (pub fun → fn) - (GitHub Issue #140, ruchy-lambda BLOCKER)
+  - **BUG**: `pub fun new()` → `fn new()` - pub keyword discarded in impl method parsing
+  - **ROOT CAUSE**: Parser checks for `pub` (line 170-172) but doesn't store the flag, hardcodes `is_pub: false` (line 235)
+  - **IMPACT**: CRITICAL BLOCKER - Library methods not accessible (private by default), breaks ruchy-lambda public API
+  - **FIX**: Capture `is_pub` flag when parsing (lines 171-176), pass to `parse_impl_method()` (line 183), use instead of hardcoded false (line 242)
+  - **RATIONALE**: Transpiler already had correct logic (lines 927-931 in types.rs), parser was the bug
+  - **VALIDATION**: ✅ 4/4 tests passing, Calculator library compiles with pub methods visible
+  - **TEST RESULTS**: 4 tests added (tests/transpiler_008_pub_visibility.rs)
+    - pub fun → pub fn preserved ✅
+    - Mixed pub/private visibility ✅
+    - Default private visibility ✅
+    - Calculator example (ruchy-lambda) ✅
+  - **FILES MODIFIED**: src/frontend/parser/expressions_helpers/impls.rs (+8 LOC, 3 locations changed)
+  - **FILES ADDED**: tests/transpiler_008_pub_visibility.rs (NEW, 206 LOC, 4 tests: 100% passing)
+
 ## [3.206.0] - 2025-11-05
 
 ### Fixed
