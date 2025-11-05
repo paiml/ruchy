@@ -57,6 +57,8 @@ struct CompileContext {
     loop_continue_block: Option<cranelift_codegen::ir::Block>,
     /// JIT-005: Track if current block is terminated (by break/continue)
     block_terminated: bool,
+    /// JIT-007: Track tuple sizes (varname → element_count)
+    tuple_sizes: HashMap<String, usize>,
 }
 
 impl JitCompiler {
@@ -163,6 +165,7 @@ impl JitCompiler {
                 loop_merge_block: None,
                 loop_continue_block: None,
                 block_terminated: false,
+                tuple_sizes: HashMap::new(),
             };
 
             // Compile expression
@@ -258,6 +261,7 @@ impl JitCompiler {
                 loop_merge_block: None,
                 loop_continue_block: None,
                 block_terminated: false,
+                tuple_sizes: HashMap::new(),
             };
 
             // Map parameters to Cranelift variables
@@ -371,6 +375,16 @@ impl JitCompiler {
             // JIT-005: Assignment (for loop variables)
             ExprKind::Assign { target, value } => {
                 Self::compile_assign(builder, ctx, target, value)
+            }
+
+            // JIT-007: Tuple literals
+            ExprKind::Tuple(elements) => {
+                Self::compile_tuple(builder, ctx, elements)
+            }
+
+            // JIT-007: Field access (tuple.0, tuple.1, etc.)
+            ExprKind::FieldAccess { object, field } => {
+                Self::compile_field_access(builder, ctx, object, field)
             }
 
             // JIT-002: Not yet implemented - fall back to error
@@ -859,17 +873,31 @@ impl JitCompiler {
         value: &Expr,
         body: &Expr,
     ) -> Result<Value> {
-        // Compile the value expression
-        let init_value = Self::compile_expr(builder, ctx, value)?;
+        // JIT-007: Check if value is a tuple literal
+        if let ExprKind::Tuple(elements) = &value.kind {
+            // Compile tuple elements directly into named variables
+            for (i, elem) in elements.iter().enumerate() {
+                let elem_value = Self::compile_expr(builder, ctx, elem)?;
+                let elem_var = builder.declare_var(types::I64);
+                builder.def_var(elem_var, elem_value);
+                let elem_name = format!("{}${}", name, i);
+                ctx.variables.insert(elem_name, elem_var);
+            }
+            // Track tuple size
+            ctx.tuple_sizes.insert(name.to_string(), elements.len());
 
-        // Create a Cranelift variable
-        let var = builder.declare_var(types::I64);
-
-        // Define the variable with initial value
-        builder.def_var(var, init_value);
-
-        // Store variable in context for future lookups (persists for rest of block)
-        ctx.variables.insert(name.to_string(), var);
+            // Still create a dummy variable for the tuple itself
+            let var = builder.declare_var(types::I64);
+            let dummy = builder.ins().iconst(types::I64, 0);
+            builder.def_var(var, dummy);
+            ctx.variables.insert(name.to_string(), var);
+        } else {
+            // Standard let binding
+            let init_value = Self::compile_expr(builder, ctx, value)?;
+            let var = builder.declare_var(types::I64);
+            builder.def_var(var, init_value);
+            ctx.variables.insert(name.to_string(), var);
+        }
 
         // Compile the body expression (usually Unit in block-level let bindings)
         let result = Self::compile_expr(builder, ctx, body)?;
@@ -923,6 +951,82 @@ impl JitCompiler {
         // Get return value (first result of call)
         let results = builder.inst_results(call_inst);
         Ok(results[0])
+    }
+
+    /// Compile tuple literal - complexity ≤5
+    ///
+    /// Strategy: Store tuple elements as separate variables with naming scheme
+    /// Returns a "tuple handle" (index into a conceptual tuple table)
+    fn compile_tuple(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        elements: &[Expr],
+    ) -> Result<Value> {
+        if elements.is_empty() {
+            return Err(anyhow!("JIT-007: Empty tuples not supported"));
+        }
+
+        // Generate unique tuple ID based on next_var
+        let tuple_id = ctx.next_var;
+        ctx.next_var += 1;
+        let tuple_name = format!("$tuple{}", tuple_id);
+
+        // Compile and store each element
+        for (i, elem) in elements.iter().enumerate() {
+            let elem_value = Self::compile_expr(builder, ctx, elem)?;
+            let elem_var = builder.declare_var(types::I64);
+            builder.def_var(elem_var, elem_value);
+            let elem_name = format!("{}${}", tuple_name, i);
+            ctx.variables.insert(elem_name, elem_var);
+        }
+
+        // Track tuple size for field access
+        ctx.tuple_sizes.insert(tuple_name.clone(), elements.len());
+        ctx.variables.insert(tuple_name.clone(), builder.declare_var(types::I64));
+
+        // Return tuple ID as handle
+        Ok(builder.ins().iconst(types::I64, tuple_id as i64))
+    }
+
+    /// Compile field access (tuple.0, tuple.1, etc.) - complexity ≤5
+    fn compile_field_access(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        object: &Expr,
+        field: &str,
+    ) -> Result<Value> {
+        // Parse field index
+        let field_idx: usize = field.parse()
+            .map_err(|_| anyhow!("JIT-007: Field must be numeric index: {}", field))?;
+
+        // For tuple access, object must be an identifier
+        if let ExprKind::Identifier(var_name) = &object.kind {
+            // Check if this is a tuple variable
+            if let Some(&tuple_size) = ctx.tuple_sizes.get(var_name) {
+                if field_idx >= tuple_size {
+                    return Err(anyhow!("JIT-007: Tuple index {} out of bounds (size {})", field_idx, tuple_size));
+                }
+                let elem_name = format!("{}${}", var_name, field_idx);
+                if let Some(&var) = ctx.variables.get(&elem_name) {
+                    return Ok(builder.use_var(var));
+                }
+            }
+
+            // Try looking up as tuple handle (for inline tuples)
+            let tuple_handle = Self::compile_expr(builder, ctx, object)?;
+            // Extract tuple ID from handle
+            // For now, we'll use a simple approach: inline tuples store directly
+            let tuple_id = tuple_handle; // This will be the iconst value
+            let tuple_name = format!("$tuple{}", tuple_id);
+            let elem_name = format!("{}${}", tuple_name, field_idx);
+            if let Some(&var) = ctx.variables.get(&elem_name) {
+                return Ok(builder.use_var(var));
+            }
+
+            Err(anyhow!("JIT-007: Variable '{}' is not a tuple", var_name))
+        } else {
+            Err(anyhow!("JIT-007: Field access only supported on identifiers"))
+        }
     }
 
     /// Get a fresh Cranelift variable ID

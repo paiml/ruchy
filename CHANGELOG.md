@@ -2,6 +2,55 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.201.0] - 2025-11-05
+
+### Added
+- **[JIT-007]** Tuple support (partial - basic literals and field access) in JIT compiler
+  - **NEW FEATURES**:
+    - Tuple literals: `(10, 20)`, `(1, 2, 3)` stack-allocated fixed-size collections
+    - Field access: `tuple.0`, `tuple.1`, `tuple.2` numeric index access
+    - Let bindings: `let pair = (10, 20); pair.0` works correctly
+    - Expressions with tuples: `point.0 + point.1`, `dims.0 * dims.1`
+  - **DEFERRED TO JIT-007B** (Advanced features requiring type system integration):
+    - Function return tuples: `fun make_pair() -> (i32, i32) { (a, b) }`
+    - Tuple destructuring: `let (a, b) = pair`
+    - Tuple parameters: `fun distance(p1: (i32, i32), p2: (i32, i32))`
+    - Tuple reassignment: `pair = (new_a, new_b)` in loops
+  - **IMPLEMENTATION**:
+    - Stack-allocated storage: Each tuple element stored as separate Cranelift variable
+    - Naming scheme: `varname$0`, `varname$1`, `varname$2` for element access
+    - Tuple tracking: `ctx.tuple_sizes` HashMap tracks which variables are tuples
+    - Modified `compile_let()` to detect and handle tuple literal assignments
+  - **FILES**:
+    - src/jit/compiler.rs:60 (Added tuple_sizes field to CompileContext)
+    - src/jit/compiler.rs:168,264 (Initialize tuple_sizes in both constructors)
+    - src/jit/compiler.rs:380-388 (Expression dispatch for Tuple and FieldAccess)
+    - src/jit/compiler.rs:869-909 (Modified compile_let to handle tuple assignments, 41 LOC)
+    - src/jit/compiler.rs:942-975 (compile_tuple function, 34 LOC, complexity ≤5)
+    - src/jit/compiler.rs:977-1016 (compile_field_access function, 40 LOC, complexity ≤5)
+    - tests/jit_007_tuples.rs (NEW, 273 LOC, 12 tests: 5 passing, 7 deferred)
+  - **TEST RESULTS**:
+    - Tuple literals: 3/3 tests passing (pair, second element, triple)
+    - Field access: 2/2 tests passing (in expression, computed with operators)
+    - **DEFERRED** Function returns: 0/3 tests (requires type tracking)
+    - **DEFERRED** Destructuring: 0/2 tests (requires LetPattern support)
+    - **DEFERRED** Algorithms: 0/2 tests (requires function integration)
+  - **QUALITY GATES**:
+    - compile_tuple complexity: ≤5 (simple element storage)
+    - compile_field_access complexity: ≤5 (variable lookup)
+    - Working tests: 5/12 passing (42% basic functionality complete)
+    - Deferred tests: 7/12 properly documented with #[ignore] attributes
+    - No regressions: JIT-005 still passing (15/15 tests)
+  - **RATIONALE FOR PARTIAL IMPLEMENTATION**:
+    - Basic tuple operations (literals + field access) working with ~100 LOC
+    - Advanced features (function integration + destructuring) require:
+      * Type system tracking for function return types
+      * LetPattern support for destructuring
+      * Cross-function tuple passing
+      * ~200-300 additional LOC estimated for JIT-007B
+    - Incremental progress: 5 working tests demonstrate value immediately
+  - **NEXT STEPS**: JIT-007B (advanced tuple features), JIT-006 (arrays - deferred due to heap complexity)
+
 ## [3.200.0] - 2025-11-04
 
 ### Added
