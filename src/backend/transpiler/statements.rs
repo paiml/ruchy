@@ -2359,8 +2359,12 @@ impl Transpiler {
             "map" | "filter" | "reduce" => {
                 self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
             }
-            // HashMap/HashSet methods (get, contains_key, items, etc.)
-            "get" | "contains_key" | "keys" | "values" | "entry" | "items" | "update" | "add" => {
+            // HashMap/HashSet methods (contains_key, items, etc.)
+            // TRANSPILER-002 FIX: Removed "get" from this list - it was adding .cloned() to ALL get() methods
+            // including struct methods that return primitives (causing "i32 has no method cloned()" errors)
+            // Generic get() methods will now use default transpilation without .cloned()
+            // For HashMap.get() that needs .cloned(), users should explicitly call it or we need type inference
+            "contains_key" | "keys" | "values" | "entry" | "items" | "update" | "add" => {
                 self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
             }
             // Set operations (union, intersection, difference, symmetric_difference)
@@ -2432,7 +2436,8 @@ impl Transpiler {
             _ => unreachable!("Non-iterator method passed to transpile_iterator_methods"),
         }
     }
-    /// Handle HashMap/HashSet methods: get, `contains_key`, items, etc.
+    /// Handle HashMap/HashSet methods: `contains_key`, items, etc.
+    /// TRANSPILER-002 FIX: Removed "get" case - was causing .cloned() on all get() methods
     fn transpile_map_set_methods(
         &self,
         obj_tokens: &TokenStream,
@@ -2441,10 +2446,6 @@ impl Transpiler {
         arg_tokens: &[TokenStream],
     ) -> Result<TokenStream> {
         match method {
-            "get" => {
-                // HashMap.get() returns Option<&V>, but we want owned values
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*).cloned() })
-            }
             "contains_key" | "keys" | "values" | "entry" | "contains" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }

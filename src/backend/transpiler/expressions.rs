@@ -480,9 +480,13 @@ impl Transpiler {
                 // Check if this identifier is a known string variable (not just any mutable var)
                 self.string_vars.borrow().contains(name.as_str())
             }
-            // DEFECT-016 FIX: Field access MIGHT be a String field - be less conservative
-            // Assume field access could be String (let Rust type system catch errors if not)
-            ExprKind::FieldAccess { .. } => true,
+            // TRANSPILER-001 FIX: Field access is NOT definitely a string
+            // We cannot determine field types without full type inference
+            // Conservative approach: assume numeric unless proven otherwise
+            // This allows `self.value + amount` (i32 + i32) to use arithmetic operators
+            // If both operands are actually Strings, Rust compiler will error on `+` operator
+            // (which would require `.to_string()` or format!() explicitly in source code)
+            ExprKind::FieldAccess { .. } => false,
             // Function calls are NOT definitely strings - they could return any type
             ExprKind::Call { .. } => false,
             // Other expressions are not strings

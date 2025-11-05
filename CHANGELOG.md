@@ -2,6 +2,29 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.206.0] - 2025-11-05
+
+### Fixed
+- **[TRANSPILER-001]** Integer arithmetic broken (field access treated as strings)
+  - **BUG**: `self.value + amount` (i32 + i32) transpiled to `format!("{}{}", self.value, &amount)` causing type mismatch
+  - **ROOT CAUSE**: `is_definitely_string()` returned `true` for ALL `FieldAccess` expressions (line 489)
+  - **IMPACT**: Basic arithmetic in struct methods completely broken (error[E0308]: expected i32, found String)
+  - **FIX**: Changed `ExprKind::FieldAccess { .. } => true` to `false` in `src/backend/transpiler/expressions.rs:489`
+  - **RATIONALE**: Conservative approach - without type inference, assume numeric operations unless proven String
+  - **VALIDATION**: ✅ rustc compilation successful, arithmetic works correctly
+  - **TEST RESULTS**: 6/6 passing (tests/transpiler_001_integer_arithmetic.rs), 2 ignored (separate bugs)
+  - **FILES MODIFIED**: src/backend/transpiler/expressions.rs (1 line changed + comment)
+
+- **[TRANSPILER-002]** Spurious .cloned() added to primitive return types
+  - **BUG**: `client.get()` → `client.get().cloned()` where `get()` returns `i32` (no .cloned() method)
+  - **ROOT CAUSE**: ALL methods named "get" dispatched to `transpile_map_set_methods()` which adds `.cloned()`
+  - **IMPACT**: Struct methods named "get" fail compilation (error: no method named `cloned` found for type `i32`)
+  - **FIX**: Removed "get" from HashMap-specific dispatch list (lines 2363-2368, 2444-2451)
+  - **RATIONALE**: Let generic get() use default transpilation; HashMap.get() users must call .cloned() explicitly
+  - **VALIDATION**: ✅ rustc compilation successful, no spurious .cloned() calls
+  - **TEST RESULTS**: Verified with `/tmp/quality_004_minimal.ruchy` - outputs `client.get()` (correct!)
+  - **FILES MODIFIED**: src/backend/transpiler/statements.rs (removed "get" from 2 locations + comments)
+
 ## [3.205.0] - 2025-11-05
 
 ### Fixed
