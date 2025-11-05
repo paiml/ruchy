@@ -25,6 +25,37 @@ impl Transpiler {
         }
     }
 
+    /// TRANSPILER-011: Get the root identifier from a field access chain
+    /// Used to determine if a chain like event.requestContext.requestId is:
+    /// - Variable field access: event.field.subfield (use . syntax)
+    /// - Module path: std::time::Duration (use :: syntax)
+    /// - Type associated: String::from (use :: syntax)
+    fn get_root_identifier(expr: &Expr) -> Option<&str> {
+        use crate::frontend::ast::ExprKind;
+        match &expr.kind {
+            ExprKind::Identifier(name) => Some(name.as_str()),
+            ExprKind::FieldAccess { object, .. } => Self::get_root_identifier(object),
+            _ => None,
+        }
+    }
+
+    /// TRANSPILER-011: Check if the root of a field access chain is a variable/parameter
+    /// Variables are lowercase identifiers that are NOT modules or types
+    /// Returns true for: event, obj, data, request (simple variables)
+    /// Returns false for: std, String, http_client, MyType (modules/types)
+    fn is_variable_chain(&self, expr: &Expr) -> bool {
+        if let Some(root) = Self::get_root_identifier(expr) {
+            // Variables are simple lowercase identifiers (no underscores, not modules, not types)
+            let is_simple_lowercase = root.chars().all(char::is_lowercase) && !root.contains('_');
+            let is_not_module = !self.module_names.contains(root) && root != "std";
+            let is_not_type = root.chars().next().map_or(false, |c| c.is_lowercase());
+
+            is_simple_lowercase && is_not_module && is_not_type
+        } else {
+            false
+        }
+    }
+
     /// Check if an identifier looks like a module name
     /// PARSER-094: Fix Issue #137 - distinguish module paths from instance fields
     /// Heuristic: Module names are typically all lowercase with underscores (e.g., http_client, std_env)
@@ -57,8 +88,8 @@ impl Transpiler {
             }
             ExprKind::FieldAccess { .. } => {
                 // Nested field access - check if module path, numeric (tuple), or struct field
-                // PARSER-094: Heuristic - nested paths are usually modules (nested::module::function)
-                // not struct fields (obj.field.method), UNLESS we see clear field indicators
+                // TRANSPILER-011: Check if this is a variable chain FIRST (event.field.subfield)
+                // before defaulting to module path syntax (std::time::Duration)
                 if field.chars().all(|c| c.is_ascii_digit()) {
                     // Nested tuple access like (nested.0).1
                     let index: usize = field.parse().unwrap();
@@ -72,6 +103,9 @@ impl Transpiler {
                     if known_methods.contains(&field) {
                         // Known method - use . and add ()
                         Ok(quote! { #obj_tokens.#field_ident() })
+                    } else if self.is_variable_chain(object) {
+                        // TRANSPILER-011: Variable chain (event.requestContext.requestId) - use . syntax
+                        Ok(quote! { #obj_tokens.#field_ident })
                     } else if self.is_module_path(object) {
                         // Confirmed module path - use ::
                         Ok(quote! { #obj_tokens::#field_ident })
