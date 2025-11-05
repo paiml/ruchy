@@ -2,7 +2,7 @@
 //!
 //! Bug: `let mut counter = 0;` at top level transpiles to `();`
 //!
-//! Expected behavior: Should transpile to `let mut counter = 0;` in main()
+//! Expected behavior: Should transpile to `let mut counter = 0;` in `main()`
 //!
 //! Test status: These tests MUST fail initially to prove we're testing the bug
 
@@ -10,7 +10,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test case 1: Single mutable let statement
-/// Should transpile to: fn main() { let mut x = 0; }
+/// Should transpile to: fn `main()` { let mut x = 0; }
 #[test]
 fn test_transpiler_single_let_mut() {
     let code = "let mut x = 0;";
@@ -28,24 +28,22 @@ fn test_transpiler_single_let_mut() {
     // Should contain the let statement
     assert!(
         transpiled.contains("let mut x = 0"),
-        "Expected 'let mut x = 0' but got: {}",
-        transpiled
+        "Expected 'let mut x = 0' but got: {transpiled}"
     );
 
     // Should NOT contain just unit literal
     assert!(
         !transpiled.contains("()"),
-        "Should not transpile let to (), got: {}",
-        transpiled
+        "Should not transpile let to (), got: {transpiled}"
     );
 }
 
 /// Test case 2: Multiple mutable let statements
-/// Should transpile to: fn main() { let mut x = 0; let mut y = 1; }
+/// Should transpile to: fn `main()` { let mut x = 0; let mut y = 1; }
 #[test]
 fn test_transpiler_multiple_let_mut() {
-    let code = r#"let mut x = 0;
-let mut y = 1;"#;
+    let code = r"let mut x = 0;
+let mut y = 1;";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     let output = cmd
@@ -60,20 +58,17 @@ let mut y = 1;"#;
     // Should contain both let statements
     assert!(
         transpiled.contains("let mut x = 0"),
-        "Expected 'let mut x = 0' but got: {}",
-        transpiled
+        "Expected 'let mut x = 0' but got: {transpiled}"
     );
     assert!(
         transpiled.contains("let mut y = 1"),
-        "Expected 'let mut y = 1' but got: {}",
-        transpiled
+        "Expected 'let mut y = 1' but got: {transpiled}"
     );
 
     // Should NOT contain result wrapping for let statements
     assert!(
         !transpiled.contains("let result = {"),
-        "Let statements should not be wrapped in result block, got: {}",
-        transpiled
+        "Let statements should not be wrapped in result block, got: {transpiled}"
     );
 }
 
@@ -98,31 +93,28 @@ println!("{}", counter);"#;
     // Should contain the let statement
     assert!(
         transpiled.contains("let mut counter = 0"),
-        "Expected 'let mut counter = 0' but got: {}",
-        transpiled
+        "Expected 'let mut counter = 0' but got: {transpiled}"
     );
 
     // Should contain the assignment
     assert!(
         transpiled.contains("counter = counter + 1"),
-        "Expected 'counter = counter + 1' but got: {}",
-        transpiled
+        "Expected 'counter = counter + 1' but got: {transpiled}"
     );
 
     // Should NOT start with just ()
     assert!(
         !transpiled.contains("fn main() {\n    ();"),
-        "First statement should not be (), got: {}",
-        transpiled
+        "First statement should not be (), got: {transpiled}"
     );
 }
 
 /// Test case 4: Mixed let and immutable let
 #[test]
 fn test_transpiler_mixed_let_statements() {
-    let code = r#"let x = 1;
+    let code = r"let x = 1;
 let mut y = 2;
-let z = 3;"#;
+let z = 3;";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     let output = cmd
@@ -137,18 +129,15 @@ let z = 3;"#;
     // All let statements should be present
     assert!(
         transpiled.contains("let x = 1"),
-        "Expected 'let x = 1' but got: {}",
-        transpiled
+        "Expected 'let x = 1' but got: {transpiled}"
     );
     assert!(
         transpiled.contains("let mut y = 2"),
-        "Expected 'let mut y = 2' but got: {}",
-        transpiled
+        "Expected 'let mut y = 2' but got: {transpiled}"
     );
     assert!(
         transpiled.contains("let z = 3"),
-        "Expected 'let z = 3' but got: {}",
-        transpiled
+        "Expected 'let z = 3' but got: {transpiled}"
     );
 }
 
@@ -170,8 +159,7 @@ fn test_transpiler_let_mut_with_type_annotation() {
     // Should contain the let statement with type
     assert!(
         transpiled.contains("let mut x") && transpiled.contains(": i64"),
-        "Expected 'let mut x : i64 = 0' but got: {}",
-        transpiled
+        "Expected 'let mut x : i64 = 0' but got: {transpiled}"
     );
 }
 
@@ -226,8 +214,7 @@ println!("{}", x);"#;
     let stdout = String::from_utf8_lossy(&run_output.stdout);
     assert!(
         stdout.trim() == "10",
-        "Expected output '10' but got: {}",
-        stdout
+        "Expected output '10' but got: {stdout}"
     );
 }
 
@@ -249,19 +236,18 @@ fn test_transpiler_bug_documented() {
 
     // This documents the BUGGY behavior - should be `let mut x = 0;` but is `();`
     // When bug is fixed, this test should fail and be removed
-    eprintln!("BUGGY OUTPUT: {}", transpiled);
+    eprintln!("BUGGY OUTPUT: {transpiled}");
     assert!(
         transpiled.contains("()") || transpiled.contains("let mut x = 0"),
-        "Documenting current behavior, output: {}",
-        transpiled
+        "Documenting current behavior, output: {transpiled}"
     );
 }
 
 /// Test case 8: Let statements followed by expression
 #[test]
 fn test_transpiler_let_then_expression() {
-    let code = r#"let mut x = 1;
-x + 2"#;
+    let code = r"let mut x = 1;
+x + 2";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     let output = cmd
@@ -276,14 +262,12 @@ x + 2"#;
     // Should have the let statement
     assert!(
         transpiled.contains("let mut x = 1"),
-        "Expected 'let mut x = 1' but got: {}",
-        transpiled
+        "Expected 'let mut x = 1' but got: {transpiled}"
     );
 
     // Should have the expression as result
     assert!(
         transpiled.contains("x + 2"),
-        "Expected 'x + 2' expression but got: {}",
-        transpiled
+        "Expected 'x + 2' expression but got: {transpiled}"
     );
 }

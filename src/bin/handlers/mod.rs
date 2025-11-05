@@ -653,7 +653,7 @@ pub fn handle_compile_command(
                     optimize,
                     binary_size,
                     compile_time.as_millis(),
-                    &optimization_info,
+                    optimization_info.as_ref(),
                     &options,
                 )?;
                 println!("{} JSON report: {}", "ℹ".bright_blue(), json_path.display());
@@ -667,10 +667,11 @@ pub fn handle_compile_command(
     Ok(())
 }
 
+/// Optimization result: (`opt_level`, strip, `rustc_flags`, info)
+type OptimizationResult = (String, bool, Vec<String>, Option<(String, Option<String>, Option<String>)>);
+
 /// Apply optimization preset and return (`opt_level`, strip, `rustc_flags`, info)
-fn apply_optimization_preset(
-    level: &str,
-) -> Result<(String, bool, Vec<String>, Option<(String, Option<String>, Option<String>)>)> {
+fn apply_optimization_preset(level: &str) -> Result<OptimizationResult> {
     use anyhow::bail;
 
     match level {
@@ -752,7 +753,7 @@ fn generate_compilation_json(
     optimization_level: Option<&str>,
     binary_size: u64,
     compile_time_ms: u128,
-    optimization_info: &Option<(String, Option<String>, Option<String>)>,
+    optimization_info: Option<&(String, Option<String>, Option<String>)>,
     options: &ruchy::backend::CompileOptions,
 ) -> Result<()> {
     use std::fs;

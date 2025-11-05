@@ -18,11 +18,11 @@ use predicates::prelude::*;
 #[test]
 fn test_perf_002b_propagate_simple_variable() {
     // Pattern: let x = 5; x + 1 → 6
-    let code = r#"
+    let code = r"
         let x = 5;
         let y = x + 1;
         println(y);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -36,12 +36,12 @@ fn test_perf_002b_propagate_simple_variable() {
 #[test]
 fn test_perf_002b_propagate_chained_variables() {
     // Pattern: let x = 5; let y = x; let z = y + 3 → z = 8
-    let code = r#"
+    let code = r"
         let x = 5;
         let y = x;
         let z = y + 3;
         println(z);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -55,11 +55,11 @@ fn test_perf_002b_propagate_chained_variables() {
 #[test]
 fn test_perf_002b_propagate_multiple_uses() {
     // Pattern: let x = 5; x + x → 10
-    let code = r#"
+    let code = r"
         let x = 5;
         let result = x + x;
         println(result);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -77,12 +77,12 @@ fn test_perf_002b_propagate_multiple_uses() {
 #[test]
 fn test_perf_002b_propagate_arithmetic_chain() {
     // Pattern: let a = 2; let b = 3; let c = a * b → c = 6
-    let code = r#"
+    let code = r"
         let a = 2;
         let b = 3;
         let c = a * b;
         println(c);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -97,11 +97,11 @@ fn test_perf_002b_propagate_arithmetic_chain() {
 fn test_perf_002b_propagate_with_folding() {
     // Pattern: let x = 5; let y = x + (2 * 3) → y = 11
     // Combines constant folding (2*3=6) + propagation (x=5)
-    let code = r#"
+    let code = r"
         let x = 5;
         let y = x + (2 * 3);
         println(y);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -119,11 +119,11 @@ fn test_perf_002b_propagate_with_folding() {
 #[test]
 fn test_perf_002b_no_propagate_mutable() {
     // Pattern: let mut x = 5; x might change, DON'T propagate
-    let code = r#"
+    let code = r"
         let mut x = 5;
         let y = x + 1;
         println(y);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -138,7 +138,7 @@ fn test_perf_002b_no_propagate_mutable() {
 #[test]
 fn test_perf_002b_no_propagate_across_conditional() {
     // Pattern: if blocks, don't propagate (conservative)
-    let code = r#"
+    let code = r"
         let x = 5;
         if true {
             let y = x + 1;
@@ -146,7 +146,7 @@ fn test_perf_002b_no_propagate_across_conditional() {
         }
         let z = x + 2;
         println(z);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -167,11 +167,11 @@ fn test_perf_002b_no_propagate_across_conditional() {
 #[test]
 fn test_perf_002b_propagate_boolean() {
     // Pattern: let flag = true; if flag → if true
-    let code = r#"
+    let code = r"
         let flag = true;
         let result = if flag { 1 } else { 0 };
         println(result);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -187,11 +187,11 @@ fn test_perf_002b_propagate_boolean() {
 #[test]
 fn test_perf_002b_propagate_comparison_result() {
     // Pattern: let cmp = (10 > 5); cmp is constant (true)
-    let code = r#"
+    let code = r"
         let cmp = 10 > 5;
         let x = if cmp { 42 } else { 0 };
         println(x);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -211,7 +211,7 @@ fn test_perf_002b_propagate_comparison_result() {
 #[test]
 fn test_perf_002b_fibonacci_constants_propagated() {
     // Real-world pattern: Fibonacci with constant inputs
-    let code = r#"
+    let code = r"
         fun fibonacci(n: i32) -> i32 {
             if n <= 1 {
                 n
@@ -223,7 +223,7 @@ fn test_perf_002b_fibonacci_constants_propagated() {
         let input = 5;
         let result = fibonacci(input);
         println(result);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -247,12 +247,12 @@ fn property_propagation_preserves_semantics() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..100i32, b in 0..100i32)| {
-        let code = format!(r#"
-            let x = {};
-            let y = {};
+        let code = format!(r"
+            let x = {a};
+            let y = {b};
             let z = x + y;
             println(z);
-        "#, a, b);
+        ");
 
         // Expected result after propagation
         let expected = a + b;
@@ -261,10 +261,10 @@ fn property_propagation_preserves_semantics() {
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
-            .stdout(predicate::str::contains(format!("let z = {}", expected)));
+            .stdout(predicate::str::contains(format!("let z = {expected}")));
     });
 }
 
@@ -276,17 +276,17 @@ fn property_no_propagate_mutable() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..100i32)| {
-        let code = format!(r#"
-            let mut x = {};
+        let code = format!(r"
+            let mut x = {a};
             let y = x + 1;
             println(y);
-        "#, a);
+        ");
 
         // Verify mutable variable is NOT propagated (should see "x + 1", not constant)
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
             .stdout(predicate::str::contains("x + 1"));
@@ -301,12 +301,12 @@ fn property_arithmetic_chain() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..50i32, b in 1..50i32)| {
-        let code = format!(r#"
-            let x = {};
-            let y = {};
+        let code = format!(r"
+            let x = {a};
+            let y = {b};
             let z = x * y;
             println(z);
-        "#, a, b);
+        ");
 
         // Expected result after propagation and folding
         let expected = a * b;
@@ -315,9 +315,9 @@ fn property_arithmetic_chain() {
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
-            .stdout(predicate::str::contains(format!("let z = {}", expected)));
+            .stdout(predicate::str::contains(format!("let z = {expected}")));
     });
 }

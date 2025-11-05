@@ -49,7 +49,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Count: 42"), "Expected 'Count: 42', got: {}", stdout);
+    assert!(stdout.contains("Count: 42"), "Expected 'Count: 42', got: {stdout}");
 }
 
 /// RED: Test integer + string concatenation (reversed order)
@@ -76,7 +76,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("42 items"), "Expected '42 items', got: {}", stdout);
+    assert!(stdout.contains("42 items"), "Expected '42 items', got: {stdout}");
 }
 
 /// RED: Test string + negative integer
@@ -103,7 +103,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Temperature: -5"), "Expected 'Temperature: -5', got: {}", stdout);
+    assert!(stdout.contains("Temperature: -5"), "Expected 'Temperature: -5', got: {stdout}");
 }
 
 /// RED: Test string + float concatenation
@@ -130,7 +130,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Price: $19.99"), "Expected 'Price: $19.99', got: {}", stdout);
+    assert!(stdout.contains("Price: $19.99"), "Expected 'Price: $19.99', got: {stdout}");
 }
 
 /// RED: Test multiple concatenations in sequence
@@ -157,7 +157,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("x = 10, y = 20"), "Expected 'x = 10, y = 20', got: {}", stdout);
+    assert!(stdout.contains("x = 10, y = 20"), "Expected 'x = 10, y = 20', got: {stdout}");
 }
 
 /// RED: Test concatenation in loop (from book ch05 examples)
@@ -187,9 +187,9 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Iteration: 0"), "Expected 'Iteration: 0', got: {}", stdout);
-    assert!(stdout.contains("Iteration: 1"), "Expected 'Iteration: 1', got: {}", stdout);
-    assert!(stdout.contains("Iteration: 2"), "Expected 'Iteration: 2', got: {}", stdout);
+    assert!(stdout.contains("Iteration: 0"), "Expected 'Iteration: 0', got: {stdout}");
+    assert!(stdout.contains("Iteration: 1"), "Expected 'Iteration: 1', got: {stdout}");
+    assert!(stdout.contains("Iteration: 2"), "Expected 'Iteration: 2', got: {stdout}");
 }
 
 /// RED: Test boolean concatenation
@@ -216,7 +216,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Is ready: true"), "Expected 'Is ready: true', got: {}", stdout);
+    assert!(stdout.contains("Is ready: true"), "Expected 'Is ready: true', got: {stdout}");
 }
 
 /// GREEN: Verify actual string + string still works
@@ -243,7 +243,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Hello, World!"), "Expected 'Hello, World!', got: {}", stdout);
+    assert!(stdout.contains("Hello, World!"), "Expected 'Hello, World!', got: {stdout}");
 }
 
 /// GREEN: Verify numeric addition still works
@@ -254,12 +254,12 @@ fn test_feature_088_integer_plus_integer_still_adds() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test_add_ints.ruchy");
 
-    let code = r#"
+    let code = r"
 fun main() {
     let result = 10 + 20;
     println(result);
 }
-"#;
+";
 
     fs::write(&test_file, code).unwrap();
 
@@ -270,6 +270,6 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("30"), "Expected '30', got: {}", stdout);
+    assert!(stdout.contains("30"), "Expected '30', got: {stdout}");
     assert!(!stdout.contains("1020"), "Should not concatenate integers");
 }
