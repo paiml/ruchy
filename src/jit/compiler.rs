@@ -277,8 +277,10 @@ impl JitCompiler {
             // Compile function body
             let result = Self::compile_expr(&mut builder, &mut ctx, body)?;
 
-            // Return result
-            builder.ins().return_(&[result]);
+            // Return result (only if block not already terminated by explicit return)
+            if !ctx.block_terminated {
+                builder.ins().return_(&[result]);
+            }
 
             builder.finalize();
         }
@@ -370,6 +372,11 @@ impl JitCompiler {
             // JIT-005B: Continue statement
             ExprKind::Continue { .. } => {
                 Self::compile_continue(builder, ctx)
+            }
+
+            // JIT-008: Return statement
+            ExprKind::Return { value } => {
+                Self::compile_return(builder, ctx, value.as_deref())
             }
 
             // JIT-005: Assignment (for loop variables)
@@ -753,6 +760,32 @@ impl JitCompiler {
         }
     }
 
+    /// Compile return statement - complexity ≤5
+    ///
+    /// Return value from function and exit immediately
+    /// # Errors
+    /// Returns error if return value compilation fails
+    fn compile_return(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        value: Option<&Expr>,
+    ) -> Result<Value> {
+        // Evaluate return value (or use 0 as default unit value)
+        let return_value = match value {
+            Some(expr) => Self::compile_expr(builder, ctx, expr)?,
+            None => builder.ins().iconst(types::I64, 0),
+        };
+
+        // Return from function (terminates current block)
+        builder.ins().return_(&[return_value]);
+
+        // Mark block as terminated so caller doesn't try to add more instructions
+        ctx.block_terminated = true;
+
+        // Return the value we're returning (for expression result, though it won't be used)
+        Ok(return_value)
+    }
+
     /// Compile assignment - complexity ≤5
     ///
     /// Update variable value: x = value
@@ -856,8 +889,11 @@ impl JitCompiler {
         // If both branches terminated, mark context as terminated
         if then_terminated && else_terminated {
             ctx.block_terminated = true;
-            // Return dummy value (won't be used since control jumped away)
-            Ok(builder.ins().iconst(types::I64, 0))
+            // Merge block is unreachable, but Cranelift requires it be filled with terminator
+            // Return dummy value (this block will never execute, but Cranelift needs it)
+            let dummy = builder.ins().iconst(types::I64, 0);
+            builder.ins().return_(&[dummy]);
+            Ok(dummy)
         } else {
             // Read the result variable (automatically creates phi node)
             let result = builder.use_var(result_var);

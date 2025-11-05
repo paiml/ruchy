@@ -2,6 +2,47 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.202.0] - 2025-11-05
+
+### Added
+- **[JIT-008]** Return statement support (early function exits) in JIT compiler
+  - **NEW FEATURES**:
+    - Explicit returns: `return value;` exits function immediately with value
+    - Early returns: Guard clause patterns (`if invalid { return error; }`)
+    - Return in conditionals: Works in if/else branches
+    - Return in loops: Search patterns (`while condition { if found { return item; } }`)
+    - Multiple returns: Functions can have many return points
+    - Return vs break: Return exits function, break exits loop
+  - **ALGORITHMS ENABLED**:
+    - Prime checking with early return
+    - Binary search with early termination
+    - Guard clauses for input validation
+    - Search patterns in loops
+  - **IMPLEMENTATION**:
+    - compile_return(): Uses Cranelift's return_(&[value]) instruction
+    - Function compilation: Checks ctx.block_terminated to avoid double-return
+    - If/else handling: Unreachable merge blocks get return terminator
+    - Block termination tracking: ctx.block_terminated prevents adding after return
+  - **FILES**:
+    - src/jit/compiler.rs:375-378 (Expression dispatch for Return)
+    - src/jit/compiler.rs:761-785 (compile_return function, 25 LOC, complexity ≤5)
+    - src/jit/compiler.rs:280-283 (Modified function compilation to check block_terminated)
+    - src/jit/compiler.rs:890-896 (Fixed if/else merge block when both branches return)
+    - tests/jit_008_return.rs (NEW, 329 LOC, 14 tests: 100% passing)
+  - **TEST RESULTS**:
+    - Simple returns: 2/2 tests passing (basic return, return with expression)
+    - Early returns: 3/3 tests passing (guard clauses, multiple guards)
+    - Returns in conditionals: 2/2 tests passing (if/else, nested if)
+    - Returns in loops: 3/3 tests passing (while, for, nested loops)
+    - Multiple returns: 1/1 tests passing (complex control flow)
+    - Return vs break: 1/1 tests passing (behavioral difference)
+    - Algorithms: 2/2 tests passing (prime checking, binary search)
+  - **QUALITY GATES**:
+    - compile_return complexity: ≤5 (simple return instruction)
+    - All tests passing: 14/14 (100%)
+    - No regressions: JIT-005 (15/15), JIT-007 (5/5) still passing
+  - **NEXT STEPS**: JIT-009 (match expressions), JIT-007B (advanced tuple features)
+
 ## [3.201.0] - 2025-11-05
 
 ### Added
