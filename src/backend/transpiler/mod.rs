@@ -596,8 +596,12 @@ impl Transpiler {
     /// // Convert to string for compilation
     /// let rust_code = tokens.to_string();
     /// ```
-    pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
-        self.transpile_expr(expr)
+    /// TRANSPILER-009 FIX: Changed to call transpile_to_program() instead of transpile_expr()
+    /// Root Cause: transpile_expr() treats Block as an expression and wraps in braces { ... }
+    /// which produces invalid Rust when the Block contains top-level items (functions/structs/etc)
+    /// Fix: Always use transpile_to_program() which properly handles top-level items
+    pub fn transpile(&mut self, expr: &Expr) -> Result<TokenStream> {
+        self.transpile_to_program(expr)
     }
     /// Check if AST contains `HashMap` operations requiring `std::collections::HashMap` import
     fn contains_hashmap(expr: &Expr) -> bool {
@@ -689,6 +693,22 @@ impl Transpiler {
             _ => false,
         }
     }
+    /// TRANSPILER-009: Check if expression contains standalone user-defined functions
+    /// Returns true if this is a Block with Function definitions (not inside impl/class)
+    /// Used to skip aggressive optimizations that would inline/eliminate user functions
+    fn has_standalone_functions(expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+
+        match &expr.kind {
+            // A Block with Function expressions => has standalone functions
+            ExprKind::Block(exprs) => {
+                exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. }))
+            }
+            // Single top-level Function
+            ExprKind::Function { .. } => true,
+            _ => false,
+        }
+    }
     /// Wraps transpiled code in a complete Rust program with necessary imports
     ///
     /// # Examples
@@ -739,15 +759,26 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
-        // PERF-002-A/B: Apply constant folding + constant propagation
-        let after_propagation = constant_folder::propagate_constants(resolved_expr);
+        // TRANSPILER-009 FIX: Skip aggressive optimizations for top-level programs with standalone functions
+        // The inlining + DCE optimizations are meant for eval expressions, NOT full programs
+        // They were causing standalone functions to be inlined and then eliminated
+        let has_standalone_functions = Self::has_standalone_functions(&resolved_expr);
 
-        // OPT-CODEGEN-004: Inline small, non-recursive functions
-        let (after_inlining, inlined_functions) = inline_expander::inline_small_functions(after_propagation);
+        let optimized_expr = if has_standalone_functions {
+            // Skip inlining and DCE for programs with standalone functions
+            // Only apply constant folding/propagation which is safe
+            constant_folder::propagate_constants(resolved_expr)
+        } else {
+            // PERF-002-A/B: Apply constant folding + constant propagation
+            let after_propagation = constant_folder::propagate_constants(resolved_expr);
 
-        // PERF-002-C: Dead code elimination (removes unused inlined functions)
-        // Pass inlined function names so DCE can preserve functions that weren't inlined
-        let optimized_expr = constant_folder::eliminate_dead_code(after_inlining, inlined_functions);
+            // OPT-CODEGEN-004: Inline small, non-recursive functions
+            let (after_inlining, inlined_functions) = inline_expander::inline_small_functions(after_propagation);
+
+            // PERF-002-C: Dead code elimination (removes unused inlined functions)
+            // Pass inlined function names so DCE can preserve functions that weren't inlined
+            constant_folder::eliminate_dead_code(after_inlining, inlined_functions)
+        };
 
         // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
         // This populates self.mutable_vars, function_signatures, and module_names
@@ -1651,7 +1682,8 @@ impl Transpiler {
         }
     }
     /// Transpiles an expression to a String
-    pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
+    /// TRANSPILER-009: Changed to &mut self to match transpile() signature
+    pub fn transpile_to_string(&mut self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
         // Format the tokens with rustfmt-like style
         let mut result = String::new();

@@ -386,7 +386,8 @@ impl Repl {
         let mut parser = Parser::new(line);
         match parser.parse() {
             Ok(ast) => {
-                let transpiler = Transpiler::new();
+                // TRANSPILER-009: Changed to mut to match transpile() signature
+                let mut transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(rust_code) => Ok(rust_code.to_string()),
                     Err(e) => Ok(format!("Transpile error: {e}")),
