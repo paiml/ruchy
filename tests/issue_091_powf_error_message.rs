@@ -14,7 +14,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-/// Test 1: .powf() with arguments shows helpful error (not misleading "takes no arguments")
+/// Test 1: .`powf()` with arguments shows helpful error (not misleading "takes no arguments")
 ///
 /// Current (BAD): "Float method 'powf' takes no arguments"
 /// Target (GOOD): "Float method 'powf' not available. Use ** operator for exponentiation"
@@ -36,7 +36,7 @@ fun main() {
         .stderr(predicate::str::contains("exponentiation").or(predicate::str::contains("power")));
 }
 
-/// Test 2: .powf() without arguments also shows helpful error
+/// Test 2: .`powf()` without arguments also shows helpful error
 #[test]
 fn test_issue_091_powf_no_args_helpful_error() {
     let script_code = r#"
@@ -79,11 +79,11 @@ fun main() {
 /// Test 4: Error message should NOT say "takes no arguments" (misleading)
 #[test]
 fn test_issue_091_no_misleading_takes_no_arguments() {
-    let script_code = r#"
+    let script_code = r"
 fun main() {
     let result = (2.0).powf(3.0);
 }
-"#;
+";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e").arg(script_code);
@@ -112,11 +112,11 @@ fun main() {
         .stdout(predicate::str::contains("sqrt(9.0) = 3"));
 
     // Test that unknown method still gives appropriate error
-    let script_unknown = r#"
+    let script_unknown = r"
 fun main() {
     let result = (2.0).nonexistent();
 }
-"#;
+";
 
     let mut cmd2 = Command::cargo_bin("ruchy").unwrap();
     cmd2.arg("-e").arg(script_unknown);

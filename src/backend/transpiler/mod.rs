@@ -596,10 +596,10 @@ impl Transpiler {
     /// // Convert to string for compilation
     /// let rust_code = tokens.to_string();
     /// ```
-    /// TRANSPILER-009 FIX: Changed to call transpile_to_program() instead of transpile_expr()
-    /// Root Cause: transpile_expr() treats Block as an expression and wraps in braces { ... }
+    /// TRANSPILER-009 FIX: Changed to call `transpile_to_program()` instead of `transpile_expr()`
+    /// Root Cause: `transpile_expr()` treats Block as an expression and wraps in braces { ... }
     /// which produces invalid Rust when the Block contains top-level items (functions/structs/etc)
-    /// Fix: Always use transpile_to_program() which properly handles top-level items
+    /// Fix: Always use `transpile_to_program()` which properly handles top-level items
     pub fn transpile(&mut self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_to_program(expr)
     }
@@ -1682,7 +1682,7 @@ impl Transpiler {
         }
     }
     /// Transpiles an expression to a String
-    /// TRANSPILER-009: Changed to &mut self to match transpile() signature
+    /// TRANSPILER-009: Changed to &mut self to match `transpile()` signature
     pub fn transpile_to_string(&mut self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
         // Format the tokens with rustfmt-like style
@@ -1897,7 +1897,7 @@ mod tests {
     // Test 1: Transpiler Creation and Default Values
     #[test]
     fn test_transpiler_creation() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         assert!(!transpiler.in_async_context);
         assert!(transpiler.mutable_vars.is_empty());
         assert!(transpiler.function_signatures.is_empty());
@@ -1956,7 +1956,7 @@ mod tests {
     // Test 3: Type String Conversion
     #[test]
     fn test_type_to_string() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
 
         let int_type = create_simple_type("i64");
         let float_type = create_simple_type("f64");
@@ -2309,7 +2309,7 @@ mod tests {
     // Test 15: Import Resolution Context
     #[test]
     fn test_import_resolution() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let literal_expr = create_test_literal_expr(42);
 
         // Test resolve_imports (should not modify simple literals)

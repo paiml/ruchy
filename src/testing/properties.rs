@@ -90,7 +90,7 @@ pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCas
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), TestCaseError> {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let result = transpiler.transpile_string_interpolation(parts);
     // Should either succeed or fail cleanly, never panic
     if let Ok(tokens) = result {
@@ -423,7 +423,7 @@ mod tests {
 
         for (i, parts) in test_cases.iter().enumerate() {
             println!("Testing case {i}: {parts:?}");
-            let mut transpiler = Transpiler::new();
+            let transpiler = Transpiler::new();
             let result = transpiler.transpile_string_interpolation(parts);
             match result {
                 Ok(tokens) => {

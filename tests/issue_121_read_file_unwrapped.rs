@@ -13,7 +13,7 @@ use tempfile::NamedTempFile;
 #[test]
 fn test_issue_121_read_file_returns_string() {
     // RED: This test WILL FAIL until read_file() returns unwrapped string
-    let mut file = NamedTempFile::new().unwrap();
+    let file = NamedTempFile::new().unwrap();
     fs::write(file.path(), "Hello from file").unwrap();
 
     let code = format!(
@@ -36,7 +36,7 @@ fn test_issue_121_read_file_returns_string() {
 #[test]
 fn test_issue_121_read_file_with_json_parsing() {
     // RED: Benchmark pattern - read file then parse JSON
-    let mut file = NamedTempFile::new().unwrap();
+    let file = NamedTempFile::new().unwrap();
     fs::write(file.path(), r#"{"name": "Alice", "age": 30}"#).unwrap();
 
     let code = format!(
@@ -60,7 +60,7 @@ fn test_issue_121_read_file_with_json_parsing() {
 #[test]
 fn test_issue_121_read_file_string_operations() {
     // RED: Verify string methods work on result
-    let mut file = NamedTempFile::new().unwrap();
+    let file = NamedTempFile::new().unwrap();
     fs::write(file.path(), "The quick brown fox").unwrap();
 
     let code = format!(
@@ -83,7 +83,7 @@ fn test_issue_121_read_file_string_operations() {
 #[test]
 fn test_issue_121_read_file_multiline() {
     // RED: Test multiline file reading
-    let mut file = NamedTempFile::new().unwrap();
+    let file = NamedTempFile::new().unwrap();
     fs::write(file.path(), "line 1\nline 2\nline 3").unwrap();
 
     let code = format!(
@@ -108,7 +108,7 @@ fn test_issue_121_read_file_multiline() {
 #[test]
 fn test_issue_121_bench_006_pattern() {
     // RED: BENCH-006 file processing pattern
-    let mut file = NamedTempFile::new().unwrap();
+    let file = NamedTempFile::new().unwrap();
     fs::write(file.path(), "apple\nbanana\ncherry\napricot").unwrap();
 
     let code = format!(

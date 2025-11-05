@@ -1,23 +1,23 @@
-/// TRANSPILER-006: time_micros() builtin function transpilation
+/// TRANSPILER-006: `time_micros()` builtin function transpilation
 ///
 /// GitHub Issue: #139
 /// Blocks: Docker integration examples (fibonacci benchmarks)
 ///
-/// BUG: time_micros() passes through transpilation without being converted
+/// BUG: `time_micros()` passes through transpilation without being converted
 /// IMPACT: error[E0425]: cannot find function `time_micros` in this scope
-/// FIX: Transpile to std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as u64
+/// FIX: Transpile to `std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros()` as u64
 
 use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
 
-/// Test 1: Basic time_micros() call
+/// Test 1: Basic `time_micros()` call
 #[test]
 fn test_transpiler_006_01_basic_time_micros() {
-    let code = r#"
+    let code = r"
 pub fn get_time() -> u64 {
     time_micros()
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -29,15 +29,13 @@ pub fn get_time() -> u64 {
     // Should NOT contain raw time_micros() call
     assert!(
         !rust_code.contains("time_micros()"),
-        "BUG: Raw time_micros() should not appear in output:\n{}",
-        rust_code
+        "BUG: Raw time_micros() should not appear in output:\n{rust_code}"
     );
 
     // Should contain Rust stdlib time API
     assert!(
         rust_code.contains("SystemTime") || rust_code.contains("as_micros"),
-        "Should use Rust time API:\n{}",
-        rust_code
+        "Should use Rust time API:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -52,8 +50,7 @@ pub fn get_time() -> u64 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: time_micros() fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: time_micros() fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -61,14 +58,14 @@ pub fn get_time() -> u64 {
 /// Test 2: Time difference (benchmarking pattern)
 #[test]
 fn test_transpiler_006_02_time_difference() {
-    let code = r#"
+    let code = r"
 pub fn benchmark() -> u64 {
     let start = time_micros();
     // Some work here
     let end = time_micros();
     end - start
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -79,8 +76,7 @@ pub fn benchmark() -> u64 {
 
     assert!(
         !rust_code.contains("time_micros()"),
-        "BUG: Raw time_micros() should not appear:\n{}",
-        rust_code
+        "BUG: Raw time_micros() should not appear:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -95,8 +91,7 @@ pub fn benchmark() -> u64 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "Time difference calculation should compile:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "Time difference calculation should compile:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -104,7 +99,7 @@ pub fn benchmark() -> u64 {
 /// Test 3: Fibonacci benchmark (GitHub Issue #139 - Docker example)
 #[test]
 fn test_transpiler_006_03_fibonacci_benchmark() {
-    let code = r#"
+    let code = r"
 pub fn benchmark() -> u64 {
     let start = time_micros();
     let result = fib(20);
@@ -119,7 +114,7 @@ fn fib(n: i32) -> i32 {
         fib(n - 1) + fib(n - 2)
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -130,8 +125,7 @@ fn fib(n: i32) -> i32 {
 
     assert!(
         !rust_code.contains("time_micros()"),
-        "BUG: Raw time_micros() in fibonacci benchmark:\n{}",
-        rust_code
+        "BUG: Raw time_micros() in fibonacci benchmark:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -146,16 +140,15 @@ fn fib(n: i32) -> i32 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Fibonacci benchmark (Issue #139) fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Fibonacci benchmark (Issue #139) fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
 
-/// Test 4: Multiple time_micros() calls in same function
+/// Test 4: Multiple `time_micros()` calls in same function
 #[test]
 fn test_transpiler_006_04_multiple_calls() {
-    let code = r#"
+    let code = r"
 pub fn multi_benchmark() -> (u64, u64) {
     let t1 = time_micros();
     let work1 = 42 + 42;
@@ -167,7 +160,7 @@ pub fn multi_benchmark() -> (u64, u64) {
     let duration2 = t3 - t2;
     (duration1, duration2)
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -178,8 +171,7 @@ pub fn multi_benchmark() -> (u64, u64) {
 
     assert!(
         !rust_code.contains("time_micros()"),
-        "BUG: Raw time_micros() should not appear:\n{}",
-        rust_code
+        "BUG: Raw time_micros() should not appear:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -194,8 +186,7 @@ pub fn multi_benchmark() -> (u64, u64) {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "Multiple time_micros() calls should compile:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "Multiple time_micros() calls should compile:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }

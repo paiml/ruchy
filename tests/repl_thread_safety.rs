@@ -8,7 +8,6 @@
 #![allow(clippy::expect_used)]
 #![allow(missing_docs)]
 
-use ruchy::runtime::Repl;
 
 /// Test that Repl is Send (can cross thread boundaries)
 ///

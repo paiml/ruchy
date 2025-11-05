@@ -16,11 +16,11 @@ use predicates::prelude::*;
 #[test]
 fn test_bug_003_simple_array_assignment() {
     // Pattern: arr[0] = value
-    let code = r#"
+    let code = r"
         let mut arr = vec![1, 2, 3];
         arr[0] = 99;
         println(arr[0]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -33,10 +33,10 @@ fn test_bug_003_simple_array_assignment() {
 #[test]
 fn test_bug_003_array_assignment_transpile() {
     // Verify transpiler generates valid Rust code
-    let code = r#"
+    let code = r"
         let mut arr = vec![1, 2, 3];
         arr[0] = 99;
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -54,11 +54,11 @@ fn test_bug_003_array_assignment_transpile() {
 #[test]
 fn test_bug_003_nested_array_assignment() {
     // Pattern: matrix[i][j] = value (CRITICAL for BENCH-002)
-    let code = r#"
+    let code = r"
         let mut matrix = vec![vec![1, 2], vec![3, 4]];
         matrix[0][1] = 99;
         println(matrix[0][1]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -71,7 +71,7 @@ fn test_bug_003_nested_array_assignment() {
 #[test]
 fn test_bug_003_matrix_update_loop() {
     // Pattern: Update all matrix elements in loop (BENCH-002 pattern)
-    let code = r#"
+    let code = r"
         let mut matrix = vec![vec![0, 0], vec![0, 0]];
         let mut i = 0;
         while i < 2 {
@@ -83,7 +83,7 @@ fn test_bug_003_matrix_update_loop() {
             i = i + 1;
         }
         println(matrix[1][1]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -100,11 +100,11 @@ fn test_bug_003_matrix_update_loop() {
 #[test]
 fn test_bug_003_index_assignment_with_expression() {
     // Pattern: arr[i] = expr (not just literal)
-    let code = r#"
+    let code = r"
         let mut arr = vec![1, 2, 3];
         arr[1] = arr[0] + arr[2];
         println(arr[1]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -121,7 +121,7 @@ fn test_bug_003_index_assignment_with_expression() {
 #[test]
 fn test_bug_003_bench_002_matrix_multiplication() {
     // Simplified BENCH-002: 2x2 matrix multiplication
-    let code = r#"
+    let code = r"
         let mut a = vec![vec![1, 2], vec![3, 4]];
         let mut b = vec![vec![2, 0], vec![1, 2]];
         let mut result = vec![vec![0, 0], vec![0, 0]];
@@ -143,7 +143,7 @@ fn test_bug_003_bench_002_matrix_multiplication() {
         }
 
         println(result[0][0]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -163,13 +163,13 @@ fn property_array_assignment_preserves_others() {
     use proptest::prelude::*;
 
     proptest!(|(val1 in 0..100i32, val2 in 0..100i32, new_val in 0..100i32)| {
-        let code = format!(r#"
-            let mut arr = vec![{}, {}, 999];
-            arr[1] = {};
+        let code = format!(r"
+            let mut arr = vec![{val1}, {val2}, 999];
+            arr[1] = {new_val};
             println(arr[0]);
             println(arr[1]);
             println(arr[2]);
-        "#, val1, val2, new_val);
+        ");
 
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         let output = cmd.arg("-e").arg(&code).output().unwrap();

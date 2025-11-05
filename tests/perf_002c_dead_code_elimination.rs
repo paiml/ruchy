@@ -374,8 +374,8 @@ fn property_no_live_code_eliminated() {
 // ============================================================================
 
 /// ASYNC-AWAIT: DCE must not eliminate async functions called via .await
-/// Bug: collect_used_functions_rec() didn't handle ExprKind::Await
-/// Fix: Added Await, AsyncBlock, Spawn cases to recurse into expressions
+/// Bug: `collect_used_functions_rec()` didn't handle `ExprKind::Await`
+/// Fix: Added Await, `AsyncBlock`, Spawn cases to recurse into expressions
 #[test]
 fn test_perf_002c_dce_async_function_not_eliminated() {
     // Pattern: Async function called via .await should NOT be eliminated

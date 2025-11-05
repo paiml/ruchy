@@ -12,7 +12,6 @@
 
 use assert_cmd::Command;
 use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// RED TEST 1: ruchy publish --dry-run validates Ruchy.toml
@@ -54,25 +53,19 @@ license = "MIT"
     // Assertions: Should validate manifest successfully
     assert!(
         output.status.success(),
-        "ruchy publish --dry-run should succeed with valid Ruchy.toml.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy publish --dry-run should succeed with valid Ruchy.toml.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should show validation messages
     assert!(
         stdout.contains("Validating") || stdout.contains("package") || stdout.contains("test-package"),
-        "Should show package validation.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should show package validation.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should NOT actually publish in dry-run mode
     assert!(
         stdout.contains("dry-run") || stdout.contains("Would publish") || !stdout.contains("Published"),
-        "Dry-run should not actually publish.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Dry-run should not actually publish.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }
 
@@ -94,17 +87,13 @@ fn test_tool_feature_001_02_publish_requires_manifest_red() {
     // Should fail
     assert!(
         !output.status.success(),
-        "ruchy publish should fail without Ruchy.toml.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy publish should fail without Ruchy.toml.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should show helpful error message
     assert!(
         stdout.contains("Ruchy.toml") || stderr.contains("Ruchy.toml") || stdout.contains("manifest"),
-        "Should mention missing Ruchy.toml.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should mention missing Ruchy.toml.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }
 
@@ -134,13 +123,11 @@ name = "incomplete-package"
     // Should fail validation
     assert!(
         !output.status.success(),
-        "ruchy publish should fail with incomplete manifest.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy publish should fail with incomplete manifest.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should report missing fields
-    let combined = format!("{}{}", stdout, stderr);
+    let combined = format!("{stdout}{stderr}");
     let has_field_error = combined.contains("version")
         || combined.contains("authors")
         || combined.contains("required")
@@ -148,9 +135,7 @@ name = "incomplete-package"
 
     assert!(
         has_field_error,
-        "Should report missing required fields.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should report missing required fields.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }
 
@@ -187,17 +172,13 @@ repository = "https://github.com/example/awesome"
     // Should parse and display metadata
     assert!(
         output.status.success(),
-        "Should validate complete manifest.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should validate complete manifest.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should show parsed package info
     assert!(
         stdout.contains("my-awesome-package") || stdout.contains("1.2.3"),
-        "Should display package name or version.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should display package name or version.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }
 
@@ -231,16 +212,12 @@ license = "MIT"
     // Should fail with invalid version
     assert!(
         !output.status.success(),
-        "Should reject invalid semver version.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should reject invalid semver version.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
-    let combined = format!("{}{}", stdout, stderr);
+    let combined = format!("{stdout}{stderr}");
     assert!(
         combined.contains("version") || combined.contains("semver") || combined.contains("invalid"),
-        "Should report version validation error.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "Should report version validation error.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }

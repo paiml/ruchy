@@ -2,7 +2,7 @@
 //!
 //! Tests the `ruchy optimize` command for hardware-aware optimization analysis.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/102
+//! Reference: <https://github.com/paiml/ruchy/issues/102>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -32,7 +32,7 @@ fn test_issue_102_optimize_simple_file() {
     let file = create_temp_file(
         &temp,
         "simple.ruchy",
-        r#"
+        r"
 fun factorial(n) {
     if n <= 1 {
         1
@@ -44,7 +44,7 @@ fun factorial(n) {
 fun main() {
     println(factorial(5));
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -61,7 +61,7 @@ fn test_issue_102_optimize_with_loops() {
     let file = create_temp_file(
         &temp,
         "loops.ruchy",
-        r#"
+        r"
 fun sum_array(arr) {
     let total = 0;
     for i in 0..arr.len() {
@@ -74,7 +74,7 @@ fun main() {
     let numbers = [1, 2, 3, 4, 5];
     println(sum_array(numbers));
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -90,7 +90,7 @@ fn test_issue_102_optimize_multiple_functions() {
     let file = create_temp_file(
         &temp,
         "multi.ruchy",
-        r#"
+        r"
 fun add(x, y) { x + y }
 fun sub(x, y) { x - y }
 fun mul(x, y) { x * y }
@@ -102,7 +102,7 @@ fun main() {
     println(mul(4, 5));
     println(div(10, 2));
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -229,7 +229,7 @@ fn test_issue_102_optimize_cache_analysis() {
     let file = create_temp_file(
         &temp,
         "cache.ruchy",
-        r#"
+        r"
 fun process_matrix(matrix) {
     for row in matrix {
         for val in row {
@@ -237,7 +237,7 @@ fun process_matrix(matrix) {
         }
     }
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -283,7 +283,7 @@ fn test_issue_102_optimize_vectorization() {
     let file = create_temp_file(
         &temp,
         "vector.ruchy",
-        r#"
+        r"
 fun dot_product(a, b) {
     let result = 0;
     for i in 0..a.len() {
@@ -291,7 +291,7 @@ fun dot_product(a, b) {
     }
     result
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -309,7 +309,7 @@ fn test_issue_102_optimize_abstractions() {
     let file = create_temp_file(
         &temp,
         "abstractions.ruchy",
-        r#"
+        r"
 fun compose(f, g) {
     fun(x) { f(g(x)) }
 }
@@ -321,7 +321,7 @@ fun main() {
     let f = compose(square, double);
     println(f(5));
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -387,7 +387,7 @@ fn test_issue_102_optimize_format_json() {
     // Verify it's valid JSON
     let content = fs::read_to_string(&output_file).unwrap();
     assert!(
-        content.contains("{") && content.contains("}"),
+        content.contains('{') && content.contains('}'),
         "Output should be valid JSON"
     );
 }
@@ -478,7 +478,7 @@ fn test_issue_102_optimize_all_flags() {
     let file = create_temp_file(
         &temp,
         "comprehensive.ruchy",
-        r#"
+        r"
 fun fibonacci(n) {
     if n <= 1 {
         n
@@ -490,7 +490,7 @@ fun fibonacci(n) {
 fun main() {
     println(fibonacci(10));
 }
-"#,
+",
     );
     let output = temp.path().join("comprehensive.txt");
 

@@ -1,8 +1,8 @@
 //! TRANSPILER-DEFECT-005: Namespaced types in function parameters cause panic
 //!
-//! Root Cause: transpile_named_type() uses format_ident! on full string "Result::Ok"
-//! Expected: Parse path segments and build :: separated path tokens  
-//! Impact: CRITICAL - Cannot use std::Result, std::Option, or any namespaced types
+//! Root Cause: `transpile_named_type()` uses `format_ident`! on full string "`Result::Ok`"
+//! Expected: Parse path segments and build :: separated path tokens\
+//! Impact: CRITICAL - Cannot use `std::Result`, `std::Option`, or any namespaced types
 
 #![allow(missing_docs)]
 
@@ -14,7 +14,7 @@ fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-/// Test that std::result::Result works in type position
+/// Test that `std::result::Result` works in type position
 #[test]
 fn test_std_result_in_function_param() {
     let temp_dir = TempDir::new().unwrap();
@@ -40,7 +40,7 @@ main()
         .success();
 }
 
-/// Test that std::option::Option works in type position  
+/// Test that `std::option::Option` works in type position  
 #[test]
 fn test_std_option_in_return_type() {
     let temp_dir = TempDir::new().unwrap();

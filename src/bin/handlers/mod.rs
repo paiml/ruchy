@@ -610,11 +610,11 @@ pub fn handle_compile_command(
     let compile_start = Instant::now();
 
     let options = CompileOptions {
-        output: output.clone(),
-        opt_level: final_opt_level.clone(),
+        output: output,
+        opt_level: final_opt_level,
         strip: final_strip,
         static_link,
-        target: target.clone(),
+        target: target,
         rustc_flags,
     };
 
@@ -667,7 +667,7 @@ pub fn handle_compile_command(
     Ok(())
 }
 
-/// Apply optimization preset and return (opt_level, strip, rustc_flags, info)
+/// Apply optimization preset and return (`opt_level`, strip, `rustc_flags`, info)
 fn apply_optimization_preset(
     level: &str,
 ) -> Result<(String, bool, Vec<String>, Option<(String, Option<String>, Option<String>)>)> {

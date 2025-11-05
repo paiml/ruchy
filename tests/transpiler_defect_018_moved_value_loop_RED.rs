@@ -63,7 +63,7 @@ fn test_defect_018_01_nested_loop_moved_value_red() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Simplified version of actual reaper pattern
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Item { id: i32 }
 
 fun process_item(item: Item) -> bool {
@@ -92,7 +92,7 @@ fun find_items(items: [Item], checks: [i32]) -> i32 {
 let items = vec![Item { id: 1 }, Item { id: 2 }];
 let checks = vec![1, 2];
 println(find_items(items, checks));
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -103,16 +103,15 @@ println(find_items(items, checks));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Auto-cloning prevents moved value in loops");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0382"),
-            "Expected E0382: use of moved value. Got:\n{}",
-            stderr
+            "Expected E0382: use of moved value. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Moved value in loop error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Auto-cloning prevents moved value in loops");
     }
 }
 
@@ -122,7 +121,7 @@ fn test_defect_018_02_single_loop_moved_value_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Data { value: i32 }
 
 fun consume(d: Data) -> i32 { d.value }
@@ -140,7 +139,7 @@ fun process(items: [Data]) -> i32 {
 }
 
 println(process(vec![Data { value: 5 }]));
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -151,16 +150,15 @@ println(process(vec![Data { value: 5 }]));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Single loop auto-cloning works");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0382"),
-            "Expected E0382 for single loop. Got:\n{}",
-            stderr
+            "Expected E0382 for single loop. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Single loop moved value confirmed");
-    } else {
-        eprintln!("✅ GREEN: Single loop auto-cloning works");
     }
 }
 
@@ -170,7 +168,7 @@ fn test_defect_018_03_no_loop_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Item { id: i32 }
 
 fun process_item(item: Item) -> i32 { item.id }
@@ -178,7 +176,7 @@ fun process_item(item: Item) -> i32 { item.id }
 let item = Item { id: 42 };
 let result = process_item(item);
 println(result);
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 

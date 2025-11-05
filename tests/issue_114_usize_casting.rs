@@ -26,12 +26,12 @@ mod property_tests {
         let operators = vec!["<", ">", "<=", ">=", "==", "!="];
 
         for op in &operators {
-            let input = format!(r#"
+            let input = format!(r"
 fun test(n) {{
     let items = []
-    items.len() {} n
+    items.len() {op} n
 }}
-"#, op);
+");
 
             let output = Command::cargo_bin("ruchy")
                 .unwrap()
@@ -46,9 +46,9 @@ fun test(n) {{
 
             let rust_code = String::from_utf8(output).unwrap();
             assert!(
-                rust_code.contains(&format!("items.len() {} n as usize", op))
-                    || rust_code.contains(&format!("items.len() {} (n as usize)", op)),
-                "Operator {} missing usize cast", op
+                rust_code.contains(&format!("items.len() {op} n as usize"))
+                    || rust_code.contains(&format!("items.len() {op} (n as usize)")),
+                "Operator {op} missing usize cast"
             );
         }
     }
@@ -63,12 +63,12 @@ fun test(n) {{
         ];
 
         for (ruchy_init, _rust_init) in collection_types {
-            let input = format!(r#"
+            let input = format!(r"
 fun test(max) {{
-    let collection = {}
+    let collection = {ruchy_init}
     collection.len() < max
 }}
-"#, ruchy_init);
+");
 
             let output = Command::cargo_bin("ruchy")
                 .unwrap()
@@ -85,7 +85,7 @@ fun test(max) {{
             assert!(
                 rust_code.contains("collection.len() < max as usize")
                     || rust_code.contains("collection.len() < (max as usize)"),
-                "Collection type {:?} missing usize cast", ruchy_init
+                "Collection type {ruchy_init:?} missing usize cast"
             );
         }
     }
@@ -94,7 +94,7 @@ fun test(max) {{
 #[test]
 fn test_issue_114_usize_bench_008_pattern() {
     // BENCH-008 pattern: while primes.len() < count
-    let input = r#"
+    let input = r"
 fun generate_primes(count) {
     let mut primes = []
     let mut candidate = 2
@@ -106,7 +106,7 @@ fun generate_primes(count) {
 
     primes
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -205,7 +205,7 @@ fun test_reversed(limit) {
 #[test]
 fn test_issue_114_usize_bench_008_end_to_end() {
     // Full BENCH-008: Transpile → Compile → Execute
-    let input = r#"
+    let input = r"
 fun is_prime(n) {
     if n < 2 {
         return false
@@ -245,7 +245,7 @@ fun main() {
     let primes = generate_primes(100)
     println(primes.len())
 }
-"#;
+";
 
     // Transpile to Rust
     let transpile_output = Command::cargo_bin("ruchy")
@@ -295,18 +295,18 @@ fun main() {
     assert!(exec_result.status.success(), "Execution failed");
 
     let output = String::from_utf8(exec_result.stdout).unwrap();
-    assert!(output.contains("100"), "Expected 100 primes, got: {}", output);
+    assert!(output.contains("100"), "Expected 100 primes, got: {output}");
 }
 
 #[test]
 fn test_issue_114_usize_simple_len_comparison() {
     // Simplest possible test case
-    let input = r#"
+    let input = r"
 fun test_len(n) {
     let items = [1, 2, 3]
     items.len() < n
 }
-"#;
+";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -322,7 +322,7 @@ fun test_len(n) {
 #[test]
 fn test_issue_114_usize_nested_in_while_loop() {
     // BENCH-008 pattern: .len() in while condition
-    let input = r#"
+    let input = r"
 fun fill_to_size(target_size) {
     let mut collection = []
     let mut i = 0
@@ -334,7 +334,7 @@ fun fill_to_size(target_size) {
 
     collection
 }
-"#;
+";
 
     let output = Command::cargo_bin("ruchy")
         .unwrap()

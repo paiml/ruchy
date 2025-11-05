@@ -1,6 +1,6 @@
 //! PARSER-DEFECT-018: Dictionary literals inside function calls fail to parse
 //!
-//! Root Cause: Parser fails with "Expected RightBrace, found Identifier" when dict literal passed as argument
+//! Root Cause: Parser fails with "Expected `RightBrace`, found Identifier" when dict literal passed as argument
 //! Impact: CRITICAL - Blocks all examples using object literals in method calls
 //! Pattern: `array.append({ key: value })` fails to parse
 
@@ -40,7 +40,7 @@ main()
         .success();
 }
 
-/// RED: Test nested dict literal (real-world pattern from 21_concurrency.ruchy)
+/// RED: Test nested dict literal (real-world pattern from `21_concurrency.ruchy`)
 #[test]
 fn test_transactions_append_pattern() {
     let temp_dir = TempDir::new().unwrap();

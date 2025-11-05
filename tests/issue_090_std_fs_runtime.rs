@@ -1,8 +1,8 @@
-//! Issue #90: std::fs operations fail with "No match arm matched" runtime error
+//! Issue #90: `std::fs` operations fail with "No match arm matched" runtime error
 //!
 //! Root Cause: Unknown - needs investigation
-//! Impact: CRITICAL - std::fs module unusable
-//! Pattern: std::fs operations return values not properly handled
+//! Impact: CRITICAL - `std::fs` module unusable
+//! Pattern: `std::fs` operations return values not properly handled
 
 #![allow(missing_docs)]
 
@@ -15,7 +15,7 @@ fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
 }
 
-/// RED: Test std::fs::write with result handling
+/// RED: Test `std::fs::write` with result handling
 #[test]
 fn test_std_fs_write_basic() {
     let temp_dir = TempDir::new().unwrap();
@@ -40,7 +40,7 @@ main()
         .success();
 }
 
-/// RED: Test std::fs::read_to_string
+/// RED: Test `std::fs::read_to_string`
 #[test]
 fn test_std_fs_read_to_string() {
     let temp_dir = TempDir::new().unwrap();
@@ -65,7 +65,7 @@ main()
         .success();
 }
 
-/// RED: Test std::fs::exists
+/// RED: Test `std::fs::exists`
 #[test]
 fn test_std_fs_exists() {
     let temp_dir = TempDir::new().unwrap();
@@ -95,7 +95,7 @@ main()
         .success();
 }
 
-/// RED: Test std::fs with error handling (Result type)
+/// RED: Test `std::fs` with error handling (Result type)
 #[test]
 fn test_std_fs_with_result_handling() {
     let temp_dir = TempDir::new().unwrap();
@@ -136,7 +136,7 @@ proptest! {
 
         let code = format!(r#"
 fun main() {{
-    let result = std::fs::write("/tmp/prop_{}.txt", "test content");
+    let result = std::fs::write("/tmp/prop_{path_suffix}.txt", "test content");
     match result {{
         Ok(_) => println!("OK"),
         Err(e) => println!("ERR: {{}}", e)
@@ -144,7 +144,7 @@ fun main() {{
 }}
 
 main()
-"#, path_suffix);
+"#);
 
         fs::write(&script, code).unwrap();
 
@@ -166,14 +166,14 @@ main()
         let code = format!(r#"
 fun main() {{
     // Test write returns Result
-    let write_result = std::fs::write("{}", "test");
+    let write_result = std::fs::write("{path}", "test");
     let write_ok = match write_result {{
         Ok(_) => true,
         Err(_) => false
     }};
 
     // Test read returns Result
-    let read_result = std::fs::read_to_string("{}");
+    let read_result = std::fs::read_to_string("{path}");
     let read_matched = match read_result {{
         Ok(_) => true,
         Err(_) => true  // Both branches valid
@@ -183,7 +183,7 @@ fun main() {{
 }}
 
 main()
-"#, path, path);
+"#);
 
         fs::write(&script, code).unwrap();
 

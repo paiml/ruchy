@@ -56,7 +56,7 @@ fun process(id, path) {
 #[test]
 fn test_parser_xxx_without_strings_works() {
     // Control: Same pattern but without strings should work
-    let source = r#"
+    let source = r"
 fun foo(x) {
     if x == 1 {
         [200, 201]
@@ -69,7 +69,7 @@ fun bar() {
     let result = foo(1)
     result[0]
 }
-"#;
+";
 
     let mut parser = Parser::new(source);
     let result = parser.parse();

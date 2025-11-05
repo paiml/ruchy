@@ -1,17 +1,16 @@
-//! EXTREME TDD - RED Phase: Tests for Issue #96 (std::env module)
+//! EXTREME TDD - RED Phase: Tests for Issue #96 (`std::env` module)
 //!
-//! GitHub Issue: #96 - std::env module not available
+//! GitHub Issue: #96 - `std::env` module not available
 //! Severity: CRITICAL
 //! Impact: Blocks all CLI applications requiring command-line argument parsing
 //!
-//! These tests will FAIL initially (RED phase) until we implement std::env module.
+//! These tests will FAIL initially (RED phase) until we implement `std::env` module.
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::env;
 
-/// Test basic env::args() access
-/// Tests that the use std::env import works and env::args() returns program arguments
+/// Test basic `env::args()` access
+/// Tests that the use `std::env` import works and `env::args()` returns program arguments
 #[test]
 fn test_issue_096_env_args_basic() {
     let script = r#"
@@ -36,7 +35,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test env::args() with multiple arguments
+/// Test `env::args()` with multiple arguments
 /// In the future when we support passing args to scripts
 #[test]
 #[ignore = "Script argument passing not yet implemented in CLI"]
@@ -73,7 +72,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test env::var() for reading environment variables
+/// Test `env::var()` for reading environment variables
 #[test]
 fn test_issue_096_env_var_get() {
     let script = r#"
@@ -103,7 +102,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test env::var() for missing environment variable
+/// Test `env::var()` for missing environment variable
 #[test]
 fn test_issue_096_env_var_not_found() {
     let script = r#"
@@ -132,7 +131,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test env::args() returns Vec with at least the program name
+/// Test `env::args()` returns Vec with at least the program name
 #[test]
 fn test_issue_096_env_args_nonempty() {
     let script = r#"
@@ -163,7 +162,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test that use std::env import doesn't fail
+/// Test that use `std::env` import doesn't fail
 #[test]
 fn test_issue_096_std_env_import() {
     let script = r#"
@@ -187,7 +186,7 @@ fun main() {
     std::fs::remove_file(temp_file).unwrap();
 }
 
-/// Test env::var() with common environment variables (HOME, PATH, USER)
+/// Test `env::var()` with common environment variables (HOME, PATH, USER)
 #[test]
 fn test_issue_096_env_var_common() {
     let script = r#"

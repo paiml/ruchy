@@ -17,11 +17,11 @@ use ruchy::{Parser, Transpiler};
 /// Test 1: Basic integer addition
 #[test]
 fn test_transpiler_001_01_integer_addition() {
-    let code = r#"
+    let code = r"
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -37,15 +37,13 @@ pub fn add(a: i32, b: i32) -> i32 {
     // CRITICAL: Must NOT contain format! or string concatenation
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Integer addition transpiled to format!() string concat:\n{}",
-        rust_code
+        "BUG: Integer addition transpiled to format!() string concat:\n{rust_code}"
     );
 
     // Must use actual + operator
     assert!(
         rust_code.contains("a + b") || rust_code.contains("a+b"),
-        "Should preserve numeric + operator, got:\n{}",
-        rust_code
+        "Should preserve numeric + operator, got:\n{rust_code}"
     );
 
     // Verify rustc compilation succeeds
@@ -60,8 +58,7 @@ pub fn add(a: i32, b: i32) -> i32 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Integer addition fails rustc compilation:\n{}\n\nGenerated code:\n{}",
-            stderr, rust_code
+            "CRITICAL: Integer addition fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}"
         );
     }
 }
@@ -69,11 +66,11 @@ pub fn add(a: i32, b: i32) -> i32 {
 /// Test 2: Integer subtraction
 #[test]
 fn test_transpiler_001_02_integer_subtraction() {
-    let code = r#"
+    let code = r"
 pub fn subtract(a: i32, b: i32) -> i32 {
     a - b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -84,25 +81,23 @@ pub fn subtract(a: i32, b: i32) -> i32 {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Subtraction should not use format!:\n{}",
-        rust_code
+        "BUG: Subtraction should not use format!:\n{rust_code}"
     );
 
     assert!(
         rust_code.contains("a - b") || rust_code.contains("a-b"),
-        "Should preserve - operator, got:\n{}",
-        rust_code
+        "Should preserve - operator, got:\n{rust_code}"
     );
 }
 
 /// Test 3: Integer multiplication
 #[test]
 fn test_transpiler_001_03_integer_multiplication() {
-    let code = r#"
+    let code = r"
 pub fn multiply(a: i32, b: i32) -> i32 {
     a * b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -113,25 +108,23 @@ pub fn multiply(a: i32, b: i32) -> i32 {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Multiplication should not use format!:\n{}",
-        rust_code
+        "BUG: Multiplication should not use format!:\n{rust_code}"
     );
 
     assert!(
         rust_code.contains("a * b") || rust_code.contains("a*b"),
-        "Should preserve * operator, got:\n{}",
-        rust_code
+        "Should preserve * operator, got:\n{rust_code}"
     );
 }
 
 /// Test 4: Integer division
 #[test]
 fn test_transpiler_001_04_integer_division() {
-    let code = r#"
+    let code = r"
 pub fn divide(a: i32, b: i32) -> i32 {
     a / b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -142,25 +135,23 @@ pub fn divide(a: i32, b: i32) -> i32 {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Division should not use format!:\n{}",
-        rust_code
+        "BUG: Division should not use format!:\n{rust_code}"
     );
 
     assert!(
         rust_code.contains("a / b") || rust_code.contains("a/b"),
-        "Should preserve / operator, got:\n{}",
-        rust_code
+        "Should preserve / operator, got:\n{rust_code}"
     );
 }
 
 /// Test 5: Complex arithmetic expression
 #[test]
 fn test_transpiler_001_05_complex_arithmetic() {
-    let code = r#"
+    let code = r"
 pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
     (a + b) * c - 10
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -171,8 +162,7 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Complex arithmetic should not use format!:\n{}",
-        rust_code
+        "BUG: Complex arithmetic should not use format!:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -187,8 +177,7 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Complex arithmetic fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Complex arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -196,7 +185,7 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
 /// Test 6: Arithmetic in struct method
 #[test]
 fn test_transpiler_001_06_arithmetic_in_method() {
-    let code = r#"
+    let code = r"
 pub struct Counter {
     value: i32,
 }
@@ -214,7 +203,7 @@ impl Counter {
         self.value * 2
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -225,8 +214,7 @@ impl Counter {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Method arithmetic should not use format!:\n{}",
-        rust_code
+        "BUG: Method arithmetic should not use format!:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -241,8 +229,7 @@ impl Counter {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Method arithmetic fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Method arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -251,11 +238,11 @@ impl Counter {
 /// Verifies that String + String uses format!() or proper borrowing
 #[test]
 fn test_transpiler_001_07_string_concat_uses_format() {
-    let code = r#"
+    let code = r"
 pub fn concat(a: String, b: String) -> String {
     a + b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -277,8 +264,7 @@ pub fn concat(a: String, b: String) -> String {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "String concatenation should compile:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "String concatenation should compile:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -287,12 +273,12 @@ pub fn concat(a: String, b: String) -> String {
 /// Verifies that mut keyword is preserved in parameter transpilation
 #[test]
 fn test_transpiler_001_08_assignment_with_arithmetic() {
-    let code = r#"
+    let code = r"
 pub fn increment_by(mut value: i32, amount: i32) -> i32 {
     value = value + amount;
     value
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -303,8 +289,7 @@ pub fn increment_by(mut value: i32, amount: i32) -> i32 {
 
     assert!(
         !rust_code.contains("format!"),
-        "BUG: Assignment arithmetic should not use format!:\n{}",
-        rust_code
+        "BUG: Assignment arithmetic should not use format!:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -319,8 +304,7 @@ pub fn increment_by(mut value: i32, amount: i32) -> i32 {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Assignment arithmetic fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Assignment arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }

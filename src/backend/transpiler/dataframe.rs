@@ -384,7 +384,7 @@ mod tests {
     }
     #[test]
     fn test_empty_dataframe() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let result = transpiler.transpile_dataframe(&[]).unwrap();
         let output = result.to_string();
         assert!(output.contains("DataFrame"));
@@ -392,7 +392,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_with_columns() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let columns = vec![
             DataFrameColumn {
                 name: "col1".to_string(),
@@ -412,7 +412,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_select_operation() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0); // Placeholder
         let op = DataFrameOp::Select(vec!["col1".to_string(), "col2".to_string()]);
         let result = transpiler
@@ -425,7 +425,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_filter_operation() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let condition = make_literal_expr(1);
         let op = DataFrameOp::Filter(Box::new(condition));
@@ -437,7 +437,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_groupby_operation() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let op = DataFrameOp::GroupBy(vec!["group_col".to_string()]);
         let result = transpiler
@@ -449,7 +449,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_sort_operation() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let op = DataFrameOp::Sort(vec!["sort_col".to_string()]);
         let result = transpiler
@@ -461,7 +461,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_join_operations() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let other_expr = make_literal_expr(1);
         let join_types = vec![
@@ -485,7 +485,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_aggregate_operations() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         let agg_ops = vec![
             AggregateOp::Mean("col1".to_string()),
@@ -505,7 +505,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_limit_operations() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
         // Test Limit
         let op = DataFrameOp::Limit(10);
@@ -531,7 +531,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_with_empty_column_values() {
-        let mut transpiler = make_test_transpiler();
+        let transpiler = make_test_transpiler();
         let columns = vec![DataFrameColumn {
             name: "empty_col".to_string(),
             values: vec![],
@@ -551,7 +551,7 @@ mod property_tests_dataframe {
     #[test]
     fn test_transpile_dataframe_never_panics() {
         // Property: transpile_dataframe never panics on any input
-        let mut transpiler = super::Transpiler::new();
+        let transpiler = super::Transpiler::new();
 
         // Test with empty columns (common edge case)
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -578,7 +578,7 @@ mod property_tests_dataframe {
 
     #[test]
     fn test_coverage_boost_dataframe() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
 
         // Test basic functionality to boost coverage
         let columns = vec![

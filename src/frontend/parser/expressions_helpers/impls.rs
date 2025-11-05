@@ -192,7 +192,7 @@ fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<ImplMethod>> {
 }
 
 /// Parse a single impl method (complexity: 8)
-/// PARSER-008 FIX: Accept is_pub parameter to preserve visibility
+/// PARSER-008 FIX: Accept `is_pub` parameter to preserve visibility
 fn parse_impl_method(state: &mut ParserState, is_pub: bool) -> Result<ImplMethod> {
     // Accept both 'fun' and 'fn' for method definitions
     if matches!(state.tokens.peek(), Some((Token::Fun, _))) {

@@ -10,7 +10,7 @@ use predicates::prelude::*;
 fn test_issue_119_println_side_effects_evaluated_once() {
     // RED: This test MUST fail - println() evaluates arguments TWICE
     
-    let script = r#"
+    let script = r"
 let mut counter = 0
 
 fun increment() {
@@ -23,7 +23,7 @@ println(increment())  // Expect: 1, Actual: 2 ❌
 println(increment())  // Expect: 2, Actual: 4 ❌
 println(increment())  // Expect: 3, Actual: 6 ❌
 println(counter)      // Expect: 3, Actual: 6 ❌
-"#;
+";
 
     std::fs::write("/tmp/issue_119_double_eval.ruchy", script).unwrap();
 
@@ -43,18 +43,13 @@ println(counter)      // Expect: 3, Actual: 6 ❌
     // Actual buggy output (side-effects evaluated TWICE)
     let actual_lines: Vec<&str> = stdout.trim().lines().collect();
 
-    if actual_lines == ["2", "4", "6", "6"] {
-        panic!(
+    assert!(actual_lines != ["2", "4", "6", "6"], 
             "BUG DETECTED: Side-effects evaluated TWICE!\n\
-             Expected: {:?} (each increment() called once)\n\
-             Actual: {:?} (each increment() called twice)\n\
+             Expected: {expected_lines:?} (each increment() called once)\n\
+             Actual: {actual_lines:?} (each increment() called twice)\n\
              \n\
-             Full output:\n{}\n",
-            expected_lines,
-            actual_lines,
-            stdout
+             Full output:\n{stdout}\n"
         );
-    }
 
     // Test passes when output is correct
     assert_eq!(
@@ -68,7 +63,7 @@ println(counter)      // Expect: 3, Actual: 6 ❌
 fn test_issue_119_variable_assignment_no_double_eval() {
     // Baseline: Variable assignment should NOT double-evaluate
     
-    let script = r#"
+    let script = r"
 let mut counter = 0
 
 fun increment() {
@@ -79,7 +74,7 @@ fun increment() {
 let result = increment()  // Should call increment() once
 println(result)
 println(counter)
-"#;
+";
 
     let output = Command::cargo_bin("ruchy")
         .unwrap()
@@ -94,7 +89,6 @@ println(counter)
     // Variable assignment should work correctly (no double-eval)
     assert!(
         stdout.contains("1\n1"),
-        "Variable assignment should not double-evaluate, got: {}",
-        stdout
+        "Variable assignment should not double-evaluate, got: {stdout}"
     );
 }

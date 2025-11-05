@@ -18,7 +18,7 @@ pub struct RuchyLanguageServer {
     client: Client,
     workspace: Arc<Mutex<Workspace>>,
     analyzer: Arc<Mutex<SemanticAnalyzer>>,
-    formatter: Arc<Formatter>,
+    formatter: Arc<Mutex<Formatter>>,
 }
 impl RuchyLanguageServer {
     /// # Examples
@@ -34,7 +34,7 @@ impl RuchyLanguageServer {
             client,
             workspace: Arc::new(Mutex::new(Workspace::new())),
             analyzer: Arc::new(Mutex::new(SemanticAnalyzer::new())),
-            formatter: Arc::new(Formatter::new()),
+            formatter: Arc::new(Mutex::new(Formatter::new())),
         }
     }
 }
@@ -147,7 +147,8 @@ impl LanguageServer for RuchyLanguageServer {
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let workspace = self.workspace.lock().await;
         if let Ok(document) = workspace.get_document(&params.text_document.uri) {
-            let formatted = self.formatter.format(document)?;
+            let formatter = self.formatter.lock().await;
+            let formatted = formatter.format(document)?;
             // Return a single text edit that replaces the entire document
             let edit = TextEdit {
                 range: Range {

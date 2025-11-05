@@ -289,7 +289,7 @@ impl crate::Transpiler {
     /// let result = transpile_with_provenance(());
     /// assert_eq!(result, Ok(()));
     /// ```
-    /// TRANSPILER-009: Changed to &mut self to match transpile() signature
+    /// TRANSPILER-009: Changed to &mut self to match `transpile()` signature
     pub fn transpile_with_provenance(
         &mut self,
         expr: &crate::Expr,

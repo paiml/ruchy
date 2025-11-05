@@ -1,9 +1,9 @@
 //! TRANSPILER-DEFECT-017: Array Literal to Vec Conversion
 //!
-//! **Issue**: Array literals assigned to Vec-typed variables don't auto-convert with .to_vec()
+//! **Issue**: Array literals assigned to Vec-typed variables don't auto-convert with .`to_vec()`
 //!
 //! **Root Cause**: Type annotation transpiler converts [T] → Vec<T>, but value transpiler
-//! emits raw array literal without .to_vec() conversion.
+//! emits raw array literal without .`to_vec()` conversion.
 //!
 //! **Impact**: 1 error in reaper project (line 262)
 //!
@@ -55,16 +55,15 @@ println(processes.len());
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Array auto-converted to Vec with .to_vec()");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: expected Vec, found array. Got:\n{}",
-            stderr
+            "Expected E0308: expected Vec, found array. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Array to Vec conversion error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Array auto-converted to Vec with .to_vec()");
     }
 }
 
@@ -95,16 +94,15 @@ println(configs.len());
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Multiple element array auto-converted");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 for multi-element array. Got:\n{}",
-            stderr
+            "Expected E0308 for multi-element array. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Multiple element array error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Multiple element array auto-converted");
     }
 }
 
@@ -114,12 +112,12 @@ fn test_defect_017_03_empty_array_to_vec() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Item { id: i32 }
 
 let items: [Item] = [];
 println(items.len());
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -130,11 +128,11 @@ println(items.len());
         .output()
         .unwrap();
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("RED TEST: Empty array - {}", stderr);
-    } else {
+    if output.status.success() {
         eprintln!("✅ GREEN: Empty array handled");
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("RED TEST: Empty array - {stderr}");
     }
 }
 
@@ -144,13 +142,13 @@ fn test_defect_017_04_vec_macro_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Item { id: i32 }
 
 let item = Item { id: 42 };
 let items = vec![item];  // Already using Vec, should work
 println(items.len());
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -168,10 +166,10 @@ fn test_defect_017_05_array_type_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 let numbers = [1, 2, 3];  // No type annotation, inferred as array
 println(numbers.len());
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -189,11 +187,11 @@ fn test_defect_017_06_integer_array_to_vec_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 let x = 10;
 let numbers: [i32] = [x, 20, 30];
 println(numbers.len());
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -204,16 +202,15 @@ println(numbers.len());
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Integer array auto-converted");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 for integer array. Got:\n{}",
-            stderr
+            "Expected E0308 for integer array. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Integer array to Vec error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Integer array auto-converted");
     }
 }
 

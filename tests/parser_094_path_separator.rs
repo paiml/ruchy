@@ -5,14 +5,14 @@
 //! Purpose: Fix transpiler converting :: to . (Issue #137)
 //! Target: Preserve Rust path separator :: in transpiled code
 //!
-//! Root Cause: Transpiler treats :: as FieldAccess instead of PathSeparator
-//! Impact: Breaks all module function calls (http_client::http_get becomes http_client.http_get)
+//! Root Cause: Transpiler treats :: as `FieldAccess` instead of `PathSeparator`
+//! Impact: Breaks all module function calls (`http_client::http_get` becomes `http_client.http_get`)
 //!
 //! Test Strategy:
-//! 1. Module function calls - http_client::http_get()
-//! 2. Stdlib qualified paths - std::io::Read
-//! 3. Nested module paths - nested::module::function
-//! 4. Type associated functions - String::from()
+//! 1. Module function calls - `http_client::http_get()`
+//! 2. Stdlib qualified paths - `std::io::Read`
+//! 3. Nested module paths - `nested::module::function`
+//! 4. Type associated functions - `String::from()`
 //! 5. Integration - Full examples from Issue #137
 
 #![allow(clippy::expect_used)]
@@ -37,13 +37,11 @@ fn test_parser_094_module_function_call_simple() {
 
     assert!(
         rust_code.contains("http_client :: http_get"),
-        "Should preserve :: in module function call, got: {}",
-        rust_code
+        "Should preserve :: in module function call, got: {rust_code}"
     );
     assert!(
         !rust_code.contains("http_client . http_get"),
-        "Should NOT convert :: to ., got: {}",
-        rust_code
+        "Should NOT convert :: to ., got: {rust_code}"
     );
 }
 
@@ -60,8 +58,7 @@ fn test_parser_094_module_function_with_args() {
 
     assert!(
         rust_code.contains("http_client :: http_get"),
-        "Should preserve :: with arguments, got: {}",
-        rust_code
+        "Should preserve :: with arguments, got: {rust_code}"
     );
 }
 
@@ -79,8 +76,7 @@ fn test_parser_094_nested_module_path() {
 
     assert!(
         rust_code.contains("http_client :: helpers :: get_json"),
-        "Should preserve :: in nested module paths, got: {}",
-        rust_code
+        "Should preserve :: in nested module paths, got: {rust_code}"
     );
 }
 
@@ -101,8 +97,7 @@ fn test_parser_094_stdlib_path() {
 
     assert!(
         rust_code.contains("std :: io :: stdin"),
-        "Should preserve :: in stdlib paths, got: {}",
-        rust_code
+        "Should preserve :: in stdlib paths, got: {rust_code}"
     );
 }
 
@@ -120,13 +115,11 @@ fn test_parser_094_multiple_stdlib_calls() {
 
     assert!(
         rust_code.contains("std :: env :: var"),
-        "Should preserve first :: call, got: {}",
-        rust_code
+        "Should preserve first :: call, got: {rust_code}"
     );
     assert!(
         rust_code.contains("std :: env :: home_dir"),
-        "Should preserve second :: call, got: {}",
-        rust_code
+        "Should preserve second :: call, got: {rust_code}"
     );
 }
 
@@ -147,8 +140,7 @@ fn test_parser_094_type_associated_function() {
 
     assert!(
         rust_code.contains("String :: from"),
-        "Should preserve :: in associated function, got: {}",
-        rust_code
+        "Should preserve :: in associated function, got: {rust_code}"
     );
 }
 
@@ -165,8 +157,7 @@ fn test_parser_094_vec_new() {
 
     assert!(
         rust_code.contains("Vec :: new"),
-        "Should preserve :: in Vec::new, got: {}",
-        rust_code
+        "Should preserve :: in Vec::new, got: {rust_code}"
     );
 }
 
@@ -189,13 +180,11 @@ fn test_parser_094_issue_137_reproduction() {
 
     assert!(
         rust_code.contains("http_client :: http_get"),
-        "Issue #137: Should preserve :: in module call, got: {}",
-        rust_code
+        "Issue #137: Should preserve :: in module call, got: {rust_code}"
     );
     assert!(
         !rust_code.contains("http_client . http_get"),
-        "Issue #137: Should NOT have . separator, got: {}",
-        rust_code
+        "Issue #137: Should NOT have . separator, got: {rust_code}"
     );
 }
 
@@ -219,15 +208,13 @@ fn test_parser_094_distinguish_field_access_from_path() {
     // Field access should use .
     assert!(
         rust_code.contains("obj . field"),
-        "Field access should use ., got: {}",
-        rust_code
+        "Field access should use ., got: {rust_code}"
     );
 
     // Module path should use ::
     assert!(
         rust_code.contains("MyModule :: function"),
-        "Module path should use ::, got: {}",
-        rust_code
+        "Module path should use ::, got: {rust_code}"
     );
 }
 
@@ -246,14 +233,12 @@ fn test_parser_094_method_call_vs_static_call() {
     // Associated function should use ::
     assert!(
         rust_code.contains("String :: from"),
-        "Associated function should use ::, got: {}",
-        rust_code
+        "Associated function should use ::, got: {rust_code}"
     );
 
     // Method call should use .
     assert!(
         rust_code.contains("s . len ()"),
-        "Method call should use ., got: {}",
-        rust_code
+        "Method call should use ., got: {rust_code}"
     );
 }

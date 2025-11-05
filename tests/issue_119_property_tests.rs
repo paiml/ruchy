@@ -12,15 +12,15 @@ fn prop_builtin_single_evaluation() {
 
     proptest!(|(initial_value in 0i32..100)| {
         for builtin in &builtins {
-            let script = format!(r#"
-let mut counter = {}
+            let script = format!(r"
+let mut counter = {initial_value}
 fun increment() {{
     counter = counter + 1
     counter
 }}
-{}(increment())
+{builtin}(increment())
 println(counter)
-"#, initial_value, builtin);
+");
 
             let output = Command::new("target/release/ruchy")
                 .arg("-e")
@@ -55,15 +55,15 @@ println(counter)
 #[test]
 fn prop_nested_builtins_single_evaluation() {
     proptest!(|(n in 1i32..50)| {
-        let script = format!(r#"
+        let script = r"
 let mut calls = 0
-fun side_effect() {{
+fun side_effect() {
     calls = calls + 1
     calls
-}}
+}
 println(str(side_effect()))
 println(calls)
-"#);
+".to_string();
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")
@@ -97,18 +97,18 @@ fn prop_sequential_builtin_calls_accumulate() {
         // Generate N sequential println calls
         let mut calls = String::new();
         for i in 0..count {
-            calls.push_str(&format!("println(increment())\n"));
+            calls.push_str(&"println(increment())\n".to_string());
         }
 
-        let script = format!(r#"
+        let script = format!(r"
 let mut counter = 0
 fun increment() {{
     counter = counter + 1
     counter
 }}
-{}
+{calls}
 println(counter)
-"#, calls);
+");
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")
@@ -154,24 +154,24 @@ println(counter)
 #[test]
 fn prop_multi_arg_builtins_single_eval_per_arg() {
     proptest!(|(a in 1i32..100, b in 1i32..100)| {
-        let script = format!(r#"
+        let script = format!(r"
 let mut counter_a = 0
 let mut counter_b = 0
 
 fun inc_a() {{
     counter_a = counter_a + 1
-    {}
+    {a}
 }}
 
 fun inc_b() {{
     counter_b = counter_b + 1
-    {}
+    {b}
 }}
 
 let result = max(inc_a(), inc_b())
 println(counter_a)
 println(counter_b)
-"#, a, b);
+");
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")
@@ -196,17 +196,17 @@ println(counter_b)
 #[test]
 fn prop_builtin_calls_deterministic() {
     proptest!(|(n in 1i32..50)| {
-        let script = format!(r#"
+        let script = r"
 let mut counter = 0
-fun increment() {{
+fun increment() {
     counter = counter + 1
     counter
-}}
+}
 println(increment())
 println(increment())
 println(increment())
 println(counter)
-"#);
+".to_string();
 
         // Run 3 times
         let outputs: Vec<_> = (0..3)

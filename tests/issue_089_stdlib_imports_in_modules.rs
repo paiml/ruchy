@@ -78,8 +78,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("Command succeeded"),
-        "Expected 'Command succeeded', got: {}",
-        stdout
+        "Expected 'Command succeeded', got: {stdout}"
     );
 }
 
@@ -137,8 +136,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("All checks passed"),
-        "Expected 'All checks passed', got: {}",
-        stdout
+        "Expected 'All checks passed', got: {stdout}"
     );
 }
 
@@ -198,8 +196,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("Transitive import works"),
-        "Expected 'Transitive import works', got: {}",
-        stdout
+        "Expected 'Transitive import works', got: {stdout}"
     );
 }
 
@@ -234,8 +231,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("Standalone works"),
-        "Expected 'Standalone works', got: {}",
-        stdout
+        "Expected 'Standalone works', got: {stdout}"
     );
 }
 
@@ -246,11 +242,11 @@ fn test_issue_089_mixed_stdlib_and_file_imports() {
 
     // Helper module (file) - simple function that returns a number
     let helper_module = temp_dir.path().join("helper.ruchy");
-    let helper_code = r#"
+    let helper_code = r"
 fun get_number() -> int {
     42
 }
-"#;
+";
     fs::write(&helper_module, helper_code).unwrap();
 
     // Main module with both stdlib and file imports
@@ -296,12 +292,10 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
         stdout.contains("Number is 42"),
-        "Expected number message, got: {}",
-        stdout
+        "Expected number message, got: {stdout}"
     );
     assert!(
         stdout.contains("Mixed imports work"),
-        "Expected success message, got: {}",
-        stdout
+        "Expected success message, got: {stdout}"
     );
 }
