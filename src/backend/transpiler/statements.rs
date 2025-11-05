@@ -3,7 +3,7 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
 use super::*;
-use crate::frontend::ast::{BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, UnaryOp};
+use crate::frontend::ast::{BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -1126,6 +1126,26 @@ impl Transpiler {
             .iter()
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
+
+                // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
+                // Method receivers in Rust have special syntax that differs from normal parameters
+                if p.name() == "self" {
+                    // Check if it's a reference type
+                    if let TypeKind::Reference { is_mut, .. } = &p.ty.kind {
+                        if *is_mut {
+                            // &mut self - mutable reference receiver
+                            return Ok(quote! { &mut self });
+                        } else {
+                            // &self - immutable reference receiver
+                            return Ok(quote! { &self });
+                        }
+                    } else {
+                        // self - owned/consuming receiver
+                        return Ok(quote! { self });
+                    }
+                }
+
+                // Regular parameter handling (not a receiver)
                 let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
                     let token_str = tokens.to_string();
                     if token_str == "_" {
@@ -1780,6 +1800,26 @@ impl Transpiler {
             .iter()
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
+
+                // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
+                // Method receivers in Rust have special syntax that differs from normal parameters
+                if p.name() == "self" {
+                    // Check if it's a reference type
+                    if let TypeKind::Reference { is_mut, .. } = &p.ty.kind {
+                        if *is_mut {
+                            // &mut self - mutable reference receiver
+                            return Ok(quote! { &mut self });
+                        } else {
+                            // &self - immutable reference receiver (with lifetime if needed)
+                            return Ok(quote! { &self });
+                        }
+                    } else {
+                        // self - owned/consuming receiver
+                        return Ok(quote! { self });
+                    }
+                }
+
+                // Regular parameter handling (not a receiver)
                 let type_tokens = if let Ok(tokens) = self.transpile_type_with_lifetime(&p.ty) {
                     let token_str = tokens.to_string();
                     if token_str == "_" {

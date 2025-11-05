@@ -5,7 +5,7 @@
 #![allow(clippy::only_used_in_recursion)]
 use super::*;
 use crate::frontend::ast::{
-    ClassMethod, Constructor, EnumVariant, ImplMethod, StructField, TraitMethod, Type,
+    ClassMethod, Constructor, EnumVariant, ImplMethod, StructField, TraitMethod, Type, TypeKind,
 };
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
@@ -885,15 +885,18 @@ impl Transpiler {
                 let param_tokens: Vec<TokenStream> = method
                     .params
                     .iter()
-                    .enumerate()
-                    .map(|(i, param)| {
+                    .map(|param| {
                         let name = param.name();
-                        if i == 0 && name.contains("self") {
-                            // Handle self parameter
-                            if name.contains("&mut") {
-                                quote! { &mut self }
-                            } else if name.contains('&') {
-                                quote! { &self }
+                        // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
+                        // Method receivers in Rust have special syntax that differs from normal parameters
+                        if name == "self" {
+                            // Check if it's a reference type (in the TYPE, not the name)
+                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
+                                if *is_mut {
+                                    quote! { &mut self }
+                                } else {
+                                    quote! { &self }
+                                }
                             } else {
                                 quote! { self }
                             }
@@ -1024,15 +1027,18 @@ impl Transpiler {
                 let param_tokens: Vec<TokenStream> = method
                     .params
                     .iter()
-                    .enumerate()
-                    .map(|(i, param)| {
+                    .map(|param| {
                         let name = param.name();
-                        if i == 0 && name.contains("self") {
-                            // Handle self parameter
-                            if name.contains("&mut") {
-                                quote! { &mut self }
-                            } else if name.contains('&') {
-                                quote! { &self }
+                        // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
+                        // Method receivers in Rust have special syntax that differs from normal parameters
+                        if name == "self" {
+                            // Check if it's a reference type (in the TYPE, not the name)
+                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
+                                if *is_mut {
+                                    quote! { &mut self }
+                                } else {
+                                    quote! { &self }
+                                }
                             } else {
                                 quote! { self }
                             }
