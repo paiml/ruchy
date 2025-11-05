@@ -30,7 +30,7 @@ impl Client {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(
         result.is_ok(),
@@ -82,7 +82,7 @@ pub fn test() -> String {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
 
@@ -126,7 +126,7 @@ impl Counter {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
 
@@ -156,7 +156,7 @@ impl Builder {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
 
@@ -164,7 +164,7 @@ impl Builder {
 
     // Owned self should remain as `self` (no &)
     assert!(
-        rust_code.contains("fn build ( self )"),
+        rust_code.contains("fn build (self)") || rust_code.contains("fn build ( self )"),
         "Should preserve owned self, got: {}",
         rust_code
     );
@@ -198,7 +198,7 @@ impl State {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
 
@@ -218,7 +218,7 @@ impl State {
     );
 
     assert!(
-        rust_code.contains("fn consume ( self )"),
+        rust_code.contains("fn consume (self)") || rust_code.contains("fn consume ( self )"),
         "Should preserve owned self in consume(), got: {}",
         rust_code
     );
@@ -251,7 +251,7 @@ impl LambdaRuntime {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile(&ast);
+    let result = Transpiler::new().transpile_to_program(&ast);
 
     assert!(
         result.is_ok(),
