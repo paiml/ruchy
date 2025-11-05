@@ -20,7 +20,7 @@ use tempfile::NamedTempFile;
 #[test]
 fn test_issue_119_01_simple_global_counter() {
     // RED: This test WILL FAIL until global mutable state is fixed
-    let code = r#"
+    let code = r"
         let mut global_counter = 0
 
         fun increment() {
@@ -33,7 +33,7 @@ fn test_issue_119_01_simple_global_counter() {
         println(global_counter)  // Expected: 2
         increment()
         println(global_counter)  // Expected: 3
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -49,7 +49,7 @@ fn test_issue_119_01_simple_global_counter() {
 #[test]
 fn test_issue_119_02_multiple_functions_same_global() {
     // RED: Multiple functions accessing same global variable
-    let code = r#"
+    let code = r"
         let mut counter = 0
 
         fun increment() {
@@ -66,7 +66,7 @@ fn test_issue_119_02_multiple_functions_same_global() {
         println(counter)  // Expected: 2
         decrement()
         println(counter)  // Expected: 1
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -81,7 +81,7 @@ fn test_issue_119_02_multiple_functions_same_global() {
 #[test]
 fn test_issue_119_03_nested_function_calls() {
     // RED: Nested functions with global modifications
-    let code = r#"
+    let code = r"
         let mut total = 0
 
         fun add_five() {
@@ -95,7 +95,7 @@ fn test_issue_119_03_nested_function_calls() {
 
         add_ten()
         println(total)  // Expected: 10
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -109,7 +109,7 @@ fn test_issue_119_03_nested_function_calls() {
 #[test]
 fn test_issue_119_04_global_array_mutation() {
     // RED: Global array mutations (needed for BENCH-002)
-    let code = r#"
+    let code = r"
         let mut results = []
 
         fun append_value(val) {
@@ -120,7 +120,7 @@ fn test_issue_119_04_global_array_mutation() {
         append_value(20)
         append_value(30)
         println(len(results))  // Expected: 3
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -134,7 +134,7 @@ fn test_issue_119_04_global_array_mutation() {
 #[test]
 fn test_issue_119_05_global_state_across_loop() {
     // RED: Global state maintained across loop iterations
-    let code = r#"
+    let code = r"
         let mut sum = 0
 
         fun add(n) {
@@ -148,7 +148,7 @@ fn test_issue_119_05_global_state_across_loop() {
         }
 
         println(sum)  // Expected: 15 (1+2+3+4+5)
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -162,7 +162,7 @@ fn test_issue_119_05_global_state_across_loop() {
 #[test]
 fn test_issue_119_06_recursive_function_global_state() {
     // RED: Recursive functions with global accumulator
-    let code = r#"
+    let code = r"
         let mut factorial_result = 1
 
         fun factorial(n) {
@@ -176,7 +176,7 @@ fn test_issue_119_06_recursive_function_global_state() {
 
         factorial(5)
         println(factorial_result)  // Expected: 120
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -190,8 +190,8 @@ fn test_issue_119_06_recursive_function_global_state() {
 #[test]
 fn test_issue_119_07_bench_002_matrix_pattern() {
     // RED: BENCH-002 pattern - matrix multiplication requires global state
-    let mut file = NamedTempFile::new().unwrap();
-    let code = r#"
+    let file = NamedTempFile::new().unwrap();
+    let code = r"
 // Simplified BENCH-002 pattern
 let mut matrix_result = []
 
@@ -211,7 +211,7 @@ let b = [[5, 6], [7, 8]]
 // Process single cell
 process_cell(0, 0, a, b)
 println(matrix_result[0])  // Expected: 19 (1*5 + 2*7)
-    "#;
+    ";
     fs::write(file.path(), code).unwrap();
 
     Command::cargo_bin("ruchy")
@@ -225,7 +225,7 @@ println(matrix_result[0])  // Expected: 19 (1*5 + 2*7)
 #[test]
 fn test_issue_119_08_multiple_globals() {
     // RED: Multiple global variables with independent state
-    let code = r#"
+    let code = r"
         let mut x = 0
         let mut y = 0
 
@@ -241,7 +241,7 @@ fn test_issue_119_08_multiple_globals() {
         update_y()
         println(x)  // Expected: 1
         println(y)  // Expected: 2
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -267,15 +267,14 @@ mod property_tests {
         #[test]
         fn prop_global_mutation_visible(initial_value in 0i32..100, increment in 1i32..10) {
             let code = format!(
-                r#"
-                let mut counter = {}
+                r"
+                let mut counter = {initial_value}
                 fun add_value() {{
-                    counter = counter + {}
+                    counter = counter + {increment}
                 }}
                 add_value()
                 println(counter)
-                "#,
-                initial_value, increment
+                "
             );
 
             let output = Command::cargo_bin("ruchy")
@@ -301,14 +300,14 @@ mod property_tests {
         #[test]
         fn prop_multiple_calls_accumulate(num_calls in 1usize..10, increment_per_call in 1i32..5) {
             let code = format!(
-                r#"
+                r"
                 let mut sum = 0
                 fun add() {{
                     sum = sum + {}
                 }}
                 {}
                 println(sum)
-                "#,
+                ",
                 increment_per_call,
                 "add()\n".repeat(num_calls)
             );
@@ -339,20 +338,19 @@ mod property_tests {
         fn prop_state_persistence(operations in prop::collection::vec(0i32..10, 1..5)) {
             let calls = operations
                 .iter()
-                .map(|op| format!("add({})", op))
+                .map(|op| format!("add({op})"))
                 .collect::<Vec<_>>()
                 .join("\n");
 
             let code = format!(
-                r#"
+                r"
                 let mut total = 0
                 fun add(n) {{
                     total = total + n
                 }}
-                {}
+                {calls}
                 println(total)
-                "#,
-                calls
+                "
             );
 
             let output = Command::cargo_bin("ruchy")

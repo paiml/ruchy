@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_transpile_error_type() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let variants = vec![
             ("NotFound".to_string(), None),
             ("InvalidInput".to_string(), Some("String".to_string())),
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_transpile_error_type_empty() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let variants = vec![];
         let error_type = transpiler.transpile_error_type("EmptyError", &variants);
         let code = error_type.to_string();
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_transpile_error_type_single_variant() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let variants = vec![("GenericError".to_string(), None)];
         let error_type = transpiler.transpile_error_type("SimpleError", &variants);
         let code = error_type.to_string();
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_match_ok_err() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let expr = make_ident("result");
         let arms = vec![
             ("Ok".to_string(), make_literal(Literal::Integer(42, None))),
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_match_with_default() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let expr = make_ident("result");
         let arms = vec![
             ("Ok".to_string(), make_ident("value")),
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_chain_empty() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let operations = vec![];
 
         let result = transpiler.transpile_result_chain(&operations);
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_chain_single() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let operations = vec![make_ident("operation")];
 
         let result = transpiler.transpile_result_chain(&operations);
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_chain_multiple() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let operations = vec![make_ident("op1"), make_ident("op2"), make_ident("op3")];
 
         let result = transpiler.transpile_result_chain(&operations);
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_unwrap_or() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let result_expr = make_ident("my_result");
         let default = make_literal(Literal::Integer(0, None));
 
@@ -381,7 +381,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_map() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let result_expr = make_ident("my_result");
         let mapper = make_ident("transform");
 
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_transpile_error_type_with_invalid_type() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let variants = vec![(
             "BadInput".to_string(),
             Some("Invalid::Type::Syntax".to_string()),
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_transpile_error_type_complex_types() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let variants = vec![
             ("IoError".to_string(), Some("std::io::Error".to_string())),
             (
@@ -444,7 +444,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_match_only_ok() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let expr = make_ident("maybe_value");
         let arms = vec![("Ok".to_string(), make_ident("value"))];
 
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_transpile_result_chain_complex() {
-        let mut transpiler = make_transpiler();
+        let transpiler = make_transpiler();
         let operations = vec![
             make_ident("fetch_data"),
             make_ident("parse_json"),

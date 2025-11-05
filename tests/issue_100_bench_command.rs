@@ -2,7 +2,7 @@
 //!
 //! Tests the `ruchy bench` command for performance measurement.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/100
+//! Reference: <https://github.com/paiml/ruchy/issues/100>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -106,7 +106,7 @@ fn test_issue_100_bench_json_format() {
     // JSON output should be parseable
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
-        stdout.contains("{") && stdout.contains("}"),
+        stdout.contains('{') && stdout.contains('}'),
         "JSON format should contain braces"
     );
 }

@@ -3,7 +3,7 @@
 //! BUG: Transpiler transforms &self → self, causing move errors
 //! ERROR: error[E0382]: use of moved value: `client`
 //!
-//! ROOT CAUSE: generate_param_tokens doesn't handle Rust's special receiver syntax
+//! ROOT CAUSE: `generate_param_tokens` doesn't handle Rust's special receiver syntax
 //!
 //! IMPACT: Methods with &self cannot be called multiple times (ownership moved)
 //!
@@ -17,7 +17,7 @@ use ruchy::{Parser, Transpiler};
 /// Test 1: Basic &self method - should preserve reference
 #[test]
 fn test_quality_001_01_immutable_self_reference() {
-    let code = r#"
+    let code = r"
 pub struct Client {
     endpoint: String,
 }
@@ -27,7 +27,7 @@ impl Client {
         self.endpoint.clone()
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -43,15 +43,13 @@ impl Client {
     // CRITICAL: Must preserve &self, not transform to self
     assert!(
         rust_code.contains("& self") || rust_code.contains("&self"),
-        "Should preserve &self reference, got: {}",
-        rust_code
+        "Should preserve &self reference, got: {rust_code}"
     );
 
     // Should NOT have ownership-taking self
     assert!(
         !rust_code.contains("fn get_endpoint ( self )"),
-        "Should NOT transform &self to self, got: {}",
-        rust_code
+        "Should NOT transform &self to self, got: {rust_code}"
     );
 }
 
@@ -100,8 +98,7 @@ pub fn test() -> String {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Transpiled code fails rustc compilation:\n{}\n\nGenerated code:\n{}",
-            stderr, rust_code
+            "CRITICAL: Transpiled code fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}"
         );
     }
 }
@@ -109,7 +106,7 @@ pub fn test() -> String {
 /// Test 3: &mut self method - mutable reference
 #[test]
 fn test_quality_001_03_mutable_self_reference() {
-    let code = r#"
+    let code = r"
 pub struct Counter {
     count: i32,
 }
@@ -123,7 +120,7 @@ impl Counter {
         self.count
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -135,15 +132,14 @@ impl Counter {
     // Must preserve &mut self
     assert!(
         rust_code.contains("& mut self") || rust_code.contains("&mut self"),
-        "Should preserve &mut self, got: {}",
-        rust_code
+        "Should preserve &mut self, got: {rust_code}"
     );
 }
 
 /// Test 4: Owned self (consuming method) - should work as-is
 #[test]
 fn test_quality_001_04_owned_self_consuming() {
-    let code = r#"
+    let code = r"
 pub struct Builder {
     value: String,
 }
@@ -153,7 +149,7 @@ impl Builder {
         self.value
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -165,15 +161,14 @@ impl Builder {
     // Owned self should remain as `self` (no &)
     assert!(
         rust_code.contains("fn build (self)") || rust_code.contains("fn build ( self )"),
-        "Should preserve owned self, got: {}",
-        rust_code
+        "Should preserve owned self, got: {rust_code}"
     );
 }
 
 /// Test 5: Mixed receiver types in same impl
 #[test]
 fn test_quality_001_05_mixed_receiver_types() {
-    let code = r#"
+    let code = r"
 pub struct State {
     value: i32,
 }
@@ -195,7 +190,7 @@ impl State {
         self.value
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -207,27 +202,24 @@ impl State {
     // Should have all three receiver types
     assert!(
         rust_code.contains("& self") || rust_code.contains("&self"),
-        "Should preserve &self in get(), got: {}",
-        rust_code
+        "Should preserve &self in get(), got: {rust_code}"
     );
 
     assert!(
         rust_code.contains("& mut self") || rust_code.contains("&mut self"),
-        "Should preserve &mut self in set(), got: {}",
-        rust_code
+        "Should preserve &mut self in set(), got: {rust_code}"
     );
 
     assert!(
         rust_code.contains("fn consume (self)") || rust_code.contains("fn consume ( self )"),
-        "Should preserve owned self in consume(), got: {}",
-        rust_code
+        "Should preserve owned self in consume(), got: {rust_code}"
     );
 }
 
 /// Test 6: Issue #137 reproduction - ruchy-lambda pattern
 #[test]
 fn test_quality_001_06_issue_137_lambda_pattern() {
-    let code = r#"
+    let code = r"
 use std::net::TcpStream;
 
 pub struct LambdaRuntime {
@@ -248,7 +240,7 @@ impl LambdaRuntime {
         self.endpoint.clone()
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -264,8 +256,7 @@ impl LambdaRuntime {
     // Both invoke() and get_endpoint() must use &self
     assert!(
         rust_code.contains("& self") || rust_code.contains("&self"),
-        "BLOCKER: &self must be preserved for ruchy-lambda, got: {}",
-        rust_code
+        "BLOCKER: &self must be preserved for ruchy-lambda, got: {rust_code}"
     );
 
     // Verify it compiles
@@ -280,8 +271,7 @@ impl LambdaRuntime {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: ruchy-lambda pattern fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: ruchy-lambda pattern fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -297,12 +287,12 @@ mod property_tests {
 
     /// Generate random valid struct names
     fn struct_name() -> impl Strategy<Value = String> {
-        "[A-Z][a-zA-Z0-9]{0,10}".prop_map(|s| s.to_string())
+        "[A-Z][a-zA-Z0-9]{0,10}".prop_map(|s| s)
     }
 
     /// Generate random valid method names
     fn method_name() -> impl Strategy<Value = String> {
-        "[a-z][a-z0-9_]{0,15}".prop_map(|s| s.to_string())
+        "[a-z][a-z0-9_]{0,15}".prop_map(|s| s)
     }
 
     /// Generate random receiver types
@@ -333,28 +323,23 @@ mod property_tests {
                 "i32" => "self.value".to_string(),
                 "String" => "\"test\".to_string()".to_string(),
                 "bool" => "true".to_string(),
-                "()" => "".to_string(),
-                "Self" => format!("{} {{ value: self.value }}", struct_name),
+                "()" => String::new(),
+                "Self" => format!("{struct_name} {{ value: self.value }}"),
                 _ => "self.value".to_string(),
             };
 
             let code = format!(
-                r#"
-                pub struct {} {{
+                r"
+                pub struct {struct_name} {{
                     value: i32,
                 }}
 
-                impl {} {{
-                    pub fn {}(&self) -> {} {{
-                        {}
+                impl {struct_name} {{
+                    pub fn {method_name}(&self) -> {return_type} {{
+                        {body}
                     }}
                 }}
-                "#,
-                struct_name,
-                struct_name,
-                method_name,
-                return_type,
-                body
+                "
             );
 
             let ast = Parser::new(&code).parse();
@@ -380,18 +365,17 @@ mod property_tests {
             method_name in method_name()
         ) {
             let code = format!(
-                r#"
-                pub struct {} {{
+                r"
+                pub struct {struct_name} {{
                     value: i32,
                 }}
 
-                impl {} {{
-                    pub fn {}(&mut self) {{
+                impl {struct_name} {{
+                    pub fn {method_name}(&mut self) {{
                         self.value += 1;
                     }}
                 }}
-                "#,
-                struct_name, struct_name, method_name
+                "
             );
 
             let ast = Parser::new(&code).parse();
@@ -421,28 +405,23 @@ mod property_tests {
                 "i32" => "self.value".to_string(),
                 "String" => "\"test\".to_string()".to_string(),
                 "bool" => "true".to_string(),
-                "()" => "".to_string(),
+                "()" => String::new(),
                 "Self" => "self".to_string(),
                 _ => "self.value".to_string(),
             };
 
             let code = format!(
-                r#"
-                pub struct {} {{
+                r"
+                pub struct {struct_name} {{
                     value: i32,
                 }}
 
-                impl {} {{
-                    pub fn {}(self) -> {} {{
-                        {}
+                impl {struct_name} {{
+                    pub fn {method_name}(self) -> {return_type} {{
+                        {body}
                     }}
                 }}
-                "#,
-                struct_name,
-                struct_name,
-                method_name,
-                return_type,
-                body
+                "
             );
 
             let ast = Parser::new(&code).parse();
@@ -455,9 +434,9 @@ mod property_tests {
 
             // INVARIANT: Owned self must be preserved (fn name(self))
             // Must have "self" but NOT "&self" or "&mut self"
-            let has_self = rust_code.contains(&format!("fn {}(self)", method_name))
-                || rust_code.contains(&format!("fn {} (self)", method_name))
-                || rust_code.contains(&format!("fn {} ( self )", method_name));
+            let has_self = rust_code.contains(&format!("fn {method_name}(self)"))
+                || rust_code.contains(&format!("fn {method_name} (self)"))
+                || rust_code.contains(&format!("fn {method_name} ( self )"));
 
             prop_assert!(
                 has_self,
@@ -474,7 +453,7 @@ mod property_tests {
             call_count in 2usize..5
         ) {
             let code = format!(
-                r#"
+                r"
                 pub struct {} {{
                     value: i32,
                 }}
@@ -494,14 +473,14 @@ mod property_tests {
                     {}
                     obj.{}()
                 }}
-                "#,
+                ",
                 struct_name,
                 struct_name,
                 struct_name,
                 getter_name,
                 struct_name,
                 (0..call_count)
-                    .map(|_| format!("    obj.{}();", getter_name))
+                    .map(|_| format!("    obj.{getter_name}();"))
                     .collect::<Vec<_>>()
                     .join("\n"),
                 getter_name
@@ -516,7 +495,7 @@ mod property_tests {
             let rust_code = result.unwrap().to_string();
 
             // Write to temp file and verify rustc compilation
-            let temp_file = format!("/tmp/quality_001_prop_{}.rs", struct_name);
+            let temp_file = format!("/tmp/quality_001_prop_{struct_name}.rs");
             std::fs::write(&temp_file, &rust_code).ok();
 
             let rustc_result = std::process::Command::new("rustc")
@@ -549,30 +528,29 @@ mod property_tests {
             prop_assume!(getter != setter && setter != consumer && getter != consumer);
 
             let code = format!(
-                r#"
-                pub struct {} {{
+                r"
+                pub struct {struct_name} {{
                     value: i32,
                 }}
 
-                impl {} {{
+                impl {struct_name} {{
                     pub fn new() -> Self {{
-                        {} {{ value: 0 }}
+                        {struct_name} {{ value: 0 }}
                     }}
 
-                    pub fn {}(&self) -> i32 {{
+                    pub fn {getter}(&self) -> i32 {{
                         self.value
                     }}
 
-                    pub fn {}(&mut self, value: i32) {{
+                    pub fn {setter}(&mut self, value: i32) {{
                         self.value = value;
                     }}
 
-                    pub fn {}(self) -> i32 {{
+                    pub fn {consumer}(self) -> i32 {{
                         self.value
                     }}
                 }}
-                "#,
-                struct_name, struct_name, struct_name, getter, setter, consumer
+                "
             );
 
             let ast = Parser::new(&code).parse();
@@ -594,9 +572,9 @@ mod property_tests {
             );
 
             // For owned self, check the specific method name
-            let has_owned_self = rust_code.contains(&format!("fn {}(self)", consumer))
-                || rust_code.contains(&format!("fn {} (self)", consumer))
-                || rust_code.contains(&format!("fn {} ( self )", consumer));
+            let has_owned_self = rust_code.contains(&format!("fn {consumer}(self)"))
+                || rust_code.contains(&format!("fn {consumer} (self)"))
+                || rust_code.contains(&format!("fn {consumer} ( self )"));
 
             prop_assert!(
                 has_owned_self,

@@ -37,8 +37,8 @@ file.close()
     let stdout = String::from_utf8_lossy(&output.stdout);
     
     // Expected output
-    assert!(stdout.contains("Line 1"), "Expected 'Line 1', got: {}", stdout);
-    assert!(stdout.contains("Line 2"), "Expected 'Line 2', got: {}", stdout);
+    assert!(stdout.contains("Line 1"), "Expected 'Line 1', got: {stdout}");
+    assert!(stdout.contains("Line 2"), "Expected 'Line 2', got: {stdout}");
 }
 
 #[test]
@@ -61,7 +61,6 @@ let file = open("/tmp/nonexistent_file_test.txt", "r")
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("Failed to open") || stderr.contains("No such file"),
-        "Expected file error, got: {}",
-        stderr
+        "Expected file error, got: {stderr}"
     );
 }

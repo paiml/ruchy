@@ -20,7 +20,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_bitwise_and_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -38,7 +38,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_bitwise_or_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -56,7 +56,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_bitwise_xor_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -74,7 +74,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_left_shift_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -92,7 +92,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_right_shift_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -110,7 +110,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_add_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("count")),
@@ -127,7 +127,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_subtract_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("count")),
@@ -144,7 +144,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_multiply_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("value")),
@@ -161,7 +161,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_divide_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("total")),
@@ -178,7 +178,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_modulo_compound() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("remainder")),
@@ -195,7 +195,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_invalid_compound_operator() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
                 target: Box::new(make_ident("x")),
@@ -210,7 +210,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_compound_with_complex_target() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         // Test with array index as target: arr[0] += 5
         let target = Expr::new(
             ExprKind::IndexAccess {
@@ -233,7 +233,7 @@ mod transpiler_compound_assignment_tests {
 
     #[test]
     fn test_compound_with_field_access() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         // Test with field access as target: obj.field += 10
         let target = Expr::new(
             ExprKind::FieldAccess {
@@ -260,7 +260,7 @@ mod transpiler_compound_assignment_tests {
         let ast = parser.parse();
         assert!(ast.is_ok());
 
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let result = transpiler.transpile_expr(&ast.unwrap());
         assert!(result.is_ok());
         let code = result.unwrap().to_string();

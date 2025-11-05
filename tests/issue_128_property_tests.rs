@@ -9,7 +9,7 @@ use std::process::Command;
 #[test]
 fn prop_recursive_fib_deterministic() {
     proptest!(|(n in 0u32..15)| {
-        let script = format!(r#"
+        let script = format!(r"
 fun fib(n) {{
     if n <= 1 {{
         return n
@@ -17,8 +17,8 @@ fun fib(n) {{
         return fib(n - 1) + fib(n - 2)
     }}
 }}
-println(fib({}))
-"#, n);
+println(fib({n}))
+");
 
         // Run twice to verify determinism
         let output1 = Command::new("target/release/ruchy")
@@ -35,7 +35,7 @@ println(fib({}))
 
         // Property: Same input → same output (determinism)
         let stdout1 = output1.stdout.clone();
-        let stdout2 = output2.stdout.clone();
+        let stdout2 = output2.stdout;
         prop_assert_eq!(stdout1, stdout2);
 
         // Property: Output is valid UTF-8
@@ -60,7 +60,7 @@ println(fib({}))
 #[test]
 fn prop_parameter_substitution_consistent() {
     proptest!(|(a in 1i32..100, b in 1i32..100)| {
-        let script = format!(r#"
+        let script = format!(r"
 fun max(x, y) {{
     if x > y {{
         return x
@@ -68,8 +68,8 @@ fun max(x, y) {{
         return y
     }}
 }}
-println(max({}, {}))
-"#, a, b);
+println(max({a}, {b}))
+");
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")
@@ -92,7 +92,7 @@ println(max({}, {}))
 #[test]
 fn prop_no_undefined_variables_in_transpiled_code() {
     proptest!(|(n in 1u32..20)| {
-        let script = format!(r#"
+        let script = format!(r"
 fun factorial(n) {{
     if n <= 1 {{
         return 1
@@ -100,8 +100,8 @@ fun factorial(n) {{
         return n * factorial(n - 1)
     }}
 }}
-println(factorial({}))
-"#, n);
+println(factorial({n}))
+");
 
         // Transpile to Rust
         let transpile_output = Command::new("target/release/ruchy")
@@ -139,7 +139,7 @@ println(factorial({}))
 #[test]
 fn prop_nested_recursion_binary_ops() {
     proptest!(|(n in 1u32..10)| {
-        let script = format!(r#"
+        let script = format!(r"
 fun fib(n) {{
     if n <= 1 {{
         return n
@@ -147,8 +147,8 @@ fun fib(n) {{
         return fib(n - 1) + fib(n - 2)
     }}
 }}
-println(fib({}))
-"#, n);
+println(fib({n}))
+");
 
         let output = Command::new("target/release/ruchy")
             .arg("-e")

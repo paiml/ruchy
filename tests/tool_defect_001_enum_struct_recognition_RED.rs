@@ -7,7 +7,6 @@
 // This test will FAIL until tools are updated to track type declarations in scope
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 /// RED TEST 1: ruchy lint should NOT report "undefined variable" for enum types
 #[test]

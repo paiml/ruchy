@@ -31,7 +31,7 @@ fn test_issue_088_basic_module_import() {
 
     // Create mylib.ruchy
     let mylib_file = temp_dir.path().join("mylib.ruchy");
-    let mylib_code = r#"
+    let mylib_code = r"
 // Simple library module for testing
 fun add(a: i32, b: i32) -> i32 {
     a + b
@@ -40,7 +40,7 @@ fun add(a: i32, b: i32) -> i32 {
 fun multiply(a: i32, b: i32) -> i32 {
     a * b
 }
-"#;
+";
     fs::write(&mylib_file, mylib_code).unwrap();
 
     // Create main.ruchy
@@ -67,8 +67,8 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Testing Ruchy module import..."), "Expected greeting, got: {}", stdout);
-    assert!(stdout.contains("5"), "Expected result 5 from mylib::add(2, 3), got: {}", stdout);
+    assert!(stdout.contains("Testing Ruchy module import..."), "Expected greeting, got: {stdout}");
+    assert!(stdout.contains('5'), "Expected result 5 from mylib::add(2, 3), got: {stdout}");
 }
 
 /// RED: Test module import with multiple functions
@@ -78,7 +78,7 @@ fn test_issue_088_multiple_function_calls() {
 
     // Create math.ruchy
     let math_file = temp_dir.path().join("math.ruchy");
-    let math_code = r#"
+    let math_code = r"
 fun double(x: i32) -> i32 {
     x * 2
 }
@@ -86,12 +86,12 @@ fun double(x: i32) -> i32 {
 fun triple(x: i32) -> i32 {
     x * 3
 }
-"#;
+";
     fs::write(&math_file, math_code).unwrap();
 
     // Create main.ruchy
     let main_file = temp_dir.path().join("main.ruchy");
-    let main_code = r#"
+    let main_code = r"
 use math;
 
 fun main() {
@@ -100,7 +100,7 @@ fun main() {
     println(a);
     println(b);
 }
-"#;
+";
     fs::write(&main_file, main_code).unwrap();
 
     let output = ruchy_cmd()
@@ -111,8 +111,8 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("10"), "Expected 10 from double(5), got: {}", stdout);
-    assert!(stdout.contains("15"), "Expected 15 from triple(5), got: {}", stdout);
+    assert!(stdout.contains("10"), "Expected 10 from double(5), got: {stdout}");
+    assert!(stdout.contains("15"), "Expected 15 from triple(5), got: {stdout}");
 }
 
 /// RED: Test nested module calls
@@ -122,23 +122,23 @@ fn test_issue_088_nested_module_calls() {
 
     // Create utils.ruchy
     let utils_file = temp_dir.path().join("utils.ruchy");
-    let utils_code = r#"
+    let utils_code = r"
 fun square(x: i32) -> i32 {
     x * x
 }
-"#;
+";
     fs::write(&utils_file, utils_code).unwrap();
 
     // Create main.ruchy
     let main_file = temp_dir.path().join("main.ruchy");
-    let main_code = r#"
+    let main_code = r"
 use utils;
 
 fun main() {
     let result = utils::square(utils::square(2));
     println(result);
 }
-"#;
+";
     fs::write(&main_file, main_code).unwrap();
 
     let output = ruchy_cmd()
@@ -150,7 +150,7 @@ fun main() {
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     // square(2) = 4, square(4) = 16
-    assert!(stdout.contains("16"), "Expected 16 from square(square(2)), got: {}", stdout);
+    assert!(stdout.contains("16"), "Expected 16 from square(square(2)), got: {stdout}");
 }
 
 /// RED: Test module with variables
@@ -160,26 +160,26 @@ fn test_issue_088_module_with_constants() {
 
     // Create constants.ruchy
     let constants_file = temp_dir.path().join("constants.ruchy");
-    let constants_code = r#"
+    let constants_code = r"
 let PI = 3;
 let MAX_SIZE = 100;
 
 fun get_pi() -> i32 {
     PI
 }
-"#;
+";
     fs::write(&constants_file, constants_code).unwrap();
 
     // Create main.ruchy
     let main_file = temp_dir.path().join("main.ruchy");
-    let main_code = r#"
+    let main_code = r"
 use constants;
 
 fun main() {
     let pi_value = constants::get_pi();
     println(pi_value);
 }
-"#;
+";
     fs::write(&main_file, main_code).unwrap();
 
     let output = ruchy_cmd()
@@ -190,7 +190,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("3"), "Expected 3 from constants::get_pi(), got: {}", stdout);
+    assert!(stdout.contains('3'), "Expected 3 from constants::get_pi(), got: {stdout}");
 }
 
 /// RED: Test module not found error
@@ -223,8 +223,7 @@ fun main() {
     // Should mention "module" not "Undefined variable"
     assert!(
         stderr.contains("module") || stderr.contains("file") || stderr.contains("not found"),
-        "Expected module/file not found error, got: {}",
-        stderr
+        "Expected module/file not found error, got: {stderr}"
     );
 }
 
@@ -236,7 +235,7 @@ fn test_issue_088_no_imports_still_works() {
     let temp_dir = TempDir::new().unwrap();
 
     let test_file = temp_dir.path().join("simple.ruchy");
-    let code = r#"
+    let code = r"
 fun add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -245,7 +244,7 @@ fun main() {
     let result = add(2, 3);
     println(result);
 }
-"#;
+";
     fs::write(&test_file, code).unwrap();
 
     let output = ruchy_cmd()
@@ -256,5 +255,5 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("5"), "Expected 5, got: {}", stdout);
+    assert!(stdout.contains('5'), "Expected 5, got: {stdout}");
 }

@@ -209,11 +209,11 @@ fn test_profiling_001_06_binary_profiling_compile_error() {
     // Invalid Ruchy code
     fs::write(
         &test_file,
-        r#"
+        r"
 fun broken() {
     let x = ;  // Syntax error
 }
-"#,
+",
     )
     .unwrap();
 

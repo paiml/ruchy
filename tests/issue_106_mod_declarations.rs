@@ -2,7 +2,7 @@
 //!
 //! Tests Rust-style module declarations that reference external files.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/106
+//! Reference: <https://github.com/paiml/ruchy/issues/106>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;
@@ -45,7 +45,7 @@ pub fun scan() {
     let main_file = create_temp_file(
         &temp,
         "main.ruchy",
-        r#"
+        r"
 mod scanner;
 
 fun main() {
@@ -53,7 +53,7 @@ fun main() {
 }
 
 main()
-"#,
+",
     );
 
     ruchy_cmd()
@@ -93,7 +93,7 @@ pub fun log(msg) {
     let main_file = create_temp_file(
         &temp,
         "main.ruchy",
-        r#"
+        r"
 mod utils;
 mod logger;
 
@@ -103,7 +103,7 @@ fun main() {
 }
 
 main()
-"#,
+",
     );
 
     ruchy_cmd()
@@ -121,7 +121,7 @@ fn test_issue_106_nested_module_calls() {
     create_temp_file(
         &temp,
         "math.ruchy",
-        r#"
+        r"
 pub fun add(x, y) {
     x + y
 }
@@ -129,7 +129,7 @@ pub fun add(x, y) {
 pub fun multiply(x, y) {
     x * y
 }
-"#,
+",
     );
 
     // Create main file using both functions
@@ -168,11 +168,11 @@ fn test_issue_106_compile_with_mod_declaration() {
     create_temp_file(
         &temp,
         "calculator.ruchy",
-        r#"
+        r"
 pub fun compute(x, y) {
     x + y
 }
-"#,
+",
     );
 
     // Create main file with mod declaration
@@ -213,11 +213,11 @@ fn test_issue_106_compiled_binary_executes() {
     create_temp_file(
         &temp,
         "processor.ruchy",
-        r#"
+        r"
 pub fun process(value) {
     value * 2
 }
-"#,
+",
     );
 
     // Create main file
@@ -266,13 +266,13 @@ fn test_issue_106_missing_module_file() {
     let main_file = create_temp_file(
         &temp,
         "main.ruchy",
-        r#"
+        r"
 mod nonexistent;
 
 fun main() {
     nonexistent::function()
 }
-"#,
+",
     );
 
     ruchy_cmd()
@@ -291,22 +291,22 @@ fn test_issue_106_invalid_module_syntax() {
     create_temp_file(
         &temp,
         "broken.ruchy",
-        r#"
+        r"
 pub fun missing_body()
-"#,
+",
     );
 
     // Create main file
     let main_file = create_temp_file(
         &temp,
         "main.ruchy",
-        r#"
+        r"
 mod broken;
 
 fun main() {
     broken::missing_body()
 }
-"#,
+",
     );
 
     ruchy_cmd()

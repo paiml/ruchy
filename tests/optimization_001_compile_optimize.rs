@@ -263,21 +263,15 @@ fun main() {
     // Both optimized binaries should be smaller than balanced
     assert!(
         aggressive_size < balanced_size,
-        "Aggressive binary ({}) should be < balanced ({})",
-        aggressive_size,
-        balanced_size
+        "Aggressive binary ({aggressive_size}) should be < balanced ({balanced_size})"
     );
     assert!(
         nasa_size < balanced_size,
-        "NASA binary ({}) should be < balanced ({})",
-        nasa_size,
-        balanced_size
+        "NASA binary ({nasa_size}) should be < balanced ({balanced_size})"
     );
     assert!(
         balanced_size < none_size,
-        "Balanced binary ({}) should be < none ({})",
-        balanced_size,
-        none_size
+        "Balanced binary ({balanced_size}) should be < none ({none_size})"
     );
 }
 

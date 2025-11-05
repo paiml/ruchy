@@ -947,7 +947,7 @@ impl Transpiler {
         }
     }
 
-    /// TRANSPILER-013: Check if expression returns an object literal (transpiled to BTreeMap)
+    /// TRANSPILER-013: Check if expression returns an object literal (transpiled to `BTreeMap`)
     /// Used to infer return type annotation for functions
     fn returns_object_literal(&self, body: &Expr) -> bool {
         match &body.kind {
@@ -1168,14 +1168,12 @@ impl Transpiler {
                         if *is_mut {
                             // &mut self - mutable reference receiver
                             return Ok(quote! { &mut self });
-                        } else {
-                            // &self - immutable reference receiver
-                            return Ok(quote! { &self });
                         }
-                    } else {
-                        // self - owned/consuming receiver
-                        return Ok(quote! { self });
+                        // &self - immutable reference receiver
+                        return Ok(quote! { &self });
                     }
+                    // self - owned/consuming receiver
+                    return Ok(quote! { self });
                 }
 
                 // Regular parameter handling (not a receiver)
@@ -1851,14 +1849,12 @@ impl Transpiler {
                         if *is_mut {
                             // &mut self - mutable reference receiver
                             return Ok(quote! { &mut self });
-                        } else {
-                            // &self - immutable reference receiver (with lifetime if needed)
-                            return Ok(quote! { &self });
                         }
-                    } else {
-                        // self - owned/consuming receiver
-                        return Ok(quote! { self });
+                        // &self - immutable reference receiver (with lifetime if needed)
+                        return Ok(quote! { &self });
                     }
+                    // self - owned/consuming receiver
+                    return Ok(quote! { self });
                 }
 
                 // Regular parameter handling (not a receiver)
@@ -1967,7 +1963,7 @@ impl Transpiler {
         for param in params {
             if let TypeKind::Named(type_name) = &param.ty.kind {
                 if type_name == "String" {
-                    self.string_vars.borrow_mut().insert(param.name().to_string());
+                    self.string_vars.borrow_mut().insert(param.name().clone());
                 }
             }
         }
@@ -2514,7 +2510,7 @@ impl Transpiler {
         }
     }
     /// Handle HashMap/HashSet methods: `contains_key`, items, etc.
-    /// TRANSPILER-002 FIX: Removed "get" case - was causing .cloned() on all get() methods
+    /// TRANSPILER-002 FIX: Removed "get" case - was causing .`cloned()` on all `get()` methods
     fn transpile_map_set_methods(
         &self,
         obj_tokens: &TokenStream,
@@ -6410,7 +6406,7 @@ mod tests {
 
     #[test]
     fn test_looks_like_numeric_function() {
-        let mut transpiler = create_transpiler();
+        let transpiler = create_transpiler();
 
         // Test mathematical functions
         assert!(transpiler.looks_like_numeric_function("sin"));
@@ -6437,7 +6433,7 @@ mod tests {
     #[test]
     fn test_pattern_needs_slice() {
         use crate::frontend::ast::Pattern;
-        let mut transpiler = create_transpiler();
+        let transpiler = create_transpiler();
 
         // Test list pattern (should need slice)
         let list_pattern = Pattern::List(vec![]);
@@ -6455,7 +6451,7 @@ mod tests {
     #[test]
     fn test_value_creates_vec() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
-        let mut transpiler = create_transpiler();
+        let transpiler = create_transpiler();
 
         // Test list expression (should create vec)
         let list_expr = Expr::new(ExprKind::List(vec![]), Span::default());
@@ -6771,7 +6767,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_helper_functions() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
 
         // Test pattern_needs_slice
         assert!(transpiler.pattern_needs_slice(&Pattern::List(vec![])));
@@ -6897,7 +6893,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpiler_helper_methods_comprehensive() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
 
         // Test all helper methods with various inputs
 

@@ -93,7 +93,7 @@ fun main() {
     let output = cmd.output().unwrap();
     let rust_code = String::from_utf8_lossy(&output.stdout);
 
-    println!("Generated Rust code:\n{}", rust_code);
+    println!("Generated Rust code:\n{rust_code}");
 
     // Now try to compile the transpiled Rust
     let transpiled_file = ruchy_file.with_extension("rs");
@@ -114,16 +114,15 @@ fun main() {
 
     let stderr = String::from_utf8_lossy(&check_output.stderr);
 
-    println!("Rustc output:\n{}", stderr);
+    println!("Rustc output:\n{stderr}");
 
     // RED: This should fail with E0382 until fixed
-    if !check_output.status.success() {
-        if stderr.contains("E0382") && stderr.contains("use of moved value") {
+    if !check_output.status.success()
+        && stderr.contains("E0382") && stderr.contains("use of moved value") {
             println!("✅ RED TEST: E0382 ownership error confirmed");
             println!("   Transpiler generates buggy code for nested loop pattern");
             return; // RED test passes (confirms bug exists)
         }
-    }
 
     panic!("RED TEST FAILED: Expected E0382 error but compilation succeeded or had different error");
 }
@@ -190,12 +189,11 @@ fun main() {
 
     let stderr = String::from_utf8_lossy(&check_output.stderr);
 
-    if !check_output.status.success() {
-        if stderr.contains("E0382") || stderr.contains("use of moved value") {
+    if !check_output.status.success()
+        && (stderr.contains("E0382") || stderr.contains("use of moved value")) {
             println!("✅ RED TEST 2: Nested loop ownership error confirmed");
             return;
         }
-    }
 
     panic!("RED TEST 2 FAILED: Expected E0382 but got different result");
 }

@@ -8,7 +8,7 @@ use std::fs;
 use tempfile::NamedTempFile;
 
 /// Test 1: Top-level mutable variable used by function
-/// MUST transpile to static mut at module level, NOT inside main()
+/// MUST transpile to static mut at module level, NOT inside `main()`
 #[test]
 fn test_transpiler_scope_global_mut_used_by_function() {
     let code = r#"
@@ -36,8 +36,7 @@ println!("{}", global_state);
     // Should NOT have let mut inside main()
     assert!(
         !transpiled.contains("fn main() {") || !transpiled.contains("let mut global_state"),
-        "Should not have 'let mut global_state' inside main(), got: {}",
-        transpiled
+        "Should not have 'let mut global_state' inside main(), got: {transpiled}"
     );
 
     // Write to temp file and compile

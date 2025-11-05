@@ -1,8 +1,8 @@
 //! Issue #105: ruchy dataflow:debug not implemented
 //!
-//! Tests the `ruchy dataflow:debug` command for DataFrame pipeline debugging.
+//! Tests the `ruchy dataflow:debug` command for `DataFrame` pipeline debugging.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/105
+//! Reference: <https://github.com/paiml/ruchy/issues/105>
 //! EXTREME TDD: These tests demonstrate the expected behavior (RED phase)
 
 use assert_cmd::Command;

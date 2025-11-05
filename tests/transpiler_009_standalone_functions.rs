@@ -12,7 +12,7 @@
 /// }
 /// ```
 ///
-/// Current (BROKEN) output: Only main() appears, square() is missing
+/// Current (BROKEN) output: Only `main()` appears, `square()` is missing
 
 use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
@@ -39,14 +39,13 @@ fun main() {
         .to_string();
 
     println!("=== Transpiled Rust code ===");
-    println!("{}", rust_code);
+    println!("{rust_code}");
     println!("============================");
 
     // BUG: This will FAIL because square() disappears
     assert!(
         rust_code.contains("fn square"),
-        "TRANSPILER-009: Standalone function 'square' missing from output!\nGot:\n{}",
-        rust_code
+        "TRANSPILER-009: Standalone function 'square' missing from output!\nGot:\n{rust_code}"
     );
 }
 
@@ -72,14 +71,13 @@ fun main() {
         .to_string();
 
     println!("=== Main body ===");
-    println!("{}", rust_code);
+    println!("{rust_code}");
     println!("=================");
 
     // BUG: This will FAIL because main body is truncated
     assert!(
         rust_code.contains("let result"),
-        "TRANSPILER-009: Main body missing 'let result' statement!\nGot:\n{}",
-        rust_code
+        "TRANSPILER-009: Main body missing 'let result' statement!\nGot:\n{rust_code}"
     );
 }
 
@@ -117,11 +115,9 @@ fun main() {
         .expect("Failed to execute rustc");
 
     // BUG: This will FAIL because square() is missing
-    if !output.status.success() {
-        panic!(
+    assert!(output.status.success(), 
             "TRANSPILER-009: Code failed to compile (missing square function)!\n\nRust:\n{}\n\nErrors:\n{}",
             rust_code,
             String::from_utf8_lossy(&output.stderr)
-        );
-    }
+        )
 }

@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_transpile_wildcard_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Wildcard;
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert_eq!(result.to_string(), "_");
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_transpile_literal_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Literal(Literal::Integer(42, None));
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         // The output should contain the integer value
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_transpile_identifier_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Identifier("x".to_string());
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert_eq!(result.to_string(), "x");
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_transpile_tuple_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Tuple(vec![
             Pattern::Identifier("a".to_string()),
             Pattern::Identifier("b".to_string()),
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_transpile_empty_list_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::List(vec![]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert!(result.to_string().contains('['));
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_transpile_rest_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Rest;
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert_eq!(result.to_string(), "..");
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_transpile_rest_named_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::RestNamed("rest".to_string());
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert!(result.to_string().contains("rest"));
@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_transpile_qualified_name_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::QualifiedName(vec!["Some".to_string()]);
         let result = transpiler.transpile_pattern(&pattern).unwrap();
         assert!(result.to_string().contains("Some"));
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_transpile_qualified_path_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::QualifiedName(vec![
             "std".to_string(),
             "option".to_string(),
@@ -414,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_transpile_struct_pattern_empty() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
             name: "Point".to_string(),
             fields: vec![],
@@ -426,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_transpile_struct_pattern_with_fields() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
             name: "Point".to_string(),
             fields: vec![
@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn test_transpile_struct_pattern_with_rest() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
             name: "Config".to_string(),
             fields: vec![StructPatternField {
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_transpile_range_pattern_exclusive() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Range {
             start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
             end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
@@ -483,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_transpile_range_pattern_inclusive() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Range {
             start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
             end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_transpile_or_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Or(vec![
             Pattern::Literal(Literal::Integer(1, None)),
             Pattern::Literal(Literal::Integer(2, None)),
@@ -514,7 +514,7 @@ mod tests {
 
     #[test]
     fn test_transpile_with_default_pattern() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::WithDefault {
             pattern: Box::new(Pattern::Identifier("x".to_string())),
             default: Box::new(Expr::new(
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_transpile_match_without_guard() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
         let arms = vec![
             MatchArm {
@@ -564,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_transpile_match_with_guard() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
         let arms = vec![MatchArm {
             pattern: Pattern::Identifier("n".to_string()),
@@ -596,7 +596,7 @@ mod tests {
 
     #[test]
     fn test_list_pattern_with_rest() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::List(vec![
             Pattern::Identifier("first".to_string()),
             Pattern::Rest,
@@ -611,7 +611,7 @@ mod tests {
 
     #[test]
     fn test_list_pattern_with_named_rest() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::List(vec![
             Pattern::Identifier("head".to_string()),
             Pattern::RestNamed("tail".to_string()),
@@ -627,7 +627,7 @@ mod tests {
 
     #[test]
     fn test_empty_struct_name() {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let pattern = Pattern::Struct {
             name: String::new(),
             fields: vec![],
