@@ -2180,6 +2180,8 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         crate::Commands::Runtime {
             file,
             profile,
+            binary,
+            iterations,
             bigo,
             bench,
             compare,
@@ -2189,6 +2191,8 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         } => commands::handle_runtime_command(
             &file,
             profile,
+            binary,
+            iterations,
             bigo,
             bench,
             compare.as_deref(),

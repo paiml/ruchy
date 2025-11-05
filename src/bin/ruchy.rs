@@ -284,6 +284,12 @@ enum Commands {
         /// Perform detailed execution profiling
         #[arg(long)]
         profile: bool,
+        /// Profile transpiled binary instead of interpreter (PROFILING-001, Issue #138)
+        #[arg(long)]
+        binary: bool,
+        /// Number of profiling iterations (default: 1 for binary, 10 for interpreter)
+        #[arg(long)]
+        iterations: Option<usize>,
         /// Automatic `BigO` algorithmic complexity analysis
         #[arg(long)]
         bigo: bool,

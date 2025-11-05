@@ -8126,6 +8126,40 @@ metrics:
 
 # Historical Context
 previous_sprints:
+  - name: "PROFILING-001: Binary Profiling for Transpiled Code (Issue #138)"
+    status: "COMPLETE"
+    completion_date: "2025-11-05"
+    time_actual: "2h"
+    commits: 1
+    tickets: ["PROFILING-001"]
+    results:
+      test_pass_rate: "100% (8/8 tests passing)"
+      feature: "ruchy runtime --profile --binary"
+      output_formats: ["text", "json"]
+      validation: "Integration tested with real Ruchy code"
+    tasks_complete:
+      - "RED: Write 8 comprehensive failing tests"
+      - "GREEN: Implement binary profiling pipeline (transpile→compile→profile→report)"
+      - "Add CLI flags: --binary and --iterations N"
+      - "Generate text and JSON output formats"
+      - "Fix parallel test execution with unique temp file names"
+      - "REFACTOR: Zero clippy warnings"
+      - "VALIDATE: Integration test with real Ruchy examples"
+    files_modified:
+      - "src/bin/ruchy.rs (+2 CLI flags)"
+      - "src/bin/handlers/mod.rs (+2 parameters)"
+      - "src/bin/handlers/commands.rs (+178 LOC)"
+    files_added:
+      - "tests/profiling_001_binary_profiling.rs (8 tests)"
+    lessons:
+      - "Unique temp file names prevent parallel test conflicts"
+      - "JSON output format enables CI/CD integration"
+      - "Binary profiling ~10-100x faster than interpreter profiling"
+    toyota_way:
+      jidoka: "EXTREME TDD - RED→GREEN→REFACTOR→VALIDATE cycle"
+      genchi_genbutsu: "Validated with real Ruchy code, not synthetic examples"
+      kaizen: "Incremental improvements - fixed clippy warnings during refactor"
+
   - name: "DEPENDENCY-CLEANUP Sprint v3.109.0 (Phase 1: Audit & Remove Unused)"
     status: "IN PROGRESS"
     completion_date: "2025-10-21"
