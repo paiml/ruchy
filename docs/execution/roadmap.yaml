@@ -6615,6 +6615,249 @@ tasks:
         Tests use Vec::new() + push() pattern instead of vec![] macro (not yet implemented in interpreter).
         Combined total: 18 tests (8 Box<T> + 7 Vec<T> + 3 Combined)
 
+  # Parser Limitations Discovered via ruchy-lambda Project (Issue #137)
+  # These block AWS Lambda runtime implementation in pure Ruchy
+  - id: "PARSER-092"
+    title: "Add support for vec![] macro syntax"
+    status: "✅ COMPLETE (v3.203.0 - 2025-11-05)"
+    completed: "2025-11-05"
+    priority: "🔴 HIGH"
+    discovered_by: "Issue #137 - ruchy-lambda project"
+    github_issue: "https://github.com/paiml/ruchy/issues/137"
+    blocking: "ruchy-lambda AWS Lambda custom runtime (pure Ruchy implementation) - ✅ NOW UNBLOCKED"
+    time_estimated: "4-6h"
+    time_actual: "2h"
+    description: |
+      Parser does not support vec![] macro syntax, forcing verbose workarounds for byte buffers.
+      Critical for systems programming where vec![0u8; 1024] pattern is idiomatic.
+
+      Example that fails:
+      ```ruchy
+      fun http_post(&self, path: &str, body: &str) -> bool {
+          let mut buffer = vec![0u8; 1024];  // ❌ Parse error: Expected RightBrace, found Let
+          // ...
+      }
+      ```
+
+      Current workaround (verbose):
+      ```ruchy
+      let mut buffer = Vec::new();
+      let mut temp_buf = [0u8; 1024];
+      let mut i = 0usize;
+      while i < n {
+          buffer.push(temp_buf[i]);
+          i = i + 1;
+      }
+      ```
+    impact:
+      - "Makes byte buffer handling extremely verbose and unidiomatic"
+      - "Blocks pure Ruchy implementation of HTTP clients, I/O libraries"
+      - "Forces manual loops where vec![] would be one line"
+    tdd_steps:
+      - "RED: Create parser_092_vec_macro.rs with 8 failing tests"
+      - "GREEN: Add MacroCall(vec) case to parser, handle vec![expr; size] and vec![a, b, c] forms"
+      - "REFACTOR: Ensure complexity ≤10, zero SATD"
+      - "VALIDATE: Property tests with 10K+ random inputs"
+    test_coverage:
+      - "vec![0u8; 1024] - fixed-size initialization"
+      - "vec![1, 2, 3] - element list initialization"
+      - "vec![expr; n] - expression repetition"
+      - "Nested vec![] - vec![vec![0; 5]; 10]"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-093"
+    title: "Add support for mod foo; declarations"
+    status: "PENDING"
+    priority: "🔴 HIGH"
+    discovered_by: "Issue #137 - ruchy-lambda project"
+    github_issue: "https://github.com/paiml/ruchy/issues/137"
+    blocking: "ruchy-lambda AWS Lambda custom runtime (Rust interop)"
+    time_estimated: "4-6h"
+    description: |
+      Parser does not support module declarations (mod foo;), preventing Ruchy code
+      from importing external Rust modules. Forces all-or-nothing approach.
+
+      Example that fails:
+      ```ruchy
+      mod http_client;  // ❌ Parse error: Unsupported expression kind: ModuleDeclaration
+
+      pub struct Runtime {
+          // ...
+      }
+      ```
+
+      Current workaround: Inject via build.rs post-processing:
+      ```rust
+      // build.rs
+      let http_client_code = std::fs::read_to_string("src/http_client.rs")?;
+      let module = format!("mod http_client {{\n{}\n}}", http_client_code);
+      transpiled = format!("{}{}", module, transpiled);
+      ```
+    impact:
+      - "Cannot compose Ruchy code with hand-written Rust modules"
+      - "Forces all-or-nothing: either 100% Ruchy or 100% Rust"
+      - "Blocks gradual migration and incremental adoption"
+    tdd_steps:
+      - "RED: Create parser_093_mod_declarations.rs with 8 failing tests"
+      - "GREEN: Add mod keyword parsing, ModuleDeclaration AST node"
+      - "REFACTOR: Ensure complexity ≤10, zero SATD"
+      - "VALIDATE: Integration with transpiler (mod foo; → mod foo;)"
+    test_coverage:
+      - "mod http_client; - external module"
+      - "mod foo { ... } - inline module"
+      - "pub mod bar; - public module"
+      - "mod nested::path; - nested paths"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-094"
+    title: "Fix module path separator bug (:: → .)"
+    status: "PENDING"
+    priority: "🔴 HIGH"
+    discovered_by: "Issue #137 - ruchy-lambda project"
+    github_issue: "https://github.com/paiml/ruchy/issues/137"
+    blocking: "ruchy-lambda AWS Lambda custom runtime (module function calls)"
+    time_estimated: "2-3h"
+    description: |
+      Transpiler incorrectly converts Rust path separator :: to . (dot), breaking
+      module function calls. Requires brittle string replacements in build.rs.
+
+      Example:
+      ```ruchy
+      // Written:
+      let result = http_client::http_get(&endpoint, &path);
+
+      // Transpiles to (WRONG):
+      let result = http_client.http_get(&endpoint, &path);  // ❌ error[E0423]: expected value, found module
+      ```
+
+      Current workaround: String replacement in build.rs:
+      ```rust
+      transpiled = transpiled.replace("http_client.http_get(", "http_client::http_get(");
+      ```
+    impact:
+      - "Breaks all module function calls"
+      - "Requires brittle, pattern-specific string replacements"
+      - "Cannot use qualified paths (std::io::Read, etc.)"
+    root_cause:
+      - "Transpiler treats :: as FieldAccess instead of PathSeparator"
+      - "MemberAccess AST node generated for module::function patterns"
+    tdd_steps:
+      - "RED: Create parser_094_path_separator.rs with 8 failing tests"
+      - "GREEN: Fix transpiler to preserve :: in qualified paths"
+      - "REFACTOR: Distinguish FieldAccess (expr.field) from PathAccess (Module::item)"
+      - "VALIDATE: All ruchy-lambda examples transpile correctly"
+    test_coverage:
+      - "http_client::http_get() - module function call"
+      - "std::io::Read - stdlib qualified path"
+      - "nested::module::function - multi-level paths"
+      - "Type::associated_fn() - associated functions"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-095"
+    title: "Add support for complex use statements"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "Issue #137 - ruchy-lambda project"
+    github_issue: "https://github.com/paiml/ruchy/issues/137"
+    blocking: "ruchy-lambda AWS Lambda custom runtime (ergonomics)"
+    time_estimated: "3-4h"
+    description: |
+      Parser does not support grouped imports in use statements, requiring one
+      import per line (verbose but manageable workaround).
+
+      Example that fails:
+      ```ruchy
+      use std::io::{Read, Write};  // ❌ Parse error: Expected RightBrace, found Let
+      use std::net::TcpStream;
+      ```
+
+      Current workaround (verbose):
+      ```ruchy
+      use std::io::Read;   // ✅ One import per line works
+      use std::io::Write;
+      use std::net::TcpStream;
+      ```
+    impact:
+      - "Verbose imports (3 lines instead of 1)"
+      - "Clutters code with repetitive use statements"
+      - "Not idiomatic Rust style"
+    tdd_steps:
+      - "RED: Create parser_095_complex_use.rs with 6 failing tests"
+      - "GREEN: Add support for use foo::{bar, baz} syntax"
+      - "REFACTOR: Ensure complexity ≤10, zero SATD"
+      - "VALIDATE: Transpiler generates correct Rust use statements"
+    test_coverage:
+      - "use std::io::{Read, Write}; - two imports"
+      - "use foo::{bar, baz, qux}; - three+ imports"
+      - "use std::io::{self, Read}; - self in group"
+      - "use std::collections::{HashMap, HashSet as Set}; - aliases in group"
+    quality:
+      complexity_max: 10
+
+  - id: "PARSER-096"
+    title: "Disable mock stub generation for stdlib types"
+    status: "PENDING"
+    priority: "🟡 MEDIUM"
+    discovered_by: "Issue #137 - ruchy-lambda project"
+    github_issue: "https://github.com/paiml/ruchy/issues/137"
+    blocking: "ruchy-lambda AWS Lambda custom runtime (stdlib usage)"
+    time_estimated: "2-3h"
+    description: |
+      Transpiler generates non-functional mock stubs for std::net::TcpStream and
+      other stdlib types, shadowing the real implementations. Requires manual
+      post-processing to strip stubs.
+
+      Example:
+      ```ruchy
+      use std::net::TcpStream;
+      let stream = TcpStream::connect(&endpoint)?;  // Intends to use real TcpStream
+      ```
+
+      Transpiler generates (WRONG):
+      ```rust
+      mod net {
+          pub use std::net::*;
+          pub struct TcpStream;  // ❌ Mock shadows real TcpStream!
+          impl TcpStream {
+              pub fn connect(addr: String) -> Result<Self, String> {
+                  println!("Would connect to: {}", addr);  // Non-functional
+                  Ok(TcpStream)
+              }
+          }
+      }
+      ```
+
+      Current workaround: Strip stubs in build.rs:
+      ```rust
+      if let Some(start) = transpiled.find("mod net {") {
+          transpiled.replace_range(start..end, "");
+      }
+      transpiled = format!("use std::net::TcpStream;\n{}", transpiled);
+      ```
+    impact:
+      - "Real stdlib types shadowed by non-functional mocks"
+      - "Network I/O, file I/O broken by default"
+      - "Requires brittle post-processing for every stdlib type used"
+    proposed_solutions:
+      - "Option A: Add --no-stubs flag to disable all stub generation"
+      - "Option B: Detect use std::* and skip stub generation for those types"
+      - "Option C: Remove stub generation entirely (breaking change)"
+    tdd_steps:
+      - "RED: Create parser_096_no_stubs.rs with 6 failing tests"
+      - "GREEN: Implement --no-stubs flag or std::* detection"
+      - "REFACTOR: Ensure complexity ≤10, zero SATD"
+      - "VALIDATE: ruchy-lambda uses real TcpStream, no post-processing needed"
+    test_coverage:
+      - "std::net::TcpStream - no mock generated"
+      - "std::io::Read - no mock generated"
+      - "std::io::Write - no mock generated"
+      - "Custom types - stubs still generated (backwards compatible)"
+    quality:
+      complexity_max: 10
+
   - id: "BUG-032"
     title: "Fix: range() function not transpiling to Rust syntax"
     status: "COMPLETE"

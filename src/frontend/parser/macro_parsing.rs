@@ -153,6 +153,64 @@ pub fn parse_macro_arguments(state: &mut ParserState, closing_token: Token) -> R
     Ok(args)
 }
 
+/// Parse vec![] macro with special repeat pattern support (complexity: 9)
+/// PARSER-092: Support vec![expr; size] repeat pattern from Issue #137
+pub fn parse_vec_macro(state: &mut ParserState) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume !
+
+    if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+        return Ok(None); // Not vec![], let regular macro parsing handle it
+    }
+
+    state.tokens.advance(); // consume [
+
+    // Check for empty vec![]
+    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        state.tokens.advance(); // consume ]
+        return Ok(Some(create_macro_expr("vec".to_string(), Vec::new())));
+    }
+
+    // Parse first expression
+    let first_expr = parse_expr_recursive(state)?;
+
+    // Check if this is repeat pattern (vec![expr; size]) or element list (vec![a, b, c])
+    match state.tokens.peek() {
+        Some((Token::Semicolon, _)) => {
+            // Repeat pattern: vec![expr; size]
+            state.tokens.advance(); // consume ;
+            let size_expr = parse_expr_recursive(state)?;
+            state.tokens.expect(&Token::RightBracket)?;
+
+            // Return MacroInvocation with two args: [value_expr, size_expr]
+            Ok(Some(create_macro_expr("vec".to_string(), vec![first_expr, size_expr])))
+        }
+        Some((Token::Comma, _)) => {
+            // Element list: vec![a, b, c, ...]
+            state.tokens.advance(); // consume comma
+            let mut args = vec![first_expr];
+
+            while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                args.push(parse_expr_recursive(state)?);
+
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume comma
+                } else {
+                    break;
+                }
+            }
+
+            state.tokens.expect(&Token::RightBracket)?;
+            Ok(Some(create_macro_expr("vec".to_string(), args)))
+        }
+        Some((Token::RightBracket, _)) => {
+            // Single element: vec![42]
+            state.tokens.advance(); // consume ]
+            Ok(Some(create_macro_expr("vec".to_string(), vec![first_expr])))
+        }
+        _ => bail!("Unexpected token in vec![] macro"),
+    }
+}
+
 /// Create a macro invocation expression (complexity: 1)
 /// FORMATTER-088: Changed from `ExprKind::Macro` to `ExprKind::MacroInvocation`
 /// to correctly represent macro CALLS, not macro DEFINITIONS (GitHub Issue #72)
