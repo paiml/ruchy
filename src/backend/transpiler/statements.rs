@@ -947,6 +947,39 @@ impl Transpiler {
         }
     }
 
+    /// TRANSPILER-013: Check if expression returns an object literal (transpiled to BTreeMap)
+    /// Used to infer return type annotation for functions
+    fn returns_object_literal(&self, body: &Expr) -> bool {
+        match &body.kind {
+            // Direct object literal { key: value, ... }
+            ExprKind::ObjectLiteral { .. } => true,
+
+            // Return statement with object literal
+            ExprKind::Return { value: Some(val) } => self.returns_object_literal(val),
+
+            // Block - check last expression
+            ExprKind::Block(exprs) => {
+                exprs.last().is_some_and(|e| self.returns_object_literal(e))
+            }
+
+            // If expression - both branches return object literal
+            ExprKind::If { then_branch, else_branch, .. } => {
+                let then_is_object = self.returns_object_literal(then_branch);
+                let else_is_object = else_branch
+                    .as_ref()
+                    .is_some_and(|e| self.returns_object_literal(e));
+                then_is_object && else_is_object
+            }
+
+            // Let expression - body returns object literal
+            ExprKind::Let { body: let_body, .. } | ExprKind::LetPattern { body: let_body, .. } => {
+                self.returns_object_literal(let_body)
+            }
+
+            _ => false,
+        }
+    }
+
     /// Check if function body returns an owned String (ISSUE-114)
     /// Detects: string concatenation, string variables, string mutations
     /// Note: This is for owned String, not &'static str (use `returns_string_literal` for that)
@@ -1220,6 +1253,10 @@ impl Transpiler {
         } else if self.returns_string_literal(body) {
             // ISSUE-103: String literals have 'static lifetime
             Ok(quote! { -> &'static str })
+        // TRANSPILER-013 FIX: Check for object literal BEFORE numeric fallback
+        // Object literals transpile to BTreeMap, not i32
+        } else if self.returns_object_literal(body) {
+            Ok(quote! { -> std::collections::BTreeMap<String, String> })
         } else if self.has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
