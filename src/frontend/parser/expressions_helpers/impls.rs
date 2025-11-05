@@ -167,15 +167,20 @@ fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<ImplMethod>> {
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Skip any visibility modifiers for now
-        if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        // PARSER-008 FIX: Check for pub keyword and capture the flag
+        let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
             state.tokens.advance();
-        }
+            true
+        } else {
+            false
+        };
 
         // Parse method
         if matches!(state.tokens.peek(), Some((Token::Fun, _)))
             || matches!(state.tokens.peek(), Some((Token::Fn, _)))
         {
-            let method = parse_impl_method(state)?;
+            // PARSER-008 FIX: Pass is_pub flag to parse_impl_method
+            let method = parse_impl_method(state, is_pub)?;
             methods.push(method);
         } else {
             // Skip unexpected tokens
@@ -187,7 +192,8 @@ fn parse_impl_methods(state: &mut ParserState) -> Result<Vec<ImplMethod>> {
 }
 
 /// Parse a single impl method (complexity: 8)
-fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
+/// PARSER-008 FIX: Accept is_pub parameter to preserve visibility
+fn parse_impl_method(state: &mut ParserState, is_pub: bool) -> Result<ImplMethod> {
     // Accept both 'fun' and 'fn' for method definitions
     if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
         state.tokens.expect(&Token::Fun)?;
@@ -227,12 +233,13 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     // Parse body
     let body = parse_expr_recursive(state)?;
 
+    // PARSER-008 FIX: Use passed is_pub parameter instead of hardcoded false
     Ok(ImplMethod {
         name,
         params,
         return_type,
         body: Box::new(body),
-        is_pub: false,
+        is_pub,
     })
 }
 
