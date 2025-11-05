@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_refactored_transpile_call() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test various function calls
         let test_cases = vec![

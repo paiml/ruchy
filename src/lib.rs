@@ -1002,7 +1002,7 @@ mod tests {
 
         let mut parser = Parser::new("1 + 2");
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast);
         }
     }

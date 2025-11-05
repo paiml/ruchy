@@ -186,7 +186,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::Transpiler;
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// assert!(!transpiler.in_async_context);
     /// ```
     pub fn new() -> Self {
@@ -554,7 +554,7 @@ impl Transpiler {
     /// let mut parser = Parser::new("42");
     /// let ast = parser.parse().expect("Failed to parse");
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let result = transpiler.transpile(&ast);
     /// assert!(result.is_ok());
     /// ```
@@ -590,7 +590,7 @@ impl Transpiler {
     /// let mut parser = Parser::new("fn double(x: int) { x * 2 }");
     /// let ast = parser.parse().unwrap();
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let tokens = transpiler.transpile(&ast).unwrap();
     ///
     /// // Convert to string for compilation
@@ -1897,7 +1897,7 @@ mod tests {
     // Test 1: Transpiler Creation and Default Values
     #[test]
     fn test_transpiler_creation() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         assert!(!transpiler.in_async_context);
         assert!(transpiler.mutable_vars.is_empty());
         assert!(transpiler.function_signatures.is_empty());
@@ -1956,7 +1956,7 @@ mod tests {
     // Test 3: Type String Conversion
     #[test]
     fn test_type_to_string() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let int_type = create_simple_type("i64");
         let float_type = create_simple_type("f64");
@@ -2078,7 +2078,7 @@ mod tests {
     // Test 7: Basic Expression Transpilation
     #[test]
     fn test_basic_transpile() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test simple literal transpilation
         let literal_expr = create_test_literal_expr(42);
@@ -2093,7 +2093,7 @@ mod tests {
     // Test 8: Block Transpilation with Multiple Expressions
     #[test]
     fn test_block_transpile() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Create block with multiple expressions
         let block_expr = Expr {
@@ -2220,7 +2220,7 @@ mod tests {
     // Test 12: Error Handling in Transpilation
     #[test]
     fn test_transpile_error_handling() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Create an expression that might cause issues (testing robustness)
         let complex_expr = Expr {
@@ -2309,7 +2309,7 @@ mod tests {
     // Test 15: Import Resolution Context
     #[test]
     fn test_import_resolution() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let literal_expr = create_test_literal_expr(42);
 
         // Test resolve_imports (should not modify simple literals)
@@ -2331,7 +2331,7 @@ mod tests {
     // Test 16: Complex Expression Chains
     #[test]
     fn test_complex_expression_chains() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Create nested binary expressions: ((1 + 2) * 3) + 4
         let inner_add = create_test_binary_expr(

@@ -201,7 +201,7 @@ fn p0_no_hashset_in_functions() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse failed");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Transpile failed");
     let rust_str = rust_code.to_string();
 
@@ -448,7 +448,7 @@ fn p0_detect_hashset_regression() {
             .parse()
             .unwrap_or_else(|_| panic!("Parse failed for {name}"));
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler
             .transpile(&ast)
             .unwrap_or_else(|_| panic!("Transpile failed for {name}"));

@@ -13,7 +13,7 @@ fun test_simple() {
         let mut parser = Parser::new(input);
         let expr = parser.parse().expect("Parse failed");
         println!("Parsed expr attributes: {:?}", expr.attributes);
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler
             .transpile_to_program(&expr)
             .expect("Transpile failed");

@@ -33,6 +33,14 @@ All notable changes to the Ruchy programming language will be documented in this
   - **FILES ADDED**: tests/profiling_001_binary_profiling.rs (NEW, 8 tests: 100% passing)
 
 ### Fixed
+- **[TRANSPILER-SCOPE-FIX]** Fix transpiler mutability across 23 modules (82 compilation errors)
+  - **BUG**: TRANSPILER-009 changed `transpile()` signature to `&mut self`, but didn't update all call sites
+  - **ROOT CAUSE**: Incomplete refactoring - 82 places still used `let transpiler =` instead of `let mut transpiler =`
+  - **IMPACT**: CRITICAL - `cargo test --lib` failed to compile (82 errors), blocking all development
+  - **FIX**: Applied `sed` replacements to update all patterns: `Transpiler::new()`, `create_transpiler()`, `make_transpiler()`, `make_test_transpiler()`
+  - **VALIDATION**: ✅ 4042/4044 tests passing (99.95%) - 2 pre-existing failures documented in roadmap
+  - **FILES MODIFIED**: 23 modules in src/ and tests/
+
 - **[TRANSPILER-009]** Standalone functions disappearing from transpiled output
   - **BUG**: User-defined helper functions completely vanished, leaving only main()
   - **ROOT CAUSE**: `transpile()` called `transpile_expr()` which wraps blocks in braces; aggressive inlining+DCE optimizations eliminated user functions

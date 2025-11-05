@@ -143,7 +143,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // transpile_let is called internally by transpile
     /// ```
     pub fn transpile_let(
@@ -306,7 +306,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // transpile_let_pattern is called internally
     /// ```
     pub fn transpile_let_pattern(
@@ -1936,7 +1936,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // transpile_function is called internally by transpile
     /// ```
     pub fn transpile_function(
@@ -2026,7 +2026,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // transpile_lambda is called internally
     /// ```
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
@@ -2060,7 +2060,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -2071,7 +2071,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Simple message")"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -2082,7 +2082,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("some_function(\"test\")");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4137,7 +4137,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("sqrt(4.0)");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4227,7 +4227,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("input()");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4294,7 +4294,7 @@ impl Transpiler {
     ///
     /// ```rust
     /// # use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // str(42) -> 42.to_string()
     /// // int("42") -> "42".parse::<i64>().unwrap()
     /// // float(42) -> 42 as f64
@@ -4435,7 +4435,7 @@ impl Transpiler {
     ///
     /// ```rust
     /// # use ruchy::backend::transpiler::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // sin(x) -> x.sin()
     /// // cos(x) -> x.cos()
     /// // log(x) -> x.ln()
@@ -4528,7 +4528,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("assert(true)");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4589,7 +4589,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("HashMap()");
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4616,7 +4616,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"range(0, 10)"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -4643,7 +4643,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"col("name")"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -5372,7 +5372,7 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"my_func("test")"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -5461,7 +5461,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_if_with_else() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "if true { 1 } else { 2 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5472,7 +5472,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_if_without_else() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "if true { 1 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5483,7 +5483,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_let_binding() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let x = 5; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5495,7 +5495,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_mutable_let() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let mut x = 5; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5505,7 +5505,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_for_loop() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "for x in [1, 2, 3] { x }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5516,7 +5516,7 @@ mod tests {
     }
     #[test]
     fn test_transpile_while_loop() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "while true { }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5526,7 +5526,7 @@ mod tests {
     }
     #[test]
     fn test_function_with_parameters() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun add(x, y) { x + y }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5538,7 +5538,7 @@ mod tests {
     }
     #[test]
     fn test_function_without_parameters() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun hello() { \"world\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5549,7 +5549,7 @@ mod tests {
     }
     #[test]
     fn test_match_expression() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5559,7 +5559,7 @@ mod tests {
     }
     #[test]
     fn test_lambda_expression() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "(x) => x + 1";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5570,7 +5570,7 @@ mod tests {
     }
     #[test]
     fn test_reserved_keyword_handling() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let move = 5; move"; // Use 'move' which is reserved in Rust but not Ruchy
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5584,7 +5584,7 @@ mod tests {
     }
     #[test]
     fn test_generic_function() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun identity<T>(x: T) -> T { x }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5594,7 +5594,7 @@ mod tests {
     }
     #[test]
     fn test_main_function_special_case() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun main() { println(\"Hello\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5606,7 +5606,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_function_call() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "col(\"name\")";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5617,7 +5617,7 @@ mod tests {
     }
     #[test]
     fn test_regular_function_call_string_conversion() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "my_func(\"test\")";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5629,7 +5629,7 @@ mod tests {
     }
     #[test]
     fn test_nested_expressions() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "if true { let x = 5; x + 1 } else { 0 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5642,7 +5642,7 @@ mod tests {
     }
     #[test]
     fn test_type_inference_integration() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         // Test function parameter as function
         let code1 = "fun apply(f, x) { f(x) }";
         let mut parser1 = Parser::new(code1);
@@ -5670,7 +5670,7 @@ mod tests {
     }
     #[test]
     fn test_return_type_inference() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         // Test numeric function gets return type
         let code = "fun double(n) { n * 2 }";
         let mut parser = Parser::new(code);
@@ -5681,7 +5681,7 @@ mod tests {
     }
     #[test]
     fn test_void_function_no_return_type() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun print_hello() { println(\"Hello\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5692,7 +5692,7 @@ mod tests {
     }
     #[test]
     fn test_complex_function_combinations() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun transform(f, n, m) { f(n + m) * 2 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5729,7 +5729,7 @@ mod tests {
 
     #[test]
     fn test_transpile_break_continue() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "while true { if x { break } else { continue } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5742,7 +5742,7 @@ mod tests {
     #[test]
 
     fn test_transpile_match_expression() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5756,7 +5756,7 @@ mod tests {
 
     #[test]
     fn test_transpile_struct_declaration() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "struct Point { x: i32, y: i32 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5769,7 +5769,7 @@ mod tests {
 
     #[test]
     fn test_transpile_enum_declaration() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "enum Color { Red, Green, Blue }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5784,7 +5784,7 @@ mod tests {
     #[test]
 
     fn test_transpile_impl_block() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "impl Point { fun new(x: i32, y: i32) { Point { x: x, y: y } } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5797,7 +5797,7 @@ mod tests {
     #[test]
 
     fn test_transpile_async_function() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "async fun fetch_data() { await http_get(\"url\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5809,7 +5809,7 @@ mod tests {
 
     #[test]
     fn test_transpile_try_catch() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "try { risky_operation() } catch (e) { handle_error(e) }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5880,7 +5880,7 @@ mod tests {
 
     #[test]
     fn test_transpile_return() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun test() { return 42 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5892,7 +5892,7 @@ mod tests {
 
     #[test]
     fn test_transpile_break_continue_extended() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Test break
         let code = "while true { break }";
@@ -5913,7 +5913,7 @@ mod tests {
 
     #[test]
     fn test_transpile_match() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5926,7 +5926,7 @@ mod tests {
 
     #[test]
     fn test_transpile_pattern_matching() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Test tuple pattern
         let code = "let (a, b) = (1, 2); a + b";
@@ -5948,7 +5948,7 @@ mod tests {
 
     #[test]
     fn test_transpile_loop() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "loop { break }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5980,7 +5980,7 @@ mod tests {
     // Test 39: Compound Assignment Transpilation
     #[test]
     fn test_compound_assignment() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let mut x = 5; x += 10; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -5993,7 +5993,7 @@ mod tests {
     // Test 40: Pre/Post Increment Operations
     #[test]
     fn test_increment_operations() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Pre-increment
         let code = "let mut x = 5; ++x";
@@ -6015,7 +6015,7 @@ mod tests {
     // Test 41: Match Expression Transpilation
     #[test]
     fn test_match_expression_transpilation() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6029,7 +6029,7 @@ mod tests {
     // Test 42: Pattern Matching with Guards
     #[test]
     fn test_pattern_guards() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "match x { n if n > 0 => \"positive\", _ => \"non-positive\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6041,7 +6041,7 @@ mod tests {
     // Test 43: Try-Catch Transpilation
     #[test]
     fn test_try_catch() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "try { risky_op() } catch(e) { handle(e) }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6053,7 +6053,7 @@ mod tests {
     // Test 44: Async Function Transpilation
     #[test]
     fn test_async_function() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "async fun fetch_data() { await get_data() }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6065,7 +6065,7 @@ mod tests {
     // Test 45: List Comprehension
     #[test]
     fn test_list_comprehension() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "[x * 2 for x in [1, 2, 3]]";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6077,7 +6077,7 @@ mod tests {
     // Test 46: Module Definition
     #[test]
     fn test_module_definition() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "mod utils { fun helper() { 42 } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6092,7 +6092,7 @@ mod tests {
     #[test]
 
     fn test_import_statement() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "import \"std::fs\"";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6104,7 +6104,7 @@ mod tests {
     // Test 48: Export Statement
     #[test]
     fn test_export_statement() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "export fun public_func() { 42 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6116,7 +6116,7 @@ mod tests {
     // Test 49: Return Statement
     #[test]
     fn test_return_statement() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun early_return() { if true { return 42 } 0 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6128,7 +6128,7 @@ mod tests {
     // Test 50: Break and Continue
     #[test]
     fn test_break_continue() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Break
         let code = "while true { if done { break } }";
@@ -6150,7 +6150,7 @@ mod tests {
     // Test 51: Nested Blocks
     #[test]
     fn test_nested_blocks() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "{ let x = 1; { let y = 2; x + y } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6163,7 +6163,7 @@ mod tests {
     // Test 52: Method Chaining
     #[test]
     fn test_method_chaining() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "[1, 2, 3].iter().sum()"; // Use simpler method chain without fat arrow
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6175,7 +6175,7 @@ mod tests {
     // Test 53: String Interpolation
     #[test]
     fn test_string_interpolation() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = r#"let name = "world"; f"Hello {name}!""#;
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6189,7 +6189,7 @@ mod tests {
     // Test 54: Tuple Destructuring
     #[test]
     fn test_tuple_destructuring() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let (a, b, c) = (1, 2, 3); a + b + c";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6202,7 +6202,7 @@ mod tests {
     // Test 55: Array Destructuring
     #[test]
     fn test_array_destructuring() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let [first, second] = [1, 2]; first + second";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6214,7 +6214,7 @@ mod tests {
     // Test 56: Object Destructuring
     #[test]
     fn test_object_destructuring() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "let {x, y} = point; x + y";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6226,7 +6226,7 @@ mod tests {
     // Test 57: Default Parameters
     #[test]
     fn test_default_parameters() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
         let code = "fun greet(name = \"World\") { f\"Hello {name}\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
@@ -6410,7 +6410,7 @@ mod tests {
 
     #[test]
     fn test_looks_like_numeric_function() {
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Test mathematical functions
         assert!(transpiler.looks_like_numeric_function("sin"));
@@ -6437,7 +6437,7 @@ mod tests {
     #[test]
     fn test_pattern_needs_slice() {
         use crate::frontend::ast::Pattern;
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Test list pattern (should need slice)
         let list_pattern = Pattern::List(vec![]);
@@ -6455,7 +6455,7 @@ mod tests {
     #[test]
     fn test_value_creates_vec() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
-        let transpiler = create_transpiler();
+        let mut transpiler = create_transpiler();
 
         // Test list expression (should create vec)
         let list_expr = Expr::new(ExprKind::List(vec![]), Span::default());
@@ -6480,7 +6480,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpile_if_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test if without else
         let code = "if x > 0 { println(\"positive\") }";
@@ -6511,7 +6511,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpile_let_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "let x = 5",
@@ -6536,7 +6536,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpile_function_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "fn simple() { }",
@@ -6561,7 +6561,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpile_call_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             // Print functions
@@ -6622,7 +6622,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpile_lambda_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "x => x",
@@ -6645,7 +6645,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_is_variable_mutated() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test mutation detection
         let test_cases = vec![
@@ -6666,7 +6666,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_control_flow_statements() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "while x < 10 { x += 1 }",
@@ -6693,7 +6693,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_try_catch_statements() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "try { risky() } catch(e) { handle(e) }",
@@ -6713,7 +6713,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_class_statements() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "class Empty { }",
@@ -6733,7 +6733,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_import_export_statements() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let test_cases = vec![
             "import std",
@@ -6755,7 +6755,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_edge_cases() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test empty and minimal cases
         let test_cases = vec!["", ";", "{ }", "( )", "let x", "fn f"];
@@ -6771,7 +6771,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_helper_functions() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test pattern_needs_slice
         assert!(transpiler.pattern_needs_slice(&Pattern::List(vec![])));
@@ -6795,7 +6795,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_advanced_transpilation_patterns() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test complex nested expressions
         let advanced_cases = vec![
@@ -6852,7 +6852,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_error_path_coverage() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test various error conditions and edge cases
         let error_cases = vec![
@@ -6897,7 +6897,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_transpiler_helper_methods_comprehensive() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test all helper methods with various inputs
 
@@ -7026,7 +7026,7 @@ mod property_tests_statements {
 
     #[test]
     fn test_extreme_edge_cases() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test with maximum complexity inputs
         let edge_cases = vec![

@@ -11,7 +11,7 @@ impl Transpiler {
     ///
     /// ```ignore
     /// use ruchy::backend::Transpiler;
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// // Method call transpilation is handled internally
     /// ```
     pub fn transpile_method_call_refactored(

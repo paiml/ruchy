@@ -110,7 +110,7 @@ impl Transpiler {
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::{Expr, BinaryOp};
     ///
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let left = Expr::literal(1.into());
     /// let right = Expr::literal(2.into());
     /// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);

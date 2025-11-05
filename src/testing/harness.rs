@@ -101,7 +101,7 @@ impl RuchyTestHarness {
             .parse()
             .map_err(|e| TestError::Parse(format!("{name}: {e:?}")))?;
         // Transpile to Rust
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler
             .transpile(&ast)
             .map_err(|e| TestError::Transpile(format!("{name}: {e:?}")))?;

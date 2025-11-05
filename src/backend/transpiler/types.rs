@@ -20,7 +20,7 @@ impl Transpiler {
     /// use ruchy::{Transpiler, Parser};
     ///
     /// // Basic types
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let x: i32 = 42");
     /// let ast = parser.parse().expect("Failed to parse");
     ///
@@ -1141,7 +1141,7 @@ mod tests {
 
     #[test]
     fn test_transpile_named_types() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // Test int type
         let int_type = Type {
@@ -1186,7 +1186,7 @@ mod tests {
 
     #[test]
     fn test_transpile_optional_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let inner_type = Type {
             kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
@@ -1205,7 +1205,7 @@ mod tests {
 
     #[test]
     fn test_transpile_list_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let elem_type = Type {
             kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
@@ -1224,7 +1224,7 @@ mod tests {
 
     #[test]
     fn test_transpile_tuple_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let types = vec![
             Type {
@@ -1251,7 +1251,7 @@ mod tests {
 
     #[test]
     fn test_transpile_array_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let elem_type = Type {
             kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
@@ -1275,7 +1275,7 @@ mod tests {
 
     #[test]
     fn test_transpile_reference_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let inner_type = Type {
             kind: crate::frontend::ast::TypeKind::Named("String".to_string()),
@@ -1317,7 +1317,7 @@ mod tests {
 
     #[test]
     fn test_transpile_dataframe_series_types() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         // DataFrame type
         let df_type = Type {
@@ -1345,7 +1345,7 @@ mod tests {
 
     #[test]
     fn test_transpile_generic_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let params = vec![Type {
             kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
@@ -1370,7 +1370,7 @@ mod tests {
     #[test]
 
     fn test_transpile_function_type() {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
 
         let params = vec![
             Type {

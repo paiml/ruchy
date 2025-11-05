@@ -291,7 +291,7 @@ mod tests {
             .test("simple_addition", "1 + 2", |input| {
                 let mut parser = Parser::new(input);
                 let ast = parser.parse()?;
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 let tokens = transpiler.transpile(&ast)?;
                 Ok(tokens.to_string())
             })
@@ -312,7 +312,7 @@ mod tests {
                 .test(&format!("determinism_test_{i}"), "x * 2 + 1", |input| {
                     let mut parser = Parser::new(input);
                     let ast = parser.parse()?;
-                    let transpiler = Transpiler::new();
+                    let mut transpiler = Transpiler::new();
                     let tokens = transpiler.transpile(&ast)?;
                     Ok(tokens.to_string())
                 })

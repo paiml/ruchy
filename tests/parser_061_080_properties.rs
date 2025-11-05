@@ -41,7 +41,7 @@ proptest! {
         assert!(parsed.is_ok(), "Failed to parse Box<{}> enum: {:?}", type_name, parsed.err());
 
         // Transpile should preserve type parameter
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(transpiled.is_ok(), "Failed to transpile Box<{}> enum: {:?}", type_name, transpiled.err());
@@ -82,7 +82,7 @@ proptest! {
         assert!(parsed.is_ok(), "Failed to parse Vec<{}> enum: {:?}", type_name, parsed.err());
 
         // Transpile should preserve type parameter
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(transpiled.is_ok(), "Failed to transpile Vec<{}> enum: {:?}", type_name, transpiled.err());
@@ -139,7 +139,7 @@ proptest! {
         );
 
         // Transpile should preserve nesting
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(
@@ -194,7 +194,7 @@ proptest! {
         );
 
         // Transpile should preserve both type parameters
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(
@@ -249,7 +249,7 @@ proptest! {
         );
 
         // Transpile should preserve nested generic structure
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(
@@ -300,7 +300,7 @@ proptest! {
         );
 
         // Transpile should preserve nested generic structure
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let ast = parsed.unwrap();
         let transpiled = transpiler.transpile(&ast);
         assert!(
