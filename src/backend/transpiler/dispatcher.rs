@@ -446,6 +446,7 @@ impl Transpiler {
             }
             ExprKind::ReExport { items, module } => Ok(Self::transpile_reexport(items, module)),
             ExprKind::Module { name, body } => self.transpile_module(name, body),
+            ExprKind::ModuleDeclaration { name } => Ok(self.transpile_external_mod_declaration(name, expr)),
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }

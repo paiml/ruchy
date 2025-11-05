@@ -33,37 +33,43 @@ pub(in crate::frontend::parser) fn parse_pub_token(
     _span: Span,
 ) -> Result<Expr> {
     state.tokens.advance(); // consume 'pub'
-    skip_visibility_scope(state)?;
+    let visibility_args = capture_visibility_scope(state)?;
 
-    let mut expr = parse_pub_target_expression(state)?;
+    let mut expr = parse_pub_target_expression(state, visibility_args)?;
     mark_expression_as_public(&mut expr);
     Ok(expr)
 }
 
-/// Parse visibility scope: pub(crate), pub(super), or pub(in path)
-///
-/// Complexity: 4 (within target ≤10)
-/// Fixed in DEFECT-PARSER-016: Added support for pub(in path) syntax
-fn skip_visibility_scope(state: &mut ParserState) -> Result<()> {
+/// Capture visibility scope: pub(crate), pub(super), or pub(in path)
+/// Returns the scope arguments for the attribute
+/// PARSER-093: Modified to return scope for attribute args
+fn capture_visibility_scope(state: &mut ParserState) -> Result<Vec<String>> {
     if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        return Ok(());
+        return Ok(vec![]);
     }
 
     state.tokens.advance(); // consume '('
-    match state.tokens.peek() {
-        Some((Token::Crate | Token::Super, _)) => {
+    let args = match state.tokens.peek() {
+        Some((Token::Crate, _)) => {
             state.tokens.advance();
             state.tokens.expect(&Token::RightParen)?;
-            Ok(())
+            vec!["crate".to_string()]
+        }
+        Some((Token::Super, _)) => {
+            state.tokens.advance();
+            state.tokens.expect(&Token::RightParen)?;
+            vec!["super".to_string()]
         }
         Some((Token::In, _)) => {
             state.tokens.advance(); // consume 'in'
             parse_visibility_path(state)?;
             state.tokens.expect(&Token::RightParen)?;
-            Ok(())
+            // For pub(in path), we skip it for now (complex to capture path)
+            vec![]
         }
         _ => bail!("Expected 'crate', 'super', or 'in' after 'pub('"),
-    }
+    };
+    Ok(args)
 }
 
 /// Parse path after pub(in ...)
@@ -101,21 +107,33 @@ fn parse_visibility_path(state: &mut ParserState) -> Result<()> {
 }
 
 /// Determine what expression follows pub keyword
-fn parse_pub_target_expression(state: &mut ParserState) -> Result<Expr> {
+fn parse_pub_target_expression(state: &mut ParserState, visibility_args: Vec<String>) -> Result<Expr> {
     match state.tokens.peek() {
-        Some((Token::Use, _)) => parse_pub_use_statement(state),
+        Some((Token::Use, _)) => parse_pub_use_statement(state, visibility_args),
         Some((Token::Const, _)) => parse_pub_const_function(state),
         Some((Token::Unsafe, _)) => parse_pub_unsafe_function(state),
+        Some((Token::Mod | Token::Module, _)) => parse_pub_module_declaration(state, visibility_args),
         _ => super::super::parse_prefix(state),
     }
 }
 
 /// Parse public use statement
-fn parse_pub_use_statement(state: &mut ParserState) -> Result<Expr> {
+fn parse_pub_use_statement(state: &mut ParserState, visibility_args: Vec<String>) -> Result<Expr> {
     let mut expr = super::super::parse_use_statement(state)?;
     expr.attributes.push(Attribute {
         name: "pub".to_string(),
-        args: vec![],
+        args: visibility_args,
+        span: expr.span,
+    });
+    Ok(expr)
+}
+
+/// Parse public module declaration (PARSER-093)
+fn parse_pub_module_declaration(state: &mut ParserState, visibility_args: Vec<String>) -> Result<Expr> {
+    let mut expr = super::modules::parse_module_declaration(state)?;
+    expr.attributes.push(Attribute {
+        name: "pub".to_string(),
+        args: visibility_args,
         span: expr.span,
     });
     Ok(expr)

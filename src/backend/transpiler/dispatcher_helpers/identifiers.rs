@@ -1,6 +1,7 @@
 //! Identifier and qualified name transpilation helpers
 
 use super::super::Transpiler;
+use crate::frontend::ast::Expr;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -104,6 +105,40 @@ impl Transpiler {
                 tokens.extend(quote! { #part_ident });
             }
             quote! { #tokens::#name_ident }
+        }
+    }
+
+    /// Transpile external module declaration: `mod name;` or `pub mod name;`
+    /// This handles module declarations WITHOUT bodies (external modules)
+    /// Complexity: 3 (attribute iteration + conditional visibility)
+    pub(in crate::backend::transpiler) fn transpile_external_mod_declaration(
+        &self,
+        name: &str,
+        expr: &Expr,
+    ) -> TokenStream {
+        let module_ident = format_ident!("{}", name);
+
+        // Check for visibility attributes (pub, pub(crate), etc.)
+        // Attributes with name="pub" indicate public visibility
+        let visibility_tokens = expr.attributes.iter().find_map(|attr| {
+            if attr.name == "pub" {
+                if attr.args.is_empty() {
+                    Some(quote! { pub })
+                } else {
+                    // Handle pub(crate), pub(super), etc.
+                    let vis_arg = &attr.args[0];
+                    let vis_ident = format_ident!("{}", vis_arg);
+                    Some(quote! { pub(#vis_ident) })
+                }
+            } else {
+                None
+            }
+        });
+
+        if let Some(vis) = visibility_tokens {
+            quote! { #vis mod #module_ident ; }
+        } else {
+            quote! { mod #module_ident ; }
         }
     }
 }
