@@ -4,6 +4,18 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [3.208.0] - 2025-11-05
 
+### Added
+- **[PROFILING-001]** Binary profiling for transpiled Rust code (Issue #138)
+  - **FEATURE**: `ruchy runtime --profile --binary` profiles compiled binary execution instead of interpreter
+  - **CLI FLAGS**: Added `--binary` flag (enable binary profiling) and `--iterations N` (run N iterations for averaging)
+  - **OUTPUT FORMATS**: Text format (human-readable) and JSON format (machine-readable for CI/CD)
+  - **VALIDATION**: ✅ 8/8 tests passing (100%), integration tested with real Ruchy code
+  - **FILES MODIFIED**:
+    - src/bin/ruchy.rs (+2 CLI flags)
+    - src/bin/handlers/mod.rs (+2 parameters to command dispatch)
+    - src/bin/handlers/commands.rs (+178 LOC: binary profiling pipeline, JSON generation)
+  - **FILES ADDED**: tests/profiling_001_binary_profiling.rs (NEW, 8 tests: 100% passing)
+
 ### Fixed
 - **[TRANSPILER-009]** Standalone functions disappearing from transpiled output
   - **BUG**: User-defined helper functions completely vanished, leaving only main()
