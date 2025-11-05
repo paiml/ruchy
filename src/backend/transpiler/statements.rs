@@ -3537,51 +3537,6 @@ impl Transpiler {
             }
         }
     }
-    /// Handle `std::net` imports with networking functions
-    fn transpile_std_net_import(
-        _path: &str,
-        _items: &[crate::frontend::ast::ImportItem],
-    ) -> TokenStream {
-        // Generate networking functions and re-export std types
-        quote! {
-            mod net {
-                pub use std::net::*;
-                pub struct TcpListener;
-                impl TcpListener {
-                    pub fn bind(addr: String) -> Result<Self, String> {
-                        println!("Would bind TCP listener to: {}", addr);
-                        Ok(TcpListener)
-                    }
-                    pub fn accept(&self) -> Result<TcpStream, String> {
-                        println!("Would accept connection");
-                        Ok(TcpStream)
-                    }
-                }
-                pub struct TcpStream;
-                impl TcpStream {
-                    pub fn connect(addr: String) -> Result<Self, String> {
-                        println!("Would connect to: {}", addr);
-                        Ok(TcpStream)
-                    }
-                }
-            }
-            // Also make available as module for http submodules
-            mod http {
-                pub struct Server {
-                    addr: String,
-                }
-                impl Server {
-                    pub fn new(addr: String) -> Self {
-                        println!("Creating HTTP server on: {}", addr);
-                        Server { addr }
-                    }
-                    pub fn listen(&self) {
-                        println!("HTTP server listening on: {}", self.addr);
-                    }
-                }
-            }
-        }
-    }
     fn transpile_std_mem_import(
         _path: &str,
         _items: &[crate::frontend::ast::ImportItem],
@@ -3822,9 +3777,8 @@ impl Transpiler {
         if path.starts_with("std::signal") {
             return Some(Self::transpile_std_signal_import(path, items));
         }
-        if path.starts_with("std::net") {
-            return Some(Self::transpile_std_net_import(path, items));
-        }
+        // PARSER-096: std::net uses real stdlib (no stub generation)
+        // Previously generated mock TcpStream/TcpListener that shadowed real implementations
         if path.starts_with("std::mem") {
             return Some(Self::transpile_std_mem_import(path, items));
         }

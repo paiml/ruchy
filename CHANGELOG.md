@@ -2,6 +2,29 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.203.0] - 2025-11-05
+
+### Fixed
+- **[PARSER-096]** Disable stdlib stub generation (Issue #137 - ruchy-lambda)
+  - **BUG**: Transpiler generated mock stubs for `std::net::TcpStream` that shadowed real implementations
+  - **IMPACT**: Required manual post-processing to strip stubs; non-functional mocks broke production code
+  - **ROOT CAUSE**: `handle_std_module_import()` explicitly generated stubs for `std::net` imports
+  - **FIX**: Removed std::net case from stub generator; now uses real stdlib via generic import handler
+  - **FILES MODIFIED**:
+    - src/backend/transpiler/statements.rs:3825-3826 (Removed std::net stub generation)
+    - src/backend/transpiler/statements.rs:3540-3584 (Deleted transpile_std_net_import function - dead code)
+    - tests/parser_096_stdlib_stubs.rs (NEW, 288 LOC, 8 tests: 100% passing)
+  - **TEST RESULTS**:
+    - std::net types: 4/4 passing (TcpStream, multiple imports, mixed stdlib/user, Issue #137 repro)
+    - Other stdlib: 3/3 passing (std::io, std::collections, std::sync - unchanged)
+    - User modules: 1/1 passing (non-stdlib modules still work correctly)
+  - **EXTREME TDD**:
+    - RED: 4/8 tests failing (std::net stubs generated, shadowing real types)
+    - GREEN: 8/8 tests passing (removed stub generation, uses real stdlib)
+    - REFACTOR: Dead code removed (45 LOC), compiles clean, zero SATD
+    - VALIDATE: CLI smoke test ✅ (use std::net::TcpStream preserved, no mock module)
+  - **RUCHY-LAMBDA UNBLOCKED**: std::net types now use real implementations, no post-processing required
+
 ## [3.201.0] - 2025-11-05
 
 ### Fixed
