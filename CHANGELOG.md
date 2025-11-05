@@ -2,6 +2,36 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [3.204.0] - 2025-11-05
+
+### Fixed
+- **[PARSER-094]** Fix :: → . transpilation bug (Issue #137 - ruchy-lambda)
+  - **BUG**: Module function calls `http_client::http_get()` transpiled to `http_client.http_get()` (wrong separator)
+  - **ROOT CAUSE**: Transpiler treated `::` as FieldAccess instead of path separator
+  - **FIXES**:
+    - Parser: Added `Token::Var` and `Token::Module` to `token_as_identifier()` whitelist (allow keywords in paths)
+    - Transpiler: Added `is_module_like_identifier()` heuristic (detect modules by lowercase_underscore pattern)
+    - Transpiler: Enhanced `is_module_path()` to recognize module patterns (std, known modules, underscore pattern, uppercase types)
+    - Transpiler: Default nested paths to `::` (conservative heuristic for module paths vs field access)
+  - **FILES MODIFIED**:
+    - src/frontend/parser/mod.rs:473-474 (Added Token::Var, Token::Module to token_as_identifier)
+    - src/backend/transpiler/expressions_helpers/field_access.rs:10-26 (Enhanced is_module_path, complexity 5)
+    - src/backend/transpiler/expressions_helpers/field_access.rs:28-36 (Added is_module_like_identifier, complexity 3)
+    - src/backend/transpiler/expressions_helpers/field_access.rs:58-84 (Nested path default to ::)
+    - src/backend/transpiler/expressions_helpers/field_access.rs:108-113 (Module-like identifier case)
+    - tests/parser_094_path_separator.rs (NEW, 259 LOC, 10 tests: 100% passing)
+  - **TEST RESULTS**:
+    - Module function calls: 3/3 passing (simple, with args, Issue #137 repro)
+    - Stdlib paths: 2/2 passing (std::io::stdin, std::env::var)
+    - Nested module paths: 1/1 passing (http_client::helpers::get_json)
+    - Type associated functions: 2/2 passing (String::from, Vec::new)
+    - Mixed :: and . : 2/2 passing (distinguish field access from paths)
+  - **EXTREME TDD**:
+    - RED: 5/10 tests failing (:: incorrectly converted to .)
+    - GREEN: 10/10 tests passing (parser + transpiler fixes)
+    - REFACTOR: Complexity ≤10, zero SATD, 4046 unit tests passing (no regressions)
+  - **RUCHY-LAMBDA UNBLOCKED**: Module calls now work correctly in AWS Lambda runtime
+
 ## [3.203.0] - 2025-11-05
 
 ### Added

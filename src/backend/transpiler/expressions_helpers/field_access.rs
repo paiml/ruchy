@@ -9,13 +9,37 @@ use quote::{format_ident, quote};
 impl Transpiler {
     /// Check if an expression represents a module path (like `std::time`)
     /// STDLIB-003: Helper for distinguishing module paths from struct field access
-    fn is_module_path(expr: &Expr) -> bool {
+    /// PARSER-094: Enhanced to recognize module-like identifiers and common module names
+    fn is_module_path(&self, expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;
         match &expr.kind {
-            ExprKind::Identifier(name) => name == "std", // stdlib module
-            ExprKind::FieldAccess { object, .. } => Self::is_module_path(object),
+            ExprKind::Identifier(name) => {
+                // Check if this is a known module
+                name == "std"  // stdlib module
+                || self.module_names.contains(name)  // known user module
+                || Self::is_module_like_identifier(name)  // lowercase_underscore pattern
+                || name.chars().next().is_some_and(char::is_uppercase)  // Type names (associated functions)
+            }
+            ExprKind::FieldAccess { object, .. } => self.is_module_path(object),
             _ => false,
         }
+    }
+
+    /// Check if an identifier looks like a module name
+    /// PARSER-094: Fix Issue #137 - distinguish module paths from instance fields
+    /// Heuristic: Module names are typically all lowercase with underscores (e.g., http_client, std_env)
+    fn is_module_like_identifier(name: &str) -> bool {
+        // Module names are all lowercase with underscores
+        // Examples: http_client, my_module (with underscore)
+        // NOT module-like: myVar (camelCase), self, this, obj (no underscore)
+        if name.is_empty() || name == "self" || name == "this" {
+            return false;
+        }
+        // Must be all lowercase/digits/underscores AND contain at least one underscore
+        // This distinguishes modules (http_client) from variables (obj, x)
+        let has_underscore = name.contains('_');
+        let is_lowercase = name.chars().all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
+        has_underscore && is_lowercase
     }
 
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
@@ -33,27 +57,28 @@ impl Transpiler {
             }
             ExprKind::FieldAccess { .. } => {
                 // Nested field access - check if module path, numeric (tuple), or struct field
-                if Self::is_module_path(object) {
-                    // Module path like std::time::now_millis - use :: syntax
-                    let field_ident = format_ident!("{}", field);
-                    Ok(quote! { #obj_tokens::#field_ident })
-                } else if field.chars().all(|c| c.is_ascii_digit()) {
+                // PARSER-094: Heuristic - nested paths are usually modules (nested::module::function)
+                // not struct fields (obj.field.method), UNLESS we see clear field indicators
+                if field.chars().all(|c| c.is_ascii_digit()) {
                     // Nested tuple access like (nested.0).1
                     let index: usize = field.parse().unwrap();
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else {
-                    // Nested struct field access like rect.top_left.x or o.status.success
-                    // TYPE-INFERENCE-001: Check for known methods like .success()
+                    // Check for known instance methods that definitely need .
                     let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
                     let field_ident = format_ident!("{}", field);
 
                     if known_methods.contains(&field) {
-                        // Known method - add () for method call
+                        // Known method - use . and add ()
                         Ok(quote! { #obj_tokens.#field_ident() })
+                    } else if self.is_module_path(object) {
+                        // Confirmed module path - use ::
+                        Ok(quote! { #obj_tokens::#field_ident })
                     } else {
-                        // Regular field access
-                        Ok(quote! { #obj_tokens.#field_ident })
+                        // PARSER-094: Default to :: for nested paths (conservative heuristic)
+                        // Rationale: nested::module::function more common than obj.field1.field2
+                        Ok(quote! { #obj_tokens::#field_ident })
                     }
                 }
             }
@@ -77,6 +102,13 @@ impl Transpiler {
                 // TRANSPILER-065: Type name (PascalCase) - use :: for associated functions/constructors
                 // Examples: String::from(), Result::Ok(), Vec::new()
                 // Heuristic: Rust types start with uppercase, instances with lowercase
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
+            ExprKind::Identifier(name) if Self::is_module_like_identifier(name) => {
+                // PARSER-094: Module-like identifier (lowercase_underscore pattern)
+                // Examples: http_client::http_get(), my_module::function()
+                // Issue #137: Fixes ruchy-lambda AWS Lambda runtime module calls
                 let field_ident = format_ident!("{}", field);
                 Ok(quote! { #obj_tokens::#field_ident })
             }

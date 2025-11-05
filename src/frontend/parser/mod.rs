@@ -469,6 +469,9 @@ fn token_as_identifier(token: &Token) -> Option<String> {
         Token::As => Some("as".to_string()),
         Token::In => Some("in".to_string()),
         Token::Type => Some("type".to_string()),
+        // PARSER-094: Allow keywords in stdlib paths (std::env::var, nested::module::function)
+        Token::Var => Some("var".to_string()),
+        Token::Module => Some("module".to_string()),
         // Add more keywords as needed for Rust compatibility
         _ => Option::None,
     }
