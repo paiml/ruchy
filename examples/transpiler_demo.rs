@@ -25,7 +25,7 @@ fn main() {
         ),
     ];
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
 
     for (name, input) in examples {
         println!("\n=== {name} ===");

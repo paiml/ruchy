@@ -74,7 +74,7 @@ fn bench_transpiler(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("transpile", name), &input, |b, &input| {
             let mut parser = Parser::new(input);
             let ast = parser.parse().unwrap();
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
 
             b.iter(|| {
                 let _ = black_box(transpiler.transpile_to_string(&ast));

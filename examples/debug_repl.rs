@@ -11,7 +11,7 @@ fn main() {
             Ok(ast) => {
                 println!("AST kind: {:?}", ast.kind);
 
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(tokens) => {
                         let code = tokens.to_string();

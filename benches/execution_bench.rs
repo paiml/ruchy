@@ -97,7 +97,7 @@ fn benchmark_transpile(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(name), &code, |b, &code| {
             let mut parser = Parser::new(code);
             let ast = parser.parse().expect("Failed to parse");
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
 
             b.iter(|| {
                 let _ = transpiler.transpile(black_box(&ast));

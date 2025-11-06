@@ -25,7 +25,7 @@ fn main() {
             println!("Parse successful!");
 
             // Transpile to Rust
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(rust_code) => {
                     println!("Transpilation successful!");
@@ -55,7 +55,7 @@ mod wasm {
             .parse()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler
             .transpile(&ast)
             .map_err(|e| JsValue::from_str(&e.to_string()))?;

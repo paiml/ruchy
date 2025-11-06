@@ -36,7 +36,7 @@ fn example_async_function() {
     println!("Input: {input}");
 
     let ast = Parser::new(input).parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
 
     println!("Transpiled to Rust async function:");
@@ -62,7 +62,7 @@ fn example_await() {
         println!("Awaiting expression: {expr:?}");
     }
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     println!("Transpiled: {output}");
     println!();
@@ -82,7 +82,7 @@ fn example_async_error_handling() {
 
     match Parser::new(input).parse() {
         Ok(ast) => {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(tokens) => {
                     println!("✓ Successfully transpiled async function with error handling");
@@ -115,7 +115,7 @@ fn example_multiple_async() {
 
         match Parser::new(input).parse() {
             Ok(ast) => {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(tokens) => {
                         let output = tokens.to_string();

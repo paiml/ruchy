@@ -81,14 +81,14 @@ fn transpile_benchmark(c: &mut Criterion) {
 
     group.bench_function("small_ast", |b| {
         b.iter(|| {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             transpiler.transpile(black_box(&small_ast))
         })
     });
 
     group.bench_function("medium_ast", |b| {
         b.iter(|| {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             transpiler.transpile(black_box(&medium_ast))
         })
     });
@@ -141,7 +141,7 @@ fn end_to_end_benchmark(c: &mut Criterion) {
             b.iter(|| {
                 let mut parser = Parser::new(black_box(program));
                 let ast = parser.parse().unwrap();
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(&ast)
             })
         });
