@@ -52,7 +52,7 @@ fn transpile_literals(c: &mut Criterion) {
     for (name, expr) in literals {
         group.bench_with_input(BenchmarkId::from_parameter(name), &expr, |b, expr| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(expr))
             });
         });
@@ -82,7 +82,7 @@ fn transpile_expressions(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(ast))
             });
         });
@@ -122,7 +122,7 @@ fn transpile_functions(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(ast))
             });
         });
@@ -151,7 +151,7 @@ fn transpile_patterns(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(ast))
             });
         });
@@ -172,7 +172,7 @@ fn transpile_scalability(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(size), &ast, |b, ast| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(ast))
             });
         });
@@ -237,7 +237,7 @@ fn transpile_real_world(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(name), &ast, |b, ast| {
             b.iter(|| {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 transpiler.transpile(black_box(ast))
             });
         });

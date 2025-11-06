@@ -57,3 +57,10 @@ path = "fuzz_targets/fuzz_cli.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "property_type_inference"
+path = "fuzz_targets/property_type_inference.rs"
+test = false
+doc = false
+bench = false

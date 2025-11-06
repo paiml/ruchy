@@ -72,7 +72,7 @@ fn benchmark_compilation_pipeline(c: &mut Criterion) {
                 // Pre-parse for transpilation benchmark
                 let mut parser = ruchy::frontend::Parser::new(source);
                 if let Ok(ast) = parser.parse() {
-                    let transpiler = ruchy::backend::Transpiler::new();
+                    let mut transpiler = ruchy::backend::Transpiler::new();
                     b.iter(|| {
                         let _ = black_box(transpiler.transpile(black_box(&ast)));
                     });

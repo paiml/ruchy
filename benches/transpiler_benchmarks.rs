@@ -10,7 +10,7 @@ use std::hint::black_box;
 fn parse_and_transpile(code: &str) -> String {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     transpiler.transpile_to_string(&ast).unwrap()
 }
 
