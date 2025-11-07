@@ -272,8 +272,10 @@ pub fun handler(event: LambdaEvent) -> Object {
     let rust = transpile(code);
 
     // Field access must use dots
+    let has_dot = rust.contains("event.") || rust.contains("event .");
+    let has_double_colon = rust.contains("event::");
     assert!(
-        rust.contains("event.") && !rust.contains("event::"),
+        has_dot && !has_double_colon,
         "Event field access must use dot notation:\n{rust}"
     );
 
