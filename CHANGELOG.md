@@ -1874,3 +1874,15 @@ cargo build --profile release-tiny  # Produces ~95KB binary with opt="z"
   - Files: `src/frontend/parser.rs` (+156 lines), `src/backend/transpiler.rs` (+112 lines)
   - Tests: `tests/lang_comp_006_data_structures.rs` (NEW, 8/8 passing)
   - Impact: Enables complex data modeling and encapsulation
+
+## [Unreleased] - 2025-11-07
+
+### Fixed
+- **[PARSER-143]** Critical parser crash on Unicode characters (✓, ✗, emoji, etc.)
+  - Root cause: `is_on_same_line()` sliced strings without checking char boundaries
+  - Impact: +5 book examples fixed (83.5% → 87.6% validation)
+  - Fix: Added UTF-8 char boundary validation before string slicing
+  - Files: src/frontend/parser/mod.rs:218
+  - Tests: tests/issue_143_unicode_char_boundary_crash.rs (5 tests, 100% pass)
+  - Validation: 4036/4036 tests passing (no regressions)
+
