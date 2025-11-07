@@ -156,7 +156,7 @@ impl ComplexityAnalyzer {
     }
 
     /// Analyze complexity based on loop depth only (no recursion)
-    /// Extracted from analyze_time_complexity to reduce complexity
+    /// Extracted from `analyze_time_complexity` to reduce complexity
     /// Complexity: 6 (≤10 ✓)
     fn analyze_loop_complexity(&self, source: &str, loop_depth: usize) -> TimeComplexity {
         match loop_depth {
@@ -271,8 +271,8 @@ impl ComplexityAnalyzer {
 
         // Count how many times function calls itself
         // Look for patterns like: func_name( or func_name (
-        let pattern1 = format!("{}(", func_name);
-        let pattern2 = format!("{} (", func_name);
+        let pattern1 = format!("{func_name}(");
+        let pattern2 = format!("{func_name} (");
 
         let count = source.matches(pattern1.as_str()).count()
                   + source.matches(pattern2.as_str()).count();
