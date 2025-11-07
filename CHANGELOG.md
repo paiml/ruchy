@@ -111,6 +111,16 @@ All notable changes to the Ruchy programming language will be documented in this
   - **IMPACT**: Zero technical debt - all clippy errors resolved
   - **FILES MODIFIED**: src/bin/handlers/mod.rs (lines 656, 670-674)
 
+- **[PRE-RELEASE-FIX]** Final clippy and version synchronization for v3.209.0 release
+  - **FIX 1**: Renamed `clippy::self_only_used_in_recursion` to `clippy::only_used_in_recursion` (lint name changed in Rust 1.91.0)
+  - **FIX 2**: Fixed inefficient `to_string()` calls on `&&str` in src/runtime/interpreter.rs (lines 1198, 1253) - now dereferences first for fast specialization
+  - **FIX 3**: Removed duplicate `clippy::only_used_in_recursion` attribute (line 38 in src/lib.rs)
+  - **FIX 4**: Synchronized ruchy-wasm version to v3.209.0 (was v3.193.0)
+  - **FIX 5**: Updated ruchy dependency in ruchy-wasm to v3.209.0 (was v3.174.0)
+  - **FIX 6**: Fixed ruchy-wasm compilation by adding `&mut self` to `compile()` method (TRANSPILER-009 compatibility)
+  - **VALIDATION**: ✅ `make lint` passes, ✅ ruchy-wasm builds successfully, ✅ All versions synchronized
+  - **FILES MODIFIED**: src/lib.rs, src/runtime/interpreter.rs, ruchy-wasm/Cargo.toml, ruchy-wasm/src/lib.rs
+
 - **[TRANSPILER-009]** Standalone functions disappearing from transpiled output
   - **BUG**: User-defined helper functions completely vanished, leaving only main()
   - **ROOT CAUSE**: `transpile()` called `transpile_expr()` which wraps blocks in braces; aggressive inlining+DCE optimizations eliminated user functions

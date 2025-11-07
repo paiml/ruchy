@@ -7,7 +7,7 @@
 // #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
-#![allow(clippy::self_only_used_in_recursion)]
+#![allow(clippy::only_used_in_recursion)]
 // Clippy allows for RUCHY-0801 commit - will be addressed in quality sprint
 #![allow(clippy::case_sensitive_file_extension_comparisons)]
 #![allow(clippy::match_same_arms)]
@@ -35,7 +35,6 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::trivially_copy_pass_by_ref)]
 #![allow(clippy::unnecessary_wraps)]
-#![allow(clippy::only_used_in_recursion)]
 #![allow(clippy::print_stdout)]
 #![allow(clippy::print_stderr)]
 #![allow(clippy::format_push_string)]

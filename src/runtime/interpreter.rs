@@ -1195,7 +1195,7 @@ impl Interpreter {
                     } else if !alias.is_empty() && alias != "*" {
                         alias.clone()
                     } else {
-                        parts.last().unwrap_or(&"").to_string()
+                        (*parts.last().unwrap_or(&"")).to_string()
                     };
 
                     // Add to global environment (first element of env_stack)
@@ -1250,7 +1250,7 @@ impl Interpreter {
 
                     // Import the module into current environment
                     if let Some(value) = current_value {
-                        let import_name = parts.last().unwrap_or(&"").to_string();
+                        let import_name = (*parts.last().unwrap_or(&"")).to_string();
 
                         // Add to global environment
                         if let Some(global_env_ref) = self.env_stack.first() {
