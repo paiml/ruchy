@@ -294,7 +294,7 @@ impl ModuleResolver {
 
     fn create_inline_module(&self, name: &str, resolved_ast: Expr, span: Span) -> Expr {
         // ISSUE-103: Make all functions in imported modules public
-        let public_ast = self.make_functions_public(resolved_ast);
+        let public_ast = Self::make_functions_public(resolved_ast);
         Expr::new(
             ExprKind::Module {
                 name: name.to_string(),
@@ -305,7 +305,7 @@ impl ModuleResolver {
     }
 
     /// Make all functions in an expression tree public (ISSUE-103)
-    fn make_functions_public(&self, expr: Expr) -> Expr {
+    fn make_functions_public(expr: Expr) -> Expr {
         match expr.kind {
             ExprKind::Function { name, type_params, params, body, is_async, return_type, .. } => {
                 Expr::new(
@@ -322,7 +322,7 @@ impl ModuleResolver {
                 )
             }
             ExprKind::Block(exprs) => {
-                let public_exprs = exprs.into_iter().map(|e| self.make_functions_public(e)).collect();
+                let public_exprs = exprs.into_iter().map(Self::make_functions_public).collect();
                 Expr::new(ExprKind::Block(public_exprs), expr.span)
             }
             _ => expr,
@@ -434,7 +434,7 @@ impl ModuleResolver {
         let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
 
         // ISSUE-106: Make all functions in loaded module public (same as use imports)
-        let public_ast = self.make_functions_public(resolved_module_ast);
+        let public_ast = Self::make_functions_public(resolved_module_ast);
 
         // Transform to inline module
         Ok(Expr::new(

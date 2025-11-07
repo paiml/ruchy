@@ -322,10 +322,10 @@ impl Transpiler {
     ///
     /// let mut transpiler = Transpiler::new();
     /// let expr = Expr::literal(42.into());
-    /// let result = transpiler.is_dataframe_expr(&expr);
+    /// let result = Transpiler::is_dataframe_expr(&expr);
     /// // Returns boolean, not Result
     /// ```
-    pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
+    pub fn is_dataframe_expr(expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;
         match &expr.kind {
             // Variable named "df" is likely a DataFrame
@@ -358,7 +358,7 @@ impl Transpiler {
                         | "tail"
                         | "drop_nulls"
                         | "fill_null"
-                ) || self.is_dataframe_expr(receiver)
+                ) || Self::is_dataframe_expr(receiver)
             }
             // DataFrame literals
             ExprKind::DataFrame { .. } => true,
