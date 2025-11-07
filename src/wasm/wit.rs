@@ -806,7 +806,7 @@ mod tests {
         let wit_type = WitType::Bool;
         match wit_type {
             WitType::Bool => {}
-            _ => assert!(false, "Expected Bool variant"),
+            _ => panic!("Expected Bool variant"),
         }
     }
 

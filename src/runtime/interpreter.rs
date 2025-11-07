@@ -1298,7 +1298,8 @@ impl Interpreter {
                 Ok(Value::Nil)
             }
             ExprKind::ImportDefault { .. } => {
-                // TODO: Implement ImportDefault variant
+                // LIMITATION: ImportDefault not yet implemented - returns Nil for now
+                // See ISSUE-106 for module resolution tracking
                 Ok(Value::Nil)
             }
             // Handle vec! macro (GitHub Issue #62)

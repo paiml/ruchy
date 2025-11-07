@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_prop_string_interpolation_unit() {
-        let test_cases = vec![
+        let test_cases = [
             vec![],                                      // Empty parts
             vec![StringPart::Text("hello".to_string())], // Text only
             vec![StringPart::Expr(Box::new(Expr::new(
