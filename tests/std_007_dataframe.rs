@@ -401,7 +401,7 @@ fn test_std_007_row_count_empty() {
 
 #[cfg(test)]
 mod property_tests {
-    
+
     use proptest::prelude::*;
 
     proptest! {

@@ -156,18 +156,14 @@ pub fn suggest_correction(input: &str) -> Option<String> {
 // Re-enable with: cargo test --features stub_tests
 #[cfg(all(test, feature = "stub_tests"))]
 mod tests {
-    use super::*;
-    use super::utils_helpers::url_validation::{
-        is_valid_url_scheme,
-        validate_url_extension,
-        validate_url_import,
-        validate_url_no_suspicious_patterns,
-        validate_url_path_safety,
-        validate_url_scheme,
-    };
-    use super::utils_helpers::string_interpolation::parse_string_interpolation;
-    use super::utils_helpers::imports::{parse_module_path, parse_import_legacy};
+    use super::utils_helpers::imports::{parse_import_legacy, parse_module_path};
     use super::utils_helpers::modules::parse_module;
+    use super::utils_helpers::string_interpolation::parse_string_interpolation;
+    use super::utils_helpers::url_validation::{
+        is_valid_url_scheme, validate_url_extension, validate_url_import,
+        validate_url_no_suspicious_patterns, validate_url_path_safety, validate_url_scheme,
+    };
+    use super::*;
     use crate::frontend::TypeKind;
 
     // Sprint 13: Parser utils tests - URL validation
@@ -674,7 +670,6 @@ mod tests {
 
 #[cfg(test)]
 mod mutation_tests {
-    
 
     #[test]
     fn test_parse_url_import_negation() {

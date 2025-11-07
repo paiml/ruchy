@@ -16,21 +16,16 @@
 //! - [ ] Control flow (if/else, loops)
 //! - [ ] Data structures (arrays, objects)
 
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 use anyhow::{anyhow, Result};
 use cranelift::prelude::*;
-use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp};
 
 /// Lower a Ruchy expression to Cranelift IR value
 ///
 /// This is a helper for the main JIT compiler
-pub fn lower_expr_to_value(
-    builder: &mut FunctionBuilder,
-    expr: &Expr,
-) -> Result<Value> {
+pub fn lower_expr_to_value(builder: &mut FunctionBuilder, expr: &Expr) -> Result<Value> {
     match &expr.kind {
-        ExprKind::Literal(Literal::Integer(n, _)) => {
-            Ok(builder.ins().iconst(types::I64, *n))
-        }
+        ExprKind::Literal(Literal::Integer(n, _)) => Ok(builder.ins().iconst(types::I64, *n)),
 
         ExprKind::Binary { left, op, right } => {
             let lhs = lower_expr_to_value(builder, left)?;
@@ -39,7 +34,10 @@ pub fn lower_expr_to_value(
             lower_binary_op(builder, *op, lhs, rhs)
         }
 
-        _ => Err(anyhow!("Unsupported expression in lowering: {:?}", expr.kind)),
+        _ => Err(anyhow!(
+            "Unsupported expression in lowering: {:?}",
+            expr.kind
+        )),
     }
 }
 
@@ -79,7 +77,9 @@ fn lower_binary_op(
             builder.ins().uextend(types::I64, cmp)
         }
         BinaryOp::GreaterEqual => {
-            let cmp = builder.ins().icmp(IntCC::SignedGreaterThanOrEqual, lhs, rhs);
+            let cmp = builder
+                .ins()
+                .icmp(IntCC::SignedGreaterThanOrEqual, lhs, rhs);
             builder.ins().uextend(types::I64, cmp)
         }
 

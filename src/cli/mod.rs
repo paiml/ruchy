@@ -226,12 +226,14 @@ fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), Stri
             use crate::runtime::bytecode::{Compiler, VM};
 
             let mut compiler = Compiler::new("main".to_string());
-            compiler.compile_expr(&ast)
+            compiler
+                .compile_expr(&ast)
                 .map_err(|e| format!("Compilation error: {e}"))?;
             let chunk = compiler.finalize();
 
             let mut vm = VM::new();
-            let _result = vm.execute(&chunk)
+            let _result = vm
+                .execute(&chunk)
                 .map_err(|e| format!("VM execution error: {e}"))?;
         }
     }
@@ -252,7 +254,10 @@ fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
 }
 
 /// Check if a file is properly formatted
-fn check_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Formatter) -> Result<(), String> {
+fn check_format(
+    path: &PathBuf,
+    formatter: &mut crate::quality::formatter::Formatter,
+) -> Result<(), String> {
     println!("Checking formatting for: {}", path.display());
 
     let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
@@ -260,7 +265,9 @@ fn check_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Forma
 
     // Set source for ignore directives
     formatter.set_source(&source);
-    let formatted_code = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+    let formatted_code = formatter
+        .format(&ast)
+        .map_err(|e| format!("Format error: {e}"))?;
 
     if formatted_code.trim() == source.trim() {
         println!("✓ File is properly formatted");
@@ -271,7 +278,10 @@ fn check_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Forma
 }
 
 /// Apply formatting to a file
-fn apply_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Formatter) -> Result<(), String> {
+fn apply_format(
+    path: &PathBuf,
+    formatter: &mut crate::quality::formatter::Formatter,
+) -> Result<(), String> {
     println!("Formatting: {}", path.display());
 
     let source = std::fs::read_to_string(path).map_err(|_e| format_file_error("read", path))?;
@@ -279,7 +289,9 @@ fn apply_format(path: &PathBuf, formatter: &mut crate::quality::formatter::Forma
 
     // Set source for ignore directives
     formatter.set_source(&source);
-    let formatted_code = formatter.format(&ast).map_err(|e| format!("Format error: {e}"))?;
+    let formatted_code = formatter
+        .format(&ast)
+        .map_err(|e| format!("Format error: {e}"))?;
 
     std::fs::write(path, formatted_code).map_err(|e| format!("Failed to write file: {e}"))?;
     println!("✓ File formatted successfully");
@@ -323,20 +335,39 @@ fn find_config_in_ancestors(start_dir: &Path) -> Result<crate::quality::Formatte
 }
 fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        NotebookCommand::Serve { port, host, pid_file } => execute_notebook_serve(port, host, pid_file, verbose),
-        NotebookCommand::Test { path, coverage, format } => execute_notebook_test(path, coverage, format, verbose),
-        NotebookCommand::Convert { input, output, format } => execute_notebook_convert(input, Some(output), format, verbose),
+        NotebookCommand::Serve {
+            port,
+            host,
+            pid_file,
+        } => execute_notebook_serve(port, host, pid_file, verbose),
+        NotebookCommand::Test {
+            path,
+            coverage,
+            format,
+        } => execute_notebook_test(path, coverage, format, verbose),
+        NotebookCommand::Convert {
+            input,
+            output,
+            format,
+        } => execute_notebook_convert(input, Some(output), format, verbose),
     }
 }
 
-fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, verbose: bool) -> Result<(), String> {
+fn execute_notebook_serve(
+    port: u16,
+    host: String,
+    pid_file: Option<PathBuf>,
+    verbose: bool,
+) -> Result<(), String> {
     // Create PID file for process management (if specified)
     let _pid_file_guard = if let Some(pid_path) = pid_file {
         if verbose {
             println!("Creating PID file at: {}", pid_path.display());
         }
-        Some(crate::server::PidFile::new(pid_path)
-            .map_err(|e| format!("Failed to create PID file: {e}"))?)
+        Some(
+            crate::server::PidFile::new(pid_path)
+                .map_err(|e| format!("Failed to create PID file: {e}"))?,
+        )
     } else {
         None
     };
@@ -346,8 +377,8 @@ fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, ve
     }
     #[cfg(feature = "notebook")]
     {
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| format!("Failed to create runtime: {e}"))?;
+        let rt =
+            tokio::runtime::Runtime::new().map_err(|e| format!("Failed to create runtime: {e}"))?;
         rt.block_on(async {
             crate::notebook::server::start_server(port)
                 .await
@@ -365,7 +396,12 @@ fn execute_notebook_serve(port: u16, host: String, pid_file: Option<PathBuf>, ve
     }
 }
 
-fn execute_notebook_test(path: PathBuf, _coverage: bool, _format: String, verbose: bool) -> Result<(), String> {
+fn execute_notebook_test(
+    path: PathBuf,
+    _coverage: bool,
+    _format: String,
+    verbose: bool,
+) -> Result<(), String> {
     if verbose {
         println!("Testing notebook: {}", path.display());
     }
@@ -392,7 +428,12 @@ fn execute_notebook_test(path: PathBuf, _coverage: bool, _format: String, verbos
     }
 }
 
-fn execute_notebook_convert(input: PathBuf, _output: Option<PathBuf>, format: String, verbose: bool) -> Result<(), String> {
+fn execute_notebook_convert(
+    input: PathBuf,
+    _output: Option<PathBuf>,
+    format: String,
+    verbose: bool,
+) -> Result<(), String> {
     if verbose {
         println!("Converting {} to {format} format", input.display());
     }
@@ -613,7 +654,12 @@ mod tests {
             host: "localhost".to_string(),
             pid_file: None,
         };
-        if let NotebookCommand::Serve { port, host, pid_file } = cmd {
+        if let NotebookCommand::Serve {
+            port,
+            host,
+            pid_file,
+        } = cmd
+        {
             assert_eq!(port, 8080);
             assert_eq!(host, "localhost");
             assert_eq!(pid_file, None);
@@ -829,7 +875,12 @@ mod tests {
         };
 
         // Test the command parsing works correctly
-        if let NotebookCommand::Serve { port, host, pid_file } = cmd {
+        if let NotebookCommand::Serve {
+            port,
+            host,
+            pid_file,
+        } = cmd
+        {
             assert_eq!(port, 8888);
             assert_eq!(host, "127.0.0.1");
             assert_eq!(pid_file, None);

@@ -26,13 +26,16 @@ fn test_walk_parallel_basic() {
     fs::write(temp.path().join("file1.txt"), "content1").unwrap();
     fs::write(temp.path().join("file2.txt"), "content2").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let entries = walk_parallel("{}")
         let files = entries.filter(fn(e) {{ e.is_file }})
 
         println("Found {{}} files", files.len())
         assert(files.len() == 2, "Expected 2 files")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -49,20 +52,19 @@ fn test_walk_parallel_composable() {
     fs::write(temp.path().join("a.txt"), "aaa").unwrap();
     fs::write(temp.path().join("b.txt"), "bbbbb").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let file_sizes = walk_parallel("{}")
             .filter(fn(e) {{ e.is_file }})
             .map(fn(e) {{ e.size }})
 
         println("Sizes: {{:?}}", file_sizes)
         assert(file_sizes.len() == 2, "Expected 2 sizes")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 }
 
 // Test 3: Returns proper FileEntry objects
@@ -71,7 +73,8 @@ fn test_walk_parallel_file_entry_structure() {
     let temp = TempDir::new().unwrap();
     fs::write(temp.path().join("test.txt"), "content").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let entries = walk_parallel("{}")
         let first = entries[0]
 
@@ -84,7 +87,9 @@ fn test_walk_parallel_file_entry_structure() {
         assert(first.depth != nil, "Should have depth field")
 
         println("FileEntry structure validated")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -99,17 +104,16 @@ fn test_walk_parallel_file_entry_structure() {
 fn test_walk_parallel_empty_directory() {
     let temp = TempDir::new().unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let entries = walk_parallel("{}")
         println("Entries: {{}} (root dir)", entries.len())
         assert(entries.len() >= 1, "Should have at least root entry")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 }
 
 // Test 5: Nonexistent path (graceful handling)
@@ -120,11 +124,7 @@ fn test_walk_parallel_nonexistent_path() {
         println("Entries: {}", entries.len())
     "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success(); // Should return empty array or handle gracefully
+    ruchy_cmd().arg("-e").arg(code).assert().success(); // Should return empty array or handle gracefully
 }
 
 // Test 6: Parallel processing (100 files)
@@ -138,13 +138,16 @@ fn test_walk_parallel_performance() {
         fs::write(temp.path().join(format!("file{i}.txt")), "test").unwrap();
     }
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let files = walk_parallel("{}")
             .filter(fn(e) {{ e.is_file }})
 
         println("Processed {{}} files in parallel", files.len())
         assert(files.len() == 100, "Expected 100 files")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -161,13 +164,16 @@ fn test_walk_parallel_complex_filter() {
     fs::write(temp.path().join("small.txt"), "ab").unwrap();
     fs::write(temp.path().join("large.txt"), "abcdefghij").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let large_files = walk_parallel("{}")
             .filter(fn(e) {{ e.is_file && e.size > 5 }})
 
         println("Found {{}} large files", large_files.len())
         assert(large_files.len() == 1, "Only 1 file > 5 bytes")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
     ruchy_cmd()
         .arg("-e")

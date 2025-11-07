@@ -364,8 +364,8 @@ fn test_langcomp_011_property_range_bounds() {
     // This test is ignored by default due to long runtime (10000 cases)
     for start in 0..10 {
         for end in (start + 1)..15 {
-            let temp_file = std::env::temp_dir()
-                .join(format!("langcomp_011_prop_bounds_{start}_{end}.ruchy"));
+            let temp_file =
+                std::env::temp_dir().join(format!("langcomp_011_prop_bounds_{start}_{end}.ruchy"));
             std::fs::write(
                 &temp_file,
                 format!(

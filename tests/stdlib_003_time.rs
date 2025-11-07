@@ -150,11 +150,7 @@ let timestamp = std::time::now_millis()
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file_path).assert().success();
 }
 
 /// Test lint command passes
@@ -166,11 +162,7 @@ let timestamp = std::time::now_millis()
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd()
-        .arg("lint")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("lint").arg(file_path).assert().success();
 }
 
 /// Test AST structure for `std::time::now_millis()` call
@@ -224,9 +216,5 @@ println("Compiled at: {}", timestamp)
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd()
-        .arg("compile")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("compile").arg(file_path).assert().success();
 }

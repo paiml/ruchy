@@ -25,15 +25,17 @@ impl Transpiler {
         // DEFECT-011 FIX: For contains() method, wrap field access args with &
         use crate::frontend::ast::ExprKind;
         let arg_tokens: Result<Vec<_>> = if method == "contains" {
-            args.iter().map(|a| {
-                let tokens = self.transpile_expr(a)?;
-                // Check if argument is a field access - if so, wrap with &
-                if matches!(&a.kind, ExprKind::FieldAccess { .. }) {
-                    Ok(quote! { &#tokens })
-                } else {
-                    Ok(tokens)
-                }
-            }).collect()
+            args.iter()
+                .map(|a| {
+                    let tokens = self.transpile_expr(a)?;
+                    // Check if argument is a field access - if so, wrap with &
+                    if matches!(&a.kind, ExprKind::FieldAccess { .. }) {
+                        Ok(quote! { &#tokens })
+                    } else {
+                        Ok(tokens)
+                    }
+                })
+                .collect()
         } else {
             args.iter().map(|a| self.transpile_expr(a)).collect()
         };

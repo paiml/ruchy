@@ -94,29 +94,48 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
             Expr::new(
                 ExprKind::Call {
                     func: Box::new(inline_function_calls(*func, functions)),
-                    args: args.into_iter().map(|a| inline_function_calls(a, functions)).collect(),
+                    args: args
+                        .into_iter()
+                        .map(|a| inline_function_calls(a, functions))
+                        .collect(),
                 },
                 expr.span,
             )
         }
         ExprKind::Block(exprs) => {
-            let inlined_exprs = exprs.into_iter().map(|e| inline_function_calls(e, functions)).collect();
+            let inlined_exprs = exprs
+                .into_iter()
+                .map(|e| inline_function_calls(e, functions))
+                .collect();
             Expr::new(ExprKind::Block(inlined_exprs), expr.span)
         }
-        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
-            Expr::new(
-                ExprKind::Let {
-                    name,
-                    type_annotation,
-                    value: Box::new(inline_function_calls(*value, functions)),
-                    body: Box::new(inline_function_calls(*body, functions)),
-                    is_mutable,
-                    else_block: else_block.map(|e| Box::new(inline_function_calls(*e, functions))),
-                },
-                expr.span,
-            )
-        }
-        ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value,
+            body,
+            is_mutable,
+            else_block,
+        } => Expr::new(
+            ExprKind::Let {
+                name,
+                type_annotation,
+                value: Box::new(inline_function_calls(*value, functions)),
+                body: Box::new(inline_function_calls(*body, functions)),
+                is_mutable,
+                else_block: else_block.map(|e| Box::new(inline_function_calls(*e, functions))),
+            },
+            expr.span,
+        ),
+        ExprKind::Function {
+            name,
+            type_params,
+            params,
+            return_type,
+            body,
+            is_async,
+            is_pub,
+        } => {
             // Recursively inline calls inside function body, but keep the function definition itself
             Expr::new(
                 ExprKind::Function {
@@ -142,13 +161,18 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
                 expr.span,
             )
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             // Recursively inline calls in if expressions
             Expr::new(
                 ExprKind::If {
                     condition: Box::new(inline_function_calls(*condition, functions)),
                     then_branch: Box::new(inline_function_calls(*then_branch, functions)),
-                    else_branch: else_branch.map(|e| Box::new(inline_function_calls(*e, functions))),
+                    else_branch: else_branch
+                        .map(|e| Box::new(inline_function_calls(*e, functions))),
                 },
                 expr.span,
             )
@@ -185,40 +209,46 @@ fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
             // Substitute if this identifier is a parameter
             subs.get(name).cloned().unwrap_or(expr)
         }
-        ExprKind::Binary { left, op, right } => {
-            Expr::new(
-                ExprKind::Binary {
-                    left: Box::new(substitute_identifiers((**left).clone(), subs)),
-                    op: *op,
-                    right: Box::new(substitute_identifiers((**right).clone(), subs)),
-                },
-                expr.span,
-            )
-        }
-        ExprKind::Call { func, args } => {
-            Expr::new(
-                ExprKind::Call {
-                    func: Box::new(substitute_identifiers((**func).clone(), subs)),
-                    args: args.iter().map(|a| substitute_identifiers(a.clone(), subs)).collect(),
-                },
-                expr.span,
-            )
-        }
-        ExprKind::Block(exprs) => {
-            Expr::new(
-                ExprKind::Block(
-                    exprs.iter().map(|e| substitute_identifiers(e.clone(), subs)).collect()
-                ),
-                expr.span,
-            )
-        }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::Binary { left, op, right } => Expr::new(
+            ExprKind::Binary {
+                left: Box::new(substitute_identifiers((**left).clone(), subs)),
+                op: *op,
+                right: Box::new(substitute_identifiers((**right).clone(), subs)),
+            },
+            expr.span,
+        ),
+        ExprKind::Call { func, args } => Expr::new(
+            ExprKind::Call {
+                func: Box::new(substitute_identifiers((**func).clone(), subs)),
+                args: args
+                    .iter()
+                    .map(|a| substitute_identifiers(a.clone(), subs))
+                    .collect(),
+            },
+            expr.span,
+        ),
+        ExprKind::Block(exprs) => Expr::new(
+            ExprKind::Block(
+                exprs
+                    .iter()
+                    .map(|e| substitute_identifiers(e.clone(), subs))
+                    .collect(),
+            ),
+            expr.span,
+        ),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             // ISSUE-128 FIX: Substitute in if-else expressions
             Expr::new(
                 ExprKind::If {
                     condition: Box::new(substitute_identifiers((**condition).clone(), subs)),
                     then_branch: Box::new(substitute_identifiers((**then_branch).clone(), subs)),
-                    else_branch: else_branch.as_ref().map(|e| Box::new(substitute_identifiers((**e).clone(), subs))),
+                    else_branch: else_branch
+                        .as_ref()
+                        .map(|e| Box::new(substitute_identifiers((**e).clone(), subs))),
                 },
                 expr.span,
             )
@@ -227,7 +257,9 @@ fn substitute_identifiers(expr: Expr, subs: &HashMap<String, Expr>) -> Expr {
             // ISSUE-128 FIX: Substitute identifiers inside return expressions
             Expr::new(
                 ExprKind::Return {
-                    value: value.as_ref().map(|v| Box::new(substitute_identifiers((**v).clone(), subs)))
+                    value: value
+                        .as_ref()
+                        .map(|v| Box::new(substitute_identifiers((**v).clone(), subs))),
                 },
                 expr.span,
             )
@@ -247,7 +279,11 @@ fn estimate_body_size(body: &Expr) -> usize {
             exprs.iter().map(estimate_body_size).sum()
         }
         ExprKind::Let { body, .. } => 1 + estimate_body_size(body),
-        ExprKind::If { then_branch, else_branch, .. } => {
+        ExprKind::If {
+            then_branch,
+            else_branch,
+            ..
+        } => {
             1 + estimate_body_size(then_branch)
                 + else_branch.as_ref().map_or(0, |e| estimate_body_size(e))
         }
@@ -274,17 +310,25 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
             check_recursion(func_name, left) || check_recursion(func_name, right)
         }
         ExprKind::Block(exprs) => exprs.iter().any(|e| check_recursion(func_name, e)),
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             check_recursion(func_name, condition)
                 || check_recursion(func_name, then_branch)
-                || else_branch.as_ref().is_some_and(|e| check_recursion(func_name, e))
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| check_recursion(func_name, e))
         }
         ExprKind::Let { value, body, .. } => {
             check_recursion(func_name, value) || check_recursion(func_name, body)
         }
         ExprKind::Return { value } => {
             // ISSUE-128 FIX: Check for recursion inside return expressions
-            value.as_ref().is_some_and(|v| check_recursion(func_name, v))
+            value
+                .as_ref()
+                .is_some_and(|v| check_recursion(func_name, v))
         }
         _ => false,
     }
@@ -301,7 +345,8 @@ fn accesses_global_variables(params: &[Param], body: &Expr) -> bool {
     use std::collections::HashSet;
 
     // Build set of parameter names
-    let param_names: HashSet<String> = params.iter()
+    let param_names: HashSet<String> = params
+        .iter()
         .map(|p| match &p.pattern {
             Pattern::Identifier(name) => name.clone(),
             _ => String::new(),
@@ -330,12 +375,20 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
             check_for_external_refs(left, allowed) || check_for_external_refs(right, allowed)
         }
         ExprKind::Block(exprs) => exprs.iter().any(|e| check_for_external_refs(e, allowed)),
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             check_for_external_refs(condition, allowed)
                 || check_for_external_refs(then_branch, allowed)
-                || else_branch.as_ref().is_some_and(|e| check_for_external_refs(e, allowed))
+                || else_branch
+                    .as_ref()
+                    .is_some_and(|e| check_for_external_refs(e, allowed))
         }
-        ExprKind::Let { name, value, body, .. } => {
+        ExprKind::Let {
+            name, value, body, ..
+        } => {
             // Check value first (binding not yet available)
             if check_for_external_refs(value, allowed) {
                 return true;
@@ -347,9 +400,9 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
             allowed_with_binding.insert(name.clone());
             check_for_external_refs(body, &allowed_with_binding)
         }
-        ExprKind::Return { value } => {
-            value.as_ref().is_some_and(|v| check_for_external_refs(v, allowed))
-        }
+        ExprKind::Return { value } => value
+            .as_ref()
+            .is_some_and(|v| check_for_external_refs(v, allowed)),
         ExprKind::Call { func, args } => {
             check_for_external_refs(func, allowed)
                 || args.iter().any(|a| check_for_external_refs(a, allowed))
@@ -422,10 +475,7 @@ mod tests {
             Span::default(),
         );
 
-        let block = Expr::new(
-            ExprKind::Block(vec![func_def, call]),
-            Span::default(),
-        );
+        let block = Expr::new(ExprKind::Block(vec![func_def, call]), Span::default());
 
         let (result, _inlined) = inline_small_functions(block);
 
@@ -521,7 +571,10 @@ mod tests {
                 if let ExprKind::Binary { .. } = body.kind {
                     // Success: call was inlined inside main's body
                 } else {
-                    panic!("Expected main's body to have inlined binary expression, got: {:?}", body.kind);
+                    panic!(
+                        "Expected main's body to have inlined binary expression, got: {:?}",
+                        body.kind
+                    );
                 }
             } else {
                 panic!("Expected second expression to be main function");

@@ -30,12 +30,8 @@ fn main() {
 }
 "#;
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -50,12 +46,8 @@ fn main() {
 }
 "#;
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -70,12 +62,8 @@ fn main() {
 }
 "#;
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -89,12 +77,8 @@ fn main() {
 }
 "#;
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -108,13 +92,9 @@ fn main() {
 }
 "#;
     fs::write(&source, code).expect("Failed to write test file");
-    
+
     // Should fail with runtime error
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("run").arg(&source).assert().failure();
 }
 
 #[test]

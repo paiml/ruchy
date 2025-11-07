@@ -279,7 +279,9 @@ println("Empty directory handled correctly")
         .arg(&code)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Empty directory handled correctly"));
+        .stdout(predicate::str::contains(
+            "Empty directory handled correctly",
+        ));
 }
 
 #[test]

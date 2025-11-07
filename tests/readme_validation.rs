@@ -57,17 +57,13 @@ fn ruchy_cmd() -> Command {
 #[test]
 fn test_readme_exists() {
     let readme = Path::new("README.md");
-    assert!(
-        readme.exists(),
-        "README.md must exist in project root"
-    );
+    assert!(readme.exists(), "README.md must exist in project root");
 }
 
 /// Test that README.md is not empty
 #[test]
 fn test_readme_not_empty() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     assert!(
         content.len() > 100,
@@ -79,14 +75,13 @@ fn test_readme_not_empty() {
 /// Test that README.md contains required sections
 #[test]
 fn test_readme_required_sections() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     let required_sections = vec![
-        "# Ruchy",           // Title
-        "## Features",       // What it does
-        "## Installation",   // How to install
-        "## CLI Commands",   // How to use
+        "# Ruchy",         // Title
+        "## Features",     // What it does
+        "## Installation", // How to install
+        "## CLI Commands", // How to use
     ];
 
     for section in required_sections {
@@ -100,8 +95,7 @@ fn test_readme_required_sections() {
 /// EXTREME TDD: Extract and validate ALL Ruchy code examples in README.md
 #[test]
 fn test_readme_ruchy_examples_all_work() {
-    let readme_content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let readme_content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     let examples = extract_code_blocks(&readme_content, "ruchy");
 
@@ -121,14 +115,13 @@ fn test_readme_ruchy_examples_all_work() {
         }
 
         // Write code to temp file
-        let test_file = temp_dir.path().join(format!("readme_line_{line_num}.ruchy"));
+        let test_file = temp_dir
+            .path()
+            .join(format!("readme_line_{line_num}.ruchy"));
         fs::write(&test_file, code).expect("Failed to write test file");
 
         // Try to run with ruchy
-        let result = ruchy_cmd()
-            .arg("run")
-            .arg(&test_file)
-            .assert();
+        let result = ruchy_cmd().arg("run").arg(&test_file).assert();
 
         if result.get_output().status.success() {
             passed += 1;
@@ -158,8 +151,7 @@ fn test_readme_ruchy_examples_all_work() {
 /// Test that README.md doesn't claim features that don't exist
 #[test]
 fn test_readme_no_false_claims() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     // List of features that are NOT implemented or partially implemented
     let false_claims: Vec<&str> = vec![
@@ -177,8 +169,7 @@ fn test_readme_no_false_claims() {
 /// Test that README.md installation instructions work
 #[test]
 fn test_readme_installation_instructions() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     // Should mention cargo install
     assert!(
@@ -190,8 +181,7 @@ fn test_readme_installation_instructions() {
 /// Test that README.md examples use correct syntax
 #[test]
 fn test_readme_syntax_check_all_examples() {
-    let readme_content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let readme_content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     let examples = extract_code_blocks(&readme_content, "ruchy");
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -207,10 +197,7 @@ fn test_readme_syntax_check_all_examples() {
         fs::write(&test_file, code).expect("Failed to write test file");
 
         // Check syntax only (don't run)
-        let result = ruchy_cmd()
-            .arg("check")
-            .arg(&test_file)
-            .assert();
+        let result = ruchy_cmd().arg("check").arg(&test_file).assert();
 
         if !result.get_output().status.success() {
             syntax_errors.push((*line_num, code.clone()));
@@ -235,8 +222,7 @@ fn test_readme_syntax_check_all_examples() {
 /// Property test: README.md should be stable (not change frequently)
 #[test]
 fn test_readme_stability() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     // README should be comprehensive enough to guide users
     assert!(
@@ -257,8 +243,7 @@ fn test_readme_stability() {
 /// Test that README.md mentions `DataFrame` status accurately
 #[test]
 fn test_readme_dataframe_accuracy() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     if content.contains("DataFrame") || content.contains("dataframe") {
         // If DataFrame is mentioned, it should have accuracy warnings
@@ -270,18 +255,19 @@ fn test_readme_dataframe_accuracy() {
             .filter(|(_, code)| code.contains("DataFrame") || code.contains("df!"))
             .collect();
 
-        println!("Found {} DataFrame examples in README.md", df_examples.len());
+        println!(
+            "Found {} DataFrame examples in README.md",
+            df_examples.len()
+        );
     }
 }
 
 /// Test README.md against actual Ruchy version
 #[test]
 fn test_readme_version_consistency() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
-    let cargo_toml = fs::read_to_string("Cargo.toml")
-        .expect("Failed to read Cargo.toml");
+    let cargo_toml = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml");
 
     // Extract version from Cargo.toml
     let version_line = cargo_toml
@@ -304,8 +290,7 @@ fn test_readme_version_consistency() {
 /// Test that code blocks have proper language tags
 #[test]
 fn test_readme_code_block_formatting() {
-    let content = fs::read_to_string("README.md")
-        .expect("Failed to read README.md");
+    let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
     let lines: Vec<&str> = content.lines().collect();
     let mut bare_code_blocks = Vec::new();
@@ -333,8 +318,7 @@ mod property_tests {
     /// Property: All examples should be idempotent (running twice = same result)
     #[test]
     fn test_readme_examples_idempotent() {
-        let readme_content = fs::read_to_string("README.md")
-            .expect("Failed to read README.md");
+        let readme_content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
         let examples = extract_code_blocks(&readme_content, "ruchy");
         let temp_dir = TempDir::new().expect("Failed to create temp dir");

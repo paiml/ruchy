@@ -60,11 +60,7 @@ fn test_append_file_to_existing() {
 
     let code = format!(r#"append_file("{test_file}", "line2\n")"#);
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 
     // Verify content
     let content = fs::read_to_string(test_file).unwrap();
@@ -81,11 +77,7 @@ fn test_append_file_creates_new() {
 
     let code = format!(r#"append_file("{test_file}", "new content\n")"#);
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 
     // Verify content
     let content = fs::read_to_string(test_file).unwrap();
@@ -106,11 +98,7 @@ fn test_delete_file_exists() {
 
     let code = format!(r#"delete_file("{test_file}")"#);
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 
     // Verify file was deleted
     assert!(!Path::new(test_file).exists());
@@ -124,9 +112,5 @@ fn test_delete_file_nonexistent() {
     let code = format!(r#"delete_file("{test_file}")"#);
 
     // Should succeed (idempotent delete)
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 }

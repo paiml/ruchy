@@ -1,8 +1,5 @@
 //! Basic expression parsing - minimal version with only used functions
-use super::{
-    bail, Expr, ExprKind, Literal, ParserState, Pattern,
-    Result, Span, Token,
-};
+use super::{bail, Expr, ExprKind, Literal, ParserState, Pattern, Result, Span, Token};
 
 // Helper modules for improved maintainability (TDG Structural improvement)
 // PARSER-069: Make expressions_helpers accessible within parser module for turbofish parsing
@@ -42,15 +39,20 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Power
         | Token::Await
         | Token::Tilde
-        | Token::Spawn => expressions_helpers::unary_operators::parse_unary_prefix(state, token, span),
+        | Token::Spawn => {
+            expressions_helpers::unary_operators::parse_unary_prefix(state, token, span)
+        }
 
         // Range operators (prefix for open-start ranges like ..5)
         Token::DotDot | Token::DotDotEqual => parse_prefix_range(state, token, span),
 
         // Identifiers and special keywords
-        Token::Identifier(_) | Token::Underscore | Token::Self_ | Token::Super | Token::Default | Token::Result => {
-            parse_identifier_prefix(state, token, span)
-        }
+        Token::Identifier(_)
+        | Token::Underscore
+        | Token::Self_
+        | Token::Super
+        | Token::Default
+        | Token::Result => parse_identifier_prefix(state, token, span),
 
         // Keywords and declarations
         Token::Fun
@@ -331,7 +333,11 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
 }
 /// Parse special definition tokens (`DataFrame`, Actor)
 /// Extracted from `parse_prefix` to reduce complexity
-fn parse_special_definition_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_special_definition_token(
+    state: &mut ParserState,
+    token: Token,
+    span: Span,
+) -> Result<Expr> {
     match token {
         // DataFrame literal (df![...]) or identifier (df) - delegated to dataframes module
         Token::DataFrame => expressions_helpers::dataframes::parse_dataframe_token(state, span),
@@ -351,7 +357,9 @@ fn parse_control_statement_token(
         Token::Const => expressions_helpers::visibility_modifiers::parse_const_token(state, span),
         Token::Sealed => expressions_helpers::visibility_modifiers::parse_sealed_token(state, span),
         Token::Final => expressions_helpers::visibility_modifiers::parse_final_token(state, span),
-        Token::Abstract => expressions_helpers::visibility_modifiers::parse_abstract_token(state, span),
+        Token::Abstract => {
+            expressions_helpers::visibility_modifiers::parse_abstract_token(state, span)
+        }
         Token::Unsafe => expressions_helpers::visibility_modifiers::parse_unsafe_token(state, span),
         Token::Break => expressions_helpers::control_flow::parse_break_token(state, span),
         Token::Continue => expressions_helpers::control_flow::parse_continue_token(state, span),
@@ -567,7 +575,14 @@ fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Res
 
     // PARSER-084: Check if this is a full open range (..) with no end
     let end = match state.tokens.peek() {
-        Some((Token::RightBracket | Token::Semicolon | Token::Comma | Token::RightParen | Token::RightBrace, _)) => {
+        Some((
+            Token::RightBracket
+            | Token::Semicolon
+            | Token::Comma
+            | Token::RightParen
+            | Token::RightBrace,
+            _,
+        )) => {
             // Full open range: .. with no start or end
             Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
         }
@@ -579,7 +594,10 @@ fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Res
 
     Ok(Expr {
         kind: ExprKind::Range {
-            start: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })),
+            start: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Unit),
+                Span { start: 0, end: 0 },
+            )),
             end: Box::new(end),
             inclusive,
         },
@@ -589,4 +607,3 @@ fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Res
         trailing_comment: None,
     })
 }
-

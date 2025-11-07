@@ -67,11 +67,13 @@ fn test_parser_060_01_file_resolution_missing_file() {
     let temp_dir = TempDir::new().unwrap();
 
     let module_path = "nonexistent";
-    let result = std::panic::catch_unwind(|| {
-        resolve_module_path(module_path, temp_dir.path()).unwrap()
-    });
+    let result =
+        std::panic::catch_unwind(|| resolve_module_path(module_path, temp_dir.path()).unwrap());
 
-    assert!(result.is_err(), "Should fail when module file doesn't exist");
+    assert!(
+        result.is_err(),
+        "Should fail when module file doesn't exist"
+    );
 }
 
 #[test]
@@ -111,11 +113,15 @@ fn test_parser_060_02_loading_module_with_multiple_functions() {
     // Test: Load module with multiple function definitions
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("utils.ruchy");
-    fs::write(&module_path, r"
+    fs::write(
+        &module_path,
+        r"
         fun add(x, y) { x + y }
         fun sub(x, y) { x - y }
         fun mul(x, y) { x * y }
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let symbols = loaded_module.symbols();
@@ -147,10 +153,14 @@ fn test_parser_060_03_extract_function_symbols() {
     // Test: Extract function definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("funcs.ruchy");
-    fs::write(&module_path, r"
+    fs::write(
+        &module_path,
+        r"
         fun public_func() { 1 }
         fun helper_func(x) { x * 2 }
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let functions = extract_functions(&loaded_module);
@@ -165,10 +175,14 @@ fn test_parser_060_03_extract_struct_symbols() {
     // Test: Extract struct definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("structs.ruchy");
-    fs::write(&module_path, r"
+    fs::write(
+        &module_path,
+        r"
         struct Point { x: i32, y: i32 }
         struct Circle { center: Point, radius: f64 }
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let structs = extract_structs(&loaded_module);
@@ -183,10 +197,14 @@ fn test_parser_060_03_extract_const_symbols() {
     // Test: Extract constant definitions from AST
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("consts.ruchy");
-    fs::write(&module_path, r"
+    fs::write(
+        &module_path,
+        r"
         const PI = 3.14159
         const MAX_SIZE = 1000
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let consts = extract_consts(&loaded_module);
@@ -201,11 +219,15 @@ fn test_parser_060_03_extract_mixed_symbols() {
     // Test: Extract all symbol types from a single module
     let temp_dir = TempDir::new().unwrap();
     let module_path = temp_dir.path().join("mixed.ruchy");
-    fs::write(&module_path, r#"
+    fs::write(
+        &module_path,
+        r#"
         const VERSION = "1.0"
         struct Config { debug: bool }
         fun init() { Config { debug: true } }
-    "#).unwrap();
+    "#,
+    )
+    .unwrap();
 
     let loaded_module = load_module(&module_path).unwrap();
     let all_symbols = extract_all_symbols(&loaded_module);
@@ -238,10 +260,14 @@ fn test_parser_060_04_import_multiple_functions() {
     // Test: use utils::{add, sub} imports multiple functions
     let temp_dir = TempDir::new().unwrap();
     let utils_path = temp_dir.path().join("utils.ruchy");
-    fs::write(&utils_path, r"
+    fs::write(
+        &utils_path,
+        r"
         fun add(x, y) { x + y }
         fun sub(x, y) { x - y }
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 
     let code = "use utils::{add, sub}\nadd(10, 5) + sub(10, 5)";
     let result = execute_with_imports(code, temp_dir.path()).unwrap();
@@ -300,7 +326,10 @@ fn test_parser_060_04_import_nonexistent_symbol() {
     let code = "use utils::missing\nmissing()";
     let result = execute_with_imports(code, temp_dir.path());
 
-    assert!(result.is_err(), "Should fail when importing nonexistent symbol");
+    assert!(
+        result.is_err(),
+        "Should fail when importing nonexistent symbol"
+    );
     let err_msg = format!("{:?}", result.unwrap_err());
     assert!(err_msg.contains("not found") || err_msg.contains("missing"));
 }
@@ -320,8 +349,10 @@ fn test_parser_060_05_cache_module_on_first_load() {
     let module1 = cache.load(&module_path).unwrap();
     let module2 = cache.load(&module_path).unwrap();
 
-    assert!(Rc::ptr_eq(&module1, &module2),
-            "Should return same cached instance");
+    assert!(
+        Rc::ptr_eq(&module1, &module2),
+        "Should return same cached instance"
+    );
 }
 
 #[test]
@@ -339,8 +370,10 @@ fn test_parser_060_05_cache_multiple_modules() {
     let module1 = cache.load(&mod1_path).unwrap();
     let module2 = cache.load(&mod2_path).unwrap();
 
-    assert!(!Rc::ptr_eq(&module1, &module2),
-            "Different modules should be different instances");
+    assert!(
+        !Rc::ptr_eq(&module1, &module2),
+        "Different modules should be different instances"
+    );
 }
 
 // -------------------------------------------------------------------
@@ -351,14 +384,13 @@ fn test_parser_060_05_cache_multiple_modules() {
 // Import actual implementations from module_loader
 // -------------------------------------------------------------------
 
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::parser::Parser;
 use ruchy::runtime::module_loader::{
-    ModuleCache,
-    extract_all_symbols, extract_consts, extract_functions, extract_structs,
-    load_module, resolve_module_path, resolve_module_path_dot_notation,
+    extract_all_symbols, extract_consts, extract_functions, extract_structs, load_module,
+    resolve_module_path, resolve_module_path_dot_notation, ModuleCache,
 };
 use ruchy::runtime::{Interpreter, Value};
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{Expr, ExprKind};
 
 fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, String> {
     // Parse the code
@@ -384,7 +416,8 @@ fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, Str
             // Split module path into module file and symbols
             // For "utils::helper" with no items → module="utils", symbols=["helper"]
             // For "utils" with items=["add", "sub"] → module="utils", symbols=["add", "sub"]
-            let (module_file, symbol_names): (String, Vec<String>) = if let Some(item_names) = items {
+            let (module_file, symbol_names): (String, Vec<String>) = if let Some(item_names) = items
+            {
                 // Explicit items: use module as-is, items as symbols
                 (module.clone(), item_names.clone())
             } else {
@@ -395,28 +428,28 @@ fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, Str
                     (module.clone(), vec![])
                 } else {
                     // Split into module and symbol
-                    let module_part = parts[..parts.len()-1].join("::");
-                    let symbol_part = parts[parts.len()-1].to_string();
+                    let module_part = parts[..parts.len() - 1].join("::");
+                    let symbol_part = parts[parts.len() - 1].to_string();
                     (module_part, vec![symbol_part])
                 }
             };
 
             // Resolve module path and load module
-            let module_path = resolve_module_path(&module_file, base)
-                .map_err(|e| e.to_string())?;
-            let loaded_module = cache.load(&module_path)
-                .map_err(|e| e.to_string())?;
+            let module_path = resolve_module_path(&module_file, base).map_err(|e| e.to_string())?;
+            let loaded_module = cache.load(&module_path).map_err(|e| e.to_string())?;
 
             // Evaluate the entire module to register ALL symbols in the interpreter
             // This avoids issues with evaluating individual function expressions
-            interpreter.eval_expr(loaded_module.ast())
+            interpreter
+                .eval_expr(loaded_module.ast())
                 .map_err(|e| format!("Failed to load module: {e}"))?;
 
             // Verify requested symbols exist
             if !symbol_names.is_empty() {
                 for item_name in &symbol_names {
-                    loaded_module.get_symbol(item_name)
-                        .ok_or_else(|| format!("Symbol '{item_name}' not found in module '{module_file}'"))?;
+                    loaded_module.get_symbol(item_name).ok_or_else(|| {
+                        format!("Symbol '{item_name}' not found in module '{module_file}'")
+                    })?;
                 }
             }
         } else {
@@ -431,7 +464,8 @@ fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, Str
         Ok(Value::Nil)
     } else if non_import_exprs.len() == 1 {
         // Single expression - evaluate directly
-        interpreter.eval_expr(&non_import_exprs[0])
+        interpreter
+            .eval_expr(&non_import_exprs[0])
             .map_err(|e| format!("Execution error: {e}"))
     } else {
         // Multiple expressions - create a block using ast's metadata
@@ -442,7 +476,8 @@ fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, Str
             leading_comments: Vec::new(),
             trailing_comment: None,
         };
-        interpreter.eval_expr(&block_expr)
+        interpreter
+            .eval_expr(&block_expr)
             .map_err(|e| format!("Execution error: {e}"))
     }
 }

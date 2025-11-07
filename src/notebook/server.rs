@@ -306,9 +306,7 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
 
     // Run server and REPL executor concurrently on local set
     local
-        .run_until(async move {
-            axum::serve(listener, app).await
-        })
+        .run_until(async move { axum::serve(listener, app).await })
         .await?;
     Ok(())
 }
@@ -757,7 +755,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_notebook_valid_file() {
         use crate::notebook::types::{Cell, Notebook};
-        
+
         use tempfile::NamedTempFile;
 
         // Create a temporary .rnb file

@@ -34,7 +34,11 @@ fn test_jit_007_tuple_literal_pair() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile tuple literal: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile tuple literal: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 10, "pair.0 should be 10");
 }
 
@@ -83,7 +87,11 @@ fn test_jit_007_tuple_access_in_expression() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should use tuple in expression: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should use tuple in expression: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 7, "3 + 4 should be 7");
 }
 
@@ -98,7 +106,11 @@ fn test_jit_007_tuple_access_computed() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compute with tuple: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compute with tuple: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 200, "10 * 20 should be 200");
 }
 
@@ -121,7 +133,11 @@ fn test_jit_007_function_return_tuple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should return tuple from function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should return tuple from function: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 15, "5 + 10 should be 15");
 }
 
@@ -164,7 +180,11 @@ fn test_jit_007_tuple_destructuring_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should destructure tuple: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should destructure tuple: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 126, "42 + 84 should be 126");
 }
 
@@ -183,7 +203,11 @@ fn test_jit_007_tuple_destructuring_from_function() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should destructure from function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should destructure from function: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 10, "20 - 10 should be 10");
 }
 
@@ -216,7 +240,11 @@ fn test_jit_007_fibonacci_pair() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compute fibonacci with tuples: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compute fibonacci with tuples: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "fib(10) should be 55");
 }
 
@@ -238,7 +266,11 @@ fn test_jit_007_coordinate_distance() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compute distance: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compute distance: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 25, "3²+4² should be 25");
 }
 

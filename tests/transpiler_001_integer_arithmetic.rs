@@ -176,9 +176,7 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Complex arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Complex arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -228,9 +226,7 @@ impl Counter {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Method arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Method arithmetic fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -263,9 +259,7 @@ pub fn concat(a: String, b: String) -> String {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "String concatenation should compile:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("String concatenation should compile:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 

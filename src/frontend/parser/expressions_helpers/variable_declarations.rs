@@ -70,10 +70,7 @@ pub(in crate::frontend::parser) fn parse_let_statement(state: &mut ParserState) 
         parse_let_in_clause(state, value.span)?
     } else {
         // For let-else, body is unit (the else block handles divergence)
-        Box::new(Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            value.span,
-        ))
+        Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span))
     };
 
     // Create the appropriate expression based on pattern type
@@ -215,7 +212,10 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
 /// Parse variant pattern with name
 ///
 /// Examples: Some(x), Ok(val), Err(e), Color(r, g, b)
-fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String) -> Result<Pattern> {
+fn parse_variant_pattern_with_name(
+    state: &mut ParserState,
+    variant_name: String,
+) -> Result<Pattern> {
     // At this point, we've consumed the variant name and peeked '('
     state.tokens.expect(&Token::LeftParen)?;
 
@@ -252,7 +252,11 @@ fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> R
     // Special case for common Option/Result variants (single element)
     if patterns.len() == 1 {
         match variant_name.as_str() {
-            "Some" => return Ok(Pattern::Some(Box::new(patterns.into_iter().next().unwrap()))),
+            "Some" => {
+                return Ok(Pattern::Some(Box::new(
+                    patterns.into_iter().next().unwrap(),
+                )))
+            }
             "Ok" => return Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap()))),
             "Err" => return Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap()))),
             _ => {}
@@ -280,7 +284,7 @@ fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
 fn parse_let_else_clause(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Else, _))) {
         state.tokens.advance(); // consume 'else'
-        // Must be followed by a block (diverging expression)
+                                // Must be followed by a block (diverging expression)
         if !matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
             bail!("let-else requires a block after 'else'");
         }
@@ -448,7 +452,7 @@ fn create_var_expression(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

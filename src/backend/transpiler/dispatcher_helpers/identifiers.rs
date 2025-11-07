@@ -86,7 +86,10 @@ impl Transpiler {
         quote! { < #(#type_tokens),* > }
     }
 
-    pub(in crate::backend::transpiler) fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
+    pub(in crate::backend::transpiler) fn transpile_qualified_name(
+        module: &str,
+        name: &str,
+    ) -> TokenStream {
         // Handle nested qualified names like "net::TcpListener"
         let module_parts: Vec<&str> = module.split("::").collect();
         let name_ident = format_ident!("{}", name);

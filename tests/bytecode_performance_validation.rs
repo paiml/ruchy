@@ -53,11 +53,7 @@ fn benchmark_code(name: &str, code: &str, iterations: u32) {
 #[test]
 #[ignore = "Run with --ignored --nocapture"]
 fn test_opt_021_basic_arithmetic() {
-    benchmark_code(
-        "Basic Arithmetic (OPT-001)",
-        "2 + 2",
-        10_000
-    );
+    benchmark_code("Basic Arithmetic (OPT-001)", "2 + 2", 10_000);
 }
 
 #[test]
@@ -66,7 +62,7 @@ fn test_opt_021_complex_arithmetic() {
     benchmark_code(
         "Complex Arithmetic (OPT-001)",
         "((10 + 5) * 2 - 3) / 4",
-        10_000
+        10_000,
     );
 }
 
@@ -76,7 +72,7 @@ fn test_opt_021_variables() {
     benchmark_code(
         "Variable Access (OPT-002)",
         "{ let x = 10; let y = 20; x + y }",
-        10_000
+        10_000,
     );
 }
 
@@ -86,7 +82,7 @@ fn test_opt_021_comparisons() {
     benchmark_code(
         "Comparisons (OPT-003)",
         "{ let x = 10; let y = 20; x < y }",
-        10_000
+        10_000,
     );
 }
 
@@ -96,7 +92,7 @@ fn test_opt_021_logical_ops() {
     benchmark_code(
         "Logical Operations (OPT-004)",
         "{ let a = true; let b = false; a && !b }",
-        10_000
+        10_000,
     );
 }
 
@@ -114,7 +110,7 @@ fn test_opt_021_while_loop() {
             }
             sum
         }",
-        1_000
+        1_000,
     );
 }
 
@@ -130,7 +126,7 @@ fn test_opt_021_assignments() {
             x = x * 2;
             x
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -146,7 +142,7 @@ fn test_opt_021_for_loop() {
             }
             sum
         }",
-        1_000
+        1_000,
     );
 }
 
@@ -159,7 +155,7 @@ fn test_opt_021_array_indexing() {
             let arr = [10, 20, 30, 40, 50];
             arr[0] + arr[2] + arr[4]
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -172,7 +168,7 @@ fn test_opt_021_string_methods() {
             let s = "hello";
             s.len()
         }"#,
-        10_000
+        10_000,
     );
 }
 
@@ -185,7 +181,7 @@ fn test_opt_021_object_field_access() {
             let obj = { x: 10, y: 20 };
             obj.x + obj.y
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -195,18 +191,14 @@ fn test_opt_021_object_literal() {
     benchmark_code(
         "Object Literal (OPT-016)",
         r#"{ name: "Alice", age: 30, score: 95 }"#,
-        10_000
+        10_000,
     );
 }
 
 #[test]
 #[ignore = "Manual run: cargo test --ignored --nocapture"]
 fn test_opt_021_tuple_literal() {
-    benchmark_code(
-        "Tuple Literal (OPT-017)",
-        "(1, 2, 3, 4, 5)",
-        10_000
-    );
+    benchmark_code("Tuple Literal (OPT-017)", "(1, 2, 3, 4, 5)", 10_000);
 }
 
 #[test]
@@ -222,7 +214,7 @@ fn test_opt_021_match_simple() {
                 _ => 0,
             }
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -236,7 +228,7 @@ fn test_opt_021_closure_simple() {
             let f = |y| x + y;
             f(5)
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -251,7 +243,7 @@ fn test_opt_021_non_literal_array() {
             let arr = [x, y, x + y];
             arr[0] + arr[1] + arr[2]
         }",
-        10_000
+        10_000,
     );
 }
 
@@ -272,7 +264,7 @@ fn test_opt_021_fibonacci() {
             }
             b
         }",
-        1_000
+        1_000,
     );
 }
 
@@ -295,7 +287,7 @@ fn test_opt_021_data_processing() {
 
             { sum: sum, count: count, avg: sum / count }
         }",
-        1_000
+        1_000,
     );
 }
 
@@ -313,6 +305,8 @@ fn test_opt_021_performance_summary() {
     println!("- Phase 1: OPT-001 to OPT-010 (Basic operations)");
     println!("- Phase 2: OPT-011 to OPT-020 (Complex features)");
     println!("\nRun all benchmarks:");
-    println!("  cargo test --release --test bytecode_performance_validation -- --ignored --nocapture");
+    println!(
+        "  cargo test --release --test bytecode_performance_validation -- --ignored --nocapture"
+    );
     println!("{}", "=".repeat(60));
 }

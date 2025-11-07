@@ -98,14 +98,38 @@ fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
             name
         }
         // Allow keywords that are valid trait/type names in impl blocks
-        Some((Token::From, _)) => { state.tokens.advance(); "From".to_string() }
-        Some((Token::Default, _)) => { state.tokens.advance(); "Default".to_string() }
-        Some((Token::Option, _)) => { state.tokens.advance(); "Option".to_string() }
-        Some((Token::Result, _)) => { state.tokens.advance(); "Result".to_string() }
-        Some((Token::Some, _)) => { state.tokens.advance(); "Some".to_string() }
-        Some((Token::None, _)) => { state.tokens.advance(); "None".to_string() }
-        Some((Token::Ok, _)) => { state.tokens.advance(); "Ok".to_string() }
-        Some((Token::Err, _)) => { state.tokens.advance(); "Err".to_string() }
+        Some((Token::From, _)) => {
+            state.tokens.advance();
+            "From".to_string()
+        }
+        Some((Token::Default, _)) => {
+            state.tokens.advance();
+            "Default".to_string()
+        }
+        Some((Token::Option, _)) => {
+            state.tokens.advance();
+            "Option".to_string()
+        }
+        Some((Token::Result, _)) => {
+            state.tokens.advance();
+            "Result".to_string()
+        }
+        Some((Token::Some, _)) => {
+            state.tokens.advance();
+            "Some".to_string()
+        }
+        Some((Token::None, _)) => {
+            state.tokens.advance();
+            "None".to_string()
+        }
+        Some((Token::Ok, _)) => {
+            state.tokens.advance();
+            "Ok".to_string()
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance();
+            "Err".to_string()
+        }
         _ => return None,
     };
 
@@ -245,7 +269,7 @@ fn parse_impl_method(state: &mut ParserState, is_pub: bool) -> Result<ImplMethod
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -264,7 +288,8 @@ mod tests {
 
     #[test]
     fn test_generic_impl() {
-        let code = "impl<T> From<T> for Wrapper { fun from(value: T) -> Wrapper { Wrapper { value } } }";
+        let code =
+            "impl<T> From<T> for Wrapper { fun from(value: T) -> Wrapper { Wrapper { value } } }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Generic impl should parse");
     }

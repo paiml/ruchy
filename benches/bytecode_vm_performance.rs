@@ -15,8 +15,8 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ruchy::frontend::parser::Parser;
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::bytecode::{Compiler, VM};
+use ruchy::runtime::interpreter::Interpreter;
 
 /// Helper to benchmark both AST and Bytecode VM execution
 fn bench_both_modes(c: &mut Criterion, name: &str, code: &str) {
@@ -75,7 +75,7 @@ fn bench_loops_assignments(c: &mut Criterion) {
                 i = i + 1;
             }
             sum
-        }"
+        }",
     );
 
     // Assignment operations
@@ -88,7 +88,7 @@ fn bench_loops_assignments(c: &mut Criterion) {
             x = x + 5;
             x = x * 2;
             x
-        }"
+        }",
     );
 }
 
@@ -103,7 +103,7 @@ fn bench_for_loops(c: &mut Criterion) {
                 sum = sum + i;
             }
             sum
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -117,7 +117,7 @@ fn bench_for_loops(c: &mut Criterion) {
                 }
             }
             sum
-        }"
+        }",
     );
 }
 
@@ -129,7 +129,7 @@ fn bench_arrays(c: &mut Criterion) {
         r"{
             let arr = [10, 20, 30, 40, 50];
             arr[0] + arr[2] + arr[4]
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -141,7 +141,7 @@ fn bench_arrays(c: &mut Criterion) {
                 sum = sum + x;
             }
             sum
-        }"
+        }",
     );
 }
 
@@ -153,7 +153,7 @@ fn bench_method_calls(c: &mut Criterion) {
         r#"{
             let s = "hello";
             s.len()
-        }"#
+        }"#,
     );
 
     bench_both_modes(
@@ -162,7 +162,7 @@ fn bench_method_calls(c: &mut Criterion) {
         r"{
             let obj = { x: 10, y: 20 };
             obj.x + obj.y
-        }"
+        }",
     );
 }
 
@@ -171,14 +171,10 @@ fn bench_literals(c: &mut Criterion) {
     bench_both_modes(
         c,
         "object_literal",
-        r#"{ name: "Alice", age: 30, score: 95 }"#
+        r#"{ name: "Alice", age: 30, score: 95 }"#,
     );
 
-    bench_both_modes(
-        c,
-        "tuple_literal",
-        r"(1, 2, 3, 4, 5)"
-    );
+    bench_both_modes(c, "tuple_literal", r"(1, 2, 3, 4, 5)");
 }
 
 /// OPT-018: Match expressions
@@ -193,7 +189,7 @@ fn bench_match(c: &mut Criterion) {
                 2 => 20,
                 _ => 0,
             }
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -205,7 +201,7 @@ fn bench_match(c: &mut Criterion) {
                 Some(x) => x * 2,
                 None => 0,
             }
-        }"
+        }",
     );
 }
 
@@ -218,7 +214,7 @@ fn bench_closures(c: &mut Criterion) {
             let x = 10;
             let f = |y| x + y;
             f(5)
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -229,7 +225,7 @@ fn bench_closures(c: &mut Criterion) {
             let b = 10;
             let add = |x| a + b + x;
             add(3) + add(7)
-        }"
+        }",
     );
 }
 
@@ -243,7 +239,7 @@ fn bench_non_literal_collections(c: &mut Criterion) {
             let y = 20;
             let arr = [x, y, x + y];
             arr[0] + arr[1] + arr[2]
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -253,7 +249,7 @@ fn bench_non_literal_collections(c: &mut Criterion) {
             let a = 5;
             let b = 10;
             (a, b, a + b, a * b)
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -263,7 +259,7 @@ fn bench_non_literal_collections(c: &mut Criterion) {
             let name = "Bob";
             let age = 25;
             { name: name, age: age }
-        }"#
+        }"#,
     );
 }
 
@@ -283,7 +279,7 @@ fn bench_comprehensive(c: &mut Criterion) {
                 i = i + 1;
             }
             b
-        }"
+        }",
     );
 
     bench_both_modes(
@@ -302,7 +298,7 @@ fn bench_comprehensive(c: &mut Criterion) {
             }
 
             { sum: sum, count: count, avg: sum / count }
-        }"
+        }",
     );
 }
 

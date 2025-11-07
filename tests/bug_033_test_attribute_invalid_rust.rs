@@ -165,13 +165,18 @@ fun test_example() {
     let transpiled = String::from_utf8_lossy(&output);
 
     // Should generate #[test] or # [test] (with formatting spaces), NOT #[test(description)]
-    assert!(transpiled.contains("#[test]") || transpiled.contains("# [test]"),
-        "Transpiled code should contain #[test] attribute, found: {transpiled}");
+    assert!(
+        transpiled.contains("#[test]") || transpiled.contains("# [test]"),
+        "Transpiled code should contain #[test] attribute, found: {transpiled}"
+    );
 
     // Should NOT contain invalid syntax with arguments
-    assert!(!transpiled.contains("#[test(") && !transpiled.contains("#[test (")
+    assert!(
+        !transpiled.contains("#[test(")
+            && !transpiled.contains("#[test (")
             && !transpiled.contains("# [test ("),
-        "Transpiled code should NOT contain #[test(description)] - found: {transpiled}");
+        "Transpiled code should NOT contain #[test(description)] - found: {transpiled}"
+    );
 }
 
 /// Test 6: property-tests command should work

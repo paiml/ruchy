@@ -36,15 +36,13 @@ impl fmt::Display for Value {
                 end,
                 inclusive,
             } => format_range(f, start, end, *inclusive),
-            Value::EnumVariant { variant_name, data, .. } => {
-                format_enum_variant(f, variant_name, data.as_ref())
-            }
+            Value::EnumVariant {
+                variant_name, data, ..
+            } => format_enum_variant(f, variant_name, data.as_ref()),
             Value::BuiltinFunction(name) => write!(f, "<builtin function: {name}>"),
             Value::Struct { name, fields } => format_struct(f, name, fields),
             Value::Class {
-                class_name,
-                fields,
-                ..
+                class_name, fields, ..
             } => format_class(f, class_name, fields),
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlDocument(_) => write!(f, "<HtmlDocument>"),

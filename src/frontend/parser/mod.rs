@@ -134,7 +134,7 @@ impl<'a> ParserState<'a> {
             arena: Arena::new(),
             interner: StringInterner::new(),
             expr_cache: VecDeque::with_capacity(8),
-            in_guard_context: false,  // PARSER-071: Initialize guard context flag
+            in_guard_context: false, // PARSER-071: Initialize guard context flag
         }
     }
     /// Get all errors encountered during parsing
@@ -222,18 +222,9 @@ fn is_on_same_line(source: &str, pos1: usize, pos2: usize) -> bool {
 /// Convert token to comment if it's a comment token (complexity: 2)
 fn token_to_comment(token: &Token, span: Span) -> Option<Comment> {
     match token {
-        Token::LineComment(text) => Some(Comment::new(
-            CommentKind::Line(text.clone()),
-            span,
-        )),
-        Token::DocComment(text) => Some(Comment::new(
-            CommentKind::Doc(text.clone()),
-            span,
-        )),
-        Token::BlockComment(text) => Some(Comment::new(
-            CommentKind::Block(text.clone()),
-            span,
-        )),
+        Token::LineComment(text) => Some(Comment::new(CommentKind::Line(text.clone()), span)),
+        Token::DocComment(text) => Some(Comment::new(CommentKind::Doc(text.clone()), span)),
+        Token::BlockComment(text) => Some(Comment::new(CommentKind::Block(text.clone()), span)),
         Token::HashComment(text) => Some(Comment::new(
             CommentKind::Line(text.clone()), // Treat hash comments as line comments
             span,
@@ -327,7 +318,16 @@ pub(crate) fn try_handle_infix_operators(
     let saved_position = state.tokens.position();
 
     // Skip comments temporarily to peek at the actual next token
-    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::DocComment(_)
+                | Token::BlockComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
         state.tokens.advance();
     }
 
@@ -371,7 +371,16 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
     // PARSER-053 FIX: Skip comments before checking for postfix operators
     // This allows: "hello" # comment\n .to_uppercase()
     // Comments are consumed (not restored) so method chains work properly
-    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::DocComment(_)
+                | Token::BlockComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
         state.tokens.advance();
     }
     let token_peek = state.tokens.peek().map(|(t, _)| t.clone());
@@ -398,7 +407,10 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
             // PARSER-086: Extended to fix block-level let with function call followed by array literal
             if matches!(
                 left.kind,
-                ExprKind::Literal(_) | ExprKind::StructLiteral { .. } | ExprKind::Let { .. } | ExprKind::Call { .. }
+                ExprKind::Literal(_)
+                    | ExprKind::StructLiteral { .. }
+                    | ExprKind::Let { .. }
+                    | ExprKind::Call { .. }
             ) {
                 Ok(None) // Not array indexing, `[...]` is a separate expression
             } else {
@@ -445,7 +457,16 @@ fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume dot
 
     // PARSER-053 FIX: Skip comments after dot (allows: .  # comment\n  method_name())
-    while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+    while matches!(
+        state.tokens.peek(),
+        Some((
+            Token::LineComment(_)
+                | Token::DocComment(_)
+                | Token::BlockComment(_)
+                | Token::HashComment(_),
+            _
+        ))
+    ) {
         state.tokens.advance();
     }
 
@@ -465,7 +486,7 @@ fn token_as_identifier(token: &Token) -> Option<String> {
         Token::Err => Some("Err".to_string()),
         Token::Some => Some("Some".to_string()),
         Token::None => Some("None".to_string()),
-        Token::From => Some("from".to_string()),  // PARSER-064: Allow from (String::from)
+        Token::From => Some("from".to_string()), // PARSER-064: Allow from (String::from)
         Token::As => Some("as".to_string()),
         Token::In => Some("in".to_string()),
         Token::Type => Some("type".to_string()),
@@ -548,9 +569,9 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
                 ))
             }
         }
-        Option::None => {
-            Err(anyhow::anyhow!("Expected identifier after '::' but reached end of input"))
-        }
+        Option::None => Err(anyhow::anyhow!(
+            "Expected identifier after '::' but reached end of input"
+        )),
     }
 }
 
@@ -582,13 +603,17 @@ fn parse_turbofish(state: &mut ParserState) -> Result<()> {
                     state.tokens.advance();
                 }
                 None => {
-                    return Err(anyhow::anyhow!("Unexpected end of input while parsing turbofish type parameters"));
+                    return Err(anyhow::anyhow!(
+                        "Unexpected end of input while parsing turbofish type parameters"
+                    ));
                 }
             }
         }
         Ok(())
     } else {
-        Err(anyhow::anyhow!("Expected '<' to start turbofish type parameters"))
+        Err(anyhow::anyhow!(
+            "Expected '<' to start turbofish type parameters"
+        ))
     }
 }
 /// Handle safe navigation operator ?.
@@ -791,7 +816,16 @@ fn try_binary_operators(
         //       + 3
         // We skip comments to get to the operator, then let parse_expr_with_precedence_recursive()
         // consume them as leading comments for the right-hand side.
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::DocComment(_) | Token::BlockComment(_) | Token::HashComment(_), _))) {
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::DocComment(_)
+                    | Token::BlockComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
             state.tokens.advance();
         }
 
@@ -944,11 +978,7 @@ fn try_new_actor_operators(
 }
 
 /// Parse actor send operator (<-) (complexity: 3, cognitive: 3)
-fn parse_actor_send_op(
-    state: &mut ParserState,
-    actor: Expr,
-    min_prec: i32,
-) -> Result<ExprKind> {
+fn parse_actor_send_op(state: &mut ParserState, actor: Expr, min_prec: i32) -> Result<ExprKind> {
     const PREC: i32 = 1; // Same as assignment
     if PREC < min_prec {
         bail!("Precedence check failed for actor send");
@@ -962,11 +992,7 @@ fn parse_actor_send_op(
 }
 
 /// Parse actor query operator (<?) (complexity: 3, cognitive: 3)
-fn parse_actor_query_op(
-    state: &mut ParserState,
-    actor: Expr,
-    min_prec: i32,
-) -> Result<ExprKind> {
+fn parse_actor_query_op(state: &mut ParserState, actor: Expr, min_prec: i32) -> Result<ExprKind> {
     const PREC: i32 = 1; // Same as assignment
     if PREC < min_prec {
         bail!("Precedence check failed for actor query");
@@ -980,11 +1006,7 @@ fn parse_actor_query_op(
 }
 
 /// Parse actor bang operator (!) (complexity: 3, cognitive: 3)
-fn parse_actor_bang_op(
-    state: &mut ParserState,
-    left: Expr,
-    min_prec: i32,
-) -> Result<ExprKind> {
+fn parse_actor_bang_op(state: &mut ParserState, left: Expr, min_prec: i32) -> Result<ExprKind> {
     const PREC: i32 = 1; // Same as assignment
     if PREC < min_prec {
         bail!("Precedence check failed for actor bang");
@@ -1132,7 +1154,14 @@ fn try_range_operators(
     // PARSER-084 FIX: Handle open-ended ranges (e.g., `2..` or `..5`)
     // Check if the next token indicates no expression follows
     let end = match state.tokens.peek() {
-        Some((Token::RightBracket | Token::Semicolon | Token::Comma | Token::RightParen | Token::RightBrace, _)) => {
+        Some((
+            Token::RightBracket
+            | Token::Semicolon
+            | Token::Comma
+            | Token::RightParen
+            | Token::RightBrace,
+            _,
+        )) => {
             // Open-ended range - no end expression
             Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
         }
@@ -1236,7 +1265,10 @@ fn parse_generic_macro(state: &mut ParserState, name: &str) -> Result<Option<Exp
     };
 
     let args = macro_parsing::parse_macro_arguments(state, closing_token)?;
-    Ok(Some(macro_parsing::create_macro_expr(name.to_string(), args)))
+    Ok(Some(macro_parsing::create_macro_expr(
+        name.to_string(),
+        args,
+    )))
 }
 
 #[cfg(test)]
@@ -2041,4 +2073,3 @@ mod mutation_tests {
         }
     }
 }
-

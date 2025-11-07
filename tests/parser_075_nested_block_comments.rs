@@ -160,11 +160,16 @@ fn test_parser_075_04_commented_out_code_with_nesting() {
     let tokens = tokenize(source);
 
     // Should have tokens for: let, active, =, 42, ;, BlockComment, let, also_active, =, 7, ;
-    let block_comments: Vec<_> = tokens.iter()
+    let block_comments: Vec<_> = tokens
+        .iter()
         .filter(|t| matches!(t, Token::BlockComment(_)))
         .collect();
 
-    assert_eq!(block_comments.len(), 1, "Should have exactly one block comment");
+    assert_eq!(
+        block_comments.len(),
+        1,
+        "Should have exactly one block comment"
+    );
 
     if let Token::BlockComment(content) = &block_comments[0] {
         assert!(content.contains("disabled"));
@@ -279,10 +284,12 @@ fn test_parser_075_06_mixed_comment_types() {
     ";
     let tokens = tokenize(source);
 
-    let line_comments: Vec<_> = tokens.iter()
+    let line_comments: Vec<_> = tokens
+        .iter()
         .filter(|t| matches!(t, Token::LineComment(_)))
         .collect();
-    let block_comments: Vec<_> = tokens.iter()
+    let block_comments: Vec<_> = tokens
+        .iter()
         .filter(|t| matches!(t, Token::BlockComment(_)))
         .collect();
 

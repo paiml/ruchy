@@ -44,9 +44,8 @@ fn arb_import_statement() -> impl Strategy<Value = String> {
         // Simple imports: import std::collections
         arb_module_path().prop_map(|path| format!("import {path}")),
         // Aliased imports: import std::vec::Vec as Vector
-        (arb_module_path(), arb_identifier()).prop_map(|(path, alias)| {
-            format!("import {path} as {alias}")
-        }),
+        (arb_module_path(), arb_identifier())
+            .prop_map(|(path, alias)| { format!("import {path} as {alias}") }),
         // Wildcard imports: import std::collections::*
         arb_module_path().prop_map(|path| format!("import {path}::*")),
     ]
@@ -231,9 +230,7 @@ mod unit_tests {
     #[test]
     #[ignore = "Wildcard imports not fully supported in current parser"]
     fn test_wildcard_imports_parse() {
-        let test_cases = vec![
-            "import std::collections::*",
-        ];
+        let test_cases = vec!["import std::collections::*"];
 
         for import_stmt in test_cases {
             let result = Parser::new(import_stmt).parse();

@@ -8,7 +8,6 @@
 #![allow(clippy::expect_used)]
 #![allow(missing_docs)]
 
-
 /// Test that Repl is Send (can cross thread boundaries)
 ///
 /// This is the RED phase test - it MUST fail with Rc, MUST pass with Arc.

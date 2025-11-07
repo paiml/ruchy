@@ -49,12 +49,16 @@ fn test_formatter_088_01_vec_macro_preserved() {
 
     // MUST preserve the `!` suffix - this is a macro CALL
     // Note: Ruchy uses parentheses for macro args, both `vec![...]` and `vec!(...)` are valid
-    assert!(formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
-        "vec! macro call must be preserved, got: {formatted}");
+    assert!(
+        formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
+        "vec! macro call must be preserved, got: {formatted}"
+    );
 
     // MUST NOT contain "macro vec(" - that's a definition, not a call
-    assert!(!formatted.contains("macro vec("),
-        "Formatter must NOT transform macro calls into macro definitions");
+    assert!(
+        !formatted.contains("macro vec("),
+        "Formatter must NOT transform macro calls into macro definitions"
+    );
 }
 
 #[test]
@@ -64,12 +68,16 @@ fn test_formatter_088_02_println_macro_preserved() {
     let formatted = format_code(input);
 
     // MUST preserve the `!` suffix
-    assert_eq!(formatted, "println!(\"Hello\")",
-        "println! macro call must be preserved");
+    assert_eq!(
+        formatted, "println!(\"Hello\")",
+        "println! macro call must be preserved"
+    );
 
     // MUST NOT contain "macro println(" - that's a definition
-    assert!(!formatted.contains("macro println("),
-        "Formatter must NOT transform println! into macro definition");
+    assert!(
+        !formatted.contains("macro println("),
+        "Formatter must NOT transform println! into macro definition"
+    );
 }
 
 #[test]
@@ -79,12 +87,16 @@ fn test_formatter_088_03_assert_macro_preserved() {
     let formatted = format_code(input);
 
     // MUST preserve the `!` suffix
-    assert_eq!(formatted, "assert!(x > 0)",
-        "assert! macro call must be preserved");
+    assert_eq!(
+        formatted, "assert!(x > 0)",
+        "assert! macro call must be preserved"
+    );
 
     // MUST NOT contain "macro assert(" - that's a definition
-    assert!(!formatted.contains("macro assert("),
-        "Formatter must NOT transform assert! into macro definition");
+    assert!(
+        !formatted.contains("macro assert("),
+        "Formatter must NOT transform assert! into macro definition"
+    );
 }
 
 #[test]
@@ -94,12 +106,16 @@ fn test_formatter_088_04_custom_macro_preserved() {
     let formatted = format_code(input);
 
     // MUST preserve the `!` suffix
-    assert_eq!(formatted, "my_macro!(args)",
-        "Custom macro calls must be preserved");
+    assert_eq!(
+        formatted, "my_macro!(args)",
+        "Custom macro calls must be preserved"
+    );
 
     // MUST NOT contain "macro my_macro(" - that's a definition
-    assert!(!formatted.contains("macro my_macro("),
-        "Formatter must NOT transform custom macros into macro definitions");
+    assert!(
+        !formatted.contains("macro my_macro("),
+        "Formatter must NOT transform custom macros into macro definitions"
+    );
 }
 
 #[test]
@@ -113,16 +129,24 @@ fn test_formatter_088_05_macro_in_function() {
     let formatted = format_code(input);
 
     // MUST preserve vec! and println! as macro CALLS
-    assert!(formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
-        "vec! macro must be preserved in function body, got: {formatted}");
-    assert!(formatted.contains("println!("),
-        "println! macro must be preserved in function body");
+    assert!(
+        formatted.contains("vec!(1, 2, 3)") || formatted.contains("vec![1, 2, 3]"),
+        "vec! macro must be preserved in function body, got: {formatted}"
+    );
+    assert!(
+        formatted.contains("println!("),
+        "println! macro must be preserved in function body"
+    );
 
     // MUST NOT transform to macro definitions
-    assert!(!formatted.contains("macro vec("),
-        "Formatter must NOT transform vec! to macro definition");
-    assert!(!formatted.contains("macro println("),
-        "Formatter must NOT transform println! to macro definition");
+    assert!(
+        !formatted.contains("macro vec("),
+        "Formatter must NOT transform vec! to macro definition"
+    );
+    assert!(
+        !formatted.contains("macro println("),
+        "Formatter must NOT transform println! to macro definition"
+    );
 }
 
 #[test]
@@ -132,20 +156,29 @@ fn test_formatter_088_06_nested_macro_calls() {
     let formatted = format_code(input);
 
     // MUST preserve all three macros as CALLS
-    assert!(formatted.contains("vec!(") || formatted.contains("vec!["),
-        "vec! must be preserved, got: {formatted}");
-    assert!(formatted.contains("assert!("),
-        "assert! must be preserved");
-    assert!(formatted.contains("println!("),
-        "println! must be preserved");
+    assert!(
+        formatted.contains("vec!(") || formatted.contains("vec!["),
+        "vec! must be preserved, got: {formatted}"
+    );
+    assert!(formatted.contains("assert!("), "assert! must be preserved");
+    assert!(
+        formatted.contains("println!("),
+        "println! must be preserved"
+    );
 
     // MUST NOT transform any to definitions
-    assert!(!formatted.contains("macro vec("),
-        "vec! must not become definition");
-    assert!(!formatted.contains("macro assert("),
-        "assert! must not become definition");
-    assert!(!formatted.contains("macro println("),
-        "println! must not become definition");
+    assert!(
+        !formatted.contains("macro vec("),
+        "vec! must not become definition"
+    );
+    assert!(
+        !formatted.contains("macro assert("),
+        "assert! must not become definition"
+    );
+    assert!(
+        !formatted.contains("macro println("),
+        "println! must not become definition"
+    );
 }
 
 // ==================== PROPERTY TESTS ====================

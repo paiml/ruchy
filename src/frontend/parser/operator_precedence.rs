@@ -265,7 +265,10 @@ mod tests {
             is_prefix_operator(&Token::Minus),
             "Minus (negation) is prefix"
         );
-        assert!(is_prefix_operator(&Token::Plus), "Plus (identity) is prefix");
+        assert!(
+            is_prefix_operator(&Token::Plus),
+            "Plus (identity) is prefix"
+        );
         assert!(is_prefix_operator(&Token::Tilde), "Tilde is prefix");
         assert!(
             is_prefix_operator(&Token::Ampersand),
@@ -318,7 +321,10 @@ mod mutation_tests {
         // Test that function returns true for prefix operators
         assert!(is_prefix_operator(&Token::Bang), "Bang should be prefix");
         assert!(is_prefix_operator(&Token::Minus), "Minus should be prefix");
-        assert!(is_prefix_operator(&Token::Plus), "Plus should be prefix (identity)");
+        assert!(
+            is_prefix_operator(&Token::Plus),
+            "Plus should be prefix (identity)"
+        );
         assert!(is_prefix_operator(&Token::Tilde), "Tilde should be prefix");
 
         // Test that function returns false for non-prefix operators (proves not stub returning true)

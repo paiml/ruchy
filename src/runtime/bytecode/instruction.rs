@@ -116,7 +116,7 @@ impl Instruction {
         let op_bits = (op.to_u8() as u32) << 26;
         let fmt_bits = (InstructionFormat::AsBx.to_u8() as u32) << 24;
         let a_bits = (a as u32) << 16;
-        let sbx_bits = (sbx as u16) as u32;  // Preserve sign bits
+        let sbx_bits = (sbx as u16) as u32; // Preserve sign bits
 
         Self(op_bits | fmt_bits | a_bits | sbx_bits)
     }
@@ -128,7 +128,7 @@ impl Instruction {
     pub const fn ax(op: OpCode, ax: u32) -> Self {
         let op_bits = (op.to_u8() as u32) << 26;
         let fmt_bits = (InstructionFormat::Ax.to_u8() as u32) << 24;
-        let ax_bits = ax & 0x00FF_FFFF;  // Mask to 24 bits
+        let ax_bits = ax & 0x00FF_FFFF; // Mask to 24 bits
 
         Self(op_bits | fmt_bits | ax_bits)
     }

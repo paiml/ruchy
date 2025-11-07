@@ -38,11 +38,7 @@ fn cli_run_valid_program_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "hello.ruchy", "println(\"Hello, World!\")\n");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("run").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -50,11 +46,7 @@ fn cli_run_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("run").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -71,11 +63,7 @@ fn cli_run_runtime_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "runtime_error.ruchy", "let x = 1 / 0\n"); // Division by zero
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("run").arg(&file).assert().failure(); // Exit code != 0
 }
 
 // ============================================================================
@@ -275,11 +263,7 @@ fn cli_run_empty_file_fails() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "empty.ruchy", "");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&file)
-        .assert()
-        .failure(); // Empty file is error
+    ruchy_cmd().arg("run").arg(&file).assert().failure(); // Empty file is error
 }
 
 #[test]
@@ -287,11 +271,7 @@ fn cli_run_comment_only_fails() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "comments.ruchy", "// Just a comment\n");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&file)
-        .assert()
-        .failure(); // Comment-only is error
+    ruchy_cmd().arg("run").arg(&file).assert().failure(); // Comment-only is error
 }
 
 #[test]

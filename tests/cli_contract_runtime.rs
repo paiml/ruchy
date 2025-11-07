@@ -42,11 +42,7 @@ fn cli_runtime_valid_program_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\nprintln(x)\n");
 
-    ruchy_cmd()
-        .arg("runtime")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("runtime").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -63,11 +59,7 @@ fn cli_runtime_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("runtime")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("runtime").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -80,9 +72,11 @@ fn cli_runtime_outputs_performance_report() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Performance")
-            .or(predicate::str::contains("Runtime"))
-            .or(predicate::str::contains("Execution")));
+        .stdout(
+            predicate::str::contains("Performance")
+                .or(predicate::str::contains("Runtime"))
+                .or(predicate::str::contains("Execution")),
+        );
 }
 
 // ============================================================================
@@ -100,9 +94,11 @@ fn cli_runtime_profile_flag() {
         .arg("--profile")
         .assert()
         .success()
-        .stdout(predicate::str::contains("profil")
-            .or(predicate::str::contains("Profil"))
-            .or(predicate::str::contains("Performance")));
+        .stdout(
+            predicate::str::contains("profil")
+                .or(predicate::str::contains("Profil"))
+                .or(predicate::str::contains("Performance")),
+        );
 }
 
 #[test]
@@ -141,9 +137,11 @@ fn cli_runtime_bigo_flag() {
         .arg("--bigo")
         .assert()
         .success()
-        .stdout(predicate::str::contains("BigO")
-            .or(predicate::str::contains("O("))
-            .or(predicate::str::contains("complexity")));
+        .stdout(
+            predicate::str::contains("BigO")
+                .or(predicate::str::contains("O("))
+                .or(predicate::str::contains("complexity")),
+        );
 }
 
 #[test]
@@ -165,8 +163,7 @@ for i in range(100) {
         .arg("--bigo")
         .assert()
         .success()
-        .stdout(predicate::str::contains("O(")
-            .or(predicate::str::contains("complexity")));
+        .stdout(predicate::str::contains("O(").or(predicate::str::contains("complexity")));
 }
 
 #[test]
@@ -207,9 +204,11 @@ fn cli_runtime_bench_flag() {
         .arg("--bench")
         .assert()
         .success()
-        .stdout(predicate::str::contains("bench")
-            .or(predicate::str::contains("Bench"))
-            .or(predicate::str::contains("statistical")));
+        .stdout(
+            predicate::str::contains("bench")
+                .or(predicate::str::contains("Bench"))
+                .or(predicate::str::contains("statistical")),
+        );
 }
 
 #[test]
@@ -251,9 +250,11 @@ fn cli_runtime_compare_two_files() {
         .arg(&file2)
         .assert()
         .success()
-        .stdout(predicate::str::contains("compar")
-            .or(predicate::str::contains("Compar"))
-            .or(predicate::str::contains("vs")));
+        .stdout(
+            predicate::str::contains("compar")
+                .or(predicate::str::contains("Compar"))
+                .or(predicate::str::contains("vs")),
+        );
 }
 
 #[test]
@@ -270,9 +271,11 @@ fn cli_runtime_compare_with_nonexistent_baseline() {
         .arg("nonexistent.ruchy")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Comparison")
-            .or(predicate::str::contains("Baseline"))
-            .or(predicate::str::contains("faster")));
+        .stdout(
+            predicate::str::contains("Comparison")
+                .or(predicate::str::contains("Baseline"))
+                .or(predicate::str::contains("faster")),
+        );
 }
 
 // ============================================================================
@@ -290,9 +293,11 @@ fn cli_runtime_memory_flag() {
         .arg("--memory")
         .assert()
         .success()
-        .stdout(predicate::str::contains("memory")
-            .or(predicate::str::contains("Memory"))
-            .or(predicate::str::contains("allocation")));
+        .stdout(
+            predicate::str::contains("memory")
+                .or(predicate::str::contains("Memory"))
+                .or(predicate::str::contains("allocation")),
+        );
 }
 
 #[test]
@@ -469,8 +474,10 @@ fn cli_runtime_empty_file_fails() {
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unexpected end of input")
-            .or(predicate::str::contains("Parse error")));
+        .stderr(
+            predicate::str::contains("Unexpected end of input")
+                .or(predicate::str::contains("Parse error")),
+        );
 }
 
 #[test]
@@ -539,9 +546,11 @@ fn cli_runtime_help_flag() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("runtime")
-            .or(predicate::str::contains("Runtime"))
-            .or(predicate::str::contains("performance")));
+        .stdout(
+            predicate::str::contains("runtime")
+                .or(predicate::str::contains("Runtime"))
+                .or(predicate::str::contains("performance")),
+        );
 }
 
 // ============================================================================
@@ -567,8 +576,7 @@ println(y)
         .arg("--bigo")
         .assert()
         .success()
-        .stdout(predicate::str::contains("O(1)")
-            .or(predicate::str::contains("constant")));
+        .stdout(predicate::str::contains("O(1)").or(predicate::str::contains("constant")));
 }
 
 #[test]
@@ -590,8 +598,7 @@ for i in range(100) {
         .arg("--bigo")
         .assert()
         .success()
-        .stdout(predicate::str::contains("O(n)")
-            .or(predicate::str::contains("linear")));
+        .stdout(predicate::str::contains("O(n)").or(predicate::str::contains("linear")));
 }
 
 #[test]
@@ -615,6 +622,5 @@ for i in range(10) {
         .arg("--bigo")
         .assert()
         .success()
-        .stdout(predicate::str::contains("O(n")
-            .or(predicate::str::contains("quadratic")));
+        .stdout(predicate::str::contains("O(n").or(predicate::str::contains("quadratic")));
 }

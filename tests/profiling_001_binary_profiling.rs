@@ -224,11 +224,11 @@ fun broken() {
         .arg(&test_file);
 
     // Should fail with clear error message
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("Parse error")
+    cmd.assert().failure().stderr(
+        predicate::str::contains("Parse error")
             .or(predicate::str::contains("Transpilation failed"))
-            .or(predicate::str::contains("Compilation failed")));
+            .or(predicate::str::contains("Compilation failed")),
+    );
 }
 
 /// Test 7: Binary profiling shows optimization recommendations

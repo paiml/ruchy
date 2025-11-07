@@ -54,7 +54,7 @@ fn test_01_hello_world_run() {
 fn test_01_hello_world_eval() {
     let code = std::fs::read_to_string(example_path("01_hello_world.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -66,7 +66,7 @@ fn test_01_hello_world_eval() {
 #[test]
 fn test_01_hello_world_compile() {
     let output_binary = std::env::temp_dir().join("hello_world_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("01_hello_world.ruchy"))
@@ -74,7 +74,7 @@ fn test_01_hello_world_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     // Clean up
     let _ = std::fs::remove_file(&output_binary);
 }
@@ -107,7 +107,7 @@ fn test_02_simple_math_run() {
 fn test_02_simple_math_eval() {
     let code = std::fs::read_to_string(example_path("02_simple_math.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -119,7 +119,7 @@ fn test_02_simple_math_eval() {
 #[test]
 fn test_02_simple_math_compile() {
     let output_binary = std::env::temp_dir().join("simple_math_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("02_simple_math.ruchy"))
@@ -127,7 +127,7 @@ fn test_02_simple_math_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 
@@ -159,7 +159,7 @@ fn test_03_variables_run() {
 fn test_03_variables_eval() {
     let code = std::fs::read_to_string(example_path("03_variables.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -171,7 +171,7 @@ fn test_03_variables_eval() {
 #[test]
 fn test_03_variables_compile() {
     let output_binary = std::env::temp_dir().join("variables_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("03_variables.ruchy"))
@@ -179,7 +179,7 @@ fn test_03_variables_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 
@@ -212,7 +212,7 @@ fn test_04_functions_run() {
 fn test_04_functions_eval() {
     let code = std::fs::read_to_string(example_path("04_functions.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -224,7 +224,7 @@ fn test_04_functions_eval() {
 #[test]
 fn test_04_functions_compile() {
     let output_binary = std::env::temp_dir().join("functions_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("04_functions.ruchy"))
@@ -232,7 +232,7 @@ fn test_04_functions_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 
@@ -264,7 +264,7 @@ fn test_05_control_flow_run() {
 fn test_05_control_flow_eval() {
     let code = std::fs::read_to_string(example_path("05_control_flow.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -276,7 +276,7 @@ fn test_05_control_flow_eval() {
 #[test]
 fn test_05_control_flow_compile() {
     let output_binary = std::env::temp_dir().join("control_flow_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("05_control_flow.ruchy"))
@@ -284,7 +284,7 @@ fn test_05_control_flow_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 
@@ -316,7 +316,7 @@ fn test_06_data_structures_run() {
 fn test_06_data_structures_eval() {
     let code = std::fs::read_to_string(example_path("06_data_structures.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -369,7 +369,7 @@ fn test_07_string_interpolation_run() {
 fn test_07_string_interpolation_eval() {
     let code = std::fs::read_to_string(example_path("07_string_interpolation.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -381,7 +381,7 @@ fn test_07_string_interpolation_eval() {
 #[test]
 fn test_07_string_interpolation_compile() {
     let output_binary = std::env::temp_dir().join("string_interpolation_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("07_string_interpolation.ruchy"))
@@ -389,7 +389,7 @@ fn test_07_string_interpolation_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 
@@ -421,7 +421,7 @@ fn test_08_error_handling_run() {
 fn test_08_error_handling_eval() {
     let code = std::fs::read_to_string(example_path("08_error_handling.ruchy"))
         .expect("Failed to read example file");
-    
+
     ruchy_cmd()
         .arg("-e")
         .arg(&code)
@@ -433,7 +433,7 @@ fn test_08_error_handling_eval() {
 #[test]
 fn test_08_error_handling_compile() {
     let output_binary = std::env::temp_dir().join("error_handling_test");
-    
+
     ruchy_cmd()
         .arg("compile")
         .arg(example_path("08_error_handling.ruchy"))
@@ -441,7 +441,7 @@ fn test_08_error_handling_compile() {
         .arg(&output_binary)
         .assert()
         .success();
-    
+
     let _ = std::fs::remove_file(&output_binary);
 }
 

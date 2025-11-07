@@ -4,9 +4,9 @@
 //! Provides method dispatching for `HtmlDocument` and `HtmlElement` types.
 //! Following Toyota Way principles - complexity ≤10 per function.
 
+use crate::runtime::{InterpreterError, Value};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::stdlib::html::{HtmlDocument, HtmlElement};
-use crate::runtime::{InterpreterError, Value};
 
 /// Evaluate `HtmlDocument` methods
 ///
@@ -70,10 +70,7 @@ fn eval_html_document_select(
     if let Value::String(selector) = &arg_values[0] {
         match doc.select(selector) {
             Ok(elements) => {
-                let values: Vec<Value> = elements
-                    .into_iter()
-                    .map(Value::HtmlElement)
-                    .collect();
+                let values: Vec<Value> = elements.into_iter().map(Value::HtmlElement).collect();
                 Ok(Value::from_array(values))
             }
             Err(e) => Err(InterpreterError::RuntimeError(format!(

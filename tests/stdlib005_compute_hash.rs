@@ -32,12 +32,15 @@ fn test_compute_hash_basic() {
     let file = temp.path().join("test.txt");
     fs::write(&file, "hello world").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let hash = compute_hash("{}")
         println("Hash: {{}}", hash)
         assert(hash != nil, "Hash should not be nil")
         assert(hash.len() == 32, "MD5 hash should be 32 hex characters")
-    "#, file.display());
+    "#,
+        file.display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -56,20 +59,20 @@ fn test_compute_hash_identical_files() {
     fs::write(&file1, "identical content").unwrap();
     fs::write(&file2, "identical content").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let hash1 = compute_hash("{}")
         let hash2 = compute_hash("{}")
 
         println("Hash1: {{}}", hash1)
         println("Hash2: {{}}", hash2)
         assert(hash1 == hash2, "Identical files should have identical hashes")
-    "#, file1.display(), file2.display());
+    "#,
+        file1.display(),
+        file2.display()
+    );
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 }
 
 // Test 3: Different files produce different hashes
@@ -81,20 +84,20 @@ fn test_compute_hash_different_files() {
     fs::write(&file1, "content A").unwrap();
     fs::write(&file2, "content B").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let hash1 = compute_hash("{}")
         let hash2 = compute_hash("{}")
 
         println("Hash1: {{}}", hash1)
         println("Hash2: {{}}", hash2)
         assert(hash1 != hash2, "Different files should have different hashes")
-    "#, file1.display(), file2.display());
+    "#,
+        file1.display(),
+        file2.display()
+    );
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(&code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(&code).assert().success();
 }
 
 // Test 4: Compose with walk_parallel for duplicate detection
@@ -107,7 +110,8 @@ fn test_compute_hash_with_walk_parallel() {
     fs::write(temp.path().join("dup2.txt"), "duplicate content").unwrap();
     fs::write(temp.path().join("unique.txt"), "unique content").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let entries = walk_parallel("{}")
             .filter(fn(e) {{ e.is_file }})
 
@@ -122,7 +126,9 @@ fn test_compute_hash_with_walk_parallel() {
         }})
 
         assert(with_hashes.len() == 3, "Should have 3 hashes")
-    "#, temp.path().display());
+    "#,
+        temp.path().display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -139,12 +145,15 @@ fn test_compute_hash_empty_file() {
     let file = temp.path().join("empty.txt");
     fs::write(&file, "").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let hash = compute_hash("{}")
         println("Empty file hash: {{}}", hash)
         # MD5 of empty string: d41d8cd98f00b204e9800998ecf8427e
         assert(hash == "d41d8cd98f00b204e9800998ecf8427e", "Empty file should have known MD5")
-    "#, file.display());
+    "#,
+        file.display()
+    );
 
     ruchy_cmd()
         .arg("-e")
@@ -162,11 +171,7 @@ fn test_compute_hash_nonexistent_file() {
         println("Hash: {}", hash)
     "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .failure(); // Should error on nonexistent file
+    ruchy_cmd().arg("-e").arg(code).assert().failure(); // Should error on nonexistent file
 }
 
 // Test 7: Known MD5 hash verification (hello world)
@@ -176,12 +181,15 @@ fn test_compute_hash_known_md5() {
     let file = temp.path().join("hello.txt");
     fs::write(&file, "hello world").unwrap();
 
-    let code = format!(r#"
+    let code = format!(
+        r#"
         let hash = compute_hash("{}")
         println("Hash: {{}}", hash)
         # MD5 of "hello world": 5eb63bbbe01eeed093cb22bb8f5acdc3
         assert(hash == "5eb63bbbe01eeed093cb22bb8f5acdc3", "Should match known MD5")
-    "#, file.display());
+    "#,
+        file.display()
+    );
 
     ruchy_cmd()
         .arg("-e")

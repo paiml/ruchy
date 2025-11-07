@@ -110,7 +110,11 @@ fn test_jit_004_and_with_comparisons() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile AND with comparisons: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile AND with comparisons: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "(5 > 3) && (10 < 20) should be true");
 }
 
@@ -204,7 +208,11 @@ fn test_jit_004_or_with_comparisons() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile OR with comparisons: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile OR with comparisons: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "(5 < 3) || (10 < 20) should be true");
 }
 
@@ -228,8 +236,16 @@ fn test_jit_004_and_short_circuit_with_variables() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile short-circuit AND: {:?}", result.err());
-    assert_eq!(result.unwrap(), 0, "x=5 > 10 is false, should short-circuit");
+    assert!(
+        result.is_ok(),
+        "Should compile short-circuit AND: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        0,
+        "x=5 > 10 is false, should short-circuit"
+    );
 }
 
 #[test]
@@ -247,8 +263,16 @@ fn test_jit_004_and_both_sides_evaluated() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile AND with both sides: {:?}", result.err());
-    assert_eq!(result.unwrap(), 1, "x=15: both (15 > 10) and (15 < 20) are true");
+    assert!(
+        result.is_ok(),
+        "Should compile AND with both sides: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        1,
+        "x=15: both (15 > 10) and (15 < 20) are true"
+    );
 }
 
 // ============================================================================
@@ -270,8 +294,16 @@ fn test_jit_004_or_short_circuit_with_variables() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile short-circuit OR: {:?}", result.err());
-    assert_eq!(result.unwrap(), 1, "x=5 < 10 is true, should short-circuit to true");
+    assert!(
+        result.is_ok(),
+        "Should compile short-circuit OR: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        1,
+        "x=5 < 10 is true, should short-circuit to true"
+    );
 }
 
 #[test]
@@ -289,8 +321,16 @@ fn test_jit_004_or_both_sides_evaluated() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile OR with both sides: {:?}", result.err());
-    assert_eq!(result.unwrap(), 0, "x=15: (15 < 10) is false, (15 > 20) is false");
+    assert!(
+        result.is_ok(),
+        "Should compile OR with both sides: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        0,
+        "x=15: (15 < 10) is false, (15 > 20) is false"
+    );
 }
 
 // ============================================================================
@@ -312,7 +352,11 @@ fn test_jit_004_complex_and_or_combination() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile complex condition: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile complex condition: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "x=7: (7 > 5 && 7 < 10) is true");
 }
 
@@ -331,8 +375,16 @@ fn test_jit_004_complex_condition_false() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile complex condition: {:?}", result.err());
-    assert_eq!(result.unwrap(), 0, "x=12: (12 > 5 && 12 < 10) is false, (12 == 15) is false");
+    assert!(
+        result.is_ok(),
+        "Should compile complex condition: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        0,
+        "x=12: (12 > 5 && 12 < 10) is false, (12 == 15) is false"
+    );
 }
 
 #[test]
@@ -354,8 +406,16 @@ fn test_jit_004_nested_logical_operators() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested operators: {:?}", result.err());
-    assert_eq!(result.unwrap(), 1, "(true || false) && (false || true) should be true");
+    assert!(
+        result.is_ok(),
+        "Should compile nested operators: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        1,
+        "(true || false) && (false || true) should be true"
+    );
 }
 
 // ============================================================================
@@ -379,7 +439,11 @@ fn test_jit_004_range_validation() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile range validation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile range validation: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "15 is in range [10, 20]");
 }
 
@@ -400,6 +464,10 @@ fn test_jit_004_range_validation_outside() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile range validation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile range validation: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 0, "5 is outside range [10, 20]");
 }

@@ -255,7 +255,7 @@ where
     let mut last_val = Value::Nil;
 
     for stmt in statements {
-        last_val = eval_expr(stmt)?;  // Propagate all errors including Return
+        last_val = eval_expr(stmt)?; // Propagate all errors including Return
     }
 
     Ok(last_val)

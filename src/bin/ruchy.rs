@@ -859,7 +859,12 @@ fn main() -> Result<()> {
 fn try_handle_direct_evaluation(cli: &Cli) -> Option<Result<()>> {
     // Handle one-liner evaluation with -e flag
     if let Some(expr) = &cli.eval {
-        return Some(handle_eval_command(expr, cli.verbose, &cli.format, cli.trace));
+        return Some(handle_eval_command(
+            expr,
+            cli.verbose,
+            &cli.format,
+            cli.trace,
+        ));
     }
     // Handle script file execution (without subcommand)
     if let Some(file) = &cli.file {
@@ -880,14 +885,29 @@ fn try_handle_stdin(command: Option<&Commands>) -> Result<Option<Result<()>>> {
     Ok(None)
 }
 /// Dispatch commands to appropriate handlers (complexity: 6)
-fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: VmMode) -> Result<()> {
+fn handle_command_dispatch(
+    command: Option<Commands>,
+    verbose: bool,
+    vm_mode: VmMode,
+) -> Result<()> {
     match command {
         Some(Commands::Repl { record }) => handle_repl_command(record),
         Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
-        Some(Commands::Build { release }) => handlers::build::handle_build_command(release, verbose),
-        Some(Commands::Publish { registry, version, dry_run, allow_dirty }) => {
-            handlers::handle_publish_command(&registry, version.as_deref(), dry_run, allow_dirty, verbose)
+        Some(Commands::Build { release }) => {
+            handlers::build::handle_build_command(release, verbose)
         }
+        Some(Commands::Publish {
+            registry,
+            version,
+            dry_run,
+            allow_dirty,
+        }) => handlers::handle_publish_command(
+            &registry,
+            version.as_deref(),
+            dry_run,
+            allow_dirty,
+            verbose,
+        ),
         None => handle_repl_command(None),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile {
@@ -906,7 +926,17 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: Vm
             target,
             verbose,
             json,
-        }) => handle_compile_command(&file, output, opt_level, optimize.as_deref(), strip, static_link, target, verbose, json.as_deref()),
+        }) => handle_compile_command(
+            &file,
+            output,
+            opt_level,
+            optimize.as_deref(),
+            strip,
+            static_link,
+            target,
+            verbose,
+            json.as_deref(),
+        ),
         Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
         Some(Commands::Test {
             path,
@@ -1471,7 +1501,8 @@ mod tests {
 
     #[test]
     fn test_handle_command_dispatch_repl() {
-        let result = handle_command_dispatch(Some(Commands::Repl { record: None }), false, VmMode::Ast);
+        let result =
+            handle_command_dispatch(Some(Commands::Repl { record: None }), false, VmMode::Ast);
         assert!(result.is_ok());
     }
 

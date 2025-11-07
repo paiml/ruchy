@@ -33,11 +33,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should parse successfully (RED phase - will fail)
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -55,11 +51,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -80,11 +72,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -102,11 +90,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -124,11 +108,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -151,9 +131,5 @@ fun test_dataframe_from_json() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }

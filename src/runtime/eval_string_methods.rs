@@ -436,11 +436,7 @@ fn eval_string_parse(s: &str) -> Result<Value, InterpreterError> {
     s.trim()
         .parse::<i64>()
         .map(Value::Integer)
-        .map_err(|_| {
-            InterpreterError::RuntimeError(format!(
-                "Failed to parse '{s}' as integer"
-            ))
-        })
+        .map_err(|_| InterpreterError::RuntimeError(format!("Failed to parse '{s}' as integer")))
 }
 
 /// Get Unix timestamp from RFC3339 datetime string (Issue #82)
@@ -454,9 +450,7 @@ fn eval_string_timestamp(s: &str) -> Result<Value, InterpreterError> {
     s.parse::<DateTime<chrono::Utc>>()
         .map(|dt| Value::Integer(dt.timestamp()))
         .map_err(|_| {
-            InterpreterError::RuntimeError(format!(
-                "Failed to parse '{s}' as RFC3339 datetime"
-            ))
+            InterpreterError::RuntimeError(format!("Failed to parse '{s}' as RFC3339 datetime"))
         })
 }
 

@@ -30,9 +30,7 @@ use crate::frontend::parser::{bail, parse_expr_recursive, ParserState, Result};
 /// Parse no-parameter lambda: `|| body`
 ///
 /// Syntax: `|| expr`
-pub(in crate::frontend::parser) fn parse_lambda_no_params(
-    state: &mut ParserState,
-) -> Result<Expr> {
+pub(in crate::frontend::parser) fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::OrOr)?;
     // Parse the body
     let body = Box::new(parse_expr_recursive(state)?);
@@ -146,7 +144,7 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -209,17 +207,45 @@ mod tests {
         /// Keywords like "fn", "if", "let" would cause parser failures.
         /// This strategy filters them out for property test validity.
         fn valid_identifier() -> impl Strategy<Value = String> {
-            "[a-z]+"
-                .prop_filter("Must not be a keyword", |s| {
-                    !matches!(
-                        s.as_str(),
-                        "fn" | "fun" | "let" | "var" | "if" | "else" | "for" | "while"
-                            | "loop" | "match" | "break" | "continue" | "return" | "async"
-                            | "await" | "try" | "catch" | "throw" | "in" | "as" | "is"
-                            | "self" | "super" | "mod" | "use" | "pub" | "const" | "static"
-                            | "mut" | "ref" | "type" | "struct" | "enum" | "trait" | "impl"
-                    )
-                })
+            "[a-z]+".prop_filter("Must not be a keyword", |s| {
+                !matches!(
+                    s.as_str(),
+                    "fn" | "fun"
+                        | "let"
+                        | "var"
+                        | "if"
+                        | "else"
+                        | "for"
+                        | "while"
+                        | "loop"
+                        | "match"
+                        | "break"
+                        | "continue"
+                        | "return"
+                        | "async"
+                        | "await"
+                        | "try"
+                        | "catch"
+                        | "throw"
+                        | "in"
+                        | "as"
+                        | "is"
+                        | "self"
+                        | "super"
+                        | "mod"
+                        | "use"
+                        | "pub"
+                        | "const"
+                        | "static"
+                        | "mut"
+                        | "ref"
+                        | "type"
+                        | "struct"
+                        | "enum"
+                        | "trait"
+                        | "impl"
+                )
+            })
         }
 
         proptest! {

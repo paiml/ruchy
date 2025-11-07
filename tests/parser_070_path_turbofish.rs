@@ -60,11 +60,7 @@ println("Created map")
     let (_temp_dir, file_path) = write_temp_file(code);
 
     // Test parsing only (HashMap not implemented in interpreter)
-    ruchy_cmd()
-        .arg("check")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file_path).assert().success();
 }
 
 /// Test nested path turbofish - `Vec::`<`Vec::`<i32>>`::new()`
@@ -78,11 +74,7 @@ println("Created nested vec")
     let (_temp_dir, file_path) = write_temp_file(code);
 
     // Test parsing only (nested generics not fully supported in interpreter)
-    ruchy_cmd()
-        .arg("check")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file_path).assert().success();
 }
 
 /// Test path turbofish with Result - `Result::`<i32, `String>::new()`
@@ -98,11 +90,7 @@ println("Created result")
     let (_temp_dir, file_path) = write_temp_file(code);
 
     // Test parsing only (Result not implemented in interpreter)
-    ruchy_cmd()
-        .arg("check")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file_path).assert().success();
 }
 
 /// Test path turbofish in variable assignment
@@ -215,11 +203,7 @@ let map = HashMap::<String, i32>::new()
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file_path).assert().success();
 }
 
 /// Test linting passes
@@ -231,11 +215,7 @@ let vec = Vec::<i32>::new()
 
     let (_temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd()
-        .arg("lint")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("lint").arg(file_path).assert().success();
 }
 
 /// Test transpilation succeeds

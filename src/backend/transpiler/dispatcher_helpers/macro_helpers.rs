@@ -18,7 +18,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `println!` macro.
     /// Empty args produce `println!()`, otherwise `println!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_println_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_println_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { println!() })
@@ -35,7 +38,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `print!` macro.
     /// Empty args produce `print!()`, otherwise `print!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_print_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_print_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { print!() })
@@ -52,7 +58,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `panic!` macro.
     /// Empty args produce `panic!()`, otherwise `panic!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_panic_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_panic_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { panic!() })
@@ -155,7 +164,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles list elements and wraps them in Rust's `vec!` macro.
     /// Produces `vec![elem1, elem2, ...]`
-    pub(in crate::backend::transpiler) fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_vec_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> =
             args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -170,7 +182,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles assertion condition and wraps it in Rust's `assert!` macro.
     /// Produces `assert!(condition, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> =
             args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -189,7 +204,10 @@ impl Transpiler {
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_eq!` macro.
     /// Produces `assert_eq!(left, right, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_eq_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_eq_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_eq! requires at least 2 arguments")
         }
@@ -207,7 +225,10 @@ impl Transpiler {
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_ne!` macro.
     /// Produces `assert_ne!(left, right, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_ne_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_ne_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_ne! requires at least 2 arguments")
         }
@@ -218,7 +239,11 @@ impl Transpiler {
     }
 
     /// Pass through external macros without modification
-    pub(in crate::backend::transpiler) fn transpile_passthrough_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_passthrough_macro(
+        &self,
+        name: &str,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let macro_ident = format_ident!("{}", name);
 
         let arg_tokens: Result<Vec<_>, _> =

@@ -39,7 +39,11 @@ fn test_jit_009_match_literal_single() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match literal: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match literal: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 100, "x=5 should match first arm");
 }
 
@@ -57,7 +61,11 @@ fn test_jit_009_match_literal_wildcard() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match wildcard: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match wildcard: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 200, "x=99 should match wildcard");
 }
 
@@ -78,7 +86,11 @@ fn test_jit_009_match_multiple_literals() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile multiple patterns: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile multiple patterns: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 30, "x=3 should match third arm");
 }
 
@@ -101,7 +113,11 @@ fn test_jit_009_match_expression_arms() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match with expressions: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match with expressions: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 30, "x=2 should evaluate to 10*3=30");
 }
 
@@ -122,7 +138,11 @@ fn test_jit_009_match_variable() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match on variable: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match on variable: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 2, "value=7 should match second arm");
 }
 
@@ -148,7 +168,11 @@ fn test_jit_009_match_in_function() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match in function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match in function: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 10, "classify(1) should return 10");
 }
 
@@ -178,7 +202,11 @@ fn test_jit_009_match_fizzbuzz_style() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested match: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested match: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 3, "15 % 15 = 0 should return 3 (FizzBuzz)");
 }
 
@@ -204,7 +232,11 @@ fn test_jit_009_match_with_return() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match with return: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match with return: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 2, "code=200 should return 2");
 }
 
@@ -241,7 +273,11 @@ fn test_jit_009_match_sign_function() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile sign function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile sign function: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 300, "sign(5) = 1 should match arm 300");
 }
 
@@ -266,7 +302,11 @@ fn test_jit_009_match_grade_calculator() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile grade calculator: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile grade calculator: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 3, "85/10=8 should match grade 3 (B)");
 }
 
@@ -287,7 +327,11 @@ fn test_jit_009_match_day_of_week() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile day matcher: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile day matcher: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "day=6 (Saturday) should be weekend");
 }
 
@@ -317,7 +361,11 @@ fn test_jit_009_match_in_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile match in loop: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile match in loop: {:?}",
+        result.err()
+    );
     // 0%3=0→1, 1%3=1→2, 2%3=2→3, 3%3=0→1, 4%3=1→2, 5%3=2→3, 6%3=0→1, 7%3=1→2, 8%3=2→3
     // sum = 1+2+3+1+2+3+1+2+3 = 18
     assert_eq!(result.unwrap(), 18, "Sum should be 18");
@@ -353,6 +401,14 @@ fn test_jit_009_match_state_machine() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile state machine: {:?}", result.err());
-    assert_eq!(result.unwrap(), 2, "State 1 with input 2 should transition to state 2");
+    assert!(
+        result.is_ok(),
+        "Should compile state machine: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        2,
+        "State 1 with input 2 should transition to state 2"
+    );
 }

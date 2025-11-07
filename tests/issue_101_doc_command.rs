@@ -51,7 +51,10 @@ fun add(x, y) {
         .stdout(predicate::str::contains("Generated documentation"));
 
     // Output directory should exist
-    assert!(output_dir.exists(), "Documentation directory should be created");
+    assert!(
+        output_dir.exists(),
+        "Documentation directory should be created"
+    );
 }
 
 #[test]
@@ -249,7 +252,10 @@ fun greet(name) {
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("md"))
         .collect();
 
-    assert!(!md_files.is_empty(), "Should generate at least one .md file");
+    assert!(
+        !md_files.is_empty(),
+        "Should generate at least one .md file"
+    );
 
     let content = fs::read_to_string(md_files[0].path()).unwrap();
     assert!(
@@ -288,7 +294,10 @@ fun test() { 42 }
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("json"))
         .collect();
 
-    assert!(!json_files.is_empty(), "Should generate at least one .json file");
+    assert!(
+        !json_files.is_empty(),
+        "Should generate at least one .json file"
+    );
 
     let content = fs::read_to_string(json_files[0].path()).unwrap();
     assert!(

@@ -165,7 +165,7 @@ pub(in crate::frontend::parser) fn parse_throw_token(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -179,7 +179,10 @@ mod tests {
     fn test_return_with_value() {
         let code = "fun f() { return 42 }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Return with value should parse successfully");
+        assert!(
+            result.is_ok(),
+            "Return with value should parse successfully"
+        );
     }
 
     #[test]

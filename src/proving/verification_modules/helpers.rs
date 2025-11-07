@@ -13,7 +13,10 @@ pub(in crate::proving) fn is_always_true(_assertion: &str) -> bool {
 }
 
 /// Find counterexample to conditional property
-pub(in crate::proving) fn find_conditional_counterexample(_antecedent: &str, _consequent: &str) -> Option<String> {
+pub(in crate::proving) fn find_conditional_counterexample(
+    _antecedent: &str,
+    _consequent: &str,
+) -> Option<String> {
     // Placeholder for finding counterexamples to conditionals
     None
 }
@@ -32,7 +35,9 @@ pub(in crate::proving) fn find_existential_witness(_assertion: &str) -> Option<S
 
 /// Evaluate a mathematical expression to a number
 pub(in crate::proving) fn evaluate_expression(expr: &str) -> Option<f64> {
-    expr.parse::<f64>().ok().or_else(|| try_binary_operation(expr))
+    expr.parse::<f64>()
+        .ok()
+        .or_else(|| try_binary_operation(expr))
 }
 
 fn try_binary_operation(expr: &str) -> Option<f64> {

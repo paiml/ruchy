@@ -62,7 +62,9 @@ fn verify_conditional_property(assertion: &str) -> (bool, Option<String>, Option
     }
 }
 
-fn parse_conditional(assertion: &str) -> Result<(&str, &str), (bool, Option<String>, Option<String>)> {
+fn parse_conditional(
+    assertion: &str,
+) -> Result<(&str, &str), (bool, Option<String>, Option<String>)> {
     let parts: Vec<&str> = if assertion.contains("=>") {
         assertion.split("=>").collect()
     } else {
@@ -70,17 +72,16 @@ fn parse_conditional(assertion: &str) -> Result<(&str, &str), (bool, Option<Stri
     };
 
     if parts.len() != 2 {
-        return Err((
-            false,
-            None,
-            Some("Invalid conditional format".to_string()),
-        ));
+        return Err((false, None, Some("Invalid conditional format".to_string())));
     }
 
     Ok((parts[0].trim(), parts[1].trim()))
 }
 
-fn check_conditional_logic(antecedent: &str, consequent: &str) -> (bool, Option<String>, Option<String>) {
+fn check_conditional_logic(
+    antecedent: &str,
+    consequent: &str,
+) -> (bool, Option<String>, Option<String>) {
     if is_always_false(antecedent) || is_always_true(consequent) {
         return (true, None, None);
     }
@@ -127,11 +128,7 @@ fn verify_existential_quantification(assertion: &str) -> (bool, Option<String>, 
     // Extract variable, range, and property
     let parts: Vec<&str> = assertion.split(',').collect();
     if parts.len() < 2 {
-        return (
-            false,
-            None,
-            Some("Malformed exists statement".to_string()),
-        );
+        return (false, None, Some("Malformed exists statement".to_string()));
     }
 
     // Try to find a witness (example that satisfies the property)
@@ -195,11 +192,7 @@ fn verify_equality(assertion: &str) -> (bool, Option<String>, Option<String>) {
 fn verify_inequality(assertion: &str) -> (bool, Option<String>, Option<String>) {
     let parts: Vec<&str> = assertion.split("!=").collect();
     if parts.len() != 2 {
-        return (
-            false,
-            None,
-            Some("Invalid inequality format".to_string()),
-        );
+        return (false, None, Some("Invalid inequality format".to_string()));
     }
 
     let left = parts[0].trim();
@@ -210,11 +203,7 @@ fn verify_inequality(assertion: &str) -> (bool, Option<String>, Option<String>) 
             if (left_val - right_val).abs() >= 1e-10 {
                 (true, None, None)
             } else {
-                (
-                    false,
-                    Some(format!("{left} = {right} = {left_val}")),
-                    None,
-                )
+                (false, Some(format!("{left} = {right} = {left_val}")), None)
             }
         }
         _ => (false, None, Some("Cannot evaluate expressions".to_string())),
@@ -228,11 +217,7 @@ fn verify_comparison(assertion: &str) -> (bool, Option<String>, Option<String>) 
     };
 
     if parts.len() != 2 {
-        return (
-            false,
-            None,
-            Some("Invalid comparison format".to_string()),
-        );
+        return (false, None, Some("Invalid comparison format".to_string()));
     }
 
     let left = parts[0].trim();
@@ -246,7 +231,9 @@ fn verify_comparison(assertion: &str) -> (bool, Option<String>, Option<String>) 
     }
 }
 
-fn parse_comparison_operator(assertion: &str) -> Result<(&str, Vec<&str>), (bool, Option<String>, Option<String>)> {
+fn parse_comparison_operator(
+    assertion: &str,
+) -> Result<(&str, Vec<&str>), (bool, Option<String>, Option<String>)> {
     if assertion.contains(">=") {
         Ok((">=", assertion.split(">=").collect::<Vec<_>>()))
     } else if assertion.contains("<=") {
@@ -256,11 +243,7 @@ fn parse_comparison_operator(assertion: &str) -> Result<(&str, Vec<&str>), (bool
     } else if assertion.contains('<') {
         Ok(("<", assertion.split('<').collect::<Vec<_>>()))
     } else {
-        Err((
-            false,
-            None,
-            Some("Unknown comparison operator".to_string()),
-        ))
+        Err((false, None, Some("Unknown comparison operator".to_string())))
     }
 }
 

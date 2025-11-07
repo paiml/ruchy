@@ -194,7 +194,10 @@ fn test_runtime_003_red_phase_summary() {
     // 2. Run mutation tests (target ≥75%)
     // 3. Optimize if needed while maintaining tests
 
-    assert!(true, "RED phase: 10 tests created, all will fail when un-ignored");
+    assert!(
+        true,
+        "RED phase: 10 tests created, all will fail when un-ignored"
+    );
 }
 
 // ==================== REFACTOR PHASE: Property Tests ====================

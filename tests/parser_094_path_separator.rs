@@ -33,7 +33,10 @@ fn test_parser_094_module_function_call_simple() {
     ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("http_client :: http_get"),
@@ -54,7 +57,10 @@ fn test_parser_094_module_function_with_args() {
     "#;
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("http_client :: http_get"),
@@ -72,7 +78,10 @@ fn test_parser_094_nested_module_path() {
     ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("http_client :: helpers :: get_json"),
@@ -93,7 +102,10 @@ fn test_parser_094_stdlib_path() {
     ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("std :: io :: stdin"),
@@ -111,7 +123,10 @@ fn test_parser_094_multiple_stdlib_calls() {
     "#;
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("std :: env :: var"),
@@ -136,7 +151,10 @@ fn test_parser_094_type_associated_function() {
     "#;
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("String :: from"),
@@ -153,7 +171,10 @@ fn test_parser_094_vec_new() {
     ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("Vec :: new"),
@@ -175,8 +196,13 @@ fn test_parser_094_issue_137_reproduction() {
         result
     "#;
 
-    let ast = Parser::new(code).parse().expect("Should parse Issue #137 code");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let ast = Parser::new(code)
+        .parse()
+        .expect("Should parse Issue #137 code");
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     assert!(
         rust_code.contains("http_client :: http_get"),
@@ -203,7 +229,10 @@ fn test_parser_094_distinguish_field_access_from_path() {
     ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     // Field access should use .
     assert!(
@@ -228,7 +257,10 @@ fn test_parser_094_method_call_vs_static_call() {
     "#;
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let rust_code = Transpiler::new().transpile(&ast).expect("Should transpile").to_string();
+    let rust_code = Transpiler::new()
+        .transpile(&ast)
+        .expect("Should transpile")
+        .to_string();
 
     // Associated function should use ::
     assert!(

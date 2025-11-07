@@ -125,7 +125,10 @@ fn test_add_command_with_version() {
     // Verify serde was added with version constraint
     let cargo_toml = fs::read_to_string(format!("{project_path}/Cargo.toml"))
         .expect("Failed to read Cargo.toml");
-    assert!(cargo_toml.contains("serde"), "serde should be in Cargo.toml");
+    assert!(
+        cargo_toml.contains("serde"),
+        "serde should be in Cargo.toml"
+    );
 }
 
 #[test]

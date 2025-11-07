@@ -32,20 +32,21 @@ pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool
 /// Check if parameter is directly in arguments
 /// Complexity: 2 (loop with early return)
 fn find_param_in_direct_args(param_name: &str, args: &[Expr]) -> bool {
-    args.iter().any(|arg| {
-        matches!(&arg.kind, ExprKind::Identifier(name) if name == param_name)
-    })
+    args.iter()
+        .any(|arg| matches!(&arg.kind, ExprKind::Identifier(name) if name == param_name))
 }
 
 /// Check if parameter is used as argument in function call
 /// Extracted to reduce complexity
 fn check_call_for_param_argument(param_name: &str, func: &Expr, args: &[Expr]) -> bool {
     // Check if any argument is the parameter
-    if matches!(&func.kind, ExprKind::Identifier(_)) && find_param_in_direct_args(param_name, args) {
+    if matches!(&func.kind, ExprKind::Identifier(_)) && find_param_in_direct_args(param_name, args)
+    {
         return true;
     }
     // Recursively check nested arguments
-    args.iter().any(|arg| is_param_used_as_function_argument(param_name, arg))
+    args.iter()
+        .any(|arg| is_param_used_as_function_argument(param_name, arg))
 }
 /// Check if parameter is used in expressions list
 fn check_expressions_for_param(param_name: &str, exprs: &[Expr]) -> bool {
@@ -82,12 +83,18 @@ fn check_func_call(param_name: &str, func: &Expr, args: &[Expr]) -> bool {
             return true;
         }
     }
-    args.iter().any(|arg| is_param_used_as_function(param_name, arg))
+    args.iter()
+        .any(|arg| is_param_used_as_function(param_name, arg))
 }
 
 /// Check if branches for parameter as function
 /// Complexity: 1 (chained OR)
-fn check_if_for_func(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
+fn check_if_for_func(
+    param_name: &str,
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: Option<&Expr>,
+) -> bool {
     is_param_used_as_function(param_name, condition)
         || is_param_used_as_function(param_name, then_branch)
         || else_branch.is_some_and(|e| is_param_used_as_function(param_name, e))
@@ -111,11 +118,20 @@ fn check_let_and_binary_for_func(param_name: &str, value: &Expr, body: &Expr) ->
 pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { func, args } => check_func_call(param_name, func, args),
-        ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_as_function(param_name, e)),
-        ExprKind::If { condition, then_branch, else_branch } => check_if_for_func(param_name, condition, then_branch, else_branch.as_deref()),
-        ExprKind::Let { value, body, .. } | ExprKind::Binary { left: value, right: body, .. } => {
-            check_let_and_binary_for_func(param_name, value, body)
-        }
+        ExprKind::Block(exprs) => exprs
+            .iter()
+            .any(|e| is_param_used_as_function(param_name, e)),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => check_if_for_func(param_name, condition, then_branch, else_branch.as_deref()),
+        ExprKind::Let { value, body, .. }
+        | ExprKind::Binary {
+            left: value,
+            right: body,
+            ..
+        } => check_let_and_binary_for_func(param_name, value, body),
         ExprKind::Lambda { body, .. } => is_param_used_as_function(param_name, body),
         _ => false,
     }
@@ -146,7 +162,9 @@ pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
         // DEFECT-CLOSURE-RETURN FIX: Check inside lambda bodies for captured variables
         ExprKind::Lambda { body, .. } => is_param_used_numerically(param_name, body),
         // ISSUE-113 FIX: Check while loop conditions and bodies for numeric usage
-        ExprKind::While { condition, body, .. } => {
+        ExprKind::While {
+            condition, body, ..
+        } => {
             is_param_used_numerically(param_name, condition)
                 || is_param_used_numerically(param_name, body)
         }
@@ -248,10 +266,10 @@ fn is_string_literal(expr: &Expr) -> bool {
 /// Complexity: 1 (single match)
 fn get_builtin_return_type(func_name: &str) -> Option<&'static str> {
     match func_name {
-        "fs_read" | "env_var" | "env_current_dir"
-        | "http_get" | "http_post" | "http_put" | "http_delete"
-        | "json_stringify"
-        | "path_extension" | "path_filename" | "path_parent" => Some("String"),
+        "fs_read" | "env_var" | "env_current_dir" | "http_get" | "http_post" | "http_put"
+        | "http_delete" | "json_stringify" | "path_extension" | "path_filename" | "path_parent" => {
+            Some("String")
+        }
         "env_args" => Some("Vec<String>"),
         "fs_exists" => Some("bool"),
         "println" | "print" | "eprintln" | "eprint" => Some("()"),
@@ -291,17 +309,20 @@ pub fn infer_return_type_from_builtin_call(expr: &Expr) -> Option<&'static str> 
 fn get_builtin_param_type(func_name: &str, arg_idx: usize) -> Option<&'static str> {
     match (func_name, arg_idx) {
         // File system functions: paths are &str
-        ("fs_read" | "fs_write" | "fs_exists" | "fs_remove" | "fs_metadata"
-        | "fs_create_dir" | "fs_read_dir", 0)
+        (
+            "fs_read" | "fs_write" | "fs_exists" | "fs_remove" | "fs_metadata" | "fs_create_dir"
+            | "fs_read_dir",
+            0,
+        )
         | ("fs_copy" | "fs_rename", 0 | 1) => Some("&str"),
 
         // HTTP functions: URLs are &str
         ("http_get" | "http_post" | "http_put" | "http_delete", 0) => Some("&str"),
 
         // Environment/Path/JSON/Regex: strings are &str
-        ("env_var" | "env_set_var" | "json_parse" | "regex_new", 0) |
-("path_join" | "path_extension" | "path_filename" | "path_parent", 0 | 1) |
-("regex_is_match" | "regex_find" | "regex_replace", 1) => Some("&str"),
+        ("env_var" | "env_set_var" | "json_parse" | "regex_new", 0)
+        | ("path_join" | "path_extension" | "path_filename" | "path_parent", 0 | 1)
+        | ("regex_is_match" | "regex_find" | "regex_replace", 1) => Some("&str"),
 
         // Output/logging: generic (keep default)
         _ => None,
@@ -324,7 +345,8 @@ fn find_param_in_args(param_name: &str, func_name: &str, args: &[Expr]) -> Optio
 /// Check recursively in nested arguments
 /// Complexity: 1 (single loop with function call)
 fn check_nested_args(param_name: &str, args: &[Expr]) -> Option<&'static str> {
-    args.iter().find_map(|arg| infer_param_type_from_builtin_usage(param_name, arg))
+    args.iter()
+        .find_map(|arg| infer_param_type_from_builtin_usage(param_name, arg))
 }
 
 /// Check a single function call for param type
@@ -347,7 +369,12 @@ fn check_let_bindings(param_name: &str, value: &Expr, body: &Expr) -> Option<&'s
 
 /// Check if expression  in branches
 /// Complexity: 1 (chained `or_else`)
-fn check_if_branches(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> Option<&'static str> {
+fn check_if_branches(
+    param_name: &str,
+    condition: &Expr,
+    then_branch: &Expr,
+    else_branch: Option<&Expr>,
+) -> Option<&'static str> {
     infer_param_type_from_builtin_usage(param_name, condition)
         .or_else(|| infer_param_type_from_builtin_usage(param_name, then_branch))
         .or_else(|| else_branch.and_then(|e| infer_param_type_from_builtin_usage(param_name, e)))
@@ -356,9 +383,17 @@ fn check_if_branches(param_name: &str, condition: &Expr, then_branch: &Expr, els
 pub fn infer_param_type_from_builtin_usage(param_name: &str, expr: &Expr) -> Option<&'static str> {
     match &expr.kind {
         ExprKind::Call { func, args } => check_call_for_param_type(param_name, func, args),
-        ExprKind::Block(exprs) => exprs.iter().find_map(|e| infer_param_type_from_builtin_usage(param_name, e)),
-        ExprKind::If { condition, then_branch, else_branch } => check_if_branches(param_name, condition, then_branch, else_branch.as_deref()),
-        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => check_let_bindings(param_name, value, body),
+        ExprKind::Block(exprs) => exprs
+            .iter()
+            .find_map(|e| infer_param_type_from_builtin_usage(param_name, e)),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => check_if_branches(param_name, condition, then_branch, else_branch.as_deref()),
+        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
+            check_let_bindings(param_name, value, body)
+        }
         ExprKind::Binary { left, right, .. } => {
             infer_param_type_from_builtin_usage(param_name, left)
                 .or_else(|| infer_param_type_from_builtin_usage(param_name, right))
@@ -398,27 +433,30 @@ pub fn is_param_used_as_array(param_name: &str, expr: &Expr) -> bool {
         }
         // Check let bindings
         ExprKind::Let { value, body, .. } => {
-            is_param_used_as_array(param_name, value)
-                || is_param_used_as_array(param_name, body)
+            is_param_used_as_array(param_name, value) || is_param_used_as_array(param_name, body)
         }
         // Check binary operations (both sides)
         ExprKind::Binary { left, right, .. } => {
-            is_param_used_as_array(param_name, left)
-                || is_param_used_as_array(param_name, right)
+            is_param_used_as_array(param_name, left) || is_param_used_as_array(param_name, right)
         }
         // Check loops
-        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+        ExprKind::While {
+            condition, body, ..
+        }
+        | ExprKind::For {
+            iter: condition,
+            body,
+            ..
+        } => {
             is_param_used_as_array(param_name, condition)
                 || is_param_used_as_array(param_name, body)
         }
         // Check assignments
         ExprKind::Assign { target, value } => {
-            is_param_used_as_array(param_name, target)
-                || is_param_used_as_array(param_name, value)
+            is_param_used_as_array(param_name, target) || is_param_used_as_array(param_name, value)
         }
         ExprKind::CompoundAssign { target, value, .. } => {
-            is_param_used_as_array(param_name, target)
-                || is_param_used_as_array(param_name, value)
+            is_param_used_as_array(param_name, target) || is_param_used_as_array(param_name, value)
         }
         _ => false,
     }
@@ -443,7 +481,8 @@ pub fn is_param_used_with_len(param_name: &str, expr: &Expr) -> bool {
                 }
             }
             // Recursively check arguments
-            args.iter().any(|arg| is_param_used_with_len(param_name, arg))
+            args.iter()
+                .any(|arg| is_param_used_with_len(param_name, arg))
         }
         // Check all expressions in block
         ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_with_len(param_name, e)),
@@ -461,27 +500,30 @@ pub fn is_param_used_with_len(param_name: &str, expr: &Expr) -> bool {
         }
         // Check let bindings
         ExprKind::Let { value, body, .. } => {
-            is_param_used_with_len(param_name, value)
-                || is_param_used_with_len(param_name, body)
+            is_param_used_with_len(param_name, value) || is_param_used_with_len(param_name, body)
         }
         // Check binary operations
         ExprKind::Binary { left, right, .. } => {
-            is_param_used_with_len(param_name, left)
-                || is_param_used_with_len(param_name, right)
+            is_param_used_with_len(param_name, left) || is_param_used_with_len(param_name, right)
         }
         // Check loops
-        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+        ExprKind::While {
+            condition, body, ..
+        }
+        | ExprKind::For {
+            iter: condition,
+            body,
+            ..
+        } => {
             is_param_used_with_len(param_name, condition)
                 || is_param_used_with_len(param_name, body)
         }
         // Check assignments
         ExprKind::Assign { target, value } => {
-            is_param_used_with_len(param_name, target)
-                || is_param_used_with_len(param_name, value)
+            is_param_used_with_len(param_name, target) || is_param_used_with_len(param_name, value)
         }
         ExprKind::CompoundAssign { target, value, .. } => {
-            is_param_used_with_len(param_name, target)
-                || is_param_used_with_len(param_name, value)
+            is_param_used_with_len(param_name, target) || is_param_used_with_len(param_name, value)
         }
         _ => false,
     }
@@ -498,8 +540,7 @@ pub fn is_param_used_as_index(param_name: &str, expr: &Expr) -> bool {
                 return true;
             }
             // Recursively check object and index
-            is_param_used_as_index(param_name, object)
-                || is_param_used_as_index(param_name, index)
+            is_param_used_as_index(param_name, object) || is_param_used_as_index(param_name, index)
         }
         // Check all expressions in block
         ExprKind::Block(exprs) => exprs.iter().any(|e| is_param_used_as_index(param_name, e)),
@@ -517,27 +558,30 @@ pub fn is_param_used_as_index(param_name: &str, expr: &Expr) -> bool {
         }
         // Check let bindings
         ExprKind::Let { value, body, .. } => {
-            is_param_used_as_index(param_name, value)
-                || is_param_used_as_index(param_name, body)
+            is_param_used_as_index(param_name, value) || is_param_used_as_index(param_name, body)
         }
         // Check binary operations
         ExprKind::Binary { left, right, .. } => {
-            is_param_used_as_index(param_name, left)
-                || is_param_used_as_index(param_name, right)
+            is_param_used_as_index(param_name, left) || is_param_used_as_index(param_name, right)
         }
         // Check loops
-        ExprKind::While { condition, body, .. } | ExprKind::For { iter: condition, body, .. } => {
+        ExprKind::While {
+            condition, body, ..
+        }
+        | ExprKind::For {
+            iter: condition,
+            body,
+            ..
+        } => {
             is_param_used_as_index(param_name, condition)
                 || is_param_used_as_index(param_name, body)
         }
         // Check assignments
         ExprKind::Assign { target, value } => {
-            is_param_used_as_index(param_name, target)
-                || is_param_used_as_index(param_name, value)
+            is_param_used_as_index(param_name, target) || is_param_used_as_index(param_name, value)
         }
         ExprKind::CompoundAssign { target, value, .. } => {
-            is_param_used_as_index(param_name, target)
-                || is_param_used_as_index(param_name, value)
+            is_param_used_as_index(param_name, target) || is_param_used_as_index(param_name, value)
         }
         _ => false,
     }
@@ -824,8 +868,10 @@ mod tests {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
                     // count should BE considered numeric in comparison
-                    assert!(is_param_used_numerically("count", body),
-                        "Parameter 'count' in 'x < count' should be detected as numeric");
+                    assert!(
+                        is_param_used_numerically("count", body),
+                        "Parameter 'count' in 'x < count' should be detected as numeric"
+                    );
                 }
             }
         }
@@ -841,8 +887,10 @@ mod tests {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
                     // count should BE considered numeric when compared with .len()
-                    assert!(is_param_used_numerically("count", body),
-                        "Parameter 'count' in 'arr.len() < count' should be detected as numeric");
+                    assert!(
+                        is_param_used_numerically("count", body),
+                        "Parameter 'count' in 'arr.len() < count' should be detected as numeric"
+                    );
                 }
             }
         }

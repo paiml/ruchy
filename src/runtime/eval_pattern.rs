@@ -73,7 +73,9 @@ pub fn match_pattern(
         Pattern::List(patterns) => match_array_pattern(patterns, value),
         Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
         Pattern::Struct { name, fields, .. } => match_struct_pattern(name, fields, value),
-        Pattern::TupleVariant { path, patterns } => match_tuple_variant_pattern(path, patterns, value),
+        Pattern::TupleVariant { path, patterns } => {
+            match_tuple_variant_pattern(path, patterns, value)
+        }
         Pattern::Ok(inner_pattern) => match_ok_pattern(inner_pattern, value),
         Pattern::Err(inner_pattern) => match_err_pattern(inner_pattern, value),
         _ => Ok(PatternMatchResult::failure()), // Other patterns not implemented yet
@@ -90,7 +92,10 @@ fn match_tuple_variant_pattern(
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
     // Match against Value::EnumVariant { variant_name, data }
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         // Extract variant name from path (last element)
         // Path is like ["Result", "Ok"] -> we want "Ok"
         let expected_variant = path.last().map_or("", std::string::String::as_str);

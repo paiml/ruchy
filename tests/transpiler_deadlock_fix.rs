@@ -11,7 +11,6 @@
 ///       let mut guard = counter.lock().unwrap();
 ///       *guard = *guard + 1;
 ///   }
-
 use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
@@ -430,10 +429,16 @@ compute()
     assert!(output.status.success(), "Transpile failed");
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
-    
+
     // Should NOT contain guard pattern for local variables
-    assert!(!transpiled.contains("__guard"), "Local var shouldn't use guard");
-    assert!(transpiled.contains("let mut x"), "Should have local variable");
+    assert!(
+        !transpiled.contains("__guard"),
+        "Local var shouldn't use guard"
+    );
+    assert!(
+        transpiled.contains("let mut x"),
+        "Should have local variable"
+    );
 
     let _ = fs::remove_file(&ruchy_path);
 }
@@ -468,12 +473,17 @@ println!("{}", result)
     // Compile
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
-        .arg("--crate-name").arg("test_global_no_ref")
-        .arg("-o").arg(temp.path().with_extension("exe"))
+        .arg("--crate-name")
+        .arg("test_global_no_ref")
+        .arg("-o")
+        .arg(temp.path().with_extension("exe"))
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed:\n{}",
-        String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let exe_path = temp.path().with_extension("exe");
@@ -485,7 +495,7 @@ println!("{}", result)
 
     assert_ne!(run.status.code(), Some(124));
     assert!(run.status.success());
-    
+
     let output_str = String::from_utf8_lossy(&run.stdout);
     assert!(output_str.contains("15"));
 
@@ -517,21 +527,29 @@ println!("{}", value)
     assert!(output.status.success());
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
-    
+
     // Should contain guard pattern
-    assert!(transpiled.contains("__guard"), "Should use guard for unary self-ref");
+    assert!(
+        transpiled.contains("__guard"),
+        "Should use guard for unary self-ref"
+    );
 
     let rs_path = temp.path().with_extension("rs");
     fs::write(&rs_path, transpiled).unwrap();
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
-        .arg("--crate-name").arg("test_unary")
-        .arg("-o").arg(temp.path().with_extension("exe"))
+        .arg("--crate-name")
+        .arg("test_unary")
+        .arg("-o")
+        .arg(temp.path().with_extension("exe"))
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed:\n{}",
-        String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     let exe_path = temp.path().with_extension("exe");
     let run = StdCommand::new("timeout")
@@ -574,7 +592,7 @@ process()
     assert!(output.status.success());
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
-    
+
     // Simple string assignment doesn't need guard
     assert!(transpiled.contains("static text"));
 
@@ -604,7 +622,7 @@ println!("{}", num)
     assert!(output.status.success());
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
-    
+
     // Should use guard pattern for nested expression
     assert!(transpiled.contains("__guard"));
 
@@ -613,12 +631,17 @@ println!("{}", num)
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
-        .arg("--crate-name").arg("test_nested")
-        .arg("-o").arg(temp.path().with_extension("exe"))
+        .arg("--crate-name")
+        .arg("test_nested")
+        .arg("-o")
+        .arg(temp.path().with_extension("exe"))
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed:\n{}",
-        String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     let exe_path = temp.path().with_extension("exe");
     let run = StdCommand::new("timeout")
@@ -661,7 +684,7 @@ println!("{}", x)
     assert!(output.status.success());
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
-    
+
     // Should use guard for global compound assignment
     assert!(transpiled.contains("__guard"));
     assert!(transpiled.contains("*="));
@@ -671,12 +694,17 @@ println!("{}", x)
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
-        .arg("--crate-name").arg("test_compound_ops")
-        .arg("-o").arg(temp.path().with_extension("exe"))
+        .arg("--crate-name")
+        .arg("test_compound_ops")
+        .arg("-o")
+        .arg(temp.path().with_extension("exe"))
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed:\n{}",
-        String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     let exe_path = temp.path().with_extension("exe");
     let run = StdCommand::new("timeout")
@@ -735,7 +763,11 @@ println!("{}", flags)
         .arg(&exe_path)
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let run = StdCommand::new("timeout")
@@ -794,7 +826,11 @@ println!("{}", status)
         .arg(&exe_path)
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let run = StdCommand::new("timeout")
@@ -853,7 +889,11 @@ println!("{}", index)
         .arg(&exe_path)
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let run = StdCommand::new("timeout")
@@ -866,7 +906,7 @@ println!("{}", index)
     assert!(run.status.success());
 
     let output_str = String::from_utf8_lossy(&run.stdout);
-    assert!(output_str.contains("0"));  // (9 + 1) % 10 = 0
+    assert!(output_str.contains("0")); // (9 + 1) % 10 = 0
 
     let _ = fs::remove_file(&ruchy_path);
     let _ = fs::remove_file(&rs_path);
@@ -912,7 +952,11 @@ println!("{}", result)
         .arg(&exe_path)
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let run = StdCommand::new("timeout")
@@ -971,7 +1015,11 @@ println!("{}", value)
         .arg(&exe_path)
         .output()
         .unwrap();
-    assert!(compile.status.success(), "Compilation failed: {}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 
     // Run with timeout
     let run = StdCommand::new("timeout")
@@ -984,7 +1032,7 @@ println!("{}", value)
     assert!(run.status.success());
 
     let output_str = String::from_utf8_lossy(&run.stdout);
-    assert!(output_str.contains("10"));  // 5 << 1 = 10
+    assert!(output_str.contains("10")); // 5 << 1 = 10
 
     let _ = fs::remove_file(&ruchy_path);
     let _ = fs::remove_file(&rs_path);

@@ -295,11 +295,22 @@ mod tests {
     fn test_opcode_to_u8_roundtrip() {
         // Test all opcodes can be converted to u8 and back
         let opcodes = [
-            OpCode::Nop, OpCode::Const, OpCode::LoadLocal, OpCode::StoreLocal,
-            OpCode::Add, OpCode::Sub, OpCode::Mul, OpCode::Div,
-            OpCode::Equal, OpCode::Greater, OpCode::Less,
-            OpCode::Jump, OpCode::JumpIfTrue, OpCode::JumpIfFalse,
-            OpCode::Call, OpCode::Return,
+            OpCode::Nop,
+            OpCode::Const,
+            OpCode::LoadLocal,
+            OpCode::StoreLocal,
+            OpCode::Add,
+            OpCode::Sub,
+            OpCode::Mul,
+            OpCode::Div,
+            OpCode::Equal,
+            OpCode::Greater,
+            OpCode::Less,
+            OpCode::Jump,
+            OpCode::JumpIfTrue,
+            OpCode::JumpIfFalse,
+            OpCode::Call,
+            OpCode::Return,
         ];
 
         for opcode in &opcodes {

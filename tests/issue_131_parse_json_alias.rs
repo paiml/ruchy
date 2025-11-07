@@ -137,7 +137,10 @@ fun main() {
         .stdout
         .clone();
 
-    assert_eq!(output1, output2, "parse_json() and json_parse() should produce identical output");
+    assert_eq!(
+        output1, output2,
+        "parse_json() and json_parse() should produce identical output"
+    );
 }
 
 #[test]

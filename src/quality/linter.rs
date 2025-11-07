@@ -45,10 +45,10 @@ struct VariableInfo {
 enum VarType {
     Local,
     Parameter,
-    Function,      // Function definitions (not checked for unused)
+    Function, // Function definitions (not checked for unused)
     LoopVariable,
     MatchBinding,
-    TypeName,      // Enum/Struct type names (Issue #107 fix)
+    TypeName, // Enum/Struct type names (Issue #107 fix)
 }
 impl Scope {
     fn new() -> Self {

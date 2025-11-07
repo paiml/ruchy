@@ -155,9 +155,7 @@ impl InferenceContext {
                     current_ty = ret;
                 }
                 if arity != expected_arity {
-                    bail!(
-                        "Function arity mismatch: expected {expected_arity}, found {arity}"
-                    );
+                    bail!("Function arity mismatch: expected {expected_arity}, found {arity}");
                 }
             }
             TypeConstraint::MethodCall(receiver_ty, method_name, arg_types) => {

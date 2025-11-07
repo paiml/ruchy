@@ -214,23 +214,37 @@ impl Compiler {
         let result = match &expr.kind {
             ExprKind::Literal(lit) => self.compile_literal(lit),
             ExprKind::Binary { op, left, right } => self.compile_binary(op, left, right),
-            ExprKind::Unary { op, operand} => self.compile_unary(op, operand),
+            ExprKind::Unary { op, operand } => self.compile_unary(op, operand),
             ExprKind::Identifier(name) => self.compile_variable(name),
-            ExprKind::Let { name, value, body, .. } => self.compile_let(name, value, body),
+            ExprKind::Let {
+                name, value, body, ..
+            } => self.compile_let(name, value, body),
             ExprKind::Block(exprs) => self.compile_block(exprs),
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.compile_if(condition, then_branch, else_branch.as_deref())
-            }
-            ExprKind::Call { func, args} => self.compile_call(func, args),
-            ExprKind::While { condition, body, .. } => self.compile_while(condition, body),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.compile_if(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Call { func, args } => self.compile_call(func, args),
+            ExprKind::While {
+                condition, body, ..
+            } => self.compile_while(condition, body),
             ExprKind::Assign { target, value } => self.compile_assign(target, value),
-            ExprKind::Function { name, params, body, .. } => self.compile_function(name, params, body),
+            ExprKind::Function {
+                name, params, body, ..
+            } => self.compile_function(name, params, body),
             ExprKind::List(elements) => self.compile_list(elements),
             ExprKind::Tuple(elements) => self.compile_tuple(elements),
             ExprKind::ObjectLiteral { fields } => self.compile_object_literal(fields),
-            ExprKind::For { var, iter, body, .. } => self.compile_for(var, iter, body),
+            ExprKind::For {
+                var, iter, body, ..
+            } => self.compile_for(var, iter, body),
             ExprKind::IndexAccess { object, index } => self.compile_index_access(object, index),
-            ExprKind::MethodCall { receiver, method, args } => self.compile_method_call(receiver, method, args),
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => self.compile_method_call(receiver, method, args),
             ExprKind::FieldAccess { object, field } => self.compile_field_access(object, field),
             ExprKind::Match { expr, arms } => self.compile_match(expr, arms),
             ExprKind::Lambda { params, body } => self.compile_closure(params, body),
@@ -293,10 +307,8 @@ impl Compiler {
         };
 
         // Emit binary operation: R[result] = R[left] op R[right]
-        self.chunk.emit(
-            Instruction::abc(opcode, result_reg, left_reg, right_reg),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abc(opcode, result_reg, left_reg, right_reg), 0);
 
         // Free input registers
         self.registers.free(left_reg);
@@ -322,10 +334,8 @@ impl Compiler {
 
         // Emit unary operation: R[result] = op R[operand]
         // Using AB format: A = result, B = operand
-        self.chunk.emit(
-            Instruction::abc(opcode, result_reg, operand_reg, 0),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abc(opcode, result_reg, operand_reg, 0), 0);
 
         // Free input register
         self.registers.free(operand_reg);
@@ -339,14 +349,14 @@ impl Compiler {
             // Local variable - copy to temporary register
             // This prevents compile_binary() from freeing the variable's register
             let temp_reg = self.registers.allocate();
-            self.chunk.emit(
-                Instruction::abc(OpCode::Move, temp_reg, var_reg, 0),
-                0,
-            );
+            self.chunk
+                .emit(Instruction::abc(OpCode::Move, temp_reg, var_reg, 0), 0);
             Ok(temp_reg)
         } else {
             // Global variable - need to load from global table
-            let name_const = self.chunk.add_constant(Value::from_string(name.to_string()));
+            let name_const = self
+                .chunk
+                .add_constant(Value::from_string(name.to_string()));
             let result_reg = self.registers.allocate();
 
             self.chunk.emit(
@@ -418,37 +428,29 @@ impl Compiler {
         let cond_reg = self.compile_expr(condition)?;
 
         // Emit conditional jump: if !R[cond] jump to else/end
-        let jump_to_else = self.chunk.emit(
-            Instruction::asbx(OpCode::JumpIfFalse, cond_reg, 0),
-            0,
-        );
+        let jump_to_else = self
+            .chunk
+            .emit(Instruction::asbx(OpCode::JumpIfFalse, cond_reg, 0), 0);
         self.registers.free(cond_reg);
 
         // Compile then branch
         let then_reg = self.compile_expr(then_branch)?;
         // Move result to result register
-        self.chunk.emit(
-            Instruction::abc(OpCode::Move, result_reg, then_reg, 0),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abc(OpCode::Move, result_reg, then_reg, 0), 0);
         self.registers.free(then_reg);
 
         if let Some(else_expr) = else_branch {
             // Emit jump to skip else branch
-            let jump_to_end = self.chunk.emit(
-                Instruction::asbx(OpCode::Jump, 0, 0),
-                0,
-            );
+            let jump_to_end = self.chunk.emit(Instruction::asbx(OpCode::Jump, 0, 0), 0);
 
             // Patch jump to else
             self.chunk.patch_jump(jump_to_else);
 
             // Compile else branch
             let else_reg = self.compile_expr(else_expr)?;
-            self.chunk.emit(
-                Instruction::abc(OpCode::Move, result_reg, else_reg, 0),
-                0,
-            );
+            self.chunk
+                .emit(Instruction::abc(OpCode::Move, result_reg, else_reg, 0), 0);
             self.registers.free(else_reg);
 
             // Patch jump to end
@@ -475,10 +477,9 @@ impl Compiler {
         let cond_reg = self.compile_expr(condition)?;
 
         // Emit conditional jump: if !condition, jump to loop end
-        let jump_to_end = self.chunk.emit(
-            Instruction::asbx(OpCode::JumpIfFalse, cond_reg, 0),
-            0,
-        );
+        let jump_to_end = self
+            .chunk
+            .emit(Instruction::asbx(OpCode::JumpIfFalse, cond_reg, 0), 0);
         self.registers.free(cond_reg);
 
         // Compile body
@@ -487,20 +488,16 @@ impl Compiler {
 
         // Emit backward jump to loop start
         let offset = -((self.chunk.instructions.len() - loop_start + 1) as i16);
-        self.chunk.emit(
-            Instruction::asbx(OpCode::Jump, 0, offset),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::asbx(OpCode::Jump, 0, offset), 0);
 
         // Patch forward jump to end
         self.chunk.patch_jump(jump_to_end);
 
         // While loops return nil
         let nil_const = self.chunk.add_constant(Value::Nil);
-        self.chunk.emit(
-            Instruction::abx(OpCode::Const, result_reg, nil_const),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abx(OpCode::Const, result_reg, nil_const), 0);
 
         Ok(result_reg)
     }
@@ -524,10 +521,8 @@ impl Compiler {
                 let value_reg = self.compile_expr(value)?;
 
                 // Move value to target register
-                self.chunk.emit(
-                    Instruction::abc(OpCode::Move, target_reg, value_reg, 0),
-                    0,
-                );
+                self.chunk
+                    .emit(Instruction::abc(OpCode::Move, target_reg, value_reg, 0), 0);
 
                 // Free temporary value register if different from target
                 if value_reg != target_reg {
@@ -567,10 +562,8 @@ impl Compiler {
 
         // Emit call instruction: R[result] = call with info from constants[call_info_idx]
         // ABx format: A = result, Bx = call_info constant index
-        self.chunk.emit(
-            Instruction::abx(OpCode::Call, result_reg, call_info_idx),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abx(OpCode::Call, result_reg, call_info_idx), 0);
 
         // OPT-011: Don't free func_reg or arg_regs yet - they contain values needed at runtime
         // TODO: Implement proper lifetime analysis for register allocation
@@ -582,7 +575,12 @@ impl Compiler {
     /// Compile a function definition
     ///
     /// Creates a closure and stores it in locals for later invocation.
-    fn compile_function(&mut self, name: &str, params: &[Param], body: &Expr) -> Result<u8, String> {
+    fn compile_function(
+        &mut self,
+        name: &str,
+        params: &[Param],
+        body: &Expr,
+    ) -> Result<u8, String> {
         // Extract parameter names
         let param_names: Vec<String> = params
             .iter()
@@ -604,10 +602,8 @@ impl Compiler {
         let closure_reg = self.registers.allocate();
 
         // Emit CONST instruction to load closure into register
-        self.chunk.emit(
-            Instruction::abx(OpCode::Const, closure_reg, const_index),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abx(OpCode::Const, closure_reg, const_index), 0);
 
         // Store function in locals table for later retrieval
         self.locals.insert(name.to_string(), closure_reg);
@@ -623,9 +619,9 @@ impl Compiler {
     /// - Non-literals: Compile elements to registers, emit `NewArray` opcode
     fn compile_list(&mut self, elements: &[Expr]) -> Result<u8, String> {
         // Check if all elements are literals (can optimize)
-        let all_literals = elements.iter().all(|elem| {
-            matches!(&elem.kind, ExprKind::Literal(_))
-        });
+        let all_literals = elements
+            .iter()
+            .all(|elem| matches!(&elem.kind, ExprKind::Literal(_)));
 
         if all_literals && !elements.is_empty() {
             // Optimization: Create array at compile-time in constant pool
@@ -649,10 +645,8 @@ impl Compiler {
             let const_index = self.chunk.add_constant(array_value);
 
             let result_reg = self.registers.allocate();
-            self.chunk.emit(
-                Instruction::abx(OpCode::Const, result_reg, const_index),
-                0,
-            );
+            self.chunk
+                .emit(Instruction::abx(OpCode::Const, result_reg, const_index), 0);
             Ok(result_reg)
         } else {
             // Runtime array construction: compile elements to registers
@@ -688,9 +682,9 @@ impl Compiler {
     /// - Non-literals: Compile elements to registers, emit `NewTuple` opcode
     fn compile_tuple(&mut self, elements: &[Expr]) -> Result<u8, String> {
         // Check if all elements are literals (can optimize)
-        let all_literals = elements.iter().all(|elem| {
-            matches!(&elem.kind, ExprKind::Literal(_))
-        });
+        let all_literals = elements
+            .iter()
+            .all(|elem| matches!(&elem.kind, ExprKind::Literal(_)));
 
         if all_literals && !elements.is_empty() {
             // Optimization: Create tuple at compile-time in constant pool
@@ -714,10 +708,8 @@ impl Compiler {
             let const_index = self.chunk.add_constant(tuple_value);
 
             let result_reg = self.registers.allocate();
-            self.chunk.emit(
-                Instruction::abx(OpCode::Const, result_reg, const_index),
-                0,
-            );
+            self.chunk
+                .emit(Instruction::abx(OpCode::Const, result_reg, const_index), 0);
             Ok(result_reg)
         } else {
             // Runtime tuple construction: compile elements to registers
@@ -750,7 +742,10 @@ impl Compiler {
     /// OPT-020: Support both literal and non-literal field values
     /// - All literals: Compile to constant pool (optimization)
     /// - Non-literals: Compile values to registers, emit `NewObject` opcode
-    fn compile_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<u8, String> {
+    fn compile_object_literal(
+        &mut self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<u8, String> {
         use crate::frontend::ast::ObjectField;
         use std::collections::HashMap;
 
@@ -786,10 +781,8 @@ impl Compiler {
             let const_index = self.chunk.add_constant(object_value);
 
             let result_reg = self.registers.allocate();
-            self.chunk.emit(
-                Instruction::abx(OpCode::Const, result_reg, const_index),
-                0,
-            );
+            self.chunk
+                .emit(Instruction::abx(OpCode::Const, result_reg, const_index), 0);
             Ok(result_reg)
         } else {
             // Runtime object construction: compile field values to registers
@@ -801,7 +794,10 @@ impl Compiler {
                         field_data.push((key.clone(), value_reg));
                     }
                     ObjectField::Spread { .. } => {
-                        return Err("Spread operator in object literals not yet supported in bytecode mode".to_string());
+                        return Err(
+                            "Spread operator in object literals not yet supported in bytecode mode"
+                                .to_string(),
+                        );
                     }
                 }
             }
@@ -864,9 +860,9 @@ impl Compiler {
         // Store for-loop metadata in constant pool
         // Format: [iter_reg, var_name, body_index]
         let loop_info = vec![
-            Value::Integer(i64::from(iter_reg)),  // Register holding the iterator
-            Value::from_string(var.to_string()),  // Loop variable name
-            Value::Integer(body_idx as i64),  // Index into chunk.loop_bodies
+            Value::Integer(i64::from(iter_reg)), // Register holding the iterator
+            Value::from_string(var.to_string()), // Loop variable name
+            Value::Integer(body_idx as i64),     // Index into chunk.loop_bodies
         ];
         let loop_info_value = Value::from_array(loop_info);
         let loop_info_idx = self.chunk.add_constant(loop_info_value);
@@ -876,10 +872,8 @@ impl Compiler {
 
         // Emit For instruction: ABx format
         // A = result register, Bx = loop_info constant index
-        self.chunk.emit(
-            Instruction::abx(OpCode::For, result_reg, loop_info_idx),
-            0,
-        );
+        self.chunk
+            .emit(Instruction::abx(OpCode::For, result_reg, loop_info_idx), 0);
 
         Ok(result_reg)
     }
@@ -889,7 +883,12 @@ impl Compiler {
     /// OPT-014: Hybrid approach - delegate to interpreter like for-loops
     /// Method calls require complex dispatch logic (stdlib, mutating methods, `DataFrame`, Actor),
     /// so we store the AST and let the VM execute via interpreter.
-    fn compile_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<u8, String> {
+    fn compile_method_call(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<u8, String> {
         // Store method call AST in chunk for interpreter access
         let method_call_idx = self.chunk.method_calls.len();
         self.chunk.method_calls.push((
@@ -920,13 +919,16 @@ impl Compiler {
     /// OPT-018: Hybrid approach - delegate to interpreter like for-loops
     /// Match expressions require complex pattern matching logic (destructuring, guards, scope management),
     /// so we store the AST and let the VM execute via interpreter.
-    fn compile_match(&mut self, expr: &Expr, arms: &[crate::frontend::ast::MatchArm]) -> Result<u8, String> {
+    fn compile_match(
+        &mut self,
+        expr: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+    ) -> Result<u8, String> {
         // Store match expression AST in chunk for interpreter access
         let match_idx = self.chunk.match_exprs.len();
-        self.chunk.match_exprs.push((
-            Arc::new(expr.clone()),
-            arms.to_vec(),
-        ));
+        self.chunk
+            .match_exprs
+            .push((Arc::new(expr.clone()), arms.to_vec()));
 
         // Store match index in constant pool
         let match_info_value = Value::Integer(match_idx as i64);
@@ -950,7 +952,11 @@ impl Compiler {
     /// OPT-019: Hybrid approach - delegate to interpreter like for-loops, method calls, match
     /// Closures require environment capture and complex scope management,
     /// so we store the AST and let the VM create the closure with captured environment.
-    fn compile_closure(&mut self, params: &[crate::frontend::ast::Param], body: &Expr) -> Result<u8, String> {
+    fn compile_closure(
+        &mut self,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+    ) -> Result<u8, String> {
         // Extract parameter names
         let param_names: Vec<String> = params
             .iter()
@@ -959,10 +965,9 @@ impl Compiler {
 
         // Store closure definition in chunk for runtime access
         let closure_idx = self.chunk.closures.len();
-        self.chunk.closures.push((
-            param_names,
-            Arc::new(body.clone()),
-        ));
+        self.chunk
+            .closures
+            .push((param_names, Arc::new(body.clone())));
 
         // Store closure index in constant pool
         let closure_info_value = Value::Integer(closure_idx as i64);
@@ -1010,7 +1015,8 @@ impl Compiler {
     /// Finalize compilation and return the bytecode chunk
     pub fn finalize(mut self) -> BytecodeChunk {
         // Emit return instruction with the last result register
-        self.chunk.emit(Instruction::abc(OpCode::Return, self.last_result, 0, 0), 0);
+        self.chunk
+            .emit(Instruction::abc(OpCode::Return, self.last_result, 0, 0), 0);
 
         // Update register count
         self.chunk.register_count = self.registers.max_count();
@@ -1047,8 +1053,15 @@ mod tests {
         let idx3 = chunk.add_constant(Value::Integer(100));
 
         assert_eq!(idx1, idx2, "Duplicate constants should return same index");
-        assert_ne!(idx1, idx3, "Different constants should have different indices");
-        assert_eq!(chunk.constants.len(), 2, "Should only store 2 unique constants");
+        assert_ne!(
+            idx1, idx3,
+            "Different constants should have different indices"
+        );
+        assert_eq!(
+            chunk.constants.len(),
+            2,
+            "Should only store 2 unique constants"
+        );
     }
 
     #[test]
@@ -1092,7 +1105,11 @@ mod tests {
 
         assert_eq!(result_reg, 0, "First expression should use register 0");
         assert_eq!(chunk.constants.len(), 1, "Should have 1 constant");
-        assert_eq!(chunk.instructions.len(), 2, "Should have CONST + RETURN instructions");
+        assert_eq!(
+            chunk.instructions.len(),
+            2,
+            "Should have CONST + RETURN instructions"
+        );
 
         // Verify CONST instruction
         let const_instr = chunk.instructions[0];
@@ -1140,11 +1157,23 @@ mod tests {
 
         // Block with 3 expressions: 1, 2, 3
         let exprs = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(1, None)), crate::frontend::ast::Span::default()),
-            Expr::new(ExprKind::Literal(Literal::Integer(2, None)), crate::frontend::ast::Span::default()),
-            Expr::new(ExprKind::Literal(Literal::Integer(3, None)), crate::frontend::ast::Span::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                crate::frontend::ast::Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                crate::frontend::ast::Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(3, None)),
+                crate::frontend::ast::Span::default(),
+            ),
         ];
-        let block = Expr::new(ExprKind::Block(exprs), crate::frontend::ast::Span::default());
+        let block = Expr::new(
+            ExprKind::Block(exprs),
+            crate::frontend::ast::Span::default(),
+        );
 
         let result_reg = compiler.compile_expr(&block).expect("Compilation failed");
         let chunk = compiler.finalize();
@@ -1189,11 +1218,16 @@ mod tests {
 
         // Should have:
         // CONST (true), JUMP_IF_FALSE, CONST (42), MOVE, JUMP, CONST (0), MOVE, RETURN
-        assert!(chunk.instructions.len() >= 7, "Should have at least 7 instructions");
+        assert!(
+            chunk.instructions.len() >= 7,
+            "Should have at least 7 instructions"
+        );
         assert_eq!(chunk.constants.len(), 3, "Should have 3 constants");
 
         // Verify conditional jump exists
-        let jump_if_false_found = chunk.instructions.iter()
+        let jump_if_false_found = chunk
+            .instructions
+            .iter()
             .any(|i| i.opcode() == OpCode::JumpIfFalse.to_u8());
         assert!(jump_if_false_found, "Should have JumpIfFalse instruction");
 
@@ -1227,10 +1261,15 @@ mod tests {
         let chunk = compiler.finalize();
 
         // Should have: CONST (true), JUMP_IF_FALSE, CONST (42), MOVE, RETURN
-        assert!(chunk.instructions.len() >= 4, "Should have at least 4 instructions");
+        assert!(
+            chunk.instructions.len() >= 4,
+            "Should have at least 4 instructions"
+        );
 
         // Verify conditional jump exists
-        let jump_if_false_found = chunk.instructions.iter()
+        let jump_if_false_found = chunk
+            .instructions
+            .iter()
             .any(|i| i.opcode() == OpCode::JumpIfFalse.to_u8());
         assert!(jump_if_false_found, "Should have JumpIfFalse instruction");
 
@@ -1267,10 +1306,15 @@ mod tests {
         let chunk = compiler.finalize();
 
         // Should have: LOAD_GLOBAL(foo), CONST(1), CONST(2), CALL, RETURN
-        assert!(chunk.instructions.len() >= 5, "Should have at least 5 instructions");
+        assert!(
+            chunk.instructions.len() >= 5,
+            "Should have at least 5 instructions"
+        );
 
         // Verify CALL instruction exists
-        let call_found = chunk.instructions.iter()
+        let call_found = chunk
+            .instructions
+            .iter()
             .any(|i| i.opcode() == OpCode::Call.to_u8());
         assert!(call_found, "Should have Call instruction");
 

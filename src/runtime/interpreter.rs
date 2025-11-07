@@ -98,8 +98,8 @@ pub enum Value {
     },
     /// Enum variant value
     EnumVariant {
-        enum_name: String,       // The enum type (e.g., "LogLevel")
-        variant_name: String,    // The variant (e.g., "Debug", "Info")
+        enum_name: String,    // The enum type (e.g., "LogLevel")
+        variant_name: String, // The variant (e.g., "Debug", "Info")
         data: Option<Vec<Value>>,
     },
     /// Built-in function reference
@@ -139,7 +139,16 @@ impl PartialEq for Value {
             (Value::Tuple(a), Value::Tuple(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Arc::ptr_eq(a, b) || **a == **b,
             (Value::ObjectMut(a), Value::ObjectMut(b)) => Arc::ptr_eq(a, b), // Identity-based
-            (Value::Struct { name: n1, fields: f1 }, Value::Struct { name: n2, fields: f2 }) => {
+            (
+                Value::Struct {
+                    name: n1,
+                    fields: f1,
+                },
+                Value::Struct {
+                    name: n2,
+                    fields: f2,
+                },
+            ) => {
                 n1 == n2 && **f1 == **f2 // Value equality (compare fields)
             }
             (Value::Class { fields: f1, .. }, Value::Class { fields: f2, .. }) => {
@@ -311,7 +320,7 @@ pub enum InterpreterError {
     Break(Option<String>, Value),
     Continue(Option<String>),
     Return(Value),
-    Throw(Value), // EXTREME TDD: Exception handling
+    Throw(Value),                         // EXTREME TDD: Exception handling
     AssertionFailed(std::string::String), // BUG-037: Test assertions
     /// Recursion depth limit exceeded (`current_depth`, `max_depth`)
     /// Added via [RUNTIME-001] fix for stack overflow crashes
@@ -844,7 +853,7 @@ impl Interpreter {
             type_feedback: TypeFeedback::new(),
             gc: ConservativeGC::new(),
             error_scopes: Vec::new(),
-            stdout_buffer: Vec::new(),       // Initialize empty stdout buffer
+            stdout_buffer: Vec::new(), // Initialize empty stdout buffer
             module_loader: crate::backend::module_loader::ModuleLoader::new(), // Issue #88
         }
     }
@@ -1254,7 +1263,8 @@ impl Interpreter {
 
                         // Add to global environment
                         if let Some(global_env_ref) = self.env_stack.first() {
-                            global_env_ref.borrow_mut().insert(import_name, value); // ISSUE-119: Mutable borrow
+                            global_env_ref.borrow_mut().insert(import_name, value);
+                            // ISSUE-119: Mutable borrow
                         }
                     }
 
@@ -1263,11 +1273,12 @@ impl Interpreter {
 
                 // Issue #88: Load file module from file system and execute it
                 // Example: `use mylib;` loads mylib.ruchy
-                let parsed_module = self.module_loader
-                    .load_module(module)
-                    .map_err(|e| InterpreterError::RuntimeError(
-                        format!("Failed to load module '{}': {}", module, e)
-                    ))?;
+                let parsed_module = self.module_loader.load_module(module).map_err(|e| {
+                    InterpreterError::RuntimeError(format!(
+                        "Failed to load module '{}': {}",
+                        module, e
+                    ))
+                })?;
 
                 // Create a new environment scope for the module
                 // ISSUE-119: Wrap in Rc<RefCell> for shared mutable access
@@ -1292,7 +1303,10 @@ impl Interpreter {
                 // Add the module object to global environment
                 // This allows `mylib::add` to work via field access
                 if let Some(global_env_ref) = self.env_stack.first() {
-                    global_env_ref.borrow_mut().insert(module.clone(), Value::Object(module_object.into())); // ISSUE-119: Mutable borrow
+                    global_env_ref
+                        .borrow_mut()
+                        .insert(module.clone(), Value::Object(module_object.into()));
+                    // ISSUE-119: Mutable borrow
                 }
 
                 Ok(Value::Nil)
@@ -1344,7 +1358,10 @@ impl Interpreter {
                                         if chars.peek() == Some(&'}') {
                                             chars.next();
                                             if value_index < values.len() {
-                                                result.push_str(&format!("{:?}", values[value_index]));
+                                                result.push_str(&format!(
+                                                    "{:?}",
+                                                    values[value_index]
+                                                ));
                                                 value_index += 1;
                                             } else {
                                                 result.push_str("{:?}");
@@ -1378,7 +1395,7 @@ impl Interpreter {
                     // format!() macro: Format string with placeholders (Issue #83)
                     if args.is_empty() {
                         return Err(InterpreterError::RuntimeError(
-                            "format!() requires at least one argument".to_string()
+                            "format!() requires at least one argument".to_string(),
                         ));
                     }
 
@@ -1438,7 +1455,8 @@ impl Interpreter {
                 } else {
                     // Other macros not yet implemented
                     Err(InterpreterError::RuntimeError(format!(
-                        "Macro '{}!' not yet implemented", name
+                        "Macro '{}!' not yet implemented",
+                        name
                     )))
                 }
             }
@@ -1486,7 +1504,10 @@ impl Interpreter {
                                         if chars.peek() == Some(&'}') {
                                             chars.next();
                                             if value_index < values.len() {
-                                                result.push_str(&format!("{:?}", values[value_index]));
+                                                result.push_str(&format!(
+                                                    "{:?}",
+                                                    values[value_index]
+                                                ));
                                                 value_index += 1;
                                             } else {
                                                 result.push_str("{:?}");
@@ -1520,7 +1541,7 @@ impl Interpreter {
                     // format!() macro: Format string with placeholders (Issue #83)
                     if args.is_empty() {
                         return Err(InterpreterError::RuntimeError(
-                            "format!() requires at least one argument".to_string()
+                            "format!() requires at least one argument".to_string(),
                         ));
                     }
 
@@ -1579,7 +1600,8 @@ impl Interpreter {
                     Ok(Value::from_string(result))
                 } else {
                     Err(InterpreterError::RuntimeError(format!(
-                        "Macro '{}!' not yet implemented", name
+                        "Macro '{}!' not yet implemented",
+                        name
                     )))
                 }
             }
@@ -1631,9 +1653,15 @@ impl Interpreter {
                     }
                     // Case 2: Object representation (function return values)
                     // Result is represented as Object with __type="Message", type="Ok"/"Err"
-                    Value::Object(obj) if obj.get("__type").and_then(|v| {
-                        if let Value::String(s) = v { Some(s.as_ref()) } else { None }
-                    }) == Some("Message") => {
+                    Value::Object(obj)
+                        if obj.get("__type").and_then(|v| {
+                            if let Value::String(s) = v {
+                                Some(s.as_ref())
+                            } else {
+                                None
+                            }
+                        }) == Some("Message") =>
+                    {
                         // Extract the "type" field (Ok or Err)
                         if let Some(Value::String(variant)) = obj.get("type") {
                             match variant.as_ref() {
@@ -1880,9 +1908,14 @@ impl Interpreter {
         match (&object_value, &index_value) {
             (Value::Array(ref array), Value::Integer(idx)) => Self::index_array(array, *idx),
             (Value::String(ref s), Value::Integer(idx)) => Self::index_string(s, *idx),
-            (Value::String(ref s), Value::Range { start, end, inclusive }) => {
-                Self::slice_string(s, start, end, *inclusive)
-            }
+            (
+                Value::String(ref s),
+                Value::Range {
+                    start,
+                    end,
+                    inclusive,
+                },
+            ) => Self::slice_string(s, start, end, *inclusive),
             (Value::Tuple(ref tuple), Value::Integer(idx)) => Self::index_tuple(tuple, *idx),
             (Value::Object(ref fields), Value::String(ref key)) => Self::index_object(fields, key),
             (Value::ObjectMut(ref cell), Value::String(ref key)) => {
@@ -2112,7 +2145,9 @@ impl Interpreter {
             .find(|col| col.name == col_name)
             .map(|col| Value::Array(Arc::from(col.values.clone())))
             .ok_or_else(|| {
-                InterpreterError::RuntimeError(format!("Column '{col_name}' not found in DataFrame"))
+                InterpreterError::RuntimeError(format!(
+                    "Column '{col_name}' not found in DataFrame"
+                ))
             })
     }
 
@@ -2167,7 +2202,10 @@ impl Interpreter {
                 self.access_object_field(object_map, field)
             }
             Value::ObjectMut(ref cell) => self.access_object_mut_field(cell, field),
-            Value::Struct { ref name, ref fields } => {
+            Value::Struct {
+                ref name,
+                ref fields,
+            } => {
                 // Struct field access
                 fields.get(field).cloned().ok_or_else(|| {
                     InterpreterError::RuntimeError(format!(
@@ -2435,7 +2473,8 @@ impl Interpreter {
 
                 // Look up the class or struct
                 for env_ref in self.env_stack.iter().rev() {
-                    if let Some(value) = env_ref.borrow().get(type_name) { // ISSUE-119: Borrow from RefCell
+                    if let Some(value) = env_ref.borrow().get(type_name) {
+                        // ISSUE-119: Borrow from RefCell
                         if let Value::Object(ref info) = value {
                             // Check if it's a class or struct
                             if let Some(Value::String(ref type_str)) = info.get("__type") {
@@ -2492,10 +2531,7 @@ impl Interpreter {
         if name == "JSON" {
             // Return a marker object that has parse and stringify methods
             let mut json_obj = HashMap::new();
-            json_obj.insert(
-                "__type".to_string(),
-                Value::from_string("JSON".to_string()),
-            );
+            json_obj.insert("__type".to_string(), Value::from_string("JSON".to_string()));
             return Ok(Value::Object(Arc::new(json_obj)));
         }
 
@@ -2503,16 +2539,14 @@ impl Interpreter {
         if name == "File" {
             // Return a marker object with __type for namespace dispatch
             let mut file_obj = HashMap::new();
-            file_obj.insert(
-                "__type".to_string(),
-                Value::from_string("File".to_string()),
-            );
+            file_obj.insert("__type".to_string(), Value::from_string("File".to_string()));
             return Ok(Value::Object(Arc::new(file_obj)));
         }
 
         // Normal variable lookup
         for env_ref in self.env_stack.iter().rev() {
-            if let Some(value) = env_ref.borrow().get(name) { // ISSUE-119: Borrow from RefCell
+            if let Some(value) = env_ref.borrow().get(name) {
+                // ISSUE-119: Borrow from RefCell
                 return Ok(value.clone());
             }
         }
@@ -2523,7 +2557,7 @@ impl Interpreter {
 
     /// Get the current (innermost) environment
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
-    // ISSUE-119: Returns reference to Rc<RefCell<HashMap>> instead of plain HashMap
+                                  // ISSUE-119: Returns reference to Rc<RefCell<HashMap>> instead of plain HashMap
     pub fn current_env(&self) -> &Rc<RefCell<HashMap<String, Value>>> {
         self.env_stack
             .last()
@@ -2564,8 +2598,11 @@ impl Interpreter {
         self.record_variable_assignment_feedback(&name, &value);
 
         // Search from innermost to outermost scope for existing variable
-        for env_ref in self.env_stack.iter().rev() { // ISSUE-119: Use iter() not iter_mut()
-            if let std::collections::hash_map::Entry::Occupied(mut e) = env_ref.borrow_mut().entry(name.clone()) {
+        for env_ref in self.env_stack.iter().rev() {
+            // ISSUE-119: Use iter() not iter_mut()
+            if let std::collections::hash_map::Entry::Occupied(mut e) =
+                env_ref.borrow_mut().entry(name.clone())
+            {
                 // Found existing variable - mutate it in place
                 e.insert(value);
                 return;
@@ -2886,8 +2923,7 @@ impl Interpreter {
                     if let Some(Value::Object(enum_def)) = self.get_variable(enum_name) {
                         if let Some(Value::Object(variants)) = enum_def.get("__variants") {
                             if let Some(Value::Object(variant_info)) = variants.get(variant_name) {
-                                if let Some(Value::Integer(disc)) =
-                                    variant_info.get("discriminant")
+                                if let Some(Value::Integer(disc)) = variant_info.get("discriminant")
                                 {
                                     return Ok(Value::Integer(*disc));
                                 }
@@ -2916,7 +2952,14 @@ impl Interpreter {
 
             // Enum variant to Integer - variable case (e.g., level as i32)
             // Now supported via discriminant lookup using stored enum_name
-            (Value::EnumVariant { enum_name, variant_name, .. }, "i32" | "i64" | "isize") => {
+            (
+                Value::EnumVariant {
+                    enum_name,
+                    variant_name,
+                    ..
+                },
+                "i32" | "i64" | "isize",
+            ) => {
                 // Lookup enum definition in environment
                 if let Some(Value::Object(enum_def)) = self.get_variable(&enum_name) {
                     if let Some(Value::Object(variants)) = enum_def.get("__variants") {
@@ -3047,9 +3090,8 @@ impl Interpreter {
 
     /// ISSUE-117: Parse JSON string into Value (complexity: 8)
     fn json_parse(&self, json_str: &str) -> Result<Value, InterpreterError> {
-        let json_value: serde_json::Value = serde_json::from_str(json_str).map_err(|e| {
-            InterpreterError::RuntimeError(format!("JSON.parse() failed: {}", e))
-        })?;
+        let json_value: serde_json::Value = serde_json::from_str(json_str)
+            .map_err(|e| InterpreterError::RuntimeError(format!("JSON.parse() failed: {}", e)))?;
         Self::serde_to_value(&json_value)
     }
 
@@ -3501,16 +3543,21 @@ impl Interpreter {
 
     /// Set a binding in the global environment (for `SharedSession` state restoration)
     pub fn set_global_binding(&mut self, name: String, value: Value) {
-        if let Some(global_env) = self.env_stack.first() { // ISSUE-119: Use first() not first_mut()
+        if let Some(global_env) = self.env_stack.first() {
+            // ISSUE-119: Use first() not first_mut()
             global_env.borrow_mut().insert(name, value); // ISSUE-119: Mutable borrow from RefCell
         }
     }
 
     /// Clear all user variables from global environment, keeping only builtins
     pub fn clear_user_variables(&mut self) {
-        if let Some(global_env) = self.env_stack.first() { // ISSUE-119: Use first() not first_mut()
+        if let Some(global_env) = self.env_stack.first() {
+            // ISSUE-119: Use first() not first_mut()
             // Keep only builtin functions (those starting with "__builtin_") and nil
-            global_env.borrow_mut().retain(|name, _| name.starts_with("__builtin_") || name == "nil"); // ISSUE-119
+            global_env
+                .borrow_mut()
+                .retain(|name, _| name.starts_with("__builtin_") || name == "nil");
+            // ISSUE-119
         }
     }
 
@@ -3752,7 +3799,11 @@ impl Interpreter {
     }
 
     /// Evaluate a match expression
-    pub fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
+    pub fn eval_match(
+        &mut self,
+        expr: &Expr,
+        arms: &[MatchArm],
+    ) -> Result<Value, InterpreterError> {
         let value = self.eval_expr(expr)?;
 
         for arm in arms {
@@ -3950,7 +4001,10 @@ impl Interpreter {
                                 fields_write.insert(field.clone(), val.clone());
                                 Ok(val)
                             }
-                            Value::Struct { ref name, ref fields } => {
+                            Value::Struct {
+                                ref name,
+                                ref fields,
+                            } => {
                                 // Struct: create new copy with updated field (value semantics)
                                 let mut new_fields = (**fields).clone();
                                 new_fields.insert(field.clone(), val.clone());
@@ -3975,9 +4029,7 @@ impl Interpreter {
                 }
             }
             // BUG-003: Support array index assignment (arr[i] = value)
-            ExprKind::IndexAccess { object, index } => {
-                self.eval_index_assign(object, index, val)
-            }
+            ExprKind::IndexAccess { object, index } => self.eval_index_assign(object, index, val),
             _ => Err(InterpreterError::RuntimeError(
                 "Invalid assignment target".to_string(),
             )),
@@ -4170,10 +4222,13 @@ impl Interpreter {
             let namespace_method = format!("{namespace}_{method}");
 
             // Try to evaluate as builtin function first
-            let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
+            let arg_values: Result<Vec<_>, _> =
+                args.iter().map(|arg| self.eval_expr(arg)).collect();
             let arg_values = arg_values?;
 
-            if let Ok(Some(result)) = crate::runtime::eval_builtin::eval_builtin_function(&namespace_method, &arg_values) {
+            if let Ok(Some(result)) =
+                crate::runtime::eval_builtin::eval_builtin_function(&namespace_method, &arg_values)
+            {
                 return Ok(result);
             }
         }
@@ -4340,7 +4395,9 @@ impl Interpreter {
             Value::Array(arr) => self.eval_array_method(arr, base_method, arg_values),
             Value::Float(f) => self.eval_float_method(*f, base_method, args_empty),
             Value::Integer(n) => self.eval_integer_method(*n, base_method, arg_values),
-            Value::DataFrame { columns } => self.eval_dataframe_method(columns, base_method, arg_values),
+            Value::DataFrame { columns } => {
+                self.eval_dataframe_method(columns, base_method, arg_values)
+            }
             Value::Object(obj) => {
                 // Check if this is a type definition with constructor
                 if base_method == "new" {
@@ -4366,17 +4423,32 @@ impl Interpreter {
 
                 // Check if this is an actor instance
                 if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    self.eval_actor_instance_method(obj, actor_name.as_ref(), base_method, arg_values)
+                    self.eval_actor_instance_method(
+                        obj,
+                        actor_name.as_ref(),
+                        base_method,
+                        arg_values,
+                    )
                 }
                 // Check if this is a class instance
                 else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    self.eval_class_instance_method(obj, class_name.as_ref(), base_method, arg_values)
+                    self.eval_class_instance_method(
+                        obj,
+                        class_name.as_ref(),
+                        base_method,
+                        arg_values,
+                    )
                 }
                 // Check if this is a struct instance with impl methods
                 else if let Some(Value::String(struct_name)) =
                     obj.get("__struct_type").or_else(|| obj.get("__struct"))
                 {
-                    self.eval_struct_instance_method(obj, struct_name.as_ref(), base_method, arg_values)
+                    self.eval_struct_instance_method(
+                        obj,
+                        struct_name.as_ref(),
+                        base_method,
+                        arg_values,
+                    )
                 }
                 // Check if this is a `DataFrame` builder
                 else if let Some(Value::String(type_str)) = obj.get("__type") {
@@ -4452,12 +4524,22 @@ impl Interpreter {
                 methods,
             } => {
                 // Dispatch instance method call on Class
-                self.eval_class_instance_method_on_class(class_name, fields, methods, base_method, arg_values)
+                self.eval_class_instance_method_on_class(
+                    class_name,
+                    fields,
+                    methods,
+                    base_method,
+                    arg_values,
+                )
             }
             #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlDocument(doc) => self.eval_html_document_method(doc, base_method, arg_values),
+            Value::HtmlDocument(doc) => {
+                self.eval_html_document_method(doc, base_method, arg_values)
+            }
             #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlElement(elem) => self.eval_html_element_method(elem, base_method, arg_values),
+            Value::HtmlElement(elem) => {
+                self.eval_html_element_method(elem, base_method, arg_values)
+            }
             _ => self.eval_generic_method(receiver, base_method, args_empty),
         }
     }
@@ -4507,13 +4589,11 @@ impl Interpreter {
                 }
                 match &arg_values[0] {
                     Value::String(selector) => {
-                        let elements = doc
-                            .select(selector.as_ref())
-                            .map_err(|e| InterpreterError::RuntimeError(format!("select() failed: {e}")))?;
-                        let values: Vec<Value> = elements
-                            .into_iter()
-                            .map(Value::HtmlElement)
-                            .collect();
+                        let elements = doc.select(selector.as_ref()).map_err(|e| {
+                            InterpreterError::RuntimeError(format!("select() failed: {e}"))
+                        })?;
+                        let values: Vec<Value> =
+                            elements.into_iter().map(Value::HtmlElement).collect();
                         Ok(Value::Array(values.into()))
                     }
                     _ => Err(InterpreterError::RuntimeError(
@@ -4529,9 +4609,9 @@ impl Interpreter {
                 }
                 match &arg_values[0] {
                     Value::String(selector) => {
-                        let element = doc
-                            .query_selector(selector.as_ref())
-                            .map_err(|e| InterpreterError::RuntimeError(format!("query_selector() failed: {e}")))?;
+                        let element = doc.query_selector(selector.as_ref()).map_err(|e| {
+                            InterpreterError::RuntimeError(format!("query_selector() failed: {e}"))
+                        })?;
                         Ok(element.map_or(Value::Nil, Value::HtmlElement))
                     }
                     _ => Err(InterpreterError::RuntimeError(
@@ -4547,13 +4627,13 @@ impl Interpreter {
                 }
                 match &arg_values[0] {
                     Value::String(selector) => {
-                        let elements = doc
-                            .query_selector_all(selector.as_ref())
-                            .map_err(|e| InterpreterError::RuntimeError(format!("query_selector_all() failed: {e}")))?;
-                        let values: Vec<Value> = elements
-                            .into_iter()
-                            .map(Value::HtmlElement)
-                            .collect();
+                        let elements = doc.query_selector_all(selector.as_ref()).map_err(|e| {
+                            InterpreterError::RuntimeError(format!(
+                                "query_selector_all() failed: {e}"
+                            ))
+                        })?;
+                        let values: Vec<Value> =
+                            elements.into_iter().map(Value::HtmlElement).collect();
                         Ok(Value::Array(values.into()))
                     }
                     _ => Err(InterpreterError::RuntimeError(
@@ -5745,10 +5825,7 @@ impl Interpreter {
         let mut enum_type = HashMap::new();
 
         // Store enum metadata
-        enum_type.insert(
-            "__type".to_string(),
-            Value::from_string("Enum".to_string()),
-        );
+        enum_type.insert("__type".to_string(), Value::from_string("Enum".to_string()));
         enum_type.insert("__name".to_string(), Value::from_string(name.to_string()));
 
         // Store variant definitions
@@ -6388,9 +6465,7 @@ impl Interpreter {
             // Execute the init constructor if present
             if let Some(Value::Object(ref constructors)) = class_info.get("__constructors") {
                 // Look for "init" or "new" constructor
-                let constructor = constructors
-                    .get("init")
-                    .or_else(|| constructors.get("new"));
+                let constructor = constructors.get("init").or_else(|| constructors.get("new"));
 
                 if let Some(constructor) = constructor {
                     if let Value::Closure {
@@ -7430,26 +7505,23 @@ impl Interpreter {
                 }
 
                 // ISSUE-116: File.open() method
-                if type_name == "File"
-                    && field == "open" {
-                        if args.len() != 1 {
-                            return Err(InterpreterError::RuntimeError(format!(
-                                "File.open() requires exactly 1 argument, got {}",
-                                args.len()
-                            )));
-                        }
-                        let path_val = self.eval_expr(&args[0])?;
-                        // Call builtin File_open through eval_builtin_function
-                        return crate::runtime::eval_builtin::eval_builtin_function(
-                            "File_open",
-                            &[path_val],
-                        )?
-                        .ok_or_else(|| {
-                            InterpreterError::RuntimeError(
-                                "File_open builtin not found".to_string(),
-                            )
-                        });
+                if type_name == "File" && field == "open" {
+                    if args.len() != 1 {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "File.open() requires exactly 1 argument, got {}",
+                            args.len()
+                        )));
                     }
+                    let path_val = self.eval_expr(&args[0])?;
+                    // Call builtin File_open through eval_builtin_function
+                    return crate::runtime::eval_builtin::eval_builtin_function(
+                        "File_open",
+                        &[path_val],
+                    )?
+                    .ok_or_else(|| {
+                        InterpreterError::RuntimeError("File_open builtin not found".to_string())
+                    });
+                }
 
                 // REGRESSION-077: Check for user-defined struct impl methods
                 // impl methods are stored with qualified names like "Logger::new_with_options"
@@ -7476,7 +7548,9 @@ impl Interpreter {
                 args.iter().map(|arg| self.eval_expr(arg)).collect();
             let arg_vals = arg_vals?;
 
-            if let Ok(Some(result)) = crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals) {
+            if let Ok(Some(result)) =
+                crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals)
+            {
                 return Ok(result);
             }
         }
@@ -7515,7 +7589,12 @@ impl Interpreter {
         let arg_vals = arg_vals?;
 
         // Special handling for enum variant construction with arguments (tuple variants)
-        if let Value::EnumVariant { enum_name, variant_name, data: _ } = func_val {
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data: _,
+        } = func_val
+        {
             // This is a tuple variant constructor: Response::Error("msg")
             return Ok(Value::EnumVariant {
                 enum_name,
@@ -7557,7 +7636,12 @@ impl Interpreter {
                 Value::String(s) => format!("\"{}\"", s),
                 other => other.to_string(),
             };
-            println!("TRACE: ← {} = {}: {}", func_name, result_str, result.type_name());
+            println!(
+                "TRACE: ← {} = {}: {}",
+                func_name,
+                result_str,
+                result.type_name()
+            );
         }
 
         // Collect type feedback for function call
@@ -7600,7 +7684,8 @@ impl Interpreter {
     pub fn get_variable(&self, name: &str) -> Option<Value> {
         // Search from innermost to outermost scope
         for env in self.env_stack.iter().rev() {
-            if let Some(value) = env.borrow().get(name) { // ISSUE-119: Borrow from RefCell
+            if let Some(value) = env.borrow().get(name) {
+                // ISSUE-119: Borrow from RefCell
                 return Some(value.clone());
             }
         }
@@ -7861,7 +7946,10 @@ mod negative_indexing_tests {
         let ast = parser.parse().expect("Parse failed");
         let mut interpreter = Interpreter::new();
         let result = interpreter.eval_expr(&ast);
-        assert!(result.is_err(), "Should fail for out-of-bounds negative index");
+        assert!(
+            result.is_err(),
+            "Should fail for out-of-bounds negative index"
+        );
     }
 
     #[test]

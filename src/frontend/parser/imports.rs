@@ -89,7 +89,7 @@ pub fn parse_from_import_statement(state: &mut ParserState) -> Result<Expr> {
 // Helper: Parse wildcard import (from module import *)
 fn parse_wildcard_import_items(state: &mut ParserState) -> Result<Option<Vec<String>>> {
     state.tokens.advance(); // consume *
-    // Use an empty vector to indicate wildcard import
+                            // Use an empty vector to indicate wildcard import
     Ok(Some(vec![]))
 }
 
@@ -220,7 +220,8 @@ fn parse_module_path(state: &mut ParserState) -> Result<String> {
     // Parse additional dot-separated or :: -separated parts
     // DEFECT-PARSER-013 FIX: Accept both . and :: as separators
     while matches!(state.tokens.peek(), Some((Token::Dot, _)))
-        || matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        || matches!(state.tokens.peek(), Some((Token::ColonColon, _)))
+    {
         state.tokens.advance(); // consume dot or ::
 
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {

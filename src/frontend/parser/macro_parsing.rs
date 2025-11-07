@@ -182,7 +182,10 @@ pub fn parse_vec_macro(state: &mut ParserState) -> Result<Option<Expr>> {
             state.tokens.expect(&Token::RightBracket)?;
 
             // Return MacroInvocation with two args: [value_expr, size_expr]
-            Ok(Some(create_macro_expr("vec".to_string(), vec![first_expr, size_expr])))
+            Ok(Some(create_macro_expr(
+                "vec".to_string(),
+                vec![first_expr, size_expr],
+            )))
         }
         Some((Token::Comma, _)) => {
             // Element list: vec![a, b, c, ...]

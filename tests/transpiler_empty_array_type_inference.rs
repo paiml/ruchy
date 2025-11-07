@@ -174,7 +174,13 @@ fn test_transpiler_type_compile_bench_002() {
     fs::write(temp_file, code_str.clone()).expect("Write temp file");
 
     let output = Command::new("rustc")
-        .args(["--crate-type", "bin", "-o", "/tmp/bench_002_test", temp_file])
+        .args([
+            "--crate-type",
+            "bin",
+            "-o",
+            "/tmp/bench_002_test",
+            temp_file,
+        ])
         .output()
         .expect("rustc should run");
 

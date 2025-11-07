@@ -38,8 +38,7 @@ fn execute_bytecode(source: &str) -> Result<Value, String> {
         .map_err(|e| format!("Compilation error: {e}"))?;
     let chunk = compiler.finalize();
     let mut vm = VM::new();
-    vm.execute(&chunk)
-        .map_err(|e| format!("VM error: {e}"))
+    vm.execute(&chunk).map_err(|e| format!("VM error: {e}"))
 }
 
 /// Helper: Assert AST and bytecode produce same result
@@ -255,10 +254,7 @@ fn test_opt_004_05_if_with_arithmetic() {
 
 #[test]
 fn test_opt_004_05_if_expression_as_operand() {
-    assert_semantic_equivalence(
-        "(if true { 40 } else { 0 }) + 2",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("(if true { 40 } else { 0 }) + 2", Value::Integer(42));
 }
 
 // ============================================================================
@@ -292,26 +288,17 @@ fn test_opt_004_07_fibonacci_formula() {
 
 #[test]
 fn test_opt_004_07_boolean_algebra() {
-    assert_semantic_equivalence(
-        "(true && false) || (true && true)",
-        Value::Bool(true),
-    );
+    assert_semantic_equivalence("(true && false) || (true && true)", Value::Bool(true));
 }
 
 #[test]
 fn test_opt_004_07_arithmetic_with_comparisons() {
-    assert_semantic_equivalence(
-        "if (10 + 5) > 12 { 42 } else { 0 }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("if (10 + 5) > 12 { 42 } else { 0 }", Value::Integer(42));
 }
 
 #[test]
 fn test_opt_004_07_nested_arithmetic() {
-    assert_semantic_equivalence(
-        "((10 + 5) * 2) + ((20 - 8) / 2)",
-        Value::Integer(36),
-    );
+    assert_semantic_equivalence("((10 + 5) * 2) + ((20 - 8) / 2)", Value::Integer(36));
 }
 
 #[test]
@@ -329,10 +316,7 @@ fn test_opt_004_07_block_in_arithmetic() {
 
 #[test]
 fn test_opt_004_07_if_in_block() {
-    assert_semantic_equivalence(
-        "{ if true { 42 } else { 0 } }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ if true { 42 } else { 0 } }", Value::Integer(42));
 }
 
 #[test]
@@ -342,10 +326,7 @@ fn test_opt_004_07_arithmetic_chain() {
 
 #[test]
 fn test_opt_004_07_comparison_chain() {
-    assert_semantic_equivalence(
-        "(10 < 20) && (20 < 30) && (30 < 40)",
-        Value::Bool(true),
-    );
+    assert_semantic_equivalence("(10 < 20) && (20 < 30) && (30 < 40)", Value::Bool(true));
 }
 
 // ============================================================================
@@ -355,19 +336,13 @@ fn test_opt_004_07_comparison_chain() {
 #[test]
 fn test_opt_004_08_while_loop_false_condition() {
     // While loop that never executes (condition is false)
-    assert_semantic_equivalence(
-        "while false { 42 }",
-        Value::Nil,
-    );
+    assert_semantic_equivalence("while false { 42 }", Value::Nil);
 }
 
 #[test]
 fn test_opt_004_08_while_loop_then_value() {
     // While loop followed by another expression in block
-    assert_semantic_equivalence(
-        "{ while false { 42 }; 5 }",
-        Value::Integer(5),
-    );
+    assert_semantic_equivalence("{ while false { 42 }; 5 }", Value::Integer(5));
 }
 
 #[test]
@@ -422,10 +397,7 @@ fn test_opt_004_08_while_loop_result_after() {
 #[test]
 fn test_opt_004_09_simple_assignment() {
     // Simple variable assignment
-    assert_semantic_equivalence(
-        "{ let mut x = 10; x = 42; x }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ let mut x = 10; x = 42; x }", Value::Integer(42));
 }
 
 #[test]
@@ -440,10 +412,7 @@ fn test_opt_004_09_assignment_returns_value() {
 #[test]
 fn test_opt_004_09_assignment_with_arithmetic() {
     // Assignment with arithmetic expression (self-referencing)
-    assert_semantic_equivalence(
-        "{ let mut x = 10; x = x + 32; x }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ let mut x = 10; x = x + 32; x }", Value::Integer(42));
 }
 
 #[test]
@@ -458,10 +427,7 @@ fn test_opt_004_09_multiple_assignments() {
 #[test]
 fn test_opt_004_09_assignment_in_expression() {
     // Assignment used in larger expression
-    assert_semantic_equivalence(
-        "{ let mut x = 10; (x = 40) + 2 }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ let mut x = 10; (x = 40) + 2 }", Value::Integer(42));
 }
 
 // ============================================================================
@@ -471,10 +437,7 @@ fn test_opt_004_09_assignment_in_expression() {
 #[test]
 fn test_opt_004_10_simple_function_call() {
     // Simple function call with no arguments
-    assert_semantic_equivalence(
-        "{ fn answer() { 42 }; answer() }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ fn answer() { 42 }; answer() }", Value::Integer(42));
 }
 
 #[test]
@@ -569,46 +532,31 @@ fn test_opt_004_11_for_loop_in_function() {
 #[test]
 fn test_opt_004_12_simple_array_index() {
     // Basic array indexing
-    assert_semantic_equivalence(
-        "[1, 2, 3][0]",
-        Value::Integer(1),
-    );
+    assert_semantic_equivalence("[1, 2, 3][0]", Value::Integer(1));
 }
 
 #[test]
 fn test_opt_004_12_array_index_middle() {
     // Index middle element
-    assert_semantic_equivalence(
-        "[10, 20, 30][1]",
-        Value::Integer(20),
-    );
+    assert_semantic_equivalence("[10, 20, 30][1]", Value::Integer(20));
 }
 
 #[test]
 fn test_opt_004_12_array_index_last() {
     // Index last element (positive index)
-    assert_semantic_equivalence(
-        "[5, 10, 15][2]",
-        Value::Integer(15),
-    );
+    assert_semantic_equivalence("[5, 10, 15][2]", Value::Integer(15));
 }
 
 #[test]
 fn test_opt_004_12_array_index_negative() {
     // Negative indexing: -1 is last element
-    assert_semantic_equivalence(
-        "[10, 20, 30][-1]",
-        Value::Integer(30),
-    );
+    assert_semantic_equivalence("[10, 20, 30][-1]", Value::Integer(30));
 }
 
 #[test]
 fn test_opt_004_12_array_index_with_let() {
     // Array indexing with variable
-    assert_semantic_equivalence(
-        "{ let arr = [1, 2, 3]; arr[1] }",
-        Value::Integer(2),
-    );
+    assert_semantic_equivalence("{ let arr = [1, 2, 3]; arr[1] }", Value::Integer(2));
 }
 
 #[test]
@@ -627,46 +575,31 @@ fn test_opt_004_12_nested_array_index() {
 #[test]
 fn test_opt_004_13_array_len() {
     // Array.len() method
-    assert_semantic_equivalence(
-        "[1, 2, 3].len()",
-        Value::Integer(3),
-    );
+    assert_semantic_equivalence("[1, 2, 3].len()", Value::Integer(3));
 }
 
 #[test]
 fn test_opt_004_13_string_len() {
     // String.len() method
-    assert_semantic_equivalence(
-        "\"hello\".len()",
-        Value::Integer(5),
-    );
+    assert_semantic_equivalence("\"hello\".len()", Value::Integer(5));
 }
 
 #[test]
 fn test_opt_004_13_to_string() {
     // Integer.to_string() method
-    assert_semantic_equivalence(
-        "42.to_string()",
-        Value::from_string("42".to_string()),
-    );
+    assert_semantic_equivalence("42.to_string()", Value::from_string("42".to_string()));
 }
 
 #[test]
 fn test_opt_004_13_method_in_let() {
     // Method call on variable
-    assert_semantic_equivalence(
-        "{ let arr = [10, 20, 30]; arr.len() }",
-        Value::Integer(3),
-    );
+    assert_semantic_equivalence("{ let arr = [10, 20, 30]; arr.len() }", Value::Integer(3));
 }
 
 #[test]
 fn test_opt_004_13_method_chain() {
     // Simple method chain (to_string.len)
-    assert_semantic_equivalence(
-        "42.to_string().len()",
-        Value::Integer(2),
-    );
+    assert_semantic_equivalence("42.to_string().len()", Value::Integer(2));
 }
 
 // ============================================================================
@@ -681,7 +614,9 @@ fn test_opt_004_14_tuple_basic() {
     use std::sync::Arc;
     assert_semantic_equivalence(
         "(42, \"hello\")",
-        Value::Tuple(Arc::from([Value::Integer(42), Value::from_string("hello".to_string())].as_slice())),
+        Value::Tuple(Arc::from(
+            [Value::Integer(42), Value::from_string("hello".to_string())].as_slice(),
+        )),
     );
 }
 
@@ -698,10 +633,7 @@ fn test_opt_004_14_tuple_single() {
 #[test]
 fn test_opt_004_14_tuple_unit() {
     // Empty parentheses () are treated as unit/nil in Ruchy (not empty tuple)
-    assert_semantic_equivalence(
-        "()",
-        Value::Nil,
-    );
+    assert_semantic_equivalence("()", Value::Nil);
 }
 
 #[test]
@@ -710,12 +642,15 @@ fn test_opt_004_14_tuple_mixed_types() {
     use std::sync::Arc;
     assert_semantic_equivalence(
         "(10, 3.14, true, \"test\")",
-        Value::Tuple(Arc::from([
-            Value::Integer(10),
-            Value::Float(3.14),
-            Value::Bool(true),
-            Value::from_string("test".to_string()),
-        ].as_slice())),
+        Value::Tuple(Arc::from(
+            [
+                Value::Integer(10),
+                Value::Float(3.14),
+                Value::Bool(true),
+                Value::from_string("test".to_string()),
+            ]
+            .as_slice(),
+        )),
     );
 }
 
@@ -739,28 +674,19 @@ fn test_opt_004_14_tuple_nested() {
 #[test]
 fn test_opt_004_15_tuple_field() {
     // Tuple field access via numeric index
-    assert_semantic_equivalence(
-        "(42, \"hello\").0",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("(42, \"hello\").0", Value::Integer(42));
 }
 
 #[test]
 fn test_opt_004_15_tuple_field_string() {
     // Tuple field access - second element
-    assert_semantic_equivalence(
-        "(42, \"hello\").1",
-        Value::from_string("hello".to_string()),
-    );
+    assert_semantic_equivalence("(42, \"hello\").1", Value::from_string("hello".to_string()));
 }
 
 #[test]
 fn test_opt_004_15_tuple_field_in_expression() {
     // Tuple field access in arithmetic expression
-    assert_semantic_equivalence(
-        "(10, 20, 30).1 + (10, 20, 30).2",
-        Value::Integer(50),
-    );
+    assert_semantic_equivalence("(10, 20, 30).1 + (10, 20, 30).2", Value::Integer(50));
 }
 
 // ============================================================================
@@ -772,46 +698,37 @@ fn test_opt_004_15_tuple_field_in_expression() {
 #[test]
 fn test_opt_004_16_object_basic() {
     // Basic object with two fields
-    use std::sync::Arc;
     use std::collections::HashMap;
+    use std::sync::Arc;
     let mut expected_map = HashMap::new();
     expected_map.insert("x".to_string(), Value::Integer(10));
     expected_map.insert("y".to_string(), Value::Integer(20));
-    assert_semantic_equivalence(
-        "{ x: 10, y: 20 }",
-        Value::Object(Arc::new(expected_map)),
-    );
+    assert_semantic_equivalence("{ x: 10, y: 20 }", Value::Object(Arc::new(expected_map)));
 }
 
 #[test]
 fn test_opt_004_16_object_empty() {
     // Empty object
-    use std::sync::Arc;
     use std::collections::HashMap;
-    assert_semantic_equivalence(
-        "{}",
-        Value::Object(Arc::new(HashMap::new())),
-    );
+    use std::sync::Arc;
+    assert_semantic_equivalence("{}", Value::Object(Arc::new(HashMap::new())));
 }
 
 #[test]
 fn test_opt_004_16_object_single_field() {
     // Object with single field
-    use std::sync::Arc;
     use std::collections::HashMap;
+    use std::sync::Arc;
     let mut expected_map = HashMap::new();
     expected_map.insert("name".to_string(), Value::from_string("Alice".to_string()));
-    assert_semantic_equivalence(
-        "{ name: \"Alice\" }",
-        Value::Object(Arc::new(expected_map)),
-    );
+    assert_semantic_equivalence("{ name: \"Alice\" }", Value::Object(Arc::new(expected_map)));
 }
 
 #[test]
 fn test_opt_004_16_object_mixed_types() {
     // Object with mixed types
-    use std::sync::Arc;
     use std::collections::HashMap;
+    use std::sync::Arc;
     let mut expected_map = HashMap::new();
     expected_map.insert("id".to_string(), Value::Integer(42));
     expected_map.insert("name".to_string(), Value::from_string("test".to_string()));
@@ -831,10 +748,7 @@ fn test_opt_004_16_object_mixed_types() {
 #[test]
 fn test_opt_004_17_object_field() {
     // Basic object field access
-    assert_semantic_equivalence(
-        "{ x: 10, y: 20 }.x",
-        Value::Integer(10),
-    );
+    assert_semantic_equivalence("{ x: 10, y: 20 }.x", Value::Integer(10));
 }
 
 #[test]
@@ -863,10 +777,7 @@ fn test_opt_004_17_object_field_in_expression() {
 #[test]
 fn test_opt_004_18_match_literal() {
     // Simple match with literal patterns
-    assert_semantic_equivalence(
-        "match 42 { 10 => 1, 42 => 2, _ => 3 }",
-        Value::Integer(2),
-    );
+    assert_semantic_equivalence("match 42 { 10 => 1, 42 => 2, _ => 3 }", Value::Integer(2));
 }
 
 #[test]
@@ -881,10 +792,7 @@ fn test_opt_004_18_match_wildcard() {
 #[test]
 fn test_opt_004_18_match_variable_binding() {
     // Match with variable binding
-    assert_semantic_equivalence(
-        "match 42 { x => x * 2 }",
-        Value::Integer(84),
-    );
+    assert_semantic_equivalence("match 42 { x => x * 2 }", Value::Integer(84));
 }
 
 #[test]
@@ -910,10 +818,7 @@ fn test_opt_004_18_match_guard_fails() {
 #[test]
 fn test_opt_004_19_closure_no_capture() {
     // Simple closure with no environment capture
-    assert_semantic_equivalence(
-        "{ let f = |x| x + 1; f(41) }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ let f = |x| x + 1; f(41) }", Value::Integer(42));
 }
 
 #[test]
@@ -946,10 +851,7 @@ fn test_opt_004_19_closure_nested() {
 #[test]
 fn test_opt_004_19_closure_multiple_params() {
     // Closure with multiple parameters
-    assert_semantic_equivalence(
-        "{ let f = |x, y| x + y; f(10, 32) }",
-        Value::Integer(42),
-    );
+    assert_semantic_equivalence("{ let f = |x, y| x + y; f(10, 32) }", Value::Integer(42));
 }
 
 // ============================================================================
@@ -961,7 +863,11 @@ fn test_opt_004_20_array_with_variable() {
     // Array with variable element (not literal)
     assert_semantic_equivalence(
         "{ let x = 10; [x, 20, 30] }",
-        Value::from_array(vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)]),
+        Value::from_array(vec![
+            Value::Integer(10),
+            Value::Integer(20),
+            Value::Integer(30),
+        ]),
     );
 }
 
@@ -970,7 +876,11 @@ fn test_opt_004_20_array_with_expression() {
     // Array with expression elements
     assert_semantic_equivalence(
         "[1 + 1, 2 * 3, 10 / 2]",
-        Value::from_array(vec![Value::Integer(2), Value::Integer(6), Value::Integer(5)]),
+        Value::from_array(vec![
+            Value::Integer(2),
+            Value::Integer(6),
+            Value::Integer(5),
+        ]),
     );
 }
 
@@ -979,7 +889,11 @@ fn test_opt_004_20_array_all_variables() {
     // Array with all variable elements
     assert_semantic_equivalence(
         "{ let x = 1; let y = 2; let z = 3; [x, y, z] }",
-        Value::from_array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]),
+        Value::from_array(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]),
     );
 }
 
@@ -988,7 +902,12 @@ fn test_opt_004_20_array_mixed() {
     // Array with mixed literals, variables, and expressions
     assert_semantic_equivalence(
         "{ let x = 10; [5, x, x + 5, 30] }",
-        Value::from_array(vec![Value::Integer(5), Value::Integer(10), Value::Integer(15), Value::Integer(30)]),
+        Value::from_array(vec![
+            Value::Integer(5),
+            Value::Integer(10),
+            Value::Integer(15),
+            Value::Integer(30),
+        ]),
     );
 }
 
@@ -1015,7 +934,11 @@ fn test_opt_004_20_object_with_variable_value() {
     // Object literal with computed value
     assert_semantic_equivalence(
         "{ let x = 42; { answer: x } }",
-        Value::Object(Arc::new(vec![("answer".to_string(), Value::Integer(42))].into_iter().collect())),
+        Value::Object(Arc::new(
+            vec![("answer".to_string(), Value::Integer(42))]
+                .into_iter()
+                .collect(),
+        )),
     );
 }
 
@@ -1024,10 +947,14 @@ fn test_opt_004_20_object_with_expression_value() {
     // Object literal with expression value
     assert_semantic_equivalence(
         "{ let x = 10; { result: x * 2, sum: x + 5 } }",
-        Value::Object(Arc::new(vec![
-            ("result".to_string(), Value::Integer(20)),
-            ("sum".to_string(), Value::Integer(15)),
-        ].into_iter().collect())),
+        Value::Object(Arc::new(
+            vec![
+                ("result".to_string(), Value::Integer(20)),
+                ("sum".to_string(), Value::Integer(15)),
+            ]
+            .into_iter()
+            .collect(),
+        )),
     );
 }
 

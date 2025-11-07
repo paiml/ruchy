@@ -91,7 +91,16 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // DEFECT-PARSER-007: Skip comments before field declaration
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::DocComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
             state.tokens.advance();
         }
 
@@ -108,7 +117,16 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
         });
 
         // DEFECT-PARSER-007: Skip any inline comments after field definition
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::DocComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
             state.tokens.advance();
         }
 
@@ -116,7 +134,16 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
             state.tokens.advance();
 
             // Skip comments after comma (allows multiline definitions with comments)
-            while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+            while matches!(
+                state.tokens.peek(),
+                Some((
+                    Token::LineComment(_)
+                        | Token::BlockComment(_)
+                        | Token::DocComment(_)
+                        | Token::HashComment(_),
+                    _
+                ))
+            ) {
                 state.tokens.advance();
             }
         }
@@ -185,7 +212,9 @@ fn parse_private_keyword(state: &mut ParserState) {
     }
 }
 
-pub(in crate::frontend::parser) fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type, Option<Expr>)> {
+pub(in crate::frontend::parser) fn parse_single_struct_field(
+    state: &mut ParserState,
+) -> Result<(String, Type, Option<Expr>)> {
     let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
@@ -209,7 +238,7 @@ pub(in crate::frontend::parser) fn parse_single_struct_field(state: &mut ParserS
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

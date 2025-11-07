@@ -38,11 +38,7 @@ fn cli_transpile_valid_file_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "valid.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("transpile").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -50,11 +46,7 @@ fn cli_transpile_invalid_syntax_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "fun f( { }\n");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("transpile").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -118,7 +110,10 @@ fn cli_transpile_to_file_creates_output() {
     // Verify output file exists and contains Rust code
     assert!(output.exists(), "Output file should exist");
     let content = fs::read_to_string(&output).unwrap();
-    assert!(content.contains("fn main"), "Should contain Rust fn main, got: {content}");
+    assert!(
+        content.contains("fn main"),
+        "Should contain Rust fn main, got: {content}"
+    );
 }
 
 #[test]
@@ -177,11 +172,7 @@ fn cli_transpile_empty_file_fails() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "empty.ruchy", "");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&file)
-        .assert()
-        .failure(); // Empty file is error
+    ruchy_cmd().arg("transpile").arg(&file).assert().failure(); // Empty file is error
 }
 
 #[test]
@@ -189,9 +180,5 @@ fn cli_transpile_comment_only_fails() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "comments.ruchy", "// Just a comment\n");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&file)
-        .assert()
-        .failure(); // Comment-only is error
+    ruchy_cmd().arg("transpile").arg(&file).assert().failure(); // Comment-only is error
 }

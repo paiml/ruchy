@@ -37,7 +37,11 @@ fn test_jit_008_return_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile simple return: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile simple return: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 42, "Function should return 42");
 }
 
@@ -54,7 +58,11 @@ fn test_jit_008_return_expression() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return with expression: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return with expression: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 20, "5*2+10 should be 20");
 }
 
@@ -78,7 +86,11 @@ fn test_jit_008_return_early_guard() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile guard clause: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile guard clause: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), -1, "Should return -1 for division by zero");
 }
 
@@ -98,7 +110,11 @@ fn test_jit_008_return_early_success() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile guard success path: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile guard success path: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "10/2 should be 5");
 }
 
@@ -121,7 +137,11 @@ fn test_jit_008_return_multiple_guards() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile multiple guards: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile multiple guards: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), -2, "Should return -2 for x>100");
 }
 
@@ -146,7 +166,11 @@ fn test_jit_008_return_if_else_both_branches() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return in both branches: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return in both branches: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "abs(-5) should be 5");
 }
 
@@ -169,7 +193,11 @@ fn test_jit_008_return_nested_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested if returns: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested if returns: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 2, "classify(15) should be 2 (>10)");
 }
 
@@ -197,7 +225,11 @@ fn test_jit_008_return_in_while_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return in while: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return in while: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 6, "First even in [5,10) should be 6");
 }
 
@@ -219,7 +251,11 @@ fn test_jit_008_return_in_for_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return in for: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return in for: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 8, "sqrt(64) should be 8");
 }
 
@@ -243,10 +279,18 @@ fn test_jit_008_return_nested_loops() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return in nested loops: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return in nested loops: {:?}",
+        result.err()
+    );
     // First pair that sums to 7: i=0,j=7 → 007, or i=1,j=6 → 106, etc.
     // Should find i=0, j=7 first
-    assert_eq!(result.unwrap(), 7, "First pair summing to 7 should be (0,7)");
+    assert_eq!(
+        result.unwrap(),
+        7,
+        "First pair summing to 7 should be (0,7)"
+    );
 }
 
 // ============================================================================
@@ -278,7 +322,11 @@ fn test_jit_008_multiple_returns_complex() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile multiple returns: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile multiple returns: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 3, "Grade for 85 should be 3 (B)");
 }
 
@@ -318,7 +366,11 @@ fn test_jit_008_return_vs_break() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile return vs break: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile return vs break: {:?}",
+        result.err()
+    );
     // test_return() = 100 (returns immediately at i=3, count_return still 3)
     // test_break() = 3 (breaks at i=3, count_break=3, returns 3)
     // result = 100*10 + 3 = 1003
@@ -355,7 +407,11 @@ fn test_jit_008_is_prime_algorithm() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile prime checker: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile prime checker: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "17 is prime, should return 1");
 }
 
@@ -385,6 +441,10 @@ fn test_jit_008_binary_search_pattern() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile binary search: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile binary search: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 42, "Should find target 42");
 }

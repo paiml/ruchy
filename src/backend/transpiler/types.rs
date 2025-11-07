@@ -89,7 +89,10 @@ impl Transpiler {
                 // TRANSPILER-DEFECT-005: Handle namespaced types (e.g., trace::Sampler, std::io::Error)
                 if name.contains("::") {
                     // Split into path segments and build path token
-                    let segments: Vec<_> = name.split("::").map(|seg| format_ident!("{}", seg)).collect();
+                    let segments: Vec<_> = name
+                        .split("::")
+                        .map(|seg| format_ident!("{}", seg))
+                        .collect();
                     quote! { #(#segments)::* }
                 } else {
                     // Simple identifier
@@ -236,7 +239,9 @@ impl Transpiler {
     /// Complexity: 2 (simple iteration + match)
     fn has_reference_fields(&self, fields: &[StructField]) -> bool {
         use crate::frontend::ast::TypeKind;
-        fields.iter().any(|field| matches!(field.ty.kind, TypeKind::Reference { .. }))
+        fields
+            .iter()
+            .any(|field| matches!(field.ty.kind, TypeKind::Reference { .. }))
     }
 
     /// Helper: Check if type params already contain a lifetime
@@ -247,7 +252,11 @@ impl Transpiler {
 
     /// Helper: Transpile type with explicit lifetime annotation for struct fields
     /// Complexity: 3 (type matching + recursive call)
-    fn transpile_struct_field_type_with_lifetime(&self, ty: &Type, lifetime: &str) -> Result<TokenStream> {
+    fn transpile_struct_field_type_with_lifetime(
+        &self,
+        ty: &Type,
+        lifetime: &str,
+    ) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
         match &ty.kind {
             TypeKind::Reference { is_mut, inner, .. } => {
@@ -273,7 +282,8 @@ impl Transpiler {
         let struct_name = format_ident!("{}", name);
 
         // BOOK-COMPAT-001: Auto-add lifetime parameter if struct has reference fields
-        let needs_lifetime = self.has_reference_fields(fields) && !self.has_lifetime_params(type_params);
+        let needs_lifetime =
+            self.has_reference_fields(fields) && !self.has_lifetime_params(type_params);
         let effective_type_params: Vec<String> = if needs_lifetime {
             let mut params = vec!["'a".to_string()];
             params.extend_from_slice(type_params);

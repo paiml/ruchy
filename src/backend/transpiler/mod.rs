@@ -39,7 +39,6 @@
 mod actors;
 pub mod codegen_minimal;
 pub mod constant_folder; // PERF-002-A: Constant folding optimization
-pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod dataframe;
 #[cfg(feature = "dataframe")]
 // mod dataframe_arrow; // Temporarily disabled until proper implementation
@@ -47,6 +46,7 @@ mod dataframe_builder;
 mod dataframe_helpers;
 mod dispatcher;
 mod expressions;
+pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod method_call_refactored;
 mod patterns;
 mod result_type;
@@ -173,7 +173,9 @@ impl Clone for Transpiler {
             function_signatures: self.function_signatures.clone(),
             module_names: self.module_names.clone(),
             string_vars: std::cell::RefCell::new(self.string_vars.borrow().clone()),
-            current_function_return_type: std::cell::RefCell::new(self.current_function_return_type.borrow().clone()),
+            current_function_return_type: std::cell::RefCell::new(
+                self.current_function_return_type.borrow().clone(),
+            ),
             global_vars: std::sync::RwLock::new(self.global_vars.read().unwrap().clone()),
         }
     }
@@ -661,9 +663,13 @@ impl Transpiler {
             }
 
             // Method calls on DataFrame instances (builder pattern)
-            ExprKind::MethodCall { receiver, method, .. } => {
-                matches!(method.as_str(), "column" | "build" | "rows" | "columns" | "height" | "width")
-                    || Self::contains_dataframe(receiver)
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
+                matches!(
+                    method.as_str(),
+                    "column" | "build" | "rows" | "columns" | "height" | "width"
+                ) || Self::contains_dataframe(receiver)
             }
 
             // Type annotations with DataFrame
@@ -684,10 +690,16 @@ impl Transpiler {
 
             // Blocks and control flow
             ExprKind::Block(exprs) => exprs.iter().any(Self::contains_dataframe),
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 Self::contains_dataframe(condition)
                     || Self::contains_dataframe(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| Self::contains_dataframe(e))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| Self::contains_dataframe(e))
             }
 
             _ => false,
@@ -701,9 +713,9 @@ impl Transpiler {
 
         match &expr.kind {
             // A Block with Function expressions => has standalone functions
-            ExprKind::Block(exprs) => {
-                exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. }))
-            }
+            ExprKind::Block(exprs) => exprs
+                .iter()
+                .any(|e| matches!(&e.kind, ExprKind::Function { .. })),
             // Single top-level Function
             ExprKind::Function { .. } => true,
             _ => false,
@@ -773,7 +785,8 @@ impl Transpiler {
             let after_propagation = constant_folder::propagate_constants(resolved_expr);
 
             // OPT-CODEGEN-004: Inline small, non-recursive functions
-            let (after_inlining, inlined_functions) = inline_expander::inline_small_functions(after_propagation);
+            let (after_inlining, inlined_functions) =
+                inline_expander::inline_small_functions(after_propagation);
 
             // PERF-002-C: Dead code elimination (removes unused inlined functions)
             // Pass inlined function names so DCE can preserve functions that weren't inlined
@@ -953,10 +966,16 @@ impl Transpiler {
         }
 
         // If we have functions, collect mutable Let names to promote to globals
-        let has_functions_check = exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. })) || has_main_function;
+        let has_functions_check = exprs
+            .iter()
+            .any(|e| matches!(&e.kind, ExprKind::Function { .. }))
+            || has_main_function;
         if has_functions_check {
             for expr in exprs {
-                if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+                if let ExprKind::Let {
+                    name, is_mutable, ..
+                } = &expr.kind
+                {
                     if *is_mutable {
                         global_var_names.insert(name.clone());
                     }
@@ -975,7 +994,10 @@ impl Transpiler {
             }
 
             // TRANSPILER-SCOPE: Skip mutable Lets that were promoted to globals
-            if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+            if let ExprKind::Let {
+                name, is_mutable, ..
+            } = &expr.kind
+            {
                 if *is_mutable && global_var_names.contains(name) {
                     continue; // Skip this Let - it's now a static mut global
                 }
@@ -1021,7 +1043,7 @@ impl Transpiler {
                                     crate::frontend::ast::Literal::Float(_) => quote! { f64 },
                                     crate::frontend::ast::Literal::String(_) => quote! { &str },
                                     crate::frontend::ast::Literal::Bool(_) => quote! { bool },
-                                    _ => quote! { i32 },  // Default fallback
+                                    _ => quote! { i32 }, // Default fallback
                                 },
                                 // TRANSPILER-TYPE: Infer Vec type for array literals
                                 ExprKind::List(elements) => {
@@ -1032,18 +1054,26 @@ impl Transpiler {
                                         // Infer element type from first element
                                         match &elements[0].kind {
                                             ExprKind::Literal(lit) => match lit {
-                                                crate::frontend::ast::Literal::Integer(_, _) => quote! { Vec<i32> },
-                                                crate::frontend::ast::Literal::Float(_) => quote! { Vec<f64> },
-                                                crate::frontend::ast::Literal::String(_) => quote! { Vec<String> },
-                                                crate::frontend::ast::Literal::Bool(_) => quote! { Vec<bool> },
+                                                crate::frontend::ast::Literal::Integer(_, _) => {
+                                                    quote! { Vec<i32> }
+                                                }
+                                                crate::frontend::ast::Literal::Float(_) => {
+                                                    quote! { Vec<f64> }
+                                                }
+                                                crate::frontend::ast::Literal::String(_) => {
+                                                    quote! { Vec<String> }
+                                                }
+                                                crate::frontend::ast::Literal::Bool(_) => {
+                                                    quote! { Vec<bool> }
+                                                }
                                                 _ => quote! { Vec<i32> },
                                             },
                                             ExprKind::List(_) => quote! { Vec<Vec<i32>> }, // Nested arrays
                                             _ => quote! { Vec<i32> },
                                         }
                                     }
-                                },
-                                _ => quote! { i32 },  // Default for non-literals
+                                }
+                                _ => quote! { i32 }, // Default for non-literals
                             }
                         };
 
@@ -2294,8 +2324,8 @@ mod tests {
                 },
                 span: Span::default(),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
 
             transpiler.collect_signatures_from_expr(&func_expr);

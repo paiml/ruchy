@@ -212,11 +212,7 @@ fn cli_compile_default_output_name() {
     let current_dir = std::env::current_dir().unwrap();
     std::env::set_current_dir(temp.path()).unwrap();
 
-    ruchy_cmd()
-        .arg("compile")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("compile").arg(&file).assert().success();
 
     // Verify a.out was created (default name)
     let default_output = temp.path().join("a.out");

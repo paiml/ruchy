@@ -12,8 +12,8 @@
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
 
-use ruchy::quality::linter::Linter;
 use ruchy::frontend::parser::Parser;
+use ruchy::quality::linter::Linter;
 
 /// Helper to lint code
 fn lint_code(code: &str) -> Vec<ruchy::quality::linter::LintIssue> {
@@ -39,12 +39,13 @@ fun read_config() {
     let issues = lint_code(code);
 
     // RED: This will FAIL - fs_read reported as undefined
-    let undefined_issues: Vec<_> = issues.iter()
-        .filter(|i| i.rule == "undefined")
-        .collect();
+    let undefined_issues: Vec<_> = issues.iter().filter(|i| i.rule == "undefined").collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "fs_read should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "fs_read should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 2: env_ functions should not be reported as undefined
@@ -58,12 +59,16 @@ fun get_args() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name.starts_with("env_"))
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "env_args should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "env_args should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 3: `range()` function should not be reported as undefined
@@ -79,12 +84,16 @@ fun test_loop() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name == "range")
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "range should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "range should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 4: http_ functions should not be reported as undefined
@@ -98,12 +107,16 @@ fun fetch_data() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name.starts_with("http_"))
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "http_get should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "http_get should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 5: json_ functions should not be reported as undefined
@@ -117,12 +130,16 @@ fun parse_json() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name.starts_with("json_"))
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "json_parse should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "json_parse should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 6: time_ functions should not be reported as undefined
@@ -136,12 +153,16 @@ fun get_timestamp() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name.starts_with("time_"))
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "time_now should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "time_now should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 7: path_ functions should not be reported as undefined
@@ -155,12 +176,16 @@ fun get_extension() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name.starts_with("path_"))
         .collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "path_extension should be recognized as built-in, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "path_extension should be recognized as built-in, found: {undefined_issues:?}"
+    );
 }
 
 /// Test 8: Baseline - println already works
@@ -174,13 +199,17 @@ fun test() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name == "println")
         .collect();
 
     // This should already pass (baseline test)
-    assert_eq!(undefined_issues.len(), 0,
-        "println should be recognized as built-in");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "println should be recognized as built-in"
+    );
 }
 
 /// Test 9: Baseline - undefined variables should still be reported
@@ -194,13 +223,17 @@ fun test() {
 
     let issues = lint_code(code);
 
-    let undefined_issues: Vec<_> = issues.iter()
+    let undefined_issues: Vec<_> = issues
+        .iter()
         .filter(|i| i.rule == "undefined" && i.name == "undefined_function_xyz")
         .collect();
 
     // This should fail - we WANT to detect real undefined variables
-    assert_eq!(undefined_issues.len(), 1,
-        "Real undefined variables should still be reported");
+    assert_eq!(
+        undefined_issues.len(),
+        1,
+        "Real undefined variables should still be reported"
+    );
 }
 
 /// Test 10: Multiple built-ins in one file
@@ -220,12 +253,13 @@ fun main() {
     let issues = lint_code(code);
 
     // Should only report undefined issues for non-built-ins
-    let undefined_issues: Vec<_> = issues.iter()
-        .filter(|i| i.rule == "undefined")
-        .collect();
+    let undefined_issues: Vec<_> = issues.iter().filter(|i| i.rule == "undefined").collect();
 
-    assert_eq!(undefined_issues.len(), 0,
-        "No built-ins should be reported as undefined, found: {undefined_issues:?}");
+    assert_eq!(
+        undefined_issues.len(),
+        0,
+        "No built-ins should be reported as undefined, found: {undefined_issues:?}"
+    );
 }
 
 // ==================== RED PHASE SUMMARY ====================

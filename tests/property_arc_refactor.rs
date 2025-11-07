@@ -57,10 +57,12 @@ fn arb_value() -> impl Strategy<Value = Value> {
                     "[A-Z][a-zA-Z0-9]{0,10}", // variant_name
                     prop::option::of(prop::collection::vec(inner.clone(), 0..2))
                 )
-                    .prop_map(|(enum_name, variant_name, data)| Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
+                    .prop_map(|(enum_name, variant_name, data)| {
+                        Value::EnumVariant {
+                            enum_name,
+                            variant_name,
+                            data,
+                        }
                     }),
                 // Range
                 (inner.clone(), inner, any::<bool>()).prop_map(|(start, end, incl)| {

@@ -158,19 +158,25 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Identifier(name) => name == var_name,
             ExprKind::Binary { left, right, .. } => {
-                self.expr_references_var(left, var_name) || self.expr_references_var(right, var_name)
+                self.expr_references_var(left, var_name)
+                    || self.expr_references_var(right, var_name)
             }
             ExprKind::Unary { operand, .. } => self.expr_references_var(operand, var_name),
             ExprKind::Call { func, args } => {
                 self.expr_references_var(func, var_name)
-                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+                    || args
+                        .iter()
+                        .any(|arg| self.expr_references_var(arg, var_name))
             }
             ExprKind::MethodCall { receiver, args, .. } => {
                 self.expr_references_var(receiver, var_name)
-                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+                    || args
+                        .iter()
+                        .any(|arg| self.expr_references_var(arg, var_name))
             }
             ExprKind::IndexAccess { object, index } => {
-                self.expr_references_var(object, var_name) || self.expr_references_var(index, var_name)
+                self.expr_references_var(object, var_name)
+                    || self.expr_references_var(index, var_name)
             }
             _ => false,
         }
@@ -178,7 +184,11 @@ impl Transpiler {
 
     /// Transpile assignment to global that references itself (single-lock pattern)
     /// Prevents deadlock: counter = counter + 1
-    fn transpile_assign_global_self_ref(&self, var_name: &str, value: &Expr) -> Result<TokenStream> {
+    fn transpile_assign_global_self_ref(
+        &self,
+        var_name: &str,
+        value: &Expr,
+    ) -> Result<TokenStream> {
         let var_ident = format_ident!("{}", var_name);
 
         // Transpile value, but temporarily disable global wrapping

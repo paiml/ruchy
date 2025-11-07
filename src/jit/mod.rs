@@ -18,19 +18,21 @@
 //! - JIT-003: Tiered optimization with profiling
 //!
 //! # References
-//! - GitHub Issue #135: https://github.com/paiml/ruchy/issues/135
-//! - Cranelift Docs: https://cranelift.dev/
-//! - SimpleJIT Example: https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/simplejit
+//! - GitHub Issue #135: <https://github.com/paiml/ruchy/issues/135>
+//! - Cranelift Docs: <https://cranelift.dev/>
+//! - `SimpleJIT` Example: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/simplejit>
 
-#![cfg(feature = "jit")]
+// JIT compilation requires unsafe for transmuting compiled code to function pointers
+// This is internal implementation, not generated user code
+#![allow(unsafe_code)]
 
 pub mod compiler;
 pub mod lowering;
 
 pub use compiler::JitCompiler;
 
-use anyhow::Result;
 use crate::frontend::ast::Expr;
+use anyhow::Result;
 
 /// JIT compile and execute a Ruchy expression
 ///
@@ -51,7 +53,7 @@ mod tests {
     use crate::frontend::parser::Parser;
 
     #[test]
-    #[ignore] // Enable once JIT implementation is complete
+    #[ignore = "Enable once JIT implementation is complete"]
     fn test_jit_simple_arithmetic() {
         let code = "2 + 2";
         let ast = Parser::new(code).parse().unwrap();
@@ -60,7 +62,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Enable once JIT implementation is complete
+    #[ignore = "Enable once JIT implementation is complete"]
     fn test_jit_fibonacci_10() {
         let code = r"
             fun fib(n: i32) -> i32 {

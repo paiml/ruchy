@@ -18,7 +18,7 @@ impl Transpiler {
                 name == "std"  // stdlib module
                 || self.module_names.contains(name)  // known user module
                 || Self::is_module_like_identifier(name)  // lowercase_underscore pattern
-                || name.chars().next().is_some_and(char::is_uppercase)  // Type names (associated functions)
+                || name.chars().next().is_some_and(char::is_uppercase) // Type names (associated functions)
             }
             ExprKind::FieldAccess { object, .. } => self.is_module_path(object),
             _ => false,
@@ -69,7 +69,9 @@ impl Transpiler {
         // Must be all lowercase/digits/underscores AND contain at least one underscore
         // This distinguishes modules (http_client) from variables (obj, x)
         let has_underscore = name.contains('_');
-        let is_lowercase = name.chars().all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
+        let is_lowercase = name
+            .chars()
+            .all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
         has_underscore && is_lowercase
     }
 
@@ -97,7 +99,9 @@ impl Transpiler {
                     Ok(quote! { #obj_tokens.#index })
                 } else {
                     // Check for known instance methods that definitely need .
-                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
+                    let known_methods = [
+                        "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
+                    ];
                     let field_ident = format_ident!("{}", field);
 
                     if known_methods.contains(&field) {
@@ -156,7 +160,9 @@ impl Transpiler {
                 } else {
                     // TYPE-INFERENCE-001: Known stdlib methods need () for method calls
                     // ExitStatus::success, Path::exists, String::is_empty, etc.
-                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
+                    let known_methods = [
+                        "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
+                    ];
                     let field_ident = format_ident!("{}", field);
 
                     if known_methods.contains(&field) {

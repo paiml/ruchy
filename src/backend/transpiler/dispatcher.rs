@@ -415,7 +415,12 @@ impl Transpiler {
                     // Transpile let-else pattern: let PAT = EXPR else { BLOCK }
                     self.transpile_let_pattern_else(pattern, value, body, else_expr)
                 } else {
-                    self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
+                    self.transpile_let_pattern_with_type(
+                        pattern,
+                        type_annotation.as_ref(),
+                        value,
+                        body,
+                    )
                 }
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
@@ -446,7 +451,9 @@ impl Transpiler {
             }
             ExprKind::ReExport { items, module } => Ok(Self::transpile_reexport(items, module)),
             ExprKind::Module { name, body } => self.transpile_module(name, body),
-            ExprKind::ModuleDeclaration { name } => Ok(self.transpile_external_mod_declaration(name, expr)),
+            ExprKind::ModuleDeclaration { name } => {
+                Ok(self.transpile_external_mod_declaration(name, expr))
+            }
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }

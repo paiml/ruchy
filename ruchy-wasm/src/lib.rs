@@ -19,9 +19,9 @@
 //! }
 //! ```
 
-use wasm_bindgen::prelude::*;
-use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::parser::Parser;
+use wasm_bindgen::prelude::*;
 
 /// WebAssembly compiler interface for Ruchy
 #[wasm_bindgen]

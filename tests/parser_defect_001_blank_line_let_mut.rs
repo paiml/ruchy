@@ -24,7 +24,7 @@ fn test_parser_001_complex_function_blank_line_let_mut() {
     // DEFECT-PARSER-001: This should parse successfully
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
-    
+
     let code = r#"
 fun process(x: &str) -> &str {
     if x == "a" {
@@ -50,15 +50,11 @@ fun main() {
     println(result)
 }
 "#;
-    
+
     fs::write(&source, code).expect("Failed to write test file");
-    
+
     // Should parse successfully (RED phase - will fail)
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -98,11 +94,7 @@ fun second() -> &str {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -110,7 +102,7 @@ fn test_parser_001_works_without_blank_line() {
     // Control test: Same code WITHOUT blank line should work
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
-    
+
     let code = r#"
 fun first() -> &str {
     if true {
@@ -124,14 +116,10 @@ fun second() -> &str {
     x
 }
 "#;
-    
+
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -139,7 +127,7 @@ fn test_parser_001_works_without_mut() {
     // Control test: Blank line + let (without mut) should work
     let temp = TempDir::new().expect("Failed to create temp dir");
     let source = temp.path().join("test.ruchy");
-    
+
     let code = r#"
 fun first() -> &str {
     if true {
@@ -154,12 +142,8 @@ fun second() -> &str {
     x
 }
 "#;
-    
+
     fs::write(&source, code).expect("Failed to write test file");
-    
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }

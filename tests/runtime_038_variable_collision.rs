@@ -140,7 +140,9 @@ fun main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     // This should succeed but currently fails with type corruption
@@ -149,9 +151,9 @@ fun main() {
         .arg(temp_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("a = \"hello\""))  // String with quotes
+        .stdout(predicate::str::contains("a = \"hello\"")) // String with quotes
         .stdout(predicate::str::contains("b = \"hello\""))
-        .stdout(predicate::str::contains("result = \"hellohello\""));  // Concatenation works!
+        .stdout(predicate::str::contains("result = \"hellohello\"")); // Concatenation works!
 }
 
 /// Regression test for variable collision bug (Issue #38)
@@ -177,7 +179,9 @@ fun main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -248,7 +252,9 @@ fun main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -294,7 +300,9 @@ fun main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()

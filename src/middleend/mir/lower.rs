@@ -286,7 +286,7 @@ impl LoweringContext {
             AstUnOp::Negate => UnOp::Neg,
             AstUnOp::Not => UnOp::Not,
             AstUnOp::BitwiseNot => UnOp::BitNot,
-            AstUnOp::Reference | AstUnOp::MutableReference => UnOp::Ref,  // PARSER-085: Issue #71
+            AstUnOp::Reference | AstUnOp::MutableReference => UnOp::Ref, // PARSER-085: Issue #71
             AstUnOp::Deref => UnOp::Deref,
         }
     }

@@ -119,7 +119,8 @@ fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::LeftBrace)?; // consume '{'
 
     // Parse multiple statements (PARSER-056 fix)
-    let statements = crate::frontend::parser::collections::parse_block_expressions(state, start_span)?;
+    let statements =
+        crate::frontend::parser::collections::parse_block_expressions(state, start_span)?;
 
     state.tokens.expect(&Token::RightBrace)?; // consume '}'
 
@@ -221,7 +222,7 @@ fn parse_async_arrow_lambda(state: &mut ParserState) -> Result<Expr> {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -257,7 +258,10 @@ mod tests {
     fn test_async_lambda_multiple_params() {
         let code = "async |x, y| await combine(x, y)";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Async lambda with multiple params should parse");
+        assert!(
+            result.is_ok(),
+            "Async lambda with multiple params should parse"
+        );
     }
 
     #[test]
@@ -272,7 +276,10 @@ mod tests {
     fn test_async_function_with_return_type() {
         let code = "async fun getData() -> Result<String> { await fetch() }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Async function with return type should parse");
+        assert!(
+            result.is_ok(),
+            "Async function with return type should parse"
+        );
     }
 
     // Property tests
@@ -286,17 +293,45 @@ mod tests {
         /// Keywords like "fn", "if", "let" would cause parser failures.
         /// This strategy filters them out for property test validity.
         fn valid_identifier() -> impl Strategy<Value = String> {
-            "[a-z]+"
-                .prop_filter("Must not be a keyword", |s| {
-                    !matches!(
-                        s.as_str(),
-                        "fn" | "fun" | "let" | "var" | "if" | "else" | "for" | "while"
-                            | "loop" | "match" | "break" | "continue" | "return" | "async"
-                            | "await" | "try" | "catch" | "throw" | "in" | "as" | "is"
-                            | "self" | "super" | "mod" | "use" | "pub" | "const" | "static"
-                            | "mut" | "ref" | "type" | "struct" | "enum" | "trait" | "impl"
-                    )
-                })
+            "[a-z]+".prop_filter("Must not be a keyword", |s| {
+                !matches!(
+                    s.as_str(),
+                    "fn" | "fun"
+                        | "let"
+                        | "var"
+                        | "if"
+                        | "else"
+                        | "for"
+                        | "while"
+                        | "loop"
+                        | "match"
+                        | "break"
+                        | "continue"
+                        | "return"
+                        | "async"
+                        | "await"
+                        | "try"
+                        | "catch"
+                        | "throw"
+                        | "in"
+                        | "as"
+                        | "is"
+                        | "self"
+                        | "super"
+                        | "mod"
+                        | "use"
+                        | "pub"
+                        | "const"
+                        | "static"
+                        | "mut"
+                        | "ref"
+                        | "type"
+                        | "struct"
+                        | "enum"
+                        | "trait"
+                        | "impl"
+                )
+            })
         }
 
         proptest! {

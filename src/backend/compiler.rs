@@ -148,7 +148,9 @@ pub fn compile_source_to_binary_with_context(
                     resolver.add_search_path(project_root.join("modules"));
                 }
             }
-            resolver.resolve_imports(ast).compile_context("resolve module declarations")?
+            resolver
+                .resolve_imports(ast)
+                .compile_context("resolve module declarations")?
         } else {
             ast
         }
@@ -374,10 +376,7 @@ fn check_method_for_http(
 
 /// Check if function name is an HTTP stdlib function (complexity: 1)
 fn is_http_function(name: &str) -> bool {
-    matches!(
-        name,
-        "http_get" | "http_post" | "http_put" | "http_delete"
-    )
+    matches!(name, "http_get" | "http_post" | "http_put" | "http_delete")
 }
 
 /// Check if AST contains any external module declarations (mod name;) or file imports (use name;)
@@ -440,9 +439,7 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
 
     // Run cargo build --release
     let mut cmd = Command::new("cargo");
-    cmd.arg("build")
-        .arg("--release")
-        .current_dir(project_dir);
+    cmd.arg("build").arg("--release").current_dir(project_dir);
 
     let output = cmd.output().context("Failed to execute cargo build")?;
     if !output.status.success() {
@@ -559,7 +556,10 @@ pub fn check_rustc_available() -> Result<()> {
 
     // Strategy 2: Try common cargo installation paths (robustness for test environments)
     let fallback_paths = [
-        format!("{}/.cargo/bin/rustc", std::env::var("HOME").unwrap_or_default()),
+        format!(
+            "{}/.cargo/bin/rustc",
+            std::env::var("HOME").unwrap_or_default()
+        ),
         "/usr/local/bin/rustc".to_string(),
         "/usr/bin/rustc".to_string(),
     ];
@@ -575,9 +575,7 @@ pub fn check_rustc_available() -> Result<()> {
 
 /// Try executing rustc command with given path (complexity: 4)
 fn try_rustc_command(rustc_path: &str) -> Result<()> {
-    let output = Command::new(rustc_path)
-        .arg("--version")
-        .output();
+    let output = Command::new(rustc_path).arg("--version").output();
 
     match output {
         Ok(output) if output.status.success() => Ok(()),

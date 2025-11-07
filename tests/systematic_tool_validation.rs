@@ -61,11 +61,7 @@ fn tool_01_check_smoke_test_valid_syntax() {
     let temp = temp_dir();
     let file = write_ruchy_file(&temp, "valid.ruchy", "let x = 42");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&file).assert().success();
 }
 
 #[test]
@@ -73,21 +69,13 @@ fn tool_01_check_rejects_invalid_syntax() {
     let temp = temp_dir();
     let file = write_ruchy_file(&temp, "invalid.ruchy", "let x = ");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&file)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("check").arg(&file).assert().failure();
 }
 
 #[test]
 fn tool_01_check_validates_example_programs() {
     // Validate that check works on real example programs
-    let examples = vec![
-        "debug_ast.rs",
-        "parser_demo.rs",
-        "transpiler_demo.rs",
-    ];
+    let examples = vec!["debug_ast.rs", "parser_demo.rs", "transpiler_demo.rs"];
 
     for example in examples {
         let path = example_path(example);
@@ -322,11 +310,7 @@ fn tool_06_lint_smoke_test_clean_code() {
     let temp = temp_dir();
     let file = write_ruchy_file(&temp, "clean.ruchy", "let x = 42\nprintln(x)");
 
-    ruchy_cmd()
-        .arg("lint")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("lint").arg(&file).assert().success();
 }
 
 #[test]
@@ -356,7 +340,11 @@ fn tool_06_lint_detects_unused_variables() {
 #[test]
 fn tool_07_compile_smoke_test() {
     let temp = temp_dir();
-    let source = write_ruchy_file(&temp, "hello.ruchy", "println(\"Hello from compiled binary\")");
+    let source = write_ruchy_file(
+        &temp,
+        "hello.ruchy",
+        "println(\"Hello from compiled binary\")",
+    );
     let output_binary = temp.path().join("hello");
 
     ruchy_cmd()

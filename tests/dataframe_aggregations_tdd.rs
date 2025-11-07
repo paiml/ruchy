@@ -5,8 +5,8 @@
 //!
 //! **Toyota Way**: Write failing tests FIRST, then implement to pass.
 
-use ruchy::runtime::{DataFrameColumn, Value};
 use ruchy::runtime::eval_dataframe_ops::eval_dataframe_method;
+use ruchy::runtime::{DataFrameColumn, Value};
 
 /// Test helper to create simple numeric `DataFrameColumn`
 fn numeric_column(name: &str, values: Vec<i64>) -> DataFrameColumn {
@@ -38,7 +38,10 @@ mod df003_std_tests {
         assert!(result.is_ok(), "std() should work on numeric columns");
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.414).abs() < 0.01, "std([1,2,3,4,5]) ≈ 1.414, got {std_val}");
+            assert!(
+                (std_val - 1.414).abs() < 0.01,
+                "std([1,2,3,4,5]) ≈ 1.414, got {std_val}"
+            );
         } else {
             panic!("Expected Float result from std()");
         }
@@ -65,7 +68,10 @@ mod df003_std_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.118).abs() < 0.01, "std([1,2,3,4]) ≈ 1.118, got {std_val}");
+            assert!(
+                (std_val - 1.118).abs() < 0.01,
+                "std([1,2,3,4]) ≈ 1.118, got {std_val}"
+            );
         }
     }
 
@@ -88,7 +94,10 @@ mod df003_std_tests {
 
         let result = eval_dataframe_method(&columns, "std", &args);
         assert!(result.is_err(), "std() should not accept arguments");
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
@@ -103,7 +112,10 @@ mod df003_std_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(std_val)) = result {
-            assert!((std_val - 1.707).abs() < 0.01, "std of all values ≈ 1.707, got {std_val}");
+            assert!(
+                (std_val - 1.707).abs() < 0.01,
+                "std of all values ≈ 1.707, got {std_val}"
+            );
         }
     }
 }
@@ -122,7 +134,10 @@ mod df003_var_tests {
         assert!(result.is_ok(), "var() should work on numeric columns");
 
         if let Ok(Value::Float(var_val)) = result {
-            assert!((var_val - 2.0).abs() < 0.01, "var([1,2,3,4,5]) = 2.0, got {var_val}");
+            assert!(
+                (var_val - 2.0).abs() < 0.01,
+                "var([1,2,3,4,5]) = 2.0, got {var_val}"
+            );
         } else {
             panic!("Expected Float result from var()");
         }
@@ -149,7 +164,10 @@ mod df003_var_tests {
         assert!(result.is_ok());
 
         if let Ok(Value::Float(var_val)) = result {
-            assert!((var_val - 5.0).abs() < 0.01, "var([2,4,6,8]) = 5.0, got {var_val}");
+            assert!(
+                (var_val - 5.0).abs() < 0.01,
+                "var([2,4,6,8]) = 5.0, got {var_val}"
+            );
         }
     }
 
@@ -172,7 +190,10 @@ mod df003_var_tests {
 
         let result = eval_dataframe_method(&columns, "var", &args);
         assert!(result.is_err(), "var() should not accept arguments");
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
@@ -199,7 +220,10 @@ mod df003_var_tests {
         if let (Ok(Value::Float(var_val)), Ok(Value::Float(std_val))) = (var_result, std_result) {
             // Mathematical invariant: var = std²
             let expected_std = var_val.sqrt();
-            assert!((std_val - expected_std).abs() < 0.01, "std² should equal var");
+            assert!(
+                (std_val - expected_std).abs() < 0.01,
+                "std² should equal var"
+            );
         }
     }
 }

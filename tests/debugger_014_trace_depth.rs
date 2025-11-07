@@ -103,9 +103,18 @@ fun main() {
     let stderr = String::from_utf8(output.stderr).unwrap();
 
     // Program output on stdout
-    assert!(stdout.contains("Result:"), "Program output should be on stdout");
+    assert!(
+        stdout.contains("Result:"),
+        "Program output should be on stdout"
+    );
 
     // Trace output on stderr
-    assert!(stderr.contains("TRACE:"), "Trace output should be on stderr");
-    assert!(stderr.contains("test_func"), "Should trace function on stderr");
+    assert!(
+        stderr.contains("TRACE:"),
+        "Trace output should be on stderr"
+    );
+    assert!(
+        stderr.contains("test_func"),
+        "Should trace function on stderr"
+    );
 }

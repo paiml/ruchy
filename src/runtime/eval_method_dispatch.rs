@@ -70,20 +70,27 @@ where
 
     match receiver {
         Value::String(s) => eval_string::eval_string_method(s, base_method, arg_values),
-        Value::Array(arr) => {
-            eval_array::eval_array_method(arr, base_method, arg_values, &mut eval_function_call_value)
-        }
+        Value::Array(arr) => eval_array::eval_array_method(
+            arr,
+            base_method,
+            arg_values,
+            &mut eval_function_call_value,
+        ),
         Value::Float(f) => eval_float_method(*f, base_method, args_empty),
         Value::Integer(n) => eval_integer_method(*n, base_method, arg_values),
         Value::DataFrame { columns } => eval_dataframe_method(columns, base_method, arg_values),
         #[cfg(not(target_arch = "wasm32"))]
-        Value::HtmlDocument(doc) => {
-            crate::runtime::eval_html_methods::eval_html_document_method(doc, base_method, arg_values)
-        }
+        Value::HtmlDocument(doc) => crate::runtime::eval_html_methods::eval_html_document_method(
+            doc,
+            base_method,
+            arg_values,
+        ),
         #[cfg(not(target_arch = "wasm32"))]
-        Value::HtmlElement(element) => {
-            crate::runtime::eval_html_methods::eval_html_element_method(element, base_method, arg_values)
-        }
+        Value::HtmlElement(element) => crate::runtime::eval_html_methods::eval_html_element_method(
+            element,
+            base_method,
+            arg_values,
+        ),
         Value::Object(obj) => eval_object_method(obj, base_method, arg_values),
         _ => eval_generic_method(receiver, base_method, args_empty),
     }
@@ -251,7 +258,7 @@ fn eval_object_method(
         }
 
         Err(InterpreterError::RuntimeError(
-            "Object is missing __type marker".to_string()
+            "Object is missing __type marker".to_string(),
         ))
     }
 }
@@ -267,9 +274,11 @@ fn build_command_from_obj(
 ) -> Result<std::process::Command, InterpreterError> {
     let program = match obj.get("program") {
         Some(Value::String(p)) => &**p,
-        _ => return Err(InterpreterError::RuntimeError(
-            "Command object missing 'program' field".to_string(),
-        )),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "Command object missing 'program' field".to_string(),
+            ))
+        }
     };
 
     let args = match obj.get("args") {
@@ -307,7 +316,8 @@ fn eval_command_method(
             if let Value::String(arg_str) = &arg_values[0] {
                 let mut new_obj = obj.clone();
                 if let Some(Value::Array(args)) = new_obj.get("args").cloned() {
-                    let mut new_args = args.to_vec(); new_args.push(Value::from_string(arg_str.to_string()));
+                    let mut new_args = args.to_vec();
+                    new_args.push(Value::from_string(arg_str.to_string()));
                     new_obj.insert("args".to_string(), Value::Array(Arc::from(new_args)));
                 }
                 Ok(Value::Object(Arc::new(new_obj)))
@@ -325,9 +335,15 @@ fn eval_command_method(
                 Ok(status) => {
                     // Create ExitStatus object with success() method
                     let mut status_obj = std::collections::HashMap::new();
-                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+                    status_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("ExitStatus".to_string()),
+                    );
                     status_obj.insert("success".to_string(), Value::from_bool(status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(i64::from(status.code().unwrap_or(-1))));
+                    status_obj.insert(
+                        "code".to_string(),
+                        Value::Integer(i64::from(status.code().unwrap_or(-1))),
+                    );
 
                     // Return Result::Ok(status_obj)
                     Ok(Value::EnumVariant {
@@ -354,21 +370,35 @@ fn eval_command_method(
                 Ok(output) => {
                     // Create Output object with stdout, stderr, status fields
                     let mut output_obj = std::collections::HashMap::new();
-                    output_obj.insert("__type".to_string(), Value::from_string("Output".to_string()));
+                    output_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("Output".to_string()),
+                    );
 
                     // Store stdout as byte array
-                    let stdout_bytes: Vec<Value> = output.stdout.iter().map(|b| Value::Byte(*b)).collect();
+                    let stdout_bytes: Vec<Value> =
+                        output.stdout.iter().map(|b| Value::Byte(*b)).collect();
                     output_obj.insert("stdout".to_string(), Value::Array(Arc::from(stdout_bytes)));
 
                     // Store stderr as byte array
-                    let stderr_bytes: Vec<Value> = output.stderr.iter().map(|b| Value::Byte(*b)).collect();
+                    let stderr_bytes: Vec<Value> =
+                        output.stderr.iter().map(|b| Value::Byte(*b)).collect();
                     output_obj.insert("stderr".to_string(), Value::Array(Arc::from(stderr_bytes)));
 
                     // Store exit status (success/code)
                     let mut status_obj = std::collections::HashMap::new();
-                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
-                    status_obj.insert("success".to_string(), Value::from_bool(output.status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(i64::from(output.status.code().unwrap_or(-1))));
+                    status_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("ExitStatus".to_string()),
+                    );
+                    status_obj.insert(
+                        "success".to_string(),
+                        Value::from_bool(output.status.success()),
+                    );
+                    status_obj.insert(
+                        "code".to_string(),
+                        Value::Integer(i64::from(output.status.code().unwrap_or(-1))),
+                    );
                     output_obj.insert("status".to_string(), Value::Object(Arc::new(status_obj)));
 
                     // Return Result::Ok(output_obj)
