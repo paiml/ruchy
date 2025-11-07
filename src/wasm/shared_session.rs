@@ -1009,21 +1009,22 @@ mod tests {
 
     #[test]
     fn test_execution_plan_creation() {
-        let mut cascade = vec![];
-        cascade.push(CascadeStep {
-            cell_id: "cell_1".to_string(),
-            estimated_time: 10.0,
-            dependencies: Some(HashSet::new()),
-            can_skip: false,
-            skipped: false,
-        });
-        cascade.push(CascadeStep {
-            cell_id: "cell_2".to_string(),
-            estimated_time: 20.0,
-            dependencies: None,
-            can_skip: true,
-            skipped: false,
-        });
+        let cascade = vec![
+            CascadeStep {
+                cell_id: "cell_1".to_string(),
+                estimated_time: 10.0,
+                dependencies: Some(HashSet::new()),
+                can_skip: false,
+                skipped: false,
+            },
+            CascadeStep {
+                cell_id: "cell_2".to_string(),
+                estimated_time: 20.0,
+                dependencies: None,
+                can_skip: true,
+                skipped: false,
+            },
+        ];
 
         let plan = ExecutionPlan {
             primary: "main_cell".to_string(),
