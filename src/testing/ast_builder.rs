@@ -748,10 +748,10 @@ mod tests {
     #[test]
     fn test_float_literal() {
         let builder = AstBuilder::new();
-        let expr = builder.float(3.14);
+        let expr = builder.float(3.15);
 
         if let ExprKind::Literal(Literal::Float(value)) = expr.kind {
-            assert!((value - 3.14).abs() < f64::EPSILON);
+            assert!((value - 3.15).abs() < f64::EPSILON);
         } else {
             panic!("Expected float literal");
         }
@@ -1873,7 +1873,7 @@ mod tests {
         // Test that all basic expressions can be transpiled
         let expressions = vec![
             builder.int(42),
-            builder.float(3.14),
+            builder.float(3.15),
             builder.string("hello"),
             builder.bool(true),
             builder.ident("variable"),

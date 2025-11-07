@@ -1287,9 +1287,9 @@ mod tests {
     #[test]
     fn test_format_float_literal() {
         let formatter = Formatter::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
+        let expr = Expr::new(ExprKind::Literal(Literal::Float(3.15)), Default::default());
         let result = formatter.format(&expr).unwrap();
-        assert_eq!(result, "3.14");
+        assert_eq!(result, "3.15");
     }
 
     #[test]

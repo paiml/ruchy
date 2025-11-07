@@ -87,7 +87,7 @@ fn lower_binary_op(
         BinaryOp::And => builder.ins().band(lhs, rhs),
         BinaryOp::Or => builder.ins().bor(lhs, rhs),
 
-        _ => return Err(anyhow!("Unsupported binary operation: {:?}", op)),
+        _ => return Err(anyhow!("Unsupported binary operation: {op:?}")),
     };
 
     Ok(result)

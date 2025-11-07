@@ -5614,10 +5614,11 @@ mod tests {
         assert!(feature_names.contains(&"Basic Evaluation"));
         assert!(feature_names.contains(&"DataFrames"));
 
-        // All features should have both native and wasm flags set
+        // Verify features have valid support flags (at least one should be true)
         for feature in &features {
-            assert!(feature.native_support || !feature.native_support);
-            assert!(feature.wasm_support || !feature.wasm_support);
+            // Each feature should have at least native OR wasm support
+            assert!(feature.native_support || feature.wasm_support,
+                "Feature '{}' must have at least one support flag", feature.feature);
         }
     }
 

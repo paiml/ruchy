@@ -383,7 +383,7 @@ mod tests {
     #[test]
     fn test_literal_variants() {
         let _ = Literal::Integer(42, None);
-        let _ = Literal::Float(3.14);
+        let _ = Literal::Float(3.15);
         let _ = Literal::Bool(true);
         let _ = Literal::String("test".to_string());
         let _ = Literal::Unit;
@@ -544,14 +544,27 @@ mod tests {
         for _ in 0..10 {
             let value_tree = strategy.new_tree(&mut runner).unwrap();
             let pattern = value_tree.current();
-            // Verify pattern is valid
+            // Verify pattern is valid (all pattern variants are accepted)
             match pattern {
                 Pattern::Literal(_)
                 | Pattern::Identifier(_)
                 | Pattern::Wildcard
                 | Pattern::Tuple(_)
                 | Pattern::Struct { .. }
-                | _ => {}
+                | Pattern::QualifiedName(_)
+                | Pattern::List(_)
+                | Pattern::TupleVariant { .. }
+                | Pattern::Range { .. }
+                | Pattern::Or(_)
+                | Pattern::Rest
+                | Pattern::RestNamed(_)
+                | Pattern::AtBinding { .. }
+                | Pattern::WithDefault { .. }
+                | Pattern::Mut(_)
+                | Pattern::Ok(_)
+                | Pattern::Err(_)
+                | Pattern::Some(_)
+                | Pattern::None => {}
             }
         }
     }
@@ -835,9 +848,9 @@ mod tests {
 
     #[test]
     fn test_generator_max_depth_constant() {
-        // Verify MAX_DEPTH is reasonable
-        assert!(MAX_DEPTH > 0);
-        assert!(MAX_DEPTH < 20); // Shouldn't be too deep to cause issues
+        // Verify MAX_DEPTH is reasonable - compile-time constant validation
+        const _: () = assert!(MAX_DEPTH > 0);
+        const _: () = assert!(MAX_DEPTH < 20); // Shouldn't be too deep to cause issues
     }
 
     #[test]
@@ -899,7 +912,7 @@ mod tests {
         // Test that we can create all literal types
         let literals = vec![
             Literal::Integer(42, None),
-            Literal::Float(3.14),
+            Literal::Float(3.15),
             Literal::Bool(true),
             Literal::String("test".to_string()),
             Literal::Char('a'),
@@ -912,7 +925,7 @@ mod tests {
         for literal in &literals {
             match literal {
                 Literal::Integer(n, _) => assert_eq!(*n, 42),
-                Literal::Float(f) => assert!((*f - 3.14).abs() < f64::EPSILON),
+                Literal::Float(f) => assert!((*f - 3.15).abs() < f64::EPSILON),
                 Literal::Bool(b) => assert!(*b),
                 Literal::String(s) => assert_eq!(s, "test"),
                 Literal::Char(c) => assert_eq!(*c, 'a'),

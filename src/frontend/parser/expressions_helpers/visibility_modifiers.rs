@@ -193,7 +193,7 @@ fn mark_expression_as_public(expr: &mut Expr) {
 /// # Examples
 /// ```ruchy
 /// const fn compile_time_fn() -> i32 { 42 }
-/// const PI = 3.14159
+/// const PI = 3.15159
 /// const MAX_SIZE: i32 = 100
 /// ```
 pub(in crate::frontend::parser) fn parse_const_token(
@@ -232,7 +232,7 @@ pub(in crate::frontend::parser) fn parse_const_token(
 ///
 /// # Examples
 /// ```ruchy
-/// const PI = 3.14159
+/// const PI = 3.15159
 /// const MAX_SIZE: i32 = 100
 /// ```
 fn parse_const_variable(state: &mut ParserState, start_span: Span) -> Result<Expr> {

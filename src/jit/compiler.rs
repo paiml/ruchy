@@ -14,6 +14,9 @@
 //! - [x] Function calls and recursion - JIT-002
 //! - [ ] Tiered optimization (JIT-003)
 
+// Allow unsafe code in JIT module - required for function pointer transmutation
+#![allow(unsafe_code)]
+
 use anyhow::{anyhow, Result};
 use cranelift::prelude::*;
 use cranelift_jit::{JITBuilder, JITModule};
@@ -49,7 +52,7 @@ struct CompileContext {
     variables: HashMap<String, Variable>,
     /// Next variable ID for creating fresh variables
     next_var: u32,
-    /// Function table (name → FuncRef) for call resolution
+    /// Function table (name → `FuncRef`) for call resolution
     functions: HashMap<String, cranelift_codegen::ir::FuncRef>,
     /// JIT-005: Current loop's merge block (for break statements)
     loop_merge_block: Option<cranelift_codegen::ir::Block>,
@@ -57,7 +60,7 @@ struct CompileContext {
     loop_continue_block: Option<cranelift_codegen::ir::Block>,
     /// JIT-005: Track if current block is terminated (by break/continue)
     block_terminated: bool,
-    /// JIT-007: Track tuple sizes (varname → element_count)
+    /// JIT-007: Track tuple sizes (varname → `element_count`)
     tuple_sizes: HashMap<String, usize>,
 }
 
@@ -70,12 +73,12 @@ impl JitCompiler {
         // Get native ISA (Instruction Set Architecture)
         let mut flag_builder = settings::builder();
         // Enable optimization
-        flag_builder.set("opt_level", "speed").map_err(|e| anyhow!("Failed to set opt_level: {}", e))?;
+        flag_builder.set("opt_level", "speed").map_err(|e| anyhow!("Failed to set opt_level: {e}"))?;
         let flags = settings::Flags::new(flag_builder);
 
         let isa = cranelift_native::builder().unwrap_or_else(|_| {
             panic!("Cranelift native ISA not available on this platform")
-        }).finish(flags).map_err(|e| anyhow!("Failed to create ISA: {}", e))?;
+        }).finish(flags).map_err(|e| anyhow!("Failed to create ISA: {e}"))?;
 
         // Create JIT builder with native target
         let builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
@@ -153,7 +156,7 @@ impl JitCompiler {
             // Import all functions as FuncRefs for this function
             let mut func_refs = HashMap::new();
             for (name, func_id) in &function_table {
-                let func_ref = self.module.declare_func_in_func(*func_id, &mut builder.func);
+                let func_ref = self.module.declare_func_in_func(*func_id, builder.func);
                 func_refs.insert(name.clone(), func_ref);
             }
 
@@ -184,31 +187,28 @@ impl JitCompiler {
         Ok(main_func_id)
     }
 
-    /// Collect all function definitions and declare them (get FuncIds)
+    /// Collect all function definitions and declare them (get `FuncIds`)
     fn collect_and_declare_functions(&mut self, expr: &Expr, table: &mut HashMap<String, FuncId>) -> Result<()> {
-        match &expr.kind {
-            ExprKind::Block(exprs) => {
-                for e in exprs {
-                    if let ExprKind::Function { name, params, .. } = &e.kind {
-                        // Create signature: (i64, i64, ...) -> i64
-                        let mut sig = self.module.make_signature();
-                        for _ in params {
-                            sig.params.push(AbiParam::new(types::I64));
-                        }
-                        sig.returns.push(AbiParam::new(types::I64));
-
-                        // Declare function
-                        let func_id = self.module.declare_function(
-                            name,
-                            Linkage::Local,
-                            &sig,
-                        )?;
-
-                        table.insert(name.clone(), func_id);
+        if let ExprKind::Block(exprs) = &expr.kind {
+            for e in exprs {
+                if let ExprKind::Function { name, params, .. } = &e.kind {
+                    // Create signature: (i64, i64, ...) -> i64
+                    let mut sig = self.module.make_signature();
+                    for _ in params {
+                        sig.params.push(AbiParam::new(types::I64));
                     }
+                    sig.returns.push(AbiParam::new(types::I64));
+
+                    // Declare function
+                    let func_id = self.module.declare_function(
+                        name,
+                        Linkage::Local,
+                        &sig,
+                    )?;
+
+                    table.insert(name.clone(), func_id);
                 }
             }
-            _ => {}
         }
         Ok(())
     }
@@ -249,7 +249,7 @@ impl JitCompiler {
             // Import all functions as FuncRefs (for recursion)
             let mut func_refs = HashMap::new();
             for (name, func_id) in function_table {
-                let func_ref = self.module.declare_func_in_func(*func_id, &mut builder.func);
+                let func_ref = self.module.declare_func_in_func(*func_id, builder.func);
                 func_refs.insert(name.clone(), func_ref);
             }
 
@@ -304,7 +304,7 @@ impl JitCompiler {
 
             // JIT-002: Boolean literals
             ExprKind::Literal(Literal::Bool(b)) => {
-                Ok(builder.ins().iconst(types::I64, if *b { 1 } else { 0 }))
+                Ok(builder.ins().iconst(types::I64, i64::from(*b)))
             }
 
             // JIT-002: Unit literal ()
@@ -452,7 +452,7 @@ impl JitCompiler {
                 builder.ins().uextend(types::I64, cmp)
             }
 
-            _ => return Err(anyhow!("Unsupported binary operation in JIT: {:?}", op)),
+            _ => return Err(anyhow!("Unsupported binary operation in JIT: {op:?}")),
         };
 
         Ok(result)
@@ -480,7 +480,7 @@ impl JitCompiler {
                 let one = builder.ins().iconst(types::I64, 1);
                 builder.ins().isub(one, operand_value)
             }
-            _ => return Err(anyhow!("JIT-003: Unsupported unary operation: {:?}", op)),
+            _ => return Err(anyhow!("JIT-003: Unsupported unary operation: {op:?}")),
         };
 
         Ok(result)
@@ -582,7 +582,7 @@ impl JitCompiler {
 
     /// Compile while loop - complexity ≤10
     ///
-    /// Structure: loop_block → check condition → body_block or merge_block
+    /// Structure: `loop_block` → check condition → `body_block` or `merge_block`
     fn compile_while(
         builder: &mut FunctionBuilder,
         ctx: &mut CompileContext,
@@ -635,8 +635,8 @@ impl JitCompiler {
 
     /// Compile for loop - complexity ≤10
     ///
-    /// Structure: loop_block → body_block → incr_block → loop_block
-    /// Continue jumps to incr_block (not loop_block) to ensure increment happens
+    /// Structure: `loop_block` → `body_block` → `incr_block` → `loop_block`
+    /// Continue jumps to `incr_block` (not `loop_block`) to ensure increment happens
     fn compile_for(
         builder: &mut FunctionBuilder,
         ctx: &mut CompileContext,
@@ -806,7 +806,7 @@ impl JitCompiler {
 
         // Look up variable
         let var = ctx.variables.get(var_name)
-            .ok_or_else(|| anyhow!("JIT-005: Undefined variable: {}", var_name))?;
+            .ok_or_else(|| anyhow!("JIT-005: Undefined variable: {var_name}"))?;
 
         // Update variable
         builder.def_var(*var, new_val);
@@ -916,7 +916,7 @@ impl JitCompiler {
                 let elem_value = Self::compile_expr(builder, ctx, elem)?;
                 let elem_var = builder.declare_var(types::I64);
                 builder.def_var(elem_var, elem_value);
-                let elem_name = format!("{}${}", name, i);
+                let elem_name = format!("{name}${i}");
                 ctx.variables.insert(elem_name, elem_var);
             }
             // Track tuple size
@@ -952,7 +952,7 @@ impl JitCompiler {
     ) -> Result<Value> {
         // Lookup variable in context
         let var = ctx.variables.get(name)
-            .ok_or_else(|| anyhow!("Undefined variable: {}", name))?;
+            .ok_or_else(|| anyhow!("Undefined variable: {name}"))?;
 
         // Read variable value (Cranelift handles SSA)
         Ok(builder.use_var(*var))
@@ -973,7 +973,7 @@ impl JitCompiler {
 
         // Lookup function reference in table (copy it to avoid borrow issues)
         let func_ref = *ctx.functions.get(func_name)
-            .ok_or_else(|| anyhow!("Undefined function: {}", func_name))?;
+            .ok_or_else(|| anyhow!("Undefined function: {func_name}"))?;
 
         // Evaluate arguments
         let mut arg_values = Vec::new();
@@ -1005,23 +1005,23 @@ impl JitCompiler {
         // Generate unique tuple ID based on next_var
         let tuple_id = ctx.next_var;
         ctx.next_var += 1;
-        let tuple_name = format!("$tuple{}", tuple_id);
+        let tuple_name = format!("$tuple{tuple_id}");
 
         // Compile and store each element
         for (i, elem) in elements.iter().enumerate() {
             let elem_value = Self::compile_expr(builder, ctx, elem)?;
             let elem_var = builder.declare_var(types::I64);
             builder.def_var(elem_var, elem_value);
-            let elem_name = format!("{}${}", tuple_name, i);
+            let elem_name = format!("{tuple_name}${i}");
             ctx.variables.insert(elem_name, elem_var);
         }
 
         // Track tuple size for field access
         ctx.tuple_sizes.insert(tuple_name.clone(), elements.len());
-        ctx.variables.insert(tuple_name.clone(), builder.declare_var(types::I64));
+        ctx.variables.insert(tuple_name, builder.declare_var(types::I64));
 
         // Return tuple ID as handle
-        Ok(builder.ins().iconst(types::I64, tuple_id as i64))
+        Ok(builder.ins().iconst(types::I64, i64::from(tuple_id)))
     }
 
     /// Compile field access (tuple.0, tuple.1, etc.) - complexity ≤5
@@ -1033,16 +1033,16 @@ impl JitCompiler {
     ) -> Result<Value> {
         // Parse field index
         let field_idx: usize = field.parse()
-            .map_err(|_| anyhow!("JIT-007: Field must be numeric index: {}", field))?;
+            .map_err(|_| anyhow!("JIT-007: Field must be numeric index: {field}"))?;
 
         // For tuple access, object must be an identifier
         if let ExprKind::Identifier(var_name) = &object.kind {
             // Check if this is a tuple variable
             if let Some(&tuple_size) = ctx.tuple_sizes.get(var_name) {
                 if field_idx >= tuple_size {
-                    return Err(anyhow!("JIT-007: Tuple index {} out of bounds (size {})", field_idx, tuple_size));
+                    return Err(anyhow!("JIT-007: Tuple index {field_idx} out of bounds (size {tuple_size})"));
                 }
-                let elem_name = format!("{}${}", var_name, field_idx);
+                let elem_name = format!("{var_name}${field_idx}");
                 if let Some(&var) = ctx.variables.get(&elem_name) {
                     return Ok(builder.use_var(var));
                 }
@@ -1053,13 +1053,13 @@ impl JitCompiler {
             // Extract tuple ID from handle
             // For now, we'll use a simple approach: inline tuples store directly
             let tuple_id = tuple_handle; // This will be the iconst value
-            let tuple_name = format!("$tuple{}", tuple_id);
-            let elem_name = format!("{}${}", tuple_name, field_idx);
+            let tuple_name = format!("$tuple{tuple_id}");
+            let elem_name = format!("{tuple_name}${field_idx}");
             if let Some(&var) = ctx.variables.get(&elem_name) {
                 return Ok(builder.use_var(var));
             }
 
-            Err(anyhow!("JIT-007: Variable '{}' is not a tuple", var_name))
+            Err(anyhow!("JIT-007: Variable '{var_name}' is not a tuple"))
         } else {
             Err(anyhow!("JIT-007: Field access only supported on identifiers"))
         }
@@ -1090,7 +1090,7 @@ mod tests {
         let ast = Parser::new(code).parse().unwrap();
         let mut compiler = JitCompiler::new().unwrap();
         let result = compiler.compile_and_execute(&ast);
-        assert!(result.is_ok(), "JIT should compile literal: {:?}", result);
+        assert!(result.is_ok(), "JIT should compile literal: {result:?}");
         assert_eq!(result.unwrap(), 42);
     }
 
@@ -1100,7 +1100,7 @@ mod tests {
         let ast = Parser::new(code).parse().unwrap();
         let mut compiler = JitCompiler::new().unwrap();
         let result = compiler.compile_and_execute(&ast);
-        assert!(result.is_ok(), "JIT should compile addition: {:?}", result);
+        assert!(result.is_ok(), "JIT should compile addition: {result:?}");
         assert_eq!(result.unwrap(), 5);
     }
 
@@ -1110,7 +1110,7 @@ mod tests {
         let ast = Parser::new(code).parse().unwrap();
         let mut compiler = JitCompiler::new().unwrap();
         let result = compiler.compile_and_execute(&ast);
-        assert!(result.is_ok(), "JIT should compile complex arithmetic: {:?}", result);
+        assert!(result.is_ok(), "JIT should compile complex arithmetic: {result:?}");
         assert_eq!(result.unwrap(), 28); // (15) * 2 - 2 = 30 - 2 = 28
     }
 }

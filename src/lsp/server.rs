@@ -148,7 +148,7 @@ impl LanguageServer for RuchyLanguageServer {
         let workspace = self.workspace.lock().await;
         if let Ok(document) = workspace.get_document(&params.text_document.uri) {
             let formatter = self.formatter.lock().await;
-            let formatted = formatter.format(document)?;
+            let formatted_text = formatter.format(document)?;
             // Return a single text edit that replaces the entire document
             let edit = TextEdit {
                 range: Range {
@@ -161,7 +161,7 @@ impl LanguageServer for RuchyLanguageServer {
                         character: 0,
                     },
                 },
-                new_text: formatted,
+                new_text: formatted_text,
             };
             Ok(Some(vec![edit]))
         } else {

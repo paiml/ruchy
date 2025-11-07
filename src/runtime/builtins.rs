@@ -1753,7 +1753,7 @@ mod property_tests {
         fn test_abs_idempotent(n: i64) {
             let val = Value::Integer(n);
             let result1 = builtin_abs(&[val]).unwrap();
-            let result2 = builtin_abs(&[result1.clone()]).unwrap();
+            let result2 = builtin_abs(std::slice::from_ref(&result1)).unwrap();
             prop_assert_eq!(result1, result2);
         }
 

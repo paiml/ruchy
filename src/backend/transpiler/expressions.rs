@@ -131,7 +131,7 @@ impl Transpiler {
         if let ExprKind::Identifier(target_name) = &target.kind {
             if self.global_vars.read().unwrap().contains(target_name) {
                 // Target is a global - check if value also references it
-                if self.expr_references_var(value, target_name) {
+                if Self::expr_references_var(value, target_name) {
                     // DEADLOCK SCENARIO: counter = counter + 1
                     // Generate single-lock pattern:
                     //   { let mut guard = counter.lock().unwrap(); *guard = *guard + 1; }
@@ -154,23 +154,23 @@ impl Transpiler {
     }
 
     /// Check if an expression references a specific variable name
-    fn expr_references_var(&self, expr: &Expr, var_name: &str) -> bool {
+    fn expr_references_var(expr: &Expr, var_name: &str) -> bool {
         match &expr.kind {
             ExprKind::Identifier(name) => name == var_name,
             ExprKind::Binary { left, right, .. } => {
-                self.expr_references_var(left, var_name) || self.expr_references_var(right, var_name)
+                Self::expr_references_var(left, var_name) || Self::expr_references_var(right, var_name)
             }
-            ExprKind::Unary { operand, .. } => self.expr_references_var(operand, var_name),
+            ExprKind::Unary { operand, .. } => Self::expr_references_var(operand, var_name),
             ExprKind::Call { func, args } => {
-                self.expr_references_var(func, var_name)
-                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+                Self::expr_references_var(func, var_name)
+                    || args.iter().any(|arg| Self::expr_references_var(arg, var_name))
             }
             ExprKind::MethodCall { receiver, args, .. } => {
-                self.expr_references_var(receiver, var_name)
-                    || args.iter().any(|arg| self.expr_references_var(arg, var_name))
+                Self::expr_references_var(receiver, var_name)
+                    || args.iter().any(|arg| Self::expr_references_var(arg, var_name))
             }
             ExprKind::IndexAccess { object, index } => {
-                self.expr_references_var(object, var_name) || self.expr_references_var(index, var_name)
+                Self::expr_references_var(object, var_name) || Self::expr_references_var(index, var_name)
             }
             _ => false,
         }
