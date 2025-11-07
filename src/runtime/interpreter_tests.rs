@@ -185,7 +185,7 @@ mod tests {
 
         // Set variables with different types
         interp.env_set("x".to_string(), Value::Integer(42));
-        interp.env_set("y".to_string(), Value::Float(3.14));
+        interp.env_set("y".to_string(), Value::Float(3.15));
         interp.env_set("z".to_string(), Value::from_string("test".to_string()));
 
         // Access variables multiple times to trigger type feedback

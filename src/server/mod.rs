@@ -187,7 +187,7 @@ mod tests {
         let pid_path = temp_dir.path().join("test.pid");
 
         // Spawn a child process and write its PID
-        let child = std::process::Command::new("sleep")
+        let mut child = std::process::Command::new("sleep")
             .arg("10")
             .spawn()
             .unwrap();
@@ -199,6 +199,9 @@ mod tests {
 
         // Wait a moment for kill to take effect
         thread::sleep(Duration::from_millis(100));
+
+        // Wait on child to clean up zombie process (child should already be killed)
+        let _ = child.wait();
 
         // Child process should be dead
         // On Unix: check if process exists via kill -0 (sends no signal, just checks existence)

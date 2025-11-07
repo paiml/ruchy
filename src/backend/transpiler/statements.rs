@@ -6633,7 +6633,7 @@ mod property_tests_statements {
         let test_cases = vec![
             "let x = 5",
             "let mut y = 10",
-            "const PI = 3.14",
+            "const PI = 3.15",
             "let (a, b) = (1, 2)",
             "let [x, y, z] = [1, 2, 3]",
             "let Some(value) = opt",
@@ -6702,7 +6702,7 @@ mod property_tests_statements {
             "log(1)",
             "exp(0)",
             // Type conversions
-            "int(3.14)",
+            "int(3.15)",
             "float(42)",
             "str(123)",
             "bool(1)",
@@ -6835,7 +6835,7 @@ mod property_tests_statements {
         let test_cases = vec![
             "class Empty { }",
             "class Point { x: int; y: int }",
-            "class Circle { radius: float; fn area() { 3.14 * radius * radius } }",
+            "class Circle { radius: float; fn area() { 3.15 * radius * radius } }",
             "class Derived extends Base { }",
             "class Generic<T> { value: T }",
         ];
@@ -6858,7 +6858,7 @@ mod property_tests_statements {
             "from std import println",
             "from math import { sin, cos, tan }",
             "export fn public() { }",
-            "export const PI = 3.14",
+            "export const PI = 3.15",
             "export { func1, func2 }",
         ];
 

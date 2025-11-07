@@ -689,9 +689,9 @@ mod mutation_tests {
     #[test]
     fn test_eval_float_method_to_string() {
         // MISSED: delete match arm "to_string" in eval_float_method (line 281)
-        let result = eval_float_method(3.14, "to_string", true).unwrap();
+        let result = eval_float_method(3.15, "to_string", true).unwrap();
         match result {
-            Value::String(s) => assert_eq!(s.as_ref(), "3.14"),
+            Value::String(s) => assert_eq!(s.as_ref(), "3.15"),
             _ => panic!("Expected string result from to_string()"),
         }
     }

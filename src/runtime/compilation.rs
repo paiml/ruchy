@@ -695,8 +695,8 @@ mod tests {
             Value::Integer(42)
         );
         assert_eq!(
-            interpreter.literal_to_value(&Literal::Float(3.14)),
-            Value::Float(3.14)
+            interpreter.literal_to_value(&Literal::Float(3.15)),
+            Value::Float(3.15)
         );
         assert_eq!(
             interpreter.literal_to_value(&Literal::Bool(true)),

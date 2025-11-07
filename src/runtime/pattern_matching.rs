@@ -395,7 +395,7 @@ mod tests {
         vec![
             Value::Nil,
             Value::Integer(42),
-            Value::Float(3.14),
+            Value::Float(3.15),
             Value::from_string("test".to_string()),
             Value::Bool(true),
             // Value::Char('a'), // Char variant not available in current Value enum
@@ -422,8 +422,8 @@ mod tests {
 
         // Float literal matching with epsilon
         assert!(match_literal_pattern(
-            &Value::Float(3.14),
-            &Literal::Float(3.14)
+            &Value::Float(3.15),
+            &Literal::Float(3.15)
         ));
         assert!(match_literal_pattern(
             &Value::Float(1.0),
@@ -480,7 +480,7 @@ mod tests {
         assert!(!values_equal(&Value::Integer(42), &Value::Integer(43)));
 
         // Float equality with epsilon
-        assert!(values_equal(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(values_equal(&Value::Float(3.15), &Value::Float(3.15)));
         assert!(values_equal(
             &Value::Float(1.0),
             &Value::Float(1.0 + f64::EPSILON / 2.0)

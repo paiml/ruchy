@@ -200,7 +200,7 @@ mod tests {
             "Should reject integer value"
         );
         assert!(
-            validate_string("test", &Value::Float(3.14), "arg").is_err(),
+            validate_string("test", &Value::Float(3.15), "arg").is_err(),
             "Should reject float value"
         );
         assert!(
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn test_validate_numeric() {
         assert!(validate_numeric("test", &Value::Integer(42), "arg").is_ok());
-        assert!(validate_numeric("test", &Value::Float(3.14), "arg").is_ok());
+        assert!(validate_numeric("test", &Value::Float(3.15), "arg").is_ok());
         assert!(validate_numeric(
             "test",
             &Value::from_string("not a number".to_string()),

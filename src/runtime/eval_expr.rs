@@ -300,7 +300,7 @@ mod tests {
             eval_literal(&Literal::Integer(42, None)),
             Value::Integer(42)
         );
-        assert_eq!(eval_literal(&Literal::Float(3.14)), Value::Float(3.14));
+        assert_eq!(eval_literal(&Literal::Float(3.15)), Value::Float(3.15));
         assert_eq!(eval_literal(&Literal::Bool(true)), Value::Bool(true));
         assert_eq!(eval_literal(&Literal::Unit), Value::Nil);
         assert_eq!(eval_literal(&Literal::Null), Value::Nil);

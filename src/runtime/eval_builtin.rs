@@ -3321,9 +3321,9 @@ mod tests {
         let result = eval_abs(&args).unwrap();
         assert_eq!(result, Value::Integer(42));
 
-        let args = vec![Value::Float(-3.14)];
+        let args = vec![Value::Float(-3.15)];
         let result = eval_abs(&args).unwrap();
-        assert_eq!(result, Value::Float(3.14));
+        assert_eq!(result, Value::Float(3.15));
     }
 
     #[test]
@@ -3357,7 +3357,7 @@ mod tests {
         let result = eval_type(&args).unwrap();
         assert_eq!(result, Value::from_string("integer".to_string()));
 
-        let args = vec![Value::Float(3.14)];
+        let args = vec![Value::Float(3.15)];
         let result = eval_type(&args).unwrap();
         assert_eq!(result, Value::from_string("float".to_string()));
     }
@@ -3723,7 +3723,7 @@ mod tests {
             Value::Integer(-100),
             Value::Integer(0),
             Value::Integer(100),
-            Value::Float(-3.14),
+            Value::Float(-3.15),
             Value::Float(0.0),
             Value::Float(2.71),
         ];

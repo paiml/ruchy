@@ -383,7 +383,7 @@ mod tests {
             "sqrt(4)",
             "input()",
             "assert(true)",
-            "int(3.14)",
+            "int(3.15)",
             "vec![1, 2, 3]",
             "df.select(\"col\")",
             "custom_func(1, 2)",

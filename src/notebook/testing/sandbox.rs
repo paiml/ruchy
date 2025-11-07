@@ -931,7 +931,7 @@ mod tests {
     #[test]
     fn test_ruchy_values() {
         let int_val = RuchyValue::Integer(42);
-        let float_val = RuchyValue::Float(3.14);
+        let float_val = RuchyValue::Float(3.15);
         let string_val = RuchyValue::String("hello".to_string());
         let bool_val = RuchyValue::Boolean(true);
         let null_val = RuchyValue::Null;
@@ -942,8 +942,8 @@ mod tests {
         }
 
         match float_val {
-            RuchyValue::Float(f) if (f - 3.14).abs() < f64::EPSILON => (),
-            _ => panic!("Expected Float(3.14)"),
+            RuchyValue::Float(f) if (f - 3.15).abs() < f64::EPSILON => (),
+            _ => panic!("Expected Float(3.15)"),
         }
 
         match string_val {

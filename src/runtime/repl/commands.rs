@@ -566,9 +566,8 @@ mod tests {
 
     #[test]
     fn test_command_registry_creation() {
-        let registry = CommandRegistry::new();
+        let _registry = CommandRegistry::new();
         // Just ensure it can be created
-        drop(registry);
     }
 
     #[test]

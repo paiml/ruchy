@@ -237,7 +237,7 @@ mod tests {
             convert_token_to_sql(&Token::Integer("42".to_string())),
             "42"
         );
-        assert_eq!(convert_token_to_sql(&Token::Float(3.14)), "3.14");
+        assert_eq!(convert_token_to_sql(&Token::Float(3.15)), "3.15");
         assert_eq!(
             convert_token_to_sql(&Token::String("test".to_string())),
             "'test'"

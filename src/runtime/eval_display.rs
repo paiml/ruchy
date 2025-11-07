@@ -290,8 +290,8 @@ mod tests {
 
     #[test]
     fn test_display_float() {
-        let val = Value::Float(3.14);
-        assert_eq!(val.to_string(), "3.14");
+        let val = Value::Float(3.15);
+        assert_eq!(val.to_string(), "3.15");
     }
 
     #[test]

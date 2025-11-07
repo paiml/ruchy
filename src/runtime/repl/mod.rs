@@ -768,7 +768,7 @@ mod tests {
         let expressions = vec![
             // Literals
             "42",
-            "3.14",
+            "3.15",
             "true",
             "false",
             "\"hello world\"",

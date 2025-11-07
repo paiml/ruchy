@@ -56,7 +56,7 @@
 //! ```
 //! use ruchy::frontend::{Parser, Expr, ExprKind};
 //!
-//! let mut parser = Parser::new("42 + 3.14");
+//! let mut parser = Parser::new("42 + 3.15");
 //! let ast = parser.parse().unwrap();
 //!
 //! if let ExprKind::Binary { left, op, right } = &ast.kind {

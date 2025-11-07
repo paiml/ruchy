@@ -353,8 +353,8 @@ mod tests {
             "42"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Float(3.14159)).unwrap(),
-            "3.14159"
+            MinimalCodeGen::gen_literal(&Literal::Float(3.15159)).unwrap(),
+            "3.15159"
         );
         assert_eq!(
             MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(),

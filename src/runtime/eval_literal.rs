@@ -37,9 +37,9 @@ mod tests {
 
     #[test]
     fn test_float_literal() {
-        let lit = Literal::Float(3.14);
+        let lit = Literal::Float(3.15);
         let value = eval_literal(&lit);
-        assert_eq!(value, Value::from_f64(3.14));
+        assert_eq!(value, Value::from_f64(3.15));
     }
 
     #[test]
