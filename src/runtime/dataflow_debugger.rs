@@ -1105,7 +1105,7 @@ mod tests {
     fn test_data_value_display() {
         assert_eq!(format!("{}", DataValue::Boolean(true)), "true");
         assert_eq!(format!("{}", DataValue::Integer(42)), "42");
-        assert_eq!(format!("{}", DataValue::Float(3.14)), "3.14");
+        assert_eq!(format!("{}", DataValue::Float(3.15)), "3.15");
         assert_eq!(
             format!("{}", DataValue::String("hello".to_string())),
             "\"hello\""

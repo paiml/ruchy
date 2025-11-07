@@ -149,7 +149,7 @@
 //! use ruchy::frontend::Parser;
 //!
 //! // Example of reusing parsers for better performance
-//! let sources = ["42", "true", "3.14"];
+//! let sources = ["42", "true", "3.15"];
 //! for source in &sources {
 //!     let mut parser = Parser::new(source);
 //!     let result = parser.parse();

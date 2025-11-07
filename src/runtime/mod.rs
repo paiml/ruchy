@@ -354,7 +354,7 @@ mod tests {
     #[test]
     fn test_value_types() {
         assert_eq!(Value::Integer(42).to_string(), "42");
-        assert_eq!(Value::Float(3.14).to_string(), "3.14");
+        assert_eq!(Value::Float(3.15).to_string(), "3.15");
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(
             Value::from_string("hello".to_string()).to_string(),

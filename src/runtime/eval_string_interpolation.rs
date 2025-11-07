@@ -174,7 +174,7 @@ mod tests {
         // Mutation test: Verify Float match arm is tested in "d" format
         // MISSED: delete match arm Value::Float(f) in format_value_with_spec (line 50:17)
 
-        let float_value = Value::Float(3.14);
+        let float_value = Value::Float(3.15);
 
         // Test "d" format with Float - should convert to integer
         assert_eq!(

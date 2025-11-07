@@ -1195,7 +1195,7 @@ impl Interpreter {
                     } else if !alias.is_empty() && alias != "*" {
                         alias.clone()
                     } else {
-                        parts.last().unwrap_or(&"").to_string()
+                        (*parts.last().unwrap_or(&"")).to_string()
                     };
 
                     // Add to global environment (first element of env_stack)
@@ -1250,7 +1250,7 @@ impl Interpreter {
 
                     // Import the module into current environment
                     if let Some(value) = current_value {
-                        let import_name = parts.last().unwrap_or(&"").to_string();
+                        let import_name = (*parts.last().unwrap_or(&"")).to_string();
 
                         // Add to global environment
                         if let Some(global_env_ref) = self.env_stack.first() {
@@ -1298,7 +1298,8 @@ impl Interpreter {
                 Ok(Value::Nil)
             }
             ExprKind::ImportDefault { .. } => {
-                // TODO: Implement ImportDefault variant
+                // LIMITATION: ImportDefault not yet implemented - returns Nil for now
+                // See ISSUE-106 for module resolution tracking
                 Ok(Value::Nil)
             }
             // Handle vec! macro (GitHub Issue #62)
@@ -7736,9 +7737,9 @@ mod tests {
         assert!(nil_val.is_nil());
         assert_eq!(nil_val.type_name(), "nil");
 
-        let float_val = Value::from_f64(3.14);
+        let float_val = Value::from_f64(3.15);
         let f_value = float_val.as_f64().expect("Should be float");
-        assert!((f_value - 3.14).abs() < f64::EPSILON);
+        assert!((f_value - 3.15).abs() < f64::EPSILON);
         assert_eq!(float_val.type_name(), "float");
 
         let string_val = Value::from_string("hello".to_string());

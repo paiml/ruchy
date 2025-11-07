@@ -626,7 +626,7 @@ mod tests {
         // Primitives
         assert!(equal_values(&Value::Integer(42), &Value::Integer(42)));
         assert!(!equal_values(&Value::Integer(42), &Value::Integer(43)));
-        assert!(equal_values(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(equal_values(&Value::Float(3.15), &Value::Float(3.15)));
         assert!(equal_values(&Value::Bool(true), &Value::Bool(true)));
         assert!(!equal_values(&Value::Bool(true), &Value::Bool(false)));
         assert!(equal_values(&Value::Byte(255), &Value::Byte(255)));
@@ -707,8 +707,8 @@ mod tests {
             Value::Integer(-5)
         );
         assert_eq!(
-            eval_unary_op(UnaryOp::Negate, &Value::Float(3.14)).unwrap(),
-            Value::Float(-3.14)
+            eval_unary_op(UnaryOp::Negate, &Value::Float(3.15)).unwrap(),
+            Value::Float(-3.15)
         );
 
         assert_eq!(

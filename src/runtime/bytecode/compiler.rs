@@ -573,8 +573,8 @@ impl Compiler {
         );
 
         // OPT-011: Don't free func_reg or arg_regs yet - they contain values needed at runtime
-        // TODO: Implement proper lifetime analysis for register allocation
-        // For now, accept some register pressure to ensure correctness
+        // DESIGN DECISION: Current register allocation accepts some register pressure to ensure correctness.
+        // Future optimization: Implement precise lifetime analysis for register reuse (see OPT-011).
 
         Ok(result_reg)
     }

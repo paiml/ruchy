@@ -571,7 +571,7 @@ mod tests {
         assert_eq!(Value::Int(42).to_string(), "42");
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(Value::String("hello".to_string()).to_string(), "\"hello\"");
-        assert_eq!(Value::Float(3.14).to_string(), "3.14");
+        assert_eq!(Value::Float(3.15).to_string(), "3.15");
         assert_eq!(Value::Null.to_string(), "null");
 
         let array = Value::Array(vec![Value::Int(1), Value::Int(2)]);
@@ -709,10 +709,7 @@ mod tests {
         let result = exec.find_error_path("x < 0");
         // The result can be Ok or Err depending on SMT solver availability
         // What matters is that it doesn't panic
-        match result {
-            Ok(_) => {}  // SMT solver worked
-            Err(_) => {} // SMT solver not available or failed, which is acceptable
-        }
+        let _ = result; // SMT solver worked or not available - both acceptable
     }
 
     #[test]
@@ -785,7 +782,7 @@ mod tests {
         let _ = Value::Int(42);
         let _ = Value::Bool(true);
         let _ = Value::String("test".to_string());
-        let _ = Value::Float(3.14);
+        let _ = Value::Float(3.15);
         let _ = Value::Array(vec![]);
         let _ = Value::Tuple(vec![]);
         let _ = Value::Null;

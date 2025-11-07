@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_parse_simple_float() {
-        let mut parser = Parser::new("3.14");
+        let mut parser = Parser::new("3.15");
         let result = parser.parse();
         assert!(result.is_ok());
     }

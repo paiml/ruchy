@@ -554,7 +554,6 @@ mod tests {
     fn test_smt_solver_new() {
         let _solver = SmtSolver::new(SolverType::Z3);
         // Constructor test - should create without panic
-        assert!(true);
     }
 
     #[test]
@@ -562,7 +561,6 @@ mod tests {
         let timeout = Duration::from_secs(30);
         let _solver = SmtSolver::with_timeout(SolverType::Z3, timeout);
         // Constructor with timeout should work
-        assert!(true);
     }
 
     #[test]
@@ -577,10 +575,10 @@ mod tests {
         let result = solver.solve(&query);
         // Should return some result
         match result {
-            SmtResult::Satisfiable(_) => assert!(true),
-            SmtResult::Unsatisfiable(_) => assert!(true),
-            SmtResult::Unknown(_) => assert!(true),
-            SmtResult::Timeout => assert!(true),
+            SmtResult::Satisfiable(_) => {}
+            SmtResult::Unsatisfiable(_) => {}
+            SmtResult::Unknown(_) => {}
+            SmtResult::Timeout => {}
         }
     }
 
@@ -720,7 +718,6 @@ mod tests {
     fn test_bounded_model_checker_new() {
         let _checker = BoundedModelChecker::new(SolverType::Z3, 10);
         // Constructor should work
-        assert!(true);
     }
 
     #[test]

@@ -751,11 +751,11 @@ mod tests {
         let eval_func = |_: &Value, _: &[Value]| Ok(Value::Bool(true));
 
         // Test "any" method via eval_array_any
-        let result = eval_array_any(&arr, &[closure.clone()], &mut |f, a| eval_func(f, a));
+        let result = eval_array_any(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
         assert!(result.is_ok(), "any method should work (match arm test)");
 
         // Test "all" method via eval_array_all
-        let result = eval_array_all(&arr, &[closure], &mut |f, a| eval_func(f, a));
+        let result = eval_array_all(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
         assert!(result.is_ok(), "all method should work (match arm test)");
     }
 
@@ -789,7 +789,7 @@ mod tests {
         );
 
         // Test with wrong number of args (1) - should fail
-        let result = eval_array_reduce(&arr, &[closure.clone()], &mut |f, a| eval_func(f, a));
+        let result = eval_array_reduce(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
         assert!(
             result.is_err(),
             "reduce with 1 arg should fail (proves != operator, not ==)"
