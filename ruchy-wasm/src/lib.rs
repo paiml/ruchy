@@ -52,7 +52,7 @@ impl RuchyCompiler {
     ///
     /// Transpiled Rust code as a string, or error message
     #[wasm_bindgen]
-    pub fn compile(&self, source: &str) -> Result<String, JsValue> {
+    pub fn compile(&mut self, source: &str) -> Result<String, JsValue> {
         let mut parser = Parser::new(source);
         let ast = parser
             .parse()
