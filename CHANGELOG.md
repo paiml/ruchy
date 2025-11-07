@@ -1875,14 +1875,26 @@ cargo build --profile release-tiny  # Produces ~95KB binary with opt="z"
   - Tests: `tests/lang_comp_006_data_structures.rs` (NEW, 8/8 passing)
   - Impact: Enables complex data modeling and encapsulation
 
-## [Unreleased] - 2025-11-07
+## [3.211.0] - 2025-11-07
 
 ### Fixed
 - **[PARSER-143]** Critical parser crash on Unicode characters (✓, ✗, emoji, etc.)
   - Root cause: `is_on_same_line()` sliced strings without checking char boundaries
-  - Impact: +5 book examples fixed (83.5% → 87.6% validation)
+  - Impact: Parser crashed on any code with Unicode symbols
   - Fix: Added UTF-8 char boundary validation before string slicing
   - Files: src/frontend/parser/mod.rs:218
   - Tests: tests/issue_143_unicode_char_boundary_crash.rs (5 tests, 100% pass)
   - Validation: 4036/4036 tests passing (no regressions)
+
+### Book Validation Improvements
+- **Overall**: 83.5% → 91.7% (+10 files fixed, +8.2%)
+- **Unicode fix**: +5 files (ruchy-book experiments with checkmarks)
+- **Test data**: +3 files (issue-116, issue-118, bench-009)
+- **Workarounds**: +2 files (JSON strings with double quotes)
+- **Remaining**: 10/121 failures (DataFrame feature, timeouts, module system)
+
+### Known Issues
+- **[PARSER-144]** Parser fails on braces inside single-quoted strings
+  - Workaround: Use double quotes for JSON strings
+  - Will be fixed in future release
 
