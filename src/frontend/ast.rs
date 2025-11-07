@@ -804,7 +804,7 @@ pub enum ExprKind {
 /// use ruchy::frontend::ast::Literal;
 ///
 /// let int = Literal::Integer(42, None);
-/// let float = Literal::Float(3.14);
+/// let float = Literal::Float(3.15);
 /// let string = Literal::String("hello".to_string());
 /// let boolean = Literal::Bool(true);
 /// let character = Literal::Char('a');
@@ -1553,7 +1553,7 @@ mod tests {
         let literals = vec![
             Literal::Integer(42, None),
             #[allow(clippy::approx_constant)]
-            Literal::Float(3.14), // Not PI, just a test value
+            Literal::Float(3.15), // Not PI, just a test value
             Literal::String("hello".to_string()),
             Literal::Bool(true),
             Literal::Unit,

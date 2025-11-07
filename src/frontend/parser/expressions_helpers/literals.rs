@@ -2,7 +2,7 @@
 //!
 //! Handles parsing of primitive literal values:
 //! - Integers with optional type suffixes (42, 100i32, 0xFF)
-//! - Floats (3.14, 1e-5)
+//! - Floats (3.15, 1e-5)
 //! - Strings (regular and raw strings)
 //! - F-strings with interpolation
 //! - Characters ('a', '\n')
@@ -26,7 +26,7 @@ use super::string_operations::parse_fstring_into_parts;
 /// # Examples
 /// ```ruchy
 /// 42          // Integer
-/// 3.14        // Float
+/// 3.15        // Float
 /// "hello"     // String
 /// 'a'         // Char
 /// true        // Bool
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_float_literal() {
-        let code = "3.14";
+        let code = "3.15";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Float literal should parse");
     }

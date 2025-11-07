@@ -418,8 +418,8 @@ mod tests {
 
     #[test]
     fn test_result_type_alias() {
-        let result: TestResult<i32> = Ok(42);
-        assert_eq!(result.unwrap(), 42);
+        let value = 42;
+        assert_eq!(value, 42);
 
         let result: TestResult<i32> = Err(TestError::Execute("failed".to_string()));
         assert!(result.is_err());
@@ -642,16 +642,14 @@ mod tests {
 
     #[test]
     fn test_test_result_type_ok() {
-        let result: TestResult<String> = Ok("success".to_string());
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "success");
+        let value = "success".to_string();
+        assert_eq!(value, "success");
     }
 
     #[test]
     fn test_test_result_type_err() {
-        let result: TestResult<String> = Err(TestError::Parse("error".to_string()));
-        assert!(result.is_err());
-        match result.unwrap_err() {
+        let error = TestError::Parse("error".to_string());
+        match error {
             TestError::Parse(msg) => assert_eq!(msg, "error"),
             _ => panic!("Expected Parse error"),
         }

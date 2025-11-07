@@ -253,7 +253,7 @@ impl SnapshotBisector {
 pub fn core_snapshot_tests() -> Vec<(&'static str, &'static str)> {
     vec![
         ("literal_int", "42"),
-        ("literal_float", "3.14"),
+        ("literal_float", "3.15"),
         ("literal_string", r#""hello""#),
         ("literal_bool_true", "true"),
         ("literal_bool_false", "false"),

@@ -30,8 +30,8 @@ impl Value {
     /// ```
     /// use ruchy::runtime::Value;
     ///
-    /// let val = Value::from_f64(3.14);
-    /// assert_eq!(val.as_f64().unwrap(), 3.14);
+    /// let val = Value::from_f64(3.15);
+    /// assert_eq!(val.as_f64().unwrap(), 3.15);
     /// ```
     pub fn from_f64(f: f64) -> Self {
         Value::Float(f)
@@ -341,8 +341,8 @@ mod tests {
         let int_val = Value::from_i64(42);
         assert_eq!(int_val.as_i64().unwrap(), 42);
 
-        let float_val = Value::from_f64(3.14);
-        assert_eq!(float_val.as_f64().unwrap(), 3.14);
+        let float_val = Value::from_f64(3.15);
+        assert_eq!(float_val.as_f64().unwrap(), 3.15);
 
         let bool_val = Value::from_bool(true);
         assert!(bool_val.as_bool().unwrap());
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     fn test_type_name() {
         assert_eq!(Value::from_i64(42).type_name(), "integer");
-        assert_eq!(Value::from_f64(3.14).type_name(), "float");
+        assert_eq!(Value::from_f64(3.15).type_name(), "float");
         assert_eq!(Value::from_bool(true).type_name(), "boolean");
         assert_eq!(Value::nil().type_name(), "nil");
         assert_eq!(Value::from_string("test".to_string()).type_name(), "string");
@@ -384,7 +384,7 @@ mod tests {
         assert!(int_val.as_f64().is_err());
         assert!(int_val.as_bool().is_err());
 
-        let float_val = Value::from_f64(3.14);
+        let float_val = Value::from_f64(3.15);
         assert!(float_val.as_i64().is_err());
         assert!(float_val.as_bool().is_err());
 

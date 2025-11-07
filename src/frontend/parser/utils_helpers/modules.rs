@@ -10,7 +10,7 @@ use super::super::{bail, Expr, ExprKind, Literal, ParserState, Result, Span, Tok
 /// Supports:
 /// - Empty modules: `module MyModule {}`
 /// - Single expression modules: `module Math { sqrt(x) }`
-/// - Multi-expression modules: `module Utils { fn helper() {...}; const PI = 3.14 }`
+/// - Multi-expression modules: `module Utils { fn helper() {...}; const PI = 3.15 }`
 ///
 /// # Examples
 ///

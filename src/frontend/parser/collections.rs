@@ -1591,7 +1591,7 @@ mod tests {
 
     #[test]
     fn test_parse_list_with_mixed_types() {
-        let mut parser = Parser::new("[1, \"hello\", true, 3.14]");
+        let mut parser = Parser::new("[1, \"hello\", true, 3.15]");
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse list with mixed types");
     }

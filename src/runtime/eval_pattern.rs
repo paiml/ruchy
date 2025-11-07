@@ -451,7 +451,7 @@ mod tests {
         // Test using imported pattern_matching::values_equal
         // Note: This function is strict - no mixed int/float comparison
         assert!(values_equal(&Value::Integer(42), &Value::Integer(42)));
-        assert!(values_equal(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(values_equal(&Value::Float(3.15), &Value::Float(3.15)));
         assert!(!values_equal(&Value::Integer(42), &Value::Float(42.0))); // Strict type matching
         assert!(!values_equal(&Value::Integer(42), &Value::Integer(43)));
     }

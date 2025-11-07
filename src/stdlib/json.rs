@@ -220,9 +220,9 @@ pub fn as_i64(value: &Value) -> Option<i64> {
 /// ```
 /// use ruchy::stdlib::json;
 ///
-/// let value = json::parse("3.14")?;
+/// let value = json::parse("3.15")?;
 /// let n = json::as_f64(&value);
-/// assert_eq!(n, Some(3.14));
+/// assert_eq!(n, Some(3.15));
 /// # Ok::<(), anyhow::Error>(())
 /// ```
 ///

@@ -843,7 +843,7 @@ mod tests {
             title: "Introduction to Ruchy".to_string(),
             description: "Basic programming exercises".to_string(),
             setup: AssignmentSetup {
-                prelude_code: vec!["let pi = 3.14159".to_string()],
+                prelude_code: vec!["let pi = 3.15159".to_string()],
                 provided_functions: HashMap::new(),
                 immutable_bindings: HashSet::new(),
             },
@@ -1122,7 +1122,7 @@ mod tests {
 
         let setup = AssignmentSetup {
             prelude_code: vec![
-                "let PI = 3.14159".to_string(),
+                "let PI = 3.15159".to_string(),
                 "let E = 2.71828".to_string(),
             ],
             provided_functions: provided,

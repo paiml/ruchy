@@ -714,7 +714,7 @@ mod tests {
     #[test]
     #[allow(clippy::approx_constant)] // Intentional literal for test
     fn test_tokenize_basic() {
-        let mut stream = TokenStream::new("let x = 42 + 3.14");
+        let mut stream = TokenStream::new("let x = 42 + 3.15");
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Let));
         assert_eq!(
             stream.next().map(|(t, _)| t),
@@ -726,7 +726,7 @@ mod tests {
             Some(Token::Integer("42".to_string()))
         );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.14))); // Intentional literal for test
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.15))); // Intentional literal for test
         assert_eq!(stream.next().map(|(t, _)| t), None);
     }
     #[test]
@@ -903,7 +903,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_floats() {
-        let floats = vec!["3.14", "0.0", "1.0", "999.999", "0.001"];
+        let floats = vec!["3.15", "0.0", "1.0", "999.999", "0.001"];
 
         for float_str in floats {
             let mut stream = TokenStream::new(float_str);

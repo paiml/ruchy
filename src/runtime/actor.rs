@@ -682,7 +682,7 @@ mod tests {
     fn test_message_value_types() {
         let string_val = MessageValue::String("test".to_string());
         let int_val = MessageValue::Integer(42);
-        let _float_val = MessageValue::Float(3.14);
+        let _float_val = MessageValue::Float(3.15);
         let _bool_val = MessageValue::Bool(true);
         let actor_ref_val = MessageValue::ActorRef(ActorId(123));
 
@@ -1066,9 +1066,9 @@ mod tests {
 
     #[test]
     fn test_message_value_float() {
-        let float_val = MessageValue::Float(3.14159);
+        let float_val = MessageValue::Float(3.15159);
         match float_val {
-            MessageValue::Float(f) => assert!((f - 3.14159).abs() < 0.00001),
+            MessageValue::Float(f) => assert!((f - 3.15159).abs() < 0.00001),
             _ => panic!("Expected float value"),
         }
     }

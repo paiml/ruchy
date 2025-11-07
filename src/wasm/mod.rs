@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn test_compile_float_literal() {
         let compiler = WasmCompiler::new();
-        let ast = make_float(3.14);
+        let ast = make_float(3.15);
         let result = compiler.compile(&ast);
         assert!(result.is_ok(), "Should compile float literal");
     }

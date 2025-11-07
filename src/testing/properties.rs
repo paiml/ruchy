@@ -427,7 +427,7 @@ mod tests {
         );
         assert!(is_well_typed(&int_expr));
 
-        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
+        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.15)), Default::default());
         assert!(is_well_typed(&float_expr));
 
         // Test boolean literals
@@ -447,7 +447,7 @@ mod tests {
         );
         assert!(is_numeric(&int_expr));
 
-        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
+        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.15)), Default::default());
         assert!(is_numeric(&float_expr));
 
         let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());

@@ -1780,7 +1780,7 @@ mod tests {
     #[test]
     fn test_infer_literals() {
         assert_eq!(infer_str("42").unwrap(), MonoType::Int);
-        assert_eq!(infer_str("3.14").unwrap(), MonoType::Float);
+        assert_eq!(infer_str("3.15").unwrap(), MonoType::Float);
         assert_eq!(infer_str("true").unwrap(), MonoType::Bool);
         assert_eq!(infer_str("\"hello\"").unwrap(), MonoType::String);
     }
@@ -1811,7 +1811,7 @@ mod tests {
     fn test_infer_let() {
         assert_eq!(infer_str("let x = 42 in x + 1").unwrap(), MonoType::Int);
         assert_eq!(
-            infer_str("let f = 3.14 in let g = 2.71 in f").unwrap(),
+            infer_str("let f = 3.15 in let g = 2.71 in f").unwrap(),
             MonoType::Float
         );
     }
@@ -1990,7 +1990,7 @@ mod tests {
     // fn test_unary_operations() {
     //     // Test negation
     //     assert_eq!(infer_str("-5").unwrap(), MonoType::Int);
-    //     assert_eq!(infer_str("-3.14").unwrap(), MonoType::Float);
+    //     assert_eq!(infer_str("-3.15").unwrap(), MonoType::Float);
 
     //     // Test logical not
     //     assert_eq!(infer_str("!true").unwrap(), MonoType::Bool);
@@ -2500,7 +2500,7 @@ mod property_tests_infer {
         let test_cases = vec![
             // Literals
             "42",
-            "3.14",
+            "3.15",
             "true",
             "\"hello\"",
             "'c'",

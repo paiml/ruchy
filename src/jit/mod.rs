@@ -18,11 +18,9 @@
 //! - JIT-003: Tiered optimization with profiling
 //!
 //! # References
-//! - GitHub Issue #135: https://github.com/paiml/ruchy/issues/135
-//! - Cranelift Docs: https://cranelift.dev/
-//! - SimpleJIT Example: https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/simplejit
-
-#![cfg(feature = "jit")]
+//! - GitHub Issue #135: <https://github.com/paiml/ruchy/issues/135>
+//! - Cranelift Docs: <https://cranelift.dev/>
+//! - `SimpleJIT` Example: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/simplejit>
 
 pub mod compiler;
 pub mod lowering;
@@ -51,7 +49,7 @@ mod tests {
     use crate::frontend::parser::Parser;
 
     #[test]
-    #[ignore] // Enable once JIT implementation is complete
+    #[ignore = "Enable once JIT implementation is complete"]
     fn test_jit_simple_arithmetic() {
         let code = "2 + 2";
         let ast = Parser::new(code).parse().unwrap();
@@ -60,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // Enable once JIT implementation is complete
+    #[ignore = "Enable once JIT implementation is complete"]
     fn test_jit_fibonacci_10() {
         let code = r"
             fun fib(n: i32) -> i32 {
