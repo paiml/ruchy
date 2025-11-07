@@ -211,11 +211,34 @@ impl<'a> ParserState<'a> {
 }
 
 /// Check if two byte positions are on the same line (no newline between them)
+///
+/// # Safety
+/// Ensures slicing respects UTF-8 char boundaries to prevent panics on multi-byte characters.
 fn is_on_same_line(source: &str, pos1: usize, pos2: usize) -> bool {
     if pos1 > pos2 {
         return false; // Invalid range
     }
-    let between = &source[pos1.min(source.len())..pos2.min(source.len())];
+
+    // Clamp positions to source length
+    let start = pos1.min(source.len());
+    let end = pos2.min(source.len());
+
+    // Ensure positions are on char boundaries (handles multi-byte UTF-8 like ✓, 世, emoji)
+    let start_safe = if source.is_char_boundary(start) {
+        start
+    } else {
+        // Find nearest char boundary before start
+        (0..=start).rev().find(|&i| source.is_char_boundary(i)).unwrap_or(0)
+    };
+
+    let end_safe = if source.is_char_boundary(end) {
+        end
+    } else {
+        // Find nearest char boundary after end
+        (end..source.len()).find(|&i| source.is_char_boundary(i)).unwrap_or(source.len())
+    };
+
+    let between = &source[start_safe..end_safe];
     !between.contains('\n')
 }
 
