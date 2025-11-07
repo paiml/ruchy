@@ -5,6 +5,23 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.210.0] - 2025-11-07
 
 ### Fixed
+- **[TRANSPILER-016B]** Transpiler Regression Suite - EXTREME TDD (15/15 tests passing)
+  - **SCOPE**: Comprehensive regression tests prevent re-introduction of past transpiler bugs
+  - **BUGS FIXED**:
+    1. **TRANSPILER-013**: Object literal return type inference - Maps `Object` → `BTreeMap<String, String>` (rustc compatible)
+    2. **Field Access**: TokenStream spacing tolerance - Accepts both `event.` and `event .` in assertions
+    3. **PARSER-077**: Lambda typed parameters - Added support for `|x: i32|` syntax (previously only `|x|` worked)
+  - **TEST COVERAGE**: 15 regression tests covering TRANSPILER-009 (standalone functions), 011 (nested field access), 013 (object literals)
+  - **FILES MODIFIED**:
+    - `tests/transpiler_regression_suite.rs`: Created comprehensive regression suite
+    - `src/backend/transpiler/types.rs`: Object type mapping fix
+    - `src/frontend/parser/expressions_helpers/lambdas.rs`: Typed lambda parameter parsing
+  - **VALIDATION**:
+    - ✅ All 15 regression tests passing (100%)
+    - ✅ TDG Score: 91.8/100 (A grade)
+    - ✅ Rustc compilation verification for all test cases
+  - **EXTREME TDD**: RED (8 failing tests) → GREEN (15 passing) → REFACTOR (TDG A grade)
+
 - **[TECH-DEBT]** Zero SATD Policy Enforcement (3 violations eliminated)
   - **FIXED**: All TODO/FIXME/HACK comments converted to proper documentation
   - **FILES MODIFIED**:
