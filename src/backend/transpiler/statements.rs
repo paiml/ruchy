@@ -918,7 +918,7 @@ impl Transpiler {
 
     /// Helper: Get the actual final expression, drilling through Let/Block wrappers
     /// Complexity: 3 (simple recursive pattern matching)
-    fn get_final_expression<'a>(expr: &'a Expr) -> Option<&'a Expr> {
+    fn get_final_expression(expr: &Expr) -> Option<&Expr> {
         match &expr.kind {
             ExprKind::Block(exprs) => {
                 exprs.last().and_then(Self::get_final_expression)
