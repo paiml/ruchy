@@ -54,14 +54,14 @@ impl Transpiler {
                 receiver,
                 method,
                 args,
-            } if method == "build" && args.is_empty() => self.extract_column_chain(receiver),
+            } if method == "build" && args.is_empty() => Self::extract_column_chain(receiver),
             // Just column chains without .build()
             ExprKind::MethodCall {
                 receiver,
                 method,
                 args,
             } if method == "column" && args.len() == 2 => {
-                if let Some((mut cols, base)) = self.extract_column_chain(receiver) {
+                if let Some((mut cols, base)) = Self::extract_column_chain(receiver) {
                     cols.push((args[0].clone(), args[1].clone()));
                     Some((cols, base))
                 } else {
@@ -75,14 +75,14 @@ impl Transpiler {
         }
     }
     /// Extract column method calls recursively
-    fn extract_column_chain(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
+    fn extract_column_chain(expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
         match &expr.kind {
             ExprKind::MethodCall {
                 receiver,
                 method,
                 args,
             } if method == "column" && args.len() == 2 => {
-                if let Some((mut cols, base)) = self.extract_column_chain(receiver) {
+                if let Some((mut cols, base)) = Self::extract_column_chain(receiver) {
                     cols.push((args[0].clone(), args[1].clone()));
                     Some((cols, base))
                 } else {

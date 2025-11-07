@@ -608,7 +608,7 @@ impl Transpiler {
         let body_tokens = self.transpile_expr(body)?;
 
         // Extract bound variables from pattern
-        let bound_vars = self.extract_pattern_bindings(pattern);
+        let bound_vars = Self::extract_pattern_bindings(pattern);
 
         if bound_vars.is_empty() {
             bail!("Let-else pattern must bind at least one variable");
@@ -652,26 +652,26 @@ impl Transpiler {
     ///
     /// # Complexity
     /// Cyclomatic complexity: 7 (within ≤10 limit)
-    fn extract_pattern_bindings(&self, pattern: &crate::frontend::ast::Pattern) -> Vec<String> {
+    fn extract_pattern_bindings(pattern: &crate::frontend::ast::Pattern) -> Vec<String> {
         use crate::frontend::ast::Pattern;
 
         match pattern {
             Pattern::Identifier(name) => vec![name.clone()],
             Pattern::Tuple(patterns) | Pattern::List(patterns) => {
                 patterns.iter()
-                    .flat_map(|p| self.extract_pattern_bindings(p))
+                    .flat_map(Self::extract_pattern_bindings)
                     .collect()
             }
             Pattern::TupleVariant { patterns, .. } => {
                 patterns.iter()
-                    .flat_map(|p| self.extract_pattern_bindings(p))
+                    .flat_map(Self::extract_pattern_bindings)
                     .collect()
             }
             Pattern::Struct { fields, .. } => {
                 fields.iter()
                     .flat_map(|field| {
                         field.pattern.as_ref()
-                            .map_or_else(|| vec![field.name.clone()], |p| self.extract_pattern_bindings(p))
+                            .map_or_else(|| vec![field.name.clone()], Self::extract_pattern_bindings)
                     })
                     .collect()
             }
@@ -680,17 +680,17 @@ impl Transpiler {
                 // For Or patterns, all branches must bind the same variables
                 // Just extract from first pattern
                 patterns.first()
-                    .map(|p| self.extract_pattern_bindings(p))
+                    .map(Self::extract_pattern_bindings)
                     .unwrap_or_default()
             }
             Pattern::AtBinding { name, pattern } => {
                 let mut bindings = vec![name.clone()];
-                bindings.extend(self.extract_pattern_bindings(pattern));
+                bindings.extend(Self::extract_pattern_bindings(pattern));
                 bindings
             }
-            Pattern::WithDefault { pattern, .. } => self.extract_pattern_bindings(pattern),
+            Pattern::WithDefault { pattern, .. } => Self::extract_pattern_bindings(pattern),
             Pattern::Mut(pattern) | Pattern::Ok(pattern) | Pattern::Err(pattern) | Pattern::Some(pattern) => {
-                self.extract_pattern_bindings(pattern)
+                Self::extract_pattern_bindings(pattern)
             }
             Pattern::None => vec![],
             Pattern::Wildcard
@@ -833,13 +833,13 @@ impl Transpiler {
 
     /// Check if function body returns a string literal (ISSUE-103)
     /// Handles direct literals and immutable Let bindings
-    fn returns_string_literal(&self, body: &Expr) -> bool {
+    fn returns_string_literal(body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::Block(exprs) if !exprs.is_empty() => {
                 if let Some(last_expr) = exprs.last() {
                     // Recursively check the last expression
-                    self.returns_string_literal(last_expr)
+                    Self::returns_string_literal(last_expr)
                 } else {
                     false
                 }
@@ -858,14 +858,14 @@ impl Transpiler {
             }
             // If expression - check if both branches return string literals
             ExprKind::If { then_branch, else_branch, .. } => {
-                let then_is_literal = self.returns_string_literal(then_branch);
+                let then_is_literal = Self::returns_string_literal(then_branch);
                 let else_is_literal = else_branch
                     .as_ref()
-                    .is_some_and(|e| self.returns_string_literal(e));
+                    .is_some_and(|e| Self::returns_string_literal(e));
                 then_is_literal && else_is_literal
             }
             // Return statement with string literal
-            ExprKind::Return { value: Some(val) } => self.returns_string_literal(val),
+            ExprKind::Return { value: Some(val) } => Self::returns_string_literal(val),
             _ => false,
         }
     }
@@ -895,7 +895,7 @@ impl Transpiler {
         self.trace_param_assignments(body, &mut var_to_param, params);
 
         // Extract final expression from body (handle nested Let/Block structures)
-        let final_expr = self.get_final_expression(body);
+        let final_expr = Self::get_final_expression(body);
 
         if let Some(expr) = final_expr {
             if let ExprKind::Identifier(name) = &expr.kind {
@@ -918,13 +918,13 @@ impl Transpiler {
 
     /// Helper: Get the actual final expression, drilling through Let/Block wrappers
     /// Complexity: 3 (simple recursive pattern matching)
-    fn get_final_expression<'a>(&self, expr: &'a Expr) -> Option<&'a Expr> {
+    fn get_final_expression<'a>(expr: &'a Expr) -> Option<&'a Expr> {
         match &expr.kind {
             ExprKind::Block(exprs) => {
-                exprs.last().and_then(|e| self.get_final_expression(e))
+                exprs.last().and_then(Self::get_final_expression)
             }
             ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-                self.get_final_expression(body)
+                Self::get_final_expression(body)
             }
             _ => Some(expr),
         }
@@ -952,7 +952,7 @@ impl Transpiler {
                     }
                 }
                 // TRANSPILER-TYPE-INFER-EXPR: Check if value is an expression involving parameters
-                else if let Some(inferred_type) = self.infer_expr_type_from_params(value, params) {
+                else if let Some(inferred_type) = Self::infer_expr_type_from_params(value, params) {
                     var_to_param.insert(name.clone(), inferred_type);
                 }
                 self.trace_param_assignments(body, var_to_param, params);
@@ -966,7 +966,6 @@ impl Transpiler {
     /// For Binary expressions, returns the type of the parameter operand
     /// Complexity: 6 (recursive with 3 match arms)
     fn infer_expr_type_from_params<'a>(
-        &self,
         expr: &Expr,
         params: &'a [Param],
     ) -> Option<&'a Type> {
@@ -978,14 +977,13 @@ impl Transpiler {
             // For binary operations, recursively check operands
             // If either operand is a parameter, assume result has that type
             // (Works for numeric operations: f64 * f64 = f64, i32 + i32 = i32, etc.)
-            ExprKind::Binary { left, right, .. } => self
-                .infer_expr_type_from_params(left, params)
-                .or_else(|| self.infer_expr_type_from_params(right, params)),
+            ExprKind::Binary { left, right, .. } => Self::infer_expr_type_from_params(left, params)
+                .or_else(|| Self::infer_expr_type_from_params(right, params)),
             _ => None,
         }
     }
 
-    fn returns_boolean(&self, body: &Expr) -> bool {
+    fn returns_boolean(body: &Expr) -> bool {
         match &body.kind {
             // Direct boolean literals
             ExprKind::Literal(Literal::Bool(_)) => true,
@@ -998,7 +996,7 @@ impl Transpiler {
             ),
 
             // Return statement with boolean value
-            ExprKind::Return { value: Some(val) } => self.returns_boolean(val),
+            ExprKind::Return { value: Some(val) } => Self::returns_boolean(val),
 
             // Block - check last expression AND all return statements
             ExprKind::Block(exprs) => {
@@ -1009,15 +1007,15 @@ impl Transpiler {
                 });
 
                 // Check last expression
-                let last_is_boolean = exprs.last().is_some_and(|e| self.returns_boolean(e));
+                let last_is_boolean = exprs.last().is_some_and(Self::returns_boolean);
 
                 has_boolean_return || last_is_boolean
             }
 
             // If expression - check both branches
             ExprKind::If { then_branch, else_branch, .. } => {
-                self.returns_boolean(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| self.returns_boolean(e))
+                Self::returns_boolean(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| Self::returns_boolean(e))
             }
 
             // Unary not operator on boolean
@@ -1351,7 +1349,7 @@ impl Transpiler {
                 _ => Ok(quote! { -> i32 }) // Fallback for unknown types
             }
         // ISSUE-113 FIX: Check for boolean return type BEFORE numeric fallback
-        } else if self.returns_boolean(body) {
+        } else if Self::returns_boolean(body) {
             Ok(quote! { -> bool })
         // ISSUE-113 FIX: Check for Vec return type BEFORE numeric fallback
         } else if self.returns_vec(body) {
@@ -1362,7 +1360,7 @@ impl Transpiler {
             Ok(quote! { -> String })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
-        } else if self.returns_string_literal(body) {
+        } else if Self::returns_string_literal(body) {
             // ISSUE-103: String literals have 'static lifetime
             Ok(quote! { -> &'static str })
         // TRANSPILER-013 FIX: Check for object literal BEFORE numeric fallback
@@ -2036,7 +2034,7 @@ impl Transpiler {
             Ok(quote! { -> impl Fn(i32) -> i32 })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
-        } else if self.returns_string_literal(body) {
+        } else if Self::returns_string_literal(body) {
             // ISSUE-103: Detect string literal returns (with lifetime)
             Ok(quote! { -> &'a str })
         } else if self.has_non_unit_expression(body) {
@@ -2519,7 +2517,7 @@ impl Transpiler {
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
         // Check DataFrame methods FIRST before generic collection methods
-        if self.is_dataframe_expr(object)
+        if Transpiler::is_dataframe_expr(object)
             && matches!(
                 method,
                 "get"
@@ -2571,7 +2569,7 @@ impl Transpiler {
             | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
             | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
                 // Check if this is a DataFrame operation
-                if self.is_dataframe_expr(object) {
+                if Transpiler::is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, args)
                 } else {
                     Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })

@@ -217,11 +217,11 @@ impl ModuleLoader {
     /// (not inline modules or standard library imports).
     fn extract_dependencies(&self, ast: &Expr) -> Result<Vec<String>> {
         let mut dependencies = Vec::new();
-        self.collect_dependencies(ast, &mut dependencies);
+        Self::collect_dependencies(ast, &mut dependencies);
         Ok(dependencies)
     }
     /// Recursive helper to collect dependencies from AST nodes
-    fn collect_dependencies(&self, expr: &Expr, dependencies: &mut Vec<String>) {
+    fn collect_dependencies(expr: &Expr, dependencies: &mut Vec<String>) {
         match &expr.kind {
             ExprKind::Import { module, .. }
             | ExprKind::ImportAll { module, .. }
@@ -245,14 +245,14 @@ impl ModuleLoader {
             }
             ExprKind::Block(exprs) => {
                 for expr in exprs {
-                    self.collect_dependencies(expr, dependencies);
+                    Self::collect_dependencies(expr, dependencies);
                 }
             }
             ExprKind::Module { body, .. } => {
-                self.collect_dependencies(body, dependencies);
+                Self::collect_dependencies(body, dependencies);
             }
             ExprKind::Function { body, .. } => {
-                self.collect_dependencies(body, dependencies);
+                Self::collect_dependencies(body, dependencies);
             }
             // Add other expression types that can contain imports
             _ => {
