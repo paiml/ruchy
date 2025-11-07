@@ -120,26 +120,26 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_compile_simple_function() {
-        let compiler = RuchyCompiler::new();
+        let mut compiler = RuchyCompiler::new();
         let result = compiler.compile("fn add(a, b) { a + b }");
         assert!(result.is_ok());
     }
 
     #[wasm_bindgen_test]
     fn test_validate_valid_syntax() {
-        let compiler = RuchyCompiler::new();
+        let mut compiler = RuchyCompiler::new();
         assert!(compiler.validate("let x = 42"));
     }
 
     #[wasm_bindgen_test]
     fn test_validate_invalid_syntax() {
-        let compiler = RuchyCompiler::new();
+        let mut compiler = RuchyCompiler::new();
         assert!(!compiler.validate("let x = "));
     }
 
     #[wasm_bindgen_test]
     fn test_version() {
-        let compiler = RuchyCompiler::new();
+        let mut compiler = RuchyCompiler::new();
         assert!(!compiler.version().is_empty());
     }
 }
