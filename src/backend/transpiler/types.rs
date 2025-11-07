@@ -85,6 +85,7 @@ impl Transpiler {
             "char" => quote! { char },
             "()" => quote! { () },       // Unit type
             "_" | "Any" => quote! { _ }, // Use Rust type inference
+            "Object" => quote! { std::collections::BTreeMap<String, String> }, // TRANSPILER-013 FIX: Use String for standalone rustc compatibility
             _ => {
                 // TRANSPILER-DEFECT-005: Handle namespaced types (e.g., trace::Sampler, std::io::Error)
                 if name.contains("::") {

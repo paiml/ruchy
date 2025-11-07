@@ -26,6 +26,7 @@
 use crate::frontend::ast::{Expr, ExprKind, Param, Pattern, Span, Type, TypeKind};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, ParserState, Result};
+use crate::frontend::parser::utils::parse_type;
 
 /// Parse no-parameter lambda: `|| body`
 ///
@@ -104,11 +105,26 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
     let start_span = state.tokens.expect(&Token::Pipe)?;
     let mut params = Vec::new();
 
-    // Parse parameters
+    // Parse parameters (with optional type annotations)
     while !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            params.push(Pattern::Identifier(name.clone()));
+            let param_name = name.clone();
             state.tokens.advance();
+
+            // PARSER-077: Check for type annotation (|x: i32| support)
+            let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                state.tokens.advance(); // consume :
+                parse_type(state)?
+            } else {
+                // Inferred type
+                Type {
+                    kind: TypeKind::Named("_".to_string()),
+                    span: start_span,
+                }
+            };
+
+            params.push((Pattern::Identifier(param_name), ty));
+
             // Check for comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
@@ -126,15 +142,12 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
     // Parse body
     let body = Box::new(parse_expr_recursive(state)?);
 
-    // Convert Pattern to Param for Lambda
+    // Convert (Pattern, Type) pairs to Param structs
     let params = params
         .into_iter()
-        .map(|p| Param {
-            pattern: p,
-            ty: Type {
-                kind: TypeKind::Named("_".to_string()),
-                span: start_span,
-            },
+        .map(|(pattern, ty)| Param {
+            pattern,
+            ty,
             span: start_span,
             is_mutable: false,
             default_value: None,
