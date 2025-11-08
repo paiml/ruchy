@@ -55,7 +55,11 @@ All notable changes to the Ruchy programming language will be documented in this
   - **VALIDATION**: ✅ Only 1 harmless warning remaining
 
 ### Added
-- **[COVERAGE]** EXTREME TDD Sprint: 400+ comprehensive tests (68.42% → measuring, TDG-driven quality improvement)
+- **[COVERAGE]** EXTREME TDD Sprint: 470+ comprehensive tests (67.05% → target 85%, TDG-driven quality improvement)
+  - **LATEST ADDITIONS** (Session 2):
+    9. parser_collections_comprehensive.rs: 30 tests (TDG-driven: collections.rs 1,979 lines, 44 → 26 lines/test)
+    10. transpiler_type_inference_comprehensive.rs: 23 tests (TDG-driven: type_inference.rs 881 lines, 35.2 → 18.4 lines/test)
+- **[COVERAGE]** EXTREME TDD Sprint (Session 1): 400+ comprehensive tests (68.42% → measuring, TDG-driven quality improvement)
   - **STRATEGY**: TDG-driven testing - target lowest-quality modules first (TDG < 85) to increase coverage + quality simultaneously
   - **CRITICAL DEFECTS FOUND**:
     - BuiltinRegistry in builtins.rs NEVER CALLED (70 orphaned functions, 1,141 lines dead code) - DEBT-006
