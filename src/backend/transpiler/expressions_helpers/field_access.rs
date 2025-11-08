@@ -76,6 +76,16 @@ impl Transpiler {
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
         use crate::frontend::ast::ExprKind;
         let obj_tokens = self.transpile_expr(object)?;
+
+        // DEFECT-PROPERTY-001: Check for numeric field access FIRST (tuple fields)
+        // Prevents panic in format_ident! when field is pure number like "0"
+        if field.chars().all(|c| c.is_ascii_digit()) {
+            // Tuple field access - use numeric index (works for any object type)
+            let index: usize = field.parse().unwrap();
+            let index = syn::Index::from(index);
+            return Ok(quote! { #obj_tokens.#index });
+        }
+
         // Check if the object is an ObjectLiteral (HashMap) or module path
         match &object.kind {
             ExprKind::ObjectLiteral { .. } => {
@@ -95,6 +105,10 @@ impl Transpiler {
                     let index: usize = field.parse().unwrap();
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
+                } else if field.is_empty() || field.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+                    // DEFECT: Empty field or starts with digit - invalid identifier
+                    // Return error instead of panicking in format_ident!
+                    anyhow::bail!("Invalid field name '{}': field names cannot be empty or start with a digit", field)
                 } else {
                     // Check for known instance methods that definitely need .
                     let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
