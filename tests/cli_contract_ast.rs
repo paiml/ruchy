@@ -280,7 +280,7 @@ fn cli_parse_comment_only_fails() {
         .arg(&file)
         .assert()
         .failure() // Comment-only is error
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 #[test]
