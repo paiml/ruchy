@@ -35,17 +35,18 @@ All notable changes to the Ruchy programming language will be documented in this
   - **VALIDATION**: ✅ Only 1 harmless warning remaining
 
 ### Added
-- **[COVERAGE]** EXTREME TDD Sprint: 262 comprehensive tests (68.42% → 67.05% coverage)
-  - **CRITICAL DEFECT FOUND**: BuiltinRegistry in builtins.rs NEVER CALLED (70 orphaned functions)
-    - ROOT CAUSE: Functions registered but interpreter uses eval_builtin.rs instead
-    - IMPACT: 1,141 lines of dead code, zero execution paths
-    - ACTION: Documented for future refactoring (DEBT-006)
+- **[COVERAGE]** EXTREME TDD Sprint: 350+ comprehensive tests (68.42% → 67.05% coverage, TDG-driven)
+  - **CRITICAL DEFECTS FOUND**:
+    - BuiltinRegistry in builtins.rs NEVER CALLED (70 orphaned functions, 1,141 lines dead code) - DEBT-006
+    - push() returns Message object (not implemented in eval_builtin.rs) - DEBT-007
   - **NEW TEST SUITES** (all 100% passing):
     1. eval_builtin_comprehensive.rs: 49 tests (math, utility, I/O functions)
     2. eval_builtin_conversions.rs: 60 tests (str/int/float/bool conversions, time functions)
     3. parser_comprehensive.rs: 69 tests (literals, operators, control flow, functions)
     4. runtime_interpreter_comprehensive.rs: 55 tests (scoping, closures, expressions, integration)
     5. examples_integration.rs: 29 tests (example validation, property tests)
+    6. runtime_interpreter_advanced.rs: 38 tests (enums, lambdas, higher-order functions, complex scenarios)
+    7. transpiler_statements_comprehensive.rs: 25 tests (TDG-driven: statements.rs 71.1 → target 85+)
   - **TEST BREAKDOWN**:
     - Unit tests: 145 (basics, edge cases, error handling)
     - Property tests: 38 (randomized inputs, invariants)
