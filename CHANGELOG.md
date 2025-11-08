@@ -5,6 +5,26 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [3.211.0] - 2025-11-07
 
 ### Fixed
+- **[DEFECT-PROPERTY-001]** Transpiler panic on numeric field access (property test found)
+  - **DISCOVERY**: Property test `test_compile_source_to_binary_never_panics` found crash
+  - **MINIMAL INPUT**: "A.0" (proptest shrunk from random unicode strings)
+  - **ROOT CAUSE**: `format_ident!()` at field_access.rs:101 panics when field is pure number
+  - **IMPACT**: Compiler crashed on valid Ruchy tuple access syntax (A.0, Result.0, obj.10)
+  - **FIX**: Check numeric fields BEFORE calling format_ident!() to prevent panic
+  - **TEST COVERAGE**: tests/transpiler_numeric_field_access.rs (17 comprehensive tests, 100% pass)
+    - Single digit: A.0, obj.1, result.9
+    - Multi-digit: tuple.10, large.100
+    - Nested: (nested.0).1, ((data.0).1).2
+    - All identifier types: uppercase (Result.0), lowercase (obj.0), module-like (my_module.0)
+    - Property tests: indices 0-20, all object types, nested depth 1-5
+    - Integration: Full transpile → compile → execute pipeline
+  - **VALIDATION**: ✅ 4036/4036 tests passing (no regressions)
+  - **EXTREME TDD**: Property test → Minimal input → Fix → Comprehensive coverage
+  - **FILES MODIFIED**:
+    - src/backend/transpiler/expressions_helpers/field_access.rs:76-86 (early numeric check)
+    - tests/transpiler_numeric_field_access.rs (NEW, 316 lines, 17 tests)
+    - proptest-regressions/backend/compiler.txt (regression baseline)
+
 - **[PARSER-143]** Critical parser crash on UTF-8 characters (✓, ✗, emoji, etc.) - EXTREME TDD
   - **ROOT CAUSE**: `is_on_same_line()` at src/frontend/parser/mod.rs:218 sliced strings without checking char boundaries
   - **IMPACT**: Parser crashed on any code with Unicode symbols (checkmarks, emoji, Chinese, Cyrillic, Arabic, etc.)
