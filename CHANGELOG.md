@@ -35,7 +35,8 @@ All notable changes to the Ruchy programming language will be documented in this
   - **VALIDATION**: ✅ Only 1 harmless warning remaining
 
 ### Added
-- **[COVERAGE]** EXTREME TDD Sprint: 350+ comprehensive tests (68.42% → 67.05% coverage, TDG-driven)
+- **[COVERAGE]** EXTREME TDD Sprint: 400+ comprehensive tests (68.42% → measuring, TDG-driven quality improvement)
+  - **STRATEGY**: TDG-driven testing - target lowest-quality modules first (TDG < 85) to increase coverage + quality simultaneously
   - **CRITICAL DEFECTS FOUND**:
     - BuiltinRegistry in builtins.rs NEVER CALLED (70 orphaned functions, 1,141 lines dead code) - DEBT-006
     - push() returns Message object (not implemented in eval_builtin.rs) - DEBT-007
@@ -46,7 +47,8 @@ All notable changes to the Ruchy programming language will be documented in this
     4. runtime_interpreter_comprehensive.rs: 55 tests (scoping, closures, expressions, integration)
     5. examples_integration.rs: 29 tests (example validation, property tests)
     6. runtime_interpreter_advanced.rs: 38 tests (enums, lambdas, higher-order functions, complex scenarios)
-    7. transpiler_statements_comprehensive.rs: 25 tests (TDG-driven: statements.rs 71.1 → target 85+)
+    7. transpiler_statements_comprehensive.rs: 25 tests (TDG-driven: statements.rs 7,191 lines, 71.1 → 85+ target)
+    8. runtime_interpreter_value_types.rs: 57 tests (TDG-driven: interpreter.rs 7,908 lines, 73.4 → 85+ target)
   - **TEST BREAKDOWN**:
     - Unit tests: 145 (basics, edge cases, error handling)
     - Property tests: 38 (randomized inputs, invariants)
