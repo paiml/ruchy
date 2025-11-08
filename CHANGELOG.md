@@ -55,8 +55,19 @@ All notable changes to the Ruchy programming language will be documented in this
   - **VALIDATION**: ✅ Only 1 harmless warning remaining
 
 ### Added
-- **[COVERAGE]** EXTREME TDD Sprint: 470+ comprehensive tests (67.05% → target 85%, TDG-driven quality improvement)
-  - **LATEST ADDITIONS** (Session 2):
+- **[COVERAGE]** EXTREME TDD Sprint: 515+ comprehensive tests (67.05% → target 85%, TDG-driven quality improvement)
+  - **LATEST ADDITIONS** (Session 3):
+    11. parser_functions_comprehensive.rs: 45 tests passing, 12 ignored (TDG-driven: functions.rs 1,142 lines, 23.8 → 20.3 lines/test)
+      - Function definitions: simple, anonymous, type params, pub visibility, where clauses (10 tests)
+      - Lambda expressions: pipe syntax, backslash syntax, empty params, closures, IIFE (9 tests)
+      - Function calls: no args, single/multiple args, named args, nested (6 tests)
+      - Method calls: chained, field access, turbofish generics (8 tests)
+      - DataFrame operations: groupby, agg, select (4 tests - ignored)
+      - Optional chaining: ?. operator for fields, methods, tuples (4 tests - ignored)
+      - Property tests: param counts 0-10, chaining depth 1-5 (4 tests)
+      - Error cases: missing syntax elements (5 tests)
+      - **IGNORED TESTS**: 12 tests for unimplemented runtime features (OptionalFieldAccess, await, actors, default params)
+  - **PREVIOUS ADDITIONS** (Session 2):
     9. parser_collections_comprehensive.rs: 30 tests (TDG-driven: collections.rs 1,979 lines, 44 → 26 lines/test)
     10. transpiler_type_inference_comprehensive.rs: 23 tests (TDG-driven: type_inference.rs 881 lines, 35.2 → 18.4 lines/test)
 - **[COVERAGE]** EXTREME TDD Sprint (Session 1): 400+ comprehensive tests (68.42% → measuring, TDG-driven quality improvement)
