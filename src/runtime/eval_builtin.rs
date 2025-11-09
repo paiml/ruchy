@@ -29,6 +29,9 @@ pub fn eval_builtin_function(
     if let Some(result) = try_eval_utility_function(name, args)? {
         return Ok(Some(result));
     }
+    if let Some(result) = try_eval_collection_function(name, args)? {
+        return Ok(Some(result));
+    }
     if let Some(result) = try_eval_conversion_function(name, args)? {
         return Ok(Some(result));
     }
@@ -205,6 +208,20 @@ fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, I
         // Advanced array utilities for functional programming patterns
         "__builtin_zip__" => Ok(Some(eval_zip(args)?)),
         "__builtin_enumerate__" => Ok(Some(eval_enumerate(args)?)),
+        _ => Ok(None),
+    }
+}
+
+/// Collection mutation functions (push, pop, sort)
+/// Complexity: 4 (within Toyota Way limits)
+fn try_eval_collection_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    match name {
+        "__builtin_push__" => Ok(Some(eval_push(args)?)),
+        "__builtin_pop__" => Ok(Some(eval_pop(args)?)),
+        "__builtin_sort__" => Ok(Some(eval_sort(args)?)),
         _ => Ok(None),
     }
 }
@@ -769,6 +786,70 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
         }
         _ => Err(InterpreterError::RuntimeError(
             "reverse() expects an array or string".to_string(),
+        )),
+    }
+}
+
+/// Push element to array (returns new array)
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_push(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("push", args, 2)?;
+    match &args[0] {
+        Value::Array(arr) => {
+            let mut new_arr = arr.to_vec();
+            new_arr.push(args[1].clone());
+            Ok(Value::from_array(new_arr))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "push() expects an array as first argument".to_string(),
+        )),
+    }
+}
+
+/// Pop element from array (returns element, not mutated array)
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_pop(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("pop", args, 1)?;
+    match &args[0] {
+        Value::Array(arr) => {
+            let mut new_arr = arr.to_vec();
+            if let Some(val) = new_arr.pop() {
+                Ok(val)
+            } else {
+                Ok(Value::nil())
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "pop() expects an array".to_string(),
+        )),
+    }
+}
+
+/// Sort array (returns new sorted array)
+///
+/// # Complexity
+/// Cyclomatic complexity: 4 (within Toyota Way limits)
+fn eval_sort(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("sort", args, 1)?;
+    match &args[0] {
+        Value::Array(arr) => {
+            let mut new_arr = arr.to_vec();
+            new_arr.sort_by(|a, b| match (a, b) {
+                (Value::Integer(x), Value::Integer(y)) => x.cmp(y),
+                (Value::Float(x), Value::Float(y)) => {
+                    x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                (Value::String(x), Value::String(y)) => x.cmp(y),
+                _ => std::cmp::Ordering::Equal,
+            });
+            Ok(Value::from_array(new_arr))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "sort() expects an array".to_string(),
         )),
     }
 }
