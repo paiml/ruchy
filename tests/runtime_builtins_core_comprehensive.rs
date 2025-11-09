@@ -1084,7 +1084,6 @@ fn property_min_max_commutative() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: to_string() returns Message object - needs to be added to eval_builtin.rs"]
 fn property_to_string_parse_int_roundtrip() {
     // Property: parse_int(to_string(n)) == n (for integers)
     for val in [0, 1, 42, 100, 999] {
