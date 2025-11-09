@@ -224,13 +224,14 @@ fn try_eval_utility_function(
 /// Try to evaluate type conversion functions (STDLIB-001)
 ///
 /// Wraps Rust stdlib methods for zero-cost abstraction.
-/// Complexity: 7 (within Toyota Way limits, added parsing functions)
+/// Complexity: 8 (within Toyota Way limits, added to_string)
 fn try_eval_conversion_function(
     name: &str,
     args: &[Value],
 ) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_str__" => Ok(Some(eval_str(args)?)),
+        "__builtin_to_string__" => Ok(Some(eval_to_string(args)?)),
         "__builtin_int__" => Ok(Some(eval_int(args)?)),
         "__builtin_float__" => Ok(Some(eval_float(args)?)),
         "__builtin_bool__" => Ok(Some(eval_bool(args)?)),
@@ -3181,6 +3182,16 @@ fn eval_str(args: &[Value]) -> Result<Value, InterpreterError> {
         // Other types: Use Display trait via format!
         other => Ok(Value::from_string(format!("{other}"))),
     }
+}
+
+/// Convert value to string using Display trait
+/// RUNTIME-BUG-002: Added to support to_string() function
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_to_string(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("to_string", args, 1)?;
+    Ok(Value::from_string(format!("{}", args[0])))
 }
 
 /// Convert value to integer (wraps Rust's parse and type casting)
