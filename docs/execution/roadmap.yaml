@@ -5841,6 +5841,52 @@ tasks:
       - "Future: Add property-based randomized performance testing"
       - "Future: Establish CI performance regression gates"
 
+  #🚀 PHASE 3: Inline Caching (2-4x Performance Gain)
+  # Based on ../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md Phase 2
+  - id: "OPT-022"
+    title: "Inline Caching Foundation - Hidden Class System"
+    status: "IN_PROGRESS"
+    priority: "🟡 HIGH"
+    phase: "Phase 3: Inline Caching (3-4 weeks)"
+    time_estimated: "1 week"
+    specification: "../ruchyruchy/OPTIMIZATION_REPORT_FOR_RUCHY.md"
+    description: |
+      Implement hidden class system for tracking object shapes and property layouts.
+      Enables monomorphic inline caching for property access (4-10x faster).
+      Expected: 2-4x overall speedup for property-heavy code.
+
+      EXTREME TDD Status: RED phase complete (10 tests written)
+      Blocking Issue: Tests revealed println!() formatting bug (outputs "200" instead of 200)
+      Next Steps: Fix println bug OR adjust test expectations before GREEN phase
+    components:
+      - "✅ Test suite created (10 comprehensive tests)"
+      - "⏳ Hidden class representation (shape tracking)"
+      - "⏳ Property layout management"
+      - "⏳ Shape transition tracking"
+      - "⏳ Inline cache structure"
+      - "⏳ Cache invalidation hooks"
+    tests:
+      unit: 10
+      property: 0
+      mutation: 0
+      passing: "2/10 (blocked by println bug: 5 failing, 3 ignored)"
+    quality:
+      complexity_max: 10
+      tdg_grade_target: "A-"
+      satd: 0
+    blocking_issues:
+      - "println!() macro outputs quoted strings: println!(\"{}\", 200) → \"200\" instead of 200"
+      - "Affects 5 tests: opt_022_02, 03, 05, 06, 08"
+    performance_target:
+      property_access: "4-10x faster (monomorphic sites)"
+      method_dispatch: "2-5x faster"
+      cache_hit_rate: "85-95%"
+      overall_speedup: "2-4x for property-heavy code"
+    references:
+      - "Brunthaler (2010) - Inline Caching Meets Quickening"
+      - "Chambers et al. (1989) - An Efficient Implementation of SELF"
+      - "Hölzle et al. (1991) - Optimizing Dynamically-Typed Languages"
+
   - id: "DEFECT-STRUCT-001"
     title: "Fix Struct Field Mutation (P0 Bug)"
     status: "COMPLETE"
