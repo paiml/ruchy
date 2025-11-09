@@ -4528,6 +4528,26 @@ pub fn handle_mutations_command(
         );
     }
 
+    // TEST-FIX-004: CLI contract requires success with "Found 0 mutants" for missing/invalid files
+    // Check if file exists and can be parsed before running mutations
+    if !path.exists() {
+        println!("Found 0 mutants to test");
+        return Ok(());
+    }
+
+    // Check if file can be parsed (for .ruchy files)
+    if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+        use std::fs;
+        if let Ok(source) = fs::read_to_string(path) {
+            let mut parser = ruchy::frontend::parser::Parser::new(&source);
+            if parser.parse().is_err() {
+                // Syntax error - report 0 mutants
+                println!("Found 0 mutants to test");
+                return Ok(());
+            }
+        }
+    }
+
     // Run cargo mutants
     let output_result = run_cargo_mutants(path, timeout, verbose)?;
     let stdout = String::from_utf8_lossy(&output_result.stdout);
