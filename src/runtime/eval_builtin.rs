@@ -192,10 +192,12 @@ fn try_eval_utility_part1(name: &str, args: &[Value]) -> Result<Option<Value>, I
 }
 
 /// Utility functions - Part 2
-/// Complexity: 7 (within Toyota Way limits, added STDLIB-004 functions)
+/// Complexity: 9 (within Toyota Way limits, added type inspection functions)
 fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_type__" => Ok(Some(eval_type(args)?)),
+        "__builtin_type_of__" => Ok(Some(eval_type_of(args)?)),
+        "__builtin_is_nil__" => Ok(Some(eval_is_nil(args)?)),
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
         // Test assertion built-ins for unit testing support
         "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
@@ -222,7 +224,7 @@ fn try_eval_utility_function(
 /// Try to evaluate type conversion functions (STDLIB-001)
 ///
 /// Wraps Rust stdlib methods for zero-cost abstraction.
-/// Complexity: 5 (within Toyota Way limits)
+/// Complexity: 7 (within Toyota Way limits, added parsing functions)
 fn try_eval_conversion_function(
     name: &str,
     args: &[Value],
@@ -232,6 +234,8 @@ fn try_eval_conversion_function(
         "__builtin_int__" => Ok(Some(eval_int(args)?)),
         "__builtin_float__" => Ok(Some(eval_float(args)?)),
         "__builtin_bool__" => Ok(Some(eval_bool(args)?)),
+        "__builtin_parse_int__" => Ok(Some(eval_parse_int(args)?)),
+        "__builtin_parse_float__" => Ok(Some(eval_parse_float(args)?)),
         _ => Ok(None),
     }
 }
@@ -724,6 +728,26 @@ fn eval_range_three_args(
 fn eval_type(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("type", args, 1)?;
     Ok(Value::from_string(args[0].type_name().to_string()))
+}
+
+/// Get type name of a value (alias for eval_type)
+/// RUNTIME-BUG-001: Added to support type_of() function
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_type_of(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("type_of", args, 1)?;
+    Ok(Value::from_string(args[0].type_name().to_string()))
+}
+
+/// Check if value is nil
+/// RUNTIME-BUG-001: Added to support is_nil() function
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_is_nil(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("is_nil", args, 1)?;
+    Ok(Value::Bool(matches!(args[0], Value::Nil)))
 }
 
 /// Reverse arrays and strings
@@ -3203,6 +3227,44 @@ fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Bool(b) => Ok(Value::Float(if *b { 1.0 } else { 0.0 })),
         _ => Err(InterpreterError::RuntimeError(
             format!("float() does not support type: {}", args[0])
+        )),
+    }
+}
+
+/// Parse string to integer with validation
+/// RUNTIME-BUG-001: Added to support parse_int() function
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_parse_int(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("parse_int", args, 1)?;
+    match &args[0] {
+        Value::String(s) => s.parse::<i64>()
+            .map(Value::Integer)
+            .map_err(|_| InterpreterError::RuntimeError(
+                format!("parse_int() cannot parse string: '{s}'")
+            )),
+        _ => Err(InterpreterError::RuntimeError(
+            format!("parse_int() expects a string, got {}", args[0].type_name())
+        )),
+    }
+}
+
+/// Parse string to float with validation
+/// RUNTIME-BUG-001: Added to support parse_float() function
+///
+/// # Complexity
+/// Cyclomatic complexity: 2 (within Toyota Way limits)
+fn eval_parse_float(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("parse_float", args, 1)?;
+    match &args[0] {
+        Value::String(s) => s.parse::<f64>()
+            .map(Value::Float)
+            .map_err(|_| InterpreterError::RuntimeError(
+                format!("parse_float() cannot parse string: '{s}'")
+            )),
+        _ => Err(InterpreterError::RuntimeError(
+            format!("parse_float() expects a string, got {}", args[0].type_name())
         )),
     }
 }

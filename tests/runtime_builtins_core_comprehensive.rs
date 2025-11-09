@@ -120,7 +120,6 @@ fn test_type_type_of_array() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: is_nil() returns Message object, not boolean - needs runtime fix"]
 fn test_type_is_nil_true() {
     ruchy_cmd()
         .arg("-e")
@@ -131,7 +130,6 @@ fn test_type_is_nil_true() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: is_nil() returns Message object, not boolean - needs runtime fix"]
 fn test_type_is_nil_false() {
     ruchy_cmd()
         .arg("-e")
@@ -320,7 +318,7 @@ fn test_string_parse_int_valid() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: parse_int() doesn't fail on invalid input - returns default value or error message"]
+#[ignore = "Design limitation: parse_int should return Result type, not throw error (requires Result support)"]
 fn test_string_parse_int_invalid() {
     ruchy_cmd()
         .arg("-e")
@@ -340,7 +338,7 @@ fn test_string_parse_float_valid() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: parse_float() doesn't fail on invalid input - returns default value or error message"]
+#[ignore = "Design limitation: parse_float should return Result type, not throw error (requires Result support)"]
 fn test_string_parse_float_invalid() {
     ruchy_cmd()
         .arg("-e")
@@ -1086,7 +1084,7 @@ fn property_min_max_commutative() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: parse_int(to_string(n)) roundtrip fails - parse_int may not handle to_string output format"]
+#[ignore = "Runtime limitation: to_string() returns Message object - needs to be added to eval_builtin.rs"]
 fn property_to_string_parse_int_roundtrip() {
     // Property: parse_int(to_string(n)) == n (for integers)
     for val in [0, 1, 42, 100, 999] {
