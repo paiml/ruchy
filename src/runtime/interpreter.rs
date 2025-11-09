@@ -7477,8 +7477,11 @@ impl Interpreter {
                 args.iter().map(|arg| self.eval_expr(arg)).collect();
             let arg_vals = arg_vals?;
 
-            if let Ok(Some(result)) = crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals) {
-                return Ok(result);
+            // RUNTIME-BUG-002: Propagate builtin function errors instead of falling back to Message objects
+            match crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals) {
+                Ok(Some(result)) => return Ok(result),
+                Ok(None) => {}, // Fall through to normal function evaluation
+                Err(e) => return Err(e), // Propagate error (parse_int/parse_float errors, etc.)
             }
         }
 
