@@ -713,6 +713,14 @@ test-quick:
 	@PROPTEST_CASES=5 cargo test --lib -- --test-threads=2 --skip property_
 	@echo "✓ Quick tests complete"
 
+# Fast tests (TDD cycle - MANDATORY: <5 min)
+# Reduced PROPTEST_CASES=10 for speed (default is 32)
+# Use for rapid TDD feedback during development
+test-fast:
+	@echo "⚡ Running fast test suite (MANDATORY: <5 min)..."
+	@PROPTEST_CASES=10 cargo test --lib --quiet -- --test-threads=4
+	@echo "✓ Fast tests complete"
+
 # Test memory usage
 test-memory:
 	@echo "Running resource verification tests..."
