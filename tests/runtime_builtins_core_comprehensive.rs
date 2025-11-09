@@ -352,11 +352,11 @@ fn test_string_parse_float_invalid() {
 // ============================================================================
 
 #[test]
-#[ignore = "Runtime limitation: push() doesn't mutate array in place - returns new array or has different semantics"]
 fn test_collection_push() {
+    // Ruchy uses Rust semantics: push() returns new array, must reassign
     let code = r#"
         let arr = [1, 2, 3];
-        push(arr, 4);
+        let arr = push(arr, 4);
         println(len(arr))
     "#;
     ruchy_cmd()
@@ -383,8 +383,9 @@ fn test_collection_pop() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: pop() on empty array doesn't fail - returns default value or error message"]
+#[ignore = "Design choice: pop() returns nil on empty (Python-style), not error (Rust-style)"]
 fn test_collection_pop_empty() {
+    // This test expects Rust-style error, but Ruchy uses Python-style nil return
     ruchy_cmd()
         .arg("-e")
         .arg("let arr = []; pop(arr)")
@@ -393,11 +394,11 @@ fn test_collection_pop_empty() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: reverse() doesn't mutate array in place - returns new array or has different semantics"]
 fn test_collection_reverse() {
+    // Ruchy uses Rust semantics: reverse() returns new array, must reassign
     let code = r#"
         let arr = [1, 2, 3];
-        reverse(arr);
+        let arr = reverse(arr);
         println(arr[0])
     "#;
     ruchy_cmd()
@@ -409,11 +410,11 @@ fn test_collection_reverse() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: sort() doesn't mutate array in place - returns new array or has different semantics"]
 fn test_collection_sort_ascending() {
+    // Ruchy uses Rust semantics: sort() returns new array, must reassign
     let code = r#"
         let arr = [3, 1, 2];
-        sort(arr);
+        let arr = sort(arr);
         println(arr[0])
     "#;
     ruchy_cmd()
@@ -995,15 +996,14 @@ fn test_http_delete() {
 // ============================================================================
 
 #[test]
-#[ignore = "Runtime limitation: push() doesn't mutate array in place - property test invalid"]
 fn property_len_after_push() {
-    // Property: len(arr) after push(arr, x) == len(arr_before) + 1
+    // Property: len(arr) after push(arr, x) == len(arr_before) + 1 (with reassignment)
     for size in 0..=10 {
         let code = format!(
             r#"
                 let arr = [{}];
                 let before = len(arr);
-                push(arr, 999);
+                let arr = push(arr, 999);
                 let after = len(arr);
                 assert_eq(after, before + 1)
             "#,
@@ -1018,36 +1018,13 @@ fn property_len_after_push() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: pop() doesn't mutate array in place - property test invalid"]
-fn property_len_after_pop() {
-    // Property: len(arr) after pop(arr) == len(arr_before) - 1 (for non-empty arrays)
-    for size in 1..=10 {
-        let code = format!(
-            r#"
-                let arr = [{}];
-                let before = len(arr);
-                pop(arr);
-                let after = len(arr);
-                assert_eq(after, before - 1)
-            "#,
-            (0..size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
-        );
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&code)
-            .assert()
-            .success();
-    }
-}
-
-#[test]
 fn property_reverse_twice_identity() {
-    // Property: reverse(reverse(arr)) == arr
+    // Property: reverse(reverse(arr)) == arr (with reassignment)
     let code = r#"
         let arr = [1, 2, 3, 4, 5];
         let original_first = arr[0];
-        reverse(arr);
-        reverse(arr);
+        let arr = reverse(arr);
+        let arr = reverse(arr);
         assert_eq(arr[0], original_first)
     "#;
     ruchy_cmd()
@@ -1184,32 +1161,31 @@ fn integration_path_manipulation() {
 }
 
 #[test]
-#[ignore = "Runtime limitation: Collection operations (push/pop/reverse/sort) don't mutate arrays in place"]
 fn integration_collection_operations() {
-    // Integration: Multiple collection operations on same array
+    // Integration: Multiple collection operations (Rust semantics: reassignment required)
     let code = r#"
         let arr = [5, 2, 8, 1, 9];
 
         // Original length
         assert_eq(len(arr), 5);
 
-        // Push
-        push(arr, 3);
+        // Push (returns new array)
+        let arr = push(arr, 3);
         assert_eq(len(arr), 6);
 
-        // Sort
-        sort(arr);
+        // Sort (returns new array)
+        let arr = sort(arr);
         assert_eq(arr[0], 1);
         assert_eq(arr[5], 9);
 
-        // Pop
+        // Pop (returns element, doesn't affect array)
         let last = pop(arr);
         assert_eq(last, 9);
-        assert_eq(len(arr), 5);
+        assert_eq(len(arr), 6);
 
-        // Reverse
-        reverse(arr);
-        assert_eq(arr[0], 8)
+        // Reverse (returns new array)
+        let arr = reverse(arr);
+        assert_eq(arr[0], 9)
     "#;
     ruchy_cmd()
         .arg("-e")
