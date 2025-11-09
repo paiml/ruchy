@@ -318,7 +318,6 @@ fn test_string_parse_int_valid() {
 }
 
 #[test]
-#[ignore = "Design limitation: parse_int should return Result type, not throw error (requires Result support)"]
 fn test_string_parse_int_invalid() {
     ruchy_cmd()
         .arg("-e")
@@ -338,7 +337,6 @@ fn test_string_parse_float_valid() {
 }
 
 #[test]
-#[ignore = "Design limitation: parse_float should return Result type, not throw error (requires Result support)"]
 fn test_string_parse_float_invalid() {
     ruchy_cmd()
         .arg("-e")
