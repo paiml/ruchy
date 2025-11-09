@@ -2039,7 +2039,7 @@ mod tests {
     fn test_add_profile_section() {
         let mut output = String::new();
         add_profile_section(&mut output);
-        assert!(output.contains("=== Execution Profile ==="));
+        assert!(output.contains("=== Execution Profiling ==="));
         assert!(output.contains("Function") || output.contains("times"));
     }
 
