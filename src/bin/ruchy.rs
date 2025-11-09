@@ -1341,7 +1341,8 @@ mod tests {
     #[test]
     fn test_handle_advanced_command_doc() {
         let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "// Documentation test").unwrap();
+        // TEST-FIX-002: Use valid Ruchy code instead of comment-only (empty program)
+        fs::write(&temp_file, "/// Documentation test\nfun add(a, b) { a + b }").unwrap();
 
         let output_dir = tempfile::tempdir().unwrap();
         let command = Commands::Doc {
