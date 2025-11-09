@@ -278,7 +278,7 @@ fn test_fmt_empty_file() {
         .arg("--stdout")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 #[test]
@@ -294,7 +294,7 @@ fn test_fmt_whitespace_only() {
         .arg("--stdout")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
 
 #[test]

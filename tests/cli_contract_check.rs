@@ -205,5 +205,5 @@ fn cli_check_comment_only_is_error() {
         .arg(&file)
         .assert()
         .failure() // Comment-only is syntax error (no actual code)
-        .stderr(predicate::str::contains("Unexpected end of input"));
+        .stderr(predicate::str::contains("Empty program"));
 }
