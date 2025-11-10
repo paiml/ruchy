@@ -5,6 +5,19 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[QUALITY-EVAL-METHOD-DISPATCH]** Add comprehensive unit tests to runtime/eval_method_dispatch.rs (20.45% → 85%+ coverage)
+  - **PROBLEM**: Critical runtime module at only 20.45% coverage (525 uncovered lines out of 735)
+  - **SOLUTION**: Added 29 comprehensive unit tests (5 → 34 total tests)
+  - **COVERAGE**: Float methods (14 tests), Integer methods (12 tests), DataFrame methods (8 tests)
+  - **TESTS ADDED**:
+    - Float: sqrt, abs, round, floor, ceil, sin/cos/tan, ln, log10, exp, to_string, powf error, unknown method, with_args error
+    - Integer: abs, sqrt, to_float, to_string, signum, pow (with negative exponent error, wrong arg count, wrong type error), unknown method
+    - DataFrame: count, sum, mean, max, min, columns, shape, mixed types
+    - Generic: to_string for bool/nil, unknown method error
+    - Dispatch: turbofish syntax stripping
+  - **TEST RESULTS**: 4352 tests passing (+29), 0 failed, 6.04s (<5min requirement)
+  - **QUALITY**: Comprehensive error case testing, edge cases, type conversions
+
 - **[QUALITY-STDLIB]** Add unit tests to 4 stdlib modules (0% → 100% coverage)
   - **MODULES**: regex (134 lines), logging (55 lines), env (43 lines), process (25 lines)
   - **TOTAL**: 257 lines, 28 functions, all fully tested
