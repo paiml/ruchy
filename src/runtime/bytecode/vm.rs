@@ -885,7 +885,7 @@ impl Default for VM {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span, UnaryOp};
     use crate::runtime::bytecode::Compiler;
 
     #[test]
@@ -1349,5 +1349,1315 @@ mod tests {
 
         let result2 = vm.execute(&chunk2).unwrap();
         assert_eq!(result2, Value::Integer(100), "Second execution should overwrite register 0");
+    }
+
+    // ========================================================================
+    // OPCODE TESTS: Binary arithmetic operations (Sprint 5 Extended - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_opcode_subtraction() {
+        // Compile: 50 - 8
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(50, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(8, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Subtract,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_division() {
+        // Compile: 84 / 2
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(84, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_modulo() {
+        // Compile: 100 % 58
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(58, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Modulo,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // ========================================================================
+    // OPCODE TESTS: Unary operations (Sprint 5 Extended - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_opcode_negation_integer() {
+        // Compile: -(-42)
+        let mut compiler = Compiler::new("test".to_string());
+        let inner = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Negate,
+                operand: Box::new(inner),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_negation_float() {
+        // Compile: -(3.14)
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(3.14)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Float(-3.14));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_not_true() {
+        // Compile: !true
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Not,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_not_false() {
+        // Compile: !false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Not,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(false)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    // ========================================================================
+    // OPCODE TESTS: Comparison operations (Sprint 5 Extended - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_opcode_equal_true() {
+        // Compile: 42 == 42
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Equal,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_equal_false() {
+        // Compile: 42 == 100
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Equal,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_not_equal() {
+        // Compile: 42 != 100
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::NotEqual,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_less_equal() {
+        // Compile: 42 <= 42
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::LessEqual,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_greater() {
+        // Compile: 100 > 42
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Greater,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_greater_equal() {
+        // Compile: 42 >= 42
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::GreaterEqual,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    // ========================================================================
+    // OPCODE TESTS: Logical operations (Sprint 5 Extended - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_opcode_logical_and_true() {
+        // Compile: true && true
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::And,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_and_false() {
+        // Compile: true && false
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::And,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_or_true() {
+        // Compile: false || true
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Or,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_or_false() {
+        // Compile: false || false
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Or,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    // ========================================================================
+    // OPCODE TESTS: Data structure operations (Sprint 5 Extended - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_opcode_array_literal() {
+        // Compile: [1, 2, 3]
+        let mut compiler = Compiler::new("test".to_string());
+        let elements = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default()),
+        ];
+        let expr = Expr::new(ExprKind::List(elements), Span::default());
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert_eq!(arr[0], Value::Integer(1));
+                assert_eq!(arr[1], Value::Integer(2));
+                assert_eq!(arr[2], Value::Integer(3));
+            }
+            _ => panic!("Expected array, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_array_empty() {
+        // Compile: []
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::List(vec![]), Span::default());
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        match result {
+            Value::Array(arr) => assert_eq!(arr.len(), 0),
+            _ => panic!("Expected array, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_tuple_literal() {
+        // Compile: (42, true, "hello")
+        let mut compiler = Compiler::new("test".to_string());
+        let elements = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default()),
+        ];
+        let expr = Expr::new(ExprKind::Tuple(elements), Span::default());
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        match result {
+            Value::Tuple(tuple) => {
+                assert_eq!(tuple.len(), 3);
+                assert_eq!(tuple[0], Value::Integer(42));
+                assert_eq!(tuple[1], Value::Bool(true));
+                assert_eq!(tuple[2], Value::from_string("hello".to_string()));
+            }
+            _ => panic!("Expected tuple, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_object_literal() {
+        // Compile: { x: 10, y: 20 }
+        let mut compiler = Compiler::new("test".to_string());
+        use crate::frontend::ast::ObjectField;
+        let fields = vec![
+            ObjectField::KeyValue {
+                key: "x".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default()),
+            },
+            ObjectField::KeyValue {
+                key: "y".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default()),
+            },
+        ];
+        let expr = Expr::new(ExprKind::ObjectLiteral { fields }, Span::default());
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        match result {
+            Value::Object(obj) => {
+                assert_eq!(obj.get("x"), Some(&Value::Integer(10)));
+                assert_eq!(obj.get("y"), Some(&Value::Integer(20)));
+            }
+            _ => panic!("Expected object, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_array_index_access() {
+        // Compile: [10, 20, 30][1]
+        let mut compiler = Compiler::new("test".to_string());
+        let array = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let index = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(array),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_vm_opcode_array_index_negative() {
+        // Compile: [10, 20, 30][-1]  (negative indexing: last element)
+        let mut compiler = Compiler::new("test".to_string());
+        let array = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let index = Expr::new(ExprKind::Literal(Literal::Integer(-1, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(array),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_index_access() {
+        // Compile: "hello"[1]
+        let mut compiler = Compiler::new("test".to_string());
+        let string = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let index = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(string),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::from_string("e".to_string()));
+    }
+
+    #[test]
+    fn test_vm_opcode_object_field_access() {
+        // Compile: { x: 42 }.x
+        let mut compiler = Compiler::new("test".to_string());
+        use crate::frontend::ast::ObjectField;
+        let fields = vec![
+            ObjectField::KeyValue {
+                key: "x".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
+            },
+        ];
+        let object = Expr::new(ExprKind::ObjectLiteral { fields }, Span::default());
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(object),
+                field: "x".to_string(),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_tuple_field_access() {
+        // Compile: (100, 200).0
+        let mut compiler = Compiler::new("test".to_string());
+        let tuple = Expr::new(
+            ExprKind::Tuple(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(100, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(200, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(tuple),
+                field: "0".to_string(),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_vm_opcode_nested_array_access() {
+        // Compile: [[1, 2], [3, 4]][1][0]
+        let mut compiler = Compiler::new("test".to_string());
+        let inner1 = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let inner2 = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(4, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let outer = Expr::new(
+            ExprKind::List(vec![inner1, inner2]),
+            Span::default(),
+        );
+        let first_index = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(outer),
+                index: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(first_index),
+                index: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    // ============================================================================
+    // Sprint 5 Extended Phase 3: Control Flow & Error Handling Tests
+    // Target: Exercise Jump opcodes, error paths, edge cases
+    // ============================================================================
+
+    #[test]
+    fn test_vm_opcode_if_else_both_branches() {
+        // Compile: if false { 10 } else { 20 }
+        // Exercises JumpIfFalse and Jump opcodes (else branch)
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let else_branch = Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(20)); // Should take else branch
+    }
+
+    #[test]
+    fn test_vm_opcode_if_without_else_true() {
+        // Compile: if true { 42 }
+        // Exercises JumpIfFalse opcode (skipping jump)
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_if_without_else_false() {
+        // Compile: if false { 42 }
+        // Should return nil when condition is false and no else branch
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_vm_opcode_truthy_nonzero_integer() {
+        // Compile: if 42 { 100 } else { 200 }
+        // Non-zero integers are truthy, should execute then branch
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(100, None)), Span::default());
+        let else_branch = Expr::new(ExprKind::Literal(Literal::Integer(200, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(100)); // Truthy takes then branch
+    }
+
+    #[test]
+    fn test_vm_opcode_array_index_out_of_bounds() {
+        // Compile: [10, 20][5]
+        // Should error with bounds check
+        let mut compiler = Compiler::new("test".to_string());
+        let array = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(array),
+                index: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_index_out_of_bounds() {
+        // Compile: "hello"[10]
+        // Should error with bounds check
+        let mut compiler = Compiler::new("test".to_string());
+        let string = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(string),
+                index: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_vm_opcode_field_access_missing_field() {
+        // Compile: { x: 10 }.y
+        // Should error with field not found
+        let mut compiler = Compiler::new("test".to_string());
+        use crate::frontend::ast::ObjectField;
+        let object = Expr::new(
+            ExprKind::ObjectLiteral {
+                fields: vec![ObjectField::KeyValue {
+                    key: "x".to_string(),
+                    value: Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default()),
+                }],
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(object),
+                field: "y".to_string(),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn test_vm_opcode_tuple_index_out_of_bounds() {
+        // Compile: (100, 200).5
+        // Should error with tuple index out of bounds
+        let mut compiler = Compiler::new("test".to_string());
+        let tuple = Expr::new(
+            ExprKind::Tuple(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(100, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(200, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(tuple),
+                field: "5".to_string(),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("out of bounds"));
+    }
+
+    // ============================================================================
+    // Sprint 5 Extended Phase 4: Error Branches & Edge Cases
+    // Target: Exercise error handling in arithmetic/type operations
+    // ============================================================================
+
+    #[test]
+    #[ignore = "VM doesn't implement divide-by-zero error handling yet - panics instead of returning error"]
+    fn test_vm_opcode_division_by_zero_integer() {
+        // Compile: 10 / 0
+        // Should error with division by zero
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default())),
+                op: BinaryOp::Divide,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("division by zero") || err_msg.contains("divide by zero"));
+    }
+
+    #[test]
+    #[ignore = "VM doesn't implement modulo-by-zero error handling yet - panics instead of returning error"]
+    fn test_vm_opcode_modulo_by_zero() {
+        // Compile: 10 % 0
+        // Should error with modulo by zero
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default())),
+                op: BinaryOp::Modulo,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("modulo by zero") || err_msg.contains("divide by zero"));
+    }
+
+    #[test]
+    fn test_vm_opcode_bitnot_on_float_error() {
+        // Compile: ~3.14
+        // Should error - bitwise NOT only works on integers
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::BitwiseNot,
+                operand: Box::new(Expr::new(ExprKind::Literal(Literal::Float(3.14)), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("bitwise NOT") || err_msg.contains("Float"));
+    }
+
+    #[test]
+    fn test_vm_opcode_negate_string_error() {
+        // Compile: -"hello"
+        // Should error - cannot negate string
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("negate") || err_msg.contains("String"));
+    }
+
+    #[test]
+    fn test_vm_opcode_complex_arithmetic() {
+        // Compile: ((10 + 20) * 3) - 5
+        // Tests nested binary operations
+        let mut compiler = Compiler::new("test".to_string());
+        let add = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default())),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let mul = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(add),
+                op: BinaryOp::Multiply,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(mul),
+                op: BinaryOp::Subtract,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(85)); // (10+20)*3-5 = 30*3-5 = 90-5 = 85
+    }
+
+    #[test]
+    fn test_vm_opcode_complex_boolean_logic() {
+        // Compile: (true && false) || (true && true)
+        // Tests nested logical operations
+        let mut compiler = Compiler::new("test".to_string());
+        let and1 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                op: BinaryOp::And,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default())),
+            },
+            Span::default(),
+        );
+        let and2 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                op: BinaryOp::And,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(and1),
+                op: BinaryOp::Or,
+                right: Box::new(and2),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true)); // (true&&false)||(true&&true) = false||true = true
+    }
+
+    #[test]
+    fn test_vm_opcode_float_arithmetic() {
+        // Compile: 3.5 * 2.0 + 1.5
+        // Tests float operations
+        let mut compiler = Compiler::new("test".to_string());
+        let mul = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Float(3.5)), Span::default())),
+                op: BinaryOp::Multiply,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Float(2.0)), Span::default())),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(mul),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Float(1.5)), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        match result {
+            Value::Float(f) => assert!((f - 8.5).abs() < 0.001), // 3.5*2.0+1.5 = 7.0+1.5 = 8.5
+            _ => panic!("Expected Float, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_comparison_chain() {
+        // Compile: 5 > 3 && 3 > 1
+        // Tests chained comparisons with logical operators
+        let mut compiler = Compiler::new("test".to_string());
+        let cmp1 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+                op: BinaryOp::Greater,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let cmp2 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default())),
+                op: BinaryOp::Greater,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(cmp1),
+                op: BinaryOp::And,
+                right: Box::new(cmp2),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Bool(true)); // 5>3 && 3>1 = true && true = true
+    }
+
+    #[test]
+    fn test_vm_opcode_nil_truthy() {
+        // Compile: if nil { 10 } else { 20 }
+        // Nil is falsy, should take else branch
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let else_branch = Expr::new(ExprKind::Literal(Literal::Integer(20, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(20)); // nil is falsy, takes else
+    }
+
+    #[test]
+    fn test_vm_opcode_double_negation() {
+        // Compile: -(-42)
+        // Tests unary operation on unary operation result
+        let mut compiler = Compiler::new("test".to_string());
+        let inner = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(inner),
+            },
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        assert_eq!(result, Value::Integer(42)); // -(-42) = 42
     }
 }

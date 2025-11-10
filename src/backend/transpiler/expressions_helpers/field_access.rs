@@ -108,7 +108,7 @@ impl Transpiler {
                 } else if field.is_empty() || field.chars().next().is_some_and(|c| c.is_ascii_digit()) {
                     // DEFECT: Empty field or starts with digit - invalid identifier
                     // Return error instead of panicking in format_ident!
-                    anyhow::bail!("Invalid field name '{}': field names cannot be empty or start with a digit", field)
+                    anyhow::bail!("Invalid field name '{field}': field names cannot be empty or start with a digit")
                 } else {
                     // Check for known instance methods that definitely need .
                     let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];

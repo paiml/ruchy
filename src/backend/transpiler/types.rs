@@ -419,7 +419,13 @@ impl Transpiler {
                 }
             };
 
-            if !methods.is_empty() {
+            if methods.is_empty() {
+                Ok(quote! {
+                    #struct_def
+
+                    #default_impl
+                })
+            } else {
                 let method_tokens = self.transpile_class_methods(methods)?;
                 let type_param_tokens = self.generate_class_type_param_tokens(type_params);
                 let impl_block = if type_param_tokens.is_empty() {
@@ -441,16 +447,12 @@ impl Transpiler {
                     #default_impl
 
                     #impl_block
-                })
-            } else {
-                Ok(quote! {
-                    #struct_def
-
-                    #default_impl
                 })
             }
         } else {
-            if !methods.is_empty() {
+            if methods.is_empty() {
+                Ok(struct_def)
+            } else {
                 let method_tokens = self.transpile_class_methods(methods)?;
                 let type_param_tokens = self.generate_class_type_param_tokens(type_params);
                 let impl_block = if type_param_tokens.is_empty() {
@@ -471,8 +473,6 @@ impl Transpiler {
 
                     #impl_block
                 })
-            } else {
-                Ok(struct_def)
             }
         }
     }

@@ -241,7 +241,7 @@ fn try_eval_utility_function(
 /// Try to evaluate type conversion functions (STDLIB-001)
 ///
 /// Wraps Rust stdlib methods for zero-cost abstraction.
-/// Complexity: 8 (within Toyota Way limits, added to_string)
+/// Complexity: 8 (within Toyota Way limits, added `to_string`)
 fn try_eval_conversion_function(
     name: &str,
     args: &[Value],
@@ -748,8 +748,8 @@ fn eval_type(args: &[Value]) -> Result<Value, InterpreterError> {
     Ok(Value::from_string(args[0].type_name().to_string()))
 }
 
-/// Get type name of a value (alias for eval_type)
-/// RUNTIME-BUG-001: Added to support type_of() function
+/// Get type name of a value (alias for `eval_type`)
+/// RUNTIME-BUG-001: Added to support `type_of()` function
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
@@ -759,7 +759,7 @@ fn eval_type_of(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Check if value is nil
-/// RUNTIME-BUG-001: Added to support is_nil() function
+/// RUNTIME-BUG-001: Added to support `is_nil()` function
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
@@ -3266,7 +3266,7 @@ fn eval_str(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Convert value to string using Display trait
-/// RUNTIME-BUG-002: Added to support to_string() function
+/// RUNTIME-BUG-002: Added to support `to_string()` function
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
@@ -3324,7 +3324,7 @@ fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Parse string to integer with validation
-/// RUNTIME-BUG-001: Added to support parse_int() function
+/// RUNTIME-BUG-001: Added to support `parse_int()` function
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
@@ -3343,7 +3343,7 @@ fn eval_parse_int(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Parse string to float with validation
-/// RUNTIME-BUG-001: Added to support parse_float() function
+/// RUNTIME-BUG-001: Added to support `parse_float()` function
 ///
 /// # Complexity
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
