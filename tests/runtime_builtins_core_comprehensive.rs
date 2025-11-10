@@ -4,7 +4,7 @@
 //! Target: src/runtime/builtins.rs (70 builtin functions)
 //! Coverage: I/O, type inspection, math, string, collection, env, fs, path, JSON, HTTP
 //!
-//! Current state: 34 existing tests in eval_builtin_comprehensive.rs
+//! Current state: 34 existing tests in `eval_builtin_comprehensive.rs`
 //! Goal: Comprehensive coverage of all 70 builtin functions
 
 use assert_cmd::Command;
@@ -53,7 +53,7 @@ fn test_io_print_no_newline() {
 fn test_io_dbg_debug_output() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"dbg(42)"#)
+        .arg(r"dbg(42)")
         .assert()
         .success();
 }
@@ -96,7 +96,7 @@ fn test_type_len_empty_array() {
 fn test_type_type_of_integer() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"println(type_of(42))"#)
+        .arg(r"println(type_of(42))")
         .assert()
         .success();
 }
@@ -114,7 +114,7 @@ fn test_type_type_of_string() {
 fn test_type_type_of_array() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"println(type_of([1, 2, 3]))"#)
+        .arg(r"println(type_of([1, 2, 3]))")
         .assert()
         .success();
 }
@@ -281,7 +281,7 @@ fn test_math_round() {
 fn test_string_to_string_int() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"println(to_string(42))"#)
+        .arg(r"println(to_string(42))")
         .assert()
         .success()
         .stdout(predicate::str::contains("42"));
@@ -291,7 +291,7 @@ fn test_string_to_string_int() {
 fn test_string_to_string_float() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"println(to_string(3.14))"#)
+        .arg(r"println(to_string(3.14))")
         .assert()
         .success()
         .stdout(predicate::str::contains("3.14"));
@@ -301,7 +301,7 @@ fn test_string_to_string_float() {
 fn test_string_to_string_bool() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"println(to_string(true))"#)
+        .arg(r"println(to_string(true))")
         .assert()
         .success()
         .stdout(predicate::str::contains("true"));
@@ -352,11 +352,11 @@ fn test_string_parse_float_invalid() {
 #[test]
 fn test_collection_push() {
     // Ruchy uses Rust semantics: push() returns new array, must reassign
-    let code = r#"
+    let code = r"
         let arr = [1, 2, 3];
         let arr = push(arr, 4);
         println(len(arr))
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -368,11 +368,11 @@ fn test_collection_push() {
 #[test]
 fn test_collection_pop() {
     // pop() works - test it succeeds
-    let code = r#"
+    let code = r"
         let arr = [1, 2, 3];
         let val = pop(arr);
         println(type_of(val))
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -394,11 +394,11 @@ fn test_collection_pop_empty() {
 #[test]
 fn test_collection_reverse() {
     // Ruchy uses Rust semantics: reverse() returns new array, must reassign
-    let code = r#"
+    let code = r"
         let arr = [1, 2, 3];
         let arr = reverse(arr);
         println(arr[0])
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -410,11 +410,11 @@ fn test_collection_reverse() {
 #[test]
 fn test_collection_sort_ascending() {
     // Ruchy uses Rust semantics: sort() returns new array, must reassign
-    let code = r#"
+    let code = r"
         let arr = [3, 1, 2];
         let arr = sort(arr);
         println(arr[0])
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -998,13 +998,13 @@ fn property_len_after_push() {
     // Property: len(arr) after push(arr, x) == len(arr_before) + 1 (with reassignment)
     for size in 0..=10 {
         let code = format!(
-            r#"
+            r"
                 let arr = [{}];
                 let before = len(arr);
                 let arr = push(arr, 999);
                 let after = len(arr);
                 assert_eq(after, before + 1)
-            "#,
+            ",
             (0..size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
         );
         ruchy_cmd()
@@ -1018,13 +1018,13 @@ fn property_len_after_push() {
 #[test]
 fn property_reverse_twice_identity() {
     // Property: reverse(reverse(arr)) == arr (with reassignment)
-    let code = r#"
+    let code = r"
         let arr = [1, 2, 3, 4, 5];
         let original_first = arr[0];
         let arr = reverse(arr);
         let arr = reverse(arr);
         assert_eq(arr[0], original_first)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -1036,7 +1036,7 @@ fn property_reverse_twice_identity() {
 fn property_abs_idempotent() {
     // Property: abs(abs(x)) == abs(x)
     for val in [-100, -10, -1, 0, 1, 10, 100] {
-        let code = format!("assert_eq(abs(abs({})), abs({}))", val, val);
+        let code = format!("assert_eq(abs(abs({val})), abs({val}))");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -1049,7 +1049,7 @@ fn property_abs_idempotent() {
 fn property_min_max_commutative() {
     // Property: min(a, b) + max(a, b) == a + b
     for (a, b) in [(1, 5), (10, 3), (7, 7), (-5, 10)] {
-        let code = format!("assert_eq(min({}, {}) + max({}, {}), {} + {})", a, b, a, b, a, b);
+        let code = format!("assert_eq(min({a}, {b}) + max({a}, {b}), {a} + {b})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -1062,7 +1062,7 @@ fn property_min_max_commutative() {
 fn property_to_string_parse_int_roundtrip() {
     // Property: parse_int(to_string(n)) == n (for integers)
     for val in [0, 1, 42, 100, 999] {
-        let code = format!(r#"assert_eq(parse_int(to_string({})), {})"#, val, val);
+        let code = format!(r"assert_eq(parse_int(to_string({val})), {val})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -1161,7 +1161,7 @@ fn integration_path_manipulation() {
 #[test]
 fn integration_collection_operations() {
     // Integration: Multiple collection operations (Rust semantics: reassignment required)
-    let code = r#"
+    let code = r"
         let arr = [5, 2, 8, 1, 9];
 
         // Original length
@@ -1184,7 +1184,7 @@ fn integration_collection_operations() {
         // Reverse (returns new array)
         let arr = reverse(arr);
         assert_eq(arr[0], 9)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -1195,7 +1195,7 @@ fn integration_collection_operations() {
 #[test]
 fn integration_math_operations() {
     // Integration: Combine math operations
-    let code = r#"
+    let code = r"
         let x = -25.7;
 
         // Abs
@@ -1219,7 +1219,7 @@ fn integration_math_operations() {
         let max_val = max(squared, 30.0);
         println(min_val);
         println(max_val)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)

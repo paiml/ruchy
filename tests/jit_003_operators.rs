@@ -313,16 +313,15 @@ fn test_jit_003_performance_gcd() {
     let avg_elapsed = total_elapsed / iterations;
 
     println!("\n=== JIT-003 Performance Benchmark ===");
-    println!("gcd(1071, 462) JIT avg over {} runs: {:?}", iterations, avg_elapsed);
+    println!("gcd(1071, 462) JIT avg over {iterations} runs: {avg_elapsed:?}");
     println!("Target: <10µs per run (faster than AST interpreter)");
 
     // Performance assertion: Should be faster than 1ms (very conservative)
     let avg_micros = avg_elapsed.as_micros();
     assert!(
         avg_micros < 1000,
-        "JIT should be faster than 1ms. Actual: {}µs",
-        avg_micros
+        "JIT should be faster than 1ms. Actual: {avg_micros}µs"
     );
 
-    println!("Actual: {}µs - ✅ Performance target met", avg_micros);
+    println!("Actual: {avg_micros}µs - ✅ Performance target met");
 }

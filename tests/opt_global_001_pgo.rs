@@ -38,7 +38,7 @@ fn test_opt_global_001_02_profile_data_collection() {
     let profraw_files = fs::read_dir("/tmp")
         .unwrap()
         .filter_map(Result::ok)
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "profraw"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "profraw"))
         .count();
 
     assert!(profraw_files > 0, "Expected .profraw files to be created");
@@ -74,7 +74,7 @@ fn test_opt_global_001_04_pgo_optimized_build() {
     let mut cmd = Command::new("cargo");
     cmd.arg("build")
         .arg("--release")
-        .env("RUSTFLAGS", format!("-Cprofile-use={}", profile_path));
+        .env("RUSTFLAGS", format!("-Cprofile-use={profile_path}"));
 
     cmd.assert()
         .success()
@@ -87,7 +87,7 @@ fn test_opt_global_001_05_benchmark_baseline() {
     use std::time::Instant;
 
     // Measure transpilation time for representative workload
-    let code = r#"
+    let code = r"
         fun fibonacci(n: i32) -> i32 {
             if n <= 1 {
                 n
@@ -99,7 +99,7 @@ fn test_opt_global_001_05_benchmark_baseline() {
         fun main() -> i32 {
             fibonacci(10)
         }
-    "#;
+    ";
 
     let start = Instant::now();
 
@@ -151,17 +151,16 @@ fn test_opt_global_001_06_statistical_validation_baseline() {
         .sum::<f64>() / 29.0; // N-1 for sample variance
     let std_dev = variance.sqrt();
 
-    println!("Baseline: Mean={}μs, StdDev={}μs", mean, std_dev);
+    println!("Baseline: Mean={mean}μs, StdDev={std_dev}μs");
 
     // Save baseline to temp file for comparison
-    fs::write("/tmp/pgo-baseline.txt", format!("{},{}", mean, std_dev))
+    fs::write("/tmp/pgo-baseline.txt", format!("{mean},{std_dev}"))
         .expect("Failed to write baseline");
 
     // Baseline should be stable (CV < 10%)
     let cv = (std_dev / mean) * 100.0;
     assert!(cv < 10.0,
-        "Baseline coefficient of variation too high: {:.2}% (expected < 10%)",
-        cv);
+        "Baseline coefficient of variation too high: {cv:.2}% (expected < 10%)");
 }
 
 /// Test 7: PGO speedup validation (requires baseline)
@@ -196,10 +195,9 @@ fn test_opt_global_001_07_pgo_speedup_validation() {
     let pgo_mean: f64 = timings.iter().map(|&t| t as f64).sum::<f64>() / 30.0;
     let speedup = ((baseline_mean - pgo_mean) / baseline_mean) * 100.0;
 
-    println!("PGO: Mean={}μs, Speedup={:.2}%", pgo_mean, speedup);
+    println!("PGO: Mean={pgo_mean}μs, Speedup={speedup:.2}%");
 
     // PGO should provide ≥15% speedup (spec target: 15-30%)
     assert!(speedup >= 15.0,
-        "PGO speedup {:.2}% below target (expected ≥15%)",
-        speedup);
+        "PGO speedup {speedup:.2}% below target (expected ≥15%)");
 }

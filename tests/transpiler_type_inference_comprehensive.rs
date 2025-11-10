@@ -1,11 +1,10 @@
 //! Comprehensive type inference tests via CLI (TDG-driven)
 //!
-//! Target: src/backend/transpiler/type_inference.rs (881 lines, 25 tests → 35.2 lines/test)
+//! Target: `src/backend/transpiler/type_inference.rs` (881 lines, 25 tests → 35.2 lines/test)
 //! Strategy: Test ALL inference patterns through transpiler output validation
 //! Coverage: Function arguments, numeric usage, return types, builtin calls
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -18,11 +17,11 @@ fn ruchy_cmd() -> Command {
 #[test]
 fn test_param_as_i32_argument() {
     // Parameter used as argument to function expecting i32 → infer i32
-    let code = r#"
+    let code = r"
         fn add_one(x) {
             x + 1
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -33,11 +32,11 @@ fn test_param_as_i32_argument() {
 #[test]
 fn test_param_passed_to_builtin() {
     // Parameter passed to len() → infer Vec/String
-    let code = r#"
+    let code = r"
         fn get_length(arr) {
             len(arr)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -48,11 +47,11 @@ fn test_param_passed_to_builtin() {
 #[test]
 fn test_param_in_nested_call() {
     // Parameter deeply nested in function calls
-    let code = r#"
+    let code = r"
         fn process(x) {
             println(str(x))
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -66,11 +65,11 @@ fn test_param_in_nested_call() {
 #[test]
 fn test_param_called_as_function() {
     // Parameter is called directly → must be function type
-    let code = r#"
+    let code = r"
         fn apply(f, x) {
             f(x)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -81,11 +80,11 @@ fn test_param_called_as_function() {
 #[test]
 fn test_param_as_callback() {
     // Higher-order function pattern
-    let code = r#"
+    let code = r"
         fn map_fn(arr, mapper) {
             mapper(arr[0])
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -99,11 +98,11 @@ fn test_param_as_callback() {
 #[test]
 fn test_param_in_addition() {
     // x + 1 → infer numeric type
-    let code = r#"
+    let code = r"
         fn increment(x) {
             x + 1
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -114,11 +113,11 @@ fn test_param_in_addition() {
 #[test]
 fn test_param_in_multiplication() {
     // x * 2 → numeric inference
-    let code = r#"
+    let code = r"
         fn double(x) {
             x * 2
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -128,11 +127,11 @@ fn test_param_in_multiplication() {
 #[test]
 fn test_param_in_comparison() {
     // x > 0 → numeric usage
-    let code = r#"
+    let code = r"
         fn is_positive(x) {
             x > 0
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -142,11 +141,11 @@ fn test_param_in_comparison() {
 #[test]
 fn test_param_in_complex_expression() {
     // (x + 1) * 2 - 3 → clearly numeric
-    let code = r#"
+    let code = r"
         fn compute(x) {
             (x + 1) * 2 - 3
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -161,11 +160,11 @@ fn test_param_in_complex_expression() {
 #[test]
 fn test_infer_len_returns_usize() {
     // len() always returns usize
-    let code = r#"
+    let code = r"
         fn get_size(arr) {
             len(arr)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -176,11 +175,11 @@ fn test_infer_len_returns_usize() {
 #[test]
 fn test_infer_str_returns_string() {
     // str() returns String
-    let code = r#"
+    let code = r"
         fn to_string(x) {
             str(x)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -190,11 +189,11 @@ fn test_infer_str_returns_string() {
 #[test]
 fn test_infer_int_returns_i64() {
     // int() returns i64
-    let code = r#"
+    let code = r"
         fn parse_int(s) {
             int(s)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -208,12 +207,12 @@ fn test_infer_int_returns_i64() {
 #[test]
 fn test_numeric_and_function_usage() {
     // Parameter used both numerically and as function argument
-    let code = r#"
+    let code = r"
         fn process(x) {
             let doubled = x * 2;
             println(doubled)
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -224,11 +223,11 @@ fn test_numeric_and_function_usage() {
 #[test]
 fn test_string_concatenation_inference() {
     // String + String → should infer String type
-    let code = r#"
+    let code = r"
         fn concat(a, b) {
             a + b
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -238,7 +237,7 @@ fn test_string_concatenation_inference() {
 #[test]
 fn test_if_branch_inference() {
     // Both branches must have compatible types
-    let code = r#"
+    let code = r"
         fn conditional(x) {
             if x > 0 {
                 x + 1
@@ -246,7 +245,7 @@ fn test_if_branch_inference() {
                 x - 1
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -256,13 +255,13 @@ fn test_if_branch_inference() {
 #[test]
 fn test_let_binding_inference() {
     // Let binding should propagate type info
-    let code = r#"
+    let code = r"
         fn compute(x) {
             let doubled = x * 2;
             let incremented = doubled + 1;
             incremented
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -276,11 +275,11 @@ fn test_let_binding_inference() {
 #[test]
 fn edge_case_unused_parameter() {
     // Parameter never used → generic type
-    let code = r#"
+    let code = r"
         fn ignore(x) {
             42
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -290,11 +289,11 @@ fn edge_case_unused_parameter() {
 #[test]
 fn edge_case_multiple_numeric_operations() {
     // x used in +, -, *, / → all numeric
-    let code = r#"
+    let code = r"
         fn math(x) {
             x + x - x * x / x
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -304,11 +303,11 @@ fn edge_case_multiple_numeric_operations() {
 #[test]
 fn edge_case_nested_function_calls() {
     // len(str(int(x))) → chain of inferences
-    let code = r#"
+    let code = r"
         fn chain(x) {
             len(str(int(x)))
         }
-    "#;
+    ";
     let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
@@ -325,7 +324,7 @@ fn property_all_numeric_operators() {
     let operators = vec!["+", "-", "*", "/", "%"];
 
     for op in operators {
-        let code = format!("fn op(x) {{ x {} 1 }}", op);
+        let code = format!("fn op(x) {{ x {op} 1 }}");
         ruchy_cmd().arg("transpile").arg("-")
             .write_stdin(code.as_str())
             .assert().success();
@@ -338,7 +337,7 @@ fn property_all_comparison_operators() {
     let operators = vec!["==", "!=", "<", ">", "<=", ">="];
 
     for op in operators {
-        let code = format!("fn cmp(x) {{ x {} 0 }}", op);
+        let code = format!("fn cmp(x) {{ x {op} 0 }}");
         ruchy_cmd().arg("transpile").arg("-")
             .write_stdin(code.as_str())
             .assert().success();
@@ -351,9 +350,9 @@ fn property_nested_depth_1_to_5() {
     for depth in 1..=5 {
         let mut code = "x".to_string();
         for _ in 0..depth {
-            code = format!("({})", code);
+            code = format!("({code})");
         }
-        code = format!("fn nested(x) {{ {} + 1 }}", code);
+        code = format!("fn nested(x) {{ {code} + 1 }}");
 
         ruchy_cmd().arg("transpile").arg("-")
             .write_stdin(code.as_str())

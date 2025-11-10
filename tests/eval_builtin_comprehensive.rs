@@ -1,6 +1,6 @@
-//! EXTREME TDD: eval_builtin.rs Comprehensive Coverage
+//! EXTREME TDD: `eval_builtin.rs` Comprehensive Coverage
 //!
-//! Target: eval_builtin.rs 36.2% → 85% coverage
+//! Target: `eval_builtin.rs` 36.2% → 85% coverage
 //! Strategy: Test all working builtin functions via CLI evaluation
 //! Quality: Unit + Property + Integration tests
 
@@ -241,7 +241,7 @@ fn property_sqrt_pow_inverse() {
     // Property: sqrt(pow(x, 2)) ≈ x
     for x in [2.0, 5.0, 10.0] {
         ruchy_cmd().arg("-e")
-            .arg(format!("let result = sqrt(pow({}, 2.0)); assert(result >= {} - 0.1); assert(result <= {} + 0.1)", x, x, x))
+            .arg(format!("let result = sqrt(pow({x}, 2.0)); assert(result >= {x} - 0.1); assert(result <= {x} + 0.1)"))
             .assert().success();
     }
 }
@@ -251,7 +251,7 @@ fn property_abs_non_negative() {
     // Property: abs(x) >= 0
     for x in [-100.0, -1.0, 0.0, 1.0, 100.0] {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert(abs({}) >= 0.0)", x))
+            .arg(format!("assert(abs({x}) >= 0.0)"))
             .assert().success();
     }
 }
@@ -262,7 +262,7 @@ fn property_min_max_bounds() {
     let pairs = [(3.0, 7.0), (-5.0, 2.0), (0.0, 0.0)];
     for (a, b) in pairs {
         ruchy_cmd().arg("-e")
-            .arg(format!("let m = min({}, {}); assert(m <= {}); assert(m <= {})", a, b, a, b))
+            .arg(format!("let m = min({a}, {b}); assert(m <= {a}); assert(m <= {b})"))
             .assert().success();
     }
 }
@@ -273,7 +273,7 @@ fn property_len_never_negative() {
     let values = vec!["\"\"", "\"test\"", "[]", "[1,2,3]"];
     for val in values {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert(len({}) >= 0)", val))
+            .arg(format!("assert(len({val}) >= 0)"))
             .assert().success();
     }
 }
@@ -283,7 +283,7 @@ fn property_range_length() {
     // Property: len(range(n)) == n
     for n in [0, 5, 10, 20] {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert_eq(len(range({})), {})", n, n))
+            .arg(format!("assert_eq(len(range({n})), {n})"))
             .assert().success();
     }
 }

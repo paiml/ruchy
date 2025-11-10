@@ -171,7 +171,7 @@ fn test_infix_all_arithmetic() {
     for (expr, expected) in operators {
         ruchy_cmd()
             .arg("-e")
-            .arg(format!("println({})", expr))
+            .arg(format!("println({expr})"))
             .assert()
             .success()
             .stdout(predicate::str::contains(expected));
@@ -192,7 +192,7 @@ fn test_infix_all_comparison() {
     for (expr, expected) in operators {
         ruchy_cmd()
             .arg("-e")
-            .arg(format!("println({})", expr))
+            .arg(format!("println({expr})"))
             .assert()
             .success()
             .stdout(predicate::str::contains(expected));
@@ -225,12 +225,12 @@ fn test_infix_logical_or() {
 
 #[test]
 fn test_postfix_function_call() {
-    let code = r#"
+    let code = r"
         fun double(x) {
             x * 2
         }
         println(double(21))
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -251,11 +251,11 @@ fn test_postfix_array_index() {
 
 #[test]
 fn test_postfix_field_access() {
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let p = Point { x: 10, y: 20 };
         println(p.x)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -300,14 +300,14 @@ fn test_comments_trailing() {
 
 #[test]
 fn test_comments_multiline() {
-    let code = r#"
+    let code = r"
         // First comment
         let x = 10;
         // Second comment
         let y = 20;
         // Third comment
         println(x + y)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -342,12 +342,12 @@ fn test_complex_mixed_operators() {
 
 #[test]
 fn test_complex_function_with_operators() {
-    let code = r#"
+    let code = r"
         fun compute(a, b, c) {
             a * b + c
         }
         println(compute(2, 3, 4))
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -442,7 +442,7 @@ fn property_arithmetic_operators() {
     // Property: All arithmetic operators parse correctly
     let operators = vec!["+", "-", "*", "/", "%"];
     for op in operators {
-        let expr = format!("10 {} 2", op);
+        let expr = format!("10 {op} 2");
         ruchy_cmd()
             .arg("-e")
             .arg(&expr)
@@ -456,7 +456,7 @@ fn property_comparison_operators() {
     // Property: All comparison operators parse correctly
     let operators = vec!["==", "!=", "<", ">", "<=", ">="];
     for op in operators {
-        let expr = format!("5 {} 3", op);
+        let expr = format!("5 {op} 3");
         ruchy_cmd()
             .arg("-e")
             .arg(&expr)
@@ -471,9 +471,9 @@ fn property_nested_depth_1_to_10() {
     for depth in 1..=10 {
         let mut expr = "42".to_string();
         for _ in 0..depth {
-            expr = format!("({})", expr);
+            expr = format!("({expr})");
         }
-        let code = format!("println({})", expr);
+        let code = format!("println({expr})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -492,7 +492,7 @@ fn property_operator_chain_length_1_to_10() {
             .collect::<Vec<_>>()
             .join(" + ");
         let expected = length.to_string();
-        let code = format!("println({})", expr);
+        let code = format!("println({expr})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)

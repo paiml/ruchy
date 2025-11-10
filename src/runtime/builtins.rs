@@ -2002,7 +2002,7 @@ mod tests {
 
         if let Value::Array(args) = result {
             // Should return array of strings (at minimum the program name)
-            assert!(args.len() >= 1);
+            assert!(!args.is_empty());
         } else {
             panic!("Expected Array");
         }
@@ -2747,7 +2747,7 @@ mod tests {
     #[test]
     fn test_builtin_push_array() {
         let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
-        let result = builtin_push(&[arr.clone(), Value::Integer(3)]).unwrap();
+        let result = builtin_push(&[arr, Value::Integer(3)]).unwrap();
         match result {
             Value::Array(items) => {
                 assert_eq!(items.len(), 3);

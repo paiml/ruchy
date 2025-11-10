@@ -2,7 +2,7 @@
 //!
 //! Tests the try operator (?) for ergonomic error propagation.
 //!
-//! Reference: https://github.com/paiml/ruchy/issues/97
+//! Reference: <https://github.com/paiml/ruchy/issues/97>
 //! EXTREME TDD: These tests demonstrate the expected behavior
 
 use assert_cmd::Command;

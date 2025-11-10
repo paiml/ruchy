@@ -48,7 +48,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("[72, 101, 108, 108, 111]"), "Expected byte array for 'Hello', got: {}", stdout);
+    assert!(stdout.contains("[72, 101, 108, 108, 111]"), "Expected byte array for 'Hello', got: {stdout}");
 }
 
 /// RED: Test empty string
@@ -74,7 +74,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("0"), "Expected length 0 for empty string, got: {}", stdout);
+    assert!(stdout.contains('0'), "Expected length 0 for empty string, got: {stdout}");
 }
 
 /// RED: Test UTF-8 multi-byte characters
@@ -103,7 +103,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("65"), "Expected byte value 65 for 'A', got: {}", stdout);
+    assert!(stdout.contains("65"), "Expected byte value 65 for 'A', got: {stdout}");
 }
 
 /// RED: Test indexing into returned byte array
@@ -133,9 +133,9 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("65"), "Expected 65 (A), got: {}", stdout);
-    assert!(stdout.contains("66"), "Expected 66 (B), got: {}", stdout);
-    assert!(stdout.contains("67"), "Expected 67 (C), got: {}", stdout);
+    assert!(stdout.contains("65"), "Expected 65 (A), got: {stdout}");
+    assert!(stdout.contains("66"), "Expected 66 (B), got: {stdout}");
+    assert!(stdout.contains("67"), "Expected 67 (C), got: {stdout}");
 }
 
 /// RED: Test special characters
@@ -163,7 +163,7 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("10"), "Expected byte value 10 for newline, got: {}", stdout);
+    assert!(stdout.contains("10"), "Expected byte value 10 for newline, got: {stdout}");
 }
 
 /// RED: Test iteration over byte array
@@ -193,13 +193,13 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("72"), "Expected 72 (H), got: {}", stdout);
-    assert!(stdout.contains("105"), "Expected 105 (i), got: {}", stdout);
+    assert!(stdout.contains("72"), "Expected 72 (H), got: {stdout}");
+    assert!(stdout.contains("105"), "Expected 105 (i), got: {stdout}");
 }
 
 /// RED: Test method chaining
 ///
-/// Pattern: text.as_bytes().len()
+/// Pattern: `text.as_bytes().len()`
 #[test]
 fn test_feature_089_as_bytes_method_chaining() {
     let temp_dir = TempDir::new().unwrap();
@@ -222,12 +222,12 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("4"), "Expected length 4 for 'Test', got: {}", stdout);
+    assert!(stdout.contains('4'), "Expected length 4 for 'Test', got: {stdout}");
 }
 
 /// GREEN: Verify string methods still work
 ///
-/// Sanity check: as_bytes() doesn't break other string methods
+/// Sanity check: `as_bytes()` doesn't break other string methods
 #[test]
 fn test_feature_089_other_string_methods_still_work() {
     let temp_dir = TempDir::new().unwrap();
@@ -250,6 +250,6 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("5"), "Expected length 5, got: {}", stdout);
-    assert!(stdout.contains("HELLO"), "Expected HELLO, got: {}", stdout);
+    assert!(stdout.contains('5'), "Expected length 5, got: {stdout}");
+    assert!(stdout.contains("HELLO"), "Expected HELLO, got: {stdout}");
 }

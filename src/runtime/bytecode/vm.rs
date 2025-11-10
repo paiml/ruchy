@@ -1870,7 +1870,7 @@ mod tests {
                 assert_eq!(arr[1], Value::Integer(2));
                 assert_eq!(arr[2], Value::Integer(3));
             }
-            _ => panic!("Expected array, got {:?}", result),
+            _ => panic!("Expected array, got {result:?}"),
         }
     }
 
@@ -1887,7 +1887,7 @@ mod tests {
 
         match result {
             Value::Array(arr) => assert_eq!(arr.len(), 0),
-            _ => panic!("Expected array, got {:?}", result),
+            _ => panic!("Expected array, got {result:?}"),
         }
     }
 
@@ -1914,7 +1914,7 @@ mod tests {
                 assert_eq!(tuple[1], Value::Bool(true));
                 assert_eq!(tuple[2], Value::from_string("hello".to_string()));
             }
-            _ => panic!("Expected tuple, got {:?}", result),
+            _ => panic!("Expected tuple, got {result:?}"),
         }
     }
 
@@ -1945,7 +1945,7 @@ mod tests {
                 assert_eq!(obj.get("x"), Some(&Value::Integer(10)));
                 assert_eq!(obj.get("y"), Some(&Value::Integer(20)));
             }
-            _ => panic!("Expected object, got {:?}", result),
+            _ => panic!("Expected object, got {result:?}"),
         }
     }
 
@@ -2566,7 +2566,7 @@ mod tests {
 
         match result {
             Value::Float(f) => assert!((f - 8.5).abs() < 0.001), // 3.5*2.0+1.5 = 7.0+1.5 = 8.5
-            _ => panic!("Expected Float, got {:?}", result),
+            _ => panic!("Expected Float, got {result:?}"),
         }
     }
 

@@ -119,5 +119,5 @@ fun main() {
             "TRANSPILER-009: Code failed to compile (missing square function)!\n\nRust:\n{}\n\nErrors:\n{}",
             rust_code,
             String::from_utf8_lossy(&output.stderr)
-        )
+        );
 }

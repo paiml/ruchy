@@ -21,10 +21,10 @@ proptest! {
         function in "[a-z][a-z_]{2,10}"  // function_name
     ) {
         // Generate module name with underscore: prefix_suffix
-        let module = format!("{}_{}", prefix, suffix);
+        let module = format!("{prefix}_{suffix}");
 
         // Generate code: module_name::function_name()
-        let code = format!("let result = {}::{}(); result", module, function);
+        let code = format!("let result = {module}::{function}(); result");
 
         if let Ok(ast) = Parser::new(&code).parse() {
             if let Ok(rust_code) = Transpiler::new().transpile(&ast) {
@@ -32,8 +32,8 @@ proptest! {
 
                 // INVARIANT: Module paths with :: should preserve ::
                 // Should NOT convert to .
-                let expected_module = format!("{} :: {}", module, function);
-                let unexpected_dot = format!("{} . {}", module, function);
+                let expected_module = format!("{module} :: {function}");
+                let unexpected_dot = format!("{module} . {function}");
 
                 prop_assert!(
                     rust_str.contains(&expected_module),
@@ -62,15 +62,15 @@ proptest! {
         function in "[a-z][a-z_]{2,10}"       // function_name
     ) {
         // Generate code: TypeName::function_name()
-        let code = format!("let result = {}::{}(); result", type_name, function);
+        let code = format!("let result = {type_name}::{function}(); result");
 
         if let Ok(ast) = Parser::new(&code).parse() {
             if let Ok(rust_code) = Transpiler::new().transpile(&ast) {
                 let rust_str = rust_code.to_string();
 
                 // INVARIANT: Type associated functions should use ::
-                let expected_path = format!("{} :: {}", type_name, function);
-                let unexpected_dot = format!("{} . {}", type_name, function);
+                let expected_path = format!("{type_name} :: {function}");
+                let unexpected_dot = format!("{type_name} . {function}");
 
                 prop_assert!(
                     rust_str.contains(&expected_path),
@@ -102,19 +102,19 @@ proptest! {
         suffix2 in "[a-z]{2,4}",
         func in "[a-z][a-z_]{2,8}"
     ) {
-        let mod1 = format!("{}_{}", prefix1, suffix1);
-        let mod2 = format!("{}_{}", prefix2, suffix2);
+        let mod1 = format!("{prefix1}_{suffix1}");
+        let mod2 = format!("{prefix2}_{suffix2}");
 
         // Generate code: mod1::mod2::func()
-        let code = format!("let result = {}::{}::{}(); result", mod1, mod2, func);
+        let code = format!("let result = {mod1}::{mod2}::{func}(); result");
 
         if let Ok(ast) = Parser::new(&code).parse() {
             if let Ok(rust_code) = Transpiler::new().transpile(&ast) {
                 let rust_str = rust_code.to_string();
 
                 // INVARIANT: All :: in nested paths should be preserved
-                let expected_first = format!("{} :: {}", mod1, mod2);
-                let expected_second = format!("{} :: {}", mod2, func);
+                let expected_first = format!("{mod1} :: {mod2}");
+                let expected_second = format!("{mod2} :: {func}");
 
                 prop_assert!(
                     rust_str.contains(&expected_first) || rust_str.contains(&expected_second),
@@ -142,7 +142,7 @@ proptest! {
         prop_assume!(!field_name.contains('_'));
 
         // Generate code: obj.field (no function call - just field access)
-        let code = format!("let obj = MyStruct {{ {}: 42 }}; let val = obj.{}; val", field_name, field_name);
+        let code = format!("let obj = MyStruct {{ {field_name}: 42 }}; let val = obj.{field_name}; val");
 
         if let Ok(ast) = Parser::new(&code).parse() {
             if let Ok(rust_code) = Transpiler::new().transpile(&ast) {
@@ -151,7 +151,7 @@ proptest! {
                 // INVARIANT: Field access should preserve .
                 // Note: We check for the general pattern, not specific obj_name
                 // since the test uses 'obj' as variable name
-                let unexpected_colon = format!("obj :: {}", field_name);
+                let unexpected_colon = format!("obj :: {field_name}");
 
                 prop_assert!(
                     !rust_str.contains(&unexpected_colon),
@@ -172,7 +172,7 @@ proptest! {
         function in "[a-z][a-z_]{2,10}"
     ) {
         // Generate code: std::module::function()
-        let code = format!("let result = std::{}::{}(); result", stdlib_mod, function);
+        let code = format!("let result = std::{stdlib_mod}::{function}(); result");
 
         if let Ok(ast) = Parser::new(&code).parse() {
             if let Ok(rust_code) = Transpiler::new().transpile(&ast) {

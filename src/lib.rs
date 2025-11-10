@@ -257,12 +257,11 @@ mod tests {
         );
 
         if let Err(e) = result {
-            let error_msg = format!("{:?}", e);
+            let error_msg = format!("{e:?}");
             assert!(
                 error_msg.contains("impl blocks are not supported") ||
                 error_msg.contains("methods should be defined inside the struct body"),
-                "Error should explain that impl blocks aren't supported. Got: {}",
-                error_msg
+                "Error should explain that impl blocks aren't supported. Got: {error_msg}"
             );
         }
     }
@@ -971,12 +970,11 @@ mod tests {
         );
 
         if let Err(e) = result {
-            let error_msg = format!("{:?}", e);
+            let error_msg = format!("{e:?}");
             assert!(
                 error_msg.contains("impl blocks are not supported") ||
                 error_msg.contains("methods should be defined inside the struct body"),
-                "Error should explain impl blocks aren't supported. Got: {}",
-                error_msg
+                "Error should explain impl blocks aren't supported. Got: {error_msg}"
             );
         }
     }

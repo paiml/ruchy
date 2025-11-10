@@ -1,7 +1,7 @@
 //! PARSER-093: Module declaration support (Issue #137 - ruchy-lambda)
 //!
-//! BUG: Parser creates ModuleDeclaration AST nodes, but transpiler doesn't support them.
-//! ERROR: "Unsupported expression kind: ModuleDeclaration { name: \"http_client\" }"
+//! BUG: Parser creates `ModuleDeclaration` AST nodes, but transpiler doesn't support them.
+//! ERROR: "Unsupported expression kind: `ModuleDeclaration` { name: \"`http_client`\" }"
 //!
 //! IMPACT: Cannot compose Ruchy code with external Rust modules, forces all-or-nothing approach.
 //!
@@ -31,8 +31,7 @@ fn test_parser_093_01_simple_mod_declaration() {
     let rust_code = result.unwrap().to_string();
     assert!(
         rust_code.contains("mod http_client"),
-        "Should contain mod declaration, got: {}",
-        rust_code
+        "Should contain mod declaration, got: {rust_code}"
     );
 }
 
@@ -55,8 +54,7 @@ fn test_parser_093_02_public_mod_declaration() {
     let rust_code = result.unwrap().to_string();
     assert!(
         rust_code.contains("pub mod http_client"),
-        "Should contain pub mod, got: {}",
-        rust_code
+        "Should contain pub mod, got: {rust_code}"
     );
 }
 
@@ -64,11 +62,11 @@ fn test_parser_093_02_public_mod_declaration() {
 /// Should handle multiple mod statements
 #[test]
 fn test_parser_093_03_multiple_mod_declarations() {
-    let code = r#"
+    let code = r"
 mod http_client;
 mod websocket;
 mod tls;
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile(&ast);
@@ -92,13 +90,13 @@ mod tls;
 /// Verifies mod doesn't break subsequent code
 #[test]
 fn test_parser_093_04_mod_with_struct() {
-    let code = r#"
+    let code = r"
 mod http_client;
 
 pub struct Runtime {
     endpoint: String,
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile(&ast);
@@ -121,10 +119,10 @@ pub struct Runtime {
 /// Verifies mod works with import statements
 #[test]
 fn test_parser_093_05_mod_with_use() {
-    let code = r#"
+    let code = r"
 mod http_client;
 use std::io::Read;
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile(&ast);
@@ -159,8 +157,7 @@ fn test_parser_093_06_pub_crate_mod() {
     assert!(
         rust_code.contains("pub (crate) mod internal")
             || rust_code.contains("pub(crate) mod internal"),
-        "Should have pub(crate) mod, got: {}",
-        rust_code
+        "Should have pub(crate) mod, got: {rust_code}"
     );
 }
 
@@ -213,7 +210,7 @@ impl LambdaRuntime {
 #[test]
 #[ignore = "Inline modules may not be supported yet"]
 fn test_parser_093_08_inline_module() {
-    let code = r#"
+    let code = r"
 mod utils {
     pub fn helper() -> i32 {
         42
@@ -221,7 +218,7 @@ mod utils {
 }
 
 let x = utils::helper();
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile(&ast);

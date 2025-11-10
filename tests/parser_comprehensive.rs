@@ -432,7 +432,7 @@ fn test_parse_complex_arithmetic() {
 fn property_parse_all_integers() {
     // Property: Parser handles all integer ranges
     for n in [-1000, -1, 0, 1, 42, 999, 1000000] {
-        ruchy_cmd().arg("-e").arg(format!("println({})", n))
+        ruchy_cmd().arg("-e").arg(format!("println({n})"))
             .assert().success();
     }
 }
@@ -442,7 +442,7 @@ fn property_parse_all_operators() {
     // Property: All binary operators parse correctly
     let ops = vec!["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "&&", "||"];
     for op in ops {
-        ruchy_cmd().arg("-e").arg(format!("let _ = 5 {} 3", op))
+        ruchy_cmd().arg("-e").arg(format!("let _ = 5 {op} 3"))
             .assert().success();
     }
 }
@@ -453,9 +453,9 @@ fn property_parse_nested_arrays() {
     for depth in 1..=5 {
         let mut arr = "42".to_string();
         for _ in 0..depth {
-            arr = format!("[{}]", arr);
+            arr = format!("[{arr}]");
         }
-        ruchy_cmd().arg("-e").arg(format!("println({})", arr))
+        ruchy_cmd().arg("-e").arg(format!("println({arr})"))
             .assert().success();
     }
 }
@@ -494,7 +494,7 @@ fn edge_case_unicode_in_string() {
 #[test]
 fn edge_case_very_long_identifier() {
     let long_name = "a".repeat(100);
-    ruchy_cmd().arg("-e").arg(format!("let {} = 42; println({})", long_name, long_name))
+    ruchy_cmd().arg("-e").arg(format!("let {long_name} = 42; println({long_name})"))
         .assert().success().stdout(predicate::str::contains("42"));
 }
 

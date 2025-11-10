@@ -424,7 +424,7 @@ mod test_issue_142_bigo_recursion {
     fn test_issue_142_recursive_fibonacci_should_be_exponential() {
         // Issue #142: fibonacci(n-1) + fibonacci(n-2) is O(2^n)
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("fib", r#"
+        let cell = make_test_cell("fib", r"
 pub fun fibonacci(n: i32) -> i32 {
     if n <= 1 {
         n
@@ -432,7 +432,7 @@ pub fun fibonacci(n: i32) -> i32 {
         fibonacci(n - 1) + fibonacci(n - 2)
     }
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         assert_eq!(result.time_complexity, TimeComplexity::OExp, 
@@ -443,11 +443,11 @@ pub fun fibonacci(n: i32) -> i32 {
     fn test_single_recursion_factorial_should_be_linear() {
         // Single recursive call is O(n)
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("fact", r#"
+        let cell = make_test_cell("fact", r"
 pub fun factorial(n: i32) -> i32 {
     if n <= 1 { 1 } else { n * factorial(n - 1) }
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         assert_eq!(result.time_complexity, TimeComplexity::ON,
@@ -458,12 +458,12 @@ pub fun factorial(n: i32) -> i32 {
     fn test_triple_recursion_should_be_exponential() {
         // Triple recursion is O(3^n)
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("trib", r#"
+        let cell = make_test_cell("trib", r"
 pub fun tribonacci(n: i32) -> i32 {
     if n <= 1 { n } 
     else { tribonacci(n-1) + tribonacci(n-2) + tribonacci(n-3) }
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         assert_eq!(result.time_complexity, TimeComplexity::OExp,
@@ -474,14 +474,14 @@ pub fun tribonacci(n: i32) -> i32 {
     fn test_non_recursive_linear_search() {
         // Simple loop, no recursion
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("search", r#"
+        let cell = make_test_cell("search", r"
 pub fun search(arr: Vec<i32>, target: i32) -> bool {
     for x in arr {
         if x == target { return true; }
     }
     false
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         assert_eq!(result.time_complexity, TimeComplexity::ON,
@@ -491,11 +491,11 @@ pub fun search(arr: Vec<i32>, target: i32) -> bool {
     #[test]
     fn test_no_recursion_no_loops_should_be_constant() {
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("add", r#"
+        let cell = make_test_cell("add", r"
 pub fun add(a: i32, b: i32) -> i32 {
     a + b
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         assert_eq!(result.time_complexity, TimeComplexity::O1,
@@ -506,7 +506,7 @@ pub fun add(a: i32, b: i32) -> i32 {
     fn test_recursion_with_loop_should_be_exponential_or_worse() {
         // Recursion + loop combination
         let analyzer = ComplexityAnalyzer::new();
-        let cell = make_test_cell("weird", r#"
+        let cell = make_test_cell("weird", r"
 pub fun weird_recursion(n: i32) -> i32 {
     if n <= 0 { return 0; }
     let mut sum = 0;
@@ -515,7 +515,7 @@ pub fun weird_recursion(n: i32) -> i32 {
     }
     sum
 }
-"#);
+");
         
         let result = analyzer.analyze(&cell);
         // Should be at least exponential (recursion in a loop)

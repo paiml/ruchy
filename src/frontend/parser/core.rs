@@ -530,12 +530,11 @@ mod tests {
         assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
 
         if let Err(e) = result {
-            let error_msg = format!("{:?}", e);
+            let error_msg = format!("{e:?}");
             assert!(
                 error_msg.contains("Attributes are not supported") ||
                 error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {}",
-                error_msg
+                "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }
     }
@@ -549,12 +548,11 @@ mod tests {
         assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
 
         if let Err(e) = result {
-            let error_msg = format!("{:?}", e);
+            let error_msg = format!("{e:?}");
             assert!(
                 error_msg.contains("Attributes are not supported") ||
                 error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {}",
-                error_msg
+                "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }
     }
@@ -568,12 +566,11 @@ mod tests {
         assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
 
         if let Err(e) = result {
-            let error_msg = format!("{:?}", e);
+            let error_msg = format!("{e:?}");
             assert!(
                 error_msg.contains("Attributes are not supported") ||
                 error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {}",
-                error_msg
+                "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }
     }

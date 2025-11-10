@@ -1,4 +1,4 @@
-//! EXTREME TDD Coverage Tests for stdlib::logging Module
+//! EXTREME TDD Coverage Tests for `stdlib::logging` Module
 //!
 //! Target: 0% → 80% coverage (+32 lines)
 //! Protocol: RED → GREEN → REFACTOR → VALIDATE
@@ -15,7 +15,7 @@ fn test_init_logger_valid_levels() {
     // Test all valid log levels
     for level in &["trace", "debug", "info", "warn", "error", "off"] {
         let result = logging::init_logger(level);
-        assert!(result.is_ok(), "Failed to init logger with level: {}", level);
+        assert!(result.is_ok(), "Failed to init logger with level: {level}");
     }
 }
 
@@ -128,8 +128,8 @@ proptest! {
         level in prop::sample::select(vec!["trace", "debug", "info", "warn", "error"])
     ) {
         // Property: After setting level, querying it should work
-        logging::init_logger(&level).ok();
-        let result = logging::is_level_enabled(&level);
+        logging::init_logger(level).ok();
+        let result = logging::is_level_enabled(level);
 
         prop_assert!(result.is_ok());
     }
@@ -214,7 +214,7 @@ fn test_multiple_log_calls() {
 
     // Rapid logging should work
     for i in 0..100 {
-        let msg = format!("Message {}", i);
+        let msg = format!("Message {i}");
         assert!(logging::log_debug(&msg).is_ok());
     }
 }

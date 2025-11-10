@@ -5911,8 +5911,7 @@ mod tests {
             err_msg.contains("impl") ||
             err_msg.contains("Methods should be defined inside struct") ||
             err_msg.contains("not supported"),
-            "Error message should explain impl blocks aren't supported. Got: {}",
-            err_msg
+            "Error message should explain impl blocks aren't supported. Got: {err_msg}"
         );
     }
 

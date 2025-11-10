@@ -5,7 +5,6 @@
 //! Coverage: Main entry points, mutability analysis, function signatures, program generation
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -38,16 +37,16 @@ fn test_transpile_variable_binding() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("let") && output.contains("x") && output.contains("42"));
+    assert!(output.contains("let") && output.contains('x') && output.contains("42"));
 }
 
 #[test]
 fn test_transpile_function_definition() {
-    let code = r#"
+    let code = r"
         fun add(a, b) {
             a + b
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -79,11 +78,11 @@ fn test_transpile_if_expression() {
 
 #[test]
 fn test_transpile_for_loop() {
-    let code = r#"
+    let code = r"
         for i in range(0, 10) {
             println(i)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -119,7 +118,7 @@ fn test_transpile_to_program_with_main() {
 
 #[test]
 fn test_transpile_to_program_multiple_functions() {
-    let code = r#"
+    let code = r"
         fun helper(x) {
             x * 2
         }
@@ -127,7 +126,7 @@ fn test_transpile_to_program_multiple_functions() {
         fun main() {
             println(helper(21))
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -142,14 +141,14 @@ fn test_transpile_to_program_multiple_functions() {
 
 #[test]
 fn test_transpile_to_program_with_imports() {
-    let code = r#"
+    let code = r"
         import std::collections::HashMap
 
         fun main() {
             let map = HashMap::new();
             println(map)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -167,10 +166,10 @@ fn test_transpile_to_program_with_imports() {
 
 #[test]
 fn test_mutability_simple_reassignment() {
-    let code = r#"
+    let code = r"
         let x = 10;
         x = 20
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -180,17 +179,17 @@ fn test_mutability_simple_reassignment() {
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
     // x should be inferred as mutable
-    assert!(output.contains("mut") || output.contains("x"));
+    assert!(output.contains("mut") || output.contains('x'));
 }
 
 #[test]
 fn test_mutability_loop_counter() {
-    let code = r#"
+    let code = r"
         let i = 0;
         while i < 10 {
             i = i + 1
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -204,10 +203,10 @@ fn test_mutability_loop_counter() {
 
 #[test]
 fn test_mutability_immutable_binding() {
-    let code = r#"
+    let code = r"
         let x = 42;
         println(x)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -226,11 +225,11 @@ fn test_mutability_immutable_binding() {
 
 #[test]
 fn test_function_signature_typed_params() {
-    let code = r#"
+    let code = r"
         fun add(a: i32, b: i32) -> i32 {
             a + b
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -244,11 +243,11 @@ fn test_function_signature_typed_params() {
 
 #[test]
 fn test_function_signature_inferred_params() {
-    let code = r#"
+    let code = r"
         fun double(x) {
             x * 2
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -266,13 +265,13 @@ fn test_function_signature_inferred_params() {
 
 #[test]
 fn test_module_names_std() {
-    let code = r#"
+    let code = r"
         import std::time
 
         fun main() {
             std::time::sleep(1000)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -291,11 +290,11 @@ fn test_module_names_std() {
 #[test]
 #[ignore = "Async functions not yet fully implemented in runtime"]
 fn test_async_function() {
-    let code = r#"
+    let code = r"
         async fun fetch_data() {
             await some_async_operation()
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -313,11 +312,11 @@ fn test_async_function() {
 
 #[test]
 fn test_loop_context_cloning() {
-    let code = r#"
+    let code = r"
         for i in range(0, 10) {
             println(i)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -350,7 +349,7 @@ fn test_string_concatenation() {
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
     // String concatenation should work
-    assert!(output.contains("String") || output.contains("format!") || output.contains("+"));
+    assert!(output.contains("String") || output.contains("format!") || output.contains('+'));
 }
 
 // ============================================================================
@@ -359,10 +358,10 @@ fn test_string_concatenation() {
 
 #[test]
 fn edge_case_empty_function() {
-    let code = r#"
+    let code = r"
         fun empty() {
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -376,7 +375,7 @@ fn edge_case_empty_function() {
 
 #[test]
 fn edge_case_nested_blocks() {
-    let code = r#"
+    let code = r"
         fun test() {
             {
                 {
@@ -384,7 +383,7 @@ fn edge_case_nested_blocks() {
                 }
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -398,9 +397,9 @@ fn edge_case_nested_blocks() {
 
 #[test]
 fn edge_case_complex_expression() {
-    let code = r#"
+    let code = r"
         let result = (1 + 2) * (3 - 4) / 5
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -414,13 +413,13 @@ fn edge_case_complex_expression() {
 
 #[test]
 fn edge_case_multiple_statements() {
-    let code = r#"
+    let code = r"
         let a = 1;
         let b = 2;
         let c = 3;
         let d = 4;
         let e = 5
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -441,10 +440,10 @@ fn property_function_param_counts_0_to_10() {
     // Property: Functions with varying parameter counts transpile correctly
     for n in 0..=10 {
         let params = (0..n)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(", ");
-        let code = format!("fun test({}) {{ 42 }}", params);
+        let code = format!("fun test({params}) {{ 42 }}");
 
         ruchy_cmd()
             .arg("transpile")
@@ -461,9 +460,9 @@ fn property_nested_block_depth_1_to_5() {
     for depth in 1..=5 {
         let mut code = "42".to_string();
         for _ in 0..depth {
-            code = format!("{{ {} }}", code);
+            code = format!("{{ {code} }}");
         }
-        code = format!("let x = {}", code);
+        code = format!("let x = {code}");
 
         ruchy_cmd()
             .arg("transpile")
@@ -480,7 +479,7 @@ fn property_binary_operators() {
     let operators = vec!["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">="];
 
     for op in operators {
-        let code = format!("let result = 42 {} 10", op);
+        let code = format!("let result = 42 {op} 10");
         ruchy_cmd()
             .arg("transpile")
             .arg("-")

@@ -1,7 +1,7 @@
-//! EXTREME TDD: eval_builtin.rs Conversion & Time Functions
+//! EXTREME TDD: `eval_builtin.rs` Conversion & Time Functions
 //!
-//! Coverage Target: conversion + time functions in eval_builtin.rs
-//! Functions: str(), int(), float(), bool(), sleep(), timestamp()
+//! Coverage Target: conversion + time functions in `eval_builtin.rs`
+//! Functions: `str()`, `int()`, `float()`, `bool()`, `sleep()`, `timestamp()`
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -217,7 +217,7 @@ fn property_str_int_roundtrip() {
     // Property: int(str(n)) == n for integers
     for n in [-100, 0, 42, 999] {
         ruchy_cmd().arg("-e")
-            .arg(format!("let s = str({}); let back = int(s); assert_eq(back, {})", n, n))
+            .arg(format!("let s = str({n}); let back = int(s); assert_eq(back, {n})"))
             .assert().success();
     }
 }
@@ -227,7 +227,7 @@ fn property_str_float_roundtrip() {
     // Property: float(str(f)) ≈ f for floats
     for f in [0.0, 3.14, -2.5] {
         ruchy_cmd().arg("-e")
-            .arg(format!("let s = str({}); let back = float(s); assert(back >= {} - 0.01); assert(back <= {} + 0.01)", f, f, f))
+            .arg(format!("let s = str({f}); let back = float(s); assert(back >= {f} - 0.01); assert(back <= {f} + 0.01)"))
             .assert().success();
     }
 }
@@ -238,7 +238,7 @@ fn property_bool_truthy_values() {
     let truthy = vec!["1", "42", "-1", "3.14", "\"x\""];
     for val in truthy {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert(bool({}))", val))
+            .arg(format!("assert(bool({val}))"))
             .assert().success();
     }
 }
@@ -249,7 +249,7 @@ fn property_bool_falsy_values() {
     let falsy = vec!["0", "0.0", "\"\""];
     for val in falsy {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert(bool({}) == false)", val))
+            .arg(format!("assert(bool({val}) == false)"))
             .assert().success();
     }
 }
@@ -260,7 +260,7 @@ fn property_int_truncates_towards_zero() {
     let pairs = [(3.9, 3), (-3.9, -3), (2.1, 2), (-2.1, -2)];
     for (input, expected) in pairs {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert_eq(int({}), {})", input, expected))
+            .arg(format!("assert_eq(int({input}), {expected})"))
             .assert().success();
     }
 }

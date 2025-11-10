@@ -2,7 +2,7 @@
 //!
 //! **Issue**: Match arms returning string literals don't auto-convert to String when function returns String
 //!
-//! **Root Cause**: Match arm transpilation emits raw string literals without .to_string()
+//! **Root Cause**: Match arm transpilation emits raw string literals without .`to_string()`
 //! when the match expression's return type is String.
 //!
 //! **Impact**: 1 error in reaper project (line 98/402)
@@ -77,16 +77,15 @@ println(priority_to_string(Priority::High));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Match arms auto-converted to String with .to_string()");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: expected String, found &str. Got:\n{}",
-            stderr
+            "Expected E0308: expected String, found &str. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Match arm string literal error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Match arms auto-converted to String with .to_string()");
     }
 }
 
@@ -121,16 +120,15 @@ println(status_to_str(Status::Active));
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Simple match auto-converted");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308 for simple match. Got:\n{}",
-            stderr
+            "Expected E0308 for simple match. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Simple match string error confirmed");
-    } else {
-        eprintln!("✅ GREEN: Simple match auto-converted");
     }
 }
 
@@ -140,7 +138,7 @@ fn test_defect_016_c_03_match_integer_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
 
-    let ruchy_code = r#"
+    let ruchy_code = r"
 enum Priority {
     High,
     Medium,
@@ -156,7 +154,7 @@ fun priority_to_int(priority: Priority) -> i32 {
 }
 
 println(priority_to_int(Priority::High));
-"#;
+";
 
     fs::write(&test_file, ruchy_code).unwrap();
 
@@ -200,11 +198,11 @@ println(describe(Level::High, Type::A));
         .output()
         .unwrap();
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("RED TEST: Nested match - {}", stderr);
-    } else {
+    if output.status.success() {
         eprintln!("✅ GREEN: Nested match handled");
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("RED TEST: Nested match - {stderr}");
     }
 }
 
@@ -234,11 +232,11 @@ println(message);
         .output()
         .unwrap();
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("RED TEST: Match in expression - {}", stderr);
-    } else {
+    if output.status.success() {
         eprintln!("✅ GREEN: Match in expression handled");
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("RED TEST: Match in expression - {stderr}");
     }
 }
 

@@ -62,22 +62,22 @@ fn test_struct_definition() {
 #[test]
 #[ignore = "Struct instantiation may not be fully implemented"]
 fn test_struct_instantiation() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         struct Point { x: i32, y: i32 };
         let p = Point { x: 10, y: 20 };
         println(p.x)
-    "#).assert().success().stdout(predicate::str::contains("10"));
+    ").assert().success().stdout(predicate::str::contains("10"));
 }
 
 #[test]
 #[ignore = "Struct field access may not be fully implemented"]
 fn test_struct_field_mutation() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         struct Counter { value: i32 };
         let mut c = Counter { value: 0 };
         c.value = 42;
         println(c.value)
-    "#).assert().success().stdout(predicate::str::contains("42"));
+    ").assert().success().stdout(predicate::str::contains("42"));
 }
 
 // ============================================================================
@@ -138,7 +138,7 @@ fn test_string_method_split() {
 
 #[test]
 fn test_nested_loops_with_break() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let mut found = false;
         for i in range(5) {
             for j in range(5) {
@@ -149,13 +149,13 @@ fn test_nested_loops_with_break() {
             }
         };
         println(found)
-    "#).assert().success().stdout(predicate::str::contains("true"));
+    ").assert().success().stdout(predicate::str::contains("true"));
 }
 
 #[test]
 fn test_loop_with_labeled_break() {
     // Most Ruchy implementations don't support labeled breaks, but test anyway
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let mut i = 0;
         loop {
             i = i + 1;
@@ -163,7 +163,7 @@ fn test_loop_with_labeled_break() {
             if i == 5 { continue }
         };
         println(i)
-    "#).assert().success().stdout(predicate::str::contains("11"));
+    ").assert().success().stdout(predicate::str::contains("11"));
 }
 
 #[test]
@@ -197,22 +197,22 @@ fn test_lambda_multiple_params() {
 
 #[test]
 fn test_lambda_as_argument() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn apply_twice(f, x) { f(f(x)) };
         let inc = |n| n + 1;
         println(apply_twice(inc, 5))
-    "#).assert().success().stdout(predicate::str::contains("7"));
+    ").assert().success().stdout(predicate::str::contains("7"));
 }
 
 #[test]
 fn test_closure_modifies_captured_var() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let mut counter = 0;
         let increment = || { counter = counter + 1; counter };
         increment();
         increment();
         println(counter)
-    "#).assert().success().stdout(predicate::str::contains("2"));
+    ").assert().success().stdout(predicate::str::contains("2"));
 }
 
 // ============================================================================
@@ -239,7 +239,7 @@ fn test_multidimensional_array_access() {
 
 #[test]
 fn test_array_of_arrays_iteration() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let matrix = [[1, 2], [3, 4]];
         let mut sum = 0;
         for row in matrix {
@@ -248,7 +248,7 @@ fn test_array_of_arrays_iteration() {
             }
         };
         println(sum)
-    "#).assert().success().stdout(predicate::str::contains("10"));
+    ").assert().success().stdout(predicate::str::contains("10"));
 }
 
 // ============================================================================
@@ -306,7 +306,7 @@ fn test_function_multiple_returns() {
 
 #[test]
 fn test_mutually_recursive_functions() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn is_even(n) {
             if n == 0 { true } else { is_odd(n - 1) }
         };
@@ -314,19 +314,19 @@ fn test_mutually_recursive_functions() {
             if n == 0 { false } else { is_even(n - 1) }
         };
         println(is_even(4))
-    "#).assert().success().stdout(predicate::str::contains("true"));
+    ").assert().success().stdout(predicate::str::contains("true"));
 }
 
 #[test]
 fn test_function_returning_closure() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn make_adder(x) {
             let adder = |y| x + y;
             adder
         };
         let add5 = make_adder(5);
         println(add5(10))
-    "#).assert().success().stdout(predicate::str::contains("15"));
+    ").assert().success().stdout(predicate::str::contains("15"));
 }
 
 // ============================================================================
@@ -382,7 +382,7 @@ fn test_integration_calculator() {
 #[test]
 #[ignore = "push() not implemented in eval_builtin.rs - returns Message object"]
 fn test_integration_filter_map_reduce() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let numbers = [1, 2, 3, 4, 5];
         let mut evens = [];
         for n in numbers {
@@ -395,13 +395,13 @@ fn test_integration_filter_map_reduce() {
             sum = sum + n
         };
         println(sum)
-    "#).assert().success().stdout(predicate::str::contains("6"));
+    ").assert().success().stdout(predicate::str::contains("6"));
 }
 
 #[test]
 #[ignore = "push() not implemented in eval_builtin.rs - returns Message object"]
 fn test_integration_memoization_simulation() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let mut cache = [0, 1];
         fn fib_cached(n) {
             if n < len(cache) {
@@ -413,7 +413,7 @@ fn test_integration_memoization_simulation() {
             }
         };
         println(fib_cached(8))
-    "#).assert().success().stdout(predicate::str::contains("21"));
+    ").assert().success().stdout(predicate::str::contains("21"));
 }
 
 #[test]
@@ -440,7 +440,7 @@ fn test_integration_nested_data_structure() {
 fn property_lambda_identity() {
     // Property: (|x| x)(v) == v
     for val in [0, 42, -10] {
-        ruchy_cmd().arg("-e").arg(format!("let id = |x| x; assert_eq(id({}), {})", val, val))
+        ruchy_cmd().arg("-e").arg(format!("let id = |x| x; assert_eq(id({val}), {val})"))
             .assert().success();
     }
 }
@@ -448,12 +448,12 @@ fn property_lambda_identity() {
 #[test]
 fn property_function_composition() {
     // Property: (f ∘ g)(x) == f(g(x))
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn double(x) { x * 2 };
         fn inc(x) { x + 1 };
         let compose = |x| double(inc(x));
         assert_eq(compose(5), 12)
-    "#).assert().success();
+    ").assert().success();
 }
 
 #[test]
@@ -462,8 +462,7 @@ fn property_array_reverse_twice() {
     for n in [0, 1, 5, 10] {
         let elements = (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
         ruchy_cmd().arg("-e").arg(format!(
-            "let arr = [{}]; let rev = reverse(reverse(arr)); assert_eq(len(arr), len(rev))",
-            elements
+            "let arr = [{elements}]; let rev = reverse(reverse(arr)); assert_eq(len(arr), len(rev))"
         )).assert().success();
     }
 }
@@ -480,19 +479,19 @@ fn test_large_array() {
 
 #[test]
 fn test_deep_function_call_stack() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn countdown(n) {
             if n <= 0 { 0 } else { countdown(n - 1) }
         };
         println(countdown(50))
-    "#).assert().success().stdout(predicate::str::contains("0"));
+    ").assert().success().stdout(predicate::str::contains("0"));
 }
 
 #[test]
 fn test_many_variables() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let v1 = 1; let v2 = 2; let v3 = 3; let v4 = 4; let v5 = 5;
         let v6 = 6; let v7 = 7; let v8 = 8; let v9 = 9; let v10 = 10;
         println(v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10)
-    "#).assert().success().stdout(predicate::str::contains("55"));
+    ").assert().success().stdout(predicate::str::contains("55"));
 }

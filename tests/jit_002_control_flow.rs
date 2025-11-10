@@ -298,7 +298,7 @@ fn test_jit_002_fibonacci_20() {
 
     // Performance target: <0.5ms for fib(20) vs 19ms AST interpreter
     // Note: First iteration may be slower due to JIT warmup
-    println!("JIT fib(20) execution time: {:?}", elapsed);
+    println!("JIT fib(20) execution time: {elapsed:?}");
 
     // Relaxed assertion for first run - we'll measure properly in benchmarks
     assert!(elapsed.as_millis() < 100, "JIT should be faster than 100ms (AST: 19ms)");
@@ -393,8 +393,8 @@ fn test_jit_002_performance_benchmark_fibonacci() {
     let avg_elapsed = total_elapsed / iterations;
 
     println!("\n=== JIT-002 Performance Benchmark ===");
-    println!("fibonacci(20) JIT avg over {} runs: {:?}", iterations, avg_elapsed);
-    println!("fibonacci(20) JIT total time: {:?}", total_elapsed);
+    println!("fibonacci(20) JIT avg over {iterations} runs: {avg_elapsed:?}");
+    println!("fibonacci(20) JIT total time: {total_elapsed:?}");
     println!("Target: <500µs per run (0.5ms)");
     println!("Baseline: 19ms AST interpreter");
 
@@ -403,17 +403,16 @@ fn test_jit_002_performance_benchmark_fibonacci() {
     let avg_micros = avg_elapsed.as_micros();
     assert!(
         avg_micros < 19_000,
-        "JIT should be faster than AST interpreter (19ms). Actual: {}µs",
-        avg_micros
+        "JIT should be faster than AST interpreter (19ms). Actual: {avg_micros}µs"
     );
 
     // Report speedup factor
     let speedup = 19_000.0 / avg_micros as f64;
-    println!("Speedup vs AST interpreter: {:.1}x", speedup);
+    println!("Speedup vs AST interpreter: {speedup:.1}x");
 
     // Stretch goal: <500µs (0.5ms) = 38x speedup
     if avg_micros < 500 {
-        println!("✅ ACHIEVED stretch goal: <500µs ({}µs)", avg_micros);
+        println!("✅ ACHIEVED stretch goal: <500µs ({avg_micros}µs)");
     } else {
         println!("⚠️  Not yet at stretch goal (<500µs), but faster than baseline");
     }
