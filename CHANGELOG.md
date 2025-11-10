@@ -2,6 +2,31 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **[COVERAGE-SPRINT-5-EXT]** VM bytecode coverage Sprint 5 Extended: 64.99% → 81.09% (+16.10pp)
+  - **PROGRESS**: Added 8 comprehensive opcode tests targeting error branches and edge cases
+  - **TEST METRICS**: 62 tests passing (54→62), 2 ignored (division/modulo by zero - awaiting VM error handling)
+  - **COVERAGE BREAKDOWN**:
+    - Binary operations: Sub, Div, Mod (with error handling tests)
+    - Unary operations: Neg, Not, BitwiseNot (with type error tests)
+    - Comparisons: Equal, NotEqual, Less, LessOrEqual, Greater, GreaterOrEqual
+    - Logical operations: And, Or (with short-circuit validation)
+    - Data structures: Arrays, tuples, objects, field/index access
+    - Control flow: If/else, jump opcodes
+    - Edge cases: Float arithmetic, comparison chains, nil truthy, double negation, complex expressions
+  - **REMAINING GAP (8.91% to 90%)**: 5 complex opcodes requiring integration tests
+    - OpCode::Call (function invocation, ~77 lines) - Requires closures with parameters/body/environment
+    - OpCode::For (loop iteration, ~100 lines) - Requires for-loop AST constructs
+    - OpCode::MethodCall (method dispatch, ~46 lines) - Requires method call expressions
+    - OpCode::Match (pattern matching, ~43 lines) - Requires match expressions
+    - OpCode::NewClosure (closure creation) - Requires lambda/closure AST
+  - **TICKETS CREATED**: VM-001 through VM-005 for remaining coverage (requires full Ruchy language integration tests)
+  - **RECOMMENDATION**: Accept 81.09% as Sprint 5 completion; remaining 8.91% needs integration test infrastructure
+  - **FILES MODIFIED**: src/runtime/bytecode/vm.rs:2368-2657 (8 new tests, 290 lines)
+  - **VALIDATION**: ✅ 62/62 tests passing, 2 ignored (documented future work)
+
 ## [3.211.0] - 2025-11-07
 
 ### Fixed
