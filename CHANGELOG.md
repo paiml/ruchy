@@ -4,6 +4,43 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+- **[PERF-002]** Optimized distribution binaries for speed (Phase 2: Fix release-dist profile)
+  - **ISSUE**: release-dist profile used opt-level="z" (size) instead of opt-level=3 (speed)
+  - **IMPACT**: Distribution binaries were only 2x faster instead of 15x faster
+  - **FIX**: Changed opt-level from "z" to 3 in Cargo.toml [profile.release-dist]
+  - **PERFORMANCE GAIN**: 15x speedup (vs 2x with size optimization)
+  - **RATIONALE**: Distribution binaries should prioritize performance over minimal size savings
+  - **SIZE TRADE-OFF**: ~1.7 MB binaries (vs 314 KB) - acceptable for most deployments
+  - **MIGRATION**: Users needing tiny binaries can use `--profile release-tiny` explicitly
+  - **PROFILE SETTINGS**:
+    - opt-level = 3 (changed from "z")
+    - lto = "fat" (unchanged)
+    - codegen-units = 1 (unchanged)
+    - overflow-checks = false (added)
+    - debug-assertions = false (added)
+    - incremental = false (added)
+  - **SPEC REFERENCE**: docs/specifications/optimized-binary-speed-size-spec.md (Phase 2)
+  - **EMPIRICAL DATA**: Based on compiled-rust-benchmarking project (580 measurements, 10 workloads)
+    - lto-fat (speed): 15.06x average speedup, 1.76 MB binaries
+    - size-z (size): 2.16x average speedup, 314 KB binaries
+    - Decision: Prioritize 15x speedup over minimal size savings
+  - **TEST COVERAGE**: tests/perf_002_profile_optimization.rs (15 comprehensive tests, 100% pass)
+    - Configuration tests: 7 tests (release-dist profile settings)
+    - Verification tests: 3 tests (other profiles: release, release-tiny, release-ultra)
+    - Consistency tests: 2 tests (profile hierarchy and documentation)
+    - Property tests: 3 tests (speed profiles, LTO usage, size profiles)
+  - **EXTREME TDD**: RED (15 failing tests) → GREEN (Cargo.toml fix) → REFACTOR (PMAT 92.4/100 A) → VALIDATE (15 passing)
+  - **FILES MODIFIED**:
+    - Cargo.toml:465-478 (release-dist profile)
+    - tests/perf_002_profile_optimization.rs (NEW, 305 lines, 15 tests)
+    - docs/execution/roadmap.yaml (session summary)
+  - **VALIDATION**: ✅ 15/15 tests passing, PMAT TDG 92.4/100 (A), clippy clean
+  - **BREAKING CHANGE**: No (profile name stays same, just gets faster)
+  - **NEXT PHASES**:
+    - Phase 3: Add `--show-profile-info` flag (v3.213.0)
+    - Phase 4: Implement `--pgo` automation (v3.214.0)
+
 ### Added
 - **[COVERAGE-SPRINT-5-EXT]** VM bytecode coverage Sprint 5 Extended: 64.99% → 81.09% (+16.10pp)
   - **PROGRESS**: Added 8 comprehensive opcode tests targeting error branches and edge cases
