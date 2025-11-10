@@ -4,6 +4,8 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.212.0] - 2025-11-10
+
 ### Added
 - **[PERF-002 Phase 3]** Add `--show-profile-info` flag to `ruchy compile` command
   - **FEATURE**: Display profile characteristics before compilation
