@@ -1706,6 +1706,38 @@ mod tests {
         assert_eq!(result, Value::nil());
     }
 
+    // EXTREME TDD Sprint 4 TIER 2: println() edge cases
+    #[test]
+    fn test_builtin_println_empty() {
+        let result = builtin_println(&[]).unwrap();
+        assert_eq!(result, Value::nil());
+    }
+
+    #[test]
+    fn test_builtin_println_multiple_args() {
+        let args = vec![
+            Value::from_string("Hello".to_string()),
+            Value::from_string("World".to_string()),
+            Value::Integer(42),
+        ];
+        let result = builtin_println(&args).unwrap();
+        assert_eq!(result, Value::nil());
+    }
+
+    #[test]
+    fn test_builtin_println_different_types() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::Integer(1));
+        let args = vec![
+            Value::Integer(42),
+            Value::Float(3.14),
+            Value::Bool(true),
+            Value::Object(Arc::new(map)),
+        ];
+        let result = builtin_println(&args).unwrap();
+        assert_eq!(result, Value::nil());
+    }
+
     #[test]
     fn test_builtin_len() {
         let result = builtin_len(&[Value::from_string("hello".to_string())]).unwrap();
@@ -2656,12 +2688,60 @@ mod tests {
         assert_eq!(result.unwrap(), Value::Nil);
     }
 
+    // EXTREME TDD Sprint 4 TIER 2: print() edge cases
+    #[test]
+    fn test_builtin_print_empty() {
+        let result = builtin_print(&[]);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_print_multiple_args() {
+        let args = vec![
+            Value::from_string("Hello".to_string()),
+            Value::Integer(42),
+            Value::Bool(false),
+        ];
+        let result = builtin_print(&args);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
     #[test]
     fn test_builtin_dbg() {
         let result = builtin_dbg(&[Value::Integer(42)]);
         assert!(result.is_ok());
         // dbg returns the value it debugs, not Nil
         assert_eq!(result.unwrap(), Value::Integer(42));
+    }
+
+    // EXTREME TDD Sprint 4 TIER 2: dbg() edge cases
+    #[test]
+    fn test_builtin_dbg_multiple_args() {
+        let args = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = builtin_dbg(&args);
+        assert!(result.is_ok());
+        // dbg with multiple args returns an array
+        match result.unwrap() {
+            Value::Array(arr) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected array return from dbg with multiple args"),
+        }
+    }
+
+    #[test]
+    fn test_builtin_dbg_different_types() {
+        let mut map = HashMap::new();
+        map.insert("test".to_string(), Value::Integer(99));
+        let args = vec![
+            Value::Float(3.14),
+            Value::from_string("debug".to_string()),
+            Value::Object(Arc::new(map)),
+        ];
+        let result = builtin_dbg(&args);
+        assert!(result.is_ok());
+        // Returns array for multiple args
+        assert!(matches!(result.unwrap(), Value::Array(_)));
     }
 
     #[test]

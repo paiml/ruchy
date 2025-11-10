@@ -519,7 +519,8 @@ pub enum ExprKind {
         name: String,
         type_params: Vec<String>,
         fields: Vec<StructField>,
-        derives: Vec<String>, // #[derive(Debug, Clone, ...)]
+        methods: Vec<ClassMethod>,  // Methods defined inside struct body
+        derives: Vec<String>,       // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
     TupleStruct {
