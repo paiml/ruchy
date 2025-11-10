@@ -1044,9 +1044,10 @@ impl Interpreter {
                 name,
                 type_params,
                 fields,
+                methods,
                 derives: _,
                 is_pub,
-            } => self.eval_struct_definition(name, type_params, fields, *is_pub),
+            } => self.eval_struct_definition(name, type_params, fields, methods, *is_pub),
             ExprKind::TupleStruct { .. } => {
                 // Tuple structs are transpilation feature, return Nil at runtime
                 Ok(Value::Nil)
@@ -1324,7 +1325,11 @@ impl Interpreter {
                     } else {
                         // Multiple arguments: use format! logic (Issue #82, #83)
                         let format_val = self.eval_expr(&args[0])?;
-                        let format_str = format_val.to_string();
+                        // OPT-022: Extract raw string without Display quotes
+                        let format_str = match format_val {
+                            Value::String(ref s) => s.as_ref().to_string(),
+                            _ => format_val.to_string(),
+                        };
 
                         let mut values = Vec::new();
                         for arg in &args[1..] {
@@ -1359,7 +1364,12 @@ impl Interpreter {
                                 } else if chars.peek() == Some(&'}') {
                                     chars.next();
                                     if value_index < values.len() {
-                                        result.push_str(&values[value_index].to_string());
+                                        // OPT-022: Extract raw string without Display quotes for {} placeholder
+                                        let display_val = match &values[value_index] {
+                                            Value::String(ref s) => s.as_ref().to_string(),
+                                            _ => values[value_index].to_string(),
+                                        };
+                                        result.push_str(&display_val);
                                         value_index += 1;
                                     } else {
                                         result.push_str("{}");
@@ -1466,7 +1476,11 @@ impl Interpreter {
                     } else {
                         // Multiple arguments: use format! logic (Issue #82, #83)
                         let format_val = self.eval_expr(&args[0])?;
-                        let format_str = format_val.to_string();
+                        // OPT-022: Extract raw string without Display quotes
+                        let format_str = match format_val {
+                            Value::String(ref s) => s.as_ref().to_string(),
+                            _ => format_val.to_string(),
+                        };
 
                         let mut values = Vec::new();
                         for arg in &args[1..] {
@@ -1501,7 +1515,12 @@ impl Interpreter {
                                 } else if chars.peek() == Some(&'}') {
                                     chars.next();
                                     if value_index < values.len() {
-                                        result.push_str(&values[value_index].to_string());
+                                        // OPT-022: Extract raw string without Display quotes for {} placeholder
+                                        let display_val = match &values[value_index] {
+                                            Value::String(ref s) => s.as_ref().to_string(),
+                                            _ => values[value_index].to_string(),
+                                        };
+                                        result.push_str(&display_val);
                                         value_index += 1;
                                     } else {
                                         result.push_str("{}");
@@ -2338,6 +2357,11 @@ impl Interpreter {
             // Issue #85: Route Command::new() to builtin handler
             Ok(Value::from_string("__builtin_command_new__".to_string()))
         } else if name == "new" {
+            // PRIORITY 1: Check for user-defined "new" method
+            let qualified_method_name = format!("{}::{}", module, name);
+            if let Ok(method_value) = self.lookup_variable(&qualified_method_name) {
+                return Ok(method_value);
+            }
             // Check if this is a class constructor call
             if let Ok(class_value) = self.lookup_variable(module) {
                 if let Value::Object(ref class_info) = class_value {
@@ -2472,6 +2496,15 @@ impl Interpreter {
                                         }
                                     }
                                 } else if type_str.as_ref() == "Struct" && method_name == "new" {
+                                    // OPT-022: Check for user-defined "new" method FIRST
+                                    // Look for qualified method name (e.g., "Counter::new") in environment
+                                    for env_ref in self.env_stack.iter().rev() {
+                                        if let Some(method_value) = env_ref.borrow().get(name) {
+                                            // Found user-defined method, return it
+                                            return Ok(method_value.clone());
+                                        }
+                                    }
+                                    // No user-defined "new" method, return default constructor marker
                                     return Ok(Value::from_string(format!(
                                         "__struct_constructor__:{}",
                                         type_name
@@ -4106,6 +4139,7 @@ impl Interpreter {
     }
 
     /// Evaluate a compound assignment
+    /// Complexity: 6
     fn eval_compound_assign(
         &mut self,
         target: &Expr,
@@ -4115,6 +4149,7 @@ impl Interpreter {
         // Get current value
         let current = match &target.kind {
             ExprKind::Identifier(name) => self.lookup_variable(name)?,
+            ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field)?,
             _ => {
                 return Err(InterpreterError::RuntimeError(
                     "Invalid compound assignment target".to_string(),
@@ -4127,8 +4162,47 @@ impl Interpreter {
         let new_val = self.apply_binary_op(&current, op, &rhs)?;
 
         // Assign back
-        if let ExprKind::Identifier(name) = &target.kind {
-            self.set_variable(name, new_val.clone());
+        match &target.kind {
+            ExprKind::Identifier(name) => {
+                self.set_variable(name, new_val.clone());
+            }
+            ExprKind::FieldAccess { object, field } => {
+                // Same pattern as regular field assignment (lines 3924-3960)
+                match &object.kind {
+                    ExprKind::Identifier(obj_name) => {
+                        let obj = self.lookup_variable(obj_name)?;
+                        match obj {
+                            Value::Object(ref map) => {
+                                let mut new_map = (**map).clone();
+                                new_map.insert(field.clone(), new_val.clone());
+                                let new_obj = Value::Object(Arc::new(new_map));
+                                self.set_variable(obj_name, new_obj);
+                            }
+                            Value::Struct { name, fields } => {
+                                let mut new_fields = fields.as_ref().clone();
+                                new_fields.insert(field.clone(), new_val.clone());
+                                let new_struct = Value::Struct {
+                                    name: name.clone(),
+                                    fields: Arc::new(new_fields),
+                                };
+                                self.set_variable(obj_name, new_struct);
+                            }
+                            _ => {
+                                return Err(InterpreterError::RuntimeError(format!(
+                                    "Cannot assign to field of non-object type: {:?}",
+                                    obj
+                                )))
+                            }
+                        }
+                    }
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(
+                            "Complex field access not supported in compound assignment".to_string(),
+                        ))
+                    }
+                }
+            }
+            _ => unreachable!(),
         }
 
         Ok(new_val)
@@ -4343,28 +4417,6 @@ impl Interpreter {
             Value::Integer(n) => self.eval_integer_method(*n, base_method, arg_values),
             Value::DataFrame { columns } => self.eval_dataframe_method(columns, base_method, arg_values),
             Value::Object(obj) => {
-                // Check if this is a type definition with constructor
-                if base_method == "new" {
-                    if let Some(Value::String(ref type_str)) = obj.get("__type") {
-                        if let Some(Value::String(ref name)) = obj.get("__name") {
-                            match type_str.as_ref() {
-                                "Actor" => {
-                                    return self.instantiate_actor_with_args(name, arg_values);
-                                }
-                                "Struct" => {
-                                    return self.instantiate_struct_with_args(name, arg_values);
-                                }
-                                "Class" => {
-                                    return self.instantiate_class_with_constructor(
-                                        name, "new", arg_values,
-                                    );
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
-
                 // Check if this is an actor instance
                 if let Some(Value::String(actor_name)) = obj.get("__actor") {
                     self.eval_actor_instance_method(obj, actor_name.as_ref(), base_method, arg_values)
@@ -5659,9 +5711,11 @@ impl Interpreter {
         name: &str,
         _type_params: &[String], // Generic type parameters (not yet used in runtime)
         fields: &[crate::frontend::ast::StructField],
+        methods: &[crate::frontend::ast::ClassMethod],
         _is_pub: bool,
     ) -> Result<Value, InterpreterError> {
         use std::collections::HashMap;
+        use std::sync::Arc;
 
         // Create a struct type object
         let mut struct_type = HashMap::new();
@@ -5722,6 +5776,31 @@ impl Interpreter {
             "__fields".to_string(),
             Value::Object(std::sync::Arc::new(field_defs)),
         );
+
+        // Store methods as separate variables with qualified names (same as impl blocks)
+        // This allows runtime method dispatch via eval_struct_instance_method
+        for method in methods {
+            // Extract parameter names from method params
+            let param_names: Vec<String> = method
+                .params
+                .iter()
+                .map(|p| match &p.pattern {
+                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                    _ => "_".to_string(),
+                })
+                .collect();
+
+            // Create a closure for the method
+            let method_closure = Value::Closure {
+                params: param_names,
+                body: Arc::new((*method.body).clone()),
+                env: Rc::new(RefCell::new(HashMap::new())), // Empty environment
+            };
+
+            // Store method with qualified name in environment (e.g., "Rectangle::area")
+            let qualified_name = format!("{}::{}", name, method.name);
+            self.set_variable(&qualified_name, method_closure);
+        }
 
         // Register this struct type in the environment
         let struct_obj = Value::Object(std::sync::Arc::new(struct_type));
@@ -5843,9 +5922,10 @@ impl Interpreter {
             return self.instantiate_actor_with_args(name, &[Value::Object(Arc::new(args_obj))]);
         }
 
-        if type_name != "Struct" {
+        // Allow both Struct and Class types (both use same instantiation syntax)
+        if type_name != "Struct" && type_name != "Class" {
             return Err(InterpreterError::RuntimeError(format!(
-                "{name} is not a struct type (it's a {type_name})"
+                "{name} is not a struct or class type (it's a {type_name})"
             )));
         }
 
@@ -5902,11 +5982,28 @@ impl Interpreter {
             }
         }
 
-        // Return Value::Struct variant (not Object)
-        Ok(Value::Struct {
-            name: name.to_string(),
-            fields: Arc::new(instance_fields),
-        })
+        // Return different value types based on __type
+        if type_name == "Struct" {
+            // Pure struct: return Value::Struct (methods stored separately via qualified names)
+            Ok(Value::Struct {
+                name: name.to_string(),
+                fields: Arc::new(instance_fields),
+            })
+        } else {
+            // Class: return Value::Object (includes metadata like __type, __class, __methods)
+            let mut class_instance = instance_fields;
+
+            // Add metadata to instance
+            class_instance.insert("__type".to_string(), Value::from_string("instance".to_string()));
+            class_instance.insert("__class".to_string(), Value::from_string(name.to_string()));
+
+            // Copy methods from class definition to instance
+            if let Some(Value::Object(methods)) = struct_type_obj.get("__methods") {
+                class_instance.insert("__methods".to_string(), Value::Object(Arc::clone(methods)));
+            }
+
+            Ok(Value::Object(Arc::new(class_instance)))
+        }
     }
 
     /// Evaluate class definition

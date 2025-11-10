@@ -190,9 +190,10 @@ impl Transpiler {
                 name,
                 type_params,
                 fields,
+                methods,
                 derives,
                 is_pub,
-            } => self.transpile_struct(name, type_params, fields, derives, *is_pub),
+            } => self.transpile_struct_with_methods(name, type_params, fields, methods, derives, *is_pub),
             ExprKind::TupleStruct {
                 name,
                 type_params,

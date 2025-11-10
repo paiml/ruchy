@@ -271,6 +271,18 @@ impl Transpiler {
         derives: &[String],
         is_pub: bool,
     ) -> Result<TokenStream> {
+        self.transpile_struct_with_methods(name, type_params, fields, &[], derives, is_pub)
+    }
+
+    pub fn transpile_struct_with_methods(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[StructField],
+        methods: &[ClassMethod],
+        derives: &[String],
+        is_pub: bool,
+    ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
 
         // BOOK-COMPAT-001: Auto-add lifetime parameter if struct has reference fields
@@ -407,13 +419,61 @@ impl Transpiler {
                 }
             };
 
-            Ok(quote! {
-                #struct_def
+            if !methods.is_empty() {
+                let method_tokens = self.transpile_class_methods(methods)?;
+                let type_param_tokens = self.generate_class_type_param_tokens(type_params);
+                let impl_block = if type_param_tokens.is_empty() {
+                    quote! {
+                        impl #struct_name {
+                            #(#method_tokens)*
+                        }
+                    }
+                } else {
+                    quote! {
+                        impl<#(#type_param_tokens),*> #struct_name<#(#type_param_tokens),*> {
+                            #(#method_tokens)*
+                        }
+                    }
+                };
+                Ok(quote! {
+                    #struct_def
 
-                #default_impl
-            })
+                    #default_impl
+
+                    #impl_block
+                })
+            } else {
+                Ok(quote! {
+                    #struct_def
+
+                    #default_impl
+                })
+            }
         } else {
-            Ok(struct_def)
+            if !methods.is_empty() {
+                let method_tokens = self.transpile_class_methods(methods)?;
+                let type_param_tokens = self.generate_class_type_param_tokens(type_params);
+                let impl_block = if type_param_tokens.is_empty() {
+                    quote! {
+                        impl #struct_name {
+                            #(#method_tokens)*
+                        }
+                    }
+                } else {
+                    quote! {
+                        impl<#(#type_param_tokens),*> #struct_name<#(#type_param_tokens),*> {
+                            #(#method_tokens)*
+                        }
+                    }
+                };
+                Ok(quote! {
+                    #struct_def
+
+                    #impl_block
+                })
+            } else {
+                Ok(struct_def)
+            }
         }
     }
 
