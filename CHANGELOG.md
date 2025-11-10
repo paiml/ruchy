@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[QUALITY-STDLIB]** Add unit tests to 4 stdlib modules (0% → 100% coverage)
+  - **MODULES**: regex (134 lines), logging (55 lines), env (43 lines), process (25 lines)
+  - **TOTAL**: 257 lines, 28 functions, all fully tested
+  - **TESTS ADDED**: 71 new tests (32 regex, 16 logging, 14 env, 9 process)
+  - **COVERAGE IMPROVEMENT**: Regex 0%→100%, Logging 0%→100%, Env 0%→100%, Process 0%→100%
+  - **TEST RESULTS**: 4323 passing (+71), 0 failed, 5.21s (<6min acceptable)
+  - **QUALITY**: Comprehensive unit/integration/edge-case testing, zero regressions
+
 - **[QUALITY-STDLIB-TIME]** Add unit tests to stdlib/time.rs (0% → 100% coverage)
   - **PROBLEM**: Module showed 0% coverage despite integration tests existing
   - **ROOT CAUSE**: Integration tests in tests/ don't count toward --lib coverage
