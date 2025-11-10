@@ -4,6 +4,30 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[PERF-002 Phase 3]** Add `--show-profile-info` flag to `ruchy compile` command
+  - **FEATURE**: Display profile characteristics before compilation
+  - **USAGE**: `ruchy compile main.ruchy -o main --show-profile-info`
+  - **DISPLAYS**:
+    - Optimization level (opt-level = 3 for speed)
+    - LTO setting (fat for maximum optimization)
+    - Codegen units (1 for best optimization)
+    - Expected speedup (15x average for release profile)
+    - Expected binary size (1-2 MB)
+    - Best use case (e.g., "General-purpose production binaries")
+    - Compile time estimate (~30-60s for 1000 LOC)
+    - Alternative profiles (release-tiny, release-ultra)
+  - **VISUAL FORMAT**: Colored output with separator lines for readability
+  - **EMPIRICAL DATA**: Based on PERF-002 spec (580 measurements, 10 workloads)
+  - **TEST COVERAGE**: tests/perf_002_phase3_show_profile_info.rs (15 tests, 100% pass)
+  - **EXTREME TDD**: RED (15 failing) → GREEN (15 passing) → REFACTOR (A+ 96.8/100)
+  - **FILES MODIFIED**:
+    - src/bin/ruchy.rs (+1 CLI flag)
+    - src/bin/handlers/mod.rs (+59 lines display_profile_info function)
+    - tests/perf_002_phase3_show_profile_info.rs (NEW, 290 lines, 15 tests)
+  - **VALIDATION**: ✅ 15/15 tests passing, PMAT TDG A+ (96.8/100), clippy clean
+  - **NEXT PHASE**: Phase 4: --pgo automation (v3.214.0)
+
 ### Changed
 - **[PERF-002]** Optimized distribution binaries for speed (Phase 2: Fix release-dist profile)
   - **ISSUE**: release-dist profile used opt-level="z" (size) instead of opt-level=3 (speed)

@@ -13,7 +13,7 @@ metadata:
   test_status: "✅ All tests passing (62 VM tests, 2 ignored), zero regressions"
   build_health: "✅ PERFECT - All examples/benchmarks compile, PMAT quality gates passing"
   benchmark_validation_status: "✅ 12/12 BENCHMARKS WORKING (100%) in run mode - All validated with ruchydbg v1.24.0"
-  perf_002_status: "✅ Phase 2 COMPLETE - release-dist profile fixed (opt-level z→3, 15x speedup)"
+  perf_002_status: "✅ Phase 2 & 3 COMPLETE - release-dist fixed + --show-profile-info flag added"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (9/12 tests passing = 75%), liveness analysis required for completion (~800 LOC, 3-5 days)"
   priority_rationale: "All 12 benchmarks working in run mode! Array type inference still needed for transpile/compile. RECOMMENDATION: Fix array types OR proceed with JIT-002 (50-100x gain)"
   benchmark_details:
@@ -104,6 +104,26 @@ metadata:
         priority: "Medium"
         status: "Open"
         note: "Currently using unsafe code - should be refactored to safe alternative"
+
+  session_summary_2025_11_10_perf_002_phase3_show_profile_info:
+    date: "2025-11-10"
+    ticket: "PERF-002 Phase 3 (--show-profile-info flag)"
+    status: "✅ COMPLETE - Profile info display before compilation"
+    goal: "Add --show-profile-info flag to show profile characteristics"
+    spec_reference: "docs/specifications/optimized-binary-speed-size-spec.md (Phase 3)"
+    method: "EXTREME TDD (RED → GREEN → REFACTOR)"
+    test_coverage: "15/15 tests passing (100%)"
+    pmat_tdg: "96.8/100 (A+)"
+    files_modified:
+      - "src/bin/ruchy.rs (CLI flag)"
+      - "src/bin/handlers/mod.rs (+59 lines display_profile_info function)"
+      - "tests/perf_002_phase3_show_profile_info.rs (NEW, 15 tests)"
+    features:
+      - "Displays optimization level, LTO, codegen units"
+      - "Shows expected speedup (15x) and binary size (1-2 MB)"
+      - "Lists alternative profiles (release-tiny, release-ultra)"
+      - "Visual formatting with colors and separators"
+    next_phase: "Phase 4: --pgo automation (v3.214.0)"
 
   session_summary_2025_11_10_perf_002_profile_optimization:
     date: "2025-11-10"

@@ -566,6 +566,7 @@ pub fn handle_compile_command(
     target: Option<String>,
     verbose: bool,
     json_output: Option<&Path>,
+    show_profile_info: bool,
 ) -> Result<()> {
     use colored::Colorize;
     use ruchy::backend::{compile_to_binary as backend_compile, CompileOptions};
@@ -586,6 +587,11 @@ pub fn handle_compile_command(
         // Use existing flags if no --optimize specified
         (opt_level, strip, Vec::new(), None)
     };
+
+    // PERF-002 Phase 3: Show profile information if requested
+    if show_profile_info {
+        display_profile_info(&final_opt_level);
+    }
 
     println!("{} Compiling {}...", "→".bright_blue(), file.display());
 
@@ -5021,6 +5027,69 @@ pub fn handle_publish_command(
             bail!("cargo publish failed with exit code: {}", status);
         }
     }
+}
+
+/// Display profile characteristics before compilation (PERF-002 Phase 3)
+///
+/// Shows optimization settings, expected performance, and alternative profiles
+/// based on empirical data from compiled-rust-benchmarking project.
+///
+/// # Arguments
+/// * `opt_level` - The optimization level being used
+fn display_profile_info(opt_level: &str) {
+    use colored::Colorize;
+
+    // Determine profile characteristics based on opt-level
+    let (profile_name, speedup, size, use_case, compile_time) = match opt_level {
+        "3" => (
+            "release",
+            "15x average",
+            "1-2 MB",
+            "General-purpose production binaries",
+            "~30-60s for 1000 LOC",
+        ),
+        "z" | "s" => (
+            "release-tiny",
+            "2x average",
+            "314 KB",
+            "Embedded systems, mobile apps",
+            "~30-60s for 1000 LOC",
+        ),
+        _ => (
+            "custom",
+            "varies",
+            "varies",
+            "Custom configuration",
+            "~30-60s for 1000 LOC",
+        ),
+    };
+
+    // Display profile information with visual formatting
+    println!("\n{}", "Profile Information".bright_cyan().bold());
+    println!("{}", "━".repeat(60).bright_black());
+    println!("  {}: {} ({})", "Profile".bright_blue(), profile_name, if profile_name == "release" { "default" } else { "custom" });
+    println!("  {}: opt-level = {} ({})", "Optimization".bright_blue(), opt_level, if opt_level == "3" { "speed" } else if opt_level == "z" || opt_level == "s" { "size" } else { "custom" });
+    println!("  {}: fat (maximum)", "LTO".bright_blue());
+    println!("  {}: 1", "Codegen units".bright_blue());
+    println!("  {}: {}", "Expected speedup".bright_blue(), speedup);
+    println!("  {}: {}", "Expected size".bright_blue(), size);
+    println!("  {}: {}", "Best for".bright_blue(), use_case);
+    println!("  {}: {}", "Compile time".bright_blue(), compile_time);
+    println!("{}", "━".repeat(60).bright_black());
+
+    // Show alternative profiles
+    if profile_name != "release-tiny" {
+        println!("\n{}", "Alternative profiles:".bright_yellow());
+        println!("  {} {} (314 KB, 2x speed, embedded)",
+            "→".bright_blue(),
+            "--profile release-tiny".bright_green());
+    }
+    if profile_name != "release-ultra" {
+        println!("  {} {} (25-50x speed, PGO, maximum performance)",
+            "→".bright_blue(),
+            "--profile release-ultra".bright_green());
+    }
+    println!();
 }
 
 
