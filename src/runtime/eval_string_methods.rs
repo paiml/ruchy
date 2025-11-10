@@ -36,16 +36,19 @@ pub fn eval_string_method(
 fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, InterpreterError> {
     match method {
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
-        "to_upper" | "to_uppercase" => Ok(Value::from_string(s.to_uppercase())),
-        "to_lower" | "to_lowercase" => Ok(Value::from_string(s.to_lowercase())),
+        "to_upper" | "to_uppercase" | "upper" => Ok(Value::from_string(s.to_uppercase())),
+        "to_lower" | "to_lowercase" | "lower" => Ok(Value::from_string(s.to_lowercase())),
         "to_string" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
+        "is_numeric" => Ok(Value::Bool(s.chars().all(|c| c.is_numeric()))),
+        "is_alphabetic" => Ok(Value::Bool(s.chars().all(|c| c.is_alphabetic()))),
+        "is_alphanumeric" => Ok(Value::Bool(s.chars().all(|c| c.is_alphanumeric()))),
         "trim" => Ok(Value::from_string(s.trim().to_string())),
         "trim_start" => Ok(Value::from_string(s.trim_start().to_string())),
         "trim_end" => Ok(Value::from_string(s.trim_end().to_string())),
         "chars" => eval_string_chars(s),
         "lines" => eval_string_lines(s),
-        "parse" => eval_string_parse(s),
+        "parse" | "to_int" | "to_integer" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
         "to_rfc3339" => Ok(Value::from_string(s.to_string())),
         "as_bytes" => eval_string_as_bytes(s),
@@ -81,7 +84,7 @@ fn eval_two_arg_string_method(
 ) -> Result<Value, InterpreterError> {
     match method {
         "replace" => eval_string_replace(s, arg1, arg2),
-        "substring" => eval_string_substring(s, arg1, arg2),
+        "substring" | "slice" => eval_string_substring(s, arg1, arg2),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown two-argument string method: {method}"
         ))),
@@ -346,6 +349,7 @@ fn eval_float_method(f: f64, method: &str, args_empty: bool) -> Result<Value, In
         "round" => Ok(Value::Float(f.round())),
         "floor" => Ok(Value::Float(f.floor())),
         "ceil" => Ok(Value::Float(f.ceil())),
+        "to_int" | "to_integer" => Ok(Value::Integer(f as i64)),
         "to_string" => Ok(Value::from_string(f.to_string())),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown float method: {method}"

@@ -85,6 +85,7 @@ pub fn eval_float_method(
         "round" => Ok(Value::Float(f.round())),
         "floor" => Ok(Value::Float(f.floor())),
         "ceil" => Ok(Value::Float(f.ceil())),
+        "to_int" | "to_integer" => Ok(Value::Integer(f as i64)),
         "to_string" => Ok(Value::from_string(f.to_string())),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown float method: {method}"
