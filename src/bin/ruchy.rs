@@ -144,6 +144,9 @@ enum Commands {
         /// Show profile characteristics before compilation (PERF-002 Phase 3)
         #[arg(long)]
         show_profile_info: bool,
+        /// Enable Profile-Guided Optimization (two-step build) (PERF-002 Phase 4)
+        #[arg(long)]
+        pgo: bool,
     },
     /// Check syntax without running
     Check {
@@ -910,7 +913,8 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool, vm_mode: Vm
             verbose,
             json,
             show_profile_info,
-        }) => handle_compile_command(&file, output, opt_level, optimize.as_deref(), strip, static_link, target, verbose, json.as_deref(), show_profile_info),
+            pgo,
+        }) => handle_compile_command(&file, output, opt_level, optimize.as_deref(), strip, static_link, target, verbose, json.as_deref(), show_profile_info, pgo),
         Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
         Some(Commands::Test {
             path,
