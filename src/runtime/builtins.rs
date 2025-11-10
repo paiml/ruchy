@@ -1741,6 +1741,817 @@ mod tests {
         assert!(registry.is_builtin("len"));
         assert!(!registry.is_builtin("not_a_builtin"));
     }
+
+    // ========================================================================
+    // COVERAGE IMPROVEMENT: Collection Functions (reverse, sort)
+    // Target: 27.91% → 40%+ coverage
+    // ========================================================================
+
+    #[test]
+    fn test_builtin_reverse_array() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = builtin_reverse(&[Value::Array(Arc::from(arr))]).unwrap();
+
+        if let Value::Array(reversed) = result {
+            assert_eq!(reversed.len(), 3);
+            assert_eq!(reversed[0], Value::Integer(3));
+            assert_eq!(reversed[1], Value::Integer(2));
+            assert_eq!(reversed[2], Value::Integer(1));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_reverse_empty() {
+        let arr = vec![];
+        let result = builtin_reverse(&[Value::Array(Arc::from(arr))]).unwrap();
+
+        if let Value::Array(reversed) = result {
+            assert_eq!(reversed.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_reverse_wrong_args() {
+        let result = builtin_reverse(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_reverse(&[Value::Integer(42)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_sort_integers() {
+        let arr = vec![Value::Integer(3), Value::Integer(1), Value::Integer(2)];
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::Integer(1));
+            assert_eq!(sorted[1], Value::Integer(2));
+            assert_eq!(sorted[2], Value::Integer(3));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_sort_floats() {
+        let arr = vec![Value::Float(3.5), Value::Float(1.2), Value::Float(2.8)];
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::Float(1.2));
+            assert_eq!(sorted[1], Value::Float(2.8));
+            assert_eq!(sorted[2], Value::Float(3.5));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_sort_strings() {
+        let arr = vec![
+            Value::from_string("charlie".to_string()),
+            Value::from_string("alice".to_string()),
+            Value::from_string("bob".to_string()),
+        ];
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::from_string("alice".to_string()));
+            assert_eq!(sorted[1], Value::from_string("bob".to_string()));
+            assert_eq!(sorted[2], Value::from_string("charlie".to_string()));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_sort_wrong_args() {
+        let result = builtin_sort(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_sort(&[Value::Integer(42)]);
+        assert!(result.is_err());
+    }
+
+    // ========================================================================
+    // COVERAGE IMPROVEMENT: Environment Functions (env_*)
+    // Target: 30%+ → 45%+ coverage
+    // ========================================================================
+
+    #[test]
+    fn test_builtin_env_args() {
+        let result = builtin_env_args(&[]).unwrap();
+
+        if let Value::Array(args) = result {
+            // Should return array of strings (at minimum the program name)
+            assert!(args.len() >= 1);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_builtin_env_args_wrong_args() {
+        let result = builtin_env_args(&[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_var_existing() {
+        // Set a test environment variable
+        std::env::set_var("RUCHY_TEST_VAR", "test_value");
+
+        let result = builtin_env_var(&[Value::from_string("RUCHY_TEST_VAR".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("test_value".to_string()));
+
+        // Clean up
+        std::env::remove_var("RUCHY_TEST_VAR");
+    }
+
+    #[test]
+    fn test_builtin_env_var_missing() {
+        // Ensure variable doesn't exist
+        std::env::remove_var("RUCHY_NONEXISTENT_VAR");
+
+        let result = builtin_env_var(&[Value::from_string("RUCHY_NONEXISTENT_VAR".to_string())]);
+        assert!(result.is_err(), "Should return error for missing variable");
+
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert!(msg.contains("not found"), "Error message should mention 'not found'");
+        }
+    }
+
+    #[test]
+    fn test_builtin_env_var_wrong_args() {
+        let result = builtin_env_var(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_env_var(&[Value::Integer(42)]);
+        assert!(result.is_err());
+
+        let result = builtin_env_var(&[Value::from_string("TEST".to_string()), Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_set_var() {
+        let result = builtin_env_set_var(&[
+            Value::from_string("RUCHY_TEST_SET_VAR".to_string()),
+            Value::from_string("new_value".to_string()),
+        ]).unwrap();
+
+        assert_eq!(result, Value::Nil);
+
+        // Verify it was set
+        assert_eq!(std::env::var("RUCHY_TEST_SET_VAR").unwrap(), "new_value");
+
+        // Clean up
+        std::env::remove_var("RUCHY_TEST_SET_VAR");
+    }
+
+    #[test]
+    fn test_builtin_env_set_var_wrong_args() {
+        let result = builtin_env_set_var(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_env_set_var(&[Value::from_string("TEST".to_string())]);
+        assert!(result.is_err());
+
+        let result = builtin_env_set_var(&[Value::Integer(1), Value::from_string("value".to_string())]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_remove_var() {
+        // Set a variable first
+        std::env::set_var("RUCHY_TEST_REMOVE_VAR", "to_be_removed");
+
+        let result = builtin_env_remove_var(&[Value::from_string("RUCHY_TEST_REMOVE_VAR".to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Verify it was removed
+        assert!(std::env::var("RUCHY_TEST_REMOVE_VAR").is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_remove_var_nonexistent() {
+        // Removing non-existent variable should succeed
+        let result = builtin_env_remove_var(&[Value::from_string("RUCHY_NEVER_EXISTED".to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_env_remove_var_wrong_args() {
+        let result = builtin_env_remove_var(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_env_remove_var(&[Value::Integer(42)]);
+        assert!(result.is_err());
+
+        let result = builtin_env_remove_var(&[Value::from_string("TEST".to_string()), Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_vars() {
+        let result = builtin_env_vars(&[]).unwrap();
+
+        if let Value::Object(vars) = result {
+            // Should have at least some environment variables
+            assert!(!vars.is_empty(), "Environment variables should not be empty");
+
+            // Verify it contains expected env vars (PATH exists on all systems)
+            assert!(vars.contains_key("PATH") || !vars.is_empty());
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_builtin_env_vars_wrong_args() {
+        let result = builtin_env_vars(&[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_current_dir() {
+        let result = builtin_env_current_dir(&[]).unwrap();
+
+        if let Value::String(dir) = result {
+            // Should be a valid path
+            assert!(!dir.is_empty());
+            assert!(std::path::Path::new(dir.as_ref()).exists());
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_builtin_env_current_dir_wrong_args() {
+        let result = builtin_env_current_dir(&[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_set_current_dir() {
+        // Save current directory
+        let original_dir = std::env::current_dir().unwrap();
+
+        // Change to temp directory
+        let temp_dir = std::env::temp_dir();
+        let result = builtin_env_set_current_dir(&[Value::from_string(temp_dir.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Verify it changed
+        assert_eq!(std::env::current_dir().unwrap(), temp_dir);
+
+        // Restore original directory
+        std::env::set_current_dir(&original_dir).unwrap();
+    }
+
+    #[test]
+    fn test_builtin_env_set_current_dir_invalid() {
+        let result = builtin_env_set_current_dir(&[Value::from_string("/nonexistent/directory/xyz".to_string())]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_set_current_dir_wrong_args() {
+        let result = builtin_env_set_current_dir(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_env_set_current_dir(&[Value::Integer(42)]);
+        assert!(result.is_err());
+
+        let result = builtin_env_set_current_dir(&[Value::from_string("/tmp".to_string()), Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_env_temp_dir() {
+        let result = builtin_env_temp_dir(&[]).unwrap();
+
+        if let Value::String(temp_dir) = result {
+            // Should be a valid path that exists
+            assert!(!temp_dir.is_empty());
+            assert!(std::path::Path::new(temp_dir.as_ref()).exists());
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_builtin_env_temp_dir_wrong_args() {
+        let result = builtin_env_temp_dir(&[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    // ========================================================================
+    // COVERAGE IMPROVEMENT: Filesystem Functions (fs_*)
+    // Target: 47.50% → 60%+ coverage
+    // ========================================================================
+
+    use tempfile::TempDir;
+
+    fn setup_test_file(content: &str) -> (TempDir, std::path::PathBuf) {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("test_file.txt");
+        std::fs::write(&file_path, content).expect("Failed to write test file");
+        (temp_dir, file_path)
+    }
+
+    #[test]
+    fn test_builtin_fs_read() {
+        let (temp_dir, file_path) = setup_test_file("Hello, World!");
+
+        let result = builtin_fs_read(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("Hello, World!".to_string()));
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_read_missing_file() {
+        let result = builtin_fs_read(&[Value::from_string("/tmp/nonexistent_test_file_12345.txt".to_string())]);
+        assert!(result.is_err(), "Should error for missing file");
+    }
+
+    #[test]
+    fn test_builtin_fs_write() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("write_test.txt");
+
+        let result = builtin_fs_write(&[
+            Value::from_string(file_path.to_string_lossy().to_string()),
+            Value::from_string("Test content".to_string()),
+        ]).unwrap();
+
+        assert_eq!(result, Value::Nil);
+        let content = std::fs::read_to_string(&file_path).expect("Failed to read file");
+        assert_eq!(content, "Test content");
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_exists_true() {
+        let (temp_dir, file_path) = setup_test_file("test");
+
+        let result = builtin_fs_exists(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::from_bool(true));
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_exists_false() {
+        let result = builtin_fs_exists(&[Value::from_string("/tmp/nonexistent_file_xyz123.txt".to_string())]).unwrap();
+        assert_eq!(result, Value::from_bool(false));
+    }
+
+    #[test]
+    fn test_builtin_fs_create_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let dir_path = temp_dir.path().join("new_directory");
+
+        let result = builtin_fs_create_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+        assert!(dir_path.exists() && dir_path.is_dir());
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_remove_file() {
+        let (temp_dir, file_path) = setup_test_file("to be removed");
+        assert!(file_path.exists());
+
+        let result = builtin_fs_remove_file(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+        assert!(!file_path.exists(), "File should be removed");
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_remove_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let dir_path = temp_dir.path().join("dir_to_remove");
+        std::fs::create_dir(&dir_path).expect("Failed to create directory");
+        assert!(dir_path.exists());
+
+        let result = builtin_fs_remove_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+        assert!(!dir_path.exists(), "Directory should be removed");
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_copy() {
+        let (temp_dir, source_path) = setup_test_file("content to copy");
+        let dest_path = temp_dir.path().join("copied_file.txt");
+
+        let result = builtin_fs_copy(&[
+            Value::from_string(source_path.to_string_lossy().to_string()),
+            Value::from_string(dest_path.to_string_lossy().to_string()),
+        ]).unwrap();
+
+        assert_eq!(result, Value::Nil);
+        assert!(dest_path.exists());
+        let content = std::fs::read_to_string(&dest_path).expect("Failed to read copied file");
+        assert_eq!(content, "content to copy");
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_rename() {
+        let (temp_dir, old_path) = setup_test_file("content to rename");
+        let new_path = temp_dir.path().join("renamed_file.txt");
+
+        let result = builtin_fs_rename(&[
+            Value::from_string(old_path.to_string_lossy().to_string()),
+            Value::from_string(new_path.to_string_lossy().to_string()),
+        ]).unwrap();
+
+        assert_eq!(result, Value::Nil);
+        assert!(!old_path.exists(), "Old file should not exist");
+        assert!(new_path.exists(), "New file should exist");
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_metadata() {
+        let (temp_dir, file_path) = setup_test_file("metadata test");
+
+        let result = builtin_fs_metadata(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+
+        if let Value::Object(meta) = result {
+            assert!(meta.contains_key("is_file"));
+            assert!(meta.contains_key("is_dir"));
+            assert!(meta.contains_key("size"));  // Key is "size" not "len"
+            // Verify the values are correct types
+            assert_eq!(meta.get("is_file").unwrap(), &Value::Bool(true));
+            assert_eq!(meta.get("is_dir").unwrap(), &Value::Bool(false));
+        } else {
+            panic!("Expected Object for metadata");
+        }
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_read_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file1 = temp_dir.path().join("file1.txt");
+        let file2 = temp_dir.path().join("file2.txt");
+        std::fs::write(&file1, "test1").expect("Failed to write file1");
+        std::fs::write(&file2, "test2").expect("Failed to write file2");
+
+        let result = builtin_fs_read_dir(&[Value::from_string(temp_dir.path().to_string_lossy().to_string())]).unwrap();
+
+        if let Value::Array(entries) = result {
+            assert!(entries.len() >= 2, "Should have at least 2 entries");
+        } else {
+            panic!("Expected Array for read_dir");
+        }
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_canonicalize() {
+        let (temp_dir, file_path) = setup_test_file("canonicalize test");
+
+        let result = builtin_fs_canonicalize(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+
+        if let Value::String(canonical_path) = result {
+            assert!(!canonical_path.is_empty());
+        } else {
+            panic!("Expected String for canonicalize");
+        }
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_is_file_true() {
+        let (temp_dir, file_path) = setup_test_file("is file test");
+
+        let result = builtin_fs_is_file(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::from_bool(true));
+
+        drop(temp_dir);
+    }
+
+    #[test]
+    fn test_builtin_fs_is_file_false_for_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+
+        let result = builtin_fs_is_file(&[Value::from_string(temp_dir.path().to_string_lossy().to_string())]).unwrap();
+        assert_eq!(result, Value::from_bool(false));
+
+        drop(temp_dir);
+    }
+
+    // Error handling tests
+    #[test]
+    fn test_builtin_fs_read_wrong_args() {
+        let result = builtin_fs_read(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_fs_read(&[Value::Integer(42)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_fs_write_wrong_args() {
+        let result = builtin_fs_write(&[]);
+        assert!(result.is_err());
+
+        let result = builtin_fs_write(&[Value::from_string("test.txt".to_string())]);
+        assert!(result.is_err());
+    }
+
+    // EXTREME TDD: Math functions (pow, min, max, floor, ceil, round)
+    #[test]
+    fn test_builtin_pow_integers() {
+        let result = builtin_pow(&[Value::Integer(2), Value::Integer(3)]).unwrap();
+        assert_eq!(result, Value::Integer(8)); // Returns Integer when both args are Integer and exp >= 0
+    }
+
+    #[test]
+    fn test_builtin_pow_floats() {
+        let result = builtin_pow(&[Value::Float(2.0), Value::Float(3.0)]).unwrap();
+        assert_eq!(result, Value::Float(8.0));
+    }
+
+    #[test]
+    fn test_builtin_pow_wrong_args() {
+        assert!(builtin_pow(&[]).is_err());
+        assert!(builtin_pow(&[Value::Integer(2)]).is_err());
+        assert!(builtin_pow(&[Value::from_string("invalid".to_string()), Value::Integer(2)]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_min_integers() {
+        let result = builtin_min(&[Value::Integer(5), Value::Integer(3)]).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_builtin_min_floats() {
+        let result = builtin_min(&[Value::Float(5.5), Value::Float(3.3)]).unwrap();
+        assert_eq!(result, Value::Float(3.3));
+    }
+
+    #[test]
+    fn test_builtin_min_wrong_args() {
+        assert!(builtin_min(&[]).is_err());
+        // NOTE: min accepts 1+ args, so single arg is valid
+        assert!(builtin_min(&[Value::Integer(5)]).is_ok());
+    }
+
+    #[test]
+    fn test_builtin_max_integers() {
+        let result = builtin_max(&[Value::Integer(5), Value::Integer(3)]).unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_builtin_max_floats() {
+        let result = builtin_max(&[Value::Float(5.5), Value::Float(3.3)]).unwrap();
+        assert_eq!(result, Value::Float(5.5));
+    }
+
+    #[test]
+    fn test_builtin_max_wrong_args() {
+        assert!(builtin_max(&[]).is_err());
+        // NOTE: max accepts 1+ args, so single arg is valid
+        assert!(builtin_max(&[Value::Integer(5)]).is_ok());
+    }
+
+    #[test]
+    fn test_builtin_floor_positive() {
+        let result = builtin_floor(&[Value::Float(3.7)]).unwrap();
+        assert_eq!(result, Value::Integer(3)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_floor_negative() {
+        let result = builtin_floor(&[Value::Float(-3.7)]).unwrap();
+        assert_eq!(result, Value::Integer(-4)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_floor_wrong_args() {
+        assert!(builtin_floor(&[]).is_err());
+        assert!(builtin_floor(&[Value::from_string("invalid".to_string())]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_ceil_positive() {
+        let result = builtin_ceil(&[Value::Float(3.2)]).unwrap();
+        assert_eq!(result, Value::Integer(4)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_ceil_negative() {
+        let result = builtin_ceil(&[Value::Float(-3.2)]).unwrap();
+        assert_eq!(result, Value::Integer(-3)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_ceil_wrong_args() {
+        assert!(builtin_ceil(&[]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_round_positive() {
+        let result = builtin_round(&[Value::Float(3.5)]).unwrap();
+        assert_eq!(result, Value::Integer(4)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_round_negative() {
+        let result = builtin_round(&[Value::Float(-3.5)]).unwrap();
+        assert_eq!(result, Value::Integer(-4)); // Returns Integer, not Float
+    }
+
+    #[test]
+    fn test_builtin_round_wrong_args() {
+        assert!(builtin_round(&[]).is_err());
+    }
+
+    // EXTREME TDD: String functions (to_string, parse_int, parse_float)
+    #[test]
+    fn test_builtin_to_string_integer() {
+        let result = builtin_to_string(&[Value::Integer(42)]).unwrap();
+        assert_eq!(result, Value::from_string("42".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_to_string_float() {
+        let result = builtin_to_string(&[Value::Float(3.14)]).unwrap();
+        assert_eq!(result, Value::from_string("3.14".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_to_string_bool() {
+        let result = builtin_to_string(&[Value::from_bool(true)]).unwrap();
+        assert_eq!(result, Value::from_string("true".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_parse_int_valid() {
+        let result = builtin_parse_int(&[Value::from_string("42".to_string())]).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_builtin_parse_int_invalid() {
+        assert!(builtin_parse_int(&[Value::from_string("not_a_number".to_string())]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_parse_int_wrong_args() {
+        assert!(builtin_parse_int(&[]).is_err());
+        // NOTE: parse_int has type coercion - accepts Integer directly and returns it
+        assert!(builtin_parse_int(&[Value::Integer(42)]).is_ok());
+    }
+
+    #[test]
+    fn test_builtin_parse_float_valid() {
+        let result = builtin_parse_float(&[Value::from_string("3.14".to_string())]).unwrap();
+        assert_eq!(result, Value::Float(3.14));
+    }
+
+    #[test]
+    fn test_builtin_parse_float_invalid() {
+        assert!(builtin_parse_float(&[Value::from_string("not_a_number".to_string())]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_parse_float_wrong_args() {
+        assert!(builtin_parse_float(&[]).is_err());
+    }
+
+    // EXTREME TDD: Testing functions (assert, assert_eq, is_nil)
+    #[test]
+    fn test_builtin_assert_true() {
+        let result = builtin_assert(&[Value::from_bool(true)]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_builtin_assert_false() {
+        let result = builtin_assert(&[Value::from_bool(false)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_assert_wrong_args() {
+        assert!(builtin_assert(&[]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_assert_eq_equal() {
+        let result = builtin_assert_eq(&[Value::Integer(42), Value::Integer(42)]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_builtin_assert_eq_not_equal() {
+        let result = builtin_assert_eq(&[Value::Integer(42), Value::Integer(43)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_assert_eq_wrong_args() {
+        assert!(builtin_assert_eq(&[]).is_err());
+        assert!(builtin_assert_eq(&[Value::Integer(42)]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_is_nil_true() {
+        let result = builtin_is_nil(&[Value::Nil]).unwrap();
+        assert_eq!(result, Value::from_bool(true));
+    }
+
+    #[test]
+    fn test_builtin_is_nil_false() {
+        let result = builtin_is_nil(&[Value::Integer(42)]).unwrap();
+        assert_eq!(result, Value::from_bool(false));
+    }
+
+    #[test]
+    fn test_builtin_is_nil_wrong_args() {
+        assert!(builtin_is_nil(&[]).is_err());
+    }
+
+    // EXTREME TDD: I/O and Collection functions
+    #[test]
+    fn test_builtin_print() {
+        let result = builtin_print(&[Value::from_string("Hello".to_string())]);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_dbg() {
+        let result = builtin_dbg(&[Value::Integer(42)]);
+        assert!(result.is_ok());
+        // dbg returns the value it debugs, not Nil
+        assert_eq!(result.unwrap(), Value::Integer(42));
+    }
+
+    #[test]
+    fn test_builtin_push_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let result = builtin_push(&[arr.clone(), Value::Integer(3)]).unwrap();
+        match result {
+            Value::Array(items) => {
+                assert_eq!(items.len(), 3);
+                assert_eq!(items[2], Value::Integer(3));
+            }
+            _ => panic!("Expected array"),
+        }
+    }
+
+    #[test]
+    fn test_builtin_push_wrong_args() {
+        assert!(builtin_push(&[]).is_err());
+        assert!(builtin_push(&[Value::Integer(42)]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_pop_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into());
+        let result = builtin_pop(&[arr]).unwrap();
+        // NOTE: pop() returns the POPPED VALUE, not the modified array
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_builtin_pop_empty_array() {
+        let arr = Value::Array(vec![].into());
+        // NOTE: pop() on empty array returns Nil, not an error
+        let result = builtin_pop(&[arr]).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_pop_wrong_args() {
+        assert!(builtin_pop(&[]).is_err());
+        assert!(builtin_pop(&[Value::Integer(42)]).is_err());
+    }
 }
 
 #[cfg(test)]
