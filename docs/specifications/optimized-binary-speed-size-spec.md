@@ -14,6 +14,8 @@ This specification defines optimal Rust compilation profiles for `ruchy compile`
 
 **Key Finding**: LTO ("link-time optimization") provides BOTH speed AND size benefits, making it the optimal default for most workloads.
 
+**Binary Analysis Integration**: Complements profile optimization with `ruchy analyze` command ([Issue #145](https://github.com/paiml/ruchy/issues/145)) for comprehensive binary analysis, optimization recommendations, and CI/CD integration. Prototype validated with 6/6 tests passing in [ruchyruchy COMPILED-INST-003](https://github.com/paiml/ruchyruchy).
+
 ---
 
 ## Background
@@ -259,6 +261,113 @@ PROFILE INFO:
     release-dist    Same as release    [DISTRIBUTION]
 ```
 
+### Binary Analysis Command (`ruchy analyze`)
+
+**Status**: Proposed in [Issue #145](https://github.com/paiml/ruchy/issues/145)
+**Prototype**: [ruchyruchy COMPILED-INST-003](https://github.com/paiml/ruchyruchy) (6/6 tests passing)
+
+Complement profile optimization with comprehensive binary analysis:
+
+```
+USAGE:
+    ruchy analyze [OPTIONS] <BINARY>
+
+OPTIONS:
+    --size              Analyze binary size breakdown by section
+    --symbols           Extract symbol table and identify optimization candidates
+    --startup           Profile startup time (loader, linking, init)
+    --relocations       Analyze relocation overhead
+    --optimize          Generate actionable optimization recommendations
+    --format            Detect binary format (ELF, Mach-O, PE)
+    --output <FILE>     Export JSON report for CI integration
+
+EXAMPLES:
+    # Verify profile choice achieved expected size
+    ruchy compile main.ruchy -o app --profile release-tiny
+    ruchy analyze --size app
+    # Expected: ~314 KB (if not, investigate with --optimize)
+
+    # Get optimization recommendations
+    ruchy analyze --optimize --output=recommendations.json app
+    # Review suggestions for dead code, inlining, outlining
+
+    # Full analysis for CI dashboard
+    ruchy analyze --size --symbols --optimize --output=analysis.json app
+
+    # Compare profiles
+    ruchy compile main.ruchy -o app-release --profile release
+    ruchy compile main.ruchy -o app-tiny --profile release-tiny
+    ruchy analyze --size app-release app-tiny
+    # Validate size tradeoff (release: 1.7 MB vs tiny: 314 KB)
+
+OUTPUT EXAMPLE (--size):
+    Binary Size Analysis
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Section       Size        Percentage
+    ────────────────────────────────────────────
+    .text         1.1 MB      62.3%  (code)
+    .rodata       109 KB      9.0%   (read-only data)
+    .data         2.5 KB      0.2%   (initialized data)
+    .bss          8.0 KB      0.7%   (uninitialized)
+    ────────────────────────────────────────────
+    Total         1.76 MB
+
+    Format: ELF x86-64
+    Profile: release (detected from optimization level)
+
+OUTPUT EXAMPLE (--optimize):
+    Optimization Recommendations
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    [HIGH] Dead code elimination
+           Function: unused_helper (main.ruchy:42)
+           Impact: -256 bytes
+           Confidence: 95%
+
+    [MEDIUM] Inline small function
+           Function: get_value (utils.ruchy:15)
+           Impact: -64 bytes, +5% speed
+           Confidence: 85%
+
+    [MEDIUM] Outline cold error path
+           Function: error_handler (error.ruchy:88)
+           Impact: -128 bytes, -0% hot path
+           Confidence: 75%
+
+    Total potential savings: 448 bytes (3.7%)
+```
+
+**Integration with Profiles**:
+
+```bash
+# Workflow: Compile → Analyze → Optimize → Verify
+ruchy compile main.ruchy -o app --profile release
+ruchy analyze --optimize app > recommendations.txt
+
+# Apply manual optimizations based on recommendations
+# (future: ruchy compile --apply-recommendations)
+
+ruchy compile main.ruchy -o app-opt --profile release
+ruchy analyze --size app app-opt
+# Verify: app-opt is smaller without performance loss
+```
+
+**CI/CD Integration**:
+
+```yaml
+# .github/workflows/binary-size-check.yml
+- name: Check binary size regression
+  run: |
+    ruchy compile main.ruchy -o app --profile release
+    ruchy analyze --size --output=size.json app
+
+    # Fail if binary exceeds 2 MB threshold
+    SIZE_KB=$(jq '.total_size / 1024' size.json)
+    if (( $(echo "$SIZE_KB > 2048" | bc -l) )); then
+      echo "Binary too large: ${SIZE_KB} KB (max 2048 KB)"
+      exit 1
+    fi
+```
+
 ---
 
 ## Benchmark Data Reference
@@ -442,6 +551,10 @@ Profile data: /tmp/ruchy-pgo-xxxxx (can be reused)
 2. **Size Bounds**: Ensure `release-tiny` produces <500 KB binaries
 3. **Performance Bounds**: Verify `release` achieves >10x speedup on standard benchmarks
 4. **PGO Sanity**: Confirm PGO builds are faster than non-PGO
+5. **Binary Analysis Validation** _(with `ruchy analyze`)_:
+   - Verify size analysis matches expected profile characteristics
+   - Confirm optimization recommendations are actionable
+   - Validate format detection across platforms (ELF, Mach-O, PE)
 
 ### Integration Tests
 
@@ -458,6 +571,33 @@ fn test_profile_tiny_size() {
     let output = compile_with_profile("test.ruchy", Profile::ReleaseTiny);
     assert!(output.size_kb() < 500);  // < 500 KB
 }
+
+#[test]
+fn test_analyze_size_breakdown() {
+    let binary = compile_with_profile("test.ruchy", Profile::Release);
+    let analysis = analyze_binary(&binary, AnalyzeOptions { size: true, ..Default::default() });
+
+    // Verify .text section is dominant (>60% for code-heavy binaries)
+    assert!(analysis.sections["text"].percentage > 60.0);
+
+    // Verify total size matches expected range
+    assert!(analysis.total_size_kb() >= 1000 && analysis.total_size_kb() <= 2000);
+}
+
+#[test]
+fn test_analyze_optimization_recommendations() {
+    let binary = compile_with_profile("test.ruchy", Profile::Release);
+    let analysis = analyze_binary(&binary, AnalyzeOptions { optimize: true, ..Default::default() });
+
+    // Should provide actionable recommendations
+    assert!(!analysis.recommendations.is_empty());
+
+    // Each recommendation should have impact estimate
+    for rec in &analysis.recommendations {
+        assert!(rec.impact_bytes > 0);
+        assert!(rec.confidence >= 0.0 && rec.confidence <= 1.0);
+    }
+}
 ```
 
 ### Benchmark Suite
@@ -473,13 +613,33 @@ for profile in release release-tiny release-ultra; do
   ruchy compile bench.ruchy -o bench-$profile --profile $profile
   time ./bench-$profile
   ls -lh bench-$profile
+
+  # Analyze binary characteristics
+  ruchy analyze --size --optimize --output=analysis-$profile.json bench-$profile
 done
+
+# Compare results
+ruchy analyze --size bench-release bench-tiny bench-ultra
 ```
 
 **Acceptance Criteria**:
-- `release`: >10x speedup, <2 MB
-- `release-tiny`: >2x speedup, <500 KB
-- `release-ultra`: >15x speedup (with PGO)
+- `release`: >10x speedup, <2 MB, >60% .text section
+- `release-tiny`: >2x speedup, <500 KB, optimized for size
+- `release-ultra`: >15x speedup (with PGO), optimal symbol placement
+
+**Binary Analysis Validation**:
+```bash
+# Verify size expectations match analysis
+ruchy analyze --size bench-release --output=analysis.json
+SIZE=$(jq '.total_size / 1024' analysis.json)  # KB
+[ "$SIZE" -lt 2048 ] || exit 1  # Must be < 2 MB
+
+# Verify optimization recommendations are reasonable
+ruchy analyze --optimize bench-release --output=optim.json
+SAVINGS=$(jq '.total_potential_savings_percent' optim.json)
+# Should have <10% potential savings (already well-optimized)
+[ "$(echo "$SAVINGS < 10" | bc -l)" -eq 1 ] || exit 1
+```
 
 ---
 
@@ -527,16 +687,60 @@ ABOUT PROFILES:
 ### Advanced Optimization Features
 
 1. **Auto-Profile Selection**: Analyze workload and recommend optimal profile
-2. **Cross-Language PGO**: Collect profiles from Ruchy execution, apply to Rust
-3. **Lazy Compilation**: JIT-compile hot paths discovered at runtime
-4. **Binary Patching**: Update optimizations without full recompilation
+   - Use `ruchy analyze --optimize` to detect workload characteristics
+   - Recommend `release` (speed), `release-tiny` (size), or `release-ultra` (max perf)
+
+2. **Automated Optimization Application**:
+   ```bash
+   ruchy compile main.ruchy -o app --apply-recommendations
+   # Automatically applies recommendations from binary analysis
+   ```
+
+3. **Cross-Language PGO**: Collect profiles from Ruchy execution, apply to Rust
+   - Integration with `ruchy analyze --startup` for profile data collection
+
+4. **Lazy Compilation**: JIT-compile hot paths discovered at runtime
+
+5. **Binary Patching**: Update optimizations without full recompilation
+
+6. **Interactive Optimization**:
+   ```bash
+   ruchy optimize main.ruchy
+   # Interactive TUI showing:
+   # - Current binary size breakdown
+   # - Optimization recommendations
+   # - Estimated impact of each change
+   # - One-click apply
+   ```
+
+### Binary Analysis Enhancements _(Issue #145)_
+
+1. **Startup Time Profiling**: Measure loader, linking, and init overhead
+2. **Relocation Analysis**: Identify relocation hotspots and suggest static linking
+3. **Symbol Deduplication**: Detect duplicate symbols across compilation units
+4. **Comparative Analysis**: Compare against C/Rust/Go binaries for size benchmarking
+5. **Machine Learning Recommendations**: Train model on successful optimizations
+6. **Cache Profiling Integration**: Combine with perf events for cache-aware optimization
+7. **HTML Report Generation**: Rich visual reports for optimization insights
+8. **Flame Graph Support**: Visualize binary size contributions by module
 
 ### Research Extensions
 
 1. **Workload Detection**: ML model to classify Ruchy program workload type
+   - Integrate with `ruchy analyze` to auto-detect CPU/memory/I/O patterns
+
 2. **Adaptive Optimization**: Runtime feedback to compiler for iterative improvement
+   - Use `ruchy analyze --startup` for production profiling
+
 3. **Cloud Profiling**: Collect PGO data from production deployments
-4. **Size Budget**: Automatic profile selection to meet size constraints
+   - Privacy-preserving aggregation of optimization data
+
+4. **Size Budget Enforcement**:
+   ```bash
+   ruchy compile main.ruchy -o app --max-size=500KB
+   # Automatically selects profile to meet constraint
+   # Uses ruchy analyze to validate size target
+   ```
 
 ---
 
@@ -555,9 +759,18 @@ ABOUT PROFILES:
 - [Link-Time Optimization](https://doc.rust-lang.org/rustc/linker-plugin-lto.html)
 - [Profile-Guided Optimization](https://doc.rust-lang.org/rustc/profile-guided-optimization.html)
 
+### Binary Analysis & Tooling
+
+- [GitHub Issue #145](https://github.com/paiml/ruchy/issues/145) - `ruchy analyze` feature request
+- [ruchyruchy COMPILED-INST-003](https://github.com/paiml/ruchyruchy) - Binary analysis prototype (6/6 tests passing)
+- **goblin** crate: Cross-platform binary parsing (ELF, Mach-O, PE)
+- **Bloaty McBloatface** (Google): Binary size profiler inspiration
+- **cargo-bloat** (Rust): Cargo plugin for binary size analysis
+
 ### Related Specifications
 
 - [PERF-001] - Speed-first optimization (v3.174.0)
+- [PERF-002] - This document (Optimized binary speed & size)
 - [Binary Build Story](binary-build-story.md) - Distribution strategy
 - [Cargo Integration](cargo-integration-ruchy.md) - Rust toolchain integration
 
