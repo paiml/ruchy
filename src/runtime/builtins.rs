@@ -1716,10 +1716,79 @@ mod tests {
         assert_eq!(result, Value::Integer(2));
     }
 
+    // EXTREME TDD Sprint 4: len() edge cases
+    #[test]
+    fn test_builtin_len_object() {
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), Value::Integer(1));
+        map.insert("b".to_string(), Value::Integer(2));
+        map.insert("c".to_string(), Value::Integer(3));
+        let result = builtin_len(&[Value::Object(Arc::new(map))]).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_builtin_len_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        let result = builtin_len(&[range]).unwrap();
+        assert_eq!(result, Value::Integer(9)); // |10 - 1| = 9
+    }
+
+    #[test]
+    fn test_builtin_len_wrong_type() {
+        let result = builtin_len(&[Value::Integer(42)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("len() not supported for"));
+    }
+
     #[test]
     fn test_builtin_type_of() {
         let result = builtin_type_of(&[Value::Integer(42)]).unwrap();
         assert_eq!(result, Value::from_string("integer".to_string()));
+    }
+
+    // EXTREME TDD Sprint 4: type_of() edge cases
+    #[test]
+    fn test_builtin_type_of_nil() {
+        let result = builtin_type_of(&[Value::Nil]).unwrap();
+        assert_eq!(result, Value::from_string("nil".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_type_of_bool() {
+        let result = builtin_type_of(&[Value::Bool(true)]).unwrap();
+        assert_eq!(result, Value::from_string("boolean".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_type_of_float() {
+        let result = builtin_type_of(&[Value::Float(3.14)]).unwrap();
+        assert_eq!(result, Value::from_string("float".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_type_of_string() {
+        let result = builtin_type_of(&[Value::from_string("hello".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("string".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_type_of_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = builtin_type_of(&[arr]).unwrap();
+        assert_eq!(result, Value::from_string("array".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_type_of_object() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::from_string("value".to_string()));
+        let result = builtin_type_of(&[Value::Object(Arc::new(map))]).unwrap();
+        assert_eq!(result, Value::from_string("object".to_string()));
     }
 
     #[test]
@@ -2407,6 +2476,37 @@ mod tests {
     fn test_builtin_to_string_bool() {
         let result = builtin_to_string(&[Value::from_bool(true)]).unwrap();
         assert_eq!(result, Value::from_string("true".to_string()));
+    }
+
+    // EXTREME TDD Sprint 4: to_string() edge cases
+    #[test]
+    fn test_builtin_to_string_nil() {
+        let result = builtin_to_string(&[Value::Nil]).unwrap();
+        assert_eq!(result, Value::from_string("nil".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_to_string_string_with_quotes() {
+        // to_string() uses Display formatting, which adds quotes for strings
+        let result = builtin_to_string(&[Value::from_string("hello".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("\"hello\"".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_to_string_array() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = builtin_to_string(&[Value::from_array(arr)]).unwrap();
+        // Should format array with Display trait
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_builtin_to_string_object() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::from_string("value".to_string()));
+        let result = builtin_to_string(&[Value::Object(Arc::new(map))]).unwrap();
+        // Should format object with Display trait
+        assert!(matches!(result, Value::String(_)));
     }
 
     #[test]
