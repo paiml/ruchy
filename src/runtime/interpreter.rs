@@ -4182,7 +4182,7 @@ impl Interpreter {
                                 let mut new_fields = fields.as_ref().clone();
                                 new_fields.insert(field.clone(), new_val.clone());
                                 let new_struct = Value::Struct {
-                                    name: name.clone(),
+                                    name: name,
                                     fields: Arc::new(new_fields),
                                 };
                                 self.set_variable(obj_name, new_struct);

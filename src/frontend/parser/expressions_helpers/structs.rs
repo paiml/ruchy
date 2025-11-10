@@ -99,7 +99,7 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<(Vec<StructField>, Vec
         }
 
         // Check if this is a method definition
-        if matches!(state.tokens.peek(), Some((Token::Fun, _)) | Some((Token::Fn, _))) {
+        if matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
             let method = parse_struct_method(state)?;
             methods.push(method);
         } else {
