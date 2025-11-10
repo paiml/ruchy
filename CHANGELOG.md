@@ -4,6 +4,15 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[QUALITY-XXX]** Fix example integration test failures by adding method aliases
+  - **STRING ALIASES**: upper/lower (for to_uppercase/to_lowercase), to_int/to_integer (for parse), slice (for substring)
+  - **STRING PREDICATES**: is_numeric, is_alphabetic, is_alphanumeric
+  - **FLOAT METHODS**: to_int/to_integer for float-to-integer conversion
+  - **FILES MODIFIED**: src/runtime/eval_string_methods.rs, src/runtime/eval_method.rs
+  - **TEST RESULTS**: Fixed test_01_basics, test_05_strings; Fast tests: 4239 passed in 2.21s
+  - **PRINCIPLE**: Toyota Way STOP THE LINE - fixed defects immediately upon discovery
+
 ## [3.212.0] - 2025-11-10
 
 ### Added
