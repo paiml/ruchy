@@ -50,3 +50,75 @@ pub fn execute(command: &str, args: &[&str]) -> Result<(String, String, i32), St
 pub fn current_pid() -> Result<u32, String> {
     Ok(std::process::id())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_execute_echo() {
+        let (stdout, stderr, exit_code) = execute("echo", &["hello"]).unwrap();
+        assert!(stdout.contains("hello"));
+        assert!(stderr.is_empty());
+        assert_eq!(exit_code, 0);
+    }
+
+    #[test]
+    fn test_execute_multiple_args() {
+        let (stdout, _stderr, exit_code) = execute("echo", &["hello", "world"]).unwrap();
+        assert!(stdout.contains("hello"));
+        assert!(stdout.contains("world"));
+        assert_eq!(exit_code, 0);
+    }
+
+    #[test]
+    fn test_execute_no_args() {
+        let (stdout, _stderr, exit_code) = execute("pwd", &[]).unwrap();
+        assert!(!stdout.is_empty());
+        assert_eq!(exit_code, 0);
+    }
+
+    #[test]
+    fn test_execute_nonexistent_command() {
+        let result = execute("nonexistent_command_xyz", &[]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_command_with_failure() {
+        // Try to list a non-existent directory (should fail)
+        let (stdout, stderr, exit_code) = execute("ls", &["/nonexistent_directory_xyz"]).unwrap();
+        assert_ne!(exit_code, 0); // Should have non-zero exit code
+        assert!(stderr.contains("No such file or directory") || !stdout.is_empty());
+    }
+
+    #[test]
+    fn test_current_pid() {
+        let pid = current_pid().unwrap();
+        assert!(pid > 0);
+        assert!(pid < u32::MAX); // Sanity check
+    }
+
+    #[test]
+    fn test_current_pid_consistent() {
+        // PID should be the same within a single process
+        let pid1 = current_pid().unwrap();
+        let pid2 = current_pid().unwrap();
+        assert_eq!(pid1, pid2);
+    }
+
+    #[test]
+    fn test_execute_with_special_characters() {
+        let (stdout, _stderr, exit_code) = execute("echo", &["test@123"]).unwrap();
+        assert!(stdout.contains("test@123"));
+        assert_eq!(exit_code, 0);
+    }
+
+    #[test]
+    fn test_execute_empty_string() {
+        let (stdout, _stderr, exit_code) = execute("echo", &[""]).unwrap();
+        assert_eq!(exit_code, 0);
+        // Echo of empty string produces newline
+        assert!(stdout.len() <= 2);
+    }
+}

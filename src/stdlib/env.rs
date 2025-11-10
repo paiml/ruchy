@@ -134,3 +134,147 @@ pub fn args() -> Result<Vec<String>, String> {
 pub fn temp_dir() -> Result<String, String> {
     Ok(env::temp_dir().to_string_lossy().to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_var_existing() {
+        // PATH should always exist
+        assert!(var("PATH").is_ok());
+        let path = var("PATH").unwrap();
+        assert!(!path.is_empty());
+    }
+
+    #[test]
+    fn test_var_nonexistent() {
+        // Variable that definitely doesn't exist
+        assert!(var("RUCHY_TEST_NONEXISTENT_VAR_XYZ").is_err());
+    }
+
+    #[test]
+    fn test_set_and_get_var() {
+        set_var("RUCHY_TEST_VAR", "test_value").unwrap();
+        assert_eq!(var("RUCHY_TEST_VAR").unwrap(), "test_value");
+
+        // Cleanup
+        remove_var("RUCHY_TEST_VAR").unwrap();
+    }
+
+    #[test]
+    fn test_set_var_overwrite() {
+        set_var("RUCHY_TEST_VAR2", "value1").unwrap();
+        assert_eq!(var("RUCHY_TEST_VAR2").unwrap(), "value1");
+
+        set_var("RUCHY_TEST_VAR2", "value2").unwrap();
+        assert_eq!(var("RUCHY_TEST_VAR2").unwrap(), "value2");
+
+        // Cleanup
+        remove_var("RUCHY_TEST_VAR2").unwrap();
+    }
+
+    #[test]
+    fn test_remove_var() {
+        set_var("RUCHY_TEST_VAR3", "value").unwrap();
+        assert!(var("RUCHY_TEST_VAR3").is_ok());
+
+        remove_var("RUCHY_TEST_VAR3").unwrap();
+        assert!(var("RUCHY_TEST_VAR3").is_err());
+    }
+
+    #[test]
+    fn test_remove_nonexistent_var() {
+        // Removing nonexistent variable should not fail
+        assert!(remove_var("RUCHY_TEST_NONEXISTENT").is_ok());
+    }
+
+    #[test]
+    fn test_vars() {
+        let all_vars = vars().unwrap();
+        assert!(!all_vars.is_empty());
+        assert!(all_vars.contains_key("PATH"));
+    }
+
+    #[test]
+    fn test_vars_includes_set() {
+        set_var("RUCHY_TEST_VAR4", "test").unwrap();
+        let all_vars = vars().unwrap();
+        assert_eq!(all_vars.get("RUCHY_TEST_VAR4"), Some(&"test".to_string()));
+
+        // Cleanup
+        remove_var("RUCHY_TEST_VAR4").unwrap();
+    }
+
+    #[test]
+    fn test_current_dir() {
+        let dir = current_dir().unwrap();
+        assert!(!dir.is_empty());
+        assert!(std::path::Path::new(&dir).exists());
+    }
+
+    #[test]
+    fn test_args() {
+        let args_list = args().unwrap();
+        assert!(!args_list.is_empty()); // At least program name
+    }
+
+    #[test]
+    fn test_temp_dir() {
+        let temp = temp_dir().unwrap();
+        assert!(!temp.is_empty());
+        assert!(std::path::Path::new(&temp).exists());
+    }
+
+    #[test]
+    fn test_env_workflow() {
+        // Complete workflow: set, get, modify, remove
+        let key = "RUCHY_WORKFLOW_TEST";
+
+        // Set initial value
+        set_var(key, "value1").unwrap();
+        assert_eq!(var(key).unwrap(), "value1");
+
+        // Modify
+        set_var(key, "value2").unwrap();
+        assert_eq!(var(key).unwrap(), "value2");
+
+        // Check it appears in vars()
+        let all_vars = vars().unwrap();
+        assert_eq!(all_vars.get(key), Some(&"value2".to_string()));
+
+        // Remove
+        remove_var(key).unwrap();
+        assert!(var(key).is_err());
+    }
+
+    #[test]
+    fn test_special_characters_in_values() {
+        let key = "RUCHY_SPECIAL_TEST";
+
+        // Test with special characters
+        set_var(key, "value with spaces").unwrap();
+        assert_eq!(var(key).unwrap(), "value with spaces");
+
+        set_var(key, "value=with=equals").unwrap();
+        assert_eq!(var(key).unwrap(), "value=with=equals");
+
+        set_var(key, "value:with:colons").unwrap();
+        assert_eq!(var(key).unwrap(), "value:with:colons");
+
+        // Cleanup
+        remove_var(key).unwrap();
+    }
+
+    #[test]
+    fn test_empty_value() {
+        let key = "RUCHY_EMPTY_TEST";
+
+        // Empty string is valid
+        set_var(key, "").unwrap();
+        assert_eq!(var(key).unwrap(), "");
+
+        // Cleanup
+        remove_var(key).unwrap();
+    }
+}
