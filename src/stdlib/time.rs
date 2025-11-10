@@ -181,3 +181,97 @@ pub fn parse_duration(duration_str: &str) -> Result<u128, String> {
 
     Ok(total_millis)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_now_positive() {
+        let timestamp = now().unwrap();
+        assert!(timestamp > 0);
+        assert!(timestamp > 946_684_800_000); // After year 2000
+    }
+
+    #[test]
+    fn test_elapsed_millis_basic() {
+        let start = now().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let elapsed = elapsed_millis(start).unwrap();
+        assert!(elapsed >= 10);
+    }
+
+    #[test]
+    fn test_sleep_millis() {
+        let result = sleep_millis(1);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_duration_secs_conversion() {
+        assert_eq!(duration_secs(1000).unwrap(), 1.0);
+        assert!((duration_secs(1500).unwrap() - 1.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_format_duration_ms() {
+        assert_eq!(format_duration(0).unwrap(), "0ms");
+        assert_eq!(format_duration(500).unwrap(), "500ms");
+    }
+
+    #[test]
+    fn test_format_duration_seconds() {
+        assert_eq!(format_duration(1000).unwrap(), "1s");
+        assert_eq!(format_duration(5000).unwrap(), "5s");
+    }
+
+    #[test]
+    fn test_format_duration_minutes() {
+        assert_eq!(format_duration(60_000).unwrap(), "1m");
+        assert_eq!(format_duration(90_000).unwrap(), "1m 30s");
+    }
+
+    #[test]
+    fn test_format_duration_hours() {
+        assert_eq!(format_duration(3_600_000).unwrap(), "1h");
+        assert_eq!(format_duration(5_400_000).unwrap(), "1h 30m");
+    }
+
+    #[test]
+    fn test_format_duration_days() {
+        assert_eq!(format_duration(86_400_000).unwrap(), "1d");
+        assert_eq!(format_duration(90_000_000).unwrap(), "1d 1h");
+    }
+
+    #[test]
+    fn test_parse_duration_simple() {
+        assert_eq!(parse_duration("500ms").unwrap(), 500);
+        assert_eq!(parse_duration("1s").unwrap(), 1_000);
+        assert_eq!(parse_duration("1m").unwrap(), 60_000);
+        assert_eq!(parse_duration("1h").unwrap(), 3_600_000);
+        assert_eq!(parse_duration("1d").unwrap(), 86_400_000);
+    }
+
+    #[test]
+    fn test_parse_duration_compound() {
+        assert_eq!(parse_duration("1h 30m").unwrap(), 5_400_000);
+        assert_eq!(parse_duration("1d 2h").unwrap(), 93_600_000);
+    }
+
+    #[test]
+    fn test_parse_duration_invalid() {
+        assert!(parse_duration("invalid").is_err());
+        assert!(parse_duration("10x").is_err());
+        assert!(parse_duration("").is_err());
+        assert!(parse_duration("0s").is_err()); // Zero not allowed
+    }
+
+    #[test]
+    fn test_format_parse_roundtrip() {
+        for millis in [1000, 60_000, 90_000, 3_600_000, 86_400_000] {
+            let formatted = format_duration(millis).unwrap();
+            let parsed = parse_duration(&formatted).unwrap();
+            assert_eq!(parsed, millis);
+        }
+    }
+}
