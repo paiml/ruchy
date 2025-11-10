@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
-//! TRANSPILER-DEFECT-011: String arguments to contains() need &str coercion
+//! TRANSPILER-DEFECT-011: String arguments to `contains()` need &str coercion
 //!
-//! **Problem**: String field access / variables passed to contains() fail with E0277
+//! **Problem**: String field access / variables passed to `contains()` fail with E0277
 //! **Discovered**: 2025-10-31 (Issue #111 - Reaper project 3 E0277 errors)
 //! **Severity**: CRITICAL (blocks string pattern matching)
 //!
@@ -26,7 +26,7 @@ fn temp_dir() -> TempDir {
 
 // ==================== GREEN PHASE: Tests Should Pass Now ====================
 
-/// Test 1: Field access in contains() (main bug from reaper)
+/// Test 1: Field access in `contains()` (main bug from reaper)
 #[test]
 fn test_defect_011_green_field_access_pattern() {
     let temp = temp_dir();
@@ -60,7 +60,7 @@ fun main() {
         .success();
 }
 
-/// Test 2: Variable identifier in contains()
+/// Test 2: Variable identifier in `contains()`
 #[test]
 fn test_defect_011_green_variable_pattern() {
     let temp = temp_dir();
@@ -145,7 +145,7 @@ fun main() {
         .success();
 }
 
-/// Test 5: Multiple contains() calls
+/// Test 5: Multiple `contains()` calls
 #[test]
 fn test_defect_011_green_multiple_contains() {
     let temp = temp_dir();

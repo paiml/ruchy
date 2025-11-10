@@ -9,7 +9,6 @@
 //! list comprehensions, pattern matching, edge cases
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -21,10 +20,10 @@ fn ruchy_cmd() -> Command {
 
 #[test]
 fn test_let_destructure_tuple() {
-    let code = r#"
+    let code = r"
         let (a, b) = (10, 20);
         a + b
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -38,10 +37,10 @@ fn test_let_destructure_tuple() {
 
 #[test]
 fn test_let_destructure_list() {
-    let code = r#"
+    let code = r"
         let [x, y, z] = [1, 2, 3];
         x + y + z
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -55,10 +54,10 @@ fn test_let_destructure_list() {
 
 #[test]
 fn test_let_with_explicit_type() {
-    let code = r#"
+    let code = r"
         let x: i32 = 42;
         x
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -73,12 +72,12 @@ fn test_let_with_explicit_type() {
 #[test]
 #[ignore = "Parser feature gap: let-else syntax not yet implemented (let Some(x) = opt else { return })"]
 fn test_let_else_pattern() {
-    let code = r#"
+    let code = r"
         let Some(x) = Some(42) else {
             return 0
         };
         x
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -92,12 +91,12 @@ fn test_let_else_pattern() {
 
 #[test]
 fn test_let_multiple_bindings() {
-    let code = r#"
+    let code = r"
         let x = 10;
         let y = 20;
         let z = 30;
         x + y + z
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -115,14 +114,14 @@ fn test_let_multiple_bindings() {
 
 #[test]
 fn test_if_let_some() {
-    let code = r#"
+    let code = r"
         let opt = Some(42);
         if let Some(x) = opt {
             x
         } else {
             0
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -136,14 +135,14 @@ fn test_if_let_some() {
 
 #[test]
 fn test_if_let_ok() {
-    let code = r#"
+    let code = r"
         let res = Ok(100);
         if let Ok(val) = res {
             val
         } else {
             0
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -157,14 +156,14 @@ fn test_if_let_ok() {
 
 #[test]
 fn test_if_let_tuple() {
-    let code = r#"
+    let code = r"
         let pair = (10, 20);
         if let (a, b) = pair {
             a + b
         } else {
             0
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -182,7 +181,7 @@ fn test_if_let_tuple() {
 
 #[test]
 fn test_while_let_some() {
-    let code = r#"
+    let code = r"
         let mut opt = Some(5);
         while let Some(x) = opt {
             if x == 0 {
@@ -191,7 +190,7 @@ fn test_while_let_some() {
                 opt = Some(x - 1)
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -209,11 +208,11 @@ fn test_while_let_some() {
 
 #[test]
 fn test_loop_infinite() {
-    let code = r#"
+    let code = r"
         loop {
             break
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -227,12 +226,12 @@ fn test_loop_infinite() {
 
 #[test]
 fn test_loop_with_break_value() {
-    let code = r#"
+    let code = r"
         let result = loop {
             break 42
         };
         result
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -246,7 +245,7 @@ fn test_loop_with_break_value() {
 
 #[test]
 fn test_loop_with_continue() {
-    let code = r#"
+    let code = r"
         let mut count = 0;
         loop {
             count = count + 1;
@@ -255,7 +254,7 @@ fn test_loop_with_continue() {
             };
             break
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -273,11 +272,11 @@ fn test_loop_with_continue() {
 
 #[test]
 fn test_for_range_exclusive() {
-    let code = r#"
+    let code = r"
         for i in 0..10 {
             println(i)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -291,11 +290,11 @@ fn test_for_range_exclusive() {
 
 #[test]
 fn test_for_range_inclusive() {
-    let code = r#"
+    let code = r"
         for i in 0..=10 {
             println(i)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -309,11 +308,11 @@ fn test_for_range_inclusive() {
 
 #[test]
 fn test_for_array_iteration() {
-    let code = r#"
+    let code = r"
         for item in [1, 2, 3, 4, 5] {
             println(item)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -327,13 +326,13 @@ fn test_for_array_iteration() {
 
 #[test]
 fn test_for_with_break() {
-    let code = r#"
+    let code = r"
         for i in 0..100 {
             if i == 10 {
                 break
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -347,14 +346,14 @@ fn test_for_with_break() {
 
 #[test]
 fn test_for_with_continue() {
-    let code = r#"
+    let code = r"
         for i in 0..10 {
             if i % 2 == 0 {
                 continue
             };
             println(i)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -372,12 +371,12 @@ fn test_for_with_continue() {
 
 #[test]
 fn test_while_condition() {
-    let code = r#"
+    let code = r"
         let mut x = 0;
         while x < 10 {
             x = x + 1
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -391,7 +390,7 @@ fn test_while_condition() {
 
 #[test]
 fn test_while_with_break() {
-    let code = r#"
+    let code = r"
         let mut x = 0;
         while true {
             x = x + 1;
@@ -399,7 +398,7 @@ fn test_while_with_break() {
                 break
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -443,10 +442,10 @@ fn test_try_catch_basic() {
 
 #[test]
 fn test_lambda_simple() {
-    let code = r#"
+    let code = r"
         let add = |a, b| a + b;
         add(10, 20)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -455,15 +454,15 @@ fn test_lambda_simple() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("|"));
+    assert!(output.contains('|'));
 }
 
 #[test]
 fn test_lambda_with_type_annotations() {
-    let code = r#"
+    let code = r"
         let multiply: fn(i32, i32) -> i32 = |x, y| x * y;
         multiply(5, 6)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -472,17 +471,17 @@ fn test_lambda_with_type_annotations() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("|"));
+    assert!(output.contains('|'));
 }
 
 #[test]
 fn test_lambda_passed_to_function() {
-    let code = r#"
+    let code = r"
         fun apply(f: fn(i32) -> i32, x: i32) -> i32 {
             f(x)
         }
         apply(|n| n * 2, 21)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -491,7 +490,7 @@ fn test_lambda_passed_to_function() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("|"));
+    assert!(output.contains('|'));
 }
 
 // ============================================================================
@@ -501,9 +500,9 @@ fn test_lambda_passed_to_function() {
 #[test]
 #[ignore = "Parser feature gap: Pipeline operator (|>) not yet implemented"]
 fn test_pipeline_simple() {
-    let code = r#"
+    let code = r"
         42 |> double |> add_ten
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -522,9 +521,9 @@ fn test_pipeline_simple() {
 #[test]
 #[ignore = "Parser feature gap: List comprehension syntax not yet implemented ([x * 2 for x in items])"]
 fn test_list_comprehension_simple() {
-    let code = r#"
+    let code = r"
         [x * 2 for x in [1, 2, 3, 4, 5]]
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -539,9 +538,9 @@ fn test_list_comprehension_simple() {
 #[test]
 #[ignore = "Parser feature gap: List comprehension with filter not yet implemented"]
 fn test_list_comprehension_with_filter() {
-    let code = r#"
+    let code = r"
         [x for x in [1, 2, 3, 4, 5] if x > 2]
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -593,10 +592,10 @@ fn test_method_call_chained() {
 
 #[test]
 fn test_method_call_with_args() {
-    let code = r#"
+    let code = r"
         let vec = vec![1, 2, 3];
         vec.push(4)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -614,13 +613,13 @@ fn test_method_call_with_args() {
 
 #[test]
 fn test_block_simple() {
-    let code = r#"
+    let code = r"
         {
             let x = 10;
             let y = 20;
             x + y
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -629,12 +628,12 @@ fn test_block_simple() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("{"));
+    assert!(output.contains('{'));
 }
 
 #[test]
 fn test_block_nested() {
-    let code = r#"
+    let code = r"
         {
             let x = {
                 let y = 10;
@@ -642,7 +641,7 @@ fn test_block_nested() {
             };
             x + 5
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -651,12 +650,12 @@ fn test_block_nested() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.matches("{").count() >= 2);
+    assert!(output.matches('{').count() >= 2);
 }
 
 #[test]
 fn test_block_with_early_return() {
-    let code = r#"
+    let code = r"
         fun test() -> i32 {
             {
                 if true {
@@ -665,7 +664,7 @@ fn test_block_with_early_return() {
                 100
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -683,13 +682,13 @@ fn test_block_with_early_return() {
 
 #[test]
 fn edge_case_nested_loops() {
-    let code = r#"
+    let code = r"
         for i in 0..5 {
             for j in 0..5 {
                 println(i * j)
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -731,7 +730,7 @@ fn edge_case_complex_if_elif_else() {
 
 #[test]
 fn edge_case_loop_labels() {
-    let code = r#"
+    let code = r"
         'outer: for i in 0..5 {
             for j in 0..5 {
                 if i * j > 10 {
@@ -739,7 +738,7 @@ fn edge_case_loop_labels() {
                 }
             }
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -783,7 +782,7 @@ fn property_for_loop_depth_1_to_5() {
     for depth in 1..=5 {
         let mut code = "println(1)".to_string();
         for i in (0..depth).rev() {
-            code = format!("for x{} in 0..2 {{ {} }}", i, code);
+            code = format!("for x{i} in 0..2 {{ {code} }}");
         }
 
         ruchy_cmd()
@@ -800,11 +799,11 @@ fn property_let_bindings_1_to_10() {
     // Property: Multiple sequential let bindings transpile correctly
     for count in 1..=10 {
         let bindings = (0..count)
-            .map(|i| format!("let x{} = {};", i, i))
+            .map(|i| format!("let x{i} = {i};"))
             .collect::<Vec<_>>()
             .join("\n");
-        let sum = (0..count).map(|i| format!("x{}", i)).collect::<Vec<_>>().join(" + ");
-        let code = format!("{}\n{}", bindings, sum);
+        let sum = (0..count).map(|i| format!("x{i}")).collect::<Vec<_>>().join(" + ");
+        let code = format!("{bindings}\n{sum}");
 
         ruchy_cmd()
             .arg("transpile")

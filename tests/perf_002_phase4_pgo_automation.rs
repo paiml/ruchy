@@ -66,8 +66,7 @@ fn test_perf_002_phase4_01_pgo_flag_exists() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             !stderr.contains("unexpected argument") && !stderr.contains("unknown"),
-            "Flag should be recognized, got: {}",
-            stderr
+            "Flag should be recognized, got: {stderr}"
         );
     }
 }

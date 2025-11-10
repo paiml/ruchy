@@ -200,7 +200,7 @@ mod property_tests {
     /// Property: ALL mutable string variables MUST use String type
     ///
     /// Invariant: If a string literal is assigned to a variable that gets reassigned,
-    /// the transpiled output MUST use String::from() or .to_string(), NOT raw &str
+    /// the transpiled output MUST use `String::from()` or .`to_string()`, NOT raw &str
     #[test]
     #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
     fn property_mutable_strings_always_use_string_type() {
@@ -216,13 +216,12 @@ mod property_tests {
             let code = format!(
                 r#"
 fun main() {{
-    let x = "{}";
-    x = x + "{}";
-    x = x + "{}";
+    let x = "{initial_value}";
+    x = x + "{second_value}";
+    x = x + "{third_value}";
     println!("{{}}", x);
 }}
-"#,
-                initial_value, second_value, third_value
+"#
             );
 
             fs::write(&source, &code).expect("Failed to write test file");
@@ -268,11 +267,10 @@ fun main() {{
             let code = format!(
                 r#"
 fun main() {{
-    let x = "{}";
+    let x = "{value}";
     println!("{{}}", x);
 }}
-"#,
-                value
+"#
             );
 
             fs::write(&source, &code).expect("Failed to write test file");
@@ -321,17 +319,16 @@ fun main() {{
             let mut assignments = String::from(r#"let x = "start";"#);
             for value in &values {
                 assignments.push_str(&format!(r#"
-    x = x + "{}";"#, value));
+    x = x + "{value}";"#));
             }
 
             let code = format!(
                 r#"
 fun main() {{
-    {}
+    {assignments}
     println!("{{}}", x);
 }}
-"#,
-                assignments
+"#
             );
 
             fs::write(&source, &code).expect("Failed to write test file");

@@ -5,7 +5,6 @@
 //! Coverage: Named types, generics, optionals, lists, arrays, tuples, functions, references
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -102,11 +101,11 @@ fn test_named_type_char() {
 
 #[test]
 fn test_named_type_unit() {
-    let code = r#"
+    let code = r"
         fun do_nothing() -> () {
             ()
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -167,9 +166,9 @@ fn test_generic_type_result() {
 
 #[test]
 fn test_generic_type_hashmap() {
-    let code = r#"
+    let code = r"
         let map: HashMap<String, i32> = HashMap::new()
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -264,7 +263,7 @@ fn test_array_type_fixed_size() {
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
     // Fixed-size array [T; N]
-    assert!(output.contains("i64") && (output.contains("5") || output.contains(";")));
+    assert!(output.contains("i64") && (output.contains('5') || output.contains(';')));
 }
 
 // ============================================================================
@@ -305,11 +304,11 @@ fn test_tuple_type_three_elements() {
 
 #[test]
 fn test_function_type_simple() {
-    let code = r#"
+    let code = r"
         fun apply(f: fn(int) -> int, x: int) -> int {
             f(x)
         }
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -336,7 +335,7 @@ fn test_reference_type_immutable() {
         .success();
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
-    assert!(output.contains("&") && output.contains("i64"));
+    assert!(output.contains('&') && output.contains("i64"));
 }
 
 #[test]
@@ -485,7 +484,7 @@ fn property_all_primitive_types() {
     ];
 
     for (ruchy_type, rust_type) in types {
-        let code = format!("let x: {} = 42", ruchy_type);
+        let code = format!("let x: {ruchy_type} = 42");
         let result = ruchy_cmd()
             .arg("transpile")
             .arg("-")
@@ -496,9 +495,7 @@ fn property_all_primitive_types() {
         let output = String::from_utf8_lossy(&result.get_output().stdout);
         assert!(
             output.contains(rust_type),
-            "{} should contain {}",
-            ruchy_type,
-            rust_type
+            "{ruchy_type} should contain {rust_type}"
         );
     }
 }
@@ -509,7 +506,7 @@ fn property_vec_with_all_primitive_types() {
     let types = vec!["int", "float", "bool", "String"];
 
     for ty in types {
-        let code = format!("let v: Vec<{}> = []", ty);
+        let code = format!("let v: Vec<{ty}> = []");
         ruchy_cmd()
             .arg("transpile")
             .arg("-")
@@ -525,7 +522,7 @@ fn property_option_with_all_primitive_types() {
     let types = vec!["int", "float", "bool", "String"];
 
     for ty in types {
-        let code = format!("let opt: Option<{}> = None", ty);
+        let code = format!("let opt: Option<{ty}> = None");
         ruchy_cmd()
             .arg("transpile")
             .arg("-")

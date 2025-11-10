@@ -33,7 +33,6 @@ use ruchy::Parser;
 
 #[test]
 #[ignore = "Arrays not yet implemented in JIT - requires heap allocation"]
-#[ignore = "Arrays not yet implemented in JIT - requires heap allocation"]
 fn test_jit_006_array_literal_simple() {
     // Test: Create array and return first element
     let code = r"

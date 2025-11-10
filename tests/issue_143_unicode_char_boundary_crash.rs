@@ -28,12 +28,12 @@ fun test() {
 
 #[test]
 fn test_issue_143_unicode_in_comments() {
-    let code = r#"
+    let code = r"
 // Test with checkmarks: ✓ ✗ → ← ↑ ↓
 fun main() {
     let x = 42
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Parser should handle Unicode in comments");

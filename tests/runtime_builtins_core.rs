@@ -146,13 +146,13 @@ fun main() {
 
 #[test]
 fn test_bug_syntax_001_attribute_error_message() {
-    let code = r#"
+    let code = r"
 #[derive(Debug)]
 struct Point {
     x: i32,
     y: i32
 }
-"#;
+";
 
     let output = ruchy_cmd()
         .arg("-e")
@@ -166,8 +166,7 @@ struct Point {
         stderr.contains("Attributes are not supported") ||
         stderr.contains("does not support #[derive]") ||
         stderr.contains("Ruchy does not use Rust-style attributes"),
-        "Error message should explain that attributes are not supported. Got: {}",
-        stderr
+        "Error message should explain that attributes are not supported. Got: {stderr}"
     );
 }
 
@@ -196,7 +195,7 @@ fun main() {
 
 #[test]
 fn test_bug_syntax_003_impl_block_error_message() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -207,7 +206,7 @@ impl Point {
         Point { x, y }
     }
 }
-"#;
+";
 
     let output = ruchy_cmd()
         .arg("-e")
@@ -220,7 +219,6 @@ impl Point {
         stderr.contains("impl") ||
         stderr.contains("Methods should be defined inside struct") ||
         stderr.contains("not supported"),
-        "Error message should explain impl blocks. Got: {}",
-        stderr
+        "Error message should explain impl blocks. Got: {stderr}"
     );
 }

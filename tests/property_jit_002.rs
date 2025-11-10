@@ -19,7 +19,6 @@
 
 use proptest::prelude::*;
 use ruchy::jit::JitCompiler;
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::Parser;
 
 // ============================================================================

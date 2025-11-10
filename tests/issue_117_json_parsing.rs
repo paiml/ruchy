@@ -6,7 +6,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until JSON parsing is implemented
-/// Current Error: No JSON.parse() or JSON.stringify() support
+/// Current Error: No `JSON.parse()` or `JSON.stringify()` support
 /// Expected: Parse JSON strings into objects like JavaScript
 
 // ============================================================================
@@ -31,12 +31,12 @@ fn test_issue_117_parse_simple_object() {
 
 #[test]
 fn test_issue_117_parse_array() {
-    let code = r#"
+    let code = r"
         let json_str = '[1, 2, 3, 4, 5]';
         let arr = JSON.parse(json_str);
         println(arr[0]);
         println(arr[4]);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -119,11 +119,11 @@ fn test_issue_117_stringify_object() {
 
 #[test]
 fn test_issue_117_stringify_array() {
-    let code = r#"
+    let code = r"
         let arr = vec![1, 2, 3];
         let json_str = JSON.stringify(arr);
         println(json_str);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -160,10 +160,10 @@ fn test_issue_117_roundtrip() {
 
 #[test]
 fn test_issue_117_parse_invalid_json() {
-    let code = r#"
+    let code = r"
         let json_str = '{invalid json}';
         let obj = JSON.parse(json_str);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e")
@@ -202,13 +202,13 @@ fn property_json_roundtrip_preserves_data() {
     use proptest::prelude::*;
 
     proptest!(|(name in "[a-z]{3,10}", age in 1..100u32)| {
-        let json = format!(r#"{{"name":"{}","age":{}}}"#, name, age);
+        let json = format!(r#"{{"name":"{name}","age":{age}}}"#);
 
-        let code = format!(r#"
-            let obj = JSON.parse('{}');
+        let code = format!(r"
+            let obj = JSON.parse('{json}');
             let result = JSON.stringify(obj);
             println(result);
-        "#, json);
+        ");
 
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         let output = cmd.arg("-e").arg(&code).output().unwrap();

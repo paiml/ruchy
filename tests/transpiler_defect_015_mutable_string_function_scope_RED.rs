@@ -31,7 +31,7 @@
 //!
 //! **Test Strategy**: EXTREME TDD (RED → GREEN → REFACTOR)
 //! - RED: These tests MUST fail with E0308/E0369
-//! - GREEN: Fix is_variable_mutated() to detect function-scope mutations
+//! - GREEN: Fix `is_variable_mutated()` to detect function-scope mutations
 //! - REFACTOR: Property tests with 10K+ inputs
 
 use assert_cmd::Command;
@@ -40,7 +40,7 @@ use tempfile::TempDir;
 
 /// Test 1: Function-scope string accumulator pattern (ACTUAL reaper pattern)
 ///
-/// This is the EXACT pattern from reaper's format_process() function.
+/// This is the EXACT pattern from reaper's `format_process()` function.
 /// Ruchy code uses string concatenation in function body.
 #[test]
 fn test_defect_015_01_function_scope_string_accumulator_RED() {
@@ -81,19 +81,18 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        // After fix is applied, this should compile and run successfully
+        eprintln!("✅ GREEN: Test passes after fix applied");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         // This test is RED - we EXPECT these errors before fix
         assert!(
             stderr.contains("E0308") || stderr.contains("E0369"),
-            "Expected E0308 or E0369 errors (mutable string not detected). Got:\n{}",
-            stderr
+            "Expected E0308 or E0369 errors (mutable string not detected). Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: E0308/E0369 errors confirmed (as expected before fix)");
-        eprintln!("Error details:\n{}", stderr);
-    } else {
-        // After fix is applied, this should compile and run successfully
-        eprintln!("✅ GREEN: Test passes after fix applied");
+        eprintln!("Error details:\n{stderr}");
     }
 }
 
@@ -127,22 +126,21 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: format!() pattern fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: format!() returns String, msg is &str. Got:\n{}",
-            stderr
+            "Expected E0308: format!() returns String, msg is &str. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: format!() type mismatch confirmed");
-    } else {
-        eprintln!("✅ GREEN: format!() pattern fixed");
     }
 }
 
 /// Test 3: Multiple concatenations in sequence
 ///
-/// Pattern from reaper's format_rule function.
+/// Pattern from reaper's `format_rule` function.
 #[test]
 fn test_defect_015_03_multiple_concatenations_RED() {
     let temp_dir = TempDir::new().unwrap();
@@ -172,16 +170,15 @@ println(output);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Multiple concatenations fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308") || stderr.contains("E0369"),
-            "Expected type errors from multiple concatenations. Got:\n{}",
-            stderr
+            "Expected type errors from multiple concatenations. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Multiple concatenation errors confirmed");
-    } else {
-        eprintln!("✅ GREEN: Multiple concatenations fixed");
     }
 }
 
@@ -221,16 +218,15 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: String field concatenation fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308"),
-            "Expected E0308: output is &str, cfg.name is String. Got:\n{}",
-            stderr
+            "Expected E0308: output is &str, cfg.name is String. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: String field concatenation error confirmed");
-    } else {
-        eprintln!("✅ GREEN: String field concatenation fixed");
     }
 }
 
@@ -321,22 +317,21 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Nested block patterns fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308") || stderr.contains("E0369"),
-            "Expected type errors in nested blocks. Got:\n{}",
-            stderr
+            "Expected type errors in nested blocks. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Nested block string accumulator errors confirmed");
-    } else {
-        eprintln!("✅ GREEN: Nested block patterns fixed");
     }
 }
 
 /// Test 8: String concatenation with method call results
 ///
-/// Real-world pattern from reaper (to_string() returns String).
+/// Real-world pattern from reaper (`to_string()` returns String).
 #[test]
 fn test_defect_015_08_method_call_concatenation_RED() {
     let temp_dir = TempDir::new().unwrap();
@@ -362,16 +357,15 @@ println(result);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: Method call concatenation fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0308") || stderr.contains("E0369"),
-            "Expected type errors with method call results. Got:\n{}",
-            stderr
+            "Expected type errors with method call results. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: Method call concatenation errors confirmed");
-    } else {
-        eprintln!("✅ GREEN: Method call concatenation fixed");
     }
 }
 
@@ -408,16 +402,15 @@ println(output);
         .output()
         .unwrap();
 
-    if !output.status.success() {
+    if output.status.success() {
+        eprintln!("✅ GREEN: E0369 pattern fixed");
+    } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("E0369"),
-            "Expected E0369: cannot add String to &str. Got:\n{}",
-            stderr
+            "Expected E0369: cannot add String to &str. Got:\n{stderr}"
         );
         eprintln!("✅ RED TEST: E0369 (cannot add String to &str) confirmed");
-    } else {
-        eprintln!("✅ GREEN: E0369 pattern fixed");
     }
 }
 

@@ -14,7 +14,6 @@
 //! This follows EXTREME TDD protocol: RED → GREEN → REFACTOR → VALIDATE
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use proptest::prelude::*;
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
