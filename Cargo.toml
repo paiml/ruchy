@@ -462,13 +462,20 @@ lto = true           # Enable Link Time Optimization
 codegen-units = 1    # Single codegen unit for better optimization
 strip = true         # Strip symbols for smaller size
 
+# [PERF-002] DIST: Distribution binaries (speed-first, Phase 2 fix v3.212.0)
+# Was: opt-level="z" (size) → Now: opt-level=3 (speed) - 15x faster!
+# Rationale: Distribution binaries should prioritize performance over minimal size
+# For size-constrained deployments, use --profile release-tiny explicitly
 [profile.release-dist]
 inherits = "release"
-strip = true           # Remove debug symbols
-lto = "fat"           # Maximum link-time optimization
-codegen-units = 1     # Single codegen unit for better optimization
-panic = "abort"       # Smaller panic handler
-opt-level = "z"       # Optimize for binary size
+opt-level = 3              # MAXIMUM speed (changed from "z" for PERF-002)
+lto = "fat"                # Full link-time optimization
+codegen-units = 1          # Single codegen unit (best optimization)
+strip = true               # Remove debug symbols
+panic = "abort"            # No unwinding overhead
+overflow-checks = false    # No runtime overflow checks (faster)
+debug-assertions = false   # No debug assertions
+incremental = false        # Disable incremental for better optimization
 
 # [PERF-001] ULTRA: Maximum performance + PGO (Profile-Guided Optimization)
 # Target: < 1.10ms on BENCH-007 (10-15% faster than release)
