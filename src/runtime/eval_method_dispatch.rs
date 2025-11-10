@@ -685,33 +685,168 @@ fn eval_dataframe_shape(
 mod tests {
     use super::*;
 
+    // =========================================================================
+    // FLOAT METHOD TESTS
+    // =========================================================================
+
     #[test]
-    fn test_float_methods() {
-        let result = eval_float_method(9.0, "sqrt", true).unwrap();
-        assert_eq!(result, Value::Float(3.0));
-
-        let result = eval_float_method(-5.5, "abs", true).unwrap();
-        assert_eq!(result, Value::Float(5.5));
-
-        let result = eval_float_method(3.7, "floor", true).unwrap();
-        assert_eq!(result, Value::Float(3.0));
+    fn test_float_sqrt() {
+        assert_eq!(eval_float_method(9.0, "sqrt", true).unwrap(), Value::Float(3.0));
+        assert_eq!(eval_float_method(0.0, "sqrt", true).unwrap(), Value::Float(0.0));
     }
 
     #[test]
-    fn test_integer_methods() {
-        let result = eval_integer_method(-42, "abs", &[]).unwrap();
-        assert_eq!(result, Value::Integer(42));
+    fn test_float_abs() {
+        assert_eq!(eval_float_method(-5.5, "abs", true).unwrap(), Value::Float(5.5));
+        assert_eq!(eval_float_method(5.5, "abs", true).unwrap(), Value::Float(5.5));
+    }
 
+    #[test]
+    fn test_float_round() {
+        assert_eq!(eval_float_method(3.7, "round", true).unwrap(), Value::Float(4.0));
+        assert_eq!(eval_float_method(3.2, "round", true).unwrap(), Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_float_floor() {
+        assert_eq!(eval_float_method(3.7, "floor", true).unwrap(), Value::Float(3.0));
+        assert_eq!(eval_float_method(-3.7, "floor", true).unwrap(), Value::Float(-4.0));
+    }
+
+    #[test]
+    fn test_float_ceil() {
+        assert_eq!(eval_float_method(3.2, "ceil", true).unwrap(), Value::Float(4.0));
+        assert_eq!(eval_float_method(-3.2, "ceil", true).unwrap(), Value::Float(-3.0));
+    }
+
+    #[test]
+    fn test_float_trig() {
+        // sin, cos, tan
+        assert!((eval_float_method(0.0, "sin", true).unwrap() == Value::Float(0.0)));
+        assert!((eval_float_method(0.0, "cos", true).unwrap() == Value::Float(1.0)));
+        assert!((eval_float_method(0.0, "tan", true).unwrap() == Value::Float(0.0)));
+    }
+
+    #[test]
+    fn test_float_log() {
+        assert_eq!(eval_float_method(2.718281828459045, "ln", true).unwrap(), Value::Float(1.0));
+        assert_eq!(eval_float_method(10.0, "log10", true).unwrap(), Value::Float(1.0));
+        assert_eq!(eval_float_method(0.0, "exp", true).unwrap(), Value::Float(1.0));
+    }
+
+    #[test]
+    fn test_float_to_string() {
+        let result = eval_float_method(3.14, "to_string", true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "3.14"),
+            _ => panic!("Expected String"),
+        }
+    }
+
+    #[test]
+    fn test_float_powf_error() {
+        let result = eval_float_method(2.0, "powf", true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Use ** operator"));
+    }
+
+    #[test]
+    fn test_float_with_args_error() {
+        let result = eval_float_method(5.0, "sqrt", false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[test]
+    fn test_float_unknown_method() {
+        let result = eval_float_method(5.0, "unknown", true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown float method"));
+    }
+
+    // =========================================================================
+    // INTEGER METHOD TESTS
+    // =========================================================================
+
+    #[test]
+    fn test_integer_abs() {
+        assert_eq!(eval_integer_method(-42, "abs", &[]).unwrap(), Value::Integer(42));
+        assert_eq!(eval_integer_method(42, "abs", &[]).unwrap(), Value::Integer(42));
+        assert_eq!(eval_integer_method(0, "abs", &[]).unwrap(), Value::Integer(0));
+    }
+
+    #[test]
+    fn test_integer_sqrt() {
+        assert_eq!(eval_integer_method(16, "sqrt", &[]).unwrap(), Value::Float(4.0));
+        assert_eq!(eval_integer_method(0, "sqrt", &[]).unwrap(), Value::Float(0.0));
+    }
+
+    #[test]
+    fn test_integer_to_float() {
+        assert_eq!(eval_integer_method(42, "to_float", &[]).unwrap(), Value::Float(42.0));
+        assert_eq!(eval_integer_method(-5, "to_float", &[]).unwrap(), Value::Float(-5.0));
+    }
+
+    #[test]
+    fn test_integer_to_string() {
         let result = eval_integer_method(123, "to_string", &[]).unwrap();
         assert_eq!(result, Value::from_string("123".to_string()));
     }
 
     #[test]
-    fn test_generic_methods() {
-        let value = Value::Bool(true);
-        let result = eval_generic_method(&value, "to_string", true).unwrap();
-        assert_eq!(result, Value::from_string("true".to_string()));
+    fn test_integer_signum() {
+        assert_eq!(eval_integer_method(42, "signum", &[]).unwrap(), Value::Integer(1));
+        assert_eq!(eval_integer_method(-42, "signum", &[]).unwrap(), Value::Integer(-1));
+        assert_eq!(eval_integer_method(0, "signum", &[]).unwrap(), Value::Integer(0));
     }
+
+    #[test]
+    fn test_integer_pow() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(3)]).unwrap();
+        assert_eq!(result, Value::Integer(8));
+
+        let result = eval_integer_method(5, "pow", &[Value::Integer(0)]).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_integer_pow_negative_exponent_error() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(-1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("non-negative"));
+    }
+
+    #[test]
+    fn test_integer_pow_wrong_type_error() {
+        let result = eval_integer_method(2, "pow", &[Value::Float(3.0)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("integer exponent"));
+    }
+
+    #[test]
+    fn test_integer_pow_wrong_arg_count() {
+        let result = eval_integer_method(2, "pow", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+    }
+
+    #[test]
+    fn test_integer_abs_with_args_error() {
+        let result = eval_integer_method(42, "abs", &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[test]
+    fn test_integer_unknown_method() {
+        let result = eval_integer_method(42, "unknown", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown integer method"));
+    }
+
+    // =========================================================================
+    // DATAFRAME METHOD TESTS
+    // =========================================================================
 
     #[test]
     fn test_dataframe_count() {
@@ -719,8 +854,7 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
-        let result = eval_dataframe_count(&columns, &[]).unwrap();
-        assert_eq!(result, Value::Integer(3));
+        assert_eq!(eval_dataframe_count(&columns, &[]).unwrap(), Value::Integer(3));
     }
 
     #[test]
@@ -729,7 +863,142 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
-        let result = eval_dataframe_sum(&columns, &[]).unwrap();
-        assert_eq!(result, Value::Float(6.0));
+        assert_eq!(eval_dataframe_sum(&columns, &[]).unwrap(), Value::Float(6.0));
+    }
+
+    #[test]
+    fn test_dataframe_sum_mixed_types() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Float(2.5), Value::Integer(3)],
+        }];
+        assert_eq!(eval_dataframe_sum(&columns, &[]).unwrap(), Value::Float(6.5));
+    }
+
+    #[test]
+    fn test_dataframe_mean() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
+        assert_eq!(eval_dataframe_mean(&columns, &[]).unwrap(), Value::Float(2.0));
+    }
+
+    #[test]
+    fn test_dataframe_max() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(5), Value::Integer(3)],
+        }];
+        assert_eq!(eval_dataframe_max(&columns, &[]).unwrap(), Value::Float(5.0));
+    }
+
+    #[test]
+    fn test_dataframe_min() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(5), Value::Integer(1), Value::Integer(3)],
+        }];
+        assert_eq!(eval_dataframe_min(&columns, &[]).unwrap(), Value::Float(1.0));
+    }
+
+    #[test]
+    fn test_dataframe_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+        ];
+        let result = eval_dataframe_columns(&columns, &[]).unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                assert_eq!(arr[0], Value::from_string("a".to_string()));
+                assert_eq!(arr[1], Value::from_string("b".to_string()));
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_dataframe_shape() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(4), Value::Integer(5), Value::Integer(6)],
+            },
+        ];
+        let result = eval_dataframe_shape(&columns, &[]).unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr[0], Value::Integer(3)); // rows
+                assert_eq!(arr[1], Value::Integer(2)); // columns
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    // =========================================================================
+    // GENERIC METHOD TESTS
+    // =========================================================================
+
+    #[test]
+    fn test_generic_to_string_bool() {
+        let value = Value::Bool(true);
+        assert_eq!(eval_generic_method(&value, "to_string", true).unwrap(),
+                   Value::from_string("true".to_string()));
+    }
+
+    #[test]
+    fn test_generic_to_string_nil() {
+        let value = Value::Nil;
+        let result = eval_generic_method(&value, "to_string", true).unwrap();
+        assert_eq!(result, Value::from_string("nil".to_string()));
+    }
+
+    #[test]
+    fn test_generic_unknown_method() {
+        let value = Value::Bool(true);
+        let result = eval_generic_method(&value, "unknown", true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // =========================================================================
+    // DISPATCH TESTS (dispatch_method_call)
+    // =========================================================================
+
+    #[test]
+    fn test_dispatch_turbofish_stripping() {
+        // Test that turbofish syntax is stripped from method names
+        // Example: "parse::<i32>" becomes "parse"
+        let s = Arc::from("42");
+        let value = Value::String(s);
+
+        // Mock closures
+        let mut eval_fn = |_v: &Value, _args: &[Value]| Ok(Value::Integer(0));
+        let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
+        let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
+
+        // This should work because turbofish is stripped
+        let result = dispatch_method_call(
+            &value,
+            "to_string::<String>",  // With turbofish
+            &[],
+            true,
+            &mut eval_fn,
+            eval_df,
+            eval_ctx
+        );
+        assert!(result.is_ok());
     }
 }
