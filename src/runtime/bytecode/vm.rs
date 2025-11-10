@@ -1083,4 +1083,271 @@ mod tests {
 
         assert_eq!(result, Value::Integer(3));
     }
+
+    // ========================================================================
+    // UNIT TESTS: CallFrame operations (Sprint 5 - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_callframe_new_initialization() {
+        // Test CallFrame initialization with default values
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let frame = CallFrame::new(&chunk);
+
+        assert_eq!(frame.pc, 0, "PC should initialize to 0");
+        assert_eq!(frame.base_register, 0, "Base register should initialize to 0");
+    }
+
+    #[test]
+    fn test_callframe_fetch_instruction_valid() {
+        // Test fetching valid instruction at current PC
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let frame = CallFrame::new(&chunk);
+        let instruction = frame.fetch_instruction();
+
+        assert!(instruction.is_some(), "Should fetch instruction at PC 0");
+        assert_eq!(
+            instruction.unwrap().opcode(),
+            OpCode::Const as u8,
+            "First instruction should be Const (load constant)"
+        );
+    }
+
+    #[test]
+    fn test_callframe_fetch_instruction_out_of_bounds() {
+        // Test fetching instruction beyond bytecode end
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut frame = CallFrame::new(&chunk);
+        // Move PC beyond bytecode
+        frame.pc = chunk.instructions.len() + 10;
+        let instruction = frame.fetch_instruction();
+
+        assert!(instruction.is_none(), "Should return None for out-of-bounds PC");
+    }
+
+    #[test]
+    fn test_callframe_advance_pc() {
+        // Test program counter increment
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut frame = CallFrame::new(&chunk);
+        assert_eq!(frame.pc, 0);
+
+        frame.advance_pc();
+        assert_eq!(frame.pc, 1, "PC should increment by 1");
+
+        frame.advance_pc();
+        assert_eq!(frame.pc, 2, "PC should increment again");
+    }
+
+    #[test]
+    fn test_callframe_jump_positive_offset() {
+        // Test jumping forward (positive offset)
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut frame = CallFrame::new(&chunk);
+        frame.pc = 5;
+        frame.jump(10); // Jump forward by 10
+
+        assert_eq!(frame.pc, 15, "PC should jump forward by offset");
+    }
+
+    #[test]
+    fn test_callframe_jump_negative_offset() {
+        // Test jumping backward (negative offset)
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut frame = CallFrame::new(&chunk);
+        frame.pc = 10;
+        frame.jump(-5); // Jump backward by 5
+
+        assert_eq!(frame.pc, 5, "PC should jump backward by offset");
+    }
+
+    #[test]
+    fn test_callframe_jump_zero_offset() {
+        // Test jump with zero offset (no-op)
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler.compile_expr(&expr).unwrap();
+        let chunk = compiler.finalize();
+
+        let mut frame = CallFrame::new(&chunk);
+        frame.pc = 7;
+        frame.jump(0); // Zero offset
+
+        assert_eq!(frame.pc, 7, "PC should remain unchanged with zero offset");
+    }
+
+    // ========================================================================
+    // UNIT TESTS: VM initialization and state (Sprint 5 - OPT-003)
+    // ========================================================================
+
+    #[test]
+    fn test_vm_new_initialization() {
+        // Test VM initialization state
+        let vm = VM::new();
+
+        // Verify registers initialized to Nil
+        for (idx, reg) in vm.registers.iter().enumerate() {
+            assert_eq!(
+                *reg,
+                Value::Nil,
+                "Register {idx} should initialize to Nil"
+            );
+        }
+
+        assert!(vm.call_stack.is_empty(), "Call stack should be empty");
+        assert!(vm.globals.is_empty(), "Globals should be empty");
+    }
+
+    #[test]
+    fn test_vm_register_count() {
+        // Test VM has exactly MAX_REGISTERS (32) registers
+        let vm = VM::new();
+        assert_eq!(
+            vm.registers.len(),
+            MAX_REGISTERS,
+            "VM should have exactly {MAX_REGISTERS} registers"
+        );
+    }
+
+    #[test]
+    fn test_vm_execute_empty_bytecode() {
+        // Test executing empty bytecode chunk
+        let compiler = Compiler::new("test".to_string());
+        let chunk = compiler.finalize(); // Empty bytecode
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk).unwrap();
+
+        // Empty bytecode returns register 0 (Nil by default)
+        assert_eq!(result, Value::Nil, "Empty bytecode should return Nil");
+    }
+
+    #[test]
+    fn test_vm_multiple_sequential_executions() {
+        // Test VM can execute multiple chunks sequentially
+        let mut vm = VM::new();
+
+        // Execute first chunk: 10 + 20
+        let mut compiler1 = Compiler::new("test1".to_string());
+        let left1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
+        let right1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(20, None)),
+            Span::default(),
+        );
+        let expr1 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(left1),
+                right: Box::new(right1),
+            },
+            Span::default(),
+        );
+        compiler1.compile_expr(&expr1).unwrap();
+        let chunk1 = compiler1.finalize();
+
+        let result1 = vm.execute(&chunk1).unwrap();
+        assert_eq!(result1, Value::Integer(30));
+
+        // Execute second chunk: 5 * 6
+        let mut compiler2 = Compiler::new("test2".to_string());
+        let left2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let right2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(6, None)),
+            Span::default(),
+        );
+        let expr2 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Multiply,
+                left: Box::new(left2),
+                right: Box::new(right2),
+            },
+            Span::default(),
+        );
+        compiler2.compile_expr(&expr2).unwrap();
+        let chunk2 = compiler2.finalize();
+
+        let result2 = vm.execute(&chunk2).unwrap();
+        assert_eq!(result2, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_vm_register_isolation_between_executions() {
+        // Test that register state is isolated between executions
+        let mut vm = VM::new();
+
+        // Execute first chunk: loads 42 into register 0
+        let mut compiler1 = Compiler::new("test1".to_string());
+        let expr1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        compiler1.compile_expr(&expr1).unwrap();
+        let chunk1 = compiler1.finalize();
+
+        let result1 = vm.execute(&chunk1).unwrap();
+        assert_eq!(result1, Value::Integer(42));
+
+        // Execute second chunk: loads 100 into register 0
+        let mut compiler2 = Compiler::new("test2".to_string());
+        let expr2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        compiler2.compile_expr(&expr2).unwrap();
+        let chunk2 = compiler2.finalize();
+
+        let result2 = vm.execute(&chunk2).unwrap();
+        assert_eq!(result2, Value::Integer(100), "Second execution should overwrite register 0");
+    }
 }
