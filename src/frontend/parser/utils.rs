@@ -707,19 +707,27 @@ mod mutation_tests {
     fn test_parse_rust_attribute_arguments_not_stub() {
         // MISSED: replace parse_rust_attribute_arguments -> Result<Vec<String>> with Ok(vec![String::new()])
 
-        // This function is difficult to test in isolation due to ParserState complexity
-        // Instead, test via Parser which exercises the function through actual parsing
+        // Negative test: Verify that Rust-style attributes are rejected
+        // Ruchy uses @decorator syntax, not #[derive]
         use crate::Parser;
 
-        // Test parsing Rust attribute with arguments
         let mut parser = Parser::new("#[derive(Debug, Clone)] struct Foo {}");
         let result = parser.parse();
 
-        // The function should parse multiple arguments from derive(Debug, Clone)
-        // If it were stubbed with Ok(vec![String::new()]), the parsing would be incorrect
+        // Rust-style attributes should be rejected with helpful error
         assert!(
-            result.is_ok(),
-            "Should parse Rust attribute with multiple arguments"
+            result.is_err(),
+            "Should reject Rust-style #[derive] attributes"
         );
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("Attributes are not supported") ||
+                error_msg.contains("does not use Rust-style attributes"),
+                "Error should explain that #[derive] is not supported. Got: {}",
+                error_msg
+            );
+        }
     }
 }

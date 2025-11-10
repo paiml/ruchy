@@ -522,53 +522,59 @@ mod tests {
 
     #[test]
     fn test_derive_attribute_processing_for_class() {
-        // Test gap: verify derive attributes extracted for Class (line 60 match arm)
-        // Pattern: #[derive(Debug, Clone)] class Foo {}
+        // Negative test: Verify helpful error for Rust-style attributes
+        // Ruchy uses @decorator syntax, not #[derive]
         let mut parser = Parser::new("#[derive(Debug, Clone)]\nclass Foo {}");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse class with derive attributes");
 
-        if let Ok(expr) = result {
-            if let ExprKind::Class { derives, .. } = expr.kind {
-                assert_eq!(derives.len(), 2, "Should extract 2 derives: Debug, Clone");
-            } else {
-                panic!("Expected Class expression");
-            }
+        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("Attributes are not supported") ||
+                error_msg.contains("does not use Rust-style attributes"),
+                "Error should explain that #[derive] is not supported. Got: {}",
+                error_msg
+            );
         }
     }
 
     #[test]
     fn test_derive_attribute_processing_for_struct() {
-        // Test gap: verify derive attributes extracted for Struct (line 60 match arm)
+        // Negative test: Verify helpful error for Rust-style attributes on struct
         let mut parser = Parser::new("#[derive(Debug)]\nstruct Point { x: i32, y: i32 }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse struct with derive attribute");
 
-        if let Ok(expr) = result {
-            if let ExprKind::Struct { derives, .. } = expr.kind {
-                assert_eq!(derives.len(), 1, "Should extract 1 derive: Debug");
-            } else {
-                panic!("Expected Struct expression");
-            }
+        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("Attributes are not supported") ||
+                error_msg.contains("does not use Rust-style attributes"),
+                "Error should explain that #[derive] is not supported. Got: {}",
+                error_msg
+            );
         }
     }
 
     #[test]
     fn test_derive_attribute_processing_for_tuple_struct() {
-        // Test gap: verify derive attributes extracted for TupleStruct (line 60 match arm)
+        // Negative test: Verify helpful error for Rust-style attributes on tuple struct
         let mut parser = Parser::new("#[derive(Clone)]\nstruct Wrapper(i32)");
         let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Should parse tuple struct with derive attribute"
-        );
 
-        if let Ok(expr) = result {
-            if let ExprKind::TupleStruct { derives, .. } = expr.kind {
-                assert_eq!(derives.len(), 1, "Should extract 1 derive: Clone");
-            } else {
-                panic!("Expected TupleStruct expression");
-            }
+        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("Attributes are not supported") ||
+                error_msg.contains("does not use Rust-style attributes"),
+                "Error should explain that #[derive] is not supported. Got: {}",
+                error_msg
+            );
         }
     }
 }
