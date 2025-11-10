@@ -246,9 +246,25 @@ mod tests {
     }
     #[test]
     fn test_compile_impl() {
+        // Negative test: impl blocks are not supported in Ruchy
+        // Methods should be defined inside struct bodies
         let result =
-            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }").unwrap();
-        assert!(result.contains("impl"));
+            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }");
+
+        assert!(
+            result.is_err(),
+            "Should reject impl blocks (methods go inside struct body)"
+        );
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("impl blocks are not supported") ||
+                error_msg.contains("methods should be defined inside the struct body"),
+                "Error should explain that impl blocks aren't supported. Got: {}",
+                error_msg
+            );
+        }
     }
     #[test]
     fn test_compile_trait() {
@@ -944,10 +960,25 @@ mod tests {
 
     #[test]
     fn test_compile_traits() {
+        // Trait declarations are supported
         assert!(compile("trait Show { fun show(self) -> String }").is_ok());
+
+        // But impl blocks are not supported (methods go in struct bodies)
+        let result = compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }");
         assert!(
-            compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }").is_ok()
+            result.is_err(),
+            "Should reject impl blocks (not supported in Ruchy)"
         );
+
+        if let Err(e) = result {
+            let error_msg = format!("{:?}", e);
+            assert!(
+                error_msg.contains("impl blocks are not supported") ||
+                error_msg.contains("methods should be defined inside the struct body"),
+                "Error should explain impl blocks aren't supported. Got: {}",
+                error_msg
+            );
+        }
     }
 
     #[test]
