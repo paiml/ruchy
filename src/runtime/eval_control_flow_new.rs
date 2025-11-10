@@ -711,4 +711,422 @@ mod tests {
         assert!(pattern_matches_simple(&literal_pattern, &Value::Integer(42)).unwrap());
         assert!(!pattern_matches_simple(&literal_pattern, &Value::Integer(43)).unwrap());
     }
+
+    // ===== TUPLE EXPRESSION TESTS =====
+
+    #[test]
+    fn test_eval_tuple_expr_basic() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            Ok(Value::Integer(call_count))
+        };
+
+        let elements = vec![
+            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1)),
+            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(2, None)), Span::new(2, 3)),
+        ];
+
+        let result = eval_tuple_expr(&elements, eval_expr).unwrap();
+        if let Value::Tuple(tuple) = result {
+            assert_eq!(tuple.len(), 2);
+            assert_eq!(tuple[0], Value::Integer(1));
+            assert_eq!(tuple[1], Value::Integer(2));
+        } else {
+            panic!("Expected tuple result");
+        }
+    }
+
+    #[test]
+    fn test_eval_tuple_expr_empty() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+        let result = eval_tuple_expr(&[], eval_expr).unwrap();
+        if let Value::Tuple(tuple) = result {
+            assert_eq!(tuple.len(), 0);
+        } else {
+            panic!("Expected empty tuple");
+        }
+    }
+
+    // ===== RANGE EXPRESSION TESTS =====
+
+    #[test]
+    fn test_eval_range_expr_inclusive() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(1)),  // start
+                2 => Ok(Value::Integer(10)), // end
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let start = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let end = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(10, None)), Span::new(2, 3));
+
+        let result = eval_range_expr(&start, &end, true, eval_expr).unwrap();
+        if let Value::Range { start: s, end: e, inclusive } = result {
+            assert_eq!(*s, Value::Integer(1));
+            assert_eq!(*e, Value::Integer(10));
+            assert!(inclusive);
+        } else {
+            panic!("Expected range");
+        }
+    }
+
+    #[test]
+    fn test_eval_range_expr_exclusive() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(0)),
+                2 => Ok(Value::Integer(5)),
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let start = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)), Span::new(0, 1));
+        let end = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(5, None)), Span::new(2, 3));
+
+        let result = eval_range_expr(&start, &end, false, eval_expr).unwrap();
+        if let Value::Range { inclusive, .. } = result {
+            assert!(!inclusive);
+        } else {
+            panic!("Expected range");
+        }
+    }
+
+    // ===== LOOP CONDITION TESTS =====
+
+    #[test]
+    fn test_eval_loop_condition_true() {
+        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)), Span::new(0, 4));
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Bool(true))
+        };
+        let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn test_eval_loop_condition_false() {
+        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Bool(false))
+        };
+        let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
+        assert!(!result);
+    }
+
+    // ===== PATTERN MATCHING HELPERS TESTS =====
+
+    #[test]
+    fn test_match_wildcard_pattern() {
+        assert!(match_wildcard_pattern(&Value::Integer(42)));
+        assert!(match_wildcard_pattern(&Value::Bool(true)));
+        assert!(match_wildcard_pattern(&Value::Nil));
+    }
+
+    #[test]
+    fn test_match_literal_pattern_integer() {
+        let lit = Literal::Integer(42, None);
+        assert!(match_literal_pattern(&lit, &Value::Integer(42)).unwrap());
+        assert!(!match_literal_pattern(&lit, &Value::Integer(43)).unwrap());
+    }
+
+    #[test]
+    fn test_match_literal_pattern_bool() {
+        let lit_true = Literal::Bool(true);
+        assert!(match_literal_pattern(&lit_true, &Value::Bool(true)).unwrap());
+        assert!(!match_literal_pattern(&lit_true, &Value::Bool(false)).unwrap());
+    }
+
+    #[test]
+    fn test_match_literal_pattern_string() {
+        let lit = Literal::String("hello".to_string());
+        assert!(match_literal_pattern(&lit, &Value::String(Arc::from("hello"))).unwrap());
+        assert!(!match_literal_pattern(&lit, &Value::String(Arc::from("world"))).unwrap());
+    }
+
+    #[test]
+    fn test_match_identifier_pattern() {
+        assert!(match_identifier_pattern("x", &Value::Integer(42)));
+        assert!(match_identifier_pattern("foo", &Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_match_list_pattern_basic() {
+        let patterns = vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ];
+        let arr = Arc::from([Value::Integer(1), Value::Integer(2)]);
+        assert!(match_list_pattern(&patterns, &Value::Array(arr)).unwrap());
+    }
+
+    #[test]
+    fn test_match_list_pattern_length_mismatch() {
+        let patterns = vec![Pattern::Literal(Literal::Integer(1, None))];
+        let arr = Arc::from([Value::Integer(1), Value::Integer(2)]);
+        assert!(!match_list_pattern(&patterns, &Value::Array(arr)).unwrap());
+    }
+
+    #[test]
+    fn test_match_tuple_pattern_basic() {
+        let patterns = vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Wildcard,
+        ];
+        let tuple = Arc::from([Value::Integer(1), Value::Integer(2)]);
+        assert!(match_tuple_pattern(&patterns, &Value::Tuple(tuple)).unwrap());
+    }
+
+    #[test]
+    fn test_match_tuple_pattern_length_mismatch() {
+        let patterns = vec![Pattern::Wildcard];
+        let tuple = Arc::from([Value::Integer(1), Value::Integer(2)]);
+        assert!(!match_tuple_pattern(&patterns, &Value::Tuple(tuple)).unwrap());
+    }
+
+    // ===== RANGE HELPERS TESTS =====
+
+    #[test]
+    fn test_extract_range_bounds_inclusive() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: true,
+        };
+        let (start, end, inclusive) = extract_range_bounds(&range).unwrap();
+        assert_eq!(start, 1);
+        assert_eq!(end, 10);
+        assert!(inclusive);
+    }
+
+    #[test]
+    fn test_extract_range_bounds_exclusive() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(5)),
+            inclusive: false,
+        };
+        let (start, end, inclusive) = extract_range_bounds(&range).unwrap();
+        assert_eq!(start, 0);
+        assert_eq!(end, 5);
+        assert!(!inclusive);
+    }
+
+    #[test]
+    fn test_extract_range_bounds_non_range() {
+        let result = extract_range_bounds(&Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_range_iterator_inclusive() {
+        let iter = create_range_iterator(1, 3, true);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_create_range_iterator_exclusive() {
+        let iter = create_range_iterator(1, 3, false);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, vec![1, 2]);
+    }
+
+    #[test]
+    fn test_create_range_iterator_empty_when_start_gt_end() {
+        // Rust ranges are empty when start > end (no reverse iteration)
+        let iter = create_range_iterator(5, 3, false);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, Vec::<i64>::new()); // Empty range
+    }
+
+    // ===== IF EXPRESSION EDGE CASES =====
+
+    #[test]
+    fn test_eval_if_expr_false_no_else() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            if call_count == 1 {
+                Ok(Value::Bool(false)) // condition is false
+            } else {
+                panic!("Should not evaluate then branch");
+            }
+        };
+
+        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
+        let then_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(6, 8));
+
+        let result = eval_if_expr(&condition, &then_branch, None, eval_expr).unwrap();
+        assert_eq!(result, Value::Nil); // No else branch, returns Nil
+    }
+
+    #[test]
+    fn test_eval_if_expr_with_else() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Bool(false)), // condition is false
+                2 => Ok(Value::Integer(99)),  // else branch
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
+        let then_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(6, 8));
+        let else_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(99, None)), Span::new(14, 16));
+
+        let result = eval_if_expr(&condition, &then_branch, Some(&else_branch), eval_expr).unwrap();
+        assert_eq!(result, Value::Integer(99));
+    }
+
+    // ===== BLOCK EXPRESSION EDGE CASES =====
+
+    #[test]
+    fn test_eval_block_expr_empty() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+        let result = eval_block_expr(&[], eval_expr).unwrap();
+        assert_eq!(result, Value::Nil); // Empty block returns Nil
+    }
+
+    #[test]
+    fn test_eval_block_expr_single_statement() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+        let statements = vec![
+            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2)),
+        ];
+        let result = eval_block_expr(&statements, eval_expr).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // ===== LIST EXPRESSION EDGE CASES =====
+
+    #[test]
+    fn test_eval_list_expr_empty() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+        let result = eval_list_expr(&[], eval_expr).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 0);
+        } else {
+            panic!("Expected empty array");
+        }
+    }
+
+    // ===== ARRAY INIT EXPRESSION TESTS =====
+
+    #[test]
+    fn test_eval_array_init_expr_basic() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(42)),  // element
+                2 => Ok(Value::Integer(3)),    // size
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(3, None)), Span::new(4, 5));
+
+        let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[0], Value::Integer(42));
+            assert_eq!(arr[1], Value::Integer(42));
+            assert_eq!(arr[2], Value::Integer(42));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_init_expr_zero_size() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(42)),
+                2 => Ok(Value::Integer(0)),
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)), Span::new(4, 5));
+
+        let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 0);
+        } else {
+            panic!("Expected empty array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_init_expr_invalid_size() {
+        let mut call_count = 0;
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(42)),
+                2 => Ok(Value::Bool(true)), // Invalid size type
+                _ => panic!("Unexpected call"),
+            }
+        };
+
+        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)), Span::new(4, 8));
+
+        let result = eval_array_init_expr(&element, &size, eval_expr);
+        assert!(result.is_err());
+    }
+
+    // ===== RETURN EXPRESSION TESTS =====
+
+    #[test]
+    fn test_eval_return_expr() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+
+        let value = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let result = eval_return_expr(Some(&value), eval_expr);
+        assert!(result.is_err()); // Return creates an error with value
+        if let Err(InterpreterError::Return(val)) = result {
+            assert_eq!(val, Value::Integer(42));
+        } else {
+            panic!("Expected return error");
+        }
+    }
+
+    #[test]
+    fn test_eval_return_expr_no_value() {
+        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+
+        let result = eval_return_expr(None, eval_expr);
+        assert!(result.is_err());
+        if let Err(InterpreterError::Return(val)) = result {
+            assert_eq!(val, Value::Nil);
+        } else {
+            panic!("Expected return error with nil");
+        }
+    }
 }
