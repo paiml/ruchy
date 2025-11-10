@@ -9427,4 +9427,168 @@ next_sprint:
       - Handle binary operations (+, -, *, /)
       - Handle method calls (.len(), .to_string(), etc.)
       - Update test to GREEN
+
+  # VM COVERAGE BACKLOG (Sprint 5 Extended Remaining Work)
+  # CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage (64.99% → 81.09%, +16.10pp)
+  # REMAINING: 8.91% gap to 90% target requires full Ruchy language integration tests
+  # These tickets document future work for complex opcodes requiring integration test infrastructure
+
+  - id: VM-001
+    title: "VM Coverage: Test OpCode::Call (Function Invocation)"
+    status: pending
+    priority: medium
+    category: vm_coverage
+    severity: MEDIUM
+    description: |
+      Add integration tests for OpCode::Call (function invocation with closures).
+
+      CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage, but OpCode::Call
+      (lines 441-518, ~77 lines) remains untested. This opcode handles:
+      - Function calls with parameters
+      - Closure environment capture
+      - Return value handling
+
+      REQUIREMENT: Full Ruchy language constructs (not hand-crafted AST expressions).
+      Current unit test pattern (Compiler → build expression → compile → execute)
+      cannot test this opcode - needs real Ruchy functions with bodies.
+
+    file: src/runtime/bytecode/vm.rs
+    lines: "441-518 (~77 lines)"
+    found_by: Sprint 5 Extended coverage analysis
+    test_file: tests/vm_opcode_call.rs (future)
+    dependencies: []
+    blocked_by: []
+    tasks:
+      - Write Ruchy code with function definitions and calls
+      - Parse and compile to bytecode
+      - Execute and verify return values
+      - Test closure environment capture
+      - Test parameter passing
+
+  - id: VM-002
+    title: "VM Coverage: Test OpCode::For (Loop Iteration)"
+    status: pending
+    priority: medium
+    category: vm_coverage
+    severity: MEDIUM
+    description: |
+      Add integration tests for OpCode::For (loop iteration).
+
+      CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage, but OpCode::For
+      (lines 520-620, ~100 lines) remains untested. This opcode handles:
+      - For-loop initialization
+      - Iterator advancement
+      - Loop body execution
+      - Break/continue control flow
+
+      REQUIREMENT: Full Ruchy for-loop AST constructs.
+      Current unit test pattern cannot test this opcode.
+
+    file: src/runtime/bytecode/vm.rs
+    lines: "520-620 (~100 lines)"
+    found_by: Sprint 5 Extended coverage analysis
+    test_file: tests/vm_opcode_for.rs (future)
+    dependencies: []
+    blocked_by: []
+    tasks:
+      - Write Ruchy code with for-loops
+      - Parse and compile to bytecode
+      - Execute and verify iteration count
+      - Test break/continue behavior
+      - Test nested loops
+
+  - id: VM-003
+    title: "VM Coverage: Test OpCode::MethodCall (Method Dispatch)"
+    status: pending
+    priority: medium
+    category: vm_coverage
+    severity: MEDIUM
+    description: |
+      Add integration tests for OpCode::MethodCall (method dispatch).
+
+      CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage, but OpCode::MethodCall
+      (lines 622-668, ~46 lines) remains untested. This opcode handles:
+      - Method lookup by name
+      - Self parameter handling
+      - Method invocation
+      - Return value handling
+
+      REQUIREMENT: Full Ruchy method call expressions.
+      Current unit test pattern cannot test this opcode.
+
+    file: src/runtime/bytecode/vm.rs
+    lines: "622-668 (~46 lines)"
+    found_by: Sprint 5 Extended coverage analysis
+    test_file: tests/vm_opcode_method_call.rs (future)
+    dependencies: []
+    blocked_by: []
+    tasks:
+      - Write Ruchy code with structs and methods
+      - Parse and compile to bytecode
+      - Execute method calls
+      - Test self parameter binding
+      - Test chained method calls
+
+  - id: VM-004
+    title: "VM Coverage: Test OpCode::Match (Pattern Matching)"
+    status: pending
+    priority: medium
+    category: vm_coverage
+    severity: MEDIUM
+    description: |
+      Add integration tests for OpCode::Match (pattern matching).
+
+      CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage, but OpCode::Match
+      (lines 670-713, ~43 lines) remains untested. This opcode handles:
+      - Pattern evaluation
+      - Arm selection
+      - Variable binding in patterns
+      - Guard clause evaluation
+
+      REQUIREMENT: Full Ruchy match expressions with patterns.
+      Current unit test pattern cannot test this opcode.
+
+    file: src/runtime/bytecode/vm.rs
+    lines: "670-713 (~43 lines)"
+    found_by: Sprint 5 Extended coverage analysis
+    test_file: tests/vm_opcode_match.rs (future)
+    dependencies: []
+    blocked_by: []
+    tasks:
+      - Write Ruchy code with match expressions
+      - Parse and compile to bytecode
+      - Execute and verify arm selection
+      - Test pattern binding
+      - Test guard clauses
+
+  - id: VM-005
+    title: "VM Coverage: Test OpCode::NewClosure (Closure Creation)"
+    status: pending
+    priority: medium
+    category: vm_coverage
+    severity: MEDIUM
+    description: |
+      Add integration tests for OpCode::NewClosure (closure creation).
+
+      CONTEXT: Sprint 5 Extended achieved 81.09% vm.rs coverage, but OpCode::NewClosure
+      (lines 715+) remains untested. This opcode handles:
+      - Closure allocation
+      - Environment capture
+      - Upvalue binding
+
+      REQUIREMENT: Full Ruchy lambda/closure AST constructs.
+      Current unit test pattern cannot test this opcode.
+
+    file: src/runtime/bytecode/vm.rs
+    lines: "715+ (unknown size)"
+    found_by: Sprint 5 Extended coverage analysis
+    test_file: tests/vm_opcode_new_closure.rs (future)
+    dependencies: []
+    blocked_by: []
+    tasks:
+      - Write Ruchy code with closures
+      - Parse and compile to bytecode
+      - Execute closures
+      - Test environment capture
+      - Test nested closures
       - Add property tests for expression inference
