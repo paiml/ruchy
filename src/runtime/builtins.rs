@@ -2552,6 +2552,149 @@ mod tests {
         assert!(builtin_pop(&[]).is_err());
         assert!(builtin_pop(&[Value::Integer(42)]).is_err());
     }
+
+    // EXTREME TDD Sprint 2: Path functions
+    #[test]
+    fn test_builtin_path_join() {
+        let result = builtin_path_join(&[Value::from_string("/home".to_string()), Value::from_string("user".to_string())]).unwrap();
+        assert!(matches!(result, Value::String(_)));
+        if let Value::String(s) = result {
+            assert!(s.as_ref().contains("home") && s.as_ref().contains("user"));
+        }
+    }
+
+    #[test]
+    fn test_builtin_path_join_wrong_args() {
+        assert!(builtin_path_join(&[]).is_err());
+        assert!(builtin_path_join(&[Value::from_string("a".to_string())]).is_err());
+        assert!(builtin_path_join(&[Value::Integer(42), Value::from_string("b".to_string())]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_path_join_many() {
+        let components = vec![Value::from_string("home".to_string()), Value::from_string("user".to_string()), Value::from_string("docs".to_string())];
+        let result = builtin_path_join_many(&[Value::Array(components.into())]).unwrap();
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_builtin_path_join_many_wrong_args() {
+        assert!(builtin_path_join_many(&[]).is_err());
+        assert!(builtin_path_join_many(&[Value::Integer(42)]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_path_parent() {
+        let result = builtin_path_parent(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_builtin_path_parent_root() {
+        let result = builtin_path_parent(&[Value::from_string("/".to_string())]).unwrap();
+        // Root has no parent
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_path_file_name() {
+        let result = builtin_path_file_name(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("file.txt".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_path_file_name_no_file() {
+        let result = builtin_path_file_name(&[Value::from_string("/".to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_path_file_stem() {
+        let result = builtin_path_file_stem(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("file".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_path_extension() {
+        let result = builtin_path_extension(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("txt".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_path_extension_no_ext() {
+        let result = builtin_path_extension(&[Value::from_string("/home/user/file".to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_path_is_absolute() {
+        let result = builtin_path_is_absolute(&[Value::from_string("/home/user".to_string())]).unwrap();
+        assert_eq!(result, Value::Bool(true));
+        let result2 = builtin_path_is_absolute(&[Value::from_string("relative/path".to_string())]).unwrap();
+        assert_eq!(result2, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_builtin_path_is_relative() {
+        let result = builtin_path_is_relative(&[Value::from_string("relative/path".to_string())]).unwrap();
+        assert_eq!(result, Value::Bool(true));
+        let result2 = builtin_path_is_relative(&[Value::from_string("/absolute".to_string())]).unwrap();
+        assert_eq!(result2, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_builtin_path_canonicalize() {
+        // Create a temp file for testing canonicalize
+        use std::fs;
+        let temp_file = "/tmp/ruchy_test_canonicalize.txt";
+        fs::write(temp_file, "test").unwrap();
+        let result = builtin_path_canonicalize(&[Value::from_string(temp_file.to_string())]);
+        fs::remove_file(temp_file).ok();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_builtin_path_canonicalize_nonexistent() {
+        let result = builtin_path_canonicalize(&[Value::from_string("/nonexistent/path/file.txt".to_string())]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_builtin_path_with_extension() {
+        let result = builtin_path_with_extension(&[Value::from_string("/home/user/file.txt".to_string()), Value::from_string("rs".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("/home/user/file.rs".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_path_with_file_name() {
+        let result = builtin_path_with_file_name(&[Value::from_string("/home/user/file.txt".to_string()), Value::from_string("newfile.rs".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("/home/user/newfile.rs".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_path_components() {
+        let result = builtin_path_components(&[Value::from_string("/home/user/docs".to_string())]).unwrap();
+        assert!(matches!(result, Value::Array(_)));
+        if let Value::Array(arr) = result {
+            assert!(arr.len() >= 3);
+        }
+    }
+
+    #[test]
+    fn test_builtin_path_normalize() {
+        let result = builtin_path_normalize(&[Value::from_string("/home/./user/../docs".to_string())]).unwrap();
+        assert!(matches!(result, Value::String(_)));
+        if let Value::String(s) = result {
+            // Should resolve . and ..
+            assert!(!s.as_ref().contains("./"));
+        }
+    }
+
+    #[test]
+    fn test_builtin_path_normalize_with_dots() {
+        let result = builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("/a/c/d".to_string()));
+    }
 }
 
 #[cfg(test)]
