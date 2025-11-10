@@ -2695,6 +2695,238 @@ mod tests {
         let result = builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())]).unwrap();
         assert_eq!(result, Value::from_string("/a/c/d".to_string()));
     }
+
+    // ============================================================================
+    // EXTREME TDD Sprint 3: JSON functions (10 functions, 28 tests)
+    // ============================================================================
+
+    // json_parse tests (3 tests)
+    #[test]
+    fn test_builtin_json_parse() {
+        let json_str = r#"{"name": "test", "value": 42}"#;
+        let result = builtin_json_parse(&[Value::from_string(json_str.to_string())]).unwrap();
+        assert!(matches!(result, Value::Object(_)));
+    }
+
+    #[test]
+    fn test_builtin_json_parse_invalid_json() {
+        let invalid_json = "{invalid json}";
+        assert!(builtin_json_parse(&[Value::from_string(invalid_json.to_string())]).is_err());
+    }
+
+    #[test]
+    fn test_builtin_json_parse_wrong_args() {
+        assert!(builtin_json_parse(&[]).is_err());
+        assert!(builtin_json_parse(&[Value::Integer(42)]).is_err());
+    }
+
+    // json_stringify tests (2 tests)
+    #[test]
+    fn test_builtin_json_stringify() {
+        let obj = Value::Object(Arc::new(
+            [("key".to_string(), Value::from_string("value".to_string()))]
+                .iter().cloned().collect()
+        ));
+        let result = builtin_json_stringify(&[obj]).unwrap();
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_builtin_json_stringify_wrong_args() {
+        assert!(builtin_json_stringify(&[]).is_err());
+    }
+
+    // json_pretty tests (2 tests)
+    #[test]
+    fn test_builtin_json_pretty() {
+        let obj = Value::Object(Arc::new(
+            [("key".to_string(), Value::Integer(42))]
+                .iter().cloned().collect()
+        ));
+        let result = builtin_json_pretty(&[obj]).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('\n')); // Pretty-printed should have newlines
+        } else {
+            panic!("Expected String result");
+        }
+    }
+
+    #[test]
+    fn test_builtin_json_pretty_wrong_args() {
+        assert!(builtin_json_pretty(&[]).is_err());
+    }
+
+    // json_read tests (2 tests)
+    #[test]
+    fn test_builtin_json_read() {
+        use std::io::Write;
+        let temp_path = "/tmp/test_json_read.json";
+        let mut file = std::fs::File::create(temp_path).unwrap();
+        write!(file, r#"{{"test": true}}"#).unwrap();
+        drop(file);
+
+        let result = builtin_json_read(&[Value::from_string(temp_path.to_string())]).unwrap();
+        assert!(matches!(result, Value::Object(_)));
+
+        std::fs::remove_file(temp_path).unwrap();
+    }
+
+    #[test]
+    fn test_builtin_json_read_file_not_found() {
+        assert!(builtin_json_read(&[Value::from_string("/nonexistent/file.json".to_string())]).is_err());
+    }
+
+    // json_write tests (2 tests)
+    #[test]
+    fn test_builtin_json_write() {
+        let temp_path = "/tmp/test_json_write.json";
+        let obj = Value::Object(Arc::new(
+            [("test".to_string(), Value::Bool(true))]
+                .iter().cloned().collect()
+        ));
+
+        let result = builtin_json_write(&[Value::from_string(temp_path.to_string()), obj]).unwrap();
+        assert_eq!(result, Value::Bool(true));
+        assert!(std::path::Path::new(temp_path).exists());
+
+        std::fs::remove_file(temp_path).unwrap();
+    }
+
+    #[test]
+    fn test_builtin_json_write_wrong_args() {
+        assert!(builtin_json_write(&[]).is_err());
+        assert!(builtin_json_write(&[Value::Integer(42), Value::Bool(true)]).is_err());
+    }
+
+    // json_validate tests (3 tests)
+    #[test]
+    fn test_builtin_json_validate_valid() {
+        let valid_json = r#"{"key": "value"}"#;
+        let result = builtin_json_validate(&[Value::from_string(valid_json.to_string())]).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_builtin_json_validate_invalid() {
+        let invalid_json = "{invalid}";
+        let result = builtin_json_validate(&[Value::from_string(invalid_json.to_string())]).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_builtin_json_validate_wrong_args() {
+        assert!(builtin_json_validate(&[]).is_err());
+        assert!(builtin_json_validate(&[Value::Integer(42)]).is_err());
+    }
+
+    // json_type tests (7 types: null, boolean, number, string, array, object, + error)
+    #[test]
+    fn test_builtin_json_type_null() {
+        let result = builtin_json_type(&[Value::from_string("null".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("null".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_boolean() {
+        let result = builtin_json_type(&[Value::from_string("true".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("boolean".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_number() {
+        let result = builtin_json_type(&[Value::from_string("42".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("number".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_string() {
+        let result = builtin_json_type(&[Value::from_string(r#""test""#.to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("string".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_array() {
+        let result = builtin_json_type(&[Value::from_string("[1,2,3]".to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("array".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_object() {
+        let result = builtin_json_type(&[Value::from_string(r#"{"key":"value"}"#.to_string())]).unwrap();
+        assert_eq!(result, Value::from_string("object".to_string()));
+    }
+
+    #[test]
+    fn test_builtin_json_type_wrong_args() {
+        assert!(builtin_json_type(&[]).is_err());
+        assert!(builtin_json_type(&[Value::Integer(42)]).is_err());
+    }
+
+    // json_merge tests (2 tests)
+    #[test]
+    fn test_builtin_json_merge() {
+        let obj1 = Value::Object(Arc::new(
+            [("a".to_string(), Value::Integer(1))]
+                .iter().cloned().collect()
+        ));
+        let obj2 = Value::Object(Arc::new(
+            [("b".to_string(), Value::Integer(2))]
+                .iter().cloned().collect()
+        ));
+
+        let result = builtin_json_merge(&[obj1, obj2]).unwrap();
+        assert!(matches!(result, Value::Object(_)));
+    }
+
+    #[test]
+    fn test_builtin_json_merge_wrong_args() {
+        assert!(builtin_json_merge(&[]).is_err());
+        assert!(builtin_json_merge(&[Value::Integer(42)]).is_err());
+    }
+
+    // json_get tests (3 tests)
+    #[test]
+    fn test_builtin_json_get() {
+        let obj = Value::Object(Arc::new(
+            [("key".to_string(), Value::Integer(42))]
+                .iter().cloned().collect()
+        ));
+        let result = builtin_json_get(&[obj, Value::from_string("key".to_string())]).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_builtin_json_get_not_found() {
+        let obj = Value::Object(Arc::new(
+            [("key".to_string(), Value::Integer(42))]
+                .iter().cloned().collect()
+        ));
+        let result = builtin_json_get(&[obj, Value::from_string("nonexistent".to_string())]).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_builtin_json_get_wrong_args() {
+        assert!(builtin_json_get(&[]).is_err());
+        assert!(builtin_json_get(&[Value::Integer(42), Value::Integer(42)]).is_err());
+    }
+
+    // json_set tests (2 tests)
+    #[test]
+    fn test_builtin_json_set() {
+        let obj = Value::Object(Arc::new(
+            [("key".to_string(), Value::Integer(42))]
+                .iter().cloned().collect()
+        ));
+        let result = builtin_json_set(&[obj, Value::from_string("key".to_string()), Value::Integer(100)]).unwrap();
+        assert!(matches!(result, Value::Object(_)));
+    }
+
+    #[test]
+    fn test_builtin_json_set_wrong_args() {
+        assert!(builtin_json_set(&[]).is_err());
+        assert!(builtin_json_set(&[Value::Integer(42), Value::Integer(42), Value::Integer(42)]).is_err());
+    }
 }
 
 #[cfg(test)]
