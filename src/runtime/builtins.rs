@@ -1797,10 +1797,62 @@ mod tests {
         assert_eq!(result, Value::Float(3.0));
     }
 
+    // EXTREME TDD Sprint 4 TIER 2: sqrt() edge cases
+    #[test]
+    fn test_builtin_sqrt_negative() {
+        let result = builtin_sqrt(&[Value::Integer(-1)]).unwrap();
+        assert!(matches!(result, Value::Float(x) if x.is_nan()));
+    }
+
+    #[test]
+    fn test_builtin_sqrt_zero() {
+        let result = builtin_sqrt(&[Value::Integer(0)]).unwrap();
+        assert_eq!(result, Value::Float(0.0));
+    }
+
+    #[test]
+    fn test_builtin_sqrt_float() {
+        let result = builtin_sqrt(&[Value::Float(16.0)]).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_builtin_sqrt_wrong_type() {
+        let result = builtin_sqrt(&[Value::from_string("not a number".to_string())]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("sqrt() expects a number"));
+    }
+
     #[test]
     fn test_builtin_abs() {
         let result = builtin_abs(&[Value::Integer(-42)]).unwrap();
         assert_eq!(result, Value::Integer(42));
+    }
+
+    // EXTREME TDD Sprint 4 TIER 2: abs() edge cases
+    #[test]
+    fn test_builtin_abs_negative_float() {
+        let result = builtin_abs(&[Value::Float(-3.14)]).unwrap();
+        assert_eq!(result, Value::Float(3.14));
+    }
+
+    #[test]
+    fn test_builtin_abs_zero() {
+        let result = builtin_abs(&[Value::Integer(0)]).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_builtin_abs_positive() {
+        let result = builtin_abs(&[Value::Integer(42)]).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_builtin_abs_wrong_type() {
+        let result = builtin_abs(&[Value::from_string("not a number".to_string())]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("abs() expects a number"));
     }
 
     #[test]
