@@ -4,6 +4,15 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[QUALITY-STDLIB-TIME]** Add unit tests to stdlib/time.rs (0% → 100% coverage)
+  - **PROBLEM**: Module showed 0% coverage despite integration tests existing
+  - **ROOT CAUSE**: Integration tests in tests/ don't count toward --lib coverage
+  - **SOLUTION**: Added 13 comprehensive unit tests inside src/stdlib/time.rs
+  - **COVERAGE**: 131 lines, all 6 functions fully tested
+  - **TESTS**: test_now_positive, test_elapsed_millis_basic, test_sleep_millis, test_duration_secs_conversion, test_format_duration_*, test_parse_duration_*, test_format_parse_roundtrip
+  - **QUALITY**: 4252 tests passing (+13), 0 failed, 2.09s (<5min requirement)
+
 ### Fixed
 - **[QUALITY-XXX]** Fix example integration test failures by adding method aliases
   - **STRING ALIASES**: upper/lower (for to_uppercase/to_lowercase), to_int/to_integer (for parse), slice (for substring)
