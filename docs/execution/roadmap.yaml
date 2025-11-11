@@ -9933,3 +9933,102 @@ next_sprint:
       - Test environment capture
       - Test nested closures
       - Add property tests for expression inference
+
+  - id: PARSER-009
+    title: "Implement Impl Block Parsing (Issue #147)"
+    status: pending
+    priority: high
+    category: parser
+    severity: BLOCKER
+    github_issue: 147
+    description: |
+      Implement full impl block parsing support. The transpiler is already correct
+      - only parser implementation is needed.
+      
+      ROOT CAUSE: Parser bails immediately at src/frontend/parser/expressions_helpers/impls.rs:45
+      with hard-coded bail!() message "impl blocks are not supported".
+      
+      IMPACT: Users cannot use impl blocks, getting immediate parse failure.
+      Blocks adoption of Rust-style impl syntax.
+      
+      TRANSPILER STATUS: ✅ Working correctly (generates "pub fn" NOT "pub pub fn")
+      PARSER STATUS: ❌ Hard-coded stub that immediately bails
+      
+      IMPLEMENTATION: Follow EXTREME TDD - 4 tests already written and failing (RED step complete)
+      
+    file: src/frontend/parser/expressions_helpers/impls.rs
+    lines: "42-56 (stub implementation, ~14 lines to replace with ~140 lines)"
+    ticket_doc: docs/tickets/PARSER-009-impl-blocks.md
+    test_file: tests/transpiler_147_impl_blocks.rs
+    found_by: GitHub Issue #147 investigation
+    dependencies: []
+    blocked_by: []
+    blocks:
+      - GitHub Issue #147
+      - User adoption of impl syntax
+      
+    test_metrics:
+      tests_written: 4
+      tests_passing: 0
+      tests_failing: 4
+      coverage_impact: "+5% parser module coverage"
+      
+    phases:
+      phase_1:
+        name: "Module Refactoring"
+        estimated: "1 hour"
+        tasks:
+          - "Add mod utils_helpers; to src/frontend/parser/mod.rs"
+          - "Fix import visibility for parse_type, parse_params, parse_type_parameters"
+          - "Verify cargo build --lib compiles"
+          
+      phase_2:
+        name: "Parser Implementation"
+        estimated: "2-3 hours"
+        functions:
+          - "parse_impl_block() - Main entry (complexity: 8)"
+          - "expect_identifier() - Helper (complexity: 2)"
+          - "parse_impl_method() - Method parser (complexity: 6)"
+        tasks:
+          - "Parse impl keyword"
+          - "Optional type parameters impl<T, U>"
+          - "Trait name + for_type OR just for_type"
+          - "Methods block with pub/private visibility"
+          - "Return ExprKind::Impl"
+          
+      phase_3:
+        name: "REFACTOR"
+        estimated: "1 hour"
+        tasks:
+          - "Complexity ≤10 per function"
+          - "Zero clippy warnings"
+          - "Zero SATD comments"
+          - "pmat tdg ≥ A- grade"
+          
+      phase_4:
+        name: "VALIDATE"
+        estimated: "1 hour"
+        tasks:
+          - "cargo test --test transpiler_147_impl_blocks (4/4 passing)"
+          - "Rustc compilation of all 4 generated .rlib files"
+          - "Manual transpile + verify test"
+          - "make validate-book still passes"
+          - "No regressions in existing tests"
+          
+    total_estimated: "4-6 hours"
+    
+    success_criteria:
+      - "All 4 tests pass: cargo test --test transpiler_147_impl_blocks"
+      - "No regressions: all existing tests pass"
+      - "Quality gates: pmat tdg . --min-grade A-"
+      - "Zero clippy warnings: make lint"
+      - "Rustc validation: all 4 .rlib files compile"
+      - "GitHub Issue #147 closed"
+      
+    references:
+      github_issue: "https://github.com/paiml/ruchy/issues/147"
+      transpiler_code: "src/backend/transpiler/types.rs:937-1032"
+      parser_stub: "src/frontend/parser/expressions_helpers/impls.rs:42-56"
+      ast_definition: "src/frontend/ast.rs:587-593 (ExprKind::Impl)"
+      test_suite: "tests/transpiler_147_impl_blocks.rs"
+      ticket: "docs/tickets/PARSER-009-impl-blocks.md"
