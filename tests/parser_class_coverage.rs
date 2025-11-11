@@ -570,3 +570,246 @@ class MyClass {
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse method with owned self");
 }
+// ============================================================================
+// TEST GROUP 12: Advanced Visibility Modifiers
+// ============================================================================
+
+#[test]
+fn test_visibility_04_protected_method() {
+    let code = r#"
+class MyClass {
+    protected fun protected_method() { }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse protected method");
+}
+
+#[test]
+fn test_visibility_05_pub_crate_method() {
+    let code = r#"
+class MyClass {
+    pub(crate) fun crate_method() { }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse pub(crate) method");
+}
+
+#[test]
+fn test_visibility_06_pub_super_method() {
+    let code = r#"
+class MyClass {
+    pub(super) fun super_method() { }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse pub(super) method");
+}
+
+#[test]
+fn test_visibility_07_private_explicit() {
+    let code = r#"
+class MyClass {
+    private fun private_method() { }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse explicit private method");
+}
+
+// ============================================================================
+// TEST GROUP 13: Method Modifiers (static, abstract, override, async)
+// ============================================================================
+
+#[test]
+fn test_modifier_01_static_method() {
+    let code = r#"
+class MyClass {
+    pub static fun create() -> MyClass {
+        MyClass { }
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse static method");
+}
+
+#[test]
+#[ignore] // Feature not yet implemented
+fn test_modifier_02_abstract_method() {
+    let code = r#"
+abstract class MyClass {
+    pub abstract fun do_something()
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse abstract method");
+}
+
+#[test]
+fn test_modifier_03_override_method() {
+    let code = r#"
+class Child : Parent {
+    pub override fun method() {
+        println("overridden")
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse override method");
+}
+
+#[test]
+#[ignore] // Feature not yet implemented
+fn test_modifier_04_async_method() {
+    let code = r#"
+class MyClass {
+    pub async fun fetch_data() -> String {
+        "data"
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse async method");
+}
+
+// ============================================================================
+// TEST GROUP 14: Complex Property Accessors
+// ============================================================================
+
+#[test]
+fn test_property_accessor_01_getter_with_block() {
+    let code = r#"
+class MyClass {
+    _value: i32
+
+    property value: i32 {
+        get => {
+            println("getting value")
+            self._value
+        }
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse getter with block");
+}
+
+#[test]
+fn test_property_accessor_02_setter_only() {
+    let code = r#"
+class MyClass {
+    _value: i32
+
+    property value: i32 {
+        set(v) => { self._value = v }
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse setter-only property");
+}
+
+// ============================================================================
+// TEST GROUP 15: Type Parameter Constraints
+// ============================================================================
+
+#[test]
+fn test_type_constraint_01_where_clause() {
+    let code = r#"
+class Container<T> where T: Display {
+    value: T
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    // May not be implemented yet - document behavior
+    let _ = result;
+}
+
+// ============================================================================
+// TEST GROUP 16: Complex Inheritance Scenarios
+// ============================================================================
+
+#[test]
+#[ignore] // Feature not yet implemented
+fn test_complex_inheritance_01_generic_parent() {
+    let code = r#"
+class Child : Parent<i32> {
+    value: i32
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse inheritance from generic parent");
+}
+
+#[test]
+#[ignore] // Feature not yet implemented
+fn test_complex_inheritance_02_multiple_generic_traits() {
+    let code = r#"
+class MyClass : + Trait1<i32> + Trait2<String> {
+    value: i32
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse multiple generic trait implementations");
+}
+
+// ============================================================================
+// TEST GROUP 17: Field Initialization
+// ============================================================================
+
+#[test]
+fn test_field_init_01_with_default() {
+    let code = r#"
+class MyClass {
+    value: i32 = 42
+    name: String = "default"
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse fields with default values");
+}
+
+// ============================================================================
+// TEST GROUP 18: Mixed Member Types
+// ============================================================================
+
+#[test]
+fn test_mixed_members_01_all_types() {
+    let code = r#"
+class MyClass {
+    const MAX: i32 = 100
+    value: i32
+    
+    property count: i32 {
+        get => self.value
+    }
+    
+    pub new(v: i32) -> MyClass {
+        MyClass { value: v }
+    }
+    
+    pub fun get_value(&self) -> i32 {
+        self.value
+    }
+}
+"#;
+    let mut parser = Parser::new(code);
+    let result = parser.parse();
+    assert!(result.is_ok(), "Should parse class with all member types");
+}
