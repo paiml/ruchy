@@ -424,6 +424,25 @@ fun main() {
     assert!(result.all_pass(), "{}", result.failure_report());
 }
 
+#[test]
+fn test_spec_001_actor_decl_three_modes() {
+    // SPEC-001-F: Actor declarations - simplified synchronous message handling
+    // Actors transpile to plain structs wrapped in Arc<Mutex<>>
+    let code = r#"
+actor Counter {
+    value: i32
+}
+
+fun main() {
+    let counter = spawn Counter { value: 0 }
+    println("Actor created")
+}
+"#;
+
+    let result = validate_three_modes(code, "actor_decl");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
 // =============================================================================
 // PATTERNS - All marked "implemented: true"
 // =============================================================================
