@@ -5898,21 +5898,19 @@ mod tests {
 
     #[test]
     fn test_transpile_impl_block() {
-        // impl blocks are NOT supported in Ruchy - methods go inside struct bodies
-        // This test verifies the error message guides users to the correct syntax
-        let code = "impl Point { fun new(x: i32, y: i32) { Point { x: x, y: y } } }";
+        // PARSER-009: impl blocks are now supported
+        let code = "impl Point { fun new(x: i32, y: i32) -> Point { Point { x: x, y: y } } }";
         let mut parser = Parser::new(code);
         let result = parser.parse();
 
-        // Should fail with helpful error message
-        assert!(result.is_err(), "impl blocks should not be supported");
-        let err_msg = format!("{:?}", result.unwrap_err());
-        assert!(
-            err_msg.contains("impl") ||
-            err_msg.contains("Methods should be defined inside struct") ||
-            err_msg.contains("not supported"),
-            "Error message should explain impl blocks aren't supported. Got: {err_msg}"
-        );
+        // Should now parse successfully
+        assert!(result.is_ok(), "impl blocks should be supported now (PARSER-009)");
+
+        // Verify it transpiles correctly
+        let ast = result.unwrap();
+        let mut transpiler = Transpiler::new();
+        let transpile_result = transpiler.transpile_to_program(&ast);
+        assert!(transpile_result.is_ok(), "impl block should transpile successfully");
     }
 
     #[test]
