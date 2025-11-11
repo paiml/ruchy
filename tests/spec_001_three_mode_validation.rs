@@ -443,6 +443,21 @@ fun main() {
     assert!(result.all_pass(), "{}", result.failure_report());
 }
 
+#[test]
+fn test_spec_001_macro_call_three_modes() {
+    // SPEC-001-G: Macro calls - standard Rust macro syntax
+    // Transpiles directly to Rust macro invocations
+    let code = r#"
+fun main() {
+    let v = vec![1, 2, 3]
+    println!("Macro works")
+}
+"#;
+
+    let result = validate_three_modes(code, "macro_call");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
 // =============================================================================
 // PATTERNS - All marked "implemented: true"
 // =============================================================================
