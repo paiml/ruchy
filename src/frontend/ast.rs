@@ -471,6 +471,11 @@ pub enum ExprKind {
     AsyncBlock {
         body: Box<Expr>,
     },
+    /// Lazy evaluation - defers computation until value is accessed.
+    Lazy {
+        /// The expression to evaluate lazily.
+        expr: Box<Expr>,
+    },
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,

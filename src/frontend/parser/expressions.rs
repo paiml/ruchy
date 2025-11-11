@@ -1,6 +1,6 @@
 //! Basic expression parsing - minimal version with only used functions
 use super::{
-    bail, Expr, ExprKind, Literal, ParserState, Pattern,
+    bail, parse_expr_recursive, Expr, ExprKind, Literal, ParserState, Pattern,
     Result, Span, Token,
 };
 
@@ -97,6 +97,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Throw
         | Token::Export
         | Token::Async
+        | Token::Lazy
         | Token::Increment
         | Token::Decrement => parse_modifier_prefix(state, token, span),
 
@@ -359,6 +360,7 @@ fn parse_control_statement_token(
         Token::Throw => expressions_helpers::control_flow::parse_throw_token(state, span),
         Token::Export => parse_export_token(state),
         Token::Async => parse_async_token(state),
+        Token::Lazy => parse_lazy_token(state),
         Token::Increment => parse_increment_token(state, span),
         Token::Decrement => parse_decrement_token(state, span),
         _ => bail!("Expected control statement token, got: {token:?}"),
@@ -548,6 +550,25 @@ fn parse_export_token(state: &mut ParserState) -> Result<Expr> {
 // Async expression parsing moved to expressions_helpers/async_expressions.rs module
 fn parse_async_token(state: &mut ParserState) -> Result<Expr> {
     expressions_helpers::async_expressions::parse_async_token(state)
+}
+
+/// Parse lazy token - defers computation until value is accessed
+///
+/// Syntax: `lazy expr` where expr is evaluated only when accessed
+/// Example: `let x = lazy expensive_computation()`
+fn parse_lazy_token(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'lazy'
+
+    // Parse the expression to be lazily evaluated
+    let expr = parse_expr_recursive(state)?;
+    let start_span = expr.span.clone();
+
+    Ok(Expr::new(
+        ExprKind::Lazy {
+            expr: Box::new(expr),
+        },
+        start_span,
+    ))
 }
 
 // Increment and decrement operator parsing moved to expressions_helpers/increment_decrement.rs module

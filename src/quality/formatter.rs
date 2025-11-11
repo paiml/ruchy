@@ -1042,6 +1042,9 @@ impl Formatter {
                     operation
                 )
             }
+            ExprKind::Lazy { expr } => {
+                format!("lazy {}", self.format_expr(expr, indent))
+            }
             ExprKind::Set(_) => {
                 // CRITICAL: Changed from silent Debug output to explicit error
                 // This prevents silent data corruption

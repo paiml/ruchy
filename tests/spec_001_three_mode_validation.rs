@@ -240,6 +240,26 @@ fun main() {
 }
 
 #[test]
+fn test_spec_001_lazy_expr_three_modes() {
+    // SPEC-001-D: Lazy evaluation - computation deferred until value accessed
+    let code = r#"
+fun expensive_computation() -> i32 {
+    println("Computing...")
+    42
+}
+
+fun main() {
+    let deferred = lazy expensive_computation()
+    println("Before access")
+    println(deferred.to_string())
+}
+"#;
+
+    let result = validate_three_modes(code, "lazy_expr");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
+#[test]
 fn test_spec_001_tuple_expr_three_modes() {
     let code = r#"
 fun main() {

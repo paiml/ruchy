@@ -1716,6 +1716,14 @@ impl Interpreter {
 
                 Ok(current_value)
             }
+            // SPEC-001-D: Lazy evaluation - defers computation until value is accessed
+            // For interpreter, we eagerly evaluate (no lazy caching mechanism yet)
+            // Transpiler will use Once<T> for true lazy behavior
+            ExprKind::Lazy { expr } => {
+                // Minimal implementation: just evaluate the expression
+                // Future: Add lazy value wrapper with memoization
+                self.eval_expr(expr)
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
