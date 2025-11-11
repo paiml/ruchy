@@ -427,9 +427,13 @@ grammar:
 
     async_block:
       rule: "'async' block"
-      implemented: false
-      test_coverage: 0
-      reason: "Async blocks not parsed yet"
+      implemented: true  # SPEC-001-E: FIXED - All 3 modes working
+      modes:
+        interpreter: true  # Synchronous evaluation (no tokio runtime)
+        transpile: true    # Transpiles to synchronous block
+        compile: true      # rustc compiles successfully
+      test_coverage: 100
+      reason: "SPEC-001-E: Fixed by adding AsyncBlock interpreter evaluation and transpiler synchronous block generation"
 
     block_expr:
       rule: "label? block"

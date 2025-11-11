@@ -1724,6 +1724,14 @@ impl Interpreter {
                 // Future: Add lazy value wrapper with memoization
                 self.eval_expr(expr)
             }
+            // SPEC-001-E: Async block - simplified synchronous evaluation
+            // For true async support, would need tokio runtime integration
+            // Current: Evaluates block immediately (no Future/await)
+            ExprKind::AsyncBlock { body } => {
+                // Simplified: Just evaluate the block synchronously
+                // Future: Wrap in Future and integrate with async runtime
+                self.eval_expr(body)
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
