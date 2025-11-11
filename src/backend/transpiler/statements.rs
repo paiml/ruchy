@@ -2142,23 +2142,31 @@ impl Transpiler {
     /// // transpile_lambda is called internally
     /// ```
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        let param_names: Vec<_> = params
-            .iter()
-            .map(|p| format_ident!("{}", p.name()))
-            .collect();
         let body_tokens = self.transpile_expr(body)?;
         // DEFECT-CLOSURE-RETURN FIX: Use 'move' for closures to capture variables by value
         // This is necessary when closures are returned from functions and capture outer variables
-        // Generate closure with proper formatting (no spaces around commas)
-        if param_names.is_empty() {
+
+        // SPEC-001-A: Generate parameters with type annotations for rustc compilation
+        // Rust closures need explicit types when type inference is insufficient
+        if params.is_empty() {
             Ok(quote! { move || #body_tokens })
         } else {
-            // Use a more controlled approach to avoid extra spaces
-            let param_list = param_names
+            // Build parameter list with type annotations: |x: i32, y: i32|
+            let param_strs: Vec<String> = params
                 .iter()
-                .map(std::string::ToString::to_string)
-                .collect::<Vec<_>>()
-                .join(",");
+                .map(|p| {
+                    let name = p.name();
+                    let ty_str = self.transpile_type(&p.ty).map(|t| t.to_string()).unwrap_or_else(|_| "_".to_string());
+                    if ty_str == "_" {
+                        // No type annotation (inferred)
+                        name.to_string()
+                    } else {
+                        // Explicit type annotation
+                        format!("{name}: {ty_str}")
+                    }
+                })
+                .collect();
+            let param_list = param_strs.join(", ");
             let closure_str = format!("move |{param_list}| {body_tokens}");
             closure_str
                 .parse()

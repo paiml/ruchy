@@ -139,6 +139,16 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
         .expect(&Token::Pipe)
         .map_err(|_| anyhow::anyhow!("Expected '|' after lambda parameters"))?;
 
+    // SPEC-001-A: Parse optional return type annotation (|x: i32| -> i32 support)
+    let _return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance(); // consume ->
+        Some(parse_type(state)?)
+    } else {
+        None
+    };
+    // Note: return_type is parsed but not yet stored in Lambda AST node
+    // This is intentional - keeps AST simple while allowing syntax to parse
+
     // Parse body
     let body = Box::new(parse_expr_recursive(state)?);
 

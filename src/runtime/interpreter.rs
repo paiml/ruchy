@@ -1695,6 +1695,27 @@ impl Interpreter {
                     ))),
                 }
             }
+            // SPEC-001-C: Pipeline operator evaluation (|> not >>)
+            // Evaluates: initial_expr |> func1 |> func2 |> ...
+            // Example: 5 |> double |> add_one → add_one(double(5)) → 11
+            ExprKind::Pipeline { expr, stages } => {
+                // Start with the initial expression value
+                let mut current_value = self.eval_expr(expr)?;
+
+                // Apply each pipeline stage (function call) in sequence
+                for stage in stages {
+                    // Each stage.op is a function (identifier or call)
+                    // We need to call it with current_value as argument
+                    current_value = self.eval_function_call(&stage.op, &[
+                        Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::from_value(&current_value)),
+                            expr.span.clone(),
+                        )
+                    ])?;
+                }
+
+                Ok(current_value)
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
