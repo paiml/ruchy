@@ -370,6 +370,33 @@ fn parse_operator_method(state: &mut ParserState) -> Result<ClassMethod> {
     })
 }
 
+/// Parse a decorator argument value (Integer, Float, String, or boolean)
+fn parse_decorator_value(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Integer(n), _)) => {
+            let v = n.clone();
+            state.tokens.advance();
+            Ok(v)
+        }
+        Some((Token::Float(f), _)) => {
+            let v = f.to_string();
+            state.tokens.advance();
+            Ok(v)
+        }
+        Some((Token::String(s), _)) => {
+            let v = s.clone();
+            state.tokens.advance();
+            Ok(v)
+        }
+        Some((Token::Identifier(id), _)) if id == "true" || id == "false" => {
+            let v = id.clone();
+            state.tokens.advance();
+            Ok(v)
+        }
+        _ => bail!("Expected value after '=' in decorator argument"),
+    }
+}
+
 /// Parse decorator: @Name or @Name("args", ...)
 fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
     // Expect @ token
@@ -391,14 +418,31 @@ fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
         let mut args = Vec::new();
 
         while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            // For now, only support string literal arguments
-            match state.tokens.peek() {
+            // Support both positional string literals and named arguments
+            let arg = match state.tokens.peek() {
                 Some((Token::String(s), _)) => {
-                    args.push(s.clone());
+                    let value = s.clone();
                     state.tokens.advance();
+                    value
                 }
-                _ => bail!("Expected string literal in decorator arguments"),
-            }
+                Some((Token::Identifier(key), _)) => {
+                    // Check for named argument: key=value
+                    let key = key.clone();
+                    state.tokens.advance();
+
+                    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+                        state.tokens.advance(); // consume '='
+                        let value = parse_decorator_value(state)?;
+                        format!("{key}={value}")
+                    } else {
+                        // Just an identifier (positional)
+                        key
+                    }
+                }
+                _ => bail!("Expected argument in decorator"),
+            };
+
+            args.push(arg);
 
             // Check for comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {

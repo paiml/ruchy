@@ -5,6 +5,28 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[PARSER-DECORATOR-001] ✅ COMPLETE** Implement decorator named argument support (EXTREME TDD fix)
+  - **REQUIREMENT**: Support decorator named arguments like `@cache(ttl=60, key="users")` (previously only `@cache("60")`)
+  - **RED PHASE**: Created test_decorator_02_decorator_with_args test - FAILED initially
+  - **GREEN PHASE**: Implemented named argument parsing supporting Integer, Float, String, boolean values
+  - **REFACTOR PHASE**: Extracted `parse_decorator_value()` helper function to reduce complexity ≤10
+  - **VALIDATE PHASE**: All 35 parser_class_coverage tests passing (100%)
+  - **IMPLEMENTATION**:
+    - Added `parse_decorator_value()` helper (lines 373-398, handles Integer/Float/String/boolean tokens)
+    - Modified `parse_decorator()` to support `key=value` syntax (lines 433-436)
+    - Fixed clippy warning (uninlined format args)
+  - **TEST RESULTS**: 35/35 tests passing (100% success rate)
+  - **FILES MODIFIED**:
+    - src/frontend/parser/expressions_helpers/classes.rs (parse_decorator, parse_decorator_value)
+    - tests/parser_class_coverage.rs (test_decorator_02)
+  - **QUALITY**: Zero clippy warnings (format!("{key}={value}")), complexity ≤10
+  - **SYNTAX SUPPORT**:
+    - Named arguments: `@cache(ttl=60)`, `@cache(enabled=true)`
+    - String values: `@cache(key="users")`
+    - Boolean values: `@cache(enabled=false)`
+    - Float values: `@cache(timeout=1.5)`
+  - **TIME**: ~45 minutes (EXTREME TDD methodology)
+
 - **[PARSER-009] ✅ COMPLETE** Implement full impl block parsing support (Issue #147) - 4 phases
   - **Phase 1**: Module refactoring - Fixed import visibility (parse_params, parse_type, parse_type_parameters)
   - **Phase 2**: Parser implementation (GREEN) - Implemented parse_impl_block(), expect_identifier(), parse_impl_method()
