@@ -22,6 +22,39 @@ All notable changes to the Ruchy programming language will be documented in this
   - **RESOLVES**: GitHub Issue #147 - Users can now use impl blocks with pub/private methods
   - **TIME**: ~3 hours actual (vs 4-6 hours estimated)
 
+- **[PARSER-147] ✅ COMPLETE** Support pub fun methods in struct bodies (EXTREME TDD fix)
+  - **ROOT CAUSE**: Parser only checked for `Token::Fun`, didn't handle `Token::Pub` before method definitions
+  - **RED PHASE**: 8 comprehensive tests created (tests/parser_147_pub_methods_in_struct.rs) - ALL FAILED initially
+  - **GREEN PHASE**: Added two helper functions with lookahead:
+    - `is_method_definition()` - Detects methods with optional `pub` modifier using `peek_ahead(1)`
+    - `parse_struct_method_with_visibility()` - Parses visibility then method
+  - **REFACTOR PHASE**: Zero clippy warnings, zero SATD, complexity ≤10
+  - **VALIDATE PHASE**: Full pipeline working (parse→transpile→rustc→execute)
+  - **TEST RESULTS**: 8/8 tests passing, 4423/4423 total tests passing (zero regressions)
+  - **FILES MODIFIED**:
+    - src/frontend/parser/expressions_helpers/structs.rs (added lines 220-250, modified lines 101-104)
+    - tests/parser_147_pub_methods_in_struct.rs (8 comprehensive tests)
+  - **QUALITY**: Zero regressions, all quality gates passing
+  - **COMMIT**: f33b8710 - "[PARSER-147] Support pub fun methods in struct bodies - EXTREME TDD fix"
+
+- **[RUNTIME-098] ✅ COMPLETE** Fix class constructors returning nil instead of instance (EXTREME TDD fix)
+  - **ROOT CAUSE**: Line 6397 in interpreter.rs discarded constructor body result with `let _result = ...`
+  - **RED PHASE**: 5 comprehensive tests created (tests/runtime_098_class_constructor_returns.rs) - 4/5 FAILED initially
+  - **GREEN PHASE**: Modified `instantiate_class_with_constructor()` to capture and return explicit struct instances:
+    - Changed `_result` to `result` (use the value, don't discard)
+    - Added logic to check if constructor returns explicit struct instance
+    - If yes, return it directly
+    - If no, use field-assignment pattern (for `self.x = value` constructors)
+  - **REFACTOR PHASE**: Zero clippy warnings, zero SATD
+  - **VALIDATE PHASE**: Example prints correct value ("0" instead of "nil")
+  - **TEST RESULTS**: 5/5 tests passing, 4423/4423 total tests passing (zero regressions)
+  - **FILES MODIFIED**:
+    - src/runtime/interpreter.rs (lines 6393-6437, fixed constructor return value handling)
+    - tests/runtime_098_class_constructor_returns.rs (5 comprehensive tests)
+    - tests/transpiler_079_class_constructors.rs (5 validation tests - all pass, proving transpiler works)
+  - **QUALITY**: Zero regressions, all quality gates passing
+  - **COMMIT**: 4a7e0689 - "[RUNTIME-098] Fix class constructors returning nil - EXTREME TDD fix"
+
 - **[QUALITY-EVAL-DATA-STRUCTURES]** Add comprehensive unit tests to runtime/eval_data_structures.rs (41.25% → 85%+ coverage)
   - **PROBLEM**: Critical data structures module at only 41.25% coverage (282 uncovered lines out of 480)
   - **SOLUTION**: Added 33 new unit tests (4 → 37 total tests)
