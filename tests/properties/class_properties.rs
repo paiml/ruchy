@@ -15,10 +15,14 @@
 /// - Property 6: Impl blocks equivalent to inline methods
 /// - Property 7: Visibility modifiers enforced
 /// - Property 8: Type parameters preserved
+///
+/// IMPORTANT: Interpreter is NOT thread-safe (by design).
+/// Run these tests with: cargo test --test class_property_tests -- --test-threads=1
 
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;
-use ruchy::runtime::interpreter::{Interpreter, Value};
+use ruchy::runtime::interpreter::Interpreter;
+use ruchy::runtime::Value;
 
 // Property 1: Class definitions parse successfully
 proptest! {
