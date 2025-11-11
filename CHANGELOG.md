@@ -55,6 +55,36 @@ All notable changes to the Ruchy programming language will be documented in this
   - **QUALITY**: Zero regressions, all quality gates passing
   - **COMMIT**: 4a7e0689 - "[RUNTIME-098] Fix class constructors returning nil - EXTREME TDD fix"
 
+- **[RUNTIME-099] ✅ COMPLETE** Fix class constructor field initialization + mutable method state (EXTREME TDD fix with ruchydbg)
+  - **DISCOVERY**: Property-based testing found bug (11/12 tests passing, 1 failed on mutations)
+  - **DEBUG TOOL**: ruchydbg --trace isolated root cause in <5 minutes (vs hours of manual debugging)
+  - **ROOT CAUSE 1**: Constructor returned Object instead of ObjectMut (fields immutable, became nil)
+  - **ROOT CAUSE 2**: Mutable method state not persisting between calls (second call saw stale state)
+  - **OBSERVED**: `t.val = nil` after `Test::new()`, `calc.add(1); calc.add(1)` returned 1 (not 2!)
+  - **RED PHASE**: 7 unit tests + 10 property tests created (17 total) - FAILED initially
+  - **TRACE PHASE**: ruchydbg showed fields=0 inside constructor but nil after return
+  - **GREEN PHASE**:
+    - Line 6425: Convert Object → ObjectMut for mutability
+    - Line 4370: Update variable binding after mutable method calls
+  - **VALIDATE PHASE**: ruchydbg confirms fix (fields persist, mutations accumulate, <5ms execution)
+  - **TEST RESULTS**:
+    - Unit tests: 7/7 passing (runtime_099_mutable_method_state.rs)
+    - Property tests: 12/12 passing (100,000+ test cases: 10 properties × 10K each)
+    - Zero regressions, all quality gates passing
+  - **FILES MODIFIED**:
+    - src/runtime/interpreter.rs (lines 4370, 6425 - two critical fixes)
+    - tests/runtime_099_mutable_method_state.rs (7 EXTREME TDD unit tests)
+    - tests/class_property_tests.rs (property test runner)
+    - tests/properties/class_properties.rs (10 property-based tests)
+    - tests/properties/mod.rs (module declaration)
+    - .pmat/run_class_mutations.sh (mutation testing script)
+  - **QUALITY**: Property tests provide 100K+ validation cases, zero regressions
+  - **KEY LEARNINGS**:
+    - ruchydbg mandatory protocol saved hours of debugging time
+    - Property testing discovered real bug that unit tests missed
+    - Stop The Line principle (Toyota Way) prevented cascading failures
+  - **COMMIT**: 353406cb - "[RUNTIME-099] Fix class constructor fields + mutable method state - EXTREME TDD"
+
 - **[QUALITY-EVAL-DATA-STRUCTURES]** Add comprehensive unit tests to runtime/eval_data_structures.rs (41.25% → 85%+ coverage)
   - **PROBLEM**: Critical data structures module at only 41.25% coverage (282 uncovered lines out of 480)
   - **SOLUTION**: Added 33 new unit tests (4 → 37 total tests)
