@@ -1297,6 +1297,9 @@ impl InferenceContext {
                 // For type inference, treat references the same as the inner type
                 Self::ast_type_to_mono_static(inner)?
             }
+            // SPEC-001-H: Refined types - extract base type, ignore constraint
+            // Type inference operates on structural types, not refinements
+            TypeKind::Refined { base, .. } => Self::ast_type_to_mono_static(base)?,
         })
     }
     /// Get the final inferred type for a type variable

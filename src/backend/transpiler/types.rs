@@ -72,6 +72,10 @@ impl Transpiler {
                 lifetime,
                 inner,
             } => self.transpile_reference_type(*is_mut, lifetime.as_deref(), inner),
+            // SPEC-001-H: Refined types - transpile base type only, ignore constraint
+            // Rust's type system doesn't support runtime refinement checking
+            // The constraint is a compile-time annotation in Ruchy
+            TypeKind::Refined { base, .. } => self.transpile_type(base),
         }
     }
     /// Transpile named types with built-in type mapping
