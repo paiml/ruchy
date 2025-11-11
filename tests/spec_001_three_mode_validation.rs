@@ -224,12 +224,13 @@ fun main() {
 
 #[test]
 fn test_spec_001_pipeline_expr_three_modes() {
+    // SPEC-001-C: Pipeline operator is |> (F#/Elixir style), NOT >> (bitwise shift)
     let code = r#"
 fun double(x: i32) -> i32 { x * 2 }
 fun add_one(x: i32) -> i32 { x + 1 }
 
 fun main() {
-    let result = 5 >> double >> add_one
+    let result = 5 |> double |> add_one
     println(result.to_string())
 }
 "#;

@@ -158,6 +158,10 @@ pub struct Transpiler {
     /// Tracks which variables are static mut globals requiring unsafe blocks.
     /// Uses `RwLock` for thread-safe interior mutability since transpiler is used in async contexts.
     pub global_vars: std::sync::RwLock<std::collections::HashSet<String>>,
+    /// SPEC-001-B: Const variable names that need module-level const declarations
+    ///
+    /// Populated during initial analysis (before optimization) to preserve const attributes.
+    pub const_vars: std::sync::RwLock<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -175,6 +179,7 @@ impl Clone for Transpiler {
             string_vars: std::cell::RefCell::new(self.string_vars.borrow().clone()),
             current_function_return_type: std::cell::RefCell::new(self.current_function_return_type.borrow().clone()),
             global_vars: std::sync::RwLock::new(self.global_vars.read().unwrap().clone()),
+            const_vars: std::sync::RwLock::new(self.const_vars.read().unwrap().clone()),
         }
     }
 }
@@ -199,6 +204,7 @@ impl Transpiler {
             string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
             current_function_return_type: std::cell::RefCell::new(None),
             global_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
+            const_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
@@ -258,6 +264,38 @@ impl Transpiler {
     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.analyze_expr_mutability(expr);
+        }
+    }
+    /// SPEC-001-B: Collects const declarations BEFORE optimization (preserves attributes)
+    ///
+    /// # Purpose
+    /// Const declarations have a `const` attribute that gets stripped by optimization passes.
+    /// We must collect them here to generate module-level const declarations later.
+    pub fn collect_const_declarations(&mut self, exprs: &[Expr]) {
+        for expr in exprs {
+            self.collect_const_declarations_from_expr(expr);
+        }
+    }
+    /// SPEC-001-B: Collect const declarations from a single expression
+    pub fn collect_const_declarations_from_expr(&mut self, expr: &Expr) {
+        if let ExprKind::Let { name, .. } = &expr.kind {
+            // Check for const attribute (before it's lost in optimization)
+            let is_const = expr.attributes.iter().any(|attr| attr.name == "const");
+            if is_const {
+                self.const_vars.write().unwrap().insert(name.clone());
+            }
+        }
+        // Recursively check nested expressions
+        match &expr.kind {
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_const_declarations_from_expr(e);
+                }
+            }
+            ExprKind::Function { body, .. } => {
+                self.collect_const_declarations_from_expr(body);
+            }
+            _ => {}
         }
     }
     /// Collects function signatures from the AST for type coercion.
@@ -732,13 +770,16 @@ impl Transpiler {
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&mut self, expr: &Expr) -> Result<TokenStream> {
-        // First analyze the entire program to detect mutable variables, function signatures, and modules
+        // First analyze the entire program to detect mutable variables, const declarations, function signatures, and modules
+        // SPEC-001-B: Must collect const names BEFORE optimization to preserve attributes
         if let ExprKind::Block(exprs) = &expr.kind {
             self.analyze_mutability(exprs);
+            self.collect_const_declarations(exprs);
             self.collect_function_signatures(exprs);
             self.collect_module_names(exprs);
         } else {
             self.analyze_expr_mutability(expr);
+            self.collect_const_declarations_from_expr(expr);
             self.collect_signatures_from_expr(expr);
             self.collect_module_names_from_expr(expr);
         }
@@ -942,8 +983,9 @@ impl Transpiler {
         let mut main_function_expr = None;
 
         // TRANSPILER-SCOPE: First pass - collect names of mutable Lets that will become globals
-        // We need to do this BEFORE categorization so we can skip them in statements
+        // SPEC-001-B: Const names are collected earlier (before optimization) in collect_const_declarations()
         let mut global_var_names = std::collections::HashSet::new();
+        let const_var_names = self.const_vars.read().unwrap().clone();
         for expr in exprs {
             if let ExprKind::Function { name, .. } = &expr.kind {
                 if name == "main" {
@@ -957,7 +999,7 @@ impl Transpiler {
         if has_functions_check {
             for expr in exprs {
                 if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
-                    if *is_mutable {
+                    if *is_mutable && !const_var_names.contains(name) {
                         global_var_names.insert(name.clone());
                     }
                 }
@@ -974,10 +1016,12 @@ impl Transpiler {
                 continue;
             }
 
-            // TRANSPILER-SCOPE: Skip mutable Lets that were promoted to globals
+            // TRANSPILER-SCOPE: Skip mutable Lets and const declarations that were promoted to globals
             if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
-                if *is_mutable && global_var_names.contains(name) {
-                    continue; // Skip this Let - it's now a static mut global
+                if (*is_mutable && global_var_names.contains(name))
+                    || const_var_names.contains(name)
+                {
+                    continue; // Skip this Let - it's now a static mut global or module-level const
                 }
             }
 
@@ -992,8 +1036,51 @@ impl Transpiler {
             )?;
         }
 
-        // TRANSPILER-SCOPE: Third pass - generate static mut declarations for globals
+        // TRANSPILER-SCOPE: Third pass - generate static mut declarations for globals and const declarations
         let mut globals = Vec::new();
+
+        // SPEC-001-B: Generate module-level const declarations
+        if !const_var_names.is_empty() {
+            for expr in exprs {
+                if let ExprKind::Let {
+                    name,
+                    value,
+                    type_annotation,
+                    ..
+                } = &expr.kind
+                {
+                    if const_var_names.contains(name) {
+                        // Transpile value to get initializer
+                        let value_tokens = self.transpile_expr(value)?;
+                        let const_name = format_ident!("{}", name);
+
+                        // Const declarations MUST have explicit type annotation
+                        let type_token = if let Some(ref type_ann) = type_annotation {
+                            self.transpile_type(type_ann)?
+                        } else {
+                            // Infer type from literal for const
+                            match &value.kind {
+                                ExprKind::Literal(lit) => match lit {
+                                    crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
+                                    crate::frontend::ast::Literal::Float(_) => quote! { f64 },
+                                    crate::frontend::ast::Literal::String(_) => quote! { &str },
+                                    crate::frontend::ast::Literal::Bool(_) => quote! { bool },
+                                    _ => quote! { i32 },
+                                },
+                                _ => quote! { i32 },
+                            }
+                        };
+
+                        // Generate module-level const declaration
+                        globals.push(quote! {
+                            const #const_name: #type_token = #value_tokens;
+                        });
+                    }
+                }
+            }
+        }
+
+        // Generate thread-safe mutable globals using LazyLock<Mutex<T>>
         if !global_var_names.is_empty() {
             for expr in exprs {
                 if let ExprKind::Let {

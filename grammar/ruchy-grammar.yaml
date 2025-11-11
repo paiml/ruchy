@@ -206,7 +206,7 @@ lexical:
 
     special:
       - name: "pipeline"
-        symbol: ">>"
+        symbol: "|>"
         precedence: 1
         associativity: "left"
         implemented: true
@@ -332,14 +332,14 @@ grammar:
 
     const_decl:
       rule: "visibility? 'const' identifier ':' type '=' expr"
-      implemented: false  # FAILS COMPILE - See SPEC-001-B
+      implemented: true  # SPEC-001-B: FIXED - All 3 modes working
       modes:
         interpreter: true
         transpile: true
-        compile: false  # rustc compilation fails
-      test_coverage: 67
+        compile: true  # Fixed: generates module-level const declarations
+      test_coverage: 100
       file: "src/frontend/parser/constants.rs"
-      reason: "Const declarations fail rustc compilation (interpreter and transpile work)"
+      reason: "SPEC-001-B: Fixed by collecting const attributes before optimization"
 
     actor_decl:
       rule: "visibility? 'actor' identifier generic_params? '{' actor_item* '}'"
@@ -438,13 +438,13 @@ grammar:
 
     lambda_expr:
       rule: "'|' params? '|' ('->' type)? (expr | block)"
-      implemented: false  # FAILS ALL THREE MODES - See SPEC-001-A
+      implemented: true  # SPEC-001-A: FIXED - All 3 modes working
       modes:
-        interpreter: false
-        transpile: false
-        compile: false
-      test_coverage: 0
-      reason: "Lambda expressions fail in interpreter, transpile, and compile modes"
+        interpreter: true  # Fixed: Lambda evaluation works
+        transpile: true    # Fixed: Type annotations generated
+        compile: true      # Fixed: rustc compiles with explicit types
+      test_coverage: 100
+      reason: "SPEC-001-A: Fixed by adding return type parsing + transpiler type annotations"
 
     lazy_expr:
       rule: "'lazy' expr"
@@ -453,14 +453,14 @@ grammar:
       reason: "Lazy evaluation not implemented"
 
     pipeline_expr:
-      rule: "expr ('>>' expr)+"
-      implemented: false  # FAILS INTERPRETER & COMPILE - See SPEC-001-C
+      rule: "expr ('|>' expr)+"
+      implemented: true  # SPEC-001-C: FIXED - All 3 modes working
       modes:
-        interpreter: false
-        transpile: true    # Only transpile works
-        compile: false
-      test_coverage: 33
-      reason: "Pipeline expressions fail in interpreter and compile modes (only transpile works)"
+        interpreter: true  # Fixed: Added Pipeline evaluation
+        transpile: true
+        compile: true
+      test_coverage: 100
+      reason: "SPEC-001-C: Fixed by adding interpreter support for Pipeline expressions"
 
     tuple_expr:
       rule: "'(' (expr (',' expr)* ','?)? ')'"
