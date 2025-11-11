@@ -10210,3 +10210,32 @@ next_sprint:
     - ruchydbg mandatory debugging protocol prevented hours of wasted time
     - Property testing discovered real bug that unit tests missed
     - Stop The Line principle (Toyota Way) prevented cascading failures
+
+  - id: PARSER-DECORATOR-001
+    title: "Implement decorator named argument support"
+    status: complete
+    priority: high
+    completed_date: "2025-11-11"
+    description: |
+      Current: Decorators only support string literals: @cache("60")
+      Required: Support named arguments: @cache(ttl=60, key="users")
+
+      EXTREME TDD Workflow (COMPLETED):
+      1. ✅ RED: Confirmed test_decorator_02 fails
+      2. ✅ GREEN: Implemented named argument parsing (Integer, Float, String, boolean)
+      3. ✅ REFACTOR: Extracted parse_decorator_value() helper (complexity ≤10)
+      4. ✅ VALIDATE: All 35 parser_class_coverage tests passing
+
+      Implementation:
+      - Added parse_decorator_value() helper function for value parsing
+      - Supports: @cache(ttl=60), @cache(enabled=true), @cache(key="value")
+      - Fixed clippy warning (uninlined format args)
+      - Reduced parse_decorator() complexity by extracting nested match
+
+    files:
+      - src/frontend/parser/expressions_helpers/classes.rs (parse_decorator, parse_decorator_value)
+      - tests/parser_class_coverage.rs (test_decorator_02)
+
+    test_results:
+      unit_tests: "35/35 passing (100%)"
+      extreme_tdd_phases: "RED→GREEN→REFACTOR→VALIDATE (all complete)"
