@@ -10153,3 +10153,60 @@ next_sprint:
     - REFACTOR: Zero clippy warnings, zero SATD
     - VALIDATE: Example prints "0" instead of "nil" (correct behavior)
     - REGRESSION: 4423/4423 total tests passing (zero regressions)
+
+# RUNTIME-099: Class constructor fields nil + mutable methods don't preserve state (2025-11-11)
+- id: RUNTIME-099
+  title: "Fix class constructor field initialization and mutable method state persistence"
+  status: complete
+  priority: critical
+  category: runtime
+  severity: BLOCKER
+  discovery_date: "2025-11-11"
+  completion_date: "2025-11-11"
+  commit: 353406cb
+
+  description: |
+    DISCOVERY METHOD: Property-based testing (11/12 tests passing, 1 failed on mutations)
+    DEBUG TOOL: ruchydbg --trace (found root cause in <5 minutes)
+    
+    ROOT CAUSE 1: Constructor returned Object instead of ObjectMut
+      Line 6425 in instantiate_class_with_constructor() returned result directly
+      without converting to ObjectMut, causing fields to be immutable (nil after construction)
+    
+    ROOT CAUSE 2: Mutable method state not persisting between calls
+      Second method call saw stale state (val=0 instead of val=1)
+    
+    OBSERVED BEHAVIOR:
+      let t = Test::new()  → t.val = nil (should be 0!)
+      calc.add(1) → returns 1
+      calc.add(1) → returns 1 (should be 2, cumulative!)
+    
+    RUCHYDBG TRACE OUTPUT:
+      Inside constructor: instance.val = 0 ✅
+      After constructor: t.val = nil ❌  (fields lost!)
+      Second method call: self.val = 0 ❌ (should be 1!)
+
+  fix_implemented:
+    1. Line 6425 - Convert Object → ObjectMut for mutability
+    2. Line 4370 - Update variable binding after mutable method calls
+    
+  files_modified:
+    - src/runtime/interpreter.rs (lines 4370, 6425)
+    - tests/runtime_099_mutable_method_state.rs (7 EXTREME TDD tests)
+    - tests/class_property_tests.rs (property test runner)
+    - tests/properties/class_properties.rs (10 property-based tests)
+    - tests/properties/mod.rs (module declaration)
+    - .pmat/run_class_mutations.sh (mutation testing script)
+
+  test_results:
+    - RED: Property tests discovered bug (11/12 passing, 1 failed)
+    - TRACE: ruchydbg isolated root cause (<5min vs hours of manual debugging)
+    - GREEN: 7/7 unit tests + 12/12 property tests passing
+    - VALIDATE: ruchydbg confirms fix (fields=0, mutations persist, <5ms execution)
+    - PROPERTY: 100,000+ test cases (10 properties × 10K each)
+    - REGRESSION: Zero regressions, all quality gates passing
+
+  key_learnings:
+    - ruchydbg mandatory debugging protocol prevented hours of wasted time
+    - Property testing discovered real bug that unit tests missed
+    - Stop The Line principle (Toyota Way) prevented cascading failures
