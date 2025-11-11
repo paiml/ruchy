@@ -458,6 +458,25 @@ fun main() {
     assert!(result.all_pass(), "{}", result.failure_report());
 }
 
+#[test]
+fn test_spec_001_refined_type_three_modes() {
+    // SPEC-001-H: Refined types - Type constraints with predicates
+    // Syntax: x: i32 where x > 0
+    let code = r#"
+fun positive(x: i32 where x > 0) -> i32 {
+    x
+}
+
+fun main() {
+    let y = positive(5)
+    println(y.to_string())
+}
+"#;
+
+    let result = validate_three_modes(code, "refined_type");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
 // =============================================================================
 // PATTERNS - All marked "implemented: true"
 // =============================================================================

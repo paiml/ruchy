@@ -104,13 +104,13 @@ fn skip_trait_bounds(state: &mut ParserState) {
 /// Returns an error if the operation fails
 pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
-    match state.tokens.peek() {
-        Some((Token::Ampersand, _)) => parse_reference_type(state, span),
-        Some((Token::Fn, _)) => parse_fn_type(state, span),
-        Some((Token::Fun, _)) => parse_fn_type(state, span),
-        Some((Token::Impl, _)) => parse_impl_trait_type(state, span),
-        Some((Token::LeftBracket, _)) => parse_list_type(state, span),
-        Some((Token::LeftParen, _)) => parse_paren_type(state, span),
+    let base_type = match state.tokens.peek() {
+        Some((Token::Ampersand, _)) => parse_reference_type(state, span)?,
+        Some((Token::Fn, _)) => parse_fn_type(state, span)?,
+        Some((Token::Fun, _)) => parse_fn_type(state, span)?,
+        Some((Token::Impl, _)) => parse_impl_trait_type(state, span)?,
+        Some((Token::LeftBracket, _)) => parse_list_type(state, span)?,
+        Some((Token::LeftParen, _)) => parse_paren_type(state, span)?,
         Some((
             Token::Identifier(_)
             | Token::Result
@@ -122,8 +122,23 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
             | Token::None
             | Token::Null,
             _,
-        )) => parse_named_type(state, span),
+        )) => parse_named_type(state, span)?,
         _ => bail!("Expected type"),
+    };
+
+    // SPEC-001-H: Check for refined type (where clause)
+    if matches!(state.tokens.peek(), Some((Token::Where, _))) {
+        state.tokens.advance(); // consume 'where'
+        let constraint = crate::frontend::parser::parse_expr_recursive(state)?;
+        Ok(Type {
+            kind: TypeKind::Refined {
+                base: Box::new(base_type),
+                constraint: Box::new(constraint),
+            },
+            span,
+        })
+    } else {
+        Ok(base_type)
     }
 }
 // Helper: Parse reference type &T or &mut T or &'a T (complexity: 5)

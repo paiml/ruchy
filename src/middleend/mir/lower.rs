@@ -355,6 +355,9 @@ impl LoweringContext {
                 // For MIR, treat references as the inner type for now
                 self.ast_to_mir_type(inner)
             }
+            // SPEC-001-H: Refined types - extract base type, ignore constraint
+            // MIR operates on structural types, not refinements
+            TypeKind::Refined { base, .. } => self.ast_to_mir_type(base),
         }
     }
     /// Infer result type for binary operations

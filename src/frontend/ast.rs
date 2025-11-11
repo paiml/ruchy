@@ -1165,6 +1165,13 @@ pub enum TypeKind {
         lifetime: Option<String>,
         inner: Box<Type>,
     },
+    /// SPEC-001-H: Refined types - Type with constraint predicate
+    /// Example: `x: i32 where x > 0`
+    /// The constraint is a boolean expression that must hold
+    Refined {
+        base: Box<Type>,
+        constraint: Box<Expr>,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PipelineStage {
