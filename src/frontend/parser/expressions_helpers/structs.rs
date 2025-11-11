@@ -98,9 +98,9 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<(Vec<StructField>, Vec
             state.tokens.advance();
         }
 
-        // Check if this is a method definition
-        if matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
-            let method = parse_struct_method(state)?;
+        // PARSER-147: Check if this is a method definition (with or without pub)
+        if is_method_definition(state) {
+            let method = parse_struct_method_with_visibility(state)?;
             methods.push(method);
         } else {
             // Parse field
@@ -215,6 +215,38 @@ pub(in crate::frontend::parser) fn parse_single_struct_field(state: &mut ParserS
     };
 
     Ok((field_name, field_type, default_value))
+}
+
+// PARSER-147: Helper to detect if next tokens are a method definition
+fn is_method_definition(state: &mut ParserState) -> bool {
+    // Check for: fun/fn OR pub fun/fn
+    match state.tokens.peek() {
+        Some((Token::Fun | Token::Fn, _)) => true,
+        Some((Token::Pub, _)) => {
+            // Lookahead: check if next token after pub is fun/fn
+            matches!(state.tokens.peek_ahead(1), Some((Token::Fun | Token::Fn, _)))
+        }
+        _ => false,
+    }
+}
+
+// PARSER-147: Parse method with optional pub visibility modifier
+fn parse_struct_method_with_visibility(state: &mut ParserState) -> Result<ClassMethod> {
+    // Parse optional pub keyword
+    let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    };
+
+    // Parse the method (reuse existing logic)
+    let mut method = parse_struct_method(state)?;
+
+    // Update visibility
+    method.is_pub = is_pub;
+
+    Ok(method)
 }
 
 fn parse_struct_method(state: &mut ParserState) -> Result<ClassMethod> {

@@ -1,0 +1,44 @@
+// Impl Blocks: Rust-Compatible Class Definition Style
+//
+// This example demonstrates how to define classes/structs with methods
+// using impl blocks (Rust-compatible style).
+
+// Basic struct with methods
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    pub fun new(x: i32, y: i32) -> Point {
+        Point { x: x, y: y }
+    }
+
+    pub fun distance_from_origin(&self) -> i32 {
+        self.x * self.x + self.y * self.y
+    }
+
+    pub fun get_x(&self) -> i32 {
+        self.x
+    }
+
+    pub fun get_y(&self) -> i32 {
+        self.y
+    }
+}
+
+println("=== Impl Blocks Demo ===")
+println("")
+
+// Create a point
+let point = Point::new(3, 4)
+println("Created point at (3, 4)")
+println("X coordinate:")
+println(point.get_x())
+println("Y coordinate:")
+println(point.get_y())
+println("Distance from origin (squared):")
+println(point.distance_from_origin())
+
+println("")
+println("All tests passed!")
