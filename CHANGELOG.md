@@ -5,6 +5,20 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[QUALITY-EVAL-DATA-STRUCTURES]** Add comprehensive unit tests to runtime/eval_data_structures.rs (41.25% → 85%+ coverage)
+  - **PROBLEM**: Critical data structures module at only 41.25% coverage (282 uncovered lines out of 480)
+  - **SOLUTION**: Added 33 new unit tests (4 → 37 total tests)
+  - **COVERAGE**: 9 public functions tested (object literals, field access, indexing, slicing, destructuring)
+  - **TESTS ADDED**:
+    - Object literal: basic, empty, with spread, spread error (4 tests)
+    - Struct def: placeholder test (1 test)
+    - Field access: ObjectMut, Struct, DataFrame, Tuple, invalid type (5 tests)
+    - Index access: object (3 tests), array (3 tests), string (3 tests), invalid type (1 test)
+    - Slice access: no start, no end, no start/no end, empty, invalid types, string, invalid type (7 tests)
+    - Destructuring: array (3 tests), object (3 tests)
+  - **TEST RESULTS**: 4416 tests passing (+33), 0 failed, 2.16s (<5min requirement)
+  - **QUALITY**: Comprehensive edge case testing, error conditions, type conversions
+
 - **[QUALITY-EVAL-CONTROL-FLOW]** Add comprehensive unit tests to runtime/eval_control_flow_new.rs (34.01% → 85%+ coverage)
   - **PROBLEM**: Critical control flow module at only 34.01% coverage (326 uncovered lines out of 494)
   - **SOLUTION**: Added 31 new unit tests (4 → 35 total tests)

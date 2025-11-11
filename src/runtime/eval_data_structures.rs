@@ -573,4 +573,485 @@ mod tests {
         let invalid_index = eval_tuple_field_access(&tuple_elements, "invalid");
         assert!(invalid_index.is_err());
     }
+
+    // ===== OBJECT LITERAL TESTS =====
+
+    #[test]
+    fn test_eval_object_literal_basic() {
+        let fields = vec![
+            ObjectField::KeyValue {
+                key: "name".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::String("Alice".to_string())), Span::new(0, 5)),
+            },
+            ObjectField::KeyValue {
+                key: "age".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::new(6, 8)),
+            },
+        ];
+
+        let mut call_count = 0;
+        let result = eval_object_literal(&fields, |_expr| {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::from_string("Alice".to_string())),
+                2 => Ok(Value::Integer(30)),
+                _ => panic!("Unexpected call"),
+            }
+        })
+        .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("name"), Some(&Value::from_string("Alice".to_string())));
+            assert_eq!(obj.get("age"), Some(&Value::Integer(30)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_empty() {
+        let result = eval_object_literal(&[], |_| Ok(Value::Nil)).unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.len(), 0);
+        } else {
+            panic!("Expected empty object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_with_spread() {
+        let mut base_fields = HashMap::new();
+        base_fields.insert("x".to_string(), Value::Integer(10));
+        base_fields.insert("y".to_string(), Value::Integer(20));
+
+        let fields = vec![
+            ObjectField::Spread {
+                expr: Expr::new(ExprKind::Identifier("base".to_string()), Span::new(0, 4)),
+            },
+            ObjectField::KeyValue {
+                key: "z".to_string(),
+                value: Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::new(5, 7)),
+            },
+        ];
+
+        let mut call_count = 0;
+        let result = eval_object_literal(&fields, |_expr| {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Object(Arc::new(base_fields.clone()))),
+                2 => Ok(Value::Integer(30)),
+                _ => panic!("Unexpected call"),
+            }
+        })
+        .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("x"), Some(&Value::Integer(10)));
+            assert_eq!(obj.get("y"), Some(&Value::Integer(20)));
+            assert_eq!(obj.get("z"), Some(&Value::Integer(30)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_spread_error() {
+        let fields = vec![ObjectField::Spread {
+            expr: Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2)),
+        }];
+
+        let result = eval_object_literal(&fields, |_| Ok(Value::Integer(42)));
+        assert!(result.is_err());
+    }
+
+    // ===== STRUCT DEF TESTS =====
+
+    #[test]
+    fn test_eval_struct_def() {
+        // eval_struct_def currently returns Nil placeholder
+        // Function signature expects &[StructField] but just returns Nil for now
+        let result = eval_struct_def("Point", &[]);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    // ===== FIELD ACCESS EXTENDED TESTS =====
+
+    #[test]
+    fn test_field_access_object_mut() {
+        let mut fields = HashMap::new();
+        fields.insert("value".to_string(), Value::Integer(42));
+
+        let obj = Value::ObjectMut(Arc::new(std::sync::Mutex::new(fields)));
+        let result = eval_field_access(&obj, "value").unwrap();
+        assert_eq!(result, Value::Integer(42));
+
+        let missing = eval_field_access(&obj, "missing");
+        assert!(missing.is_err());
+    }
+
+    #[test]
+    fn test_field_access_struct() {
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), Value::from_string("Alice".to_string()));
+
+        let s = Value::Struct {
+            name: "Person".to_string(),
+            fields: Arc::new(fields),
+        };
+
+        let result = eval_field_access(&s, "name").unwrap();
+        assert_eq!(result, Value::from_string("Alice".to_string()));
+
+        let missing = eval_field_access(&s, "age");
+        assert!(missing.is_err());
+    }
+
+    #[test]
+    fn test_field_access_dataframe() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Value::from_string("Alice".to_string()),
+                    Value::from_string("Bob".to_string()),
+                ],
+            },
+        ];
+
+        let df = Value::DataFrame { columns };
+        let result = eval_field_access(&df, "id").unwrap();
+
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 2);
+            assert_eq!(arr[0], Value::Integer(1));
+        } else {
+            panic!("Expected array");
+        }
+
+        let missing = eval_field_access(&df, "age");
+        assert!(missing.is_err());
+    }
+
+    #[test]
+    fn test_field_access_tuple() {
+        let tuple = Value::Tuple(Arc::from([Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let result = eval_field_access(&tuple, "0").unwrap();
+        assert_eq!(result, Value::Integer(1));
+
+        let out_of_bounds = eval_field_access(&tuple, "5");
+        assert!(out_of_bounds.is_err());
+    }
+
+    #[test]
+    fn test_field_access_invalid_type() {
+        let result = eval_field_access(&Value::Integer(42), "field");
+        assert!(result.is_err());
+    }
+
+    // ===== INDEX ACCESS EXTENDED TESTS =====
+
+    #[test]
+    fn test_index_access_object() {
+        let mut fields = HashMap::new();
+        fields.insert("key1".to_string(), Value::Integer(100));
+
+        let obj = Value::Object(Arc::new(fields));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::String("key1".to_string())),
+            Span::new(0, 4),
+        );
+
+        let result = eval_index_access(&obj, &index_expr, |_| {
+            Ok(Value::from_string("key1".to_string()))
+        })
+        .unwrap();
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_index_access_object_missing_key() {
+        let obj = Value::Object(Arc::new(HashMap::new()));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::String("missing".to_string())),
+            Span::new(0, 7),
+        );
+
+        let result = eval_index_access(&obj, &index_expr, |_| {
+            Ok(Value::from_string("missing".to_string()))
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_object_wrong_type() {
+        let obj = Value::Object(Arc::new(HashMap::new()));
+        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+
+        let result = eval_index_access(&obj, &index_expr, |_| Ok(Value::Integer(42)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_array_out_of_bounds() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::new(0, 2));
+
+        let result = eval_index_access(&arr, &index_expr, |_| Ok(Value::Integer(10)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_array_wrong_type() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::String("not_int".to_string())),
+            Span::new(0, 7),
+        );
+
+        let result = eval_index_access(&arr, &index_expr, |_| {
+            Ok(Value::from_string("not_int".to_string()))
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_string() {
+        let s = Value::from_string("hello".to_string());
+        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+
+        let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(1))).unwrap();
+        assert_eq!(result, Value::from_string("e".to_string()));
+    }
+
+    #[test]
+    fn test_index_access_string_out_of_bounds() {
+        let s = Value::from_string("hi".to_string());
+        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::new(0, 2));
+
+        let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(10)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_string_wrong_type() {
+        let s = Value::from_string("hello".to_string());
+        let index_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 4));
+
+        let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Bool(true)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_access_invalid_type() {
+        let result = eval_index_access(
+            &Value::Integer(42),
+            &Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::new(0, 1)),
+            |_| Ok(Value::Integer(0)),
+        );
+        assert!(result.is_err());
+    }
+
+    // ===== SLICE ACCESS EXTENDED TESTS =====
+
+    #[test]
+    fn test_slice_access_no_start() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::new(0, 1));
+
+        let result = eval_slice_access(&arr, None, Some(&end_expr), |_| Ok(Value::Integer(2))).unwrap();
+
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(1));
+            assert_eq!(sliced[1], Value::Integer(2));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_access_no_end() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+
+        let result = eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Integer(1))).unwrap();
+
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(2));
+            assert_eq!(sliced[1], Value::Integer(3));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_access_no_start_no_end() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = eval_slice_access(&arr, None, None, |_| Ok(Value::Nil)).unwrap();
+
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_access_empty_slice() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+
+        let result = eval_slice_access(&arr, Some(&start_expr), Some(&end_expr), |_| {
+            Ok(Value::Integer(1))
+        })
+        .unwrap();
+
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 0);
+        } else {
+            panic!("Expected empty array");
+        }
+    }
+
+    #[test]
+    fn test_slice_access_invalid_start_type() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let start_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 4));
+
+        let result = eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Bool(true)));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_slice_access_invalid_end_type() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let end_expr = Expr::new(
+            ExprKind::Literal(Literal::String("not_int".to_string())),
+            Span::new(0, 7),
+        );
+
+        let result = eval_slice_access(&arr, None, Some(&end_expr), |_| {
+            Ok(Value::from_string("not_int".to_string()))
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_slice_access_string() {
+        let s = Value::from_string("hello".to_string());
+        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(4, None)), Span::new(0, 1));
+
+        let mut call_count = 0;
+        let result = eval_slice_access(&s, Some(&start_expr), Some(&end_expr), |_| {
+            call_count += 1;
+            match call_count {
+                1 => Ok(Value::Integer(1)),
+                2 => Ok(Value::Integer(4)),
+                _ => panic!("Unexpected call"),
+            }
+        })
+        .unwrap();
+
+        if let Value::String(sliced) = result {
+            assert_eq!(&*sliced, "ell");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_slice_access_invalid_type() {
+        let result = eval_slice_access(&Value::Integer(42), None, None, |_| Ok(Value::Nil));
+        assert!(result.is_err());
+    }
+
+    // ===== DESTRUCTURING TESTS =====
+
+    #[test]
+    fn test_destructuring_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let pattern = DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+
+        let mut assigned = HashMap::new();
+        let result = eval_destructuring_assignment(&pattern, &arr, |name, val| {
+            assigned.insert(name.to_string(), val);
+            Ok(())
+        });
+
+        assert!(result.is_ok());
+        assert_eq!(assigned.get("a"), Some(&Value::Integer(1)));
+        assert_eq!(assigned.get("b"), Some(&Value::Integer(2)));
+        assert_eq!(assigned.get("c"), Some(&Value::Integer(3)));
+    }
+
+    #[test]
+    fn test_destructuring_array_length_mismatch() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let pattern = DestructuringPattern::Array(vec!["a".to_string(), "b".to_string()]);
+
+        let result = eval_destructuring_assignment(&pattern, &arr, |_, _| Ok(()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_destructuring_array_wrong_type() {
+        let pattern = DestructuringPattern::Array(vec!["a".to_string()]);
+        let result = eval_destructuring_assignment(&pattern, &Value::Integer(42), |_, _| Ok(()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_destructuring_object() {
+        let mut fields = HashMap::new();
+        fields.insert("x".to_string(), Value::Integer(10));
+        fields.insert("y".to_string(), Value::Integer(20));
+
+        let obj = Value::Object(Arc::new(fields));
+        let pattern = DestructuringPattern::Object(vec![
+            ("x".to_string(), "a".to_string()),
+            ("y".to_string(), "b".to_string()),
+        ]);
+
+        let mut assigned = HashMap::new();
+        let result = eval_destructuring_assignment(&pattern, &obj, |name, val| {
+            assigned.insert(name.to_string(), val);
+            Ok(())
+        });
+
+        assert!(result.is_ok());
+        assert_eq!(assigned.get("a"), Some(&Value::Integer(10)));
+        assert_eq!(assigned.get("b"), Some(&Value::Integer(20)));
+    }
+
+    #[test]
+    fn test_destructuring_object_missing_field() {
+        let obj = Value::Object(Arc::new(HashMap::new()));
+        let pattern = DestructuringPattern::Object(vec![("x".to_string(), "a".to_string())]);
+
+        let result = eval_destructuring_assignment(&pattern, &obj, |_, _| Ok(()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_destructuring_object_wrong_type() {
+        let pattern = DestructuringPattern::Object(vec![("x".to_string(), "a".to_string())]);
+        let result = eval_destructuring_assignment(&pattern, &Value::Integer(42), |_, _| Ok(()));
+        assert!(result.is_err());
+    }
 }
