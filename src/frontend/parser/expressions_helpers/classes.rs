@@ -54,8 +54,31 @@ fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<Str
     state.tokens.advance(); // consume ':'
 
     let superclass = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
+        let mut name = name.clone();
         state.tokens.advance();
+
+        // Parse generic type parameters if present (e.g., Parent<i32>)
+        if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+            state.tokens.advance(); // consume '<'
+            name.push('<');
+
+            // Parse type parameters
+            loop {
+                let type_param = utils::parse_type(state)?;
+                name.push_str(&format!("{:?}", type_param)); // Format type as string
+
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                    name.push_str(", ");
+                } else {
+                    break;
+                }
+            }
+
+            state.tokens.expect(&Token::Greater)?;
+            name.push('>');
+        }
+
         Some(name)
     } else {
         None
@@ -65,8 +88,32 @@ fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<Str
     while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
         state.tokens.advance();
         if let Some((Token::Identifier(trait_name), _)) = state.tokens.peek() {
-            traits.push(trait_name.clone());
+            let mut name = trait_name.clone();
             state.tokens.advance();
+
+            // Parse generic type parameters if present (e.g., Trait<i32>)
+            if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+                state.tokens.advance(); // consume '<'
+                name.push('<');
+
+                // Parse type parameters
+                loop {
+                    let type_param = utils::parse_type(state)?;
+                    name.push_str(&format!("{:?}", type_param)); // Format type as string
+
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                        name.push_str(", ");
+                    } else {
+                        break;
+                    }
+                }
+
+                state.tokens.expect(&Token::Greater)?;
+                name.push('>');
+            }
+
+            traits.push(name);
         } else {
             bail!("Expected trait name after '+'");
         }
@@ -203,7 +250,7 @@ fn parse_member_and_dispatch(
     decorators: Vec<Decorator>,
 ) -> Result<()> {
     let (visibility, is_mut) = parse_class_modifiers(state)?;
-    let (is_static, is_override, is_final, is_abstract) = parse_member_flags(state)?;
+    let (is_static, is_override, is_final, is_abstract, is_async) = parse_member_flags(state)?;
 
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) if name == "new" || name == "init" => {
@@ -218,6 +265,7 @@ fn parse_member_and_dispatch(
                 is_override,
                 is_final,
                 is_abstract,
+                is_async,
             },
         ),
         // Support field declaration with 'let' keyword
@@ -250,6 +298,7 @@ struct MethodModifiers {
     is_override: bool,
     is_final: bool,
     is_abstract: bool,
+    is_async: bool,
 }
 
 fn parse_and_add_method(
@@ -257,7 +306,7 @@ fn parse_and_add_method(
     methods: &mut Vec<ClassMethod>,
     modifiers: MethodModifiers,
 ) -> Result<()> {
-    let mut method = parse_class_method(state)?;
+    let mut method = parse_class_method(state, modifiers.is_abstract)?;
     apply_method_modifiers(&mut method, modifiers)?;
     methods.push(method);
     Ok(())
@@ -366,6 +415,7 @@ fn parse_operator_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_override: false,
         is_final: false,
         is_abstract: false,
+        is_async: false,
         self_type: SelfType::Borrowed, // Most operators take &self
     })
 }
@@ -661,7 +711,7 @@ fn try_parse_mut_modifier(state: &mut ParserState) -> bool {
 }
 
 /// Parse member flags (static, override) - complexity: 4
-fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool, bool)> {
+fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool, bool, bool)> {
     let is_static = matches!(state.tokens.peek(), Some((Token::Static, _)));
     if is_static {
         state.tokens.advance();
@@ -682,7 +732,12 @@ fn parse_member_flags(state: &mut ParserState) -> Result<(bool, bool, bool, bool
         state.tokens.advance();
     }
 
-    Ok((is_static, is_override, is_final, is_abstract))
+    let is_async = matches!(state.tokens.peek(), Some((Token::Async, _)));
+    if is_async {
+        state.tokens.advance();
+    }
+
+    Ok((is_static, is_override, is_final, is_abstract, is_async))
 }
 
 /// Validate constructor modifiers - complexity: 2
@@ -703,6 +758,7 @@ fn apply_method_modifiers(method: &mut ClassMethod, modifiers: MethodModifiers) 
     method.is_override = modifiers.is_override;
     method.is_final = modifiers.is_final;
     method.is_abstract = modifiers.is_abstract;
+    method.is_async = modifiers.is_async;
 
     if modifiers.is_static {
         method.self_type = SelfType::None;
@@ -808,7 +864,7 @@ fn parse_constructor(state: &mut ParserState) -> Result<Constructor> {
 }
 
 /// Parse class method: fn `method_name(self_param`, `other_params`) -> `return_type` { body } - complexity: <10
-fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
+fn parse_class_method(state: &mut ParserState, is_abstract: bool) -> Result<ClassMethod> {
     // Expect 'fun' or 'fn' keyword
     match state.tokens.peek() {
         Some((Token::Fun, _)) => {
@@ -853,8 +909,13 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         None
     };
 
-    // Parse method body
-    let body = Box::new(parse_expr_recursive(state)?);
+    // Parse method body (abstract methods have no body)
+    let body = if is_abstract {
+        // Abstract methods don't have a body - use empty block as placeholder
+        Box::new(Expr::new(ExprKind::Block(Vec::new()), Span::default()))
+    } else {
+        Box::new(parse_expr_recursive(state)?)
+    };
 
     Ok(ClassMethod {
         name: method_name,
@@ -866,6 +927,7 @@ fn parse_class_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_override: false, // Will be set by class body parsing
         is_final: false,    // Will be set by class body parsing
         is_abstract: false, // Will be set by class body parsing
+        is_async: false,    // Will be set by class body parsing
         self_type,
     })
 }

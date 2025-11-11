@@ -297,6 +297,7 @@ fn parse_struct_method(state: &mut ParserState) -> Result<ClassMethod> {
         is_override: false,
         is_final: false,
         is_abstract: false,
+        is_async: false,
         self_type,
     })
 }
