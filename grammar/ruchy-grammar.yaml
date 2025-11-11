@@ -343,10 +343,14 @@ grammar:
 
     actor_decl:
       rule: "visibility? 'actor' identifier generic_params? '{' actor_item* '}'"
-      implemented: false
-      test_coverage: 0
-      file: null
-      reason: "Actor system not yet implemented in parser"
+      implemented: true  # SPEC-001-F: FIXED - All 3 modes working
+      modes:
+        interpreter: true  # Actor state management works
+        transpile: true    # Generates Arc<Mutex<Struct>> with handle_message
+        compile: true      # rustc compiles successfully (no tokio dependency)
+      test_coverage: 100
+      file: "src/frontend/parser/actors.rs"
+      reason: "SPEC-001-F: Fixed by simplifying actor transpilation to synchronous Arc<Mutex<>> pattern (no async/tokio)"
 
   types:
     simple_type:

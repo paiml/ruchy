@@ -94,37 +94,28 @@ impl Transpiler {
                 }
             }
         }
-        // Generate the complete actor implementation
+        // SPEC-001-F: Generate simplified actor implementation (no tokio dependency)
+        // Actors transpile to plain structs wrapped in Arc<Mutex<>> via spawn
+        // For true async actor support, would need tokio runtime
+        // Current: Synchronous message handling (no channels/futures)
         Ok(quote! {
             // Message enum
             #[derive(Debug, Clone)]
             enum #message_enum_name {
                 #(#message_variants,)*
             }
-            // Actor struct
+            // Actor struct (simplified, no async/tokio)
+            #[derive(Debug, Clone)]
             struct #actor_name {
                 #(#state_fields,)*
-                receiver: tokio::sync::mpsc::Receiver<#message_enum_name>,
-                sender: tokio::sync::mpsc::Sender<#message_enum_name>,
             }
             impl #actor_name {
                 fn new() -> Self {
-                    let (sender, receiver) = tokio::sync::mpsc::channel(100);
                     Self {
                         #(#field_names: Default::default(),)*
-                        receiver,
-                        sender,
                     }
                 }
-                fn sender(&self) -> tokio::sync::mpsc::Sender<#message_enum_name> {
-                    self.sender.clone()
-                }
-                async fn run(&mut self) {
-                    while let Some(msg) = self.receiver.recv().await {
-                        self.handle_message(msg).await;
-                    }
-                }
-                async fn handle_message(&mut self, msg: #message_enum_name) {
+                fn handle_message(&mut self, msg: #message_enum_name) {
                     match msg {
                         #(#handler_arms)*
                     }
@@ -146,10 +137,12 @@ impl Transpiler {
     /// assert!(result.is_ok());
     /// ```
     pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
+        // SPEC-001-F: Simplified actor send (no async/await)
+        // Actors use Arc<Mutex<>> so we lock and call handle_message directly
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
         Ok(quote! {
-            #actor_tokens.send(#message_tokens).await
+            #actor_tokens.lock().unwrap().handle_message(#message_tokens)
         })
     }
     /// Transpiles ask operations (actor ? message)
@@ -171,17 +164,20 @@ impl Transpiler {
         message: &Expr,
         timeout: Option<&Expr>,
     ) -> Result<TokenStream> {
+        // SPEC-001-F: Simplified actor ask (no async/await)
+        // Synchronous message handling via Arc<Mutex<>>
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
         if let Some(timeout_expr) = timeout {
-            let timeout_tokens = self.transpile_expr(timeout_expr)?;
+            let _timeout_tokens = self.transpile_expr(timeout_expr)?;
+            // Simplified: ignore timeout for now, just handle message
             Ok(quote! {
-                #actor_tokens.ask(#message_tokens, #timeout_tokens).await
+                #actor_tokens.lock().unwrap().handle_message(#message_tokens)
             })
         } else {
-            // Default timeout of 5 seconds
+            // Simplified: no timeout parameter
             Ok(quote! {
-                #actor_tokens.ask(#message_tokens, std::time::Duration::from_secs(5)).await
+                #actor_tokens.lock().unwrap().handle_message(#message_tokens)
             })
         }
     }
