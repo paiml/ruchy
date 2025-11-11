@@ -9936,11 +9936,12 @@ next_sprint:
 
   - id: PARSER-009
     title: "Implement Impl Block Parsing (Issue #147)"
-    status: pending
+    status: completed
     priority: high
     category: parser
-    severity: BLOCKER
+    severity: BLOCKER (RESOLVED)
     github_issue: 147
+    completion_date: "2025-11-11"
     description: |
       Implement full impl block parsing support. The transpiler is already correct
       - only parser implementation is needed.
@@ -9969,9 +9970,12 @@ next_sprint:
       
     test_metrics:
       tests_written: 4
-      tests_passing: 0
-      tests_failing: 4
+      tests_passing: 4
+      tests_failing: 0
+      rustc_validation: "4/4 .rlib files compile successfully"
+      regression_tests_updated: 3
       coverage_impact: "+5% parser module coverage"
+      pmat_tdg_score: "A+ (98.2/100) for impls.rs, A (91.7/100) for tests"
       
     phases:
       phase_1:

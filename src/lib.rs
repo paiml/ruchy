@@ -246,23 +246,18 @@ mod tests {
     }
     #[test]
     fn test_compile_impl() {
-        // Negative test: impl blocks are not supported in Ruchy
-        // Methods should be defined inside struct bodies
+        // PARSER-009: impl blocks are now supported
         let result =
             compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }");
 
         assert!(
-            result.is_err(),
-            "Should reject impl blocks (methods go inside struct body)"
+            result.is_ok(),
+            "Should accept impl blocks (PARSER-009 implementation)"
         );
 
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("impl blocks are not supported") ||
-                error_msg.contains("methods should be defined inside the struct body"),
-                "Error should explain that impl blocks aren't supported. Got: {error_msg}"
-            );
+        if let Ok(code) = result {
+            assert!(code.contains("impl Point"));
+            assert!(code.contains("fn new"));
         }
     }
     #[test]
@@ -962,20 +957,16 @@ mod tests {
         // Trait declarations are supported
         assert!(compile("trait Show { fun show(self) -> String }").is_ok());
 
-        // But impl blocks are not supported (methods go in struct bodies)
+        // PARSER-009: impl blocks are now supported
         let result = compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }");
         assert!(
-            result.is_err(),
-            "Should reject impl blocks (not supported in Ruchy)"
+            result.is_ok(),
+            "Should accept impl blocks (PARSER-009 implementation)"
         );
 
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("impl blocks are not supported") ||
-                error_msg.contains("methods should be defined inside the struct body"),
-                "Error should explain impl blocks aren't supported. Got: {error_msg}"
-            );
+        if let Ok(code) = result {
+            assert!(code.contains("impl"));
+            assert!(code.contains("Show"));
         }
     }
 

@@ -35,8 +35,7 @@
 use crate::frontend::ast::{Expr, ExprKind, ImplMethod};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{ParserState, Result};
-use crate::frontend::parser::utils_helpers::types::{parse_type, parse_type_parameters};
-use crate::frontend::parser::utils_helpers::parameters::parse_params;
+use crate::frontend::parser::utils::{parse_params, parse_type, parse_type_parameters};
 use crate::frontend::parser::collections::parse_block;
 
 /// Parse impl block: impl [Trait for] Type { methods }
@@ -46,7 +45,7 @@ pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> 
     let start = state.tokens.expect(&Token::Impl)?.start;
 
     // Parse optional type parameters: impl<T, U>
-    let type_params = if matches!(state.tokens.peek(), Some((Token::Lt, _))) {
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         parse_type_parameters(state)?
     } else {
         vec![]
@@ -118,10 +117,8 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     // Method name
     let name = expect_identifier(state)?;
 
-    // Parameters
-    state.tokens.expect(&Token::LeftParen)?;
+    // Parameters (parse_params handles both parens)
     let params = parse_params(state)?;
-    state.tokens.expect(&Token::RightParen)?;
 
     // Return type
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {

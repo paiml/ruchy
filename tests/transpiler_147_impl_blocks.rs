@@ -25,11 +25,11 @@ impl Runtime {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile_to_program(&ast);
+    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
 
-    assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
-
-    let rust_code = result.unwrap().to_string();
+    // Format with prettyplease (same as CLI does)
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
+    let rust_code = prettyplease::unparse(&syntax_tree);
 
     // CRITICAL: Should generate "pub fn" NOT "pub pub fn"
     assert!(
@@ -88,11 +88,11 @@ impl Calculator {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile_to_program(&ast);
+    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
 
-    assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
-
-    let rust_code = result.unwrap().to_string();
+    // Format with prettyplease (same as CLI does)
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
+    let rust_code = prettyplease::unparse(&syntax_tree);
 
     // NO duplicate pub keywords
     assert!(
@@ -149,11 +149,11 @@ impl Counter {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile_to_program(&ast);
+    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
 
-    assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
-
-    let rust_code = result.unwrap().to_string();
+    // Format with prettyplease (same as CLI does)
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
+    let rust_code = prettyplease::unparse(&syntax_tree);
 
     // NO duplicate pub
     assert!(!rust_code.contains("pub pub"), "Found duplicate pub");
@@ -210,11 +210,11 @@ impl Point {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let result = Transpiler::new().transpile_to_program(&ast);
+    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
 
-    assert!(result.is_ok(), "Should transpile, got: {:?}", result.err());
-
-    let rust_code = result.unwrap().to_string();
+    // Format with prettyplease (same as CLI does)
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
+    let rust_code = prettyplease::unparse(&syntax_tree);
 
     // NO duplicate pub
     assert!(!rust_code.contains("pub pub"), "Found duplicate pub");
