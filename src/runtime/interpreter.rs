@@ -4365,6 +4365,21 @@ impl Interpreter {
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
 
+        // RUNTIME-099 FIX: For mutable method calls on identifiers, ensure variable binding
+        // is updated after the method executes (similar to array.push/pop pattern)
+        if let ExprKind::Identifier(var_name) = &receiver.kind {
+            if matches!(receiver_value, Value::ObjectMut(_)) {
+                // Call the mutable method
+                let result = self.dispatch_method_call(&receiver_value, method, &arg_values, args.is_empty())?;
+
+                // Update the variable binding to ensure mutations persist
+                // (ObjectMut uses Arc, so this just ensures the binding is current)
+                self.set_variable(var_name, receiver_value);
+
+                return Ok(result);
+            }
+        }
+
         self.dispatch_method_call(&receiver_value, method, &arg_values, args.is_empty())
     }
 
@@ -6406,8 +6421,9 @@ impl Interpreter {
                             // Check if it's a struct instance with the correct class
                             if let Some(Value::String(ref class)) = returned_obj.get("__class") {
                                 if class.as_ref() == class_name {
-                                    // Constructor explicitly returned an instance - use it
-                                    return Ok(result);
+                                    // Constructor explicitly returned an instance - convert to ObjectMut for mutability
+                                    let obj_map = returned_obj.as_ref().clone();
+                                    return Ok(crate::runtime::object_helpers::new_mutable_object(obj_map));
                                 }
                             }
                             // Also handle struct literals (without __class)
