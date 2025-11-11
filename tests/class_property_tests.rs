@@ -17,6 +17,11 @@ mod integration {
     fn test_class_properties_integration() {
         // This test ensures the property module compiles and runs
         println!("Class property tests are available");
+        println!("IMPORTANT: Interpreter is NOT thread-safe (by design)");
         println!("Run with: cargo test --test class_property_tests -- --test-threads=1");
+        println!("");
+        println!("Rationale: Each test creates its own Interpreter instance.");
+        println!("Proptest runs iterations in parallel, causing race conditions.");
+        println!("In production, each execution has its own interpreter (no sharing).");
     }
 }
