@@ -5,6 +5,17 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[PARSER-009]** Created comprehensive parser implementation ticket for impl block support (Issue #147)
+  - **INVESTIGATION**: Confirmed transpiler is CORRECT - generates "pub fn" NOT "pub pub fn"
+  - **ROOT CAUSE**: Parser stub at src/frontend/parser/expressions_helpers/impls.rs:45 bails immediately
+  - **STATUS**: RED step complete - 4 tests written and failing (0/4 passing)
+  - **TICKET**: docs/tickets/PARSER-009-impl-blocks.md (comprehensive scope analysis)
+  - **ROADMAP**: Added PARSER-009 to docs/execution/roadmap.yaml
+  - **TEST FILE**: tests/transpiler_147_impl_blocks.rs (4 tests, 194 lines)
+  - **ESTIMATED**: 4-6 hours implementation (4 phases: module refactoring, implementation, refactor, validate)
+  - **BLOCKS**: GitHub Issue #147, user adoption of impl syntax
+  - **WORKAROUND**: Use methods-in-struct syntax (Ruchy's preferred style)
+
 - **[QUALITY-EVAL-DATA-STRUCTURES]** Add comprehensive unit tests to runtime/eval_data_structures.rs (41.25% → 85%+ coverage)
   - **PROBLEM**: Critical data structures module at only 41.25% coverage (282 uncovered lines out of 480)
   - **SOLUTION**: Added 33 new unit tests (4 → 37 total tests)

@@ -32,26 +32,113 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::Expr;
+use crate::frontend::ast::{Expr, ExprKind, ImplMethod};
 use crate::frontend::lexer::Token;
-use crate::frontend::parser::{bail, ParserState, Result};
+use crate::frontend::parser::{ParserState, Result};
+use crate::frontend::parser::utils_helpers::types::{parse_type, parse_type_parameters};
+use crate::frontend::parser::utils_helpers::parameters::parse_params;
+use crate::frontend::parser::collections::parse_block;
 
 /// Parse impl block: impl [Trait for] Type { methods }
 ///
-/// Complexity: 1
+/// Complexity: 8 (within Toyota Way limits)
 pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
-    state.tokens.expect(&Token::Impl)?;
+    let start = state.tokens.expect(&Token::Impl)?.start;
 
-    bail!(
-        "impl blocks are not supported. \
-         In Ruchy, methods should be defined inside the struct body. \
-         \n\nExample:\n\
-         struct Point {{\n    \
-         x: i32,\n    \
-         y: i32,\n\n    \
-         fun new(x: i32, y: i32) -> Point {{\n        \
-         Point {{ x, y }}\n    \
-         }}\n\
-         }}"
-    );
+    // Parse optional type parameters: impl<T, U>
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Lt, _))) {
+        parse_type_parameters(state)?
+    } else {
+        vec![]
+    };
+
+    // Parse trait name and for_type
+    // Could be: impl TraitName for TypeName OR impl TypeName
+    let first_ident = expect_identifier(state)?;
+
+    let (trait_name, for_type) = if matches!(state.tokens.peek(), Some((Token::For, _))) {
+        // impl TraitName for TypeName
+        state.tokens.advance(); // consume 'for'
+        let type_name = expect_identifier(state)?;
+        (Some(first_ident), type_name)
+    } else {
+        // impl TypeName (no trait)
+        (None, first_ident)
+    };
+
+    // Parse methods block
+    state.tokens.expect(&Token::LeftBrace)?;
+
+    let mut methods = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
+        methods.push(parse_impl_method(state)?);
+    }
+
+    let end = state.tokens.expect(&Token::RightBrace)?.end;
+
+    Ok(Expr::new(
+        ExprKind::Impl {
+            type_params,
+            trait_name,
+            for_type,
+            methods,
+            is_pub: false, // Impl blocks themselves are not pub
+        },
+        crate::frontend::ast::Span::new(start, end),
+    ))
+}
+
+/// Helper: Expect identifier token
+fn expect_identifier(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Ok(name)
+    } else {
+        use crate::frontend::parser::bail;
+        bail!("Expected identifier")
+    }
+}
+
+/// Parse single method in impl block
+///
+/// Complexity: 6 (within Toyota Way limits)
+fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
+    // Check for pub visibility
+    let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    };
+
+    // Expect fun keyword
+    state.tokens.expect(&Token::Fun)?;
+
+    // Method name
+    let name = expect_identifier(state)?;
+
+    // Parameters
+    state.tokens.expect(&Token::LeftParen)?;
+    let params = parse_params(state)?;
+    state.tokens.expect(&Token::RightParen)?;
+
+    // Return type
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Body
+    let body = Box::new(parse_block(state)?);
+
+    Ok(ImplMethod {
+        name,
+        params,
+        return_type,
+        body,
+        is_pub,
+    })
 }
