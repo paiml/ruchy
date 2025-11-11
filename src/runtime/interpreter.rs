@@ -6394,10 +6394,38 @@ impl Interpreter {
                         self.env_stack.push(Rc::new(RefCell::new(ctor_env))); // ISSUE-119: Wrap in Rc<RefCell>
 
                         // Execute constructor body
-                        let _result = self.eval_expr(body)?;
+                        // RUNTIME-098: Constructor may return explicit value (e.g., Counter { count: 0 })
+                        let result = self.eval_expr(body)?;
 
-                        // Extract updated self from environment after constructor execution
-                        // Note: Handles immutability by copying updated fields back to instance
+                        // Pop environment before checking result
+                        self.env_stack.pop();
+
+                        // RUNTIME-098: Check if constructor returned an explicit struct instance
+                        // If so, use that instead of manually building from fields
+                        if let Value::Object(ref returned_obj) = result {
+                            // Check if it's a struct instance with the correct class
+                            if let Some(Value::String(ref class)) = returned_obj.get("__class") {
+                                if class.as_ref() == class_name {
+                                    // Constructor explicitly returned an instance - use it
+                                    return Ok(result);
+                                }
+                            }
+                            // Also handle struct literals (without __class)
+                            if !returned_obj.contains_key("__class") {
+                                // This is a plain struct literal, add class metadata
+                                let mut obj_with_class = returned_obj.as_ref().clone();
+                                obj_with_class.insert(
+                                    "__class".to_string(),
+                                    Value::from_string(class_name.to_string()),
+                                );
+                                return Ok(crate::runtime::object_helpers::new_mutable_object(
+                                    obj_with_class,
+                                ));
+                            }
+                        }
+
+                        // RUNTIME-098: For field-assignment constructors (self.x = value),
+                        // extract updated self from environment after constructor execution
                         let updated_self = self.lookup_variable("self")?;
                         if let Value::Object(ref updated_instance) = updated_self {
                             // Copy all non-metadata fields from updated self back to instance
@@ -6407,9 +6435,6 @@ impl Interpreter {
                                 }
                             }
                         }
-
-                        // Pop environment
-                        self.env_stack.pop();
                     }
                 }
             }
