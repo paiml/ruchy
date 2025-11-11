@@ -1,0 +1,607 @@
+# Ruchy Language Grammar Specification (Canonical)
+# Version 1.0.0
+# Source: docs/architecture/grammer.md
+# This is the SINGLE SOURCE OF TRUTH for Ruchy grammar
+
+version: "1.0.0"
+language: "ruchy"
+updated: "2025-11-11"
+schema_version: "1.0"
+
+meta:
+  description: "Complete formal grammar for the Ruchy programming language"
+  grammar_type: "LL(2)"
+  max_lookahead: 2
+  production_count: 41
+  status: "active"
+  maintainer: "Parser Team"
+
+lexical:
+  keywords:
+    - actor
+    - as
+    - async
+    - await
+    - break
+    - const
+    - continue
+    - effect
+    - else
+    - enum
+    - false
+    - for
+    - fun
+    - handle
+    - handler
+    - if
+    - impl
+    - import
+    - in
+    - lazy
+    - let
+    - loop
+    - match
+    - mod
+    - mut
+    - pub
+    - ref
+    - return
+    - self
+    - spawn
+    - struct
+    - super
+    - trait
+    - true
+    - type
+    - use
+    - where
+    - while
+    - yield
+
+  operators:
+    arithmetic:
+      - name: "add"
+        symbol: "+"
+        precedence: 9
+        associativity: "left"
+        implemented: true
+      - name: "subtract"
+        symbol: "-"
+        precedence: 9
+        associativity: "left"
+        implemented: true
+      - name: "multiply"
+        symbol: "*"
+        precedence: 8
+        associativity: "left"
+        implemented: true
+      - name: "divide"
+        symbol: "/"
+        precedence: 8
+        associativity: "left"
+        implemented: true
+      - name: "modulo"
+        symbol: "%"
+        precedence: 8
+        associativity: "left"
+        implemented: true
+      - name: "exponent"
+        symbol: "**"
+        precedence: 6
+        associativity: "right"
+        implemented: true
+
+    comparison:
+      - name: "equal"
+        symbol: "=="
+        precedence: 15
+        associativity: "left"
+        implemented: true
+      - name: "not_equal"
+        symbol: "!="
+        precedence: 15
+        associativity: "left"
+        implemented: true
+      - name: "less"
+        symbol: "<"
+        precedence: 14
+        associativity: "left"
+        implemented: true
+      - name: "greater"
+        symbol: ">"
+        precedence: 14
+        associativity: "left"
+        implemented: true
+      - name: "less_equal"
+        symbol: "<="
+        precedence: 14
+        associativity: "left"
+        implemented: true
+      - name: "greater_equal"
+        symbol: ">="
+        precedence: 14
+        associativity: "left"
+        implemented: true
+
+    logical:
+      - name: "and"
+        symbol: "&&"
+        precedence: 16
+        associativity: "left"
+        implemented: true
+      - name: "or"
+        symbol: "||"
+        precedence: 17
+        associativity: "left"
+        implemented: true
+      - name: "not"
+        symbol: "!"
+        precedence: 7
+        associativity: "right"
+        implemented: true
+
+    bitwise:
+      - name: "bit_and"
+        symbol: "&"
+        precedence: 11
+        associativity: "left"
+        implemented: true
+      - name: "bit_or"
+        symbol: "|"
+        precedence: 13
+        associativity: "left"
+        implemented: true
+      - name: "bit_xor"
+        symbol: "^"
+        precedence: 12
+        associativity: "left"
+        implemented: true
+      - name: "bit_not"
+        symbol: "~"
+        precedence: 7
+        associativity: "right"
+        implemented: true
+      - name: "shift_left"
+        symbol: "<<"
+        precedence: 10
+        associativity: "left"
+        implemented: true
+      - name: "shift_right"
+        symbol: ">>"
+        precedence: 10
+        associativity: "left"
+        implemented: true
+
+    assignment:
+      - name: "assign"
+        symbol: "="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+      - name: "add_assign"
+        symbol: "+="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+      - name: "sub_assign"
+        symbol: "-="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+      - name: "mul_assign"
+        symbol: "*="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+      - name: "div_assign"
+        symbol: "/="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+      - name: "mod_assign"
+        symbol: "%="
+        precedence: 18
+        associativity: "right"
+        implemented: true
+
+    special:
+      - name: "pipeline"
+        symbol: ">>"
+        precedence: 1
+        associativity: "left"
+        implemented: true
+      - name: "actor_send"
+        symbol: "<-"
+        precedence: 2
+        associativity: "left"
+        implemented: false
+      - name: "actor_ask"
+        symbol: "<?"
+        precedence: 2
+        associativity: "left"
+        implemented: false
+      - name: "try"
+        symbol: "?"
+        precedence: 3
+        associativity: "left"
+        implemented: true
+      - name: "arrow"
+        symbol: "->"
+        precedence: null
+        associativity: null
+        implemented: true
+      - name: "range"
+        symbol: ".."
+        precedence: null
+        associativity: null
+        implemented: true
+      - name: "range_inclusive"
+        symbol: "..."
+        precedence: null
+        associativity: null
+        implemented: true
+
+  literals:
+    integer:
+      patterns: ["decimal", "hex", "octal", "binary"]
+      implemented: true
+      test_coverage: 100
+    float:
+      patterns: ["standard", "scientific"]
+      implemented: true
+      test_coverage: 100
+    string:
+      patterns: ["double_quote", "f_string", "raw_string", "triple_quote"]
+      implemented: true
+      test_coverage: 95
+    char:
+      patterns: ["single_char", "escaped"]
+      implemented: true
+      test_coverage: 100
+    boolean:
+      values: ["true", "false"]
+      implemented: true
+      test_coverage: 100
+
+grammar:
+  program:
+    rule: "item*"
+    description: "Top-level program structure"
+    implemented: true
+    test_coverage: 100
+    productions:
+      - import_stmt
+      - module_decl
+      - function_decl
+      - struct_decl
+      - enum_decl
+      - trait_decl
+      - impl_block
+      - type_alias
+      - const_decl
+      - actor_decl
+
+  items:
+    import_stmt:
+      rule: "'import' import_path ('as' identifier)?"
+      implemented: true
+      test_coverage: 95
+      file: "src/frontend/parser/imports.rs"
+
+    module_decl:
+      rule: "visibility? 'mod' identifier '{' item* '}'"
+      implemented: true
+      test_coverage: 85
+      file: "src/frontend/parser/modules.rs"
+
+    function_decl:
+      rule: "visibility? async? 'fun' identifier generic_params? '(' params? ')' return_type? where_clause? block"
+      implemented: true
+      test_coverage: 100
+      file: "src/frontend/parser/functions.rs"
+
+    struct_decl:
+      rule: "visibility? 'struct' identifier generic_params? struct_body"
+      implemented: true
+      test_coverage: 95
+      file: "src/frontend/parser/expressions_helpers/structs.rs"
+
+    enum_decl:
+      rule: "visibility? 'enum' identifier generic_params? '{' enum_variants '}'"
+      implemented: true
+      test_coverage: 90
+      file: "src/frontend/parser/enums.rs"
+
+    trait_decl:
+      rule: "visibility? 'trait' identifier generic_params? trait_bounds? '{' trait_item* '}'"
+      implemented: true
+      test_coverage: 80
+      file: "src/frontend/parser/traits.rs"
+
+    impl_block:
+      rule: "'impl' generic_params? type_for trait_for? where_clause? '{' impl_item* '}'"
+      implemented: true
+      test_coverage: 85
+      file: "src/frontend/parser/expressions_helpers/impls.rs"
+
+    type_alias:
+      rule: "visibility? 'type' identifier generic_params? '=' type"
+      implemented: true
+      test_coverage: 90
+      file: "src/frontend/parser/types.rs"
+
+    const_decl:
+      rule: "visibility? 'const' identifier ':' type '=' expr"
+      implemented: false  # FAILS COMPILE - See SPEC-001-B
+      modes:
+        interpreter: true
+        transpile: true
+        compile: false  # rustc compilation fails
+      test_coverage: 67
+      file: "src/frontend/parser/constants.rs"
+      reason: "Const declarations fail rustc compilation (interpreter and transpile work)"
+
+    actor_decl:
+      rule: "visibility? 'actor' identifier generic_params? '{' actor_item* '}'"
+      implemented: false
+      test_coverage: 0
+      file: null
+      reason: "Actor system not yet implemented in parser"
+
+  types:
+    simple_type:
+      rule: "identifier ('::' identifier)*"
+      implemented: true
+      test_coverage: 100
+
+    generic_type:
+      rule: "identifier '<' type_list '>'"
+      implemented: true
+      test_coverage: 95
+
+    tuple_type:
+      rule: "'(' (type (',' type)*)? ')'"
+      implemented: true
+      test_coverage: 100
+
+    array_type:
+      rule: "'[' type ';' expr ']'"
+      implemented: true
+      test_coverage: 85
+
+    slice_type:
+      rule: "'[' type ']'"
+      implemented: true
+      test_coverage: 90
+
+    ref_type:
+      rule: "'&' 'mut'? type"
+      implemented: true
+      test_coverage: 100
+
+    function_type:
+      rule: "'|' type_list? '|' '->' type"
+      implemented: true
+      test_coverage: 90
+
+    refined_type:
+      rule: "type 'where' constraint"
+      implemented: false
+      test_coverage: 0
+      reason: "Refinement types not implemented"
+
+  expressions:
+    if_expr:
+      rule: "'if' expr block ('else' (if_expr | block))?"
+      implemented: true
+      test_coverage: 100
+      test_cases:
+        - "basic_if"
+        - "if_else"
+        - "if_else_if"
+        - "nested_if"
+
+    match_expr:
+      rule: "'match' expr '{' match_arms '}'"
+      implemented: true
+      test_coverage: 95
+      test_cases:
+        - "literal_match"
+        - "pattern_match"
+        - "guard_match"
+
+    for_expr:
+      rule: "label? 'for' pattern 'in' expr block"
+      implemented: true
+      test_coverage: 95
+
+    while_expr:
+      rule: "label? 'while' expr block"
+      implemented: true
+      test_coverage: 90
+
+    loop_expr:
+      rule: "label? 'loop' block"
+      implemented: true
+      test_coverage: 85
+
+    async_block:
+      rule: "'async' block"
+      implemented: false
+      test_coverage: 0
+      reason: "Async blocks not parsed yet"
+
+    block_expr:
+      rule: "label? block"
+      implemented: true
+      test_coverage: 100
+
+    lambda_expr:
+      rule: "'|' params? '|' ('->' type)? (expr | block)"
+      implemented: false  # FAILS ALL THREE MODES - See SPEC-001-A
+      modes:
+        interpreter: false
+        transpile: false
+        compile: false
+      test_coverage: 0
+      reason: "Lambda expressions fail in interpreter, transpile, and compile modes"
+
+    lazy_expr:
+      rule: "'lazy' expr"
+      implemented: false
+      test_coverage: 0
+      reason: "Lazy evaluation not implemented"
+
+    pipeline_expr:
+      rule: "expr ('>>' expr)+"
+      implemented: false  # FAILS INTERPRETER & COMPILE - See SPEC-001-C
+      modes:
+        interpreter: false
+        transpile: true    # Only transpile works
+        compile: false
+      test_coverage: 33
+      reason: "Pipeline expressions fail in interpreter and compile modes (only transpile works)"
+
+    tuple_expr:
+      rule: "'(' (expr (',' expr)* ','?)? ')'"
+      implemented: true
+      test_coverage: 100
+
+    array_expr:
+      rule: "'[' array_elements? ']'"
+      implemented: true
+      test_coverage: 95
+
+    struct_expr:
+      rule: "path '{' field_inits? '}'"
+      implemented: true
+      test_coverage: 90
+
+  patterns:
+    literal_pattern:
+      rule: "literal"
+      implemented: true
+      test_coverage: 100
+
+    identifier_pattern:
+      rule: "'mut'? identifier ('@' pattern)?"
+      implemented: true
+      test_coverage: 95
+
+    wildcard_pattern:
+      rule: "'_'"
+      implemented: true
+      test_coverage: 100
+
+    tuple_pattern:
+      rule: "'(' (pattern (',' pattern)* ','?)? ')'"
+      implemented: true
+      test_coverage: 100
+
+    array_pattern:
+      rule: "'[' array_patterns? ']'"
+      implemented: true
+      test_coverage: 90
+
+    struct_pattern:
+      rule: "path '{' field_patterns? '}'"
+      implemented: true
+      test_coverage: 85
+
+    enum_pattern:
+      rule: "path variant_pattern?"
+      implemented: true
+      test_coverage: 90
+
+    ref_pattern:
+      rule: "'&' 'mut'? pattern"
+      implemented: true
+      test_coverage: 95
+
+    range_pattern:
+      rule: "expr '..' expr? | '..' expr"
+      implemented: true
+      test_coverage: 80
+
+    or_pattern:
+      rule: "pattern ('|' pattern)+"
+      implemented: true
+      test_coverage: 85
+
+  effects:
+    effect_decl:
+      rule: "visibility? 'effect' identifier generic_params? '{' effect_operations '}'"
+      implemented: false
+      test_coverage: 0
+      reason: "Effect system not implemented"
+
+    handler_expr:
+      rule: "'handle' expr 'with' '{' handler_cases '}'"
+      implemented: false
+      test_coverage: 0
+      reason: "Effect handlers not implemented"
+
+  macros:
+    macro_call:
+      rule: "identifier '!' macro_args"
+      implemented: false
+      test_coverage: 0
+      reason: "Macro system not implemented"
+
+validation:
+  property_tests:
+    - name: "all_keywords_parsed"
+      description: "Parser accepts all keywords in valid contexts"
+      generator: "arbitrary_keyword"
+      implemented: true
+
+    - name: "all_operators_parsed"
+      description: "Parser correctly handles all operators"
+      generator: "arbitrary_operator"
+      implemented: true
+
+    - name: "operator_precedence"
+      description: "Parser respects operator precedence table"
+      generator: "arbitrary_binary_expr"
+      implemented: true
+
+    - name: "expression_roundtrip"
+      description: "Parse then pretty-print preserves semantics"
+      generator: "arbitrary_expr"
+      implemented: false
+
+    - name: "type_wellformedness"
+      description: "All parsed types are well-formed"
+      generator: "arbitrary_type"
+      implemented: true
+
+  completeness:
+    target_percentage: 85
+    current_percentage: null  # Calculated by validator
+    missing_components: null  # Calculated by validator
+
+  performance:
+    max_validation_time_seconds: 30
+    fast_mode_time_seconds: 15
+    parallel_execution: true
+
+thresholds:
+  implementation: 85  # Minimum % of components implemented
+  test_coverage: 80   # Minimum test coverage for implemented components
+  property_tests: 75  # Minimum property test coverage
+
+output:
+  formats:
+    - summary
+    - full
+    - json
+    - ci
+  colors: true
+  unicode: true
+
+history:
+  - version: "1.0.0"
+    date: "2025-11-11"
+    author: "Parser Team"
+    changes: "Initial canonical grammar specification"
+    backwards_compatible: true

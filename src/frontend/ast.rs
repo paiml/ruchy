@@ -1051,6 +1051,7 @@ pub struct ClassMethod {
     pub is_override: bool,   // override keyword for explicit overriding
     pub is_final: bool,      // final method (cannot be overridden)
     pub is_abstract: bool,   // abstract method (no implementation)
+    pub is_async: bool,      // async method (returns Future)
     pub self_type: SelfType, // &self, &mut self, or self (move)
 }
 

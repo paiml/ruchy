@@ -641,7 +641,6 @@ class MyClass {
 }
 
 #[test]
-#[ignore] // Feature not yet implemented
 fn test_modifier_02_abstract_method() {
     let code = r#"
 abstract class MyClass {
@@ -668,7 +667,6 @@ class Child : Parent {
 }
 
 #[test]
-#[ignore] // Feature not yet implemented
 fn test_modifier_04_async_method() {
     let code = r#"
 class MyClass {
@@ -743,7 +741,6 @@ class Container<T> where T: Display {
 // ============================================================================
 
 #[test]
-#[ignore] // Feature not yet implemented
 fn test_complex_inheritance_01_generic_parent() {
     let code = r#"
 class Child : Parent<i32> {
@@ -756,7 +753,6 @@ class Child : Parent<i32> {
 }
 
 #[test]
-#[ignore] // Feature not yet implemented
 fn test_complex_inheritance_02_multiple_generic_traits() {
     let code = r#"
 class MyClass : + Trait1<i32> + Trait2<String> {
