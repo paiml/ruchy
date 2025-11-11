@@ -421,6 +421,12 @@ impl Transpiler {
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
+            ExprKind::Lazy { expr } => {
+                // SPEC-001-D: Lazy evaluation transpiles to immediate evaluation
+                // For simplicity, just evaluate the expression immediately
+                // Future: Use std::sync::LazyLock or once_cell::Lazy for true lazy semantics
+                self.transpile_expr(expr)
+            }
             ExprKind::Import { module, items } => {
                 // Check if this import has a "pub" attribute
                 let has_pub = expr.attributes.iter().any(|attr| attr.name == "pub");
