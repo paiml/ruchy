@@ -69,8 +69,11 @@ impl Transpiler {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn transpile_async_block(&self, body: &Expr) -> Result<TokenStream> {
+        // SPEC-001-E: Async block - simplified synchronous evaluation
+        // For true async support, would need tokio runtime integration
+        // Current: Evaluates block immediately (no Future/await)
         let body_tokens = self.transpile_expr(body)?;
-        Ok(quote! { async { #body_tokens } })
+        Ok(quote! { { #body_tokens } })
     }
 
     /// Transpiles async lambda expressions to Rust async closures

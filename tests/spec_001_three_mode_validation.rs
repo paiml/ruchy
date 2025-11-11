@@ -260,6 +260,24 @@ fun main() {
 }
 
 #[test]
+fn test_spec_001_async_block_three_modes() {
+    // SPEC-001-E: Async block - simplified synchronous evaluation
+    // For full async support, would need tokio runtime
+    let code = r#"
+fun main() {
+    let result = async {
+        println("Async block")
+        42
+    }
+    println(result.to_string())
+}
+"#;
+
+    let result = validate_three_modes(code, "async_block");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
+#[test]
 fn test_spec_001_tuple_expr_three_modes() {
     let code = r#"
 fun main() {
