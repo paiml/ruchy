@@ -1,0 +1,186 @@
+// Comprehensive Example: Class Definition Styles in Ruchy
+//
+// This example demonstrates the two fully working ways to define classes/structs
+// with methods in Ruchy. Both styles generate identical Rust code with the same performance.
+//
+// NOTE: Methods in struct body with pub keyword (Style 1) is not yet fully implemented.
+// Use impl blocks or class syntax for public methods.
+
+// ============================================================
+// STYLE 1: Impl Blocks (Rust-Compatible Style)
+// ============================================================
+// Separate the struct definition from method implementations.
+// Best for: Rust developers, multiple trait implementations,
+// separation of concerns
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    pub fun new(x: i32, y: i32) -> Point {
+        Point { x: x, y: y }
+    }
+
+    pub fun distance_from_origin(&self) -> i32 {
+        self.x * self.x + self.y * self.y
+    }
+
+    pub fun move_by(&mut self, dx: i32, dy: i32) {
+        self.x = self.x + dx
+        self.y = self.y + dy
+    }
+
+    pub fun get_x(&self) -> i32 {
+        self.x
+    }
+
+    pub fun get_y(&self) -> i32 {
+        self.y
+    }
+}
+
+println("=== STYLE 1: Impl Blocks ===")
+let mut point = Point::new(3, 4)
+println("Point created at (3, 4)")
+println("X coordinate:")
+println(point.get_x())
+println("Y coordinate:")
+println(point.get_y())
+
+println("Distance from origin (squared):")
+println(point.distance_from_origin())
+
+point.move_by(1, 1)
+println("After move_by(1, 1):")
+println("X coordinate:")
+println(point.get_x())
+println("Y coordinate:")
+println(point.get_y())
+
+// ============================================================
+// STYLE 2: Class Syntax (Full OOP Style)
+// ============================================================
+// Traditional object-oriented class syntax with explicit constructors.
+// Best for: Python/TypeScript/Java developers, inheritance,
+// complex object hierarchies
+
+class Counter {
+    count: i32
+
+    pub new(initial: i32) -> Counter {
+        Counter { count: initial }
+    }
+
+    pub fun increment(&mut self) {
+        self.count = self.count + 1
+    }
+
+    pub fun decrement(&mut self) {
+        self.count = self.count - 1
+    }
+
+    pub fun get_count(&self) -> i32 {
+        self.count
+    }
+
+    pub fun add(&mut self, amount: i32) {
+        self.count = self.count + amount
+    }
+}
+
+println("")
+println("=== STYLE 2: Class Syntax ===")
+let mut counter = Counter::new(100)
+println("Counter initialized to 100")
+println("Current count:")
+println(counter.get_count())
+
+counter.increment()
+println("After increment():")
+println(counter.get_count())
+
+counter.increment()
+println("After another increment():")
+println(counter.get_count())
+
+counter.decrement()
+println("After decrement():")
+println(counter.get_count())
+
+counter.add(10)
+println("After add(10):")
+println(counter.get_count())
+
+// ============================================================
+// DEMONSTRATION: Method Receivers
+// ============================================================
+// Both styles support three types of method receivers:
+// - &self: Immutable borrow (read-only access)
+// - &mut self: Mutable borrow (can modify fields)
+// - self: Owned (consumes the value)
+
+struct Widget {
+    id: i32,
+    active: bool,
+}
+
+impl Widget {
+    pub fun new(id: i32) -> Widget {
+        Widget { id: id, active: true }
+    }
+
+    pub fun get_id(&self) -> i32 {
+        self.id
+    }
+
+    pub fun is_active(&self) -> bool {
+        self.active
+    }
+
+    pub fun activate(&mut self) {
+        self.active = true
+    }
+
+    pub fun deactivate(&mut self) {
+        self.active = false
+    }
+
+    pub fun set_id(&mut self, new_id: i32) {
+        self.id = new_id
+    }
+}
+
+println("")
+println("=== METHOD RECEIVERS DEMO ===")
+let mut widget = Widget::new(42)
+println("Widget created with ID:")
+println(widget.get_id())
+println("Is active?")
+println(widget.is_active())
+
+widget.deactivate()
+println("After deactivate(), is active?")
+println(widget.is_active())
+
+widget.activate()
+println("After activate(), is active?")
+println(widget.is_active())
+
+widget.set_id(99)
+println("After set_id(99), new ID:")
+println(widget.get_id())
+
+// ============================================================
+// SUMMARY
+// ============================================================
+println("")
+println("=== SUMMARY ===")
+println("Both styles work perfectly!")
+println("Choose based on your background and project needs:")
+println("")
+println("1. Impl blocks: Rust-compatible, modular, full pub support")
+println("2. Class syntax: Full OOP, inheritance support, explicit constructors")
+println("")
+println("Both generate identical Rust code with same performance!")

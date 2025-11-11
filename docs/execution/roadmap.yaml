@@ -10036,3 +10036,96 @@ next_sprint:
       ast_definition: "src/frontend/ast.rs:587-593 (ExprKind::Impl)"
       test_suite: "tests/transpiler_147_impl_blocks.rs"
       ticket: "docs/tickets/PARSER-009-impl-blocks.md"
+
+# PARSER-147: pub fun in struct bodies not supported (2025-11-11)
+- id: PARSER-147
+  title: "Support pub fun in struct bodies - Discovered during EXTREME TDD"
+  status: in_progress
+  priority: critical
+  category: parser
+  severity: BLOCKER
+  discovery_date: "2025-11-11"
+  
+  description: |
+    ROOT CAUSE: parse_struct_fields() at structs.rs:102 only checks for Token::Fun,
+    doesn't handle Token::Pub before method definitions.
+    
+    IMPACT: Style 1 (methods in struct body) can't have public methods.
+    Users forced to use impl blocks for all public methods.
+    
+    CURRENT BEHAVIOR:
+      ❌ struct Calculator { pub fun new() {...} } → Parse error
+      ✅ struct Calculator { fun new() {...} }     → Works (private only)
+      ✅ impl Calculator { pub fun new() {...} }   → Works
+    
+    REQUIRED FIX: Extend parse_struct_fields() to check for pub modifier
+    before Token::Fun check, similar to how parse_struct_field_modifiers() works.
+    
+  files_to_modify:
+    - src/frontend/parser/expressions_helpers/structs.rs:95-118 (parse_struct_fields)
+    
+  test_approach:
+    - RED: 6-8 failing tests for pub/private method combinations
+    - GREEN: Minimal fix with parse_method_visibility() helper
+    - REFACTOR: ≤10 complexity validation
+    - VALIDATE: Full pipeline (parse→transpile→compile→execute)
+
+# TRANSPILER-079: Class constructor transpilation broken (2025-11-11)
+- id: TRANSPILER-079
+  title: "Fix class constructor transpilation - Generates invalid self reference"
+  status: pending
+  priority: high
+  category: transpiler
+  severity: CRITICAL
+  discovery_date: "2025-11-11"
+  
+  description: |
+    ROOT CAUSE: Class constructor with `self.field = value` syntax transpiles
+    to invalid Rust code using `self` in a function without self parameter.
+    
+    CURRENT BEHAVIOR:
+      Ruchy: `pub new() { self.value = 0 }`
+      Rust:  `pub fn new() -> Self { { self.value = 0 } }`  ← ERROR!
+      
+    EXPECTED:
+      Rust:  `pub fn new() -> Self { Self { value: 0 } }`
+    
+    IMPACT: Class constructors don't work at runtime, return nil instead of instance.
+    
+  files_to_investigate:
+    - src/backend/transpiler/classes.rs (class constructor logic)
+    - src/runtime/interpreter.rs (class evaluation)
+    
+  test_approach:
+    - RED: 6-8 tests for various constructor patterns
+    - GREEN: Fix constructor body generation
+    - VALIDATE: Runtime execution confirms proper instance creation
+
+# RUNTIME-098: Struct field mutation broken in some cases (2025-11-11)
+- id: RUNTIME-098
+  title: "Fix struct field mutation - move_by doesn't mutate fields"
+  status: pending
+  priority: medium
+  category: runtime
+  severity: BUG
+  discovery_date: "2025-11-11"
+  
+  description: |
+    ROOT CAUSE: Method with &mut self doesn't actually mutate struct fields.
+    Example: point.move_by(1, 1) doesn't change x/y coordinates.
+    
+    OBSERVED:
+      point = Point::new(3, 4)  → x=3, y=4
+      point.move_by(1, 1)       → Should be x=4, y=5
+      point.get_x()             → Still returns 3 (mutation didn't work!)
+    
+    IMPACT: Mutable methods appear to work but don't modify state.
+    
+  files_to_investigate:
+    - src/runtime/interpreter.rs (method call evaluation)
+    - src/runtime/values.rs (struct value mutation)
+    
+  test_approach:
+    - RED: 6-8 tests for mutation patterns
+    - GREEN: Fix method call mutation handling
+    - VALIDATE: Confirm state changes persist after method calls
