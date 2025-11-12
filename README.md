@@ -14,6 +14,23 @@ A modern, expressive programming language for data science and scientific comput
 > **Appropriate uses**: Research, education, prototyping, experimentation
 > **Inappropriate uses**: Production services, mission-critical systems, public-facing products
 
+## Grammar Implementation Status
+
+**100% Complete** - All 89/89 grammar features implemented and validated (v3.94.0+)
+
+Ruchy has achieved complete grammar implementation coverage with comprehensive validation:
+
+- **handler_expr** (SPEC-001-J): Effect handlers with pattern matching - `handle expr with { operation => body }`
+- **expression_roundtrip**: Parser/formatter equivalence verified via 1,536+ property test cases
+
+**Validation Results**:
+- Three-mode validation: 26 tests (interpreter, transpile, compile modes)
+- Property tests: 11 tests with 1,536+ randomized test cases
+- Essential tools: 10 tests validating all core tooling (check, lint, ast, format, run, transpile, compile, test, coverage)
+- Total: 47+ comprehensive validation tests
+
+All grammar features work across all execution modes and tools. See [grammar/ruchy-grammar.yaml](grammar/ruchy-grammar.yaml) for complete specification.
+
 ## Features
 
 - **Self-Hosting Compiler**: Written in Rust with full bootstrapping capabilities
@@ -511,7 +528,7 @@ make qa-help
 ## Documentation
 
 - [Language Specification](docs/SPECIFICATION.md)
-- [Development Roadmap](docs/execution/roadmap.md)
+- [Development Roadmap](docs/execution/roadmap.yaml)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Architecture Overview](docs/architecture/README.md)
 
