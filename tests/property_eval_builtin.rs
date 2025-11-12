@@ -560,6 +560,40 @@ proptest! {
             }
         }
     }
+
+    /// Property: sum returns correct total for integer arrays
+    /// Coverage target: eval_sum (lines 695-710)
+    #[test]
+    fn prop_sum_integers(arr in prop::collection::vec(-100i64..100i64, 0..50)) {
+        let expected_sum: i64 = arr.iter().sum();
+        let values: Vec<Value> = arr.iter().map(|&x| Value::Integer(x)).collect();
+        let array = Value::from_array(values);
+
+        let result = eval_builtin_function("__builtin_sum__", &[array]);
+        prop_assert!(result.is_ok());
+
+        if let Ok(Some(Value::Integer(sum))) = result {
+            prop_assert_eq!(sum, expected_sum,
+                "sum({:?}) = {} ≠ {}", arr, sum, expected_sum);
+        }
+    }
+
+    /// Property: product multiplies all elements correctly
+    /// Coverage target: eval_product (lines 715-730)
+    #[test]
+    fn prop_product_small_integers(arr in prop::collection::vec(1i64..5i64, 0..10)) {
+        let expected_product: i64 = arr.iter().product();
+        let values: Vec<Value> = arr.iter().map(|&x| Value::Integer(x)).collect();
+        let array = Value::from_array(values);
+
+        let result = eval_builtin_function("__builtin_product__", &[array]);
+        prop_assert!(result.is_ok());
+
+        if let Ok(Some(Value::Integer(prod))) = result {
+            prop_assert_eq!(prod, expected_product,
+                "product({:?}) = {} ≠ {}", arr, prod, expected_product);
+        }
+    }
 }
 
 // ============================================================================
