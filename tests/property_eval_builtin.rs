@@ -974,3 +974,65 @@ fn test_timestamp_returns_integer() {
         panic!("timestamp should return Integer");
     }
 }
+
+/// Unit test: chrono_utc_now returns UTC time string
+/// Coverage target: eval_chrono_utc_now
+#[test]
+fn test_chrono_utc_now_returns_string() {
+    let result = eval_builtin_function("__builtin_chrono_utc_now__", &[]);
+    assert!(result.is_ok(), "chrono_utc_now should succeed");
+
+    // Should return String with ISO 8601 format (e.g., "2024-01-15T10:30:00Z")
+    if let Ok(Some(Value::String(time_str))) = result {
+        assert!(!time_str.is_empty(), "UTC time string should not be empty");
+        // Should contain typical ISO 8601 elements (year, month, day separators)
+        assert!(time_str.contains('-'), "Should contain date separators");
+        assert!(time_str.contains(':'), "Should contain time separators");
+    } else {
+        panic!("chrono_utc_now should return String");
+    }
+}
+
+// ============================================================================
+// STDLIB-005: Directory Walking and Text Search
+// Coverage target: eval_walk, eval_search
+// ============================================================================
+
+/// Unit test: walk returns array of file entries
+/// Coverage target: eval_walk
+#[test]
+fn test_walk_returns_array() {
+    // Walk current directory (tests/)
+    let path = Value::String(Arc::from("tests"));
+
+    let result = eval_builtin_function("__builtin_walk__", &[path]);
+    assert!(result.is_ok(), "walk should succeed");
+
+    // walk returns array of file entries (may be Objects or Strings depending on implementation)
+    if let Ok(Some(Value::Array(files))) = result {
+        // Should find entries in tests/ directory
+        assert!(!files.is_empty(), "walk should find files in tests/ directory");
+    } else {
+        panic!("walk should return Array");
+    }
+}
+
+/// Unit test: search finds text in files
+/// Coverage target: eval_search
+#[test]
+fn test_search_finds_matches() {
+    // Search for "property_eval_builtin" in test files
+    let pattern = Value::String(Arc::from("property_eval_builtin"));
+    let path = Value::String(Arc::from("tests"));
+
+    let result = eval_builtin_function("__builtin_search__", &[pattern, path]);
+    assert!(result.is_ok(), "search should succeed");
+
+    // search returns array of matching results
+    if let Ok(Some(Value::Array(matches))) = result {
+        // Should find matches for "property_eval_builtin" in this test file
+        assert!(!matches.is_empty(), "search should find matches in test files");
+    } else {
+        panic!("search should return Array");
+    }
+}
