@@ -848,6 +848,28 @@ impl Formatter {
                     .join(" ");
                 format!("actor {name} {{ {state_str} {handlers_str} }}")
             }
+            // SPEC-001-I: Effect declaration formatting
+            ExprKind::Effect { name, operations } => {
+                let ops_str = operations
+                    .iter()
+                    .map(|op| {
+                        let params_str = op
+                            .params
+                            .iter()
+                            .map(|p| format!("{:?}: {:?}", p.pattern, p.ty))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        let ret_str = op
+                            .return_type
+                            .as_ref()
+                            .map(|t| format!(" -> {:?}", t.kind))
+                            .unwrap_or_default();
+                        format!("{}({}){}", op.name, params_str, ret_str)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("effect {name} {{ {ops_str} }}")
+            }
             ExprKind::Send { actor, message } => {
                 format!("send({}, {})", self.format_expr(actor, indent), self.format_expr(message, indent))
             }

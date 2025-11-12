@@ -37,6 +37,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
 mod actors;
+mod effects;
 pub mod codegen_minimal;
 pub mod constant_folder; // PERF-002-A: Constant folding optimization
 pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
@@ -1201,7 +1202,10 @@ impl Transpiler {
             ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
                 functions.push(self.transpile_struct_expr(expr)?);
             }
-            ExprKind::Enum { .. } | ExprKind::Class { .. } | ExprKind::Actor { .. } => {
+            ExprKind::Enum { .. }
+            | ExprKind::Class { .. }
+            | ExprKind::Actor { .. }
+            | ExprKind::Effect { .. } => {
                 functions.push(self.transpile_expr(expr)?);
             }
             ExprKind::Import { .. }
@@ -1657,8 +1661,9 @@ impl Transpiler {
             | ExprKind::TupleStruct { .. }
             | ExprKind::Class { .. }
             | ExprKind::Actor { .. }
+            | ExprKind::Effect { .. }
             | ExprKind::Impl { .. } => {
-                // Structs, actors, and impl blocks should be top-level items
+                // Structs, actors, effects, and impl blocks should be top-level items
                 let item_tokens = self.transpile_expr(expr)?;
                 match (needs_polars, needs_hashmap) {
                     (true, true) => Ok(quote! {
@@ -1854,7 +1859,7 @@ impl Transpiler {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
             Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
-            DictComprehension, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
+            DictComprehension, Effect, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
             QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
@@ -1922,6 +1927,7 @@ impl Transpiler {
             | Try { .. } => self.transpile_data_error_expr(expr),
             // Actor system and process execution
             Actor { .. }
+            | Effect { .. }
             | Send { .. }
             | Ask { .. }
             | ActorSend { .. }

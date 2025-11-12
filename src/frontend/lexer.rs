@@ -303,6 +303,12 @@ pub enum Token {
     Actor,
     #[token("spawn")]
     Spawn,
+    #[token("effect")]
+    Effect,
+    #[token("handle")]
+    Handle,
+    #[token("handler")]
+    Handler,
     // NOTE: 'state' removed as keyword - now context-sensitive in actor parser
     // This fixes DEFECT-PARSER-001 where 'let mut state' failed after if/else chains
     #[token("property")]

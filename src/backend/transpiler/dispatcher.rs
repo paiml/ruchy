@@ -355,6 +355,8 @@ impl Transpiler {
                 state,
                 handlers,
             } => self.transpile_actor(name, state, handlers),
+            // SPEC-001-I: Effect declaration transpiles to Rust trait
+            ExprKind::Effect { name, operations } => self.transpile_effect(name, operations),
             ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
                 self.transpile_send(actor, message)
             }

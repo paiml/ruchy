@@ -601,6 +601,11 @@ pub enum ExprKind {
         state: Vec<StructField>,
         handlers: Vec<ActorHandler>,
     },
+    /// SPEC-001-I: Effect declaration with operation signatures
+    Effect {
+        name: String,
+        operations: Vec<EffectOperation>,
+    },
     Send {
         actor: Box<Expr>,
         message: Box<Expr>,
@@ -1043,6 +1048,14 @@ pub struct ActorHandler {
     pub message_type: String,
     pub params: Vec<Param>,
     pub body: Box<Expr>,
+}
+
+/// SPEC-001-I: Effect operation signature
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EffectOperation {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

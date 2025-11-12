@@ -992,6 +992,7 @@ impl Interpreter {
         matches!(
             expr_kind,
             ExprKind::Actor { .. }
+                | ExprKind::Effect { .. }
                 | ExprKind::Enum { .. }
                 | ExprKind::Struct { .. }
                 | ExprKind::TupleStruct { .. }
@@ -1034,6 +1035,8 @@ impl Interpreter {
                 state,
                 handlers,
             } => self.eval_actor_definition(name, state, handlers),
+            // SPEC-001-I: Effect declarations return Nil (no runtime implementation)
+            ExprKind::Effect { .. } => Ok(Value::Nil),
             ExprKind::Enum {
                 name,
                 type_params,

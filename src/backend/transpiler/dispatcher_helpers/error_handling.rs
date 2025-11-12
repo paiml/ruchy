@@ -63,6 +63,7 @@ impl Transpiler {
                 state,
                 handlers,
             } => self.transpile_actor(name, state, handlers),
+            ExprKind::Effect { name, operations } => self.transpile_effect(name, operations),
             ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
                 self.transpile_send(actor, message)
             }
