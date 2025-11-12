@@ -2197,6 +2197,7 @@ mod tests {
                 TypeKind::Optional(_) | TypeKind::List(_) | TypeKind::Series { .. } => {}
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
                 TypeKind::DataFrame { columns } => assert!(!columns.is_empty()),
+                TypeKind::Refined { .. } => {} // SPEC-001-H: Refined types (constraint validation not tested here)
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
                 TypeKind::Reference {
                     is_mut: _,
