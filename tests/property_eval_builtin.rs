@@ -734,3 +734,107 @@ fn test_glob_returns_array() {
         panic!("glob should return Array");
     }
 }
+
+// ============================================================================
+// String Functions (REGRESSION-077, Issue #77)
+// Coverage target: String::new, String::from, String::from_utf8
+// ============================================================================
+
+/// Unit test: String::new creates empty string
+/// Coverage target: eval_string_new (lines 3187-3190)
+#[test]
+fn test_string_new_creates_empty() {
+    let result = eval_builtin_function("__builtin_String_new__", &[]);
+    assert!(result.is_ok(), "String::new should succeed");
+
+    if let Ok(Some(Value::String(s))) = result {
+        assert_eq!(s.as_ref(), "", "String::new should return empty string");
+    } else {
+        panic!("String::new should return String value");
+    }
+}
+
+/// Unit test: String::from converts values to strings
+/// Coverage target: eval_string_from (lines 3195-3201)
+#[test]
+fn test_string_from_integer() {
+    let input = Value::Integer(42);
+    let result = eval_builtin_function("__builtin_String_from__", &[input]);
+    assert!(result.is_ok());
+
+    if let Ok(Some(Value::String(s))) = result {
+        assert_eq!(s.as_ref(), "42", "String::from(42) should return '42'");
+    } else {
+        panic!("String::from should return String");
+    }
+}
+
+/// Unit test: String::from handles string input
+#[test]
+fn test_string_from_string() {
+    let input = Value::String(Arc::from("hello"));
+    let result = eval_builtin_function("__builtin_String_from__", &[input]);
+    assert!(result.is_ok());
+
+    if let Ok(Some(Value::String(s))) = result {
+        assert_eq!(s.as_ref(), "hello", "String::from(string) should preserve content");
+    } else {
+        panic!("String::from should return String");
+    }
+}
+
+/// Unit test: String::from_utf8 with valid UTF-8 bytes
+/// Coverage target: eval_string_from_utf8 (lines 3207-3247)
+#[test]
+fn test_string_from_utf8_valid() {
+    // UTF-8 encoding of "hello": [104, 101, 108, 108, 111]
+    let bytes = vec![
+        Value::Byte(104),
+        Value::Byte(101),
+        Value::Byte(108),
+        Value::Byte(108),
+        Value::Byte(111),
+    ];
+    let input = Value::from_array(bytes);
+
+    let result = eval_builtin_function("__builtin_String_from_utf8__", &[input]);
+    assert!(result.is_ok());
+
+    // Should return Result::Ok(String)
+    if let Ok(Some(Value::EnumVariant { enum_name, variant_name, data })) = result {
+        assert_eq!(enum_name, "Result", "Should return Result enum");
+        assert_eq!(variant_name, "Ok", "Should be Ok variant for valid UTF-8");
+
+        if let Some(values) = data {
+            if let Value::String(s) = &values[0] {
+                assert_eq!(s.as_ref(), "hello", "Should decode to 'hello'");
+            } else {
+                panic!("Ok variant should contain String");
+            }
+        } else {
+            panic!("Ok variant should have data");
+        }
+    } else {
+        panic!("String::from_utf8 should return Result enum");
+    }
+}
+
+/// Unit test: String::from_utf8 with invalid UTF-8 bytes
+#[test]
+fn test_string_from_utf8_invalid() {
+    // Invalid UTF-8 sequence: [0xFF, 0xFE]
+    let bytes = vec![Value::Byte(0xFF), Value::Byte(0xFE)];
+    let input = Value::from_array(bytes);
+
+    let result = eval_builtin_function("__builtin_String_from_utf8__", &[input]);
+    assert!(result.is_ok());
+
+    // Should return Result::Err(error_message)
+    if let Ok(Some(Value::EnumVariant { enum_name, variant_name, data })) = result {
+        assert_eq!(enum_name, "Result", "Should return Result enum");
+        assert_eq!(variant_name, "Err", "Should be Err variant for invalid UTF-8");
+        assert!(data.is_some(), "Err variant should contain error message");
+    } else {
+        panic!("String::from_utf8 should return Result enum");
+    }
+}
