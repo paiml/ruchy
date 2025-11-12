@@ -689,3 +689,48 @@ fn test_assert_false() {
     let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(false)]);
     assert!(result.is_err(), "assert(false) should fail");
 }
+
+/// Unit test: dbg returns its input unchanged
+/// Coverage target: eval_dbg (lines 810-815)
+#[test]
+fn test_dbg_passthrough() {
+    // dbg should return the value it receives
+    let test_value = Value::Integer(42);
+    let result = eval_builtin_function("__builtin_dbg__", &[test_value.clone()]);
+    assert!(result.is_ok());
+    match result.unwrap() {
+        Some(Value::Integer(42)) => (),  // Expected
+        other => panic!("dbg should return input value, got {:?}", other),
+    }
+}
+
+/// Unit test: to_string converts values to strings
+/// Coverage target: eval_to_string (lines 820-830)
+#[test]
+fn test_to_string_integer() {
+    let input = Value::Integer(42);
+    let result = eval_builtin_function("__builtin_to_string__", &[input]);
+    assert!(result.is_ok());
+    if let Ok(Some(Value::String(s))) = result {
+        assert_eq!(s.as_ref(), "42", "to_string(42) should return '42'");
+    } else {
+        panic!("to_string should return String");
+    }
+}
+
+/// Unit test: glob pattern matching returns array
+/// Coverage target: eval_glob (lines 840-860)
+#[test]
+fn test_glob_returns_array() {
+    // Simple glob pattern for test files
+    let pattern = Value::String(Arc::from("tests/*.rs"));
+    let result = eval_builtin_function("__builtin_glob__", &[pattern]);
+    assert!(result.is_ok());
+    // Glob should return an array of matching file paths
+    if let Ok(Some(Value::Array(files))) = result {
+        // Should find at least this test file
+        assert!(!files.is_empty(), "Glob should find test files");
+    } else {
+        panic!("glob should return Array");
+    }
+}
