@@ -838,3 +838,139 @@ fn test_string_from_utf8_invalid() {
         panic!("String::from_utf8 should return Result enum");
     }
 }
+
+// ============================================================================
+// Collection Functions (push, pop, sort)
+// Coverage target: collection manipulation functions
+// ============================================================================
+
+/// Unit test: push adds element to array
+/// Coverage target: eval_push
+#[test]
+fn test_push_adds_element() {
+    let arr = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
+    let elem = Value::Integer(3);
+
+    let result = eval_builtin_function("__builtin_push__", &[arr.clone(), elem]);
+    assert!(result.is_ok(), "push should succeed");
+
+    if let Ok(Some(Value::Array(new_arr))) = result {
+        assert_eq!(new_arr.len(), 3, "Array should have 3 elements after push");
+        // Verify elements: [1, 2, 3]
+        if let Value::Integer(n) = new_arr[2] {
+            assert_eq!(n, 3, "Last element should be 3");
+        }
+    } else {
+        panic!("push should return Array");
+    }
+}
+
+/// Unit test: pop removes last element
+/// Coverage target: eval_pop
+#[test]
+fn test_pop_removes_element() {
+    let arr = Value::from_array(vec![
+        Value::Integer(1),
+        Value::Integer(2),
+        Value::Integer(3),
+    ]);
+
+    let result = eval_builtin_function("__builtin_pop__", &[arr]);
+    assert!(result.is_ok(), "pop should succeed");
+
+    // pop returns the removed element
+    if let Ok(Some(Value::Integer(n))) = result {
+        assert_eq!(n, 3, "pop should return last element (3)");
+    } else {
+        panic!("pop should return the removed element");
+    }
+}
+
+/// Unit test: sort orders array elements
+/// Coverage target: eval_sort
+#[test]
+fn test_sort_integers() {
+    let arr = Value::from_array(vec![
+        Value::Integer(3),
+        Value::Integer(1),
+        Value::Integer(2),
+    ]);
+
+    let result = eval_builtin_function("__builtin_sort__", &[arr]);
+    assert!(result.is_ok(), "sort should succeed");
+
+    if let Ok(Some(Value::Array(sorted))) = result {
+        assert_eq!(sorted.len(), 3, "Sorted array should have 3 elements");
+        // Verify sorted order: [1, 2, 3]
+        if let (Value::Integer(a), Value::Integer(b), Value::Integer(c)) =
+            (&sorted[0], &sorted[1], &sorted[2])
+        {
+            assert_eq!(*a, 1, "First element should be 1");
+            assert_eq!(*b, 2, "Second element should be 2");
+            assert_eq!(*c, 3, "Third element should be 3");
+        } else {
+            panic!("Sorted array should contain integers");
+        }
+    } else {
+        panic!("sort should return Array");
+    }
+}
+
+// ============================================================================
+// Conversion Functions (parse_float)
+// Coverage target: eval_parse_float
+// ============================================================================
+
+/// Unit test: parse_float converts string to float
+/// Coverage target: eval_parse_float
+#[test]
+fn test_parse_float_valid() {
+    let input = Value::String(Arc::from("3.14"));
+
+    let result = eval_builtin_function("__builtin_parse_float__", &[input]);
+    assert!(result.is_ok(), "parse_float should succeed");
+
+    if let Ok(Some(Value::Float(f))) = result {
+        assert!((f - 3.14).abs() < 0.001, "parse_float should return 3.14");
+    } else {
+        panic!("parse_float should return Float");
+    }
+}
+
+/// Unit test: parse_float handles negative numbers
+#[test]
+fn test_parse_float_negative() {
+    let input = Value::String(Arc::from("-2.5"));
+
+    let result = eval_builtin_function("__builtin_parse_float__", &[input]);
+    assert!(result.is_ok());
+
+    if let Ok(Some(Value::Float(f))) = result {
+        assert!((f - (-2.5)).abs() < 0.001, "parse_float should return -2.5");
+    } else {
+        panic!("parse_float should return Float");
+    }
+}
+
+// ============================================================================
+// Time Functions (timestamp)
+// Coverage target: eval_timestamp
+// ============================================================================
+
+/// Unit test: timestamp returns current Unix timestamp
+/// Coverage target: eval_timestamp
+#[test]
+fn test_timestamp_returns_integer() {
+    let result = eval_builtin_function("__builtin_timestamp__", &[]);
+    assert!(result.is_ok(), "timestamp should succeed");
+
+    // timestamp returns Integer (Unix timestamp in milliseconds)
+    if let Ok(Some(Value::Integer(ts))) = result {
+        // Timestamp should be positive and reasonable (after year 2000)
+        assert!(ts > 946_684_800_000, "Timestamp should be after year 2000");
+        // Should be before year 2100 (4102444800000ms)
+        assert!(ts < 4_102_444_800_000, "Timestamp should be before year 2100");
+    } else {
+        panic!("timestamp should return Integer");
+    }
+}
