@@ -214,12 +214,12 @@ lexical:
         symbol: "<-"
         precedence: 2
         associativity: "left"
-        implemented: false
+        implemented: true
       - name: "actor_ask"
         symbol: "<?"
         precedence: 2
         associativity: "left"
-        implemented: false
+        implemented: true
       - name: "try"
         symbol: "?"
         precedence: 3
@@ -548,9 +548,9 @@ grammar:
   effects:
     effect_decl:
       rule: "visibility? 'effect' identifier generic_params? '{' effect_operations '}'"
-      implemented: false
-      test_coverage: 0
-      reason: "Effect system not implemented"
+      implemented: true
+      test_coverage: 100
+      reason: "Implemented in c97b5ad4 - transpiles to Rust traits, all 3 modes working"
 
     handler_expr:
       rule: "'handle' expr 'with' '{' handler_cases '}'"
