@@ -79,8 +79,9 @@ pub enum Value {
     /// Tuple of values
     Tuple(Arc<[Value]>),
     /// Function closure
+    /// RUNTIME-DEFAULT-PARAMS: Params now store (name, default_value) to support default parameters
     Closure {
-        params: Vec<String>,
+        params: Vec<(String, Option<Arc<Expr>>)>, // (param_name, default_value)
         body: Arc<Expr>,
         env: Rc<RefCell<HashMap<String, Value>>>, // Shared mutable reference (ISSUE-119)
     },
@@ -2748,12 +2749,17 @@ impl Interpreter {
                 // [RUNTIME-001] CHECK RECURSION DEPTH BEFORE ENTERING
                 crate::runtime::eval_function::check_recursion_depth()?;
 
-                // Check argument count
-                if args.len() != params.len() {
+                // RUNTIME-DEFAULT-PARAMS: Check argument count with default parameter support
+                // Count required params (those without defaults)
+                let required_count = params.iter().filter(|(_, default)| default.is_none()).count();
+                let total_count = params.len();
+
+                if args.len() < required_count || args.len() > total_count {
                     crate::runtime::eval_function::decrement_depth();
                     return Err(InterpreterError::RuntimeError(format!(
-                        "Function expects {} arguments, got {}",
-                        params.len(),
+                        "Function expects {}-{} arguments, got {}",
+                        required_count,
+                        total_count,
                         args.len()
                     )));
                 }
@@ -2764,8 +2770,20 @@ impl Interpreter {
 
                 // Create NEW empty HashMap for function's local scope (parameters)
                 let mut local_env = HashMap::new();
-                for (param, arg) in params.iter().zip(args) {
-                    local_env.insert(param.clone(), arg.clone());
+
+                // RUNTIME-DEFAULT-PARAMS: Bind provided arguments + apply defaults for missing args
+                for (i, (param_name, default_value)) in params.iter().enumerate() {
+                    let value = if i < args.len() {
+                        // Use provided argument
+                        args[i].clone()
+                    } else if let Some(default_expr) = default_value {
+                        // Apply default value by evaluating the expression
+                        self.eval_expr(default_expr)?
+                    } else {
+                        // This should never happen due to required_count check above
+                        unreachable!("Missing required parameter");
+                    };
+                    local_env.insert(param_name.clone(), value);
                 }
 
                 // Push local scope on top (parameters shadow outer variables)
@@ -3555,9 +3573,10 @@ impl Interpreter {
     }
 
     /// Allocate a new closure and track it in GC
+    /// RUNTIME-DEFAULT-PARAMS: Updated to support default parameter values
     pub fn gc_alloc_closure(
         &mut self,
-        params: Vec<String>,
+        params: Vec<(String, Option<Arc<Expr>>)>, // (param_name, default_value)
         body: Arc<Expr>,
         env: Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from Arc<HashMap>
     ) -> Value {
@@ -4812,8 +4831,9 @@ impl Interpreter {
                             )));
                         }
 
-                        for (param, arg) in params.iter().zip(arg_values) {
-                            method_env.insert(param.clone(), arg.clone());
+                        // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple (name, default_value)
+                        for ((param_name, _default_value), arg) in params.iter().zip(arg_values) {
+                            method_env.insert(param_name.clone(), arg.clone());
                         }
 
                         // Push method environment
@@ -4879,9 +4899,9 @@ impl Interpreter {
                     },
                 );
 
-                // Bind method parameters to arguments
-                for (param, arg) in params.iter().zip(arg_values) {
-                    method_env.insert(param.clone(), arg.clone());
+                // RUNTIME-DEFAULT-PARAMS: Bind method parameters to arguments
+                for ((param_name, _default_value), arg) in params.iter().zip(arg_values) {
+                    method_env.insert(param_name.clone(), arg.clone());
                 }
 
                 // Push method environment
@@ -5201,7 +5221,8 @@ impl Interpreter {
                                                                     env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                                                                 // Bind message parameters
-                                                                for (i, param_name) in
+                                                                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple
+                                                                for (i, (param_name, _default_value)) in
                                                                     params.iter().enumerate()
                                                                 {
                                                                     if let Some(value) = data.get(i)
@@ -5356,7 +5377,8 @@ impl Interpreter {
                                 let mut handler_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
                                 // Bind message parameters
-                                for (i, param_name) in params.iter().enumerate() {
+                                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple
+                                for (i, (param_name, _default_value)) in params.iter().enumerate() {
                                     if let Some(value) = msg_args.get(i) {
                                         handler_env.insert(param_name.clone(), value.clone());
                                     }
@@ -5502,8 +5524,8 @@ impl Interpreter {
                                 // Create a new environment for handler execution
                                 let mut handler_env = env_clone.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
-                                // Bind message parameters
-                                for (i, param_name) in params_clone.iter().enumerate() {
+                                // RUNTIME-DEFAULT-PARAMS: Bind message parameters
+                                for (i, (param_name, _default_value)) in params_clone.iter().enumerate() {
                                     if let Some(value) = msg_args.get(i) {
                                         handler_env.insert(param_name.clone(), value.clone());
                                     }
@@ -5563,11 +5585,11 @@ impl Interpreter {
                 // Create new environment with method's captured environment as base
                 let mut new_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell
 
-                // Bind self parameter (first parameter)
+                // RUNTIME-DEFAULT-PARAMS: Bind self parameter (first parameter)
                 // RUNTIME-094: Bind as Value::Struct to preserve struct type for nested method calls
-                if let Some(self_param) = params.first() {
+                if let Some((self_param_name, _default_value)) = params.first() {
                     new_env.insert(
-                        self_param.clone(),
+                        self_param_name.clone(),
                         Value::Struct {
                             name: struct_name.to_string(),
                             fields: std::sync::Arc::new(instance.clone()),
@@ -5575,9 +5597,9 @@ impl Interpreter {
                     );
                 }
 
-                // Bind other parameters
+                // RUNTIME-DEFAULT-PARAMS: Bind other parameters
                 for (i, arg_value) in arg_values.iter().enumerate() {
-                    if let Some(param_name) = params.get(i + 1) {
+                    if let Some((param_name, _default_value)) = params.get(i + 1) {
                         // +1 to skip self
                         new_env.insert(param_name.clone(), arg_value.clone());
                     }
@@ -5705,11 +5727,18 @@ impl Interpreter {
             );
 
             // Store params as strings
-            let param_names: Vec<String> = handler
+            // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+            let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = handler
                 .params
                 .iter()
-                .map(crate::frontend::ast::Param::name)
+                .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
                 .collect();
+
+            let param_names: Vec<String> = params_with_defaults
+                .iter()
+                .map(|(name, _)| name.clone())
+                .collect();
+
             handler_obj.insert(
                 "params".to_string(),
                 Value::Array(Arc::from(
@@ -5744,7 +5773,7 @@ impl Interpreter {
             handler_obj.insert(
                 "body".to_string(),
                 Value::Closure {
-                    params: param_names,
+                    params: params_with_defaults,
                     body: Arc::new(*handler.body.clone()),
                     env: self.current_env().clone(), // ISSUE-119: Rc::clone (shallow copy)
                 },
@@ -5841,19 +5870,23 @@ impl Interpreter {
         // Store methods as separate variables with qualified names (same as impl blocks)
         // This allows runtime method dispatch via eval_struct_instance_method
         for method in methods {
-            // Extract parameter names from method params
-            let param_names: Vec<String> = method
+            // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+            let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = method
                 .params
                 .iter()
-                .map(|p| match &p.pattern {
-                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
-                    _ => "_".to_string(),
+                .map(|p| {
+                    let name = match &p.pattern {
+                        crate::frontend::ast::Pattern::Identifier(n) => n.clone(),
+                        _ => "_".to_string(),
+                    };
+                    let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+                    (name, default)
                 })
                 .collect();
 
             // Create a closure for the method
             let method_closure = Value::Closure {
-                params: param_names,
+                params: params_with_defaults,
                 body: Arc::new((*method.body).clone()),
                 env: Rc::new(RefCell::new(HashMap::new())), // Empty environment
             };
@@ -6156,19 +6189,23 @@ impl Interpreter {
                 .unwrap_or(&"new".to_string())
                 .clone();
 
-            // Extract parameter names from the constructor params
-            let param_names: Vec<String> = constructor
+            // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+            let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = constructor
                 .params
                 .iter()
-                .map(|p| match &p.pattern {
-                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
-                    _ => "_".to_string(),
+                .map(|p| {
+                    let name = match &p.pattern {
+                        crate::frontend::ast::Pattern::Identifier(n) => n.clone(),
+                        _ => "_".to_string(),
+                    };
+                    let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+                    (name, default)
                 })
                 .collect();
 
             // Create a closure for the constructor
             let ctor_closure = Value::Closure {
-                params: param_names,
+                params: params_with_defaults,
                 body: Arc::new((*constructor.body).clone()),
                 env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty env for now
             };
@@ -6201,22 +6238,26 @@ impl Interpreter {
         // Store methods as closures with metadata
         let mut method_info = HashMap::new();
         for method in methods {
-            // Extract parameter names from the method params (excluding 'self')
-            let param_names: Vec<String> = method
+            // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values (excluding 'self')
+            let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = method
                 .params
                 .iter()
                 .filter_map(|p| match &p.pattern {
                     crate::frontend::ast::Pattern::Identifier(name) if name != "self" => {
-                        Some(name.clone())
+                        let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+                        Some((name.clone(), default))
                     }
                     crate::frontend::ast::Pattern::Identifier(_) => None, // Skip 'self'
-                    _ => Some("_".to_string()),
+                    _ => {
+                        let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+                        Some(("_".to_string(), default))
+                    }
                 })
                 .collect();
 
             // Create a closure for the method
             let method_closure = Value::Closure {
-                params: param_names,
+                params: params_with_defaults,
                 body: Arc::new((*method.body).clone()),
                 env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty environment
             };
@@ -6281,19 +6322,23 @@ impl Interpreter {
         let mut impl_methods = HashMap::new();
 
         for method in methods {
-            // Extract parameter names from Param structs
-            let param_names: Vec<String> = method
+            // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+            let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = method
                 .params
                 .iter()
-                .map(|p| match &p.pattern {
-                    crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
-                    _ => "_".to_string(), // For other patterns, use placeholder
+                .map(|p| {
+                    let name = match &p.pattern {
+                        crate::frontend::ast::Pattern::Identifier(name) => name.clone(),
+                        _ => "_".to_string(), // For other patterns, use placeholder
+                    };
+                    let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+                    (name, default)
                 })
                 .collect();
 
             // Convert ImplMethod to a Value::Closure
             let closure = Value::Closure {
-                params: param_names,
+                params: params_with_defaults,
                 body: Arc::new(*method.body.clone()),
                 env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Empty environment
             };
@@ -6446,9 +6491,9 @@ impl Interpreter {
                             Value::Object(Arc::new(instance.clone())),
                         );
 
-                        // Bind constructor parameters
-                        for (param, arg) in params.iter().zip(args) {
-                            ctor_env.insert(param.clone(), arg.clone());
+                        // RUNTIME-DEFAULT-PARAMS: Bind constructor parameters
+                        for ((param_name, _default_value), arg) in params.iter().zip(args) {
+                            ctor_env.insert(param_name.clone(), arg.clone());
                         }
 
                         // Push constructor environment
@@ -6599,9 +6644,9 @@ impl Interpreter {
                         // Bind 'self' to the class instance
                         ctor_env.insert("self".to_string(), class_instance.clone());
 
-                        // Bind constructor parameters
-                        for (param, arg) in params.iter().zip(args) {
-                            ctor_env.insert(param.clone(), arg.clone());
+                        // RUNTIME-DEFAULT-PARAMS: Bind constructor parameters
+                        for ((param_name, _default_value), arg) in params.iter().zip(args) {
+                            ctor_env.insert(param_name.clone(), arg.clone());
                         }
 
                         // Push constructor environment
@@ -6857,8 +6902,9 @@ impl Interpreter {
                             )));
                         }
 
-                        for (param, arg) in params.iter().zip(arg_values) {
-                            method_env.insert(param.clone(), arg.clone());
+                        // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple (name, default_value)
+                        for ((param_name, _default_value), arg) in params.iter().zip(arg_values) {
+                            method_env.insert(param_name.clone(), arg.clone());
                         }
 
                         // Push method environment
@@ -6935,9 +6981,9 @@ impl Interpreter {
                         // Create environment for static method execution
                         let mut method_env = HashMap::new();
 
-                        // Bind parameters to arguments (no self for static methods)
-                        for (i, param) in params.iter().enumerate() {
-                            method_env.insert(param.clone(), args[i].clone());
+                        // RUNTIME-DEFAULT-PARAMS: Bind parameters to arguments (no self for static methods)
+                        for (i, (param_name, _default_value)) in params.iter().enumerate() {
+                            method_env.insert(param_name.clone(), args[i].clone());
                         }
 
                         // Push the method environment
@@ -7536,13 +7582,14 @@ impl Interpreter {
         params: &[Param],
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
-        let param_names: Vec<String> = params
+        // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+        let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
             .iter()
-            .map(crate::frontend::ast::Param::name)
+            .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
             .collect();
 
         let closure = Value::Closure {
-            params: param_names,
+            params: params_with_defaults,
             body: Arc::new(body.clone()),
             env: self.current_env().clone(), // ISSUE-119: Rc::clone (shallow copy, already wrapped)
         };

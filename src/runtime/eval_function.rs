@@ -130,15 +130,22 @@ where
     let captured_env = capture_environment();
     let param_patterns: Vec<Pattern> = params.iter().map(|p| p.pattern.clone()).collect();
     let closure = Closure::named(param_patterns, body.clone(), captured_env, name.to_string());
-    Ok(Value::Closure {
-        params: closure
-            .params
-            .iter()
-            .map(|p| match p {
+
+    // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values from original params
+    let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
+        .iter()
+        .map(|p| {
+            let name = match &p.pattern {
                 Pattern::Identifier(name) => name.clone(),
                 _ => "_".to_string(), // Complex patterns converted to placeholder
-            })
-            .collect(),
+            };
+            let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+            (name, default)
+        })
+        .collect();
+
+    Ok(Value::Closure {
+        params: params_with_defaults,
         body: Arc::new(closure.body),
         env: Rc::new(RefCell::new(closure.captured_env)), // ISSUE-119: Wrap HashMap in Rc<RefCell>
     })
@@ -159,15 +166,22 @@ where
     let captured_env = capture_environment();
     let param_patterns: Vec<Pattern> = params.iter().map(|p| p.pattern.clone()).collect();
     let closure = Closure::new(param_patterns, body.clone(), captured_env);
-    Ok(Value::Closure {
-        params: closure
-            .params
-            .iter()
-            .map(|p| match p {
+
+    // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values from original params
+    let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
+        .iter()
+        .map(|p| {
+            let name = match &p.pattern {
                 Pattern::Identifier(name) => name.clone(),
                 _ => "_".to_string(), // Complex patterns converted to placeholder
-            })
-            .collect(),
+            };
+            let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+            (name, default)
+        })
+        .collect();
+
+    Ok(Value::Closure {
+        params: params_with_defaults,
         body: Arc::new(closure.body),
         env: Rc::new(RefCell::new(closure.captured_env)), // ISSUE-119: Wrap HashMap in Rc<RefCell>
     })
@@ -207,7 +221,7 @@ where
 /// # [RUNTIME-001] Fix
 /// Now checks recursion depth before entering function body
 fn eval_closure_call_direct<F>(
-    params: &[String],
+    params: &[(String, Option<Arc<Expr>>)], // RUNTIME-DEFAULT-PARAMS: Support default parameters
     body: &Expr,
     env: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Accept Rc<RefCell<HashMap>>
     args: &[Value],
@@ -221,10 +235,15 @@ where
 
     // Ensure depth is decremented on ALL exit paths
     let result = (|| {
-        if args.len() != params.len() {
+        // RUNTIME-DEFAULT-PARAMS: Check argument count with default parameter support
+        let required_count = params.iter().filter(|(_, default)| default.is_none()).count();
+        let total_count = params.len();
+
+        if args.len() < required_count || args.len() > total_count {
             return Err(InterpreterError::RuntimeError(format!(
-                "Function expects {} arguments, got {}",
-                params.len(),
+                "Function expects {}-{} arguments, got {}",
+                required_count,
+                total_count,
                 args.len()
             )));
         }
@@ -232,9 +251,16 @@ where
         // Create call environment with captured environment
         let mut call_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell then clone
 
-        // Bind parameters to arguments
-        for (param, arg) in params.iter().zip(args.iter()) {
-            call_env.insert(param.clone(), arg.clone());
+        // RUNTIME-DEFAULT-PARAMS: Bind parameters to arguments + apply defaults for missing args
+        for (i, (param_name, default_value)) in params.iter().enumerate() {
+            let value = if i < args.len() {
+                args[i].clone()
+            } else if let Some(default_expr) = default_value {
+                eval_with_env(default_expr, &call_env)?
+            } else {
+                unreachable!("Missing required parameter");
+            };
+            call_env.insert(param_name.clone(), value);
         }
 
         // Evaluate function body with bound environment
@@ -276,13 +302,14 @@ where
 
     // Add self-reference for recursive functions
     if let Some(ref name) = closure.name {
+        // RUNTIME-DEFAULT-PARAMS: Convert Closure to Value::Closure with None defaults
         let closure_value = Value::Closure {
             params: closure
                 .params
                 .iter()
                 .map(|p| match p {
-                    Pattern::Identifier(name) => name.clone(),
-                    _ => "_".to_string(),
+                    Pattern::Identifier(name) => (name.clone(), None),
+                    _ => ("_".to_string(), None),
                 })
                 .collect(),
             body: Arc::new(closure.body.clone()),
@@ -400,11 +427,11 @@ pub fn create_partial_application(
 ) -> Result<Value, InterpreterError> {
     match function {
         Value::Closure { params, body, env } => {
-            // Convert to internal Closure structure for partial application
+            // RUNTIME-DEFAULT-PARAMS: Convert to internal Closure structure for partial application
             let closure = Closure {
                 params: params
                     .iter()
-                    .map(|name| Pattern::Identifier(name.clone()))
+                    .map(|(param_name, _default_value)| Pattern::Identifier(param_name.clone()))
                     .collect(),
                 body: body.as_ref().clone(),
                 captured_env: env.borrow().clone(), // ISSUE-119: Borrow from RefCell then clone HashMap
@@ -428,13 +455,14 @@ pub fn create_partial_application(
             let partial_closure =
                 Closure::new(remaining_params, closure.body.clone(), new_captured_env);
 
+            // RUNTIME-DEFAULT-PARAMS: Convert Closure to Value::Closure with None defaults
             Ok(Value::Closure {
                 params: partial_closure
                     .params
                     .iter()
                     .map(|p| match p {
-                        Pattern::Identifier(name) => name.clone(),
-                        _ => "_".to_string(),
+                        Pattern::Identifier(name) => (name.clone(), None),
+                        _ => ("_".to_string(), None),
                     })
                     .collect(),
                 body: Arc::new(partial_closure.body),
@@ -604,8 +632,9 @@ mod tests {
             Pattern::Identifier("x".to_string()),
             Pattern::Identifier("y".to_string()),
         ];
+        // RUNTIME-DEFAULT-PARAMS: Test closure with tuple format
         let function_value = Value::Closure {
-            params: vec!["x".to_string(), "y".to_string()],
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
             body: Arc::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0))),
             env: Rc::new(RefCell::new(HashMap::new())),
         };

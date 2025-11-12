@@ -733,11 +733,12 @@ mod tests {
             Value::Integer(3),
         ]);
 
+        // RUNTIME-DEFAULT-PARAMS: Test closure with tuple format
         // Test by calling eval_array_any and eval_array_all directly
         // Both require a closure, so we create a minimal one
         use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
-            params: vec!["x".to_string()],
+            params: vec![("x".to_string(), None)],
             body: RcAlias::new(crate::frontend::ast::Expr {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
@@ -766,10 +767,11 @@ mod tests {
 
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
 
+        // RUNTIME-DEFAULT-PARAMS: Test closure with tuple format
         // Test with correct number of args (2) - should work
         use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
-            params: vec!["acc".to_string(), "x".to_string()],
+            params: vec![("acc".to_string(), None), ("x".to_string(), None)],
             body: RcAlias::new(crate::frontend::ast::Expr {
                 kind: crate::frontend::ast::ExprKind::Identifier("acc".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
@@ -859,12 +861,13 @@ mod tests {
             Value::Bool(true),
         ]);
 
+        // RUNTIME-DEFAULT-PARAMS: Test closure with tuple format
         // Evaluator that returns the actual value
         let eval_identity = |_: &Value, args: &[Value]| Ok(args[0].clone());
 
         use std::sync::Arc as RcAlias;
         let closure = Value::Closure {
-            params: vec!["x".to_string()],
+            params: vec![("x".to_string(), None)],
             body: RcAlias::new(crate::frontend::ast::Expr {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
@@ -884,10 +887,11 @@ mod tests {
             "all() should return false when any element is falsy (tests ! operator)"
         );
 
+        // RUNTIME-DEFAULT-PARAMS: Test closure with tuple format
         // Test with all true values
         let all_true_arr = Arc::from(vec![Value::Bool(true), Value::Bool(true)]);
         let closure2 = Value::Closure {
-            params: vec!["x".to_string()],
+            params: vec![("x".to_string(), None)],
             body: RcAlias::new(crate::frontend::ast::Expr {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),

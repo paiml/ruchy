@@ -52,8 +52,9 @@ pub struct BytecodeChunk {
     pub match_exprs: Vec<(Arc<Expr>, Vec<crate::frontend::ast::MatchArm>)>,
     /// Closures (for hybrid execution - OPT-019)
     /// Stores AST for closures to enable interpreter delegation
-    /// Each entry: (params, body) - environment captured at runtime
-    pub closures: Vec<(Vec<String>, Arc<Expr>)>,
+    /// Each entry: (params_with_defaults, body) - environment captured at runtime
+    /// RUNTIME-DEFAULT-PARAMS: Params now include default values
+    pub closures: Vec<(Vec<(String, Option<Arc<Expr>>)>, Arc<Expr>)>,
     /// Array element registers (for runtime array construction - OPT-020)
     /// Stores register lists for `NewArray` opcodes (element registers may not be contiguous)
     pub array_element_regs: Vec<Vec<u8>>,
@@ -583,16 +584,16 @@ impl Compiler {
     ///
     /// Creates a closure and stores it in locals for later invocation.
     fn compile_function(&mut self, name: &str, params: &[Param], body: &Expr) -> Result<u8, String> {
-        // Extract parameter names
-        let param_names: Vec<String> = params
+        // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+        let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
             .iter()
-            .map(crate::frontend::ast::Param::name)
+            .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
             .collect();
 
         // Create closure value
         // Note: Using empty environment for now. Full lexical scoping will be added later.
         let closure = Value::Closure {
-            params: param_names,
+            params: params_with_defaults,
             body: Arc::new(body.clone()),
             env: Rc::new(RefCell::new(HashMap::new())), // ISSUE-119: Wrap in Rc<RefCell>
         };
@@ -951,16 +952,16 @@ impl Compiler {
     /// Closures require environment capture and complex scope management,
     /// so we store the AST and let the VM create the closure with captured environment.
     fn compile_closure(&mut self, params: &[crate::frontend::ast::Param], body: &Expr) -> Result<u8, String> {
-        // Extract parameter names
-        let param_names: Vec<String> = params
+        // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+        let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
             .iter()
-            .map(crate::frontend::ast::Param::name)
+            .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
             .collect();
 
         // Store closure definition in chunk for runtime access
         let closure_idx = self.chunk.closures.len();
         self.chunk.closures.push((
-            param_names,
+            params_with_defaults,
             Arc::new(body.clone()),
         ));
 
