@@ -606,6 +606,11 @@ pub enum ExprKind {
         name: String,
         operations: Vec<EffectOperation>,
     },
+    /// SPEC-001-J: Effect handler expression
+    Handle {
+        expr: Box<Expr>,
+        handlers: Vec<EffectHandler>,
+    },
     Send {
         actor: Box<Expr>,
         message: Box<Expr>,
@@ -1056,6 +1061,14 @@ pub struct EffectOperation {
     pub name: String,
     pub params: Vec<Param>,
     pub return_type: Option<Type>,
+}
+
+/// SPEC-001-J: Effect handler clause
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EffectHandler {
+    pub operation: String,
+    pub params: Vec<Pattern>,
+    pub body: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -477,6 +477,52 @@ fun main() {
     assert!(result.all_pass(), "{}", result.failure_report());
 }
 
+#[test]
+fn test_spec_001_effect_decl_three_modes() {
+    // SPEC-001-I: Effect declarations - algebraic effect system
+    let code = r#"
+effect State {
+    get() -> i32,
+    set(x: i32) -> ()
+}
+
+fun main() {
+    println("Effect declared")
+}
+"#;
+
+    let result = validate_three_modes(code, "effect_decl");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
+#[test]
+fn test_spec_001_handler_expr_three_modes() {
+    // SPEC-001-J: Effect handler expression
+    // Syntax: handle expr with { operation => body, operation(params) => body }
+    let code = r#"
+effect State {
+    get() -> i32,
+    set(x: i32) -> ()
+}
+
+fun foo() {
+    println("Test function")
+}
+
+handle foo() with {
+    get => 42,
+    set(x) => println("Set operation")
+}
+
+fun main() {
+    println("Handler defined")
+}
+"#;
+
+    let result = validate_three_modes(code, "handler_expr");
+    assert!(result.all_pass(), "{}", result.failure_report());
+}
+
 // =============================================================================
 // PATTERNS - All marked "implemented: true"
 // =============================================================================

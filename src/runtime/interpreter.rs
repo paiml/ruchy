@@ -993,6 +993,7 @@ impl Interpreter {
             expr_kind,
             ExprKind::Actor { .. }
                 | ExprKind::Effect { .. }
+                | ExprKind::Handle { .. }
                 | ExprKind::Enum { .. }
                 | ExprKind::Struct { .. }
                 | ExprKind::TupleStruct { .. }
@@ -1037,6 +1038,11 @@ impl Interpreter {
             } => self.eval_actor_definition(name, state, handlers),
             // SPEC-001-I: Effect declarations return Nil (no runtime implementation)
             ExprKind::Effect { .. } => Ok(Value::Nil),
+            // SPEC-001-J: Effect handlers evaluate expression and return nil
+            ExprKind::Handle { expr, .. } => {
+                self.eval_expr(expr)?;
+                Ok(Value::Nil)
+            }
             ExprKind::Enum {
                 name,
                 type_params,
@@ -1712,7 +1718,7 @@ impl Interpreter {
                     current_value = self.eval_function_call(&stage.op, &[
                         Expr::new(
                             ExprKind::Literal(crate::frontend::ast::Literal::from_value(&current_value)),
-                            expr.span.clone(),
+                            expr.span,
                         )
                     ])?;
                 }
