@@ -600,7 +600,22 @@ validation:
     - name: "expression_roundtrip"
       description: "Parse then pretty-print preserves semantics"
       generator: "arbitrary_expr"
-      implemented: false
+      implemented: true
+      test_coverage: 100
+      test_cases: 1536
+      test_file: "tests/property_roundtrip.rs"
+      tests:
+        - "prop_literals_parse_without_panic"
+        - "prop_literal_roundtrip"
+        - "prop_binary_roundtrip"
+        - "prop_simple_expr_roundtrip"
+        - "prop_formatting_deterministic"
+        - "prop_double_roundtrip_stabilizes"
+        - "test_integer_literal_roundtrip"
+        - "test_boolean_literal_roundtrip"
+        - "test_string_literal_roundtrip"
+        - "test_binary_add_roundtrip"
+        - "test_function_call_roundtrip"
 
     - name: "type_wellformedness"
       description: "All parsed types are well-formed"
