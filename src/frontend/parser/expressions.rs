@@ -80,7 +80,8 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Type
         | Token::DataFrame
         | Token::Actor
-        | Token::Effect => parse_structure_prefix(state, token, span),
+        | Token::Effect
+        | Token::Handle => parse_structure_prefix(state, token, span),
 
         // Imports, modifiers, and specials
         Token::Import
@@ -203,7 +204,7 @@ fn parse_structure_prefix(state: &mut ParserState, token: Token, span: Span) -> 
         | Token::Interface
         | Token::Impl
         | Token::Type => parse_data_structure_token(state, token),
-        Token::DataFrame | Token::Actor | Token::Effect => parse_special_definition_token(state, token, span),
+        Token::DataFrame | Token::Actor | Token::Effect | Token::Handle => parse_special_definition_token(state, token, span),
         _ => unreachable!(),
     }
 }
@@ -339,6 +340,7 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token, span: S
         Token::DataFrame => expressions_helpers::dataframes::parse_dataframe_token(state, span),
         Token::Actor => parse_actor_definition(state),
         Token::Effect => parse_effect_definition(state),
+        Token::Handle => parse_handler_expression(state),
         _ => bail!("Expected special definition token, got: {token:?}"),
     }
 }
@@ -542,6 +544,11 @@ fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
 /// SPEC-001-I: Effect definition delegates to effects module
 fn parse_effect_definition(state: &mut ParserState) -> Result<Expr> {
     super::effects::parse_effect(state)
+}
+
+/// SPEC-001-J: Effect handler expression delegates to effects module
+fn parse_handler_expression(state: &mut ParserState) -> Result<Expr> {
+    super::effects::parse_handler(state)
 }
 
 /// Parse actor name

@@ -1859,7 +1859,7 @@ impl Transpiler {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
             Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
-            DictComprehension, Effect, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess,
+            DictComprehension, Effect, Err, FieldAccess, For, Function, Handle, Identifier, If, IfLet, IndexAccess,
             Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
             ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
             QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
@@ -1928,6 +1928,7 @@ impl Transpiler {
             // Actor system and process execution
             Actor { .. }
             | Effect { .. }
+            | Handle { .. }
             | Send { .. }
             | Ask { .. }
             | ActorSend { .. }

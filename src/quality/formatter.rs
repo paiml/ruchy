@@ -870,6 +870,24 @@ impl Formatter {
                     .join(", ");
                 format!("effect {name} {{ {ops_str} }}")
             }
+            // SPEC-001-J: Effect handler formatting
+            ExprKind::Handle { expr, handlers } => {
+                let expr_str = self.format_expr(expr, indent);
+                let handlers_str = handlers
+                    .iter()
+                    .map(|h| {
+                        let params_str = if h.params.is_empty() {
+                            String::new()
+                        } else {
+                            format!("({})", h.params.iter().map(|p| format!("{p:?}")).collect::<Vec<_>>().join(", "))
+                        };
+                        let body_str = self.format_expr(&h.body, indent);
+                        format!("{}{} => {}", h.operation, params_str, body_str)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("handle {expr_str} with {{ {handlers_str} }}")
+            }
             ExprKind::Send { actor, message } => {
                 format!("send({}, {})", self.format_expr(actor, indent), self.format_expr(message, indent))
             }

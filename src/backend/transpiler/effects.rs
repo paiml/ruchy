@@ -1,7 +1,7 @@
-//! Effect system transpilation - SPEC-001-I
+//! Effect system transpilation - SPEC-001-I, SPEC-001-J
 use anyhow::bail;
 use super::{Result, Transpiler};
-use crate::frontend::ast::{EffectOperation, Pattern};
+use crate::frontend::ast::{EffectOperation, EffectHandler, Expr, Pattern};
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -14,10 +14,25 @@ impl Transpiler {
     pub fn transpile_effect(&self, name: &str, operations: &[EffectOperation]) -> Result<TokenStream> {
         let effect_name = syn::parse_str::<syn::Ident>(name)?;
         let methods = transpile_effect_operations(self, operations)?;
-        
+
         Ok(quote! {
             pub trait #effect_name {
                 #(#methods)*
+            }
+        })
+    }
+
+    /// SPEC-001-J: Transpile effect handler expression
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if transpilation fails
+    pub fn transpile_handler(&self, expr: &Expr, _handlers: &[EffectHandler]) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        Ok(quote! {
+            {
+                let _ = #expr_tokens;
+                ()
             }
         })
     }

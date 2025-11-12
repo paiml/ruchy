@@ -64,6 +64,8 @@ impl Transpiler {
                 handlers,
             } => self.transpile_actor(name, state, handlers),
             ExprKind::Effect { name, operations } => self.transpile_effect(name, operations),
+            // SPEC-001-J: Effect handler expression
+            ExprKind::Handle { expr, handlers } => self.transpile_handler(expr, handlers),
             ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
                 self.transpile_send(actor, message)
             }

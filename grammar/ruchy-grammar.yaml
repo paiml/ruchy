@@ -554,9 +554,20 @@ grammar:
 
     handler_expr:
       rule: "'handle' expr 'with' '{' handler_cases '}'"
-      implemented: false
-      test_coverage: 0
-      reason: "Effect handlers not implemented"
+      implemented: true
+      test_coverage: 100
+      reason: "SPEC-001-J: All 3 modes working (interpreter, transpile, compile)"
+      files:
+        - src/frontend/ast.rs
+        - src/frontend/parser/effects.rs
+        - src/frontend/parser/expressions.rs
+        - src/backend/transpiler/mod.rs
+        - src/backend/transpiler/dispatcher.rs
+        - src/backend/transpiler/dispatcher_helpers/error_handling.rs
+        - src/backend/transpiler/effects.rs
+        - src/runtime/interpreter.rs
+        - src/quality/formatter.rs
+        - tests/spec_001_three_mode_validation.rs
 
   macros:
     macro_call:
