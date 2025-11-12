@@ -490,8 +490,8 @@ Enter expressions to evaluate them.
                         .map_or(0, |vals| vals.iter().map(Self::estimate_value_memory).sum())
             }
             Value::Closure { params, .. } => {
-                // Approximate: params + environment overhead
-                params.iter().map(std::string::String::len).sum::<usize>() + 128
+                // RUNTIME-DEFAULT-PARAMS: Approximate params + environment overhead
+                params.iter().map(|(param_name, _default)| param_name.len()).sum::<usize>() + 128
             }
             Value::BuiltinFunction(name) => name.len() + size_of::<usize>(),
             Value::Struct { name, fields } => {

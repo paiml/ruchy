@@ -501,8 +501,9 @@ impl VM {
                 }
 
                 // Bind parameters to arguments
-                for (param, arg) in params.iter().zip(args.iter()) {
-                    self.interpreter.set_variable(param, arg.clone());
+                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple (name, default_value)
+                for ((param_name, _default_value), arg) in params.iter().zip(args.iter()) {
+                    self.interpreter.set_variable(param_name, arg.clone());
                 }
 
                 // Execute closure body using interpreter

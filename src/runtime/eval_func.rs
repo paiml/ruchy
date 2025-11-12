@@ -22,13 +22,14 @@ pub fn eval_function(
     current_env_ref: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from &HashMap
     mut env_set: impl FnMut(String, Value),
 ) -> Result<Value, InterpreterError> {
-    let param_names: Vec<String> = params
+    // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+    let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
         .iter()
-        .map(super::super::frontend::ast::Param::name)
+        .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
         .collect();
 
     let closure = Value::Closure {
-        params: param_names,
+        params: params_with_defaults,
         body: Arc::new(body.clone()),
         env: current_env_ref.clone(), // ISSUE-119: ROOT CAUSE #1 FIX - Rc::clone (shallow copy, no data clone)
     };
@@ -47,13 +48,14 @@ pub fn eval_lambda(
     body: &Expr,
     current_env_ref: &Rc<RefCell<HashMap<String, Value>>>, // ISSUE-119: Changed from &HashMap
 ) -> Result<Value, InterpreterError> {
-    let param_names: Vec<String> = params
+    // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
+    let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
         .iter()
-        .map(super::super::frontend::ast::Param::name)
+        .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
         .collect();
 
     let closure = Value::Closure {
-        params: param_names,
+        params: params_with_defaults,
         body: Arc::new(body.clone()),
         env: current_env_ref.clone(), // ISSUE-119: ROOT CAUSE #1 FIX - Rc::clone for lambdas
     };
@@ -99,7 +101,7 @@ mod tests {
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
             Value::Closure { params, .. } => {
-                assert_eq!(params.len(), 0);
+                assert_eq!(params.len(), 0, "Expected 0 params");
                 // Body should be the literal expression
             }
             _ => panic!("Expected closure value"),
