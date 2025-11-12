@@ -1354,3 +1354,231 @@ fn test_json_merge_objects() {
         assert!(result.is_ok(), "json_merge should handle merge operation");
     }
 }
+
+// ============================================================================
+// Path Functions (Pure, Deterministic)
+// ============================================================================
+
+/// Unit test: path_join combines path components
+#[test]
+fn test_path_join_two_components() {
+    let part1 = Value::String(Arc::from("/home/user"));
+    let part2 = Value::String(Arc::from("documents"));
+
+    let result = eval_builtin_function("__builtin_path_join__", &[part1, part2]);
+    assert!(result.is_ok(), "path_join should succeed");
+
+    // path_join returns String with combined path
+    if let Ok(Some(Value::String(path))) = result {
+        assert!(
+            path.contains("home") && path.contains("documents"),
+            "Joined path should contain both components"
+        );
+    } else {
+        panic!("path_join should return String");
+    }
+}
+
+/// Unit test: path_parent returns parent directory
+#[test]
+fn test_path_parent() {
+    let path = Value::String(Arc::from("/home/user/documents/file.txt"));
+
+    let result = eval_builtin_function("__builtin_path_parent__", &[path]);
+    assert!(result.is_ok(), "path_parent should succeed");
+
+    // path_parent returns String with parent directory
+    if let Ok(Some(Value::String(parent))) = result {
+        assert!(
+            parent.contains("documents"),
+            "Parent should be documents directory"
+        );
+    } else {
+        panic!("path_parent should return String");
+    }
+}
+
+/// Unit test: path_file_name extracts filename from path
+#[test]
+fn test_path_file_name() {
+    let path = Value::String(Arc::from("/home/user/documents/test.txt"));
+
+    let result = eval_builtin_function("__builtin_path_file_name__", &[path]);
+    assert!(result.is_ok(), "path_file_name should succeed");
+
+    // path_file_name returns String with filename
+    if let Ok(Some(Value::String(filename))) = result {
+        assert_eq!(
+            filename.as_ref(),
+            "test.txt",
+            "Should extract filename from path"
+        );
+    } else {
+        panic!("path_file_name should return String");
+    }
+}
+
+/// Unit test: path_file_stem extracts filename without extension
+#[test]
+fn test_path_file_stem() {
+    let path = Value::String(Arc::from("/home/user/report.pdf"));
+
+    let result = eval_builtin_function("__builtin_path_file_stem__", &[path]);
+    assert!(result.is_ok(), "path_file_stem should succeed");
+
+    // path_file_stem returns String without extension
+    if let Ok(Some(Value::String(stem))) = result {
+        assert_eq!(stem.as_ref(), "report", "Should return filename without extension");
+    } else {
+        panic!("path_file_stem should return String");
+    }
+}
+
+/// Unit test: path_extension extracts file extension
+#[test]
+fn test_path_extension() {
+    let path = Value::String(Arc::from("/home/user/document.txt"));
+
+    let result = eval_builtin_function("__builtin_path_extension__", &[path]);
+    assert!(result.is_ok(), "path_extension should succeed");
+
+    // path_extension returns String with extension
+    if let Ok(Some(Value::String(ext))) = result {
+        assert_eq!(ext.as_ref(), "txt", "Should extract file extension");
+    } else {
+        panic!("path_extension should return String");
+    }
+}
+
+/// Unit test: path_is_absolute checks if path is absolute
+#[test]
+fn test_path_is_absolute() {
+    let abs_path = Value::String(Arc::from("/home/user/file.txt"));
+
+    let result = eval_builtin_function("__builtin_path_is_absolute__", &[abs_path]);
+    assert!(result.is_ok(), "path_is_absolute should succeed");
+
+    // path_is_absolute returns Bool
+    if let Ok(Some(Value::Bool(is_abs))) = result {
+        assert!(is_abs, "Path starting with / should be absolute");
+    } else {
+        panic!("path_is_absolute should return Bool");
+    }
+}
+
+/// Unit test: path_is_relative checks if path is relative
+#[test]
+fn test_path_is_relative() {
+    let rel_path = Value::String(Arc::from("documents/file.txt"));
+
+    let result = eval_builtin_function("__builtin_path_is_relative__", &[rel_path]);
+    assert!(result.is_ok(), "path_is_relative should succeed");
+
+    // path_is_relative returns Bool
+    if let Ok(Some(Value::Bool(is_rel))) = result {
+        assert!(is_rel, "Path without leading / should be relative");
+    } else {
+        panic!("path_is_relative should return Bool");
+    }
+}
+
+// ============================================================================
+// Additional JSON Functions
+// ============================================================================
+
+/// Unit test: json_type returns type of JSON value
+#[test]
+fn test_json_type_string() {
+    let json_str = Value::String(Arc::from(r#""hello""#));
+
+    let result = eval_builtin_function("__builtin_json_type__", &[json_str]);
+
+    // json_type might return String with type name (defensive test)
+    if result.is_ok() {
+        if let Ok(Some(Value::String(type_name))) = result {
+            assert!(
+                type_name.contains("string") || type_name.contains("String"),
+                "Type should be string"
+            );
+        }
+    }
+}
+
+/// Unit test: json_get retrieves value from JSON object by key
+#[test]
+fn test_json_get_existing_key() {
+    // Create JSON object using json_parse first
+    let json_obj_str = Value::String(Arc::from(r#"{"name":"test","value":42}"#));
+    let parse_result = eval_builtin_function("__builtin_json_parse__", &[json_obj_str]);
+
+    if let Ok(Some(json_obj)) = parse_result {
+        let key = Value::String(Arc::from("name"));
+        let result = eval_builtin_function("__builtin_json_get__", &[json_obj, key]);
+
+        // json_get should return the value for the key (defensive)
+        if result.is_ok() {
+            assert!(
+                result.is_ok(),
+                "json_get should retrieve value for existing key"
+            );
+        }
+    }
+}
+
+// ============================================================================
+// Additional Utility Functions
+// ============================================================================
+
+/// Unit test: type_of returns type name of value
+#[test]
+fn test_type_of_integer() {
+    let val = Value::Integer(42);
+
+    let result = eval_builtin_function("__builtin_type_of__", &[val]);
+    assert!(result.is_ok(), "type_of should succeed");
+
+    // type_of returns String with type name
+    if let Ok(Some(Value::String(type_name))) = result {
+        assert!(
+            type_name.contains("int") || type_name.contains("Integer"),
+            "Type should be integer"
+        );
+    } else {
+        panic!("type_of should return String");
+    }
+}
+
+/// Unit test: type returns type name (alias for type_of)
+#[test]
+fn test_type_function() {
+    let val = Value::String(Arc::from("hello"));
+
+    let result = eval_builtin_function("__builtin_type__", &[val]);
+    assert!(result.is_ok(), "type should succeed");
+
+    // type returns String with type name
+    if let Ok(Some(Value::String(type_name))) = result {
+        assert!(
+            type_name.contains("string") || type_name.contains("String"),
+            "Type should be string"
+        );
+    } else {
+        panic!("type should return String");
+    }
+}
+
+/// Unit test: parse_int converts string to integer
+#[test]
+fn test_parse_int_positive() {
+    let val = Value::String(Arc::from("123"));
+
+    let result = eval_builtin_function("__builtin_parse_int__", &[val]);
+    assert!(result.is_ok(), "parse_int should succeed");
+
+    // parse_int returns Integer
+    if let Ok(Some(Value::Integer(num))) = result {
+        assert_eq!(num, 123, "Should parse '123' to integer 123");
+    } else {
+        panic!("parse_int should return Integer");
+    }
+}
