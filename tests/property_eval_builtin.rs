@@ -476,4 +476,182 @@ proptest! {
             prop_assert!(false, "parse_int(\"{}\") should fail", s);
         }
     }
+
+    /// Property: type() returns correct type name string
+    /// Coverage target: eval_type (lines 746-755)
+    #[test]
+    fn prop_type_returns_string(x in prop::num::i64::ANY) {
+        let result = eval_builtin_function("__builtin_type__", &[Value::Integer(x)]);
+        prop_assert!(result.is_ok());
+
+        if let Ok(Some(Value::String(type_name))) = result {
+            prop_assert_eq!(type_name.as_ref(), "integer",
+                "type({}) should return 'integer'", x);
+        }
+    }
+
+    /// Property: type_of() returns detailed type information
+    /// Coverage target: eval_type_of (lines 756-765)
+    #[test]
+    fn prop_type_of_consistency(x in prop::num::i64::ANY) {
+        let result = eval_builtin_function("__builtin_type_of__", &[Value::Integer(x)]);
+        prop_assert!(result.is_ok());
+
+        // type_of should return String with type information
+        if let Ok(Some(Value::String(_))) = result {
+            // Success - returns string type info
+        } else {
+            prop_assert!(false, "type_of({}) should return String", x);
+        }
+    }
+
+    /// Property: zip combines two arrays element-wise
+    /// Coverage target: eval_zip (lines 650-670)
+    #[test]
+    fn prop_zip_equal_length(
+        arr1 in prop::collection::vec(0i64..100i64, 0..50),
+        arr2 in prop::collection::vec(0i64..100i64, 0..50)
+    ) {
+        let len1 = arr1.len();
+        let len2 = arr2.len();
+        let values1: Vec<Value> = arr1.iter().map(|&x| Value::Integer(x)).collect();
+        let values2: Vec<Value> = arr2.iter().map(|&x| Value::Integer(x)).collect();
+
+        let array1 = Value::from_array(values1);
+        let array2 = Value::from_array(values2);
+
+        let result = eval_builtin_function("__builtin_zip__", &[array1, array2]);
+        prop_assert!(result.is_ok());
+
+        if let Ok(Some(Value::Array(zipped))) = result {
+            let expected_len = len1.min(len2);
+            prop_assert_eq!(zipped.len(), expected_len,
+                "zip([{}], [{}]) should have {} elements", len1, len2, expected_len);
+        }
+    }
+
+    /// Property: enumerate returns array of (index, value) tuples
+    /// Coverage target: eval_enumerate (lines 675-690)
+    #[test]
+    fn prop_enumerate_indices(arr in prop::collection::vec(0i64..100i64, 0..50)) {
+        let len = arr.len();
+        let values: Vec<Value> = arr.iter().map(|&x| Value::Integer(x)).collect();
+        let array = Value::from_array(values);
+
+        let result = eval_builtin_function("__builtin_enumerate__", &[array]);
+        prop_assert!(result.is_ok());
+
+        if let Ok(Some(Value::Array(enumerated))) = result {
+            prop_assert_eq!(enumerated.len(), len,
+                "enumerate([{}]) should have {} elements", len, len);
+
+            // Each element should be a tuple (index, value)
+            for (i, item) in enumerated.iter().enumerate() {
+                if let Value::Tuple(tuple) = item {
+                    prop_assert_eq!(tuple.len(), 2,
+                        "enumerate tuple should have 2 elements");
+
+                    // First element should be index
+                    if let Value::Integer(idx) = tuple[0] {
+                        prop_assert_eq!(idx, i as i64,
+                            "Index mismatch at position {}", i);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Unit Tests: Type Inspection (Fixed Test Cases)
+// ============================================================================
+
+/// Property: type() distinguishes between types correctly
+/// Coverage target: eval_type (lines 746-755)
+#[test]
+fn prop_type_distinguishes_types() {
+    let test_cases = vec![
+        (Value::Integer(42), "integer"),
+        (Value::Float(3.14), "float"),
+        (Value::Bool(true), "boolean"),
+        (Value::String(Arc::from("test")), "string"),
+        (Value::Nil, "nil"),
+    ];
+
+    for (value, expected_type) in test_cases {
+        let result = eval_builtin_function("__builtin_type__", &[value]);
+        assert!(result.is_ok());
+
+        if let Ok(Some(Value::String(type_name))) = result {
+            assert_eq!(type_name.as_ref(), expected_type,
+                "type() mismatch for {}", expected_type);
+        }
+    }
+}
+
+/// Property: is_nil() correctly identifies nil values
+/// Coverage target: eval_is_nil (lines 766-774)
+#[test]
+fn prop_is_nil_detection() {
+    // Test nil value
+    let nil_result = eval_builtin_function("__builtin_is_nil__", &[Value::Nil]);
+    assert!(nil_result.is_ok());
+    if let Ok(Some(Value::Bool(is_nil))) = nil_result {
+        assert!(is_nil, "is_nil(Nil) should return true");
+    }
+
+    // Test non-nil values
+    let non_nil_values = vec![
+        Value::Integer(0),
+        Value::Integer(42),
+        Value::Float(0.0),
+        Value::Bool(false),
+        Value::String(Arc::from("")),
+    ];
+
+    for value in non_nil_values {
+        let result = eval_builtin_function("__builtin_is_nil__", &[value.clone()]);
+        assert!(result.is_ok());
+        if let Ok(Some(Value::Bool(is_nil))) = result {
+            assert!(!is_nil, "is_nil({:?}) should return false", value);
+        }
+    }
+}
+
+/// Unit test: assert_eq passes on equal values
+/// Coverage target: eval_assert_eq (lines 780-790)
+#[test]
+fn test_assert_eq_success() {
+    let result = eval_builtin_function("__builtin_assert_eq__",
+        &[Value::Integer(42), Value::Integer(42)]);
+    assert!(result.is_ok());
+    // assert_eq returns Nil on success
+    assert_eq!(result.unwrap(), Some(Value::Nil));
+}
+
+/// Unit test: assert_eq fails on unequal values
+/// Coverage target: eval_assert_eq error path (line 787)
+#[test]
+fn test_assert_eq_failure() {
+    let result = eval_builtin_function("__builtin_assert_eq__",
+        &[Value::Integer(42), Value::Integer(99)]);
+    // Should return error
+    assert!(result.is_err(), "assert_eq(42, 99) should fail");
+}
+
+/// Unit test: assert passes on true
+/// Coverage target: eval_assert (lines 795-805)
+#[test]
+fn test_assert_true() {
+    let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(true)]);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), Some(Value::Nil));
+}
+
+/// Unit test: assert fails on false
+/// Coverage target: eval_assert error path (line 802)
+#[test]
+fn test_assert_false() {
+    let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(false)]);
+    assert!(result.is_err(), "assert(false) should fail");
 }
