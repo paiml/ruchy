@@ -821,4 +821,136 @@ mod tests {
         let result = transpiler.looks_like_real_set(&expr);
         assert!(!result); // Let expressions are definitely function bodies
     }
+
+    // Test 28: transpile_string_interpolation with expression
+    #[test]
+    fn test_transpile_string_interpolation_with_expr() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("name".to_string()), Span::default());
+        let parts = vec![
+            StringPart::Text("Hello ".to_string()),
+            StringPart::Expr(Box::new(expr)),
+        ];
+        let result = transpiler.transpile_string_interpolation(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains("format"));
+        assert!(tokens_str.contains("Hello"));
+    }
+
+    // Test 29: transpile_string_interpolation with format spec
+    #[test]
+    fn test_transpile_string_interpolation_with_format_spec() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("value".to_string()), Span::default());
+        let parts = vec![StringPart::ExprWithFormat {
+            expr: Box::new(expr),
+            format_spec: ":>10".to_string(),
+        }];
+        let result = transpiler.transpile_string_interpolation(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains(":>10"));
+    }
+
+    // Test 30: expr_references_var with Unary expression
+    #[test]
+    fn test_expr_references_var_unary() {
+        let operand = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 31: expr_references_var with Call expression
+    #[test]
+    fn test_expr_references_var_call() {
+        let func = Expr::new(ExprKind::Identifier("compute".to_string()), Span::default());
+        let arg = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![arg],
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 32: expr_references_var with MethodCall
+    #[test]
+    fn test_expr_references_var_method_call() {
+        let receiver = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "to_string".to_string(),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 33: expr_references_var with IndexAccess
+    #[test]
+    fn test_expr_references_var_index_access() {
+        let object = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let index = Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(object),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 34: get_compound_op_token with Subtract
+    #[test]
+    fn test_get_compound_op_token_subtract() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Subtract);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains("-="));
+    }
+
+    // Test 35: get_compound_op_token with Modulo
+    #[test]
+    fn test_get_compound_op_token_modulo() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Modulo);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains("%="));
+    }
+
+    // Test 36: get_bitwise_compound_token with BitwiseOr
+    #[test]
+    fn test_get_bitwise_compound_token_or() {
+        let result = Transpiler::get_bitwise_compound_token(BinaryOp::BitwiseOr);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("|="));
+    }
+
+    // Test 37: get_bitwise_compound_token with BitwiseXor
+    #[test]
+    fn test_get_bitwise_compound_token_xor() {
+        let result = Transpiler::get_bitwise_compound_token(BinaryOp::BitwiseXor);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("^="));
+    }
 }
