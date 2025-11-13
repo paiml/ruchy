@@ -879,6 +879,245 @@ mod tests {
         assert_eq!(cleared_stats.cached_modules, 0);
         Ok(())
     }
+
+    // ========================================
+    // Coverage Sprint: Inline Unit Tests (bashrs pattern: 13.5 tests/file)
+    // Target: Test untested code paths and edge cases
+    // ========================================
+
+    // Test 14: resolve_expr with Literal (pass-through)
+    #[test]
+    fn test_resolve_expr_literal_passthrough() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let literal_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 0 },
+        );
+        let resolved = resolver.resolve_imports(literal_expr.clone())?;
+
+        // Literals should pass through unchanged
+        match resolved.kind {
+            ExprKind::Literal(Literal::Integer(val, _)) => assert_eq!(val, 42),
+            _ => panic!("Expected literal to pass through"),
+        }
+        Ok(())
+    }
+
+    // Test 15: resolve_expr with BinaryOp (recursive resolution)
+    #[test]
+    fn test_resolve_expr_binary_op() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span { start: 0, end: 0 },
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span { start: 0, end: 0 },
+        ));
+        let bin_op = Expr::new(
+            ExprKind::Binary {
+                left,
+                op: crate::frontend::ast::BinaryOp::Add,
+                right,
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(bin_op)?;
+        // Should resolve both operands
+        assert!(matches!(resolved.kind, ExprKind::Binary { .. }));
+        Ok(())
+    }
+
+    // Test 16: resolve_expr with UnaryOp (recursive resolution)
+    #[test]
+    fn test_resolve_expr_unary_op() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let operand = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 0 },
+        ));
+        let unary_op = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Negate,
+                operand,
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(unary_op)?;
+        // Should resolve the operand
+        assert!(matches!(resolved.kind, ExprKind::Unary { .. }));
+        Ok(())
+    }
+
+    // Test 17: resolve_expr with Call (recursive resolution)
+    #[test]
+    fn test_resolve_expr_call() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("print".to_string()),
+                    Span { start: 0, end: 0 },
+                )),
+                args: vec![Expr::new(
+                    ExprKind::Literal(Literal::String("hello".to_string())),
+                    Span { start: 0, end: 0 },
+                )],
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(call_expr)?;
+        // Should resolve func and args
+        assert!(matches!(resolved.kind, ExprKind::Call { .. }));
+        Ok(())
+    }
+
+    // Test 18: resolve_expr with While (recursive resolution)
+    #[test]
+    fn test_resolve_expr_while_loop() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let while_expr = Expr::new(
+            ExprKind::While {
+                label: None,
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span { start: 0, end: 0 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Block(vec![]),
+                    Span { start: 0, end: 0 },
+                )),
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(while_expr)?;
+        // Should resolve condition and body
+        assert!(matches!(resolved.kind, ExprKind::While { .. }));
+        Ok(())
+    }
+
+    // Test 19: resolve_expr with For (recursive resolution)
+    #[test]
+    fn test_resolve_expr_for_loop() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let for_expr = Expr::new(
+            ExprKind::For {
+                label: None,
+                var: "i".to_string(),
+                pattern: Some(crate::frontend::ast::Pattern::Identifier("i".to_string())),
+                iter: Box::new(Expr::new(
+                    ExprKind::Identifier("items".to_string()),
+                    Span { start: 0, end: 0 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Block(vec![]),
+                    Span { start: 0, end: 0 },
+                )),
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(for_expr)?;
+        // Should resolve iterable and body
+        assert!(matches!(resolved.kind, ExprKind::For { .. }));
+        Ok(())
+    }
+
+    // Test 20: resolve_expr with Match (recursive resolution)
+    #[test]
+    fn test_resolve_expr_match() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span { start: 0, end: 0 },
+                )),
+                arms: vec![],
+            },
+            Span { start: 0, end: 0 },
+        );
+
+        let resolved = resolver.resolve_imports(match_expr)?;
+        // Should resolve the matched expression
+        assert!(matches!(resolved.kind, ExprKind::Match { .. }));
+        Ok(())
+    }
+
+    // Test 21: is_file_import with camelCase module names
+    #[test]
+    fn test_is_file_import_camel_case() {
+        let resolver = ModuleResolver::new();
+
+        // camelCase should be considered file imports
+        assert!(resolver.is_file_import("camelCase"));
+        assert!(resolver.is_file_import("MyModule"));
+        assert!(resolver.is_file_import("myModule"));
+    }
+
+    // Test 22: is_file_import with numbers
+    #[test]
+    fn test_is_file_import_with_numbers() {
+        let resolver = ModuleResolver::new();
+
+        // Module names with numbers should be file imports
+        assert!(resolver.is_file_import("module123"));
+        assert!(resolver.is_file_import("test2"));
+        assert!(resolver.is_file_import("v1_utils"));
+    }
+
+    // Test 23: is_file_import with special prefixes (not std/core/alloc)
+    #[test]
+    fn test_is_file_import_custom_prefixes() {
+        let resolver = ModuleResolver::new();
+
+        // Names starting with stdlib prefixes are NOT file imports (avoid conflicts)
+        assert!(!resolver.is_file_import("core_utils")); // Starts with "core"
+        assert!(!resolver.is_file_import("stdlib")); // Starts with "std"
+
+        // Completely different names are file imports
+        assert!(resolver.is_file_import("my_module"));
+        assert!(resolver.is_file_import("utils"));
+    }
+
+    // Test 24: clear_cache multiple times (idempotent)
+    #[test]
+    fn test_clear_cache_idempotent() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut resolver = ModuleResolver::new();
+        resolver.module_loader.search_paths.clear();
+        resolver.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "test", "42")?;
+
+        // Load a module
+        let import_expr = Expr::new(
+            ExprKind::Import {
+                module: "test".to_string(),
+                items: None,
+            },
+            Span { start: 0, end: 0 },
+        );
+        resolver.resolve_imports(import_expr)?;
+
+        // Clear cache multiple times - should be idempotent
+        resolver.clear_cache();
+        let stats1 = resolver.stats();
+        resolver.clear_cache();
+        let stats2 = resolver.stats();
+
+        assert_eq!(stats1.cached_modules, 0);
+        assert_eq!(stats2.cached_modules, 0);
+        assert_eq!(stats1.files_loaded, 0);
+        assert_eq!(stats2.files_loaded, 0);
+
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_module_resolver {
