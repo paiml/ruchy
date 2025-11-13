@@ -792,6 +792,241 @@ mod tests {
         assert_eq!(msg.params, deserialized.params);
         Ok(())
     }
+
+    // Test 31: ActorHandle::ask when actor has stopped (ERROR PATH)
+    #[tokio::test]
+    async fn test_actor_handle_ask_actor_stopped() {
+        let (tx, _rx) = mpsc::channel::<(TestMessage, mpsc::Sender<TestResponse>)>(1);
+        drop(_rx); // Close the receiver to simulate stopped actor
+        let stopped_handle = ActorHandle { tx };
+
+        let msg = TestMessage {
+            content: "Test".to_string(),
+        };
+
+        // Should fail with "Actor has stopped"
+        let result = stopped_handle.ask(msg).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Actor has stopped"));
+    }
+
+    // Test 32: ActorHandle::send when actor has stopped (ERROR PATH)
+    #[tokio::test]
+    async fn test_actor_handle_send_actor_stopped() {
+        let (tx, _rx) = mpsc::channel::<(TestMessage, mpsc::Sender<TestResponse>)>(1);
+        drop(_rx); // Close the receiver to simulate stopped actor
+        let stopped_handle = ActorHandle { tx };
+
+        let msg = TestMessage {
+            content: "Test".to_string(),
+        };
+
+        // Should fail with "Actor has stopped"
+        let result = stopped_handle.send(msg).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Actor has stopped"));
+    }
+
+    // Test 33: ActorHandle::is_alive returns false when actor stopped
+    #[tokio::test]
+    async fn test_actor_handle_is_alive_stopped() {
+        let (tx, _rx) = mpsc::channel::<(TestMessage, mpsc::Sender<TestResponse>)>(1);
+        drop(_rx); // Close receiver
+        let stopped_handle = ActorHandle { tx };
+
+        // Wait a bit for channel to fully close
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        assert!(!stopped_handle.is_alive());
+    }
+
+    // Test 34: McpMessage with empty method
+    #[test]
+    fn test_mcp_message_empty_method() -> Result<(), Box<dyn std::error::Error>> {
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "".to_string(),
+            params: serde_json::Value::Null,
+            id: Some("empty".to_string()),
+        };
+        assert_eq!(msg.method, "");
+        let serialized = serde_json::to_string(&msg)?;
+        let deserialized: McpMessage = serde_json::from_str(&serialized)?;
+        assert_eq!(msg.method, deserialized.method);
+        Ok(())
+    }
+
+    // Test 35: McpError with zero code
+    #[test]
+    fn test_mcp_error_zero_code() {
+        let error = McpError {
+            code: 0,
+            message: "No error".to_string(),
+            data: None,
+        };
+        assert_eq!(error.code, 0);
+        assert!(error.data.is_none());
+    }
+
+    // Test 36: McpResponse with both result and error (invalid but parseable)
+    #[test]
+    fn test_mcp_response_both_result_and_error() -> Result<(), Box<dyn std::error::Error>> {
+        let response = McpResponse {
+            jsonrpc: "2.0".to_string(),
+            result: Some(serde_json::json!({"value": 42})),
+            error: Some(McpError {
+                code: -1,
+                message: "Error".to_string(),
+                data: None,
+            }),
+            id: Some("invalid".to_string()),
+        };
+
+        // Should be serializable even if semantically invalid
+        let serialized = serde_json::to_string(&response)?;
+        let deserialized: McpResponse = serde_json::from_str(&serialized)?;
+        assert!(deserialized.result.is_some());
+        assert!(deserialized.error.is_some());
+        Ok(())
+    }
+
+    // Test 37: Supervisor with zero children
+    #[test]
+    fn test_supervisor_zero_children() {
+        let supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForOne);
+        assert_eq!(supervisor.children.len(), 0);
+    }
+
+    // Test 38: McpActor with modified tools list
+    #[test]
+    fn test_mcp_actor_custom_tools() {
+        let mut actor = McpActor::new();
+        actor.tools.push("custom_tool".to_string());
+        assert_eq!(actor.tools.len(), 4);
+        assert!(actor.tools.contains(&"custom_tool".to_string()));
+    }
+
+    // Test 39: MCP call_tool with empty params object
+    #[test]
+    fn test_mcp_call_tool_empty_params() {
+        let params = serde_json::json!({});
+        let response = McpActor::call_tool(&params);
+
+        // Should return None when name parameter missing
+        assert!(response.is_none());
+    }
+
+    // Test 40: McpMessage with large params
+    #[test]
+    fn test_mcp_message_large_params() -> Result<(), Box<dyn std::error::Error>> {
+        let large_array: Vec<i32> = (0..1000).collect();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "test".to_string(),
+            params: serde_json::json!({ "data": large_array }),
+            id: Some("large".to_string()),
+        };
+
+        let serialized = serde_json::to_string(&msg)?;
+        let deserialized: McpMessage = serde_json::from_str(&serialized)?;
+        assert_eq!(msg.method, deserialized.method);
+        Ok(())
+    }
+
+    // Test 41: SupervisionStrategy Debug formatting
+    #[test]
+    fn test_supervision_strategy_debug() {
+        let one_for_one = SupervisionStrategy::OneForOne;
+        let debug_str = format!("{:?}", one_for_one);
+        assert!(debug_str.contains("OneForOne"));
+
+        let one_for_all = SupervisionStrategy::OneForAll;
+        let debug_str = format!("{:?}", one_for_all);
+        assert!(debug_str.contains("OneForAll"));
+
+        let rest_for_one = SupervisionStrategy::RestForOne;
+        let debug_str = format!("{:?}", rest_for_one);
+        assert!(debug_str.contains("RestForOne"));
+    }
+
+    // Test 42: SupervisionStrategy Clone
+    #[test]
+    fn test_supervision_strategy_clone() {
+        let original = SupervisionStrategy::OneForOne;
+        let cloned = original.clone();
+        assert!(matches!(cloned, SupervisionStrategy::OneForOne));
+    }
+
+    // Test 43: McpActor receive with id propagation
+    #[tokio::test]
+    async fn test_mcp_actor_id_propagation() -> Result<(), Box<dyn std::error::Error>> {
+        let mut actor = McpActor::new();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "unknown_method".to_string(),
+            params: serde_json::Value::Null,
+            id: Some("propagate_me".to_string()),
+        };
+
+        let response = actor.receive(msg).await.unwrap();
+        assert_eq!(response.id, Some("propagate_me".to_string()));
+        Ok(())
+    }
+
+    // Test 44: MCP call_tool with all three tools
+    #[tokio::test]
+    async fn test_mcp_call_all_tools() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+
+        for tool_name in &["transpile", "parse", "analyze"] {
+            let msg = McpMessage {
+                jsonrpc: "2.0".to_string(),
+                method: "tools/call".to_string(),
+                params: serde_json::json!({
+                    "name": tool_name,
+                    "arguments": {}
+                }),
+                id: Some(format!("test_{}", tool_name)),
+            };
+
+            let response = handle.ask(msg).await?;
+            assert!(response.result.is_some());
+            assert!(response.error.is_none());
+        }
+        Ok(())
+    }
+
+    // Test 45: Actor that returns None response
+    struct NoResponseActor;
+
+    #[async_trait::async_trait]
+    impl Actor for NoResponseActor {
+        type Message = TestMessage;
+        type Response = TestResponse;
+
+        async fn receive(&mut self, _msg: TestMessage) -> Option<TestResponse> {
+            None // No response
+        }
+    }
+
+    #[tokio::test]
+    async fn test_actor_no_response() {
+        let actor = NoResponseActor;
+        let handle = actor.spawn();
+
+        let msg = TestMessage {
+            content: "Test".to_string(),
+        };
+
+        // Ask should timeout/fail when actor returns None
+        let result = tokio::time::timeout(
+            tokio::time::Duration::from_millis(100),
+            handle.ask(msg)
+        ).await;
+
+        // Timeout or error expected
+        assert!(result.is_err() || result.unwrap().is_err());
+    }
 }
 #[cfg(test)]
 mod property_tests_actors {
