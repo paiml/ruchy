@@ -1617,6 +1617,260 @@ fn test_compute_hash() {
 }
 
 // ============================================================================
+// Filesystem Operations (Phase 2)
+// ============================================================================
+
+/// Unit test: fs_read reads file content and returns Result::Ok
+#[test]
+fn test_fs_read() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("test.txt");
+    std::fs::write(&file_path, "test content").unwrap();
+
+    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_read__", &[path]);
+
+    assert!(result.is_ok(), "fs_read should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, data, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+        if let Some(values) = data {
+            assert!(!values.is_empty(), "Should have content");
+        }
+    }
+}
+
+/// Unit test: fs_write writes content to file and returns Result::Ok
+#[test]
+fn test_fs_write() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("output.txt");
+
+    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let content = Value::String(Arc::from("test write"));
+    let result = eval_builtin_function("__builtin_fs_write__", &[path, content]);
+
+    assert!(result.is_ok(), "fs_write should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+    }
+
+    // Verify file was created
+    assert!(file_path.exists(), "File should be created");
+    let written = std::fs::read_to_string(&file_path).unwrap();
+    assert_eq!(written, "test write", "Content should match");
+}
+
+/// Unit test: fs_exists checks if path exists
+#[test]
+fn test_fs_exists() {
+    let temp_dir = TempDir::new().unwrap();
+    let existing_file = temp_dir.path().join("exists.txt");
+    std::fs::write(&existing_file, "exists").unwrap();
+
+    // Test existing file
+    let path = Value::String(Arc::from(existing_file.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_exists__", &[path]);
+    assert!(result.is_ok(), "fs_exists should succeed");
+    if let Ok(Some(Value::Bool(exists))) = result {
+        assert!(exists, "Existing file should return true");
+    }
+
+    // Test non-existing file
+    let non_existing = temp_dir.path().join("not_exists.txt");
+    let path2 = Value::String(Arc::from(non_existing.to_str().unwrap()));
+    let result2 = eval_builtin_function("__builtin_fs_exists__", &[path2]);
+    if let Ok(Some(Value::Bool(exists))) = result2 {
+        assert!(!exists, "Non-existing file should return false");
+    }
+}
+
+/// Unit test: fs_create_dir creates directory
+#[test]
+fn test_fs_create_dir() {
+    let temp_dir = TempDir::new().unwrap();
+    let new_dir = temp_dir.path().join("new_dir");
+
+    let path = Value::String(Arc::from(new_dir.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_create_dir__", &[path]);
+
+    assert!(result.is_ok(), "fs_create_dir should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+    }
+
+    // Verify directory was created
+    assert!(new_dir.exists(), "Directory should be created");
+    assert!(new_dir.is_dir(), "Path should be a directory");
+}
+
+/// Unit test: fs_remove_file removes a file
+#[test]
+fn test_fs_remove_file() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("to_remove.txt");
+    std::fs::write(&file_path, "remove me").unwrap();
+
+    assert!(file_path.exists(), "File should exist before removal");
+
+    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_remove_file__", &[path]);
+
+    assert!(result.is_ok(), "fs_remove_file should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+    }
+
+    // Verify file was removed
+    assert!(!file_path.exists(), "File should be removed");
+}
+
+/// Unit test: fs_remove_dir removes a directory
+#[test]
+fn test_fs_remove_dir() {
+    let temp_dir = TempDir::new().unwrap();
+    let dir_path = temp_dir.path().join("to_remove_dir");
+    std::fs::create_dir(&dir_path).unwrap();
+
+    assert!(dir_path.exists(), "Directory should exist before removal");
+
+    let path = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_remove_dir__", &[path]);
+
+    assert!(result.is_ok(), "fs_remove_dir should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+    }
+
+    // Verify directory was removed
+    assert!(!dir_path.exists(), "Directory should be removed");
+}
+
+/// Unit test: fs_copy copies a file
+#[test]
+fn test_fs_copy() {
+    let temp_dir = TempDir::new().unwrap();
+    let source_file = temp_dir.path().join("source.txt");
+    let dest_file = temp_dir.path().join("dest.txt");
+    std::fs::write(&source_file, "copy me").unwrap();
+
+    let from = Value::String(Arc::from(source_file.to_str().unwrap()));
+    let to = Value::String(Arc::from(dest_file.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_copy__", &[from, to]);
+
+    assert!(result.is_ok(), "fs_copy should succeed");
+
+    // Verify file was copied
+    assert!(dest_file.exists(), "Destination file should exist");
+    let content = std::fs::read_to_string(&dest_file).unwrap();
+    assert_eq!(content, "copy me", "Content should match source");
+}
+
+/// Unit test: fs_rename renames/moves a file
+#[test]
+fn test_fs_rename() {
+    let temp_dir = TempDir::new().unwrap();
+    let old_path = temp_dir.path().join("old_name.txt");
+    let new_path = temp_dir.path().join("new_name.txt");
+    std::fs::write(&old_path, "rename me").unwrap();
+
+    let from = Value::String(Arc::from(old_path.to_str().unwrap()));
+    let to = Value::String(Arc::from(new_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_rename__", &[from, to]);
+
+    assert!(result.is_ok(), "fs_rename should succeed");
+
+    // Verify file was renamed
+    assert!(!old_path.exists(), "Old path should not exist");
+    assert!(new_path.exists(), "New path should exist");
+    let content = std::fs::read_to_string(&new_path).unwrap();
+    assert_eq!(content, "rename me", "Content should be preserved");
+}
+
+/// Unit test: fs_metadata returns file metadata
+#[test]
+fn test_fs_metadata() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("metadata.txt");
+    std::fs::write(&file_path, "12345").unwrap();
+
+    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_metadata__", &[path]);
+
+    assert!(result.is_ok(), "fs_metadata should succeed");
+    if let Ok(Some(Value::Object(meta))) = result {
+        assert!(meta.contains_key("size"), "Should have size field");
+        assert!(meta.contains_key("is_file"), "Should have is_file field");
+        assert!(meta.contains_key("is_dir"), "Should have is_dir field");
+
+        // Verify values
+        if let Some(Value::Integer(size)) = meta.get("size") {
+            assert_eq!(*size, 5, "Size should be 5 bytes");
+        }
+        if let Some(Value::Bool(is_file)) = meta.get("is_file") {
+            assert!(*is_file, "Should be a file");
+        }
+    }
+}
+
+/// Unit test: fs_read_dir reads directory contents
+#[test]
+fn test_fs_read_dir() {
+    let temp_dir = TempDir::new().unwrap();
+    let dir_path = temp_dir.path().join("read_dir_test");
+    std::fs::create_dir(&dir_path).unwrap();
+
+    // Create some files
+    std::fs::write(dir_path.join("file1.txt"), "one").unwrap();
+    std::fs::write(dir_path.join("file2.txt"), "two").unwrap();
+
+    let path = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_fs_read_dir__", &[path]);
+
+    assert!(result.is_ok(), "fs_read_dir should succeed");
+    if let Ok(Some(Value::Array(entries))) = result {
+        assert_eq!(entries.len(), 2, "Should have 2 entries");
+    }
+}
+
+/// Unit test: fs_canonicalize returns absolute path
+#[test]
+fn test_fs_canonicalize() {
+    let path = Value::String(Arc::from("."));
+    let result = eval_builtin_function("__builtin_fs_canonicalize__", &[path]);
+
+    assert!(result.is_ok(), "fs_canonicalize should succeed for existing path");
+    if let Ok(Some(Value::String(canonical))) = result {
+        assert!(canonical.starts_with('/'), "Should be absolute path");
+    }
+}
+
+/// Unit test: fs_is_file checks if path is a file
+#[test]
+fn test_fs_is_file() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("is_file_test.txt");
+    let dir_path = temp_dir.path().join("is_file_dir");
+
+    std::fs::write(&file_path, "file").unwrap();
+    std::fs::create_dir(&dir_path).unwrap();
+
+    // Test file
+    let path1 = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let result1 = eval_builtin_function("__builtin_fs_is_file__", &[path1]);
+    assert!(result1.is_ok(), "fs_is_file should succeed");
+    if let Ok(Some(Value::Bool(is_file))) = result1 {
+        assert!(is_file, "File should return true");
+    }
+
+    // Test directory
+    let path2 = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let result2 = eval_builtin_function("__builtin_fs_is_file__", &[path2]);
+    if let Ok(Some(Value::Bool(is_file))) = result2 {
+        assert!(!is_file, "Directory should return false");
+    }
+}
+
+// ============================================================================
 // Additional JSON Functions
 // ============================================================================
 
