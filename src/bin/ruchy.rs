@@ -1254,6 +1254,8 @@ mod tests {
             target: None,
             verbose: false,
             json: None,
+            show_profile_info: false,
+            pgo: false,
         };
         let result = handle_advanced_command(command);
         assert!(result.is_ok());
