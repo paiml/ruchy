@@ -1871,6 +1871,99 @@ fn test_fs_is_file() {
 }
 
 // ============================================================================
+// Environment Functions (Phase 3)
+// ============================================================================
+
+/// Unit test: env_var reads environment variable
+#[test]
+fn test_env_var() {
+    // Set a test variable
+    std::env::set_var("RUCHY_TEST_VAR", "test_value");
+
+    let key = Value::String(Arc::from("RUCHY_TEST_VAR"));
+    let result = eval_builtin_function("__builtin_env_var__", &[key]);
+
+    assert!(result.is_ok(), "env_var should succeed");
+    if let Ok(Some(Value::EnumVariant { variant_name, data, .. })) = result {
+        assert_eq!(variant_name, "Ok", "Should return Result::Ok");
+        if let Some(values) = data {
+            if let Some(Value::String(val)) = values.first() {
+                assert_eq!(val.as_ref(), "test_value", "Should return correct value");
+            }
+        }
+    }
+
+    // Cleanup
+    std::env::remove_var("RUCHY_TEST_VAR");
+}
+
+/// Unit test: env_set_var sets environment variable
+#[test]
+fn test_env_set_var() {
+    let key = Value::String(Arc::from("RUCHY_TEST_SET_VAR"));
+    let value = Value::String(Arc::from("new_value"));
+
+    let result = eval_builtin_function("__builtin_env_set_var__", &[key, value]);
+
+    assert!(result.is_ok(), "env_set_var should succeed");
+    assert!(matches!(result, Ok(Some(Value::Nil))), "Should return Nil");
+
+    // Verify variable was set
+    let var = std::env::var("RUCHY_TEST_SET_VAR");
+    assert!(var.is_ok(), "Variable should be set");
+    assert_eq!(var.unwrap(), "new_value", "Value should match");
+
+    // Cleanup
+    std::env::remove_var("RUCHY_TEST_SET_VAR");
+}
+
+/// Unit test: env_remove_var removes environment variable
+#[test]
+fn test_env_remove_var() {
+    // Set a variable first
+    std::env::set_var("RUCHY_TEST_REMOVE_VAR", "to_remove");
+    assert!(std::env::var("RUCHY_TEST_REMOVE_VAR").is_ok(), "Variable should exist");
+
+    let key = Value::String(Arc::from("RUCHY_TEST_REMOVE_VAR"));
+    let result = eval_builtin_function("__builtin_env_remove_var__", &[key]);
+
+    assert!(result.is_ok(), "env_remove_var should succeed");
+    assert!(matches!(result, Ok(Some(Value::Nil))), "Should return Nil");
+
+    // Verify variable was removed
+    let var = std::env::var("RUCHY_TEST_REMOVE_VAR");
+    assert!(var.is_err(), "Variable should be removed");
+}
+
+/// Unit test: env_set_current_dir changes working directory
+#[test]
+fn test_env_set_current_dir() {
+    // Save current directory
+    let original_dir = std::env::current_dir().unwrap();
+
+    // Create temp directory
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path().to_str().unwrap();
+
+    let path = Value::String(Arc::from(temp_path));
+    let result = eval_builtin_function("__builtin_env_set_current_dir__", &[path]);
+
+    assert!(result.is_ok(), "env_set_current_dir should succeed");
+    assert!(matches!(result, Ok(Some(Value::Nil))), "Should return Nil");
+
+    // Verify directory was changed
+    let new_dir = std::env::current_dir().unwrap();
+    assert_eq!(
+        new_dir.to_str().unwrap(),
+        temp_path,
+        "Current directory should be changed"
+    );
+
+    // Restore original directory
+    std::env::set_current_dir(original_dir).unwrap();
+}
+
+// ============================================================================
 // Additional JSON Functions
 // ============================================================================
 
