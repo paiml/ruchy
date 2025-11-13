@@ -1591,6 +1591,32 @@ fn test_path_canonicalize() {
 }
 
 // ============================================================================
+// Hash Functions
+// ============================================================================
+
+/// Unit test: compute_hash generates MD5 hash of file contents
+#[test]
+fn test_compute_hash() {
+    use std::fs;
+
+    // Create temp file with known content
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("test.txt");
+    fs::write(&file_path, "test content").unwrap();
+
+    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let result = eval_builtin_function("__builtin_compute_hash__", &[path]);
+
+    assert!(result.is_ok(), "compute_hash should succeed");
+    if let Ok(Some(Value::String(hash))) = result {
+        assert_eq!(hash.len(), 32, "MD5 hash should be 32 hex characters");
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()), "Hash should be hex");
+    } else {
+        panic!("compute_hash should return String");
+    }
+}
+
+// ============================================================================
 // Additional JSON Functions
 // ============================================================================
 
