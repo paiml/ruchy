@@ -706,6 +706,311 @@ mod tests {
         println!("   • Large slice: {}ms", slice_time.as_millis());
         println!("   • All operations <100ms target ✅");
     }
+
+    // ========================================
+    // Coverage Sprint: Inline Unit Tests (bashrs pattern: 13.5 tests/file)
+    // Target: Test all Result<T,E> error paths and edge cases
+    // ========================================
+
+    // Test 1: polars_dtype_to_arrow with unsupported type (ERROR PATH)
+    #[test]
+    fn test_polars_dtype_to_arrow_unsupported_type_error() {
+        use polars::datatypes::DataType as PolarsDataType;
+
+        // Binary type is unsupported
+        let result = polars_dtype_to_arrow(&PolarsDataType::Binary);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported Polars DataType"));
+    }
+
+    // Test 2: polars_dtype_to_arrow with Date type
+    #[test]
+    fn test_polars_dtype_to_arrow_date() {
+        use polars::datatypes::DataType as PolarsDataType;
+
+        let result = polars_dtype_to_arrow(&PolarsDataType::Date).unwrap();
+        assert_eq!(result, ArrowDataType::Date32);
+    }
+
+    // Test 3: polars_dtype_to_arrow with Datetime type
+    #[test]
+    fn test_polars_dtype_to_arrow_datetime() {
+        use polars::datatypes::DataType as PolarsDataType;
+
+        let result = polars_dtype_to_arrow(&PolarsDataType::Datetime(
+            polars::datatypes::TimeUnit::Microseconds,
+            None,
+        )).unwrap();
+
+        match result {
+            ArrowDataType::Timestamp(unit, tz) => {
+                assert_eq!(unit, arrow::datatypes::TimeUnit::Microsecond);
+                assert_eq!(tz, None);
+            }
+            _ => panic!("Expected Timestamp type"),
+        }
+    }
+
+    // Test 4: polars_series_to_arrow with unsupported type (ERROR PATH)
+    #[test]
+    fn test_polars_series_to_arrow_unsupported_error() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        // Create a Binary series (unsupported)
+        let values: Vec<&[u8]> = vec![b"hello", b"world"];
+        let series = Series::new(PlSmallStr::from("binary_col"), values);
+
+        let result = polars_series_to_arrow(&series);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported Series DataType"));
+    }
+
+    // Test 5: polars_series_to_arrow with Int32
+    #[test]
+    fn test_polars_series_to_arrow_int32() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<i32> = vec![1, 2, 3, 4, 5];
+        let series = Series::new(PlSmallStr::from("int32_col"), values);
+
+        let result = polars_series_to_arrow(&series).unwrap();
+        assert_eq!(result.len(), 5);
+
+        let array = result.as_any().downcast_ref::<arrow::array::Int32Array>().unwrap();
+        assert_eq!(array.value(0), 1);
+        assert_eq!(array.value(4), 5);
+    }
+
+    // Test 6: polars_series_to_arrow with Int32 containing nulls
+    #[test]
+    fn test_polars_series_to_arrow_int32_with_nulls() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
+        let series = Series::new(PlSmallStr::from("nullable_int32"), values);
+
+        let result = polars_series_to_arrow(&series).unwrap();
+        assert_eq!(result.len(), 5);
+
+        let array = result.as_any().downcast_ref::<arrow::array::Int32Array>().unwrap();
+        assert!(!array.is_null(0));
+        assert!(array.is_null(1));
+        assert_eq!(array.value(0), 1);
+        assert_eq!(array.value(2), 3);
+    }
+
+    // Test 7: arrow_array_to_polars_series with unsupported type (ERROR PATH)
+    #[test]
+    fn test_arrow_array_to_polars_series_unsupported_error() {
+        use arrow::array::{BinaryArray, ArrayRef};
+
+        // Create a Binary array (unsupported in this function)
+        let values: Vec<&[u8]> = vec![b"hello", b"world"];
+        let array = BinaryArray::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("binary_col", array_ref);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported Arrow DataType"));
+    }
+
+    // Test 8: arrow_array_to_polars_series with Int32
+    #[test]
+    fn test_arrow_array_to_polars_series_int32() {
+        use arrow::array::{Int32Array};
+
+        let values = vec![10, 20, 30, 40, 50];
+        let array = Int32Array::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("test_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+        assert_eq!(result.name(), "test_col");
+    }
+
+    // Test 9: arrow_array_to_polars_series with Float64
+    #[test]
+    fn test_arrow_array_to_polars_series_float64() {
+        use arrow::array::{Float64Array};
+
+        let values = vec![1.5, 2.5, 3.5, 4.5, 5.5];
+        let array = Float64Array::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("float_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+    }
+
+    // Test 10: arrow_array_to_polars_series with Boolean
+    #[test]
+    fn test_arrow_array_to_polars_series_boolean() {
+        let values = vec![true, false, true, false, true];
+        let array = BooleanArray::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("bool_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+    }
+
+    // Test 11: convert_arrow_string with empty array
+    #[test]
+    fn test_convert_arrow_string_empty() {
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<&str>> = vec![];
+        let array = StringArray::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = convert_arrow_string(array_ref, PlSmallStr::from("empty")).unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    // Test 12: convert_arrow_string with nulls
+    #[test]
+    fn test_convert_arrow_string_with_nulls() {
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<&str>> = vec![Some("hello"), None, Some("world"), None];
+        let array = StringArray::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = convert_arrow_string(array_ref, PlSmallStr::from("nullable_str")).unwrap();
+        assert_eq!(result.len(), 4);
+    }
+
+    // Test 13: ArrowDataFrame::num_rows with multiple batches
+    #[test]
+    fn test_arrow_dataframe_num_rows_multiple_batches() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "col1",
+            ArrowDataType::Int32,
+            false,
+        )]));
+
+        let batch1 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef]
+        ).unwrap();
+
+        let batch2 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![4, 5])) as ArrayRef]
+        ).unwrap();
+
+        let arrow_df = ArrowDataFrame::new(schema, vec![batch1, batch2]);
+        assert_eq!(arrow_df.num_rows(), 5); // 3 + 2 rows
+    }
+
+    // Test 14: ArrowDataFrame::concat with single dataframe
+    #[test]
+    fn test_arrow_dataframe_concat_single() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "col1",
+            ArrowDataType::Int32,
+            false,
+        )]));
+
+        let batch = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef]
+        ).unwrap();
+
+        let df = ArrowDataFrame::new(schema.clone(), vec![batch]);
+        let result = ArrowDataFrame::concat(&[df]).unwrap();
+
+        assert_eq!(result.num_rows(), 3);
+        assert_eq!(result.schema, schema);
+    }
+
+    // Test 15: ArrowDataFrame::concat with matching schemas
+    #[test]
+    fn test_arrow_dataframe_concat_matching_schemas() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "values",
+            ArrowDataType::Int32,
+            false,
+        )]));
+
+        let batch1 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef]
+        ).unwrap();
+
+        let batch2 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![4, 5, 6])) as ArrayRef]
+        ).unwrap();
+
+        let df1 = ArrowDataFrame::new(schema.clone(), vec![batch1]);
+        let df2 = ArrowDataFrame::new(schema.clone(), vec![batch2]);
+
+        let result = ArrowDataFrame::concat(&[df1, df2]).unwrap();
+        assert_eq!(result.num_rows(), 6); // 3 + 3 rows
+        assert_eq!(result.batches.len(), 2); // 2 batches preserved
+    }
+
+    // Test 16: dataframe_to_arrow with empty dataframe
+    #[test]
+    fn test_dataframe_to_arrow_empty() {
+        let df = df! {
+            "empty_col" => Vec::<i32>::new(),
+        }.unwrap();
+
+        let result = dataframe_to_arrow(&df).unwrap();
+        assert_eq!(result.num_rows(), 0);
+        assert_eq!(result.num_columns(), 1);
+    }
+
+    // Test 17: arrow_to_dataframe with empty batch
+    #[test]
+    fn test_arrow_to_dataframe_empty() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "col1",
+            ArrowDataType::Int32,
+            false,
+        )]));
+
+        let batch = RecordBatch::try_new(
+            schema,
+            vec![Arc::new(Int32Array::from(Vec::<i32>::new())) as ArrayRef]
+        ).unwrap();
+
+        let result = arrow_to_dataframe(&batch).unwrap();
+        assert_eq!(result.shape(), (0, 1)); // 0 rows, 1 column
+    }
+
+    // Test 18: ArrowDataFrame::slice spanning multiple batches
+    #[test]
+    fn test_arrow_dataframe_slice_spanning_batches() {
+        let schema = Arc::new(ArrowSchema::new(vec![ArrowField::new(
+            "values",
+            ArrowDataType::Int32,
+            false,
+        )]));
+
+        let batch1 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef]
+        ).unwrap();
+
+        let batch2 = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(Int32Array::from(vec![4, 5, 6])) as ArrayRef]
+        ).unwrap();
+
+        let arrow_df = ArrowDataFrame::new(schema, vec![batch1, batch2]);
+
+        // Slice from row 1 to row 4 (spans both batches)
+        let sliced = arrow_df.slice(1, 4).unwrap();
+        assert_eq!(sliced.num_rows(), 4); // rows 2, 3, 4, 5
+
+        let array = sliced.column(0).as_any().downcast_ref::<Int32Array>().unwrap();
+        assert_eq!(array.value(0), 2); // First value in slice
+        assert_eq!(array.value(3), 5); // Last value in slice
+    }
 }
 #[cfg(test)]
 mod property_tests_arrow_integration {

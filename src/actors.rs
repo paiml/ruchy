@@ -383,6 +383,218 @@ mod tests {
         assert_eq!(msg.id, deserialized.id);
         Ok(())
     }
+
+    // Test 6: ActorHandle::is_alive returns true for active actor
+    #[tokio::test]
+    async fn test_actor_handle_is_alive() {
+        let actor = EchoActor;
+        let handle = actor.spawn();
+        assert!(handle.is_alive());
+    }
+
+    // Test 7: McpActor::new creates actor with default tools
+    #[test]
+    fn test_mcp_actor_new() {
+        let actor = McpActor::new();
+        assert_eq!(actor.tools.len(), 3);
+        assert!(actor.tools.contains(&"transpile".to_string()));
+        assert!(actor.tools.contains(&"parse".to_string()));
+        assert!(actor.tools.contains(&"analyze".to_string()));
+    }
+
+    // Test 8: McpActor::default matches new()
+    #[test]
+    fn test_mcp_actor_default() {
+        let actor1 = McpActor::new();
+        let actor2 = McpActor::default();
+        assert_eq!(actor1.tools, actor2.tools);
+    }
+
+    // Test 9: MCP actor handles unknown method (ERROR PATH)
+    #[tokio::test]
+    async fn test_mcp_actor_unknown_method_error() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "invalid/method".to_string(),
+            params: serde_json::Value::Null,
+            id: Some("test".to_string()),
+        };
+        let response = handle.ask(msg).await?;
+        assert!(response.error.is_some());
+        assert!(response.result.is_none());
+        let error = response.error.unwrap();
+        assert_eq!(error.code, -32601);
+        assert!(error.message.contains("Unknown method"));
+        Ok(())
+    }
+
+    // Test 10: MCP actor call_tool with unknown tool (ERROR PATH)
+    #[tokio::test]
+    async fn test_mcp_actor_unknown_tool_error() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: serde_json::json!({
+                "name": "nonexistent_tool",
+                "arguments": {}
+            }),
+            id: Some("test".to_string()),
+        };
+        let response = handle.ask(msg).await?;
+        assert!(response.error.is_some());
+        assert!(response.result.is_none());
+        let error = response.error.unwrap();
+        assert_eq!(error.code, -32601);
+        assert!(error.message.contains("Unknown tool"));
+        Ok(())
+    }
+
+    // Test 11: MCP actor call_tool with parse tool
+    #[tokio::test]
+    async fn test_mcp_actor_call_parse_tool() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: serde_json::json!({
+                "name": "parse",
+                "arguments": {}
+            }),
+            id: Some("test".to_string()),
+        };
+        let response = handle.ask(msg).await?;
+        assert!(response.result.is_some());
+        assert!(response.error.is_none());
+        Ok(())
+    }
+
+    // Test 12: MCP actor call_tool with analyze tool
+    #[tokio::test]
+    async fn test_mcp_actor_call_analyze_tool() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: serde_json::json!({
+                "name": "analyze",
+                "arguments": {}
+            }),
+            id: Some("test".to_string()),
+        };
+        let response = handle.ask(msg).await?;
+        assert!(response.result.is_some());
+        assert!(response.error.is_none());
+        Ok(())
+    }
+
+    // Test 13: McpError construction
+    #[test]
+    fn test_mcp_error_construction() {
+        let error = McpError {
+            code: -32700,
+            message: "Parse error".to_string(),
+            data: Some(serde_json::json!({"details": "invalid json"})),
+        };
+        assert_eq!(error.code, -32700);
+        assert_eq!(error.message, "Parse error");
+        assert!(error.data.is_some());
+    }
+
+    // Test 14: McpResponse with error
+    #[test]
+    fn test_mcp_response_with_error() {
+        let response = McpResponse {
+            jsonrpc: "2.0".to_string(),
+            result: None,
+            error: Some(McpError {
+                code: -32600,
+                message: "Invalid Request".to_string(),
+                data: None,
+            }),
+            id: Some("req1".to_string()),
+        };
+        assert!(response.result.is_none());
+        assert!(response.error.is_some());
+    }
+
+    // Test 15: McpResponse serialization
+    #[test]
+    fn test_mcp_response_serialization() -> Result<(), Box<dyn std::error::Error>> {
+        let response = McpResponse {
+            jsonrpc: "2.0".to_string(),
+            result: Some(serde_json::json!({"success": true})),
+            error: None,
+            id: Some("resp1".to_string()),
+        };
+        let serialized = serde_json::to_string(&response)?;
+        let deserialized: McpResponse = serde_json::from_str(&serialized)?;
+        assert_eq!(response.jsonrpc, deserialized.jsonrpc);
+        assert_eq!(response.id, deserialized.id);
+        Ok(())
+    }
+
+    // Test 16: Supervisor with OneForAll strategy
+    #[test]
+    fn test_supervisor_one_for_all_strategy() {
+        let supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForAll);
+        assert!(matches!(
+            supervisor.strategy,
+            SupervisionStrategy::OneForAll
+        ));
+    }
+
+    // Test 17: Supervisor with RestForOne strategy
+    #[test]
+    fn test_supervisor_rest_for_one_strategy() {
+        let supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::RestForOne);
+        assert!(matches!(
+            supervisor.strategy,
+            SupervisionStrategy::RestForOne
+        ));
+    }
+
+    // Test 18: Supervisor supervise adds child
+    #[test]
+    fn test_supervisor_supervise() {
+        let mut supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForOne);
+        assert_eq!(supervisor.children.len(), 0);
+        supervisor.supervise(EchoActor);
+        assert_eq!(supervisor.children.len(), 1);
+    }
+
+    // Test 19: ActorHandle::send without waiting for response
+    #[tokio::test]
+    async fn test_actor_handle_send() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = EchoActor;
+        let handle = actor.spawn();
+        let msg = TestMessage {
+            content: "Fire and forget".to_string(),
+        };
+        handle.send(msg).await?;
+        Ok(())
+    }
+
+    // Test 20: McpMessage with null id
+    #[test]
+    fn test_mcp_message_null_id() -> Result<(), Box<dyn std::error::Error>> {
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "notification".to_string(),
+            params: serde_json::Value::Null,
+            id: None,
+        };
+        assert!(msg.id.is_none());
+        let serialized = serde_json::to_string(&msg)?;
+        let deserialized: McpMessage = serde_json::from_str(&serialized)?;
+        assert!(deserialized.id.is_none());
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_actors {

@@ -538,3 +538,287 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Test 1: transpile_literal with Integer (no suffix)
+    #[test]
+    fn test_transpile_literal_integer_no_suffix() {
+        let lit = Literal::Integer(42, None);
+        let result = Transpiler::transpile_literal(&lit);
+        assert!(!result.is_empty());
+    }
+
+    // Test 2: transpile_literal with Integer (i64 suffix)
+    #[test]
+    fn test_transpile_literal_integer_with_suffix() {
+        let lit = Literal::Integer(100, Some("i64".to_string()));
+        let result = Transpiler::transpile_literal(&lit);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("100i64"));
+    }
+
+    // Test 3: transpile_literal with Float
+    #[test]
+    fn test_transpile_literal_float() {
+        let lit = Literal::Float(3.14);
+        let result = Transpiler::transpile_literal(&lit);
+        assert!(!result.is_empty());
+    }
+
+    // Test 4: transpile_literal with Unit
+    #[test]
+    fn test_transpile_literal_unit() {
+        let lit = Literal::Unit;
+        let result = Transpiler::transpile_literal(&lit);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("("));
+        assert!(tokens_str.contains(")"));
+    }
+
+    // Test 5: transpile_literal with Null
+    #[test]
+    fn test_transpile_literal_null() {
+        let lit = Literal::Null;
+        let result = Transpiler::transpile_literal(&lit);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("None"));
+    }
+
+    // Test 6: transpile_simple_literal with String
+    #[test]
+    fn test_transpile_simple_literal_string() {
+        let lit = Literal::String("hello".to_string());
+        let result = Transpiler::transpile_simple_literal(&lit);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("hello"));
+    }
+
+    // Test 7: transpile_simple_literal with Bool
+    #[test]
+    fn test_transpile_simple_literal_bool() {
+        let lit = Literal::Bool(true);
+        let result = Transpiler::transpile_simple_literal(&lit);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("true"));
+    }
+
+    // Test 8: transpile_simple_literal with Char
+    #[test]
+    fn test_transpile_simple_literal_char() {
+        let lit = Literal::Char('x');
+        let result = Transpiler::transpile_simple_literal(&lit);
+        assert!(!result.is_empty());
+    }
+
+    // Test 9: transpile_integer with type suffix
+    #[test]
+    fn test_transpile_integer_with_type_suffix() {
+        let result = Transpiler::transpile_integer(42, Some("i32"));
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("42i32"));
+    }
+
+    // Test 10: transpile_integer i32 range (no suffix)
+    #[test]
+    fn test_transpile_integer_i32_range() {
+        let result = Transpiler::transpile_integer(1000, None);
+        assert!(!result.is_empty());
+    }
+
+    // Test 11: transpile_integer large i64 (requires suffix)
+    #[test]
+    fn test_transpile_integer_i64_large() {
+        let large_val = i64::MAX;
+        let result = Transpiler::transpile_integer(large_val, None);
+        let tokens_str = result.to_string();
+        // Should have i64 suffix for large values
+        assert!(tokens_str.contains("i64"));
+    }
+
+    // Test 12: transpile_string_interpolation empty parts
+    #[test]
+    fn test_transpile_string_interpolation_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_string_interpolation(&[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains("\"\""));
+    }
+
+    // Test 13: transpile_string_interpolation text only
+    #[test]
+    fn test_transpile_string_interpolation_text_only() {
+        let transpiler = Transpiler::new();
+        let parts = vec![StringPart::Text("hello".to_string())];
+        let result = transpiler.transpile_string_interpolation(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        // Should contain either "hello" directly or in format! call
+        assert!(tokens_str.contains("hello"));
+    }
+
+    // Test 14: expr_references_var with Identifier
+    #[test]
+    fn test_expr_references_var_identifier() {
+        let expr = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 15: expr_references_var with different identifier
+    #[test]
+    fn test_expr_references_var_different_identifier() {
+        let expr = Expr::new(ExprKind::Identifier("other".to_string()), Span::default());
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(!result);
+    }
+
+    // Test 16: expr_references_var with Binary expression
+    #[test]
+    fn test_expr_references_var_binary_expr() {
+        let left = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let right = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 17: get_compound_op_token with Add
+    #[test]
+    fn test_get_compound_op_token_add() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Add);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let tokens_str = tokens.to_string();
+        assert!(tokens_str.contains("+="));
+    }
+
+    // Test 18: get_compound_op_token with invalid operator (ERROR PATH)
+    #[test]
+    fn test_get_compound_op_token_invalid_error_path() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Equal);
+        assert!(result.is_err());
+    }
+
+    // Test 19: get_basic_compound_token
+    #[test]
+    fn test_get_basic_compound_token() {
+        let result = Transpiler::get_basic_compound_token(BinaryOp::Multiply);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("*="));
+    }
+
+    // Test 20: get_division_compound_token
+    #[test]
+    fn test_get_division_compound_token() {
+        let result = Transpiler::get_division_compound_token(BinaryOp::Divide);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("/="));
+    }
+
+    // Test 21: get_bitwise_compound_token
+    #[test]
+    fn test_get_bitwise_compound_token() {
+        let result = Transpiler::get_bitwise_compound_token(BinaryOp::BitwiseAnd);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("&="));
+    }
+
+    // Test 22: is_definitely_string with string literal
+    #[test]
+    fn test_is_definitely_string_literal() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::String("test".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.is_definitely_string(&expr);
+        assert!(result);
+    }
+
+    // Test 23: is_definitely_string with integer literal
+    #[test]
+    fn test_is_definitely_string_integer_not_string() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let result = transpiler.is_definitely_string(&expr);
+        assert!(!result);
+    }
+
+    // Test 24: is_definitely_string with FieldAccess (not string)
+    #[test]
+    fn test_is_definitely_string_field_access_conservative() {
+        let transpiler = Transpiler::new();
+        let obj = Expr::new(ExprKind::Identifier("self".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(obj),
+                field: "value".to_string(),
+            },
+            Span::default(),
+        );
+        let result = transpiler.is_definitely_string(&expr);
+        assert!(!result); // Conservative: field access is not definitely string
+    }
+
+    // Test 25: looks_like_real_set with Literal (true)
+    #[test]
+    fn test_looks_like_real_set_literal() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let result = transpiler.looks_like_real_set(&expr);
+        assert!(result);
+    }
+
+    // Test 26: looks_like_real_set with Binary (false - function body)
+    #[test]
+    fn test_looks_like_real_set_binary_false() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let right = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.looks_like_real_set(&expr);
+        assert!(!result); // Binary expressions unlikely in real sets
+    }
+
+    // Test 27: looks_like_real_set with Let (false - definitely function body)
+    #[test]
+    fn test_looks_like_real_set_let_false() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let body = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(value),
+                body: Box::new(body),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.looks_like_real_set(&expr);
+        assert!(!result); // Let expressions are definitely function bodies
+    }
+}
