@@ -1011,6 +1011,199 @@ mod tests {
         assert_eq!(array.value(0), 2); // First value in slice
         assert_eq!(array.value(3), 5); // Last value in slice
     }
+
+    // Test 19: polars_dtype_to_arrow with Float32
+    #[test]
+    fn test_polars_dtype_to_arrow_float32() {
+        use polars::datatypes::DataType as PolarsDataType;
+
+        let result = polars_dtype_to_arrow(&PolarsDataType::Float32).unwrap();
+        assert_eq!(result, ArrowDataType::Float32);
+    }
+
+    // Test 20: polars_series_to_arrow with Float64 including nulls
+    #[test]
+    fn test_polars_series_to_arrow_float64_with_nulls() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<f64>> = vec![Some(1.5), None, Some(3.5), None, Some(5.5)];
+        let series = Series::new(PlSmallStr::from("nullable_float64"), values);
+
+        let result = polars_series_to_arrow(&series).unwrap();
+        assert_eq!(result.len(), 5);
+
+        let array = result.as_any().downcast_ref::<Float64Array>().unwrap();
+        assert!(!array.is_null(0));
+        assert!(array.is_null(1));
+        assert_eq!(array.value(0), 1.5);
+        assert_eq!(array.value(2), 3.5);
+    }
+
+    // Test 21: polars_series_to_arrow with Boolean including nulls
+    #[test]
+    fn test_polars_series_to_arrow_boolean_with_nulls() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<bool>> = vec![Some(true), None, Some(false), None, Some(true)];
+        let series = Series::new(PlSmallStr::from("nullable_bool"), values);
+
+        let result = polars_series_to_arrow(&series).unwrap();
+        assert_eq!(result.len(), 5);
+
+        let array = result.as_any().downcast_ref::<BooleanArray>().unwrap();
+        assert!(!array.is_null(0));
+        assert!(array.is_null(1));
+        assert_eq!(array.value(0), true);
+        assert_eq!(array.value(2), false);
+    }
+
+    // Test 22: polars_series_to_arrow with String including nulls
+    #[test]
+    fn test_polars_series_to_arrow_string_with_nulls() {
+        use polars::prelude::{Series, NamedFrom};
+        use polars::datatypes::PlSmallStr;
+
+        let values: Vec<Option<&str>> = vec![Some("hello"), None, Some("world"), None];
+        let series = Series::new(PlSmallStr::from("nullable_str"), values);
+
+        let result = polars_series_to_arrow(&series).unwrap();
+        assert_eq!(result.len(), 4);
+
+        let array = result.as_any().downcast_ref::<StringArray>().unwrap();
+        assert!(!array.is_null(0));
+        assert!(array.is_null(1));
+        assert_eq!(array.value(0), "hello");
+        assert_eq!(array.value(2), "world");
+    }
+
+    // Test 23: arrow_array_to_polars_series with Int64 including nulls
+    #[test]
+    fn test_arrow_array_to_polars_series_int64_with_nulls() {
+        use arrow::array::Int64Array;
+
+        let values: Vec<Option<i64>> = vec![Some(100), None, Some(300), None, Some(500)];
+        let array = Int64Array::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("test_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+        assert_eq!(result.name(), "test_col");
+    }
+
+    // Test 24: arrow_array_to_polars_series with Float64 including nulls
+    #[test]
+    fn test_arrow_array_to_polars_series_float64_with_nulls() {
+        let values: Vec<Option<f64>> = vec![Some(1.1), None, Some(3.3), None, Some(5.5)];
+        let array = Float64Array::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("float_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+    }
+
+    // Test 25: arrow_array_to_polars_series with Boolean including nulls
+    #[test]
+    fn test_arrow_array_to_polars_series_boolean_with_nulls() {
+        let values: Vec<Option<bool>> = vec![Some(true), None, Some(false), None, Some(true)];
+        let array = BooleanArray::from(values);
+        let array_ref: &dyn Array = &array;
+
+        let result = arrow_array_to_polars_series("bool_col", array_ref).unwrap();
+        assert_eq!(result.len(), 5);
+    }
+
+    // Test 26: ArrowDataFrame::filter with all-false mask (ERROR PATH)
+    #[test]
+    fn test_arrow_dataframe_filter_all_false_mask() {
+        let df = df! {
+            "values" => &[1, 2, 3, 4, 5],
+        }
+        .unwrap();
+        let batch = dataframe_to_arrow(&df).unwrap();
+        let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+        // Create mask with all False
+        let mask = BooleanArray::from(vec![false, false, false, false, false]);
+
+        let result = arrow_df.filter(&mask).unwrap();
+        // Result should be empty (0 rows)
+        assert_eq!(result.num_rows(), 0);
+    }
+
+    // Test 27: ArrowDataFrame::filter with all-true mask
+    #[test]
+    fn test_arrow_dataframe_filter_all_true_mask() {
+        let df = df! {
+            "values" => &[1, 2, 3, 4, 5],
+        }
+        .unwrap();
+        let batch = dataframe_to_arrow(&df).unwrap();
+        let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+        // Create mask with all True
+        let mask = BooleanArray::from(vec![true, true, true, true, true]);
+
+        let result = arrow_df.filter(&mask).unwrap();
+        // Result should have all 5 rows
+        assert_eq!(result.num_rows(), 5);
+    }
+
+    // Test 28: ArrowDataFrame::slice with offset at end (boundary condition)
+    #[test]
+    fn test_arrow_dataframe_slice_offset_at_end() {
+        let df = df! {
+            "values" => &[1, 2, 3, 4, 5],
+        }
+        .unwrap();
+        let batch = dataframe_to_arrow(&df).unwrap();
+        let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+        // Slice starting at the last element
+        let sliced = arrow_df.slice(4, 10).unwrap();
+        assert_eq!(sliced.num_rows(), 1); // Only 1 row remaining
+
+        let array = sliced.column(0).as_any().downcast_ref::<arrow::array::Int32Array>().unwrap();
+        assert_eq!(array.value(0), 5);
+    }
+
+    // Test 29: ArrowDataFrame::slice with offset beyond end (boundary condition)
+    #[test]
+    fn test_arrow_dataframe_slice_offset_beyond_end() {
+        let df = df! {
+            "values" => &[1, 2, 3, 4, 5],
+        }
+        .unwrap();
+        let batch = dataframe_to_arrow(&df).unwrap();
+        let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+        // Slice starting beyond the end (should return empty or handle gracefully)
+        let result = arrow_df.slice(10, 5);
+        // This might return an error or empty result depending on implementation
+        // Either is acceptable as long as it doesn't panic
+        match result {
+            Ok(sliced) => assert_eq!(sliced.num_rows(), 0),
+            Err(_) => {} // Error is also acceptable
+        }
+    }
+
+    // Test 30: dataframe_to_arrow with multi-type columns
+    #[test]
+    fn test_dataframe_to_arrow_multi_type() {
+        let df = df! {
+            "int32" => &[1i32, 2, 3],
+            "int64" => &[10i64, 20, 30],
+            "float64" => &[1.5f64, 2.5, 3.5],
+            "bool" => &[true, false, true],
+            "str" => &["a", "b", "c"],
+        }
+        .unwrap();
+
+        let result = dataframe_to_arrow(&df).unwrap();
+        assert_eq!(result.num_rows(), 3);
+        assert_eq!(result.num_columns(), 5);
+    }
 }
 #[cfg(test)]
 mod property_tests_arrow_integration {
