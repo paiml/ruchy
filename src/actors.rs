@@ -595,6 +595,203 @@ mod tests {
         assert!(deserialized.id.is_none());
         Ok(())
     }
+
+    // Test 21: Multiple messages to same actor
+    #[tokio::test]
+    async fn test_multiple_messages_to_actor() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = EchoActor;
+        let handle = actor.spawn();
+
+        // Send multiple messages
+        for i in 0..5 {
+            let msg = TestMessage {
+                content: format!("Message {i}"),
+            };
+            let response = handle.ask(msg).await?;
+            assert!(response.echo.contains(&format!("Message {i}")));
+        }
+        Ok(())
+    }
+
+    // Test 22: Concurrent messages to actor
+    #[tokio::test]
+    async fn test_concurrent_messages_to_actor() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = EchoActor;
+        let handle = std::sync::Arc::new(actor.spawn());
+
+        let mut tasks = vec![];
+        for i in 0..10 {
+            let h = handle.clone();
+            let task = tokio::spawn(async move {
+                let msg = TestMessage {
+                    content: format!("Concurrent {i}"),
+                };
+                h.ask(msg).await
+            });
+            tasks.push(task);
+        }
+
+        // All messages should succeed
+        for task in tasks {
+            assert!(task.await.is_ok());
+        }
+        Ok(())
+    }
+
+    // Test 23: MCP actor with complex params
+    #[tokio::test]
+    async fn test_mcp_actor_complex_params() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = McpActor::new();
+        let handle = actor.spawn();
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: serde_json::json!({
+                "name": "transpile",
+                "arguments": {
+                    "source": "fun main() { println!(\"hello\") }",
+                    "options": {
+                        "optimize": true,
+                        "target": "rust"
+                    }
+                }
+            }),
+            id: Some("complex".to_string()),
+        };
+        let response = handle.ask(msg).await?;
+        assert!(response.result.is_some());
+        Ok(())
+    }
+
+    // Test 24: McpError with data field
+    #[test]
+    fn test_mcp_error_with_data() -> Result<(), Box<dyn std::error::Error>> {
+        let error = McpError {
+            code: -32602,
+            message: "Invalid params".to_string(),
+            data: Some(serde_json::json!({
+                "param": "name",
+                "expected": "string",
+                "got": "number"
+            })),
+        };
+        assert_eq!(error.code, -32602);
+        assert!(error.data.is_some());
+
+        // Serialize and deserialize
+        let serialized = serde_json::to_string(&error)?;
+        let deserialized: McpError = serde_json::from_str(&serialized)?;
+        assert_eq!(error.message, deserialized.message);
+        Ok(())
+    }
+
+    // Test 25: Supervisor with multiple children
+    #[tokio::test]
+    async fn test_supervisor_multiple_children() {
+        let mut supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForOne);
+
+        // Add 5 children
+        for _ in 0..5 {
+            supervisor.supervise(EchoActor);
+        }
+
+        assert_eq!(supervisor.children.len(), 5);
+
+        // All children should be alive
+        for child in &supervisor.children {
+            assert!(child.is_alive());
+        }
+    }
+
+    // Test 26: Actor handle send fire-and-forget multiple times
+    #[tokio::test]
+    async fn test_actor_handle_send_multiple() -> Result<(), Box<dyn std::error::Error>> {
+        let actor = EchoActor;
+        let handle = actor.spawn();
+
+        // Send 10 fire-and-forget messages
+        for i in 0..10 {
+            let msg = TestMessage {
+                content: format!("Fire {i}"),
+            };
+            handle.send(msg).await?;
+        }
+
+        // Actor should still be alive
+        assert!(handle.is_alive());
+        Ok(())
+    }
+
+    // Test 27: MCP response with null result
+    #[test]
+    fn test_mcp_response_null_result() {
+        let response = McpResponse {
+            jsonrpc: "2.0".to_string(),
+            result: None,
+            error: None,
+            id: Some("null_result".to_string()),
+        };
+        assert!(response.result.is_none());
+        assert!(response.error.is_none());
+    }
+
+    // Test 28: McpActor list_tools returns correct structure
+    #[test]
+    fn test_mcp_actor_list_tools_structure() {
+        let actor = McpActor::new();
+        let response = actor.list_tools();
+
+        assert_eq!(response.jsonrpc, "2.0");
+        assert!(response.result.is_some());
+        assert!(response.error.is_none());
+
+        // Verify tools structure
+        let result = response.result.unwrap();
+        let tools = result.get("tools").unwrap().as_array().unwrap();
+        assert_eq!(tools.len(), 3);
+
+        // Check first tool structure
+        let first_tool = &tools[0];
+        assert!(first_tool.get("name").is_some());
+        assert!(first_tool.get("description").is_some());
+    }
+
+    // Test 29: MCP call_tool with missing name parameter (ERROR PATH)
+    #[test]
+    fn test_mcp_call_tool_missing_name() {
+        let params = serde_json::json!({
+            "arguments": {}
+        });
+        let response = McpActor::call_tool(&params);
+
+        // Should return None when required parameter missing
+        assert!(response.is_none());
+    }
+
+    // Test 30: McpMessage serialization with complex params
+    #[test]
+    fn test_mcp_message_complex_serialization() -> Result<(), Box<dyn std::error::Error>> {
+        let msg = McpMessage {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: serde_json::json!({
+                "nested": {
+                    "array": [1, 2, 3],
+                    "object": {
+                        "key": "value"
+                    }
+                }
+            }),
+            id: Some("complex_params".to_string()),
+        };
+
+        let serialized = serde_json::to_string(&msg)?;
+        let deserialized: McpMessage = serde_json::from_str(&serialized)?;
+
+        assert_eq!(msg.method, deserialized.method);
+        assert_eq!(msg.params, deserialized.params);
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_actors {
