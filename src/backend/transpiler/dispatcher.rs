@@ -515,3 +515,284 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Test 1: transpile_basic_expr with Literal routes correctly
+    #[test]
+    fn test_transpile_basic_expr_literal() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_basic_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("42"));
+    }
+
+    // Test 2: transpile_basic_expr with Identifier routes correctly
+    #[test]
+    fn test_transpile_basic_expr_identifier() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Identifier("my_var".to_string()),
+            Span::default(),
+        );
+        let result = transpiler.transpile_basic_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("my_var"));
+    }
+
+    // Test 3: transpile_basic_expr with QualifiedName routes correctly
+    #[test]
+    fn test_transpile_basic_expr_qualified_name() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::QualifiedName {
+                module: "std::collections".to_string(),
+                name: "HashMap".to_string(),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_basic_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("HashMap"));
+    }
+
+    // Test 4: transpile_basic_expr with StringInterpolation routes correctly
+    #[test]
+    fn test_transpile_basic_expr_string_interpolation() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::StringInterpolation { parts: vec![] },
+            Span::default(),
+        );
+        let result = transpiler.transpile_basic_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 5: transpile_macro with unknown macro (ERROR PATH)
+    #[test]
+    fn test_transpile_macro_unknown_error() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_macro("unknown_macro", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown macro"));
+    }
+
+    // Test 6: transpile_macro with println routes correctly
+    #[test]
+    fn test_transpile_macro_println() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_macro("println", &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("println"));
+    }
+
+    // Test 7: transpile_macro with vec routes correctly
+    #[test]
+    fn test_transpile_macro_vec() {
+        let transpiler = Transpiler::new();
+        let elem = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_macro("vec", &[elem]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("vec"));
+    }
+
+    // Test 8: transpile_macro with assert routes correctly
+    #[test]
+    fn test_transpile_macro_assert() {
+        let transpiler = Transpiler::new();
+        let condition = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_macro("assert", &[condition]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("assert"));
+    }
+
+    // Test 9: transpile_macro with passthrough macro (json) routes correctly
+    #[test]
+    fn test_transpile_macro_passthrough_json() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_macro("json", &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("json"));
+    }
+
+    // Test 10: transpile_result_ok with integer literal
+    #[test]
+    fn test_transpile_result_ok_integer() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_result_ok(&value);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Ok"));
+        assert!(tokens.contains("42"));
+    }
+
+    // Test 11: transpile_result_ok with string literal (auto-conversion to String)
+    #[test]
+    fn test_transpile_result_ok_string_conversion() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_result_ok(&value);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Ok"));
+        assert!(tokens.contains("to_string"));
+    }
+
+    // Test 12: transpile_result_err with integer literal
+    #[test]
+    fn test_transpile_result_err_integer() {
+        let transpiler = Transpiler::new();
+        let error = Expr::new(
+            ExprKind::Literal(Literal::Integer(404, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_result_err(&error);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Err"));
+        assert!(tokens.contains("404"));
+    }
+
+    // Test 13: transpile_result_err with string literal (auto-conversion to String)
+    #[test]
+    fn test_transpile_result_err_string_conversion() {
+        let transpiler = Transpiler::new();
+        let error = Expr::new(
+            ExprKind::Literal(Literal::String("error message".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_result_err(&error);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Err"));
+        assert!(tokens.contains("to_string"));
+    }
+
+    // Test 14: transpile_option_some with integer literal
+    #[test]
+    fn test_transpile_option_some_integer() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(123, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_option_some(&value);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Some"));
+        assert!(tokens.contains("123"));
+    }
+
+    // Test 15: transpile_option_some with string literal (auto-conversion to String)
+    #[test]
+    fn test_transpile_option_some_string_conversion() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(
+            ExprKind::Literal(Literal::String("value".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_option_some(&value);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Some"));
+        assert!(tokens.contains("to_string"));
+    }
+
+    // Test 16: transpile_try_operator
+    #[test]
+    fn test_transpile_try_operator() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Identifier("result_value".to_string()),
+            Span::default(),
+        );
+        let result = transpiler.transpile_try_operator(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("result_value"));
+        assert!(tokens.contains("?"));
+    }
+
+    // Test 17: transpile_error_only_expr with None
+    #[test]
+    fn test_transpile_error_only_expr_none() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::None, Span::default());
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("None"));
+    }
+
+    // Test 18: transpile_error_only_expr with Ok routes correctly
+    #[test]
+    fn test_transpile_error_only_expr_ok() {
+        let transpiler = Transpiler::new();
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        ));
+        let expr = Expr::new(ExprKind::Ok { value }, Span::default());
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Ok"));
+    }
+
+    // Test 19: transpile_error_only_expr with Err routes correctly
+    #[test]
+    fn test_transpile_error_only_expr_err() {
+        let transpiler = Transpiler::new();
+        let error = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        ));
+        let expr = Expr::new(ExprKind::Err { error }, Span::default());
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Err"));
+    }
+
+    // Test 20: transpile_error_only_expr with Some routes correctly
+    #[test]
+    fn test_transpile_error_only_expr_some() {
+        let transpiler = Transpiler::new();
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        ));
+        let expr = Expr::new(ExprKind::Some { value }, Span::default());
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Some"));
+    }
+}
