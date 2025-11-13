@@ -702,6 +702,136 @@ mod tests {
         assert!(result.contains('*'));
         assert!(result.contains('/'));
     }
+
+    // Test 1: gen_literal with Null
+    #[test]
+    fn test_gen_literal_null() {
+        let result = MinimalCodeGen::gen_literal(&Literal::Null).unwrap();
+        assert_eq!(result, "None");
+    }
+
+    // Test 2: gen_literal with Byte
+    #[test]
+    fn test_gen_literal_byte() {
+        let result = MinimalCodeGen::gen_literal(&Literal::Byte(65)).unwrap();
+        assert_eq!(result, "b'A'");
+    }
+
+    // Test 3: gen_literal with Byte (newline)
+    #[test]
+    fn test_gen_literal_byte_newline() {
+        let result = MinimalCodeGen::gen_literal(&Literal::Byte(10)).unwrap();
+        assert_eq!(result, "b'\n'");
+    }
+
+    // Test 4: gen_binary_op Power
+    #[test]
+    fn test_gen_binary_op_power() {
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Power), "pow");
+    }
+
+    // Test 5: gen_binary_op Send
+    #[test]
+    fn test_gen_binary_op_send() {
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Send), "!");
+    }
+
+    // Test 6: gen_binary_op RightShift
+    #[test]
+    fn test_gen_binary_op_right_shift() {
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::RightShift), ">>");
+    }
+
+    // Test 7: gen_unary_op MutableReference
+    #[test]
+    fn test_gen_unary_op_mut_ref() {
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::MutableReference), "&mut ");
+    }
+
+    // Test 8: gen_unary_op Deref
+    #[test]
+    fn test_gen_unary_op_deref() {
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::Deref), "*");
+    }
+
+    // Test 9: gen_expr with unsupported ExprKind (ERROR PATH)
+    #[test]
+    fn test_gen_expr_unsupported_error() {
+        use crate::frontend::ast::ExprKind;
+        // Use an ExprKind variant not supported by minimal codegen
+        let expr = Expr::new(
+            ExprKind::Return { value: Some(Box::new(make_literal(Literal::Integer(42, None)))) },
+            Span::new(0, 1),
+        );
+        let result = MinimalCodeGen::gen_expr(&expr);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Minimal codegen does not support"));
+    }
+
+    // Test 10: gen_expr with Ternary (syntactic sugar for if-else)
+    #[test]
+    fn test_gen_expr_ternary() {
+        let condition = make_ident("x");
+        let true_expr = make_literal(Literal::Integer(1, None));
+        let false_expr = make_literal(Literal::Integer(2, None));
+        let expr = Expr::new(
+            ExprKind::Ternary {
+                condition: Box::new(condition),
+                true_expr: Box::new(true_expr),
+                false_expr: Box::new(false_expr),
+            },
+            Span::new(0, 1),
+        );
+        let result = MinimalCodeGen::gen_expr(&expr).unwrap();
+        assert!(result.contains("if x"));
+        assert!(result.contains("{ 1 }"));
+        assert!(result.contains("else"));
+        assert!(result.contains("{ 2 }"));
+    }
+
+    // Test 11: gen_type (simplified for MVP)
+    #[test]
+    fn test_gen_type_simplified() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let ty = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::new(0, 1),
+        };
+        let result = MinimalCodeGen::gen_type(&ty).unwrap();
+        assert_eq!(result, "String"); // Simplified for MVP
+    }
+
+    // Test 12: gen_function_expr with no params
+    #[test]
+    fn test_gen_function_expr_no_params() {
+        let body = make_literal(Literal::Integer(42, None));
+        let result = MinimalCodeGen::gen_function_expr("foo", &[], &body).unwrap();
+        assert_eq!(result, "fn foo() { 42 }");
+    }
+
+    // Test 13: gen_lambda_expr with no params
+    #[test]
+    fn test_gen_lambda_expr_no_params() {
+        let body = make_literal(Literal::Integer(42, None));
+        let result = MinimalCodeGen::gen_lambda_expr(&[], &body).unwrap();
+        assert_eq!(result, "|| 42");
+    }
+
+    // Test 14: gen_method_call with no args
+    #[test]
+    fn test_gen_method_call_no_args() {
+        let receiver = make_ident("obj");
+        let result = MinimalCodeGen::gen_method_call(&receiver, "method", &[]).unwrap();
+        assert_eq!(result, "obj.method()");
+    }
+
+    // Test 15: gen_block_expr with single expression
+    #[test]
+    fn test_gen_block_expr_single() {
+        let exprs = vec![make_literal(Literal::Integer(42, None))];
+        let result = MinimalCodeGen::gen_block_expr(&exprs).unwrap();
+        assert_eq!(result, "{ 42 }");
+    }
 }
 #[cfg(test)]
 mod property_tests_codegen_minimal {
