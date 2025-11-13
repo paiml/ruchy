@@ -324,6 +324,42 @@ grep "MISSED" core_mutations.txt
    - Current: 33.34% (post-QUALITY-007: character literals, tuple destructuring, rest patterns)
    - Direction: Must increase or stay same
 
+### 🚨 MANDATORY: PROPTEST_CASES=100 Standard (Institutionalized)
+
+**SACRED RULE**: Property tests MUST use 100+ test cases for statistical significance.
+
+**Rationale**:
+- 5 cases = insufficient for edge case discovery (may hit 3-4 branches out of 10)
+- 100 cases = statistically significant coverage of conditional branches, error paths, boundary conditions
+- Empirical evidence: bashrs achieved ~90% coverage using PROPTEST_CASES=100 (validated)
+- Scientific backing: docs/specifications/90-percent-coverage-strategy-spec.md (10 peer-reviewed papers)
+
+**Implementation**: Makefile line 340 (NEVER change back to 5)
+```makefile
+@env PROPTEST_CASES=100 QUICKCHECK_TESTS=100 cargo llvm-cov ...
+```
+
+**Expected Impact**: +3-5% coverage increase (Phase 1, Task 1.2 from 90% strategy)
+
+**Verification**: Coverage percentage displayed in `make coverage` output
+
+### 90% Coverage Strategy (Scientific + Empirical)
+
+**Command**: `make prompt-coverage` (generates AI-ready prompts for coverage work)
+
+**Full Strategy**: `docs/specifications/90-percent-coverage-strategy-spec.md`
+- Empirical analysis of bashrs (sister project at ~90% coverage)
+- 10 peer-reviewed computer science papers (IEEE, ACM, PLDI, ICSE)
+- 3-phase actionable plan: 70%→80%→90%→95%
+- bashrs patterns: 13.5 tests/file, PROPTEST_CASES=100, SQLite exhaustive testing
+
+**Implementation**: Script auto-detects current coverage phase and generates context-aware prompts with:
+- Priority modules for improvement
+- Specific tasks with time estimates
+- Code patterns from bashrs
+- Success criteria
+- Copy-paste ready prompts
+
 ## PMAT Quality Gates & Enforcement (v2.70+)
 
 **Standards**: A- (≥85), Complexity ≤10, SATD=0, Duplication <10%, Docs >70%, Coverage ≥80%

@@ -1,4 +1,4 @@
-.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
+.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
 
 # Default target
 help:
@@ -32,11 +32,12 @@ help:
 	@echo "  make clean       - Clean build artifacts"
 	@echo ""
 	@echo "Quality Commands:"
-	@echo "  make coverage    - Generate comprehensive coverage report (Toyota Way)"
+	@echo "  make coverage    - Generate comprehensive coverage report (PROPTEST_CASES=100, bashrs pattern)"
 	@echo "  make clean-coverage - Clean and generate fresh coverage report"
 	@echo "  make coverage-wasm-notebook - LLVM coverage for WASM & notebooks (>80% target, A+ TDG)"
 	@echo "  make coverage-quick - Quick coverage check for development"
 	@echo "  make coverage-open - Generate and open coverage report in browser"
+	@echo "  make prompt-coverage - Generate AI-ready coverage improvement prompt (90% strategy)"
 	@echo "  make test-coverage-quality - Show coverage & TDG quality per component"
 	@echo "  make quality-gate - Run PMAT quality checks"
 	@echo "  make quality-web  - Run HTML/JS linting and coverage (>80%)"
@@ -334,15 +335,22 @@ coverage:
 	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@env PROPTEST_CASES=5 QUICKCHECK_TESTS=5 cargo llvm-cov --no-report nextest --no-fail-fast --no-tests=warn --lib --all-features || true
-	@echo "📊 Phase 2: Generating HTML coverage report..."
+	# PROPTEST_CASES=100: bashrs pattern for statistical significance (90-percent-coverage-strategy-spec.md)
+	# More random inputs → more branches covered (5 cases insufficient for edge case discovery)
+	@env PROPTEST_CASES=100 QUICKCHECK_TESTS=100 cargo llvm-cov --no-report nextest --no-fail-fast --no-tests=warn --lib --all-features || true
+	@echo "📊 Phase 2: Generating coverage reports..."
 	@cargo llvm-cov report --html --output-dir target/coverage/html || true
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info || true
+	@echo ""
+	@echo "📊 Coverage Summary:"
+	@awk -F: 'BEGIN{lf=0;lh=0} /^LF:/{lf+=$$2} /^LH:/{lh+=$$2} END{if(lf>0){printf "%.2f%% coverage (%d/%d lines)\n", (lh/lf)*100, lh, lf}else{print "No coverage data"}}' target/coverage/lcov.info 2>/dev/null || echo "Coverage data in HTML report"
+	@echo ""
 	@echo "⚙️  Restoring global cargo config..."
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
-	@echo "✅ Coverage generation complete!"
+	@echo "✅ Coverage analysis complete!"
 	@echo "📊 HTML report: target/coverage/html/index.html"
-	@echo "🔢 Tests run: 4500+ (with PROPTEST_CASES=5 for speed)"
+	@echo "📊 LCOV report: target/coverage/lcov.info"
 	@echo ""
 
 # Open coverage report in browser
@@ -354,6 +362,10 @@ coverage-open:
 	else \
 		echo "❌ Run 'make coverage' first to generate the HTML report"; \
 	fi
+
+# Generate AI-ready coverage improvement prompt (scientific strategy)
+prompt-coverage:
+	@./scripts/generate_coverage_prompt.sh
 
 # WASM and Notebook Coverage Analysis (LLVM-based, >80% target, A+ TDG)
 coverage-wasm-notebook:
