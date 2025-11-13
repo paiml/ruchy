@@ -89,3 +89,149 @@ fn transpile_operation_return_type(
         Ok(quote! {})
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span, Type, TypeKind};
+
+    // Test 1: transpile_handler with integer literal
+    #[test]
+    fn test_transpile_handler_integer() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("42"));
+    }
+
+    // Test 2: transpile_handler with string literal
+    #[test]
+    fn test_transpile_handler_string() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("hello"));
+    }
+
+    // Test 3: transpile_handler with identifier
+    #[test]
+    fn test_transpile_handler_identifier() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Identifier("result".to_string()),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("result"));
+    }
+
+    // Test 4: transpile_handler with boolean literal
+    #[test]
+    fn test_transpile_handler_boolean() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("true"));
+    }
+
+    // Test 5: transpile_operation_return_type with None
+    #[test]
+    fn test_transpile_operation_return_type_none() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "action".to_string(),
+            params: vec![],
+            return_type: None,
+        };
+        let result = transpile_operation_return_type(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        // Empty return type (no arrow)
+        assert!(!tokens.contains("->"));
+    }
+
+    // Test 6: transpile_operation_return_type with Some (i32)
+    #[test]
+    fn test_transpile_operation_return_type_i32() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "get".to_string(),
+            params: vec![],
+            return_type: Some(Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            }),
+        };
+        let result = transpile_operation_return_type(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("->"));
+        assert!(tokens.contains("i32"));
+    }
+
+    // Test 7: transpile_operation_return_type with Some (String)
+    #[test]
+    fn test_transpile_operation_return_type_string() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "read".to_string(),
+            params: vec![],
+            return_type: Some(Type {
+                kind: TypeKind::Named("String".to_string()),
+                span: Span::default(),
+            }),
+        };
+        let result = transpile_operation_return_type(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("->"));
+        assert!(tokens.contains("String"));
+    }
+
+    // Test 8: transpile_effect_operations with empty slice
+    #[test]
+    fn test_transpile_effect_operations_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpile_effect_operations(&transpiler, &[]);
+        assert!(result.is_ok());
+        let operations = result.unwrap();
+        assert_eq!(operations.len(), 0);
+    }
+
+    // Test 9: transpile_effect with no operations
+    #[test]
+    fn test_transpile_effect_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_effect("EmptyEffect", &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("trait EmptyEffect"));
+    }
+
+    // Test 10: transpile_effect with valid effect name
+    #[test]
+    fn test_transpile_effect_valid_name() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_effect("FileIO", &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("pub trait FileIO"));
+    }
+}
