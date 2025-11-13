@@ -1483,6 +1483,113 @@ fn test_path_is_relative() {
     }
 }
 
+/// Unit test: path_join_many combines array of path components
+/// Coverage target: eval_path_join_many (line 2275)
+#[test]
+fn test_path_join_many() {
+    let components = Value::Array(vec![
+        Value::String(Arc::from("/home")),
+        Value::String(Arc::from("user")),
+        Value::String(Arc::from("documents")),
+    ].into());
+
+    let result = eval_builtin_function("__builtin_path_join_many__", &[components]);
+    assert!(result.is_ok(), "path_join_many should succeed");
+
+    if let Ok(Some(Value::String(path))) = result {
+        assert!(path.contains("home") && path.contains("user") && path.contains("documents"));
+    } else {
+        panic!("path_join_many should return String");
+    }
+}
+
+/// Unit test: path_with_extension changes file extension
+/// Coverage target: eval_path_with_extension (line 2385)
+#[test]
+fn test_path_with_extension() {
+    let path = Value::String(Arc::from("/path/to/file.txt"));
+    let new_ext = Value::String(Arc::from("md"));
+
+    let result = eval_builtin_function("__builtin_path_with_extension__", &[path, new_ext]);
+    assert!(result.is_ok(), "path_with_extension should succeed");
+
+    if let Ok(Some(Value::String(new_path))) = result {
+        assert!(new_path.ends_with(".md"), "Should have .md extension");
+        assert!(new_path.contains("file"), "Should preserve file name");
+    } else {
+        panic!("path_with_extension should return String");
+    }
+}
+
+/// Unit test: path_with_file_name changes file name
+/// Coverage target: eval_path_with_file_name (line 2398)
+#[test]
+fn test_path_with_file_name() {
+    let path = Value::String(Arc::from("/path/to/old_file.txt"));
+    let new_name = Value::String(Arc::from("new_file.txt"));
+
+    let result = eval_builtin_function("__builtin_path_with_file_name__", &[path, new_name]);
+    assert!(result.is_ok(), "path_with_file_name should succeed");
+
+    if let Ok(Some(Value::String(new_path))) = result {
+        assert!(new_path.ends_with("new_file.txt"), "Should have new file name");
+        assert!(new_path.contains("/path/to"), "Should preserve directory");
+    } else {
+        panic!("path_with_file_name should return String");
+    }
+}
+
+/// Unit test: path_components splits path into parts
+/// Coverage target: eval_path_components (line 2411)
+#[test]
+fn test_path_components() {
+    let path = Value::String(Arc::from("/home/user/docs"));
+
+    let result = eval_builtin_function("__builtin_path_components__", &[path]);
+    assert!(result.is_ok(), "path_components should succeed");
+
+    if let Ok(Some(Value::Array(components))) = result {
+        assert!(components.len() >= 3, "Should have multiple components");
+    } else {
+        panic!("path_components should return Array");
+    }
+}
+
+/// Unit test: path_normalize resolves . and ..
+/// Coverage target: eval_path_normalize (line 2427)
+#[test]
+fn test_path_normalize() {
+    let path = Value::String(Arc::from("/home/user/../admin/./config"));
+
+    let result = eval_builtin_function("__builtin_path_normalize__", &[path]);
+    assert!(result.is_ok(), "path_normalize should succeed");
+
+    if let Ok(Some(Value::String(normalized))) = result {
+        assert!(!normalized.contains(".."), "Should resolve ..");
+        assert!(!normalized.contains("/./"  ), "Should resolve .");
+        assert!(normalized.contains("admin"), "Should preserve real paths");
+    } else {
+        panic!("path_normalize should return String");
+    }
+}
+
+/// Unit test: path_canonicalize resolves to absolute path
+/// Coverage target: eval_path_canonicalize (line 2372)
+#[test]
+fn test_path_canonicalize() {
+    // Use a path that exists - current directory
+    let path = Value::String(Arc::from("."));
+
+    let result = eval_builtin_function("__builtin_path_canonicalize__", &[path]);
+    assert!(result.is_ok(), "path_canonicalize should succeed for existing path");
+
+    if let Ok(Some(Value::String(canonical))) = result {
+        assert!(canonical.starts_with('/'), "Canonical path should be absolute");
+    } else {
+        panic!("path_canonicalize should return String");
+    }
+}
+
 // ============================================================================
 // Additional JSON Functions
 // ============================================================================
