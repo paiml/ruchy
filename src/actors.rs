@@ -560,8 +560,8 @@ mod tests {
     }
 
     // Test 18: Supervisor supervise adds child
-    #[test]
-    fn test_supervisor_supervise() {
+    #[tokio::test]
+    async fn test_supervisor_supervise() {
         let mut supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForOne);
         assert_eq!(supervisor.children.len(), 0);
         supervisor.supervise(EchoActor);
