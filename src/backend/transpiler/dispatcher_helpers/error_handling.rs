@@ -213,3 +213,347 @@ impl Transpiler {
     }
 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Helper: Create test transpiler instance
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Helper: Create integer literal expression
+    fn int_expr(value: i64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create string literal expression
+    fn string_expr(value: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(value.to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create identifier expression
+    fn ident_expr(name: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Identifier(name.to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Test 1: transpile_result_ok - integer value
+    #[test]
+    fn test_transpile_result_ok_integer() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_ok(&int_expr(42));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("42"));
+    }
+
+    // Test 2: transpile_result_ok - string literal (DEFECT-STRING-RESULT FIX)
+    #[test]
+    fn test_transpile_result_ok_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_ok(&string_expr("success"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("to_string"));
+    }
+
+    // Test 3: transpile_result_err - integer value
+    #[test]
+    fn test_transpile_result_err_integer() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_err(&int_expr(404));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Err"));
+        assert!(output.contains("404"));
+    }
+
+    // Test 4: transpile_result_err - string literal (auto-conversion)
+    #[test]
+    fn test_transpile_result_err_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_err(&string_expr("error"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Err"));
+        assert!(output.contains("to_string"));
+    }
+
+    // Test 5: transpile_option_some - integer value
+    #[test]
+    fn test_transpile_option_some_integer() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_option_some(&int_expr(99));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Some"));
+        assert!(output.contains("99"));
+    }
+
+    // Test 6: transpile_option_some - string literal (DEFECT-STRING-RESULT FIX)
+    #[test]
+    fn test_transpile_option_some_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_option_some(&string_expr("value"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Some"));
+        assert!(output.contains("to_string"));
+    }
+
+    // Test 7: transpile_try_operator - basic try
+    #[test]
+    fn test_transpile_try_operator() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_try_operator(&ident_expr("fallible_func"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert_eq!(tokens.to_string(), "fallible_func ?");
+    }
+
+    // Test 8: transpile_error_only_expr - None
+    #[test]
+    fn test_transpile_error_only_expr_none() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::None,
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "None");
+    }
+
+    // Test 9: transpile_error_only_expr - Ok
+    #[test]
+    fn test_transpile_error_only_expr_ok() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Ok {
+                value: Box::new(int_expr(1)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Ok"));
+    }
+
+    // Test 10: transpile_error_only_expr - Err
+    #[test]
+    fn test_transpile_error_only_expr_err() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Err {
+                error: Box::new(string_expr("fail")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Err"));
+    }
+
+    // Test 11: transpile_error_only_expr - Some
+    #[test]
+    fn test_transpile_error_only_expr_some() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Some {
+                value: Box::new(int_expr(5)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Some"));
+    }
+
+    // Test 12: transpile_error_only_expr - Try
+    #[test]
+    fn test_transpile_error_only_expr_try() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Try {
+                expr: Box::new(ident_expr("operation")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("?"));
+    }
+
+    // Test 13: transpile_misc_expr - Block
+    #[test]
+    fn test_transpile_misc_expr_block() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Block(vec![int_expr(1), int_expr(2)]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 14: transpile_type_decl_expr - TypeAlias
+    #[test]
+    fn test_transpile_type_decl_expr_type_alias() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::TypeAlias {
+                name: "MyType".to_string(),
+                target_type: "i32".to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_type_decl_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("type"));
+        assert!(output.contains("MyType"));
+    }
+
+    // Test 15: transpile_result_ok - identifier (no string conversion)
+    #[test]
+    fn test_transpile_result_ok_identifier() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_ok(&ident_expr("value"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("value"));
+        assert!(!output.contains("to_string")); // No conversion for non-string-literals
+    }
+
+    // Test 16: transpile_result_err - identifier (no string conversion)
+    #[test]
+    fn test_transpile_result_err_identifier() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_err(&ident_expr("error"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Err"));
+        assert!(output.contains("error"));
+        assert!(!output.contains("to_string")); // No conversion for non-string-literals
+    }
+
+    // Test 17: transpile_option_some - identifier (no string conversion)
+    #[test]
+    fn test_transpile_option_some_identifier() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_option_some(&ident_expr("opt"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Some"));
+        assert!(output.contains("opt"));
+        assert!(!output.contains("to_string")); // No conversion for non-string-literals
+    }
+
+    // Test 18: transpile_error_only_expr - Throw
+    #[test]
+    fn test_transpile_error_only_expr_throw() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Throw {
+                expr: Box::new(string_expr("exception")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("panic"));
+    }
+
+    // Test 19: transpile_result_ok - empty string
+    #[test]
+    fn test_transpile_result_ok_empty_string() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_result_ok(&string_expr(""));
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("to_string"));
+    }
+
+    // Test 20: transpile_try_operator - complex expression
+    #[test]
+    fn test_transpile_try_operator_complex() {
+        let transpiler = test_transpiler();
+        let complex_expr = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(ident_expr("parse")),
+                args: vec![string_expr("42")],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_try_operator(&complex_expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("?"));
+    }
+}
