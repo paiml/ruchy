@@ -250,3 +250,296 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Helper function to create test transpiler
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Helper function to create test transpiler with module names
+    fn test_transpiler_with_modules(modules: Vec<&str>) -> Transpiler {
+        let mut transpiler = Transpiler::new();
+        transpiler.module_names = modules.iter().map(|s| s.to_string()).collect();
+        transpiler
+    }
+
+    // Helper to create identifier expression
+    fn ident_expr(name: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Identifier(name.to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper to create field access expression
+    fn field_access_expr(object: Expr, field: &str) -> Expr {
+        Expr {
+            kind: ExprKind::FieldAccess {
+                object: Box::new(object),
+                field: field.to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper to create integer literal expression
+    fn int_expr(value: i64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper to create string literal expression
+    fn string_expr(value: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(value.to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Test 1: is_module_like_identifier - valid module names
+    #[test]
+    fn test_is_module_like_identifier_valid() {
+        assert!(Transpiler::is_module_like_identifier("http_client"));
+        assert!(Transpiler::is_module_like_identifier("my_module"));
+        assert!(Transpiler::is_module_like_identifier("std_env"));
+    }
+
+    // Test 2: is_module_like_identifier - invalid (no underscore)
+    #[test]
+    fn test_is_module_like_identifier_no_underscore() {
+        assert!(!Transpiler::is_module_like_identifier("obj"));
+        assert!(!Transpiler::is_module_like_identifier("myvar"));
+        assert!(!Transpiler::is_module_like_identifier("x"));
+    }
+
+    // Test 3: is_module_like_identifier - special cases
+    #[test]
+    fn test_is_module_like_identifier_special() {
+        assert!(!Transpiler::is_module_like_identifier("self"));
+        assert!(!Transpiler::is_module_like_identifier("this"));
+        assert!(!Transpiler::is_module_like_identifier(""));
+    }
+
+    // Test 4: is_module_path - stdlib module
+    #[test]
+    fn test_is_module_path_std() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("std");
+        assert!(transpiler.is_module_path(&expr));
+    }
+
+    // Test 5: is_module_path - known user module
+    #[test]
+    fn test_is_module_path_user_module() {
+        let transpiler = test_transpiler_with_modules(vec!["helper"]);
+        let expr = ident_expr("helper");
+        assert!(transpiler.is_module_path(&expr));
+    }
+
+    // Test 6: is_module_path - module-like identifier
+    #[test]
+    fn test_is_module_path_module_like() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("http_client");
+        assert!(transpiler.is_module_path(&expr));
+    }
+
+    // Test 7: is_module_path - type name (uppercase)
+    #[test]
+    fn test_is_module_path_type_name() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("String");
+        assert!(transpiler.is_module_path(&expr));
+    }
+
+    // Test 8: is_module_path - nested field access
+    #[test]
+    fn test_is_module_path_nested() {
+        let transpiler = test_transpiler();
+        let std_expr = ident_expr("std");
+        let nested = field_access_expr(std_expr, "time");
+        assert!(transpiler.is_module_path(&nested));
+    }
+
+    // Test 9: get_root_identifier - identifier
+    #[test]
+    fn test_get_root_identifier_simple() {
+        let expr = ident_expr("obj");
+        assert_eq!(Transpiler::get_root_identifier(&expr), Some("obj"));
+    }
+
+    // Test 10: get_root_identifier - nested field access
+    #[test]
+    fn test_get_root_identifier_nested() {
+        let obj = ident_expr("event");
+        let access = field_access_expr(obj, "requestContext");
+        assert_eq!(Transpiler::get_root_identifier(&access), Some("event"));
+    }
+
+    // Test 11: is_variable_chain - simple variable
+    #[test]
+    fn test_is_variable_chain_simple() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("event");
+        assert!(transpiler.is_variable_chain(&expr));
+    }
+
+    // Test 12: is_variable_chain - not a module
+    #[test]
+    fn test_is_variable_chain_not_module() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("http_client");
+        assert!(!transpiler.is_variable_chain(&expr)); // Has underscore
+    }
+
+    // Test 13: transpile_field_access - tuple field (numeric)
+    #[test]
+    fn test_transpile_field_access_tuple() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("tuple");
+        let result = transpiler.transpile_field_access(&obj, "0").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("tuple") && result_str.contains(". 0"));
+    }
+
+    // Test 14: transpile_field_access - std module
+    #[test]
+    fn test_transpile_field_access_std_module() {
+        let transpiler = test_transpiler();
+        let std = ident_expr("std");
+        let result = transpiler.transpile_field_access(&std, "time").unwrap();
+        assert_eq!(result.to_string(), "std :: time");
+    }
+
+    // Test 15: transpile_field_access - type associated function
+    #[test]
+    fn test_transpile_field_access_type_associated() {
+        let transpiler = test_transpiler();
+        let string_type = ident_expr("String");
+        let result = transpiler.transpile_field_access(&string_type, "from").unwrap();
+        assert_eq!(result.to_string(), "String :: from");
+    }
+
+    // Test 16: transpile_field_access - known method
+    #[test]
+    fn test_transpile_field_access_known_method() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("result");
+        let result = transpiler.transpile_field_access(&obj, "is_ok").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("result") && result_str.contains("is_ok") && result_str.contains("()"));
+    }
+
+    // Test 17: transpile_field_access - variable chain
+    #[test]
+    fn test_transpile_field_access_variable_chain() {
+        let transpiler = test_transpiler();
+        let event = ident_expr("event");
+        let result = transpiler.transpile_field_access(&event, "field").unwrap();
+        assert_eq!(result.to_string(), "event . field");
+    }
+
+    // Test 18: transpile_field_access - module-like identifier
+    #[test]
+    fn test_transpile_field_access_module_like_identifier() {
+        let transpiler = test_transpiler();
+        let http_client = ident_expr("http_client");
+        let result = transpiler.transpile_field_access(&http_client, "get").unwrap();
+        assert_eq!(result.to_string(), "http_client :: get");
+    }
+
+    // Test 19: transpile_field_access - invalid field (starts with digit)
+    #[test]
+    fn test_transpile_field_access_invalid_field_starts_digit() {
+        let transpiler = test_transpiler();
+        let nested = field_access_expr(ident_expr("obj"), "field");
+        let result = transpiler.transpile_field_access(&nested, "9field");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid field name"));
+    }
+
+    // Test 20: transpile_index_access - string key (HashMap)
+    #[test]
+    fn test_transpile_index_access_string_key() {
+        let transpiler = test_transpiler();
+        let map = ident_expr("map");
+        let key = string_expr("key");
+        let result = transpiler.transpile_index_access(&map, &key).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("map . get") && result_str.contains("cloned"));
+    }
+
+    // Test 21: transpile_index_access - numeric key (array)
+    #[test]
+    fn test_transpile_index_access_numeric() {
+        let transpiler = test_transpiler();
+        let array = ident_expr("arr");
+        let index = int_expr(0);
+        let result = transpiler.transpile_index_access(&array, &index).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("arr") && result_str.contains("[") && result_str.contains("clone"));
+    }
+
+    // Test 22: transpile_slice - full slice [..]
+    #[test]
+    fn test_transpile_slice_full() {
+        let transpiler = test_transpiler();
+        let array = ident_expr("arr");
+        let result = transpiler.transpile_slice(&array, None, None).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("& arr") && result_str.contains("[") && result_str.contains(".."));
+    }
+
+    // Test 23: transpile_slice - from beginning [..end]
+    #[test]
+    fn test_transpile_slice_to_end() {
+        let transpiler = test_transpiler();
+        let array = ident_expr("arr");
+        let end = int_expr(5);
+        let result = transpiler.transpile_slice(&array, None, Some(&end)).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("arr") && result_str.contains("..") && result_str.contains("5"));
+    }
+
+    // Test 24: transpile_slice - from start [start..]
+    #[test]
+    fn test_transpile_slice_from_start() {
+        let transpiler = test_transpiler();
+        let array = ident_expr("arr");
+        let start = int_expr(2);
+        let result = transpiler.transpile_slice(&array, Some(&start), None).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("arr") && result_str.contains("2") && result_str.contains(".."));
+    }
+
+    // Test 25: transpile_slice - range [start..end]
+    #[test]
+    fn test_transpile_slice_range() {
+        let transpiler = test_transpiler();
+        let array = ident_expr("arr");
+        let start = int_expr(1);
+        let end = int_expr(4);
+        let result = transpiler.transpile_slice(&array, Some(&start), Some(&end)).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("arr") && result_str.contains("1") && result_str.contains("4") && result_str.contains(".."));
+    }
+}
