@@ -234,4 +234,364 @@ mod tests {
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("pub trait FileIO"));
     }
+
+    // Test 11: transpile_operation_params with valid Identifier pattern
+    #[test]
+    fn test_transpile_operation_params_identifier() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "write".to_string(),
+            params: vec![Param {
+                pattern: Pattern::Identifier("data".to_string()),
+                ty: Type {
+                    kind: TypeKind::Named("String".to_string()),
+                    span: Span::default(),
+                },
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+        };
+        let result = transpile_operation_params(&transpiler, &operation);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        let param_str = params[0].to_string();
+        assert!(param_str.contains("data"));
+        assert!(param_str.contains("String"));
+    }
+
+    // Test 12: transpile_operation_params with non-Identifier pattern (ERROR PATH - line 73)
+    #[test]
+    fn test_transpile_operation_params_non_identifier_error() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "destructure".to_string(),
+            params: vec![Param {
+                pattern: Pattern::Tuple(vec![
+                    Pattern::Identifier("a".to_string()),
+                    Pattern::Identifier("b".to_string()),
+                ]),
+                ty: Type {
+                    kind: TypeKind::Named("(i32, i32)".to_string()),
+                    span: Span::default(),
+                },
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+        };
+        let result = transpile_operation_params(&transpiler, &operation);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("Only identifier patterns supported"));
+    }
+
+    // Test 13: transpile_single_operation with no params
+    #[test]
+    fn test_transpile_single_operation_no_params() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "tick".to_string(),
+            params: vec![],
+            return_type: None,
+        };
+        let result = transpile_single_operation(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn tick"));
+        assert!(tokens.contains("self"));
+    }
+
+    // Test 14: transpile_single_operation with one param
+    #[test]
+    fn test_transpile_single_operation_one_param() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "log".to_string(),
+            params: vec![Param {
+                pattern: Pattern::Identifier("message".to_string()),
+                ty: Type {
+                    kind: TypeKind::Named("String".to_string()),
+                    span: Span::default(),
+                },
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+        };
+        let result = transpile_single_operation(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn log"));
+        assert!(tokens.contains("message"));
+        assert!(tokens.contains("String"));
+    }
+
+    // Test 15: transpile_single_operation with multiple params
+    #[test]
+    fn test_transpile_single_operation_multiple_params() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "send".to_string(),
+            params: vec![
+                Param {
+                    pattern: Pattern::Identifier("to".to_string()),
+                    ty: Type {
+                        kind: TypeKind::Named("Address".to_string()),
+                        span: Span::default(),
+                    },
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: None,
+                },
+                Param {
+                    pattern: Pattern::Identifier("message".to_string()),
+                    ty: Type {
+                        kind: TypeKind::Named("String".to_string()),
+                        span: Span::default(),
+                    },
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: None,
+                },
+            ],
+            return_type: None,
+        };
+        let result = transpile_single_operation(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn send"));
+        assert!(tokens.contains("to : Address"));
+        assert!(tokens.contains("message : String"));
+    }
+
+    // Test 16: transpile_single_operation with return type
+    #[test]
+    fn test_transpile_single_operation_with_return() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "fetch".to_string(),
+            params: vec![],
+            return_type: Some(Type {
+                kind: TypeKind::Named("Data".to_string()),
+                span: Span::default(),
+            }),
+        };
+        let result = transpile_single_operation(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn fetch"));
+        assert!(tokens.contains("-> Data"));
+    }
+
+    // Test 17: transpile_effect_operations with single operation
+    #[test]
+    fn test_transpile_effect_operations_single() {
+        let transpiler = Transpiler::new();
+        let operations = vec![EffectOperation {
+            name: "close".to_string(),
+            params: vec![],
+            return_type: None,
+        }];
+        let result = transpile_effect_operations(&transpiler, &operations);
+        assert!(result.is_ok());
+        let ops = result.unwrap();
+        assert_eq!(ops.len(), 1);
+        let op_str = ops[0].to_string();
+        assert!(op_str.contains("fn close"));
+    }
+
+    // Test 18: transpile_effect_operations with multiple operations
+    #[test]
+    fn test_transpile_effect_operations_multiple() {
+        let transpiler = Transpiler::new();
+        let operations = vec![
+            EffectOperation {
+                name: "open".to_string(),
+                params: vec![],
+                return_type: None,
+            },
+            EffectOperation {
+                name: "close".to_string(),
+                params: vec![],
+                return_type: None,
+            },
+            EffectOperation {
+                name: "flush".to_string(),
+                params: vec![],
+                return_type: None,
+            },
+        ];
+        let result = transpile_effect_operations(&transpiler, &operations);
+        assert!(result.is_ok());
+        let ops = result.unwrap();
+        assert_eq!(ops.len(), 3);
+        assert!(ops[0].to_string().contains("fn open"));
+        assert!(ops[1].to_string().contains("fn close"));
+        assert!(ops[2].to_string().contains("fn flush"));
+    }
+
+    // Test 19: transpile_effect with one operation
+    #[test]
+    fn test_transpile_effect_one_operation() {
+        let transpiler = Transpiler::new();
+        let operations = vec![EffectOperation {
+            name: "reset".to_string(),
+            params: vec![],
+            return_type: None,
+        }];
+        let result = transpiler.transpile_effect("Resettable", &operations);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("pub trait Resettable"));
+        assert!(tokens.contains("fn reset"));
+    }
+
+    // Test 20: transpile_effect with multiple operations
+    #[test]
+    fn test_transpile_effect_multiple_operations() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operations = vec![
+            EffectOperation {
+                name: "read".to_string(),
+                params: vec![],
+                return_type: Some(Type {
+                    kind: TypeKind::Named("String".to_string()),
+                    span: Span::default(),
+                }),
+            },
+            EffectOperation {
+                name: "write".to_string(),
+                params: vec![Param {
+                    pattern: Pattern::Identifier("data".to_string()),
+                    ty: Type {
+                        kind: TypeKind::Named("String".to_string()),
+                        span: Span::default(),
+                    },
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: None,
+                }],
+                return_type: None,
+            },
+        ];
+        let result = transpiler.transpile_effect("FileSystem", &operations);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("pub trait FileSystem"));
+        assert!(tokens.contains("fn read"));
+        assert!(tokens.contains("-> String"));
+        assert!(tokens.contains("fn write"));
+        assert!(tokens.contains("data : String"));
+    }
+
+    // Test 21: transpile_effect with invalid name (error path)
+    #[test]
+    fn test_transpile_effect_invalid_name() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_effect("123InvalidName", &[]);
+        assert!(result.is_err());
+    }
+
+    // Test 22: transpile_handler with float literal
+    #[test]
+    fn test_transpile_handler_float() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(3.14)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("3.14"));
+    }
+
+    // Test 23: transpile_handler with null literal
+    #[test]
+    fn test_transpile_handler_null() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Null),
+            Span::default(),
+        );
+        let result = transpiler.transpile_handler(&expr, &[]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("None") || tokens.contains("null"));
+    }
+
+    // Test 24: transpile_operation_return_type with bool type
+    #[test]
+    fn test_transpile_operation_return_type_bool() {
+        let transpiler = Transpiler::new();
+        let operation = EffectOperation {
+            name: "is_ready".to_string(),
+            params: vec![],
+            return_type: Some(Type {
+                kind: TypeKind::Named("bool".to_string()),
+                span: Span::default(),
+            }),
+        };
+        let result = transpile_operation_return_type(&transpiler, &operation);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("->"));
+        assert!(tokens.contains("bool"));
+    }
+
+    // Test 25: transpile_effect with operation having multiple params
+    #[test]
+    fn test_transpile_effect_multiple_params() {
+        use crate::frontend::ast::{Param, Pattern};
+        let transpiler = Transpiler::new();
+        let operations = vec![EffectOperation {
+            name: "process".to_string(),
+            params: vec![
+                Param {
+                    pattern: Pattern::Identifier("input".to_string()),
+                    ty: Type {
+                        kind: TypeKind::Named("Data".to_string()),
+                        span: Span::default(),
+                    },
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: None,
+                },
+                Param {
+                    pattern: Pattern::Identifier("config".to_string()),
+                    ty: Type {
+                        kind: TypeKind::Named("Config".to_string()),
+                        span: Span::default(),
+                    },
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: None,
+                },
+            ],
+            return_type: Some(Type {
+                kind: TypeKind::Named("Output".to_string()),
+                span: Span::default(),
+            }),
+        }];
+        let result = transpiler.transpile_effect("Processor", &operations);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("pub trait Processor"));
+        assert!(tokens.contains("fn process"));
+        assert!(tokens.contains("input"));
+        assert!(tokens.contains("config"));
+        assert!(tokens.contains("Data"));
+        assert!(tokens.contains("Config"));
+        assert!(tokens.contains("Output"));
+    }
 }
