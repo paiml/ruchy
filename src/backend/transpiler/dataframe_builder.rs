@@ -131,6 +131,285 @@ impl Transpiler {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Helper: Create test transpiler
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Helper: Create string literal expression
+    fn string_expr(value: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(value.to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create list expression
+    fn list_expr(items: Vec<i64>) -> Expr {
+        Expr {
+            kind: ExprKind::List(
+                items
+                    .into_iter()
+                    .map(|n| Expr {
+                        kind: ExprKind::Literal(Literal::Integer(n, None)),
+                        span: Span::default(),
+                        attributes: vec![],
+                        leading_comments: vec![],
+                        trailing_comment: None,
+                    })
+                    .collect(),
+            ),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create DataFrame::new() call
+    fn dataframe_new_call() -> Expr {
+        Expr {
+            kind: ExprKind::Call {
+                func: Box::new(Expr {
+                    kind: ExprKind::QualifiedName {
+                        module: "DataFrame".to_string(),
+                        name: "new".to_string(),
+                    },
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create .column() method call
+    fn column_method_call(receiver: Expr, name: Expr, data: Expr) -> Expr {
+        Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "column".to_string(),
+                args: vec![name, data],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create .build() method call
+    fn build_method_call(receiver: Expr) -> Expr {
+        Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "build".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Test 1: transpile_dataframe_builder - empty DataFrame (no columns)
+    #[test]
+    fn test_transpile_dataframe_builder_empty() {
+        let transpiler = test_transpiler();
+        let expr = build_method_call(dataframe_new_call());
+        let result = transpiler.transpile_dataframe_builder(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert!(tokens.is_some());
+        let output = tokens.unwrap().to_string();
+        assert!(output.contains("DataFrame"));
+        assert!(output.contains("empty"));
+    }
+
+    // Test 2: transpile_dataframe_builder - single column
+    #[test]
+    fn test_transpile_dataframe_builder_single_column() {
+        let transpiler = test_transpiler();
+        let expr = build_method_call(column_method_call(
+            dataframe_new_call(),
+            string_expr("a"),
+            list_expr(vec![1, 2, 3]),
+        ));
+        let result = transpiler.transpile_dataframe_builder(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert!(tokens.is_some());
+        let output = tokens.unwrap().to_string();
+        assert!(output.contains("DataFrame"));
+        assert!(output.contains("Series"));
+    }
+
+    // Test 3: transpile_dataframe_builder - multiple columns
+    #[test]
+    fn test_transpile_dataframe_builder_multiple_columns() {
+        let transpiler = test_transpiler();
+        let base = dataframe_new_call();
+        let with_col1 = column_method_call(base, string_expr("a"), list_expr(vec![1, 2]));
+        let with_col2 = column_method_call(with_col1, string_expr("b"), list_expr(vec![3, 4]));
+        let expr = build_method_call(with_col2);
+        let result = transpiler.transpile_dataframe_builder(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert!(tokens.is_some());
+        let output = tokens.unwrap().to_string();
+        assert!(output.contains("DataFrame"));
+        assert!(output.contains("Series"));
+        assert!(output.contains("vec"));
+    }
+
+    // Test 4: transpile_dataframe_builder - without .build() call
+    #[test]
+    fn test_transpile_dataframe_builder_no_build() {
+        let transpiler = test_transpiler();
+        let expr = column_method_call(
+            dataframe_new_call(),
+            string_expr("x"),
+            list_expr(vec![10, 20]),
+        );
+        let result = transpiler.transpile_dataframe_builder(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert!(tokens.is_some());
+    }
+
+    // Test 5: transpile_dataframe_builder - non-builder pattern (None)
+    #[test]
+    fn test_transpile_dataframe_builder_non_builder() {
+        let transpiler = test_transpiler();
+        let expr = string_expr("not a builder");
+        let result = transpiler.transpile_dataframe_builder(&expr);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    // Test 6: is_dataframe_builder - DataFrame::new()
+    #[test]
+    fn test_is_dataframe_builder_new_call() {
+        let transpiler = test_transpiler();
+        let expr = dataframe_new_call();
+        assert!(transpiler.is_dataframe_builder(&expr));
+    }
+
+    // Test 7: is_dataframe_builder - .column() method
+    #[test]
+    fn test_is_dataframe_builder_column_method() {
+        let transpiler = test_transpiler();
+        let expr = column_method_call(
+            dataframe_new_call(),
+            string_expr("a"),
+            list_expr(vec![1]),
+        );
+        assert!(transpiler.is_dataframe_builder(&expr));
+    }
+
+    // Test 8: is_dataframe_builder - .build() method
+    #[test]
+    fn test_is_dataframe_builder_build_method() {
+        let transpiler = test_transpiler();
+        let expr = build_method_call(dataframe_new_call());
+        assert!(transpiler.is_dataframe_builder(&expr));
+    }
+
+    // Test 9: is_dataframe_builder - non-builder pattern
+    #[test]
+    fn test_is_dataframe_builder_false() {
+        let transpiler = test_transpiler();
+        let expr = string_expr("not a builder");
+        assert!(!transpiler.is_dataframe_builder(&expr));
+    }
+
+    // Test 10: extract_dataframe_builder_chain - with .build()
+    #[test]
+    fn test_extract_dataframe_builder_chain_with_build() {
+        let transpiler = test_transpiler();
+        let expr = build_method_call(column_method_call(
+            dataframe_new_call(),
+            string_expr("col"),
+            list_expr(vec![1]),
+        ));
+        let result = transpiler.extract_dataframe_builder_chain(&expr);
+        assert!(result.is_some());
+        let (columns, _base) = result.unwrap();
+        assert_eq!(columns.len(), 1);
+    }
+
+    // Test 11: extract_dataframe_builder_chain - without .build()
+    #[test]
+    fn test_extract_dataframe_builder_chain_no_build() {
+        let transpiler = test_transpiler();
+        let expr = column_method_call(
+            dataframe_new_call(),
+            string_expr("data"),
+            list_expr(vec![5, 6]),
+        );
+        let result = transpiler.extract_dataframe_builder_chain(&expr);
+        assert!(result.is_some());
+    }
+
+    // Test 12: extract_dataframe_builder_chain - None for non-builder
+    #[test]
+    fn test_extract_dataframe_builder_chain_none() {
+        let transpiler = test_transpiler();
+        let expr = string_expr("not builder");
+        let result = transpiler.extract_dataframe_builder_chain(&expr);
+        assert!(result.is_none());
+    }
+
+    // Test 13: extract_column_chain - single column
+    #[test]
+    fn test_extract_column_chain_single() {
+        let expr = column_method_call(
+            dataframe_new_call(),
+            string_expr("x"),
+            list_expr(vec![1]),
+        );
+        let result = Transpiler::extract_column_chain(&expr);
+        assert!(result.is_some());
+        let (columns, _base) = result.unwrap();
+        assert_eq!(columns.len(), 1);
+    }
+
+    // Test 14: extract_column_chain - chained columns
+    #[test]
+    fn test_extract_column_chain_chained() {
+        let base = dataframe_new_call();
+        let col1 = column_method_call(base, string_expr("a"), list_expr(vec![1]));
+        let col2 = column_method_call(col1, string_expr("b"), list_expr(vec![2]));
+        let result = Transpiler::extract_column_chain(&col2);
+        assert!(result.is_some());
+        let (columns, _base) = result.unwrap();
+        assert_eq!(columns.len(), 2);
+    }
+
+    // Test 15: extract_column_chain - None for non-column
+    #[test]
+    fn test_extract_column_chain_none() {
+        let expr = string_expr("not a column");
+        let result = Transpiler::extract_column_chain(&expr);
+        assert!(result.is_none());
+    }
+}
+
+#[cfg(test)]
 mod property_tests_dataframe_builder {
     #[allow(unused_imports)]
     use super::*;
