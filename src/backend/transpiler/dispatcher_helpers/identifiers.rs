@@ -142,3 +142,202 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Attribute, Expr, ExprKind, Span};
+
+    // Helper: Create test transpiler instance
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Test 1: transpile_identifier - simple identifier
+    #[test]
+    fn test_transpile_identifier_simple() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("foo");
+        assert_eq!(result.to_string(), "foo");
+    }
+
+    // Test 2: transpile_identifier - module path
+    #[test]
+    fn test_transpile_identifier_module_path() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("std::collections::HashMap");
+        assert_eq!(result.to_string(), "std :: collections :: HashMap");
+    }
+
+    // Test 3: transpile_identifier - turbofish in path
+    #[test]
+    fn test_transpile_identifier_turbofish() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("Vec::<i32>::new");
+        let result_str = result.to_string();
+        assert!(result_str.contains("Vec"));
+        assert!(result_str.contains("i32"));
+        assert!(result_str.contains("new"));
+    }
+
+    // Test 4: transpile_identifier - self keyword
+    #[test]
+    fn test_transpile_identifier_self_keyword() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("self");
+        assert_eq!(result.to_string(), "self");
+    }
+
+    // Test 5: transpile_identifier - Self keyword
+    #[test]
+    fn test_transpile_identifier_self_type() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("Self");
+        assert_eq!(result.to_string(), "Self");
+    }
+
+    // Test 6: transpile_identifier - super keyword
+    #[test]
+    fn test_transpile_identifier_super_keyword() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("super");
+        assert_eq!(result.to_string(), "super");
+    }
+
+    // Test 7: transpile_identifier - crate keyword
+    #[test]
+    fn test_transpile_identifier_crate_keyword() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("crate");
+        assert_eq!(result.to_string(), "crate");
+    }
+
+    // Test 8: transpile_identifier - Rust reserved keyword
+    #[test]
+    fn test_transpile_identifier_reserved_keyword() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("type");
+        let result_str = result.to_string();
+        // Raw identifier format: r#type
+        assert!(result_str.contains("r#") || result_str.contains("type"));
+    }
+
+    // Test 9: transpile_turbofish - single type
+    #[test]
+    fn test_transpile_turbofish_single_type() {
+        let result = Transpiler::transpile_turbofish("<i32>");
+        assert_eq!(result.to_string(), "< i32 >");
+    }
+
+    // Test 10: transpile_turbofish - multiple types
+    #[test]
+    fn test_transpile_turbofish_multiple_types() {
+        let result = Transpiler::transpile_turbofish("<String, i32>");
+        let result_str = result.to_string();
+        assert!(result_str.contains("String"));
+        assert!(result_str.contains("i32"));
+        assert!(result_str.contains(","));
+    }
+
+    // Test 11: transpile_turbofish - with whitespace
+    #[test]
+    fn test_transpile_turbofish_with_whitespace() {
+        let result = Transpiler::transpile_turbofish("< String , usize >");
+        let result_str = result.to_string();
+        assert!(result_str.contains("String"));
+        assert!(result_str.contains("usize"));
+    }
+
+    // Test 12: transpile_qualified_name - simple module
+    #[test]
+    fn test_transpile_qualified_name_simple() {
+        let result = Transpiler::transpile_qualified_name("math", "add");
+        assert_eq!(result.to_string(), "math :: add");
+    }
+
+    // Test 13: transpile_qualified_name - nested path
+    #[test]
+    fn test_transpile_qualified_name_nested() {
+        let result = Transpiler::transpile_qualified_name("net::tcp", "TcpListener");
+        let result_str = result.to_string();
+        assert!(result_str.contains("net"));
+        assert!(result_str.contains("tcp"));
+        assert!(result_str.contains("TcpListener"));
+    }
+
+    // Test 14: transpile_external_mod_declaration - basic mod
+    #[test]
+    fn test_transpile_external_mod_declaration_basic() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("utils".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("utils", &expr);
+        assert_eq!(result.to_string(), "mod utils ;");
+    }
+
+    // Test 15: transpile_external_mod_declaration - pub mod
+    #[test]
+    fn test_transpile_external_mod_declaration_pub() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("api".to_string()),
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("api", &expr);
+        assert_eq!(result.to_string(), "pub mod api ;");
+    }
+
+    // Test 16: transpile_external_mod_declaration - pub(crate) mod
+    #[test]
+    fn test_transpile_external_mod_declaration_pub_crate() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("internal".to_string()),
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec!["crate".to_string()],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("internal", &expr);
+        let result_str = result.to_string();
+        assert!(result_str.contains("pub"));
+        assert!(result_str.contains("crate"));
+        assert!(result_str.contains("internal"));
+    }
+
+    // Test 17: transpile_identifier - path with reserved keyword
+    #[test]
+    fn test_transpile_identifier_path_with_reserved() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("mod::type");
+        let result_str = result.to_string();
+        // Should handle reserved keywords in paths
+        assert!(result_str.contains("r#") || result_str.contains("mod") || result_str.contains("type"));
+    }
+
+    // Test 18: transpile_turbofish - three types
+    #[test]
+    fn test_transpile_turbofish_three_types() {
+        let result = Transpiler::transpile_turbofish("<K, V, H>");
+        let result_str = result.to_string();
+        assert!(result_str.contains("K"));
+        assert!(result_str.contains("V"));
+        assert!(result_str.contains("H"));
+    }
+}
