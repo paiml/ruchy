@@ -667,24 +667,28 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
 mod tests {
     use super::*;
 
+    // Helper: Create integer literal
+    fn int_lit(n: i64) -> Expr {
+        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::new(0, 0))
+    }
+
+    // Helper: Create binary expression
+    fn binary(left: i64, op: BinaryOp, right: i64) -> Expr {
+        Expr::new(
+            ExprKind::Binary {
+                left: Box::new(int_lit(left)),
+                op,
+                right: Box::new(int_lit(right)),
+            },
+            Span::new(0, 0),
+        )
+    }
+
+    // Test 1: fold_constants - simple addition
     #[test]
     fn test_fold_simple_add() {
         // 2 + 3 → 5
-        let expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(2, None)),
-                    Span::new(0, 1),
-                )),
-                op: BinaryOp::Add,
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(3, None)),
-                    Span::new(4, 5),
-                )),
-            },
-            Span::new(0, 5),
-        );
-
+        let expr = binary(2, BinaryOp::Add, 3);
         let folded = fold_constants(expr);
         assert!(matches!(
             folded.kind,
@@ -692,28 +696,173 @@ mod tests {
         ));
     }
 
+    // Test 2: fold_constants - comparison (10 > 5)
     #[test]
     fn test_fold_comparison() {
         // 10 > 5 → true
-        let expr = Expr::new(
-            ExprKind::Binary {
-                left: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(10, None)),
-                    Span::new(0, 2),
-                )),
-                op: BinaryOp::Greater,
-                right: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Integer(5, None)),
-                    Span::new(5, 6),
-                )),
-            },
-            Span::new(0, 6),
-        );
-
+        let expr = binary(10, BinaryOp::Greater, 5);
         let folded = fold_constants(expr);
         assert!(matches!(
             folded.kind,
             ExprKind::Literal(Literal::Bool(true))
         ));
+    }
+
+    // Test 3: fold_integer_arithmetic - subtract
+    #[test]
+    fn test_fold_integer_arithmetic_subtract() {
+        let result = fold_integer_arithmetic(10, BinaryOp::Subtract, 3);
+        assert!(matches!(result, Some(Literal::Integer(7, None))));
+    }
+
+    // Test 4: fold_integer_arithmetic - multiply
+    #[test]
+    fn test_fold_integer_arithmetic_multiply() {
+        let result = fold_integer_arithmetic(4, BinaryOp::Multiply, 5);
+        assert!(matches!(result, Some(Literal::Integer(20, None))));
+    }
+
+    // Test 5: fold_integer_arithmetic - divide
+    #[test]
+    fn test_fold_integer_arithmetic_divide() {
+        let result = fold_integer_arithmetic(20, BinaryOp::Divide, 4);
+        assert!(matches!(result, Some(Literal::Integer(5, None))));
+    }
+
+    // Test 6: fold_integer_arithmetic - divide by zero
+    #[test]
+    fn test_fold_integer_arithmetic_divide_by_zero() {
+        let result = fold_integer_arithmetic(20, BinaryOp::Divide, 0);
+        assert!(result.is_none());
+    }
+
+    // Test 7: fold_integer_arithmetic - unsupported operation
+    #[test]
+    fn test_fold_integer_arithmetic_unsupported() {
+        let result = fold_integer_arithmetic(10, BinaryOp::Equal, 5);
+        assert!(result.is_none());
+    }
+
+    // Test 8: fold_integer_comparison - equal
+    #[test]
+    fn test_fold_integer_comparison_equal() {
+        let result = fold_integer_comparison(5, BinaryOp::Equal, 5);
+        assert!(matches!(result, Some(Literal::Bool(true))));
+    }
+
+    // Test 9: fold_integer_comparison - not equal
+    #[test]
+    fn test_fold_integer_comparison_not_equal() {
+        let result = fold_integer_comparison(5, BinaryOp::NotEqual, 3);
+        assert!(matches!(result, Some(Literal::Bool(true))));
+    }
+
+    // Test 10: fold_integer_comparison - less
+    #[test]
+    fn test_fold_integer_comparison_less() {
+        let result = fold_integer_comparison(3, BinaryOp::Less, 5);
+        assert!(matches!(result, Some(Literal::Bool(true))));
+    }
+
+    // Test 11: fold_integer_comparison - less equal
+    #[test]
+    fn test_fold_integer_comparison_less_equal() {
+        let result = fold_integer_comparison(5, BinaryOp::LessEqual, 5);
+        assert!(matches!(result, Some(Literal::Bool(true))));
+    }
+
+    // Test 12: fold_integer_comparison - greater equal
+    #[test]
+    fn test_fold_integer_comparison_greater_equal() {
+        let result = fold_integer_comparison(5, BinaryOp::GreaterEqual, 5);
+        assert!(matches!(result, Some(Literal::Bool(true))));
+    }
+
+    // Test 13: fold_integer_comparison - unsupported operation
+    #[test]
+    fn test_fold_integer_comparison_unsupported() {
+        let result = fold_integer_comparison(5, BinaryOp::Add, 3);
+        assert!(result.is_none());
+    }
+
+    // Test 14: has_side_effects - Call expression
+    #[test]
+    fn test_has_side_effects_call() {
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("foo".to_string()),
+                    Span::new(0, 0),
+                )),
+                args: vec![],
+            },
+            Span::new(0, 0),
+        );
+        assert!(has_side_effects(&expr));
+    }
+
+    // Test 15: has_side_effects - Assign expression
+    #[test]
+    fn test_has_side_effects_assign() {
+        let expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                value: Box::new(int_lit(5)),
+            },
+            Span::new(0, 0),
+        );
+        assert!(has_side_effects(&expr));
+    }
+
+    // Test 16: has_side_effects - Literal (no side effects)
+    #[test]
+    fn test_has_side_effects_literal() {
+        let expr = int_lit(42);
+        assert!(!has_side_effects(&expr));
+    }
+
+    // Test 17: has_early_exit - Return
+    #[test]
+    fn test_has_early_exit_return() {
+        let expr = Expr::new(
+            ExprKind::Return {
+                value: Some(Box::new(int_lit(5))),
+            },
+            Span::new(0, 0),
+        );
+        assert!(has_early_exit(&expr));
+    }
+
+    // Test 18: has_early_exit - Break
+    #[test]
+    fn test_has_early_exit_break() {
+        let expr = Expr::new(
+            ExprKind::Break {
+                label: None,
+                value: None,
+            },
+            Span::new(0, 0),
+        );
+        assert!(has_early_exit(&expr));
+    }
+
+    // Test 19: has_early_exit - Continue
+    #[test]
+    fn test_has_early_exit_continue() {
+        let expr = Expr::new(
+            ExprKind::Continue { label: None },
+            Span::new(0, 0),
+        );
+        assert!(has_early_exit(&expr));
+    }
+
+    // Test 20: has_early_exit - Literal (no early exit)
+    #[test]
+    fn test_has_early_exit_literal() {
+        let expr = int_lit(42);
+        assert!(!has_early_exit(&expr));
     }
 }
