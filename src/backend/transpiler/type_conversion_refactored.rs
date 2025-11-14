@@ -250,6 +250,347 @@ fn is_tuple_expr(expr: &Expr) -> bool {
     matches!(&expr.kind, ExprKind::Tuple(items) if items.len() == 2)
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span, StringPart};
+
+    // Helper: Create test transpiler instance
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Helper: Create integer literal expression
+    fn int_expr(value: i64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create string literal expression
+    fn string_expr(value: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(value.to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create float literal expression
+    fn float_expr(value: f64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Float(value)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create bool literal expression
+    fn bool_expr(value: bool) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Bool(value)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create None expression
+    fn none_expr() -> Expr {
+        Expr {
+            kind: ExprKind::None,
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create list expression
+    fn list_expr(items: Vec<Expr>) -> Expr {
+        Expr {
+            kind: ExprKind::List(items),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Test 1: try_transpile_type_conversion_refactored - str() with 1 arg
+    #[test]
+    fn test_dispatcher_str_valid() {
+        let transpiler = test_transpiler();
+        let args = vec![int_expr(42)];
+        let result = transpiler.try_transpile_type_conversion_refactored("str", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    // Test 2: try_transpile_type_conversion_refactored - int() with 1 arg
+    #[test]
+    fn test_dispatcher_int_valid() {
+        let transpiler = test_transpiler();
+        let args = vec![string_expr("123")];
+        let result = transpiler.try_transpile_type_conversion_refactored("int", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    // Test 3: try_transpile_type_conversion_refactored - unknown function returns None
+    #[test]
+    fn test_dispatcher_unknown_function() {
+        let transpiler = test_transpiler();
+        let args = vec![int_expr(42)];
+        let result = transpiler.try_transpile_type_conversion_refactored("unknown", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    // Test 4: try_transpile_type_conversion_refactored - str() with 0 args (error path)
+    #[test]
+    fn test_dispatcher_str_zero_args() {
+        let transpiler = test_transpiler();
+        let args = vec![];
+        let result = transpiler.try_transpile_type_conversion_refactored("str", &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("expects exactly 1 argument"));
+    }
+
+    // Test 5: try_transpile_type_conversion_refactored - int() with 2 args (error path)
+    #[test]
+    fn test_dispatcher_int_two_args() {
+        let transpiler = test_transpiler();
+        let args = vec![int_expr(1), int_expr(2)];
+        let result = transpiler.try_transpile_type_conversion_refactored("int", &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("expects exactly 1 argument"));
+    }
+
+    // Test 6: convert_to_string - integer
+    #[test]
+    fn test_convert_to_string_integer() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_string(&int_expr(42));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        // TokenStream formats as "format ! (...)" with spaces
+        assert!(output.contains("format") && output.contains("!"));
+    }
+
+    // Test 7: convert_to_int - string literal
+    #[test]
+    fn test_convert_to_int_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_int(&string_expr("123"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("parse"));
+        assert!(output.contains("i64"));
+    }
+
+    // Test 8: convert_to_int - float literal (cast)
+    #[test]
+    fn test_convert_to_int_float_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_int(&float_expr(3.14));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("as i64"));
+    }
+
+    // Test 9: convert_to_int - bool literal (0 or 1)
+    #[test]
+    fn test_convert_to_int_bool_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_int(&bool_expr(true));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("if"));
+        assert!(output.contains("1i64"));
+        assert!(output.contains("0i64"));
+    }
+
+    // Test 10: convert_to_float - string literal
+    #[test]
+    fn test_convert_to_float_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_float(&string_expr("3.14"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("parse"));
+        assert!(output.contains("f64"));
+    }
+
+    // Test 11: convert_to_float - integer literal (cast)
+    #[test]
+    fn test_convert_to_float_integer_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_float(&int_expr(42));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("as f64"));
+    }
+
+    // Test 12: convert_to_bool - integer literal (!= 0)
+    #[test]
+    fn test_convert_to_bool_integer_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_bool(&int_expr(42));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("!= 0"));
+    }
+
+    // Test 13: convert_to_bool - string literal (!is_empty())
+    #[test]
+    fn test_convert_to_bool_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_bool(&string_expr("hello"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("is_empty"));
+    }
+
+    // Test 14: convert_to_bool - bool literal (identity)
+    #[test]
+    fn test_convert_to_bool_bool_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_bool(&bool_expr(true));
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    // Test 15: convert_to_bool - list (!is_empty())
+    #[test]
+    fn test_convert_to_bool_list() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_bool(&list_expr(vec![int_expr(1)]));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("is_empty"));
+    }
+
+    // Test 16: convert_to_bool - None → false
+    #[test]
+    fn test_convert_to_bool_none() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_bool(&none_expr());
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        assert_eq!(tokens.to_string(), "false");
+    }
+
+    // Test 17: convert_to_list - string literal (chars)
+    #[test]
+    fn test_convert_to_list_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_list(&string_expr("hello"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("chars"));
+        assert!(output.contains("collect"));
+    }
+
+    // Test 18: convert_to_set - list (HashSet)
+    #[test]
+    fn test_convert_to_set_list() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_set(&list_expr(vec![int_expr(1), int_expr(2)]));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("HashSet"));
+    }
+
+    // Test 19: convert_to_set - string literal (chars as set)
+    #[test]
+    fn test_convert_to_set_string_literal() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_set(&string_expr("abc"));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("chars"));
+        assert!(output.contains("HashSet"));
+    }
+
+    // Test 20: convert_to_dict - generic (empty HashMap)
+    #[test]
+    fn test_convert_to_dict_generic() {
+        let transpiler = test_transpiler();
+        let result = transpiler.convert_to_dict(&int_expr(42));
+        assert!(result.is_ok());
+        let tokens = result.unwrap().unwrap();
+        let output = tokens.to_string();
+        assert!(output.contains("HashMap"));
+        assert!(output.contains("new"));
+    }
+
+    // Test 21: is_single_text_part helper - single text part
+    #[test]
+    fn test_is_single_text_part_true() {
+        let parts = vec![StringPart::Text("hello".to_string())];
+        assert!(is_single_text_part(&parts));
+    }
+
+    // Test 22: is_single_text_part helper - multiple parts
+    #[test]
+    fn test_is_single_text_part_false_multiple() {
+        let parts = vec![
+            StringPart::Text("hello".to_string()),
+            StringPart::Text("world".to_string()),
+        ];
+        assert!(!is_single_text_part(&parts));
+    }
+
+    // Test 23: is_single_text_part helper - empty parts
+    #[test]
+    fn test_is_single_text_part_false_empty() {
+        let parts = vec![];
+        assert!(!is_single_text_part(&parts));
+    }
+
+    // Test 24: is_tuple_expr helper - 2-element tuple
+    #[test]
+    fn test_is_tuple_expr_true() {
+        let expr = Expr {
+            kind: ExprKind::Tuple(vec![int_expr(1), int_expr(2)]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(is_tuple_expr(&expr));
+    }
+
+    // Test 25: is_tuple_expr helper - non-tuple
+    #[test]
+    fn test_is_tuple_expr_false() {
+        let expr = int_expr(42);
+        assert!(!is_tuple_expr(&expr));
+    }
+}
+
+#[cfg(test)]
 mod property_tests_type_conversion_refactored {
     use proptest::proptest;
 
