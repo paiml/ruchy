@@ -258,3 +258,249 @@ impl Transpiler {
         Ok(quote! { [#left_tokens.as_slice(), &#right_tokens].concat() })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quote::quote;
+
+    // Test 1: get_operator_precedence - Or (lowest)
+    #[test]
+    fn test_get_operator_precedence_or() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Or), 10);
+    }
+
+    // Test 2: get_operator_precedence - And
+    #[test]
+    fn test_get_operator_precedence_and() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::And), 20);
+    }
+
+    // Test 3: get_operator_precedence - comparison operators
+    #[test]
+    fn test_get_operator_precedence_comparison() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Equal), 30);
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Less), 40);
+    }
+
+    // Test 4: get_operator_precedence - arithmetic Add/Subtract
+    #[test]
+    fn test_get_operator_precedence_add_subtract() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Add), 50);
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Subtract), 50);
+    }
+
+    // Test 5: get_operator_precedence - arithmetic Multiply/Divide
+    #[test]
+    fn test_get_operator_precedence_multiply_divide() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Multiply), 60);
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Divide), 60);
+    }
+
+    // Test 6: get_operator_precedence - Power (highest)
+    #[test]
+    fn test_get_operator_precedence_power() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Power), 70);
+    }
+
+    // Test 7: is_right_associative - Power is right-associative
+    #[test]
+    fn test_is_right_associative_power() {
+        assert!(Transpiler::is_right_associative(BinaryOp::Power));
+    }
+
+    // Test 8: is_right_associative - Add is left-associative
+    #[test]
+    fn test_is_right_associative_add() {
+        assert!(!Transpiler::is_right_associative(BinaryOp::Add));
+    }
+
+    // Test 9: transpile_binary_op - Add arithmetic
+    #[test]
+    fn test_transpile_binary_op_add() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Add, right);
+        assert_eq!(result.to_string(), "a + b");
+    }
+
+    // Test 10: transpile_binary_op - Subtract arithmetic
+    #[test]
+    fn test_transpile_binary_op_subtract() {
+        let left = quote! { x };
+        let right = quote! { y };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Subtract, right);
+        assert_eq!(result.to_string(), "x - y");
+    }
+
+    // Test 11: transpile_binary_op - Multiply arithmetic
+    #[test]
+    fn test_transpile_binary_op_multiply() {
+        let left = quote! { m };
+        let right = quote! { n };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Multiply, right);
+        assert_eq!(result.to_string(), "m * n");
+    }
+
+    // Test 12: transpile_binary_op - Divide arithmetic
+    #[test]
+    fn test_transpile_binary_op_divide() {
+        let left = quote! { p };
+        let right = quote! { q };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Divide, right);
+        assert_eq!(result.to_string(), "p / q");
+    }
+
+    // Test 13: transpile_binary_op - Modulo arithmetic
+    #[test]
+    fn test_transpile_binary_op_modulo() {
+        let left = quote! { r };
+        let right = quote! { s };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Modulo, right);
+        assert_eq!(result.to_string(), "r % s");
+    }
+
+    // Test 14: transpile_binary_op - Power arithmetic
+    #[test]
+    fn test_transpile_binary_op_power() {
+        let left = quote! { base };
+        let right = quote! { exp };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Power, right);
+        assert_eq!(result.to_string(), "base . pow (exp)");
+    }
+
+    // Test 15: transpile_binary_op - Equal comparison
+    #[test]
+    fn test_transpile_binary_op_equal() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Equal, right);
+        assert_eq!(result.to_string(), "a == b");
+    }
+
+    // Test 16: transpile_binary_op - NotEqual comparison
+    #[test]
+    fn test_transpile_binary_op_not_equal() {
+        let left = quote! { x };
+        let right = quote! { y };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::NotEqual, right);
+        assert_eq!(result.to_string(), "x != y");
+    }
+
+    // Test 17: transpile_binary_op - Less comparison
+    #[test]
+    fn test_transpile_binary_op_less() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Less, right);
+        assert_eq!(result.to_string(), "a < b");
+    }
+
+    // Test 18: transpile_binary_op - Greater comparison
+    #[test]
+    fn test_transpile_binary_op_greater() {
+        let left = quote! { x };
+        let right = quote! { y };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Greater, right);
+        assert_eq!(result.to_string(), "x > y");
+    }
+
+    // Test 19: transpile_binary_op - And logical
+    #[test]
+    fn test_transpile_binary_op_and() {
+        let left = quote! { cond1 };
+        let right = quote! { cond2 };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::And, right);
+        assert_eq!(result.to_string(), "cond1 && cond2");
+    }
+
+    // Test 20: transpile_binary_op - Or logical
+    #[test]
+    fn test_transpile_binary_op_or() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Or, right);
+        assert_eq!(result.to_string(), "a || b");
+    }
+
+    // Test 21: transpile_binary_op - BitwiseAnd
+    #[test]
+    fn test_transpile_binary_op_bitwise_and() {
+        let left = quote! { flags1 };
+        let right = quote! { flags2 };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::BitwiseAnd, right);
+        assert_eq!(result.to_string(), "flags1 & flags2");
+    }
+
+    // Test 22: transpile_binary_op - BitwiseOr
+    #[test]
+    fn test_transpile_binary_op_bitwise_or() {
+        let left = quote! { mask1 };
+        let right = quote! { mask2 };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::BitwiseOr, right);
+        assert_eq!(result.to_string(), "mask1 | mask2");
+    }
+
+    // Test 23: transpile_binary_op - LeftShift
+    #[test]
+    fn test_transpile_binary_op_left_shift() {
+        let left = quote! { value };
+        let right = quote! { bits };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::LeftShift, right);
+        assert_eq!(result.to_string(), "value << bits");
+    }
+
+    // Test 24: transpile_binary_op - RightShift
+    #[test]
+    fn test_transpile_binary_op_right_shift() {
+        let left = quote! { num };
+        let right = quote! { shift };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::RightShift, right);
+        assert_eq!(result.to_string(), "num >> shift");
+    }
+
+    // Test 25: is_comparison_op - Equal is comparison
+    #[test]
+    fn test_is_comparison_op_equal() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::Equal));
+    }
+
+    // Test 26: is_comparison_op - Less is comparison
+    #[test]
+    fn test_is_comparison_op_less() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::Less));
+    }
+
+    // Test 27: is_comparison_op - Add is NOT comparison
+    #[test]
+    fn test_is_comparison_op_add() {
+        assert!(!Transpiler::is_comparison_op(BinaryOp::Add));
+    }
+
+    // Test 28: transpile_binary_op - NullCoalesce
+    #[test]
+    fn test_transpile_binary_op_null_coalesce() {
+        let left = quote! { opt };
+        let right = quote! { default };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::NullCoalesce, right);
+        assert_eq!(result.to_string(), "opt . unwrap_or (default)");
+    }
+
+    // Test 29: transpile_binary_op - Send (actor operation)
+    #[test]
+    fn test_transpile_binary_op_send() {
+        let left = quote! { actor };
+        let right = quote! { message };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Send, right);
+        assert_eq!(result.to_string(), "actor . send (message)");
+    }
+
+    // Test 30: transpile_binary_op - GreaterEqual comparison
+    #[test]
+    fn test_transpile_binary_op_greater_equal() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::GreaterEqual, right);
+        assert_eq!(result.to_string(), "a >= b");
+    }
+}
