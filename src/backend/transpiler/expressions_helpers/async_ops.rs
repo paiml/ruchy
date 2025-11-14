@@ -109,3 +109,200 @@ impl Transpiler {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    // Helper: Create test transpiler instance
+    fn test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    // Helper: Create identifier expression
+    fn ident_expr(name: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Identifier(name.to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Helper: Create string literal expression
+    fn string_expr(value: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(value.to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    // Test 1: transpile_unary - Not operator
+    #[test]
+    fn test_transpile_unary_not() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("x");
+        let result = transpiler.transpile_unary(UnaryOp::Not, &operand).unwrap();
+        assert_eq!(result.to_string(), "! x");
+    }
+
+    // Test 2: transpile_unary - BitwiseNot operator
+    #[test]
+    fn test_transpile_unary_bitwise_not() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("bits");
+        let result = transpiler.transpile_unary(UnaryOp::BitwiseNot, &operand).unwrap();
+        assert_eq!(result.to_string(), "! bits");
+    }
+
+    // Test 3: transpile_unary - Negate operator
+    #[test]
+    fn test_transpile_unary_negate() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("num");
+        let result = transpiler.transpile_unary(UnaryOp::Negate, &operand).unwrap();
+        assert_eq!(result.to_string(), "- num");
+    }
+
+    // Test 4: transpile_unary - Reference operator
+    #[test]
+    fn test_transpile_unary_reference() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("value");
+        let result = transpiler.transpile_unary(UnaryOp::Reference, &operand).unwrap();
+        assert_eq!(result.to_string(), "& value");
+    }
+
+    // Test 5: transpile_unary - MutableReference operator (PARSER-085: Issue #71)
+    #[test]
+    fn test_transpile_unary_mutable_reference() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("data");
+        let result = transpiler.transpile_unary(UnaryOp::MutableReference, &operand).unwrap();
+        assert_eq!(result.to_string(), "& mut data");
+    }
+
+    // Test 6: transpile_unary - Deref operator
+    #[test]
+    fn test_transpile_unary_deref() {
+        let transpiler = test_transpiler();
+        let operand = ident_expr("ptr");
+        let result = transpiler.transpile_unary(UnaryOp::Deref, &operand).unwrap();
+        assert_eq!(result.to_string(), "* ptr");
+    }
+
+    // Test 7: transpile_await - basic await expression
+    #[test]
+    fn test_transpile_await_basic() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("future");
+        let result = transpiler.transpile_await(&expr).unwrap();
+        assert_eq!(result.to_string(), "future . await");
+    }
+
+    // Test 8: transpile_spawn - struct literal (actor pattern)
+    #[test]
+    fn test_transpile_spawn_struct_literal() {
+        let transpiler = test_transpiler();
+        let actor = Expr {
+            kind: ExprKind::StructLiteral {
+                name: "Worker".to_string(),
+                fields: vec![("id".to_string(), ident_expr("worker_id"))],
+                base: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_spawn(&actor).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("Arc"));
+        assert!(result_str.contains("Mutex"));
+        assert!(result_str.contains("Worker"));
+        assert!(result_str.contains("id"));
+    }
+
+    // Test 9: transpile_spawn - non-struct expression (fallback)
+    #[test]
+    fn test_transpile_spawn_non_struct() {
+        let transpiler = test_transpiler();
+        let actor = ident_expr("actor_instance");
+        let result = transpiler.transpile_spawn(&actor).unwrap();
+        assert_eq!(result.to_string(), "actor_instance");
+    }
+
+    // Test 10: transpile_async_block - basic block (SPEC-001-E)
+    #[test]
+    fn test_transpile_async_block_basic() {
+        let transpiler = test_transpiler();
+        let body = ident_expr("value");
+        let result = transpiler.transpile_async_block(&body).unwrap();
+        assert_eq!(result.to_string(), "{ value }");
+    }
+
+    // Test 11: transpile_async_lambda - no params
+    #[test]
+    fn test_transpile_async_lambda_no_params() {
+        let transpiler = test_transpiler();
+        let params = vec![];
+        let body = string_expr("result");
+        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("async move"));
+        assert!(result_str.contains("\"result\""));
+    }
+
+    // Test 12: transpile_async_lambda - single param
+    #[test]
+    fn test_transpile_async_lambda_single_param() {
+        let transpiler = test_transpiler();
+        let params = vec!["x".to_string()];
+        let body = ident_expr("x");
+        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("| x |"));
+        assert!(result_str.contains("async move"));
+    }
+
+    // Test 13: transpile_async_lambda - multiple params
+    #[test]
+    fn test_transpile_async_lambda_multiple_params() {
+        let transpiler = test_transpiler();
+        let params = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let body = ident_expr("result");
+        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("a"));
+        assert!(result_str.contains("b"));
+        assert!(result_str.contains("c"));
+        assert!(result_str.contains("async move"));
+    }
+
+    // Test 14: transpile_throw - string message
+    #[test]
+    fn test_transpile_throw_string() {
+        let transpiler = test_transpiler();
+        let expr = string_expr("Error occurred");
+        let result = transpiler.transpile_throw(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("panic"));
+        assert!(result_str.contains("\"Error occurred\""));
+    }
+
+    // Test 15: transpile_throw - identifier expression
+    #[test]
+    fn test_transpile_throw_identifier() {
+        let transpiler = test_transpiler();
+        let expr = ident_expr("error_msg");
+        let result = transpiler.transpile_throw(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("panic"));
+        assert!(result_str.contains("error_msg"));
+    }
+}
