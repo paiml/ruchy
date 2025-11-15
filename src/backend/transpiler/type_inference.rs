@@ -860,6 +860,291 @@ mod tests {
             }
         }
     }
+
+    // COVERAGE-PMAT: Tests for infer_return_type_from_builtin_call
+    #[test]
+    fn test_infer_return_type_fs_read() {
+        let code = "fun test() { fs_read(\"/path\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("String"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_return_type_env_args() {
+        let code = "fun test() { env_args() }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("Vec<String>"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_return_type_fs_exists() {
+        let code = "fun test() { fs_exists(\"/path\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("bool"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_return_type_println() {
+        let code = "fun test() { println(\"hello\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("()"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_return_type_in_block() {
+        let code = "fun test() { let x = 5; fs_read(\"/file\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("String"));
+                }
+            }
+        }
+    }
+
+    // COVERAGE-PMAT: Tests for infer_param_type_from_builtin_usage
+    #[test]
+    fn test_infer_param_type_fs_read() {
+        let code = "fun test(path) { fs_read(path) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("path", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_http_get() {
+        let code = "fun test(url) { http_get(url) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("url", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_env_var() {
+        let code = "fun test(name) { env_var(name) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("name", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_in_if() {
+        let code = "fun test(path) { if (true) { fs_read(path) } else { \"\" } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("path", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_in_let() {
+        let code = "fun test(file) { let x = fs_read(file); x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("file", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    // COVERAGE-PMAT: Tests for is_param_used_as_array
+    #[test]
+    fn test_is_param_used_as_array_direct() {
+        let code = "fun test(arr) { arr[0] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_array_in_if() {
+        let code = "fun test(arr) { if (true) { arr[1] } else { 0 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_array_in_while() {
+        let code = "fun test(arr) { let i = 0; while i < 10 { arr[i] } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_array_false() {
+        let code = "fun test(x) { x + 5 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!is_param_used_as_array("x", body));
+                }
+            }
+        }
+    }
+
+    // COVERAGE-PMAT: Tests for is_param_used_with_len
+    #[test]
+    fn test_is_param_used_with_len_direct() {
+        let code = "fun test(arr) { len(arr) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_with_len("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_with_len_in_while() {
+        let code = "fun test(arr) { let i = 0; while i < len(arr) { i = i + 1 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_with_len("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_with_len_false() {
+        let code = "fun test(x) { x * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!is_param_used_with_len("x", body));
+                }
+            }
+        }
+    }
+
+    // COVERAGE-PMAT: Tests for is_param_used_as_index
+    #[test]
+    fn test_is_param_used_as_index_direct() {
+        let code = "fun test(i) { let arr = [1,2,3]; arr[i] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_index("i", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_index_in_for() {
+        let code = "fun test(i) { for x in [1,2,3] { arr[i] } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_index("i", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_index_false() {
+        let code = "fun test(x) { x + 10 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!is_param_used_as_index("x", body));
+                }
+            }
+        }
+    }
 }
 #[cfg(test)]
 mod property_tests_type_inference {
