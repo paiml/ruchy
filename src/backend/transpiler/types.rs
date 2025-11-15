@@ -1467,4 +1467,245 @@ mod tests {
         assert!(code.contains("i64"));
         assert!(code.contains("bool"));
     }
+
+    // Helper: Create Type from TypeKind
+    fn make_type(kind: TypeKind) -> Type {
+        Type { kind, span: crate::frontend::ast::Span::new(0, 0) }
+    }
+
+    // Helper: Create StructField
+    fn make_field(name: &str, type_name: &str) -> StructField {
+        use crate::frontend::ast::Visibility;
+        StructField {
+            name: name.to_string(),
+            ty: make_type(TypeKind::Named(type_name.to_string())),
+            visibility: Visibility::Private,
+            is_mut: false,
+            default_value: None,
+            decorators: vec![],
+        }
+    }
+
+    // Test 11: has_reference_fields - no references
+    #[test]
+    fn test_has_reference_fields_none() {
+        let transpiler = Transpiler::new();
+        let fields = vec![
+            make_field("x", "i32"),
+            make_field("y", "String"),
+        ];
+        assert!(!transpiler.has_reference_fields(&fields));
+    }
+
+    // Test 12: has_reference_fields - with reference
+    #[test]
+    fn test_has_reference_fields_with_ref() {
+        use crate::frontend::ast::Visibility;
+        let transpiler = Transpiler::new();
+        let ref_field = StructField {
+            name: "data".to_string(),
+            ty: make_type(TypeKind::Reference {
+                is_mut: false,
+                lifetime: None,
+                inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+            }),
+            visibility: Visibility::Private,
+            is_mut: false,
+            default_value: None,
+            decorators: vec![],
+        };
+        assert!(transpiler.has_reference_fields(&vec![ref_field]));
+    }
+
+    // Test 13: has_lifetime_params - no lifetimes
+    #[test]
+    fn test_has_lifetime_params_none() {
+        let transpiler = Transpiler::new();
+        let type_params = vec!["T".to_string(), "U".to_string()];
+        assert!(!transpiler.has_lifetime_params(&type_params));
+    }
+
+    // Test 14: has_lifetime_params - with lifetime
+    #[test]
+    fn test_has_lifetime_params_with_lifetime() {
+        let transpiler = Transpiler::new();
+        let type_params = vec!["'a".to_string(), "T".to_string()];
+        assert!(transpiler.has_lifetime_params(&type_params));
+    }
+
+    // Test 15: generate_derive_attributes - empty
+    #[test]
+    fn test_generate_derive_attributes_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.generate_derive_attributes(&vec![]);
+        assert_eq!(result.to_string(), "");
+    }
+
+    // Test 16: generate_derive_attributes - single derive
+    #[test]
+    fn test_generate_derive_attributes_single() {
+        let transpiler = Transpiler::new();
+        let derives = vec!["Debug".to_string()];
+        let result = transpiler.generate_derive_attributes(&derives);
+        let code = result.to_string();
+        assert!(code.contains("derive"));
+        assert!(code.contains("Debug"));
+    }
+
+    // Test 17: generate_derive_attributes - multiple derives
+    #[test]
+    fn test_generate_derive_attributes_multiple() {
+        let transpiler = Transpiler::new();
+        let derives = vec!["Debug".to_string(), "Clone".to_string(), "PartialEq".to_string()];
+        let result = transpiler.generate_derive_attributes(&derives);
+        let code = result.to_string();
+        assert!(code.contains("Debug"));
+        assert!(code.contains("Clone"));
+        assert!(code.contains("PartialEq"));
+    }
+
+    // Test 18: generate_class_type_param_tokens - empty
+    #[test]
+    fn test_generate_class_type_param_tokens_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.generate_class_type_param_tokens(&vec![]);
+        assert_eq!(result.len(), 0);
+    }
+
+    // Test 19: generate_class_type_param_tokens - single param
+    #[test]
+    fn test_generate_class_type_param_tokens_single() {
+        let transpiler = Transpiler::new();
+        let type_params = vec!["T".to_string()];
+        let result = transpiler.generate_class_type_param_tokens(&type_params);
+        assert_eq!(result.len(), 1);
+        assert!(result[0].to_string().contains("T"));
+    }
+
+    // Test 20: generate_class_type_param_tokens - with lifetime
+    #[test]
+    fn test_generate_class_type_param_tokens_with_lifetime() {
+        let transpiler = Transpiler::new();
+        let type_params = vec!["'a".to_string(), "T".to_string()];
+        let result = transpiler.generate_class_type_param_tokens(&type_params);
+        assert_eq!(result.len(), 2);
+        // Lifetime should be first
+        assert!(result[0].to_string().contains("'a"));
+    }
+
+    // Test 21: transpile_params - empty
+    #[test]
+    fn test_transpile_params_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_params(&vec![]).unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    // Test 22: transpile_params - single param
+    #[test]
+    fn test_transpile_params_single() {
+        let transpiler = Transpiler::new();
+        let params = vec![crate::frontend::ast::Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            span: crate::frontend::ast::Span::new(0, 0),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("x"));
+        assert!(code.contains("i32"));
+    }
+
+    // Test 23: transpile_params - multiple params
+    #[test]
+    fn test_transpile_params_multiple() {
+        let transpiler = Transpiler::new();
+        let params = vec![
+            crate::frontend::ast::Param {
+                pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                span: crate::frontend::ast::Span::new(0, 0),
+                is_mutable: false,
+                default_value: None,
+            },
+            crate::frontend::ast::Param {
+                pattern: crate::frontend::ast::Pattern::Identifier("y".to_string()),
+                ty: make_type(TypeKind::Named("String".to_string())),
+                span: crate::frontend::ast::Span::new(0, 0),
+                is_mutable: false,
+                default_value: None,
+            },
+        ];
+        let result = transpiler.transpile_params(&params).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    // Test 24: transpile_params - with mutable param
+    #[test]
+    fn test_transpile_params_mutable() {
+        let transpiler = Transpiler::new();
+        let params = vec![crate::frontend::ast::Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            span: crate::frontend::ast::Span::new(0, 0),
+            is_mutable: true,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        let code = result[0].to_string();
+        assert!(code.contains("mut"));
+        assert!(code.contains("x"));
+    }
+
+    // Test 25: transpile_struct - basic struct
+    #[test]
+    fn test_transpile_struct_basic() {
+        let transpiler = Transpiler::new();
+        let fields = vec![
+            make_field("x", "i32"),
+            make_field("y", "String"),
+        ];
+        let result = transpiler.transpile_struct("Point", &vec![], &fields, &vec![], false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("struct"));
+        assert!(code.contains("Point"));
+        assert!(code.contains("x"));
+        assert!(code.contains("y"));
+    }
+
+    // Test 26: transpile_struct - with derives
+    #[test]
+    fn test_transpile_struct_with_derives() {
+        let transpiler = Transpiler::new();
+        let fields = vec![make_field("value", "i32")];
+        let derives = vec!["Debug".to_string(), "Clone".to_string()];
+        let result = transpiler.transpile_struct("Data", &vec![], &fields, &derives, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("derive"));
+        assert!(code.contains("Debug"));
+        assert!(code.contains("Clone"));
+    }
+
+    // Test 27: transpile_tuple_struct - basic
+    #[test]
+    fn test_transpile_tuple_struct_basic() {
+        let transpiler = Transpiler::new();
+        let field_types = vec![
+            make_type(TypeKind::Named("i32".to_string())),
+            make_type(TypeKind::Named("String".to_string())),
+        ];
+        let result = transpiler.transpile_tuple_struct("Wrapper", &vec![], &field_types, &vec![], false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("struct"));
+        assert!(code.contains("Wrapper"));
+        assert!(code.contains("i32"));
+        assert!(code.contains("String"));
+    }
+
 }
