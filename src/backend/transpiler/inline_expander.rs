@@ -1095,7 +1095,7 @@ mod tests {
                 arms: vec![MatchArm {
                     pattern: Pattern::Literal(Literal::Integer(1, None)),
                     guard: None,
-                    body: ident("value"),
+                    body: Box::new(ident("value")),
                 }],
             },
             Span::default(),
@@ -1143,13 +1143,13 @@ mod tests {
                 arms: vec![MatchArm {
                     pattern: Pattern::Literal(Literal::Integer(1, None)),
                     guard: None,
-                    body: Expr::new(
+                    body: Box::new(Expr::new(
                         ExprKind::Call {
                             func: Box::new(ident("factorial")),
                             args: vec![int_lit(1)],
                         },
                         Span::default(),
-                    ),
+                    )),
                 }],
             },
             Span::default(),
