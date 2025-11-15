@@ -556,4 +556,327 @@ mod tests {
         let output = result.unwrap().to_string();
         assert!(output.contains("?"));
     }
+
+    // Test 21: transpile_misc_expr - Let with type annotation
+    #[test]
+    fn test_transpile_misc_expr_let_with_type() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: Some("i32".to_string()),
+                value: Box::new(int_expr(10)),
+                body: None,
+                is_mutable: false,
+                else_block: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("let"));
+        assert!(output.contains("x"));
+    }
+
+    // Test 22: transpile_misc_expr - Let mutable
+    #[test]
+    fn test_transpile_misc_expr_let_mut() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Let {
+                name: "counter".to_string(),
+                type_annotation: None,
+                value: Box::new(int_expr(0)),
+                body: None,
+                is_mutable: true,
+                else_block: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("let"));
+        assert!(output.contains("mut"));
+    }
+
+    // Test 23: transpile_misc_expr - Import
+    #[test]
+    fn test_transpile_misc_expr_import() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Import {
+                module: "std::collections".to_string(),
+                items: Some(vec!["HashMap".to_string(), "Vec".to_string()]),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("use"));
+    }
+
+    // Test 24: transpile_misc_expr - ImportAll
+    #[test]
+    fn test_transpile_misc_expr_import_all() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ImportAll {
+                module: "std::prelude".to_string(),
+                alias: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("use"));
+        assert!(output.contains("*"));
+    }
+
+    // Test 25: transpile_misc_expr - Break (via transpile_control_misc_expr)
+    #[test]
+    fn test_transpile_misc_expr_break() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Break {
+                label: None,
+                value: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "break");
+    }
+
+    // Test 26: transpile_misc_expr - Continue (via transpile_control_misc_expr)
+    #[test]
+    fn test_transpile_misc_expr_continue() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Continue { label: None },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "continue");
+    }
+
+    // Test 27: transpile_misc_expr - Return (via transpile_control_misc_expr)
+    #[test]
+    fn test_transpile_misc_expr_return() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Return {
+                value: Some(Box::new(int_expr(42))),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("return"));
+        assert!(output.contains("42"));
+    }
+
+    // Test 28: transpile_misc_expr - ImportDefault
+    #[test]
+    fn test_transpile_misc_expr_import_default() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ImportDefault {
+                module: "utils".to_string(),
+                name: "helper".to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("use"));
+    }
+
+    // Test 29: transpile_error_only_expr - Throw with integer (panic)
+    #[test]
+    fn test_transpile_error_only_expr_throw_integer() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Throw {
+                expr: Box::new(int_expr(500)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("panic"));
+    }
+
+    // Test 30: transpile_result_ok - nested result
+    #[test]
+    fn test_transpile_result_ok_nested() {
+        let transpiler = test_transpiler();
+        let nested = Expr {
+            kind: ExprKind::Ok {
+                value: Box::new(int_expr(1)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_result_ok(&nested);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Ok"));
+    }
+
+    // Test 31: transpile_result_err - nested error
+    #[test]
+    fn test_transpile_result_err_nested() {
+        let transpiler = test_transpiler();
+        let nested = Expr {
+            kind: ExprKind::Err {
+                error: Box::new(int_expr(404)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_result_err(&nested);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Err"));
+    }
+
+    // Test 32: transpile_option_some - nested option
+    #[test]
+    fn test_transpile_option_some_nested() {
+        let transpiler = test_transpiler();
+        let nested = Expr {
+            kind: ExprKind::Some {
+                value: Box::new(string_expr("nested")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_option_some(&nested);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Some"));
+    }
+
+    // Test 33: transpile_misc_expr - Let with else block (let-else)
+    #[test]
+    fn test_transpile_misc_expr_let_else() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Let {
+                name: "val".to_string(),
+                type_annotation: None,
+                value: Box::new(ident_expr("opt")),
+                body: None,
+                is_mutable: false,
+                else_block: Some(Box::new(Expr {
+                    kind: ExprKind::Return { value: None },
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                })),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("let"));
+    }
+
+    // Test 34: transpile_error_only_expr - Try with method call
+    #[test]
+    fn test_transpile_error_only_expr_try_method_call() {
+        let transpiler = test_transpiler();
+        let method_call = Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(ident_expr("file")),
+                method: "read".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let expr = Expr {
+            kind: ExprKind::Try {
+                expr: Box::new(method_call),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_error_only_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("?"));
+        assert!(output.contains("read"));
+    }
+
+    // Test 35: transpile_misc_expr - Block with multiple expressions
+    #[test]
+    fn test_transpile_misc_expr_block_multi() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Block(vec![
+                int_expr(1),
+                int_expr(2),
+                int_expr(3),
+                ident_expr("result"),
+            ]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+    }
 }
