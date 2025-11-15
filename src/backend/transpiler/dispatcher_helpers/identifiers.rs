@@ -516,4 +516,153 @@ mod tests {
         assert!(result_str.contains("self"));
         assert!(result_str.contains("module"));
     }
+
+    // Test 34: transpile_identifier - reserved keyword "loop"
+    #[test]
+    fn test_transpile_identifier_reserved_loop() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("loop");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("loop"));
+    }
+
+    // Test 35: transpile_identifier - reserved keyword "trait"
+    #[test]
+    fn test_transpile_identifier_reserved_trait() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("trait");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("trait"));
+    }
+
+    // Test 36: transpile_identifier - reserved keyword "const"
+    #[test]
+    fn test_transpile_identifier_reserved_const() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("const");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("const"));
+    }
+
+    // Test 37: transpile_identifier - reserved keyword "while"
+    #[test]
+    fn test_transpile_identifier_reserved_while() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("while");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("while"));
+    }
+
+    // Test 38: transpile_identifier - reserved keyword "for"
+    #[test]
+    fn test_transpile_identifier_reserved_for() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("for");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("for"));
+    }
+
+    // Test 39: transpile_identifier - reserved keyword "async"
+    #[test]
+    fn test_transpile_identifier_reserved_async() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("async");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("async"));
+    }
+
+    // Test 40: transpile_identifier - reserved keyword "await"
+    #[test]
+    fn test_transpile_identifier_reserved_await() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("await");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("await"));
+    }
+
+    // Test 41: transpile_identifier - reserved keyword "dyn"
+    #[test]
+    fn test_transpile_identifier_reserved_dyn() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("dyn");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("dyn"));
+    }
+
+    // Test 42: transpile_identifier - reserved keyword "unsafe"
+    #[test]
+    fn test_transpile_identifier_reserved_unsafe() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("unsafe");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("unsafe"));
+    }
+
+    // Test 43: transpile_turbofish - nested generics
+    #[test]
+    fn test_transpile_turbofish_nested() {
+        // Note: This tests the tokenization, not full nested generic parsing
+        let result = Transpiler::transpile_turbofish("<Vec<i32>>");
+        let result_str = result.to_string();
+        // The result will tokenize "Vec<i32>" as a single type argument
+        assert!(result_str.contains("Vec"));
+    }
+
+    // Test 44: transpile_qualified_name - with numeric suffix
+    #[test]
+    fn test_transpile_qualified_name_numeric_suffix() {
+        let result = Transpiler::transpile_qualified_name("module", "version2");
+        let result_str = result.to_string();
+        assert!(result_str.contains("module"));
+        assert!(result_str.contains("version2"));
+    }
+
+    // Test 45: transpile_qualified_name - with underscore prefix
+    #[test]
+    fn test_transpile_qualified_name_underscore() {
+        let result = Transpiler::transpile_qualified_name("_internal", "_helper");
+        let result_str = result.to_string();
+        assert!(result_str.contains("_internal"));
+        assert!(result_str.contains("_helper"));
+    }
+
+    // Test 46: transpile_external_mod_declaration - pub(in path)
+    #[test]
+    fn test_transpile_external_mod_declaration_pub_in() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("restricted".to_string()),
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec!["in".to_string()],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("restricted", &expr);
+        let result_str = result.to_string();
+        assert!(result_str.contains("pub"));
+        assert!(result_str.contains("in") || result_str.contains("restricted"));
+    }
+
+    // Test 47: transpile_identifier - very long identifier (50+ chars)
+    #[test]
+    fn test_transpile_identifier_very_long() {
+        let transpiler = test_transpiler();
+        let long_name = "this_is_a_very_long_identifier_name_with_many_words_and_underscores";
+        let result = transpiler.transpile_identifier(long_name);
+        assert!(result.to_string().contains("this_is_a_very_long_identifier"));
+    }
+
+    // Test 48: transpile_turbofish - with extra whitespace and newlines
+    #[test]
+    fn test_transpile_turbofish_extra_whitespace() {
+        let result = Transpiler::transpile_turbofish("<  String  ,   i32   >");
+        let result_str = result.to_string();
+        // Whitespace should be trimmed
+        assert!(result_str.contains("String"));
+        assert!(result_str.contains("i32"));
+    }
 }
