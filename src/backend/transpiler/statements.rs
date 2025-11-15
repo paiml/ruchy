@@ -6604,6 +6604,278 @@ mod tests {
         let id_expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
         assert!(!transpiler.value_creates_vec(&id_expr));
     }
+
+    // Test 1: is_variable_mutated - direct assignment
+    #[test]
+    fn test_is_variable_mutated_assignment() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let value = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let assign_expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(target),
+                value: Box::new(value),
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
+        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+    }
+
+    // Test 3: is_variable_mutated - pre-increment
+    #[test]
+    fn test_is_variable_mutated_pre_increment() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let target = Expr::new(ExprKind::Identifier("i".to_string()), Span::default());
+        let inc_expr = Expr::new(
+            ExprKind::PreIncrement {
+                target: Box::new(target),
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::is_variable_mutated("i", &inc_expr));
+    }
+
+    // Test 4: is_variable_mutated - block with nested mutation
+    #[test]
+    fn test_is_variable_mutated_block() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let value = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let assign_expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(target),
+                value: Box::new(value),
+            },
+            Span::default(),
+        );
+        let block_expr = Expr::new(ExprKind::Block(vec![assign_expr]), Span::default());
+        assert!(Transpiler::is_variable_mutated("x", &block_expr));
+    }
+
+    // Test 5: extract_pattern_bindings - identifier pattern
+    #[test]
+    fn test_extract_pattern_bindings_identifier() {
+        use crate::frontend::ast::Pattern;
+        let pattern = Pattern::Identifier("x".to_string());
+        let bindings = Transpiler::extract_pattern_bindings(&pattern);
+        assert_eq!(bindings, vec!["x"]);
+    }
+
+    // Test 6: extract_pattern_bindings - tuple pattern
+    #[test]
+    fn test_extract_pattern_bindings_tuple() {
+        use crate::frontend::ast::Pattern;
+        let pattern = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+            Pattern::Identifier("c".to_string()),
+        ]);
+        let bindings = Transpiler::extract_pattern_bindings(&pattern);
+        assert_eq!(bindings, vec!["a", "b", "c"]);
+    }
+
+    // Test 7: extract_pattern_bindings - wildcard pattern
+    #[test]
+    fn test_extract_pattern_bindings_wildcard() {
+        use crate::frontend::ast::Pattern;
+        let pattern = Pattern::Wildcard;
+        let bindings = Transpiler::extract_pattern_bindings(&pattern);
+        assert!(bindings.is_empty());
+    }
+
+    // Test 8: looks_like_numeric_function - arithmetic functions
+    #[test]
+    fn test_looks_like_numeric_function_arithmetic() {
+        let transpiler = create_transpiler();
+        assert!(transpiler.looks_like_numeric_function("add"));
+        assert!(transpiler.looks_like_numeric_function("multiply"));
+        assert!(transpiler.looks_like_numeric_function("sqrt"));
+        assert!(transpiler.looks_like_numeric_function("pow"));
+        assert!(!transpiler.looks_like_numeric_function("concat"));
+    }
+
+    // Test 9: looks_like_numeric_function - trigonometric functions
+    #[test]
+    fn test_looks_like_numeric_function_trig() {
+        let transpiler = create_transpiler();
+        assert!(transpiler.looks_like_numeric_function("sin"));
+        assert!(transpiler.looks_like_numeric_function("cos"));
+        assert!(transpiler.looks_like_numeric_function("atan2"));
+        assert!(!transpiler.looks_like_numeric_function("uppercase"));
+    }
+
+    // Test 10: is_void_function_call - println function
+    #[test]
+    fn test_is_void_function_call_println() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let func = Expr::new(ExprKind::Identifier("println".to_string()), Span::default());
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_void_function_call(&call_expr));
+    }
+
+    // Test 11: is_void_function_call - assert function
+    #[test]
+    fn test_is_void_function_call_assert() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let func = Expr::new(ExprKind::Identifier("assert".to_string()), Span::default());
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_void_function_call(&call_expr));
+    }
+
+    // Test 12: is_void_expression - unit literal
+    #[test]
+    fn test_is_void_expression_unit() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let unit_expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::default());
+        assert!(transpiler.is_void_expression(&unit_expr));
+    }
+
+    // Test 13: is_void_expression - assignment expression
+    #[test]
+    fn test_is_void_expression_assignment() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let value = Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default());
+        let assign_expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(target),
+                value: Box::new(value),
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_void_expression(&assign_expr));
+    }
+
+    // Test 14: returns_closure - non-closure returns false
+    #[test]
+    fn test_returns_closure_false() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let transpiler = create_transpiler();
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        assert!(!transpiler.returns_closure(&int_expr));
+    }
+
+    // Test 15: returns_string_literal - direct string literal
+    #[test]
+    fn test_returns_string_literal_direct() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let string_expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        assert!(Transpiler::returns_string_literal(&string_expr));
+    }
+
+    // Test 16: returns_string_literal - in block
+    #[test]
+    fn test_returns_string_literal_in_block() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let string_expr = Expr::new(
+            ExprKind::Literal(Literal::String("world".to_string())),
+            Span::default(),
+        );
+        let block_expr = Expr::new(ExprKind::Block(vec![string_expr]), Span::default());
+        assert!(Transpiler::returns_string_literal(&block_expr));
+    }
+
+    // Test 17: returns_boolean - comparison operator
+    #[test]
+    fn test_returns_boolean_comparison() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
+        let left = Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default());
+        let right = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let comparison_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Less,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::returns_boolean(&comparison_expr));
+    }
+
+    // Test 18: returns_boolean - unary not operator
+    #[test]
+    fn test_returns_boolean_unary_not() {
+        use crate::frontend::ast::{Expr, ExprKind, Span, UnaryOp};
+        let inner = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let not_expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(inner),
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::returns_boolean(&not_expr));
+    }
+
+    // Test 19: returns_vec - array literal
+    #[test]
+    fn test_returns_vec_array_literal() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let array_expr = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
+                Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default()),
+            ]),
+            Span::default(),
+        );
+        assert!(transpiler.returns_vec(&array_expr));
+    }
+
+    // Test 20: returns_string - string concatenation
+    #[test]
+    fn test_returns_string_concatenation() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
+        let transpiler = create_transpiler();
+        let left = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::String("world".to_string())),
+            Span::default(),
+        );
+        let concat_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        assert!(transpiler.returns_string(&concat_expr));
+    }
+
+    // Test 20: value_creates_vec - array literal creates vec
+    #[test]
+    fn test_value_creates_vec_list() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let transpiler = create_transpiler();
+        let elem1 = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let elem2 = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default());
+        let list_expr = Expr::new(ExprKind::List(vec![elem1, elem2]), Span::default());
+        assert!(transpiler.value_creates_vec(&list_expr));
+    }
 }
 #[cfg(test)]
 mod property_tests_statements {
