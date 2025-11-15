@@ -348,4 +348,180 @@ mod tests {
         let u64_result = transpiler.transpile_type_cast(&expr, "u64").unwrap();
         assert!(u64_result.to_string().contains("as u64"));
     }
+
+    // Test 21: transpile_type_cast - i8
+    #[test]
+    fn test_transpile_type_cast_i8() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(127);
+        let result = transpiler.transpile_type_cast(&expr, "i8").unwrap();
+        assert!(result.to_string().contains("as i8"));
+    }
+
+    // Test 22: transpile_type_cast - i16
+    #[test]
+    fn test_transpile_type_cast_i16() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(32767);
+        let result = transpiler.transpile_type_cast(&expr, "i16").unwrap();
+        assert!(result.to_string().contains("as i16"));
+    }
+
+    // Test 23: transpile_control_misc_expr - break with label and value
+    #[test]
+    fn test_transpile_control_misc_expr_break_label_value() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Break {
+                label: Some("'outer".to_string()),
+                value: Some(Box::new(int_expr(99))),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("outer"));
+        assert!(result_str.contains("99"));
+    }
+
+    // Test 24: transpile_control_misc_expr - break with label only
+    #[test]
+    fn test_transpile_control_misc_expr_break_label_only() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Break {
+                label: Some("'loop1".to_string()),
+                value: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("loop1"));
+    }
+
+    // Test 25: transpile_control_misc_expr - continue with label
+    #[test]
+    fn test_transpile_control_misc_expr_continue_with_label() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Continue {
+                label: Some("'outer".to_string()),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("outer"));
+    }
+
+    // Test 26: make_break_continue - break with different label
+    #[test]
+    fn test_make_break_continue_break_with_different_label() {
+        let label = String::from("'inner");
+        let result = Transpiler::make_break_continue(true, Some(&label));
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("inner"));
+    }
+
+    // Test 27: make_break_continue - continue with label
+    #[test]
+    fn test_make_break_continue_continue_with_label() {
+        let label = String::from("'loop1");
+        let result = Transpiler::make_break_continue(false, Some(&label));
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("loop1"));
+    }
+
+    // Test 28: make_break_continue - empty label defaults to no label
+    #[test]
+    fn test_make_break_continue_empty_label() {
+        let label = String::from("");
+        let result = Transpiler::make_break_continue(true, Some(&label));
+        assert_eq!(result.to_string(), "break");
+    }
+
+    // Test 29: make_break_continue_with_value - break with only value
+    #[test]
+    fn test_make_break_continue_with_value_only_value() {
+        let value = quote! { 42 };
+        let result = Transpiler::make_break_continue_with_value(true, None, Some(value));
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("42"));
+    }
+
+    // Test 30: make_break_continue_with_value - continue with value (even though unusual)
+    #[test]
+    fn test_make_break_continue_with_value_continue_value() {
+        let value = quote! { result };
+        let result = Transpiler::make_break_continue_with_value(false, None, Some(value));
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("result"));
+    }
+
+    // Test 31: make_break_continue_with_value - neither label nor value
+    #[test]
+    fn test_make_break_continue_with_value_neither() {
+        let result = Transpiler::make_break_continue_with_value(true, None, None);
+        assert_eq!(result.to_string(), "break");
+    }
+
+    // Test 32: transpile_type_cast - negative value
+    #[test]
+    fn test_transpile_type_cast_negative_value() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(-42);
+        let result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("as i32"));
+        assert!(result_str.contains("-") || result_str.contains("42"));
+    }
+
+    // Test 33: transpile_type_cast - zero value
+    #[test]
+    fn test_transpile_type_cast_zero() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(0);
+        let result = transpiler.transpile_type_cast(&expr, "usize").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("as usize"));
+        assert!(result_str.contains("0"));
+    }
+
+    // Test 34: make_break_continue_with_value - label without prefix
+    #[test]
+    fn test_make_break_continue_with_value_label_no_prefix() {
+        let label = String::from("outer");
+        let result = Transpiler::make_break_continue_with_value(true, Some(&label), None);
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("outer"));
+    }
+
+    // Test 35: transpile_type_cast - very large value
+    #[test]
+    fn test_transpile_type_cast_large_value() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(9999999);
+        let result = transpiler.transpile_type_cast(&expr, "i64").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("as i64"));
+        assert!(result_str.contains("9999999"));
+    }
 }
