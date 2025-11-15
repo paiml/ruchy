@@ -865,4 +865,356 @@ mod tests {
         let expr = int_lit(42);
         assert!(!has_early_exit(&expr));
     }
+
+    // Test 21: collect_used_functions - basic function call
+    #[test]
+    fn test_collect_used_functions_basic() {
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("foo".to_string()),
+                    Span::new(0, 0),
+                )),
+                args: vec![],
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_functions(&expr);
+        assert!(used.contains("foo"));
+        assert_eq!(used.len(), 1);
+    }
+
+    // Test 22: collect_used_functions - nested in if
+    #[test]
+    fn test_collect_used_functions_nested_if() {
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("check".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("action".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+                else_branch: None,
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_functions(&expr);
+        assert!(used.contains("check"));
+        assert!(used.contains("action"));
+        assert_eq!(used.len(), 2);
+    }
+
+    // Test 23: collect_used_functions_rec - Await expression
+    #[test]
+    fn test_collect_used_functions_await() {
+        let mut used = HashSet::new();
+        let expr = Expr::new(
+            ExprKind::Await {
+                expr: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("async_fn".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+            },
+            Span::new(0, 0),
+        );
+        collect_used_functions_rec(&expr, &mut used);
+        assert!(used.contains("async_fn"));
+    }
+
+    // Test 24: collect_used_functions_rec - AsyncBlock
+    #[test]
+    fn test_collect_used_functions_async_block() {
+        let mut used = HashSet::new();
+        let expr = Expr::new(
+            ExprKind::AsyncBlock {
+                body: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("work".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+            },
+            Span::new(0, 0),
+        );
+        collect_used_functions_rec(&expr, &mut used);
+        assert!(used.contains("work"));
+    }
+
+    // Test 25: collect_used_functions_rec - Spawn expression
+    #[test]
+    fn test_collect_used_functions_spawn() {
+        let mut used = HashSet::new();
+        let expr = Expr::new(
+            ExprKind::Spawn {
+                actor: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("actor_fn".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+            },
+            Span::new(0, 0),
+        );
+        collect_used_functions_rec(&expr, &mut used);
+        assert!(used.contains("actor_fn"));
+    }
+
+    // Test 26: collect_used_variables - simple identifier
+    #[test]
+    fn test_collect_used_variables_simple() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_variables(&expr);
+        assert!(used.contains("x"));
+        assert_eq!(used.len(), 1);
+    }
+
+    // Test 27: collect_used_variables_rec - While loop
+    #[test]
+    fn test_collect_used_variables_while_loop() {
+        let mut used = HashSet::new();
+        let mut bound = HashSet::new();
+        bound.insert("counter".to_string());
+
+        let expr = Expr::new(
+            ExprKind::While {
+                condition: Box::new(Expr::new(
+                    ExprKind::Identifier("counter".to_string()),
+                    Span::new(0, 0),
+                )),
+                body: Box::new(int_lit(1)),
+                label: None,
+            },
+            Span::new(0, 0),
+        );
+        collect_used_variables_rec(&expr, &mut used, &bound);
+        assert!(used.contains("counter"));
+    }
+
+    // Test 28: collect_used_variables_rec - Return with value
+    #[test]
+    fn test_collect_used_variables_return() {
+        let mut used = HashSet::new();
+        let mut bound = HashSet::new();
+        bound.insert("result".to_string());
+
+        let expr = Expr::new(
+            ExprKind::Return {
+                value: Some(Box::new(Expr::new(
+                    ExprKind::Identifier("result".to_string()),
+                    Span::new(0, 0),
+                ))),
+            },
+            Span::new(0, 0),
+        );
+        collect_used_variables_rec(&expr, &mut used, &bound);
+        assert!(used.contains("result"));
+    }
+
+    // Test 29: remove_dead_statements - after return
+    #[test]
+    fn test_remove_dead_statements_after_return() {
+        let stmts = vec![
+            Expr::new(
+                ExprKind::Return {
+                    value: Some(Box::new(int_lit(5))),
+                },
+                Span::new(0, 0),
+            ),
+            int_lit(10), // Dead code - after return
+            int_lit(20), // Dead code - after return
+        ];
+        let result = remove_dead_statements(stmts);
+        assert_eq!(result.len(), 1); // Only return statement remains
+    }
+
+    // Test 30: remove_dead_statements - no early exit
+    #[test]
+    fn test_remove_dead_statements_no_early_exit() {
+        let stmts = vec![
+            int_lit(1),
+            int_lit(2),
+            int_lit(3),
+        ];
+        let result = remove_dead_statements(stmts.clone());
+        assert_eq!(result.len(), 3); // All statements preserved
+    }
+
+    // Test 31: propagate_constants - simple let binding
+    #[test]
+    fn test_propagate_constants_simple_let() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(Expr::new(
+                    ExprKind::Binary {
+                        left: Box::new(Expr::new(
+                            ExprKind::Identifier("x".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        op: BinaryOp::Add,
+                        right: Box::new(int_lit(1)),
+                    },
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let result = propagate_constants(expr);
+        // After propagation: let x = 5; x + 1 → let x = 5; 5 + 1 → let x = 5; 6
+        if let ExprKind::Let { body, .. } = result.kind {
+            // Body should be folded to 6
+            assert!(matches!(body.kind, ExprKind::Literal(Literal::Integer(6, None))));
+        } else {
+            panic!("Expected Let expression");
+        }
+    }
+
+    // Test 32: propagate_constants - variable substitution
+    #[test]
+    fn test_propagate_constants_variable_substitution() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(10)),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let result = propagate_constants(expr);
+        // After propagation: let x = 10; x → let x = 10; 10
+        if let ExprKind::Let { body, .. } = result.kind {
+            // Variable should be replaced with its constant value
+            assert!(matches!(body.kind, ExprKind::Literal(Literal::Integer(10, None))));
+        } else {
+            panic!("Expected Let expression");
+        }
+    }
+
+    // Test 33: propagate_with_env - mutable variable (not propagated)
+    #[test]
+    fn test_propagate_with_env_mutable() {
+        let mut env = HashMap::new();
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                is_mutable: true, // Mutable variable
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let result = propagate_with_env(expr, &mut env);
+        // Mutable variables should NOT be propagated
+        if let ExprKind::Let { body, .. } = result.kind {
+            // Variable should remain as identifier (not replaced with constant)
+            assert!(matches!(body.kind, ExprKind::Identifier(_)));
+        } else {
+            panic!("Expected Let expression");
+        }
+    }
+
+    // Test 34: propagate_with_env - in Call arguments
+    #[test]
+    fn test_propagate_with_env_call() {
+        let mut env = HashMap::new();
+        env.insert("x".to_string(), Literal::Integer(5, None));
+
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("foo".to_string()),
+                    Span::new(0, 0),
+                )),
+                args: vec![Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )],
+            },
+            Span::new(0, 0),
+        );
+        let result = propagate_with_env(expr, &mut env);
+        // Variable in argument should be replaced with constant
+        if let ExprKind::Call { args, .. } = result.kind {
+            assert_eq!(args.len(), 1);
+            assert!(matches!(args[0].kind, ExprKind::Literal(Literal::Integer(5, None))));
+        } else {
+            panic!("Expected Call expression");
+        }
+    }
+
+    // Test 35: fold_constants - If with const true condition (dead branch elimination)
+    #[test]
+    fn test_fold_constants_if_const_true() {
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::new(0, 0),
+                )),
+                then_branch: Box::new(int_lit(42)),
+                else_branch: Some(Box::new(int_lit(99))),
+            },
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        // Should eliminate else branch and return then branch
+        assert!(matches!(folded.kind, ExprKind::Literal(Literal::Integer(42, None))));
+    }
 }
