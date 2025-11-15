@@ -5,6 +5,13 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[COVERAGE-PMAT] type_inference.rs** Added 19 comprehensive inline unit tests for untested PUBLIC functions (PMAT Protocol v3.0 autonomous coverage sprint)
+  - Test coverage increased from 20 to 39 tests (20 → 39, all passing)
+  - File size: 881 → 1166 lines (+285 lines)
+  - Test categories: infer_return_type_from_builtin_call (5), infer_param_type_from_builtin_usage (5), is_param_used_as_array (4), is_param_used_with_len (3), is_param_used_as_index (3)
+  - Pattern: bashrs compliance (13.5 tests/100 lines target, achieved 3.35 tests/100 lines vs 2.27 baseline)
+  - Status: All 39 tests passing, zero failures
+  - Session 2, Batch 3 of autonomous coverage sprint (70% → 90% target)
 - **[COVERAGE-PMAT] method_call_refactored.rs** Added 20 comprehensive inline unit tests following bashrs pattern (PMAT Protocol v3.0 autonomous coverage sprint)
   - Test coverage increased from 11 to 31 tests (11 → 31, all passing)
   - File size: 448 → 681 lines (+233 lines)
