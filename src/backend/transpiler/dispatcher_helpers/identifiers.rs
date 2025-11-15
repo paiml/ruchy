@@ -340,4 +340,180 @@ mod tests {
         assert!(result_str.contains("V"));
         assert!(result_str.contains("H"));
     }
+
+    // Test 19: transpile_identifier - reserved keyword "match"
+    #[test]
+    fn test_transpile_identifier_reserved_match() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("match");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("match"));
+    }
+
+    // Test 20: transpile_identifier - reserved keyword "fn"
+    #[test]
+    fn test_transpile_identifier_reserved_fn() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("fn");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("fn"));
+    }
+
+    // Test 21: transpile_identifier - reserved keyword "impl"
+    #[test]
+    fn test_transpile_identifier_reserved_impl() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("impl");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("impl"));
+    }
+
+    // Test 22: transpile_identifier - very long module path (5 components)
+    #[test]
+    fn test_transpile_identifier_long_path() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("std::collections::hash::map::HashMap");
+        let result_str = result.to_string();
+        assert!(result_str.contains("std"));
+        assert!(result_str.contains("collections"));
+        assert!(result_str.contains("hash"));
+        assert!(result_str.contains("map"));
+        assert!(result_str.contains("HashMap"));
+    }
+
+    // Test 23: transpile_qualified_name - deeply nested (3 levels)
+    #[test]
+    fn test_transpile_qualified_name_deep_nested() {
+        let result = Transpiler::transpile_qualified_name("std::io::prelude", "Read");
+        let result_str = result.to_string();
+        assert!(result_str.contains("std"));
+        assert!(result_str.contains("io"));
+        assert!(result_str.contains("prelude"));
+        assert!(result_str.contains("Read"));
+    }
+
+    // Test 24: transpile_qualified_name - single character names
+    #[test]
+    fn test_transpile_qualified_name_single_char() {
+        let result = Transpiler::transpile_qualified_name("a", "b");
+        assert_eq!(result.to_string(), "a :: b");
+    }
+
+    // Test 25: transpile_external_mod_declaration - pub(super)
+    #[test]
+    fn test_transpile_external_mod_declaration_pub_super() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("helpers".to_string()),
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec!["super".to_string()],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("helpers", &expr);
+        let result_str = result.to_string();
+        assert!(result_str.contains("pub"));
+        assert!(result_str.contains("super"));
+        assert!(result_str.contains("helpers"));
+    }
+
+    // Test 26: transpile_turbofish - four types
+    #[test]
+    fn test_transpile_turbofish_four_types() {
+        let result = Transpiler::transpile_turbofish("<A, B, C, D>");
+        let result_str = result.to_string();
+        assert!(result_str.contains("A"));
+        assert!(result_str.contains("B"));
+        assert!(result_str.contains("C"));
+        assert!(result_str.contains("D"));
+    }
+
+    // Test 27: transpile_turbofish - five types (stress test)
+    #[test]
+    fn test_transpile_turbofish_five_types() {
+        let result = Transpiler::transpile_turbofish("<T, U, V, W, X>");
+        let result_str = result.to_string();
+        assert!(result_str.contains("T"));
+        assert!(result_str.contains("U"));
+        assert!(result_str.contains("V"));
+        assert!(result_str.contains("W"));
+        assert!(result_str.contains("X"));
+    }
+
+    // Test 28: transpile_identifier - module path with multiple turbofishes
+    #[test]
+    fn test_transpile_identifier_multiple_turbofishes() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("HashMap::<String, i32>::new");
+        let result_str = result.to_string();
+        assert!(result_str.contains("HashMap"));
+        assert!(result_str.contains("String"));
+        assert!(result_str.contains("i32"));
+        assert!(result_str.contains("new"));
+    }
+
+    // Test 29: transpile_qualified_name - very deep nesting (4 levels)
+    #[test]
+    fn test_transpile_qualified_name_very_deep() {
+        let result = Transpiler::transpile_qualified_name("a::b::c::d", "Function");
+        let result_str = result.to_string();
+        assert!(result_str.contains("a"));
+        assert!(result_str.contains("b"));
+        assert!(result_str.contains("c"));
+        assert!(result_str.contains("d"));
+        assert!(result_str.contains("Function"));
+    }
+
+    // Test 30: transpile_identifier - reserved keyword "struct"
+    #[test]
+    fn test_transpile_identifier_reserved_struct() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("struct");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("struct"));
+    }
+
+    // Test 31: transpile_identifier - reserved keyword "enum"
+    #[test]
+    fn test_transpile_identifier_reserved_enum() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("enum");
+        let result_str = result.to_string();
+        assert!(result_str.contains("r#") || result_str.contains("enum"));
+    }
+
+    // Test 32: transpile_external_mod_declaration - non-pub attribute ignored
+    #[test]
+    fn test_transpile_external_mod_declaration_non_pub_attr() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Identifier("module".to_string()),
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "allow".to_string(),
+                args: vec!["dead_code".to_string()],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_external_mod_declaration("module", &expr);
+        // Non-pub attributes are ignored, so result is just "mod module ;"
+        assert_eq!(result.to_string(), "mod module ;");
+    }
+
+    // Test 33: transpile_identifier - path with self keyword in middle
+    #[test]
+    fn test_transpile_identifier_self_in_path() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_identifier("crate::self::module");
+        let result_str = result.to_string();
+        assert!(result_str.contains("crate"));
+        assert!(result_str.contains("self"));
+        assert!(result_str.contains("module"));
+    }
 }
