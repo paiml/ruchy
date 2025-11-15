@@ -795,4 +795,271 @@ mod tests {
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("Some"));
     }
+
+    // Test 21: transpile_operator_control_expr routes Binary to operator handler
+    #[test]
+    fn test_transpile_operator_control_expr_binary() {
+        use crate::frontend::ast::BinaryOp;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_control_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 22: transpile_operator_control_expr routes If to control flow handler
+    #[test]
+    fn test_transpile_operator_control_expr_if() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_control_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 23: transpile_operator_control_expr routes Await to operator handler
+    #[test]
+    fn test_transpile_operator_control_expr_await() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Await {
+                expr: Box::new(Expr::new(ExprKind::Identifier("future".to_string()), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_control_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 24: transpile_operator_only_expr handles Binary
+    #[test]
+    fn test_transpile_operator_only_expr_binary() {
+        use crate::frontend::ast::BinaryOp;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+                op: BinaryOp::Multiply,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("5") && tokens.contains("3"));
+    }
+
+    // Test 25: transpile_operator_only_expr handles Unary
+    #[test]
+    fn test_transpile_operator_only_expr_unary() {
+        use crate::frontend::ast::UnaryOp;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("-"));
+    }
+
+    // Test 26: transpile_operator_only_expr handles Assign
+    #[test]
+    fn test_transpile_operator_only_expr_assign() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default())),
+                value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("x"));
+    }
+
+    // Test 27: transpile_operator_only_expr handles CompoundAssign
+    #[test]
+    fn test_transpile_operator_only_expr_compound_assign() {
+        use crate::frontend::ast::BinaryOp;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::CompoundAssign {
+                target: Box::new(Expr::new(ExprKind::Identifier("count".to_string()), Span::default())),
+                op: BinaryOp::Add,
+                value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("count"));
+    }
+
+    // Test 28: transpile_operator_only_expr handles PreIncrement
+    #[test]
+    fn test_transpile_operator_only_expr_pre_increment() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::PreIncrement {
+                target: Box::new(Expr::new(ExprKind::Identifier("i".to_string()), Span::default())),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 29: transpile_control_flow_only_expr handles If
+    #[test]
+    fn test_transpile_control_flow_only_expr_if() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                else_branch: Some(Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default()))),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("if"));
+    }
+
+    // Test 30: transpile_control_flow_only_expr handles Match
+    #[test]
+    fn test_transpile_control_flow_only_expr_match() {
+        use crate::frontend::ast::{MatchArm, Pattern};
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default())),
+                arms: vec![MatchArm {
+                    pattern: Pattern::Wildcard,
+                    guard: None,
+                    body: Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
+                }],
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("match"));
+    }
+
+    // Test 31: transpile_control_flow_only_expr handles For
+    #[test]
+    fn test_transpile_control_flow_only_expr_for() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::For {
+                var: "i".to_string(),
+                pattern: None,
+                iter: Box::new(Expr::new(ExprKind::Identifier("items".to_string()), Span::default())),
+                body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
+                label: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 32: transpile_control_flow_only_expr handles While
+    #[test]
+    fn test_transpile_control_flow_only_expr_while() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::While {
+                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
+                label: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("while"));
+    }
+
+    // Test 33: transpile_control_flow_only_expr handles Loop
+    #[test]
+    fn test_transpile_control_flow_only_expr_loop() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Loop {
+                body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
+                label: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("loop"));
+    }
+
+    // Test 34: transpile_control_flow_only_expr handles IfLet
+    #[test]
+    fn test_transpile_control_flow_only_expr_if_let() {
+        use crate::frontend::ast::Pattern;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::IfLet {
+                pattern: Pattern::Wildcard,
+                value: Box::new(Expr::new(ExprKind::Identifier("opt".to_string()), Span::default())),
+                then_branch: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("if") && tokens.contains("let"));
+    }
+
+    // Test 35: transpile_control_flow_only_expr handles WhileLet
+    #[test]
+    fn test_transpile_control_flow_only_expr_while_let() {
+        use crate::frontend::ast::Pattern;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::WhileLet {
+                pattern: Pattern::Wildcard,
+                value: Box::new(Expr::new(ExprKind::Identifier("iter".to_string()), Span::default())),
+                body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
+                label: None,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("while") && tokens.contains("let"));
+    }
 }
