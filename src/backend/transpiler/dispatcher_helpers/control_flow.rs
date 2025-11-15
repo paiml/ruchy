@@ -569,4 +569,250 @@ mod tests {
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
     }
+
+    // Test 21: transpile_operator_only_expr - Binary (addition)
+    #[test]
+    fn test_transpile_operator_only_expr_binary() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Binary {
+                left: Box::new(int_expr(1)),
+                op: BinaryOp::Add,
+                right: Box::new(int_expr(2)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 22: transpile_operator_only_expr - Unary (negation)
+    #[test]
+    fn test_transpile_operator_only_expr_unary() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Unary {
+                op: UnaryOp::Minus,
+                operand: Box::new(int_expr(42)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 23: transpile_operator_only_expr - Assign
+    #[test]
+    fn test_transpile_operator_only_expr_assign() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(ident_expr("x")),
+                value: Box::new(int_expr(10)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 24: transpile_operator_only_expr - CompoundAssign
+    #[test]
+    fn test_transpile_operator_only_expr_compound_assign() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::CompoundAssign {
+                target: Box::new(ident_expr("count")),
+                op: BinaryOp::Add,
+                value: Box::new(int_expr(1)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 25: transpile_operator_only_expr - PreIncrement
+    #[test]
+    fn test_transpile_operator_only_expr_pre_increment() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::PreIncrement {
+                target: Box::new(ident_expr("i")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 26: transpile_operator_only_expr - PostIncrement
+    #[test]
+    fn test_transpile_operator_only_expr_post_increment() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::PostIncrement {
+                target: Box::new(ident_expr("j")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 27: transpile_control_flow_only_expr - IfLet
+    #[test]
+    fn test_transpile_control_flow_only_expr_if_let() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::IfLet {
+                pattern: Pattern::Identifier("x".to_string()),
+                expr: Box::new(ident_expr("opt")),
+                then_branch: Box::new(ident_expr("x")),
+                else_branch: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 28: transpile_control_flow_only_expr - WhileLet
+    #[test]
+    fn test_transpile_control_flow_only_expr_while_let() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::WhileLet {
+                pattern: Pattern::Identifier("item".to_string()),
+                expr: Box::new(ident_expr("iter")),
+                body: Box::new(block_expr(vec![ident_expr("item")])),
+                label: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 29: transpile_control_flow_only_expr - TryCatch
+    #[test]
+    fn test_transpile_control_flow_only_expr_try_catch() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::TryCatch {
+                try_block: Box::new(block_expr(vec![ident_expr("work")])),
+                catch_clauses: vec![],
+                finally_block: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_flow_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 30: transpile_macro - print
+    #[test]
+    fn test_transpile_macro_print() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("print", &[int_expr(42)]);
+        assert!(result.is_ok());
+    }
+
+    // Test 31: transpile_macro - panic
+    #[test]
+    fn test_transpile_macro_panic() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("panic", &[]);
+        assert!(result.is_ok());
+    }
+
+    // Test 32: transpile_macro - assert_eq
+    #[test]
+    fn test_transpile_macro_assert_eq() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("assert_eq", &[int_expr(1), int_expr(1)]);
+        assert!(result.is_ok());
+    }
+
+    // Test 33: transpile_struct_expr - ObjectLiteral
+    #[test]
+    fn test_transpile_struct_expr_object_literal() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ObjectLiteral {
+                fields: vec![("name".to_string(), ident_expr("value"))],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_struct_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 34: transpile_struct_expr - Slice
+    #[test]
+    fn test_transpile_struct_expr_slice() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Slice {
+                object: Box::new(ident_expr("arr")),
+                start: Some(Box::new(int_expr(0))),
+                end: Some(Box::new(int_expr(5))),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_struct_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 35: transpile_data_error_expr - Range
+    #[test]
+    fn test_transpile_data_error_expr_range() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Range {
+                start: Some(Box::new(int_expr(1))),
+                end: Some(Box::new(int_expr(10))),
+                inclusive: false,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_data_error_expr(&expr);
+        assert!(result.is_ok());
+    }
 }
