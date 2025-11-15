@@ -761,6 +761,456 @@ mod tests {
         };
         assert!(!Transpiler::is_dataframe_expr(&expr));
     }
+
+    // Test 16: transpile_builder_method with "build"
+    #[test]
+    fn test_transpile_builder_method_build() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { df_builder };
+        let result = transpiler.transpile_builder_method(&df_tokens, "build", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert_eq!(output, "df_builder");
+    }
+
+    // Test 17: transpile_builder_method with "column" and 2 args
+    #[test]
+    fn test_transpile_builder_method_column_two_args() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { df_builder };
+        let args = vec![quote! { "name" }, quote! { vec![1, 2, 3] }];
+        let result = transpiler.transpile_builder_method(&df_tokens, "column", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("column"));
+    }
+
+    // Test 18: transpile_inspection_method with "get" and multiple args
+    #[test]
+    fn test_transpile_inspection_method_get_multi_args() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let args = vec![quote! { "col1" }, quote! { 0 }];
+        let result = transpiler.transpile_inspection_method(&df_tokens, "get", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("get"));
+    }
+
+    // Test 19: transpile_lazy_operation for select
+    #[test]
+    fn test_transpile_lazy_operation_select() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let args = vec![quote! { "col1" }];
+        let result = transpiler.transpile_lazy_operation(&df_tokens, "select", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("lazy"));
+        assert!(output.contains("select"));
+        assert!(output.contains("collect"));
+    }
+
+    // Test 20: transpile_groupby generates correct tokens
+    #[test]
+    fn test_transpile_groupby_tokens() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { df_var };
+        let args = vec![quote! { "group_col" }];
+        let result = transpiler.transpile_groupby(&df_tokens, &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("group_by"));
+    }
+
+    // Test 21: transpile_simple_operation for "agg"
+    #[test]
+    fn test_transpile_simple_operation_agg() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let args = vec![quote! { col("x").sum() }];
+        let result = transpiler.transpile_simple_operation(&df_tokens, "agg", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("agg"));
+    }
+
+    // Test 22: transpile_simple_operation for "join"
+    #[test]
+    fn test_transpile_simple_operation_join() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { df1 };
+        let args = vec![quote! { df2 }, quote! { "id" }];
+        let result = transpiler.transpile_simple_operation(&df_tokens, "join", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("join"));
+    }
+
+    // Test 23: transpile_statistical_method - mean
+    #[test]
+    fn test_transpile_statistical_method_mean() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let result = transpiler.transpile_statistical_method(&df_tokens, "mean");
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("mean"));
+    }
+
+    // Test 24: transpile_statistical_method - std
+    #[test]
+    fn test_transpile_statistical_method_std() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let result = transpiler.transpile_statistical_method(&df_tokens, "std");
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("std"));
+    }
+
+    // Test 25: transpile_head_tail with empty args (default 5)
+    #[test]
+    fn test_transpile_head_tail_empty_args() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let result = transpiler.transpile_head_tail(&df_tokens, "head", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("head"));
+        assert!(output.contains("Some (5)"));
+    }
+
+    // Test 26: transpile_head_tail with args
+    #[test]
+    fn test_transpile_head_tail_with_args() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let args = vec![quote! { 10 }];
+        let result = transpiler.transpile_head_tail(&df_tokens, "tail", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("tail"));
+        assert!(output.contains("Some (10)"));
+    }
+
+    // Test 27: transpile_default_method for unknown method
+    #[test]
+    fn test_transpile_default_method_unknown() {
+        use quote::quote;
+        let transpiler = make_test_transpiler();
+        let df_tokens = quote! { my_df };
+        let args = vec![quote! { "arg1" }];
+        let result = transpiler.transpile_default_method(&df_tokens, "custom_method", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("custom_method"));
+    }
+
+    // Test 28: transpile_dataframe with column containing empty values
+    #[test]
+    fn test_transpile_dataframe_column_empty_values() {
+        let transpiler = make_test_transpiler();
+        let columns = vec![DataFrameColumn {
+            name: "empty_col".to_string(),
+            values: vec![],
+        }];
+        let result = transpiler.transpile_dataframe(&columns);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("empty_col"));
+        assert!(output.contains("vec !"));
+    }
+
+    // Test 29: transpile_dataframe_operation - Limit
+    #[test]
+    fn test_transpile_dataframe_operation_limit() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let op = DataFrameOp::Limit(100);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("limit"));
+        assert!(output.contains("100"));
+    }
+
+    // Test 30: transpile_dataframe_operation - Head
+    #[test]
+    fn test_transpile_dataframe_operation_head() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let op = DataFrameOp::Head(20);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("head"));
+        assert!(output.contains("Some (20)"));
+    }
+
+    // Test 31: transpile_dataframe_operation - Tail
+    #[test]
+    fn test_transpile_dataframe_operation_tail() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let op = DataFrameOp::Tail(15);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("tail"));
+        assert!(output.contains("Some (15)"));
+    }
+
+    // Test 32: is_dataframe_expr with DataFrame::from_csv
+    #[test]
+    fn test_is_dataframe_expr_from_csv() {
+        let func = Box::new(Expr {
+            kind: ExprKind::QualifiedName {
+                module: "DataFrame".to_string(),
+                name: "from_csv".to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::Call { func, args: vec![] },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 33: is_dataframe_expr with DataFrame::from_json
+    #[test]
+    fn test_is_dataframe_expr_from_json() {
+        let func = Box::new(Expr {
+            kind: ExprKind::QualifiedName {
+                module: "DataFrame".to_string(),
+                name: "from_json".to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::Call { func, args: vec![] },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 34: is_dataframe_expr with sort method
+    #[test]
+    fn test_is_dataframe_expr_sort_method() {
+        let receiver = Box::new(Expr {
+            kind: ExprKind::Identifier("data".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver,
+                method: "sort".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 35: is_dataframe_expr with filter method
+    #[test]
+    fn test_is_dataframe_expr_filter_method() {
+        let receiver = Box::new(Expr {
+            kind: ExprKind::Identifier("dataset".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver,
+                method: "filter".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 36: is_dataframe_expr with drop_nulls method
+    #[test]
+    fn test_is_dataframe_expr_drop_nulls() {
+        let receiver = Box::new(Expr {
+            kind: ExprKind::Identifier("data".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver,
+                method: "drop_nulls".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 37: is_dataframe_expr with fill_null method
+    #[test]
+    fn test_is_dataframe_expr_fill_null() {
+        let receiver = Box::new(Expr {
+            kind: ExprKind::Identifier("df_clean".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver,
+                method: "fill_null".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 38: is_dataframe_expr with non-DataFrame method
+    #[test]
+    fn test_is_dataframe_expr_non_df_method() {
+        let receiver = Box::new(Expr {
+            kind: ExprKind::Identifier("obj".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver,
+                method: "compute".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_dataframe_expr(&expr));
+    }
+
+    // Test 39: Aggregate with all AggregateOp variants
+    #[test]
+    fn test_dataframe_aggregate_all_variants() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let agg_ops = vec![
+            AggregateOp::Sum("sum_col".to_string()),
+            AggregateOp::Mean("mean_col".to_string()),
+            AggregateOp::Min("min_col".to_string()),
+            AggregateOp::Max("max_col".to_string()),
+            AggregateOp::Count("count_col".to_string()),
+            AggregateOp::Std("std_col".to_string()),
+            AggregateOp::Var("var_col".to_string()),
+        ];
+        let op = DataFrameOp::Aggregate(agg_ops);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("sum"));
+        assert!(output.contains("mean"));
+        assert!(output.contains("min"));
+        assert!(output.contains("max"));
+        assert!(output.contains("count"));
+        assert!(output.contains("std"));
+        assert!(output.contains("var"));
+    }
+
+    // Test 40: Join with Left type
+    #[test]
+    fn test_dataframe_join_left() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let other_expr = make_literal_expr(1);
+        let op = DataFrameOp::Join {
+            other: Box::new(other_expr),
+            on: vec!["key".to_string()],
+            how: JoinType::Left,
+        };
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("join"));
+        assert!(output.contains("Left"));
+    }
+
+    // Test 41: Join with Right type
+    #[test]
+    fn test_dataframe_join_right() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let other_expr = make_literal_expr(1);
+        let op = DataFrameOp::Join {
+            other: Box::new(other_expr),
+            on: vec!["id".to_string()],
+            how: JoinType::Right,
+        };
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("join"));
+        assert!(output.contains("Right"));
+    }
+
+    // Test 42: transpile_dataframe_method with "rows" → height()
+    #[test]
+    fn test_transpile_dataframe_method_rows() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let result = transpiler.transpile_dataframe_method(&df_expr, "rows", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("height"));
+    }
 }
 #[cfg(test)]
 mod property_tests_dataframe {
