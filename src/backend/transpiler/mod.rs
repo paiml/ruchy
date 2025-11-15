@@ -2451,4 +2451,209 @@ mod tests {
             assert!(!code.is_empty());
         }
     }
+
+    // Test 17: is_call_to_main - with main() call
+    #[test]
+    fn test_is_call_to_main_true() {
+        let main_call = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(create_test_variable_expr("main")),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_call_to_main(&main_call));
+    }
+
+    // Test 18: is_call_to_main - with non-main call
+    #[test]
+    fn test_is_call_to_main_false() {
+        let other_call = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(create_test_variable_expr("other_func")),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_call_to_main(&other_call));
+    }
+
+    // Test 19: is_standard_library - with std
+    #[test]
+    fn test_is_standard_library_std() {
+        assert!(Transpiler::is_standard_library("std"));
+        assert!(Transpiler::is_standard_library("core"));
+        assert!(Transpiler::is_standard_library("alloc"));
+    }
+
+    // Test 20: is_standard_library - with third-party libs
+    #[test]
+    fn test_is_standard_library_third_party() {
+        assert!(Transpiler::is_standard_library("tokio"));
+        assert!(Transpiler::is_standard_library("serde"));
+        assert!(Transpiler::is_standard_library("serde_json"));
+        assert!(Transpiler::is_standard_library("polars"));
+    }
+
+    // Test 21: is_standard_library - with non-standard module
+    #[test]
+    fn test_is_standard_library_false() {
+        assert!(!Transpiler::is_standard_library("my_module"));
+        assert!(!Transpiler::is_standard_library("custom_lib"));
+    }
+
+    // Test 22: contains_imports - with Import expression
+    #[test]
+    fn test_contains_imports_true() {
+        let transpiler = Transpiler::new();
+        let import_expr = Expr {
+            kind: ExprKind::Import {
+                module: "std::io".to_string(),
+                items: Some(vec!["Read".to_string()]),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.contains_imports(&import_expr));
+    }
+
+    // Test 23: contains_imports - with non-import expression
+    #[test]
+    fn test_contains_imports_false() {
+        let transpiler = Transpiler::new();
+        let literal_expr = create_test_literal_expr(42);
+        assert!(!transpiler.contains_imports(&literal_expr));
+    }
+
+    // Test 24: contains_file_imports - with relative path
+    #[test]
+    fn test_contains_file_imports_relative() {
+        let transpiler = Transpiler::new();
+        let file_import = Expr {
+            kind: ExprKind::Import {
+                module: "./my_module".to_string(),
+                items: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.contains_file_imports(&file_import));
+    }
+
+    // Test 25: contains_file_imports - with parent path
+    #[test]
+    fn test_contains_file_imports_parent() {
+        let transpiler = Transpiler::new();
+        let file_import = Expr {
+            kind: ExprKind::Import {
+                module: "../parent_module".to_string(),
+                items: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.contains_file_imports(&file_import));
+    }
+
+    // Test 26: contains_file_imports - with std library (not a file)
+    #[test]
+    fn test_contains_file_imports_std_false() {
+        let transpiler = Transpiler::new();
+        let std_import = Expr {
+            kind: ExprKind::Import {
+                module: "std::collections::HashMap".to_string(),
+                items: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!transpiler.contains_file_imports(&std_import));
+    }
+
+    // Test 27: is_statement_expr - with Let binding
+    #[test]
+    fn test_is_statement_expr_let() {
+        let transpiler = Transpiler::new();
+        let let_expr = Expr {
+            kind: ExprKind::Let {
+                name: "x".to_string(),
+                value: Box::new(create_test_literal_expr(42)),
+                body: Box::new(create_test_literal_expr(0)),
+                type_annotation: None,
+                is_mutable: false,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.is_statement_expr(&let_expr));
+    }
+
+    // Test 28: is_statement_expr - with Assignment
+    #[test]
+    fn test_is_statement_expr_assign() {
+        let transpiler = Transpiler::new();
+        let assign_expr = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(create_test_variable_expr("x")),
+                value: Box::new(create_test_literal_expr(42)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.is_statement_expr(&assign_expr));
+    }
+
+    // Test 29: is_statement_expr - with While loop
+    #[test]
+    fn test_is_statement_expr_while() {
+        let transpiler = Transpiler::new();
+        let while_expr = Expr {
+            kind: ExprKind::While {
+                condition: Box::new(create_test_literal_expr(1)),
+                body: Box::new(create_test_literal_expr(2)),
+                label: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(transpiler.is_statement_expr(&while_expr));
+    }
+
+    // Test 30: is_statement_expr - with expression (not statement)
+    #[test]
+    fn test_is_statement_expr_false() {
+        let transpiler = Transpiler::new();
+        let literal_expr = create_test_literal_expr(42);
+        assert!(!transpiler.is_statement_expr(&literal_expr));
+    }
+
+    // Test 31: generate_use_statements - with polars and HashMap
+    #[test]
+    fn test_generate_use_statements_both() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.generate_use_statements(true, true);
+        let code = result.to_string();
+        assert!(code.contains("polars"));
+        assert!(code.contains("HashMap"));
+    }
 }
