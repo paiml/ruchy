@@ -8200,4 +8200,127 @@ mod property_tests_statements {
         assert!(code.contains("cloned"));
         assert!(code.contains("HashSet"));
     }
+
+    // Test 130: looks_like_numeric_function - with numeric names
+    #[test]
+    fn test_looks_like_numeric_function_true() {
+        let transpiler = Transpiler::new();
+        assert!(transpiler.looks_like_numeric_function("abs"));
+        assert!(transpiler.looks_like_numeric_function("sqrt"));
+        assert!(transpiler.looks_like_numeric_function("pow"));
+    }
+
+    // Test 131: looks_like_numeric_function - with non-numeric names
+    #[test]
+    fn test_looks_like_numeric_function_false() {
+        let transpiler = Transpiler::new();
+        assert!(!transpiler.looks_like_numeric_function("print"));
+        assert!(!transpiler.looks_like_numeric_function("hello"));
+    }
+
+    // Test 132: returns_boolean - with boolean literal
+    #[test]
+    fn test_returns_boolean_literal() {
+        let body = create_literal_expr(crate::frontend::ast::Literal::Boolean(true));
+        assert!(Transpiler::returns_boolean(&body));
+    }
+
+    // Test 133: returns_boolean - with comparison
+    #[test]
+    fn test_returns_boolean_comparison() {
+        let body = create_binary_expr(
+            create_literal_expr(crate::frontend::ast::Literal::Integer(5, None)),
+            crate::frontend::ast::BinaryOp::Eq,
+            create_literal_expr(crate::frontend::ast::Literal::Integer(5, None)),
+        );
+        assert!(Transpiler::returns_boolean(&body));
+    }
+
+    // Test 134: returns_string_literal - with string
+    #[test]
+    fn test_returns_string_literal_true() {
+        let body = create_literal_expr(crate::frontend::ast::Literal::String("test".to_string()));
+        assert!(Transpiler::returns_string_literal(&body));
+    }
+
+    // Test 135: returns_string_literal - with non-string
+    #[test]
+    fn test_returns_string_literal_false() {
+        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        assert!(!Transpiler::returns_string_literal(&body));
+    }
+
+    // Test 136: returns_vec - with vec macro
+    #[test]
+    fn test_returns_vec_macro() {
+        let transpiler = Transpiler::new();
+        let body = create_macro_expr("vec!", vec![]);
+        assert!(transpiler.returns_vec(&body));
+    }
+
+    // Test 137: returns_vec - with list literal
+    #[test]
+    fn test_returns_vec_list() {
+        let transpiler = Transpiler::new();
+        let body = create_list_expr(vec![
+            create_literal_expr(crate::frontend::ast::Literal::Integer(1, None)),
+        ]);
+        assert!(transpiler.returns_vec(&body));
+    }
+
+    // Test 138: returns_object_literal - with object
+    #[test]
+    fn test_returns_object_literal_true() {
+        let transpiler = Transpiler::new();
+        let body = create_object_expr(vec![]);
+        assert!(transpiler.returns_object_literal(&body));
+    }
+
+    // Test 139: returns_object_literal - with non-object
+    #[test]
+    fn test_returns_object_literal_false() {
+        let transpiler = Transpiler::new();
+        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        assert!(!transpiler.returns_object_literal(&body));
+    }
+
+    // Test 140: expr_is_string - with string literal
+    #[test]
+    fn test_expr_is_string_literal() {
+        let transpiler = Transpiler::new();
+        let expr = create_literal_expr(crate::frontend::ast::Literal::String("test".to_string()));
+        assert!(transpiler.expr_is_string(&expr));
+    }
+
+    // Test 141: expr_is_string - with interpolation
+    #[test]
+    fn test_expr_is_string_interpolation() {
+        let transpiler = Transpiler::new();
+        let expr = create_string_interpolation_expr(vec![]);
+        assert!(transpiler.expr_is_string(&expr));
+    }
+
+    // Test 142: has_non_unit_expression - with non-unit
+    #[test]
+    fn test_has_non_unit_expression_true() {
+        let transpiler = Transpiler::new();
+        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        assert!(transpiler.has_non_unit_expression(&body));
+    }
+
+    // Test 143: has_non_unit_expression - with unit
+    #[test]
+    fn test_has_non_unit_expression_false() {
+        let transpiler = Transpiler::new();
+        let body = create_literal_expr(crate::frontend::ast::Literal::Unit);
+        assert!(!transpiler.has_non_unit_expression(&body));
+    }
+
+    // Test 144: is_void_expression - with unit literal
+    #[test]
+    fn test_is_void_expression_unit() {
+        let transpiler = Transpiler::new();
+        let expr = create_literal_expr(crate::frontend::ast::Literal::Unit);
+        assert!(transpiler.is_void_expression(&expr));
+    }
 }
