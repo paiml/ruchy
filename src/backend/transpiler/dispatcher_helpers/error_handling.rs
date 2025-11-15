@@ -879,4 +879,327 @@ mod tests {
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
     }
+
+    // Test 36: transpile_misc_expr - Import with pub attribute
+    #[test]
+    fn test_transpile_misc_expr_import_pub() {
+        use crate::frontend::ast::Attribute;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Import {
+                module: "std::io".to_string(),
+                items: Some(vec!["Read".to_string()]),
+            },
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+        assert!(output.contains("use"));
+    }
+
+    // Test 37: transpile_misc_expr - ImportAll with pub attribute
+    #[test]
+    fn test_transpile_misc_expr_import_all_pub() {
+        use crate::frontend::ast::Attribute;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ImportAll {
+                module: "std::collections".to_string(),
+                alias: None,
+            },
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+        assert!(output.contains("*"));
+    }
+
+    // Test 38: transpile_misc_expr - ImportAll with alias
+    #[test]
+    fn test_transpile_misc_expr_import_all_alias() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ImportAll {
+                module: "std::fs".to_string(),
+                alias: Some("filesystem".to_string()),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("use"));
+    }
+
+    // Test 39: transpile_misc_expr - ReExport
+    #[test]
+    fn test_transpile_misc_expr_reexport() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ReExport {
+                items: vec!["Foo".to_string(), "Bar".to_string()],
+                module: Some("internal".to_string()),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+        assert!(output.contains("use"));
+    }
+
+    // Test 40: transpile_misc_expr - Module
+    #[test]
+    fn test_transpile_misc_expr_module() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Module {
+                name: "utils".to_string(),
+                body: vec![int_expr(1)],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("mod"));
+        assert!(output.contains("utils"));
+    }
+
+    // Test 41: transpile_misc_expr - Trait (via transpile_type_decl_expr)
+    #[test]
+    fn test_transpile_misc_expr_trait() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Trait {
+                name: "MyTrait".to_string(),
+                type_params: vec![],
+                associated_types: vec![],
+                methods: vec![],
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("trait"));
+    }
+
+    // Test 42: transpile_misc_expr - Impl (via transpile_type_decl_expr)
+    #[test]
+    fn test_transpile_misc_expr_impl() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Impl {
+                type_params: vec![],
+                trait_name: None,
+                for_type: "MyType".to_string(),
+                methods: vec![],
+                is_pub: false,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("impl"));
+    }
+
+    // Test 43: transpile_misc_expr - Extension (via transpile_type_decl_expr)
+    #[test]
+    fn test_transpile_misc_expr_extension() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Extension {
+                target_type: "String".to_string(),
+                methods: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("impl"));
+    }
+
+    // Test 44: transpile_misc_expr - Enum (via transpile_type_decl_expr)
+    #[test]
+    fn test_transpile_misc_expr_enum() {
+        use crate::frontend::ast::EnumVariant;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Enum {
+                name: "Color".to_string(),
+                type_params: vec![],
+                variants: vec![
+                    EnumVariant {
+                        name: "Red".to_string(),
+                        fields: None,
+                    },
+                    EnumVariant {
+                        name: "Blue".to_string(),
+                        fields: None,
+                    },
+                ],
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("enum"));
+        assert!(output.contains("Color"));
+    }
+
+    // Test 45: transpile_misc_expr - Export
+    #[test]
+    fn test_transpile_misc_expr_export() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Export {
+                expr: Box::new(ident_expr("my_func")),
+                is_default: false,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+    }
+
+    // Test 46: transpile_misc_expr - ExportList
+    #[test]
+    fn test_transpile_misc_expr_export_list() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ExportList {
+                names: vec!["foo".to_string(), "bar".to_string()],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+    }
+
+    // Test 47: transpile_misc_expr - ExportDefault
+    #[test]
+    fn test_transpile_misc_expr_export_default() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ExportDefault {
+                expr: Box::new(ident_expr("main_func")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("pub"));
+    }
+
+    // Test 48: transpile_result_ok - boolean literal
+    #[test]
+    fn test_transpile_result_ok_boolean() {
+        let transpiler = test_transpiler();
+        let bool_expr = Expr {
+            kind: ExprKind::Literal(Literal::Bool(true)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_result_ok(&bool_expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("true"));
+    }
+
+    // Test 49: transpile_result_err - boolean literal
+    #[test]
+    fn test_transpile_result_err_boolean() {
+        let transpiler = test_transpiler();
+        let bool_expr = Expr {
+            kind: ExprKind::Literal(Literal::Bool(false)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_result_err(&bool_expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Err"));
+        assert!(output.contains("false"));
+    }
+
+    // Test 50: transpile_option_some - boolean literal
+    #[test]
+    fn test_transpile_option_some_boolean() {
+        let transpiler = test_transpiler();
+        let bool_expr = Expr {
+            kind: ExprKind::Literal(Literal::Bool(true)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_option_some(&bool_expr);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("Some"));
+        assert!(output.contains("true"));
+    }
 }
