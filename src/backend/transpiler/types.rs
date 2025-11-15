@@ -1708,4 +1708,280 @@ mod tests {
         assert!(code.contains("String"));
     }
 
+    // Test 28: transpile_struct_field_type_with_lifetime - with reference type
+    #[test]
+    fn test_transpile_struct_field_type_with_lifetime_reference() {
+        let transpiler = Transpiler::new();
+        let ref_type = make_type(TypeKind::Reference {
+            is_mut: false,
+            lifetime: Some("'old".to_string()),
+            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+        });
+        let result = transpiler.transpile_struct_field_type_with_lifetime(&ref_type, "'a").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("'a")); // Should use new lifetime
+        assert!(code.contains("str"));
+    }
+
+    // Test 29: transpile_struct_field_type_with_lifetime - with non-reference type
+    #[test]
+    fn test_transpile_struct_field_type_with_lifetime_non_reference() {
+        let transpiler = Transpiler::new();
+        let non_ref_type = make_type(TypeKind::Named("String".to_string()));
+        let result = transpiler.transpile_struct_field_type_with_lifetime(&non_ref_type, "'a").unwrap();
+        let code = result.to_string();
+        assert_eq!(code, "String");
+        assert!(!code.contains("'a")); // Non-reference type shouldn't get lifetime
+    }
+
+    // Test 30: transpile_named_type - with namespaced type (std::io::Error)
+    #[test]
+    fn test_transpile_named_type_namespaced() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("std::io::Error").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("std"));
+        assert!(code.contains("io"));
+        assert!(code.contains("Error"));
+    }
+
+    // Test 31: transpile_named_type - with nested namespace (trace::Sampler)
+    #[test]
+    fn test_transpile_named_type_nested_namespace() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("trace::Sampler").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("trace"));
+        assert!(code.contains("Sampler"));
+    }
+
+    // Test 32: transpile_reference_type - with lifetime
+    #[test]
+    fn test_transpile_reference_type_with_lifetime() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("String".to_string()));
+        let result = transpiler.transpile_reference_type(false, Some("'a"), &inner).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("'a"));
+        assert!(code.contains("String"));
+        assert!(!code.contains("mut"));
+    }
+
+    // Test 33: transpile_reference_type - mut with lifetime
+    #[test]
+    fn test_transpile_reference_type_mut_with_lifetime() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("Vec<i32>".to_string()));
+        let result = transpiler.transpile_reference_type(true, Some("'b"), &inner).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("'b"));
+        assert!(code.contains("mut"));
+        assert!(code.contains("Vec"));
+    }
+
+    // Test 34: transpile_generic_type - with multiple type params
+    #[test]
+    fn test_transpile_generic_type_multiple_params() {
+        let transpiler = Transpiler::new();
+        let params = vec![
+            make_type(TypeKind::Named("String".to_string())),
+            make_type(TypeKind::Named("i32".to_string())),
+            make_type(TypeKind::Named("bool".to_string())),
+        ];
+        let result = transpiler.transpile_generic_type("HashMap", &params).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("HashMap"));
+        assert!(code.contains("String"));
+        assert!(code.contains("i32"));
+        assert!(code.contains("bool"));
+    }
+
+    // Helper: Create Constructor for testing
+    fn make_constructor(name: Option<&str>, return_type: Option<Type>) -> Constructor {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        Constructor {
+            name: name.map(|n| n.to_string()),
+            params: vec![],
+            body: Expr {
+                kind: ExprKind::Literal(Literal::Integer(0, None)),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            },
+            return_type,
+            is_pub: true,
+            span: crate::frontend::ast::Span::new(0, 0),
+        }
+    }
+
+    // Test 35: transpile_constructors - with named constructor
+    #[test]
+    fn test_transpile_constructors_named() {
+        let transpiler = Transpiler::new();
+        let ctors = vec![make_constructor(Some("from_string"), None)];
+        let result = transpiler.transpile_constructors(&ctors).unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("from_string"));
+        assert!(code.contains("pub"));
+        assert!(code.contains("Self"));
+    }
+
+    // Test 36: transpile_constructors - with return type
+    #[test]
+    fn test_transpile_constructors_with_return_type() {
+        let transpiler = Transpiler::new();
+        let ret_type = make_type(TypeKind::Named("Result<Self, Error>".to_string()));
+        let ctors = vec![make_constructor(None, Some(ret_type))];
+        let result = transpiler.transpile_constructors(&ctors).unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("Result"));
+        assert!(code.contains("new")); // Default constructor name
+    }
+
+    // Helper: Create ClassMethod for testing
+    fn make_class_method(name: &str, is_pub: bool) -> ClassMethod {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        ClassMethod {
+            name: name.to_string(),
+            params: vec![],
+            return_type: None,
+            body: Expr {
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            },
+            is_pub,
+            is_async: false,
+            span: crate::frontend::ast::Span::new(0, 0),
+        }
+    }
+
+    // Test 37: transpile_class_methods - single method
+    #[test]
+    fn test_transpile_class_methods_single() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_class_method("compute", true)];
+        let result = transpiler.transpile_class_methods(&methods).unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("compute"));
+        assert!(code.contains("pub"));
+        assert!(code.contains("42"));
+    }
+
+    // Helper: Create ClassConstant for testing
+    fn make_class_constant(name: &str, is_pub: bool) -> crate::frontend::ast::ClassConstant {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        crate::frontend::ast::ClassConstant {
+            name: name.to_string(),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            value: Expr {
+                kind: ExprKind::Literal(Literal::Integer(100, None)),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            },
+            is_pub,
+            span: crate::frontend::ast::Span::new(0, 0),
+        }
+    }
+
+    // Test 38: transpile_class_constants - single constant
+    #[test]
+    fn test_transpile_class_constants_single() {
+        let transpiler = Transpiler::new();
+        let constants = vec![make_class_constant("MAX_SIZE", true)];
+        let result = transpiler.transpile_class_constants(&constants).unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("MAX_SIZE"));
+        assert!(code.contains("const"));
+        assert!(code.contains("pub"));
+        assert!(code.contains("100"));
+    }
+
+    // Test 39: generate_impl_block - without type params
+    #[test]
+    fn test_generate_impl_block_no_type_params() {
+        let transpiler = Transpiler::new();
+        let struct_name = format_ident!("MyStruct");
+        let result = transpiler.generate_impl_block(
+            &struct_name,
+            &vec![],
+            &vec![],
+            &vec![],
+            &vec![]
+        );
+        let code = result.to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("MyStruct"));
+        assert!(!code.contains("<")); // No angle brackets for type params
+    }
+
+    // Test 40: generate_impl_block - with type params
+    #[test]
+    fn test_generate_impl_block_with_type_params() {
+        let transpiler = Transpiler::new();
+        let struct_name = format_ident!("MyStruct");
+        let type_params = vec![quote! { T }, quote! { U }];
+        let result = transpiler.generate_impl_block(
+            &struct_name,
+            &type_params,
+            &vec![],
+            &vec![],
+            &vec![]
+        );
+        let code = result.to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("<")); // Has type params
+        assert!(code.contains("T"));
+        assert!(code.contains("U"));
+    }
+
+    // Test 41: generate_default_impl - no defaults (returns empty)
+    #[test]
+    fn test_generate_default_impl_no_defaults() {
+        let transpiler = Transpiler::new();
+        let struct_name = format_ident!("NoDefaults");
+        let fields = vec![make_field("x", "i32")]; // No default values
+        let result = transpiler.generate_default_impl(&fields, &struct_name, &vec![]).unwrap();
+        let code = result.to_string();
+        assert!(code.is_empty()); // Should return empty TokenStream
+    }
+
+    // Test 42: generate_default_impl - with defaults
+    #[test]
+    fn test_generate_default_impl_with_defaults() {
+        use crate::frontend::ast::{Visibility, Expr, ExprKind, Literal};
+        let transpiler = Transpiler::new();
+        let struct_name = format_ident!("WithDefaults");
+        let field_with_default = StructField {
+            name: "count".to_string(),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            visibility: Visibility::Private,
+            is_mut: false,
+            default_value: Some(Expr {
+                kind: ExprKind::Literal(Literal::Integer(10, None)),
+                span: crate::frontend::ast::Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }),
+            decorators: vec![],
+        };
+        let result = transpiler.generate_default_impl(&vec![field_with_default], &struct_name, &vec![]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("Default"));
+        assert!(code.contains("default"));
+        assert!(code.contains("count"));
+        assert!(code.contains("10"));
+    }
+
 }
