@@ -815,4 +815,260 @@ mod tests {
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
     }
+
+    // Test 36: transpile_operator_only_expr - PreDecrement
+    #[test]
+    fn test_transpile_operator_only_expr_pre_decrement() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::PreDecrement {
+                target: Box::new(ident_expr("counter")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 37: transpile_operator_only_expr - PostDecrement
+    #[test]
+    fn test_transpile_operator_only_expr_post_decrement() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::PostDecrement {
+                target: Box::new(ident_expr("value")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 38: transpile_operator_only_expr - Await
+    #[test]
+    fn test_transpile_operator_only_expr_await() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Await {
+                expr: Box::new(ident_expr("future")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 39: transpile_operator_only_expr - Spawn
+    #[test]
+    fn test_transpile_operator_only_expr_spawn() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Spawn {
+                actor: Box::new(ident_expr("worker")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 40: transpile_operator_only_expr - AsyncBlock
+    #[test]
+    fn test_transpile_operator_only_expr_async_block() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::AsyncBlock {
+                body: Box::new(block_expr(vec![ident_expr("task")])),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 41: transpile_operator_only_expr - AsyncLambda
+    #[test]
+    fn test_transpile_operator_only_expr_async_lambda() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::AsyncLambda {
+                params: vec!["x".to_string()],
+                body: Box::new(ident_expr("x")),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_operator_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 42: transpile_macro - assert_ne
+    #[test]
+    fn test_transpile_macro_assert_ne() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("assert_ne", &[int_expr(1), int_expr(2)]);
+        assert!(result.is_ok());
+    }
+
+    // Test 43: transpile_macro - format (passthrough)
+    #[test]
+    fn test_transpile_macro_format() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("format", &[]);
+        assert!(result.is_ok());
+    }
+
+    // Test 44: transpile_macro - dbg (passthrough)
+    #[test]
+    fn test_transpile_macro_dbg() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("dbg", &[ident_expr("value")]);
+        assert!(result.is_ok());
+    }
+
+    // Test 45: transpile_macro - todo (passthrough)
+    #[test]
+    fn test_transpile_macro_todo() {
+        let transpiler = test_transpiler();
+        let result = transpiler.transpile_macro("todo", &[]);
+        assert!(result.is_ok());
+    }
+
+    // Test 46: transpile_struct_expr - Struct definition
+    #[test]
+    fn test_transpile_struct_expr_struct() {
+        use crate::frontend::ast::StructField;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Struct {
+                name: "Point".to_string(),
+                type_params: vec![],
+                fields: vec![
+                    StructField {
+                        name: "x".to_string(),
+                        field_type: "i32".to_string(),
+                        is_pub: true,
+                        default_value: None,
+                    },
+                ],
+                derives: vec![],
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_struct_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 47: transpile_struct_expr - TupleStruct definition
+    #[test]
+    fn test_transpile_struct_expr_tuple_struct() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::TupleStruct {
+                name: "Wrapper".to_string(),
+                type_params: vec![],
+                fields: vec!["i32".to_string()],
+                derives: vec![],
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_struct_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 48: transpile_struct_expr - Class definition
+    #[test]
+    fn test_transpile_struct_expr_class() {
+        use crate::frontend::ast::StructField;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Class {
+                name: "MyClass".to_string(),
+                type_params: vec![],
+                superclass: None,
+                traits: vec![],
+                fields: vec![
+                    StructField {
+                        name: "value".to_string(),
+                        field_type: "i32".to_string(),
+                        is_pub: true,
+                        default_value: None,
+                    },
+                ],
+                constructors: vec![],
+                methods: vec![],
+                constants: vec![],
+                properties: vec![],
+                derives: vec![],
+                is_pub: true,
+                is_sealed: false,
+                is_abstract: false,
+                decorators: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_struct_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 49: transpile_data_error_expr - Set
+    #[test]
+    fn test_transpile_data_error_expr_set() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Set(vec![int_expr(1), int_expr(2), int_expr(3)]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_data_error_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 50: transpile_data_error_expr - ArrayInit
+    #[test]
+    fn test_transpile_data_error_expr_array_init() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::ArrayInit {
+                elem: Box::new(int_expr(0)),
+                count: Box::new(int_expr(10)),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_data_error_expr(&expr);
+        assert!(result.is_ok());
+    }
 }
