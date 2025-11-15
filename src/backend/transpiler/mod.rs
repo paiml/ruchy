@@ -42,7 +42,7 @@ pub mod codegen_minimal;
 pub mod constant_folder; // PERF-002-A: Constant folding optimization
 pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod dataframe;
-#[cfg(feature = "dataframe")]
+// #[cfg(feature = "dataframe")]
 // mod dataframe_arrow; // Temporarily disabled until proper implementation
 mod dataframe_builder;
 mod dataframe_helpers;
