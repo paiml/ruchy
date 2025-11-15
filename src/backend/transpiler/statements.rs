@@ -7477,4 +7477,543 @@ mod property_tests_statements {
             }
         }
     }
+
+    // Test 101: is_variable_mutated with Assign
+    #[test]
+    fn test_is_variable_mutated_assign() {
+        let target = Expr {
+            kind: ExprKind::Identifier("x".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let assign_expr = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(target),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(42, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
+        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+    }
+
+    // Test 102: is_variable_mutated with CompoundAssign
+    #[test]
+    fn test_is_variable_mutated_compound_assign() {
+        let target = Expr {
+            kind: ExprKind::Identifier("counter".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let compound_expr = Expr {
+            kind: ExprKind::CompoundAssign {
+                target: Box::new(target),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                op: BinaryOp::Add,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("counter", &compound_expr));
+    }
+
+    // Test 103: is_variable_mutated with PreIncrement
+    #[test]
+    fn test_is_variable_mutated_pre_increment() {
+        let target = Expr {
+            kind: ExprKind::Identifier("i".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let inc_expr = Expr {
+            kind: ExprKind::PreIncrement {
+                target: Box::new(target),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("i", &inc_expr));
+    }
+
+    // Test 104: is_variable_mutated with PostDecrement
+    #[test]
+    fn test_is_variable_mutated_post_decrement() {
+        let target = Expr {
+            kind: ExprKind::Identifier("value".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let dec_expr = Expr {
+            kind: ExprKind::PostDecrement {
+                target: Box::new(target),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("value", &dec_expr));
+    }
+
+    // Test 105: is_variable_mutated in Block
+    #[test]
+    fn test_is_variable_mutated_in_block() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("x".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(10, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let block_expr = Expr {
+            kind: ExprKind::Block(vec![assign]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("x", &block_expr));
+    }
+
+    // Test 106: is_variable_mutated in If condition
+    #[test]
+    fn test_is_variable_mutated_in_if() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("flag".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Bool(true)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let if_expr = Expr {
+            kind: ExprKind::If {
+                condition: Box::new(assign),
+                then_branch: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Unit),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                else_branch: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("flag", &if_expr));
+    }
+
+    // Test 107: is_variable_mutated in While body
+    #[test]
+    fn test_is_variable_mutated_in_while() {
+        let inc = Expr {
+            kind: ExprKind::PreIncrement {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("count".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let while_expr = Expr {
+            kind: ExprKind::While {
+                condition: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Bool(true)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                body: Box::new(inc),
+                label: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("count", &while_expr));
+    }
+
+    // Test 108: is_variable_mutated in For body
+    #[test]
+    fn test_is_variable_mutated_in_for() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("sum".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(0, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let for_expr = Expr {
+            kind: ExprKind::For {
+                pattern: Pattern::Identifier("item".to_string()),
+                iterable: Box::new(Expr {
+                    kind: ExprKind::List(vec![]),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                body: Box::new(assign),
+                label: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("sum", &for_expr));
+    }
+
+    // Test 109: is_variable_mutated in Match arm
+    #[test]
+    fn test_is_variable_mutated_in_match() {
+        use crate::frontend::ast::MatchArm;
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("result".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let match_expr = Expr {
+            kind: ExprKind::Match {
+                expr: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                arms: vec![MatchArm {
+                    pattern: Pattern::Wildcard,
+                    guard: None,
+                    body: assign,
+                }],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("result", &match_expr));
+    }
+
+    // Test 110: is_variable_mutated in nested Let
+    #[test]
+    fn test_is_variable_mutated_in_let() {
+        let inc = Expr {
+            kind: ExprKind::PreIncrement {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("x".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let let_expr = Expr {
+            kind: ExprKind::Let {
+                name: "y".to_string(),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(5, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                body: Box::new(inc),
+                type_annotation: None,
+                is_mutable: false,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("x", &let_expr));
+    }
+
+    // Test 111: is_variable_mutated in Binary expression
+    #[test]
+    fn test_is_variable_mutated_in_binary() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("a".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let binary_expr = Expr {
+            kind: ExprKind::Binary {
+                left: Box::new(assign),
+                op: BinaryOp::Add,
+                right: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(2, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("a", &binary_expr));
+    }
+
+    // Test 112: is_variable_mutated in Unary expression
+    #[test]
+    fn test_is_variable_mutated_in_unary() {
+        let inc = Expr {
+            kind: ExprKind::PreIncrement {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("val".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let unary_expr = Expr {
+            kind: ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(inc),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("val", &unary_expr));
+    }
+
+    // Test 113: is_variable_mutated in Call arguments
+    #[test]
+    fn test_is_variable_mutated_in_call() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("arg".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(42, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let call_expr = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(Expr {
+                    kind: ExprKind::Identifier("foo".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                args: vec![assign],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("arg", &call_expr));
+    }
+
+    // Test 114: is_variable_mutated in MethodCall receiver
+    #[test]
+    fn test_is_variable_mutated_in_method_call() {
+        let assign = Expr {
+            kind: ExprKind::Assign {
+                target: Box::new(Expr {
+                    kind: ExprKind::Identifier("obj".to_string()),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                value: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let method_expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(assign),
+                method: "process".to_string(),
+                args: vec![],
+                turbofish: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_variable_mutated("obj", &method_expr));
+    }
+
+    // Test 115: is_variable_mutated returns false for immutable access
+    #[test]
+    fn test_is_variable_mutated_immutable_access() {
+        let literal = Expr {
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_variable_mutated("x", &literal));
+
+        let ident = Expr {
+            kind: ExprKind::Identifier("x".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_variable_mutated("x", &ident));
+    }
 }
