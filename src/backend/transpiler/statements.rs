@@ -8016,4 +8016,188 @@ mod property_tests_statements {
         };
         assert!(!Transpiler::is_variable_mutated("x", &ident));
     }
+
+    // Test 115: needs_lifetime_parameter - no ref params
+    #[test]
+    fn test_needs_lifetime_parameter_no_refs() {
+        let transpiler = Transpiler::new();
+        let params = vec![
+            Param {
+                name: "x".to_string(),
+                ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::default() },
+                default: None,
+            }
+        ];
+        assert!(!transpiler.needs_lifetime_parameter(&params, None));
+    }
+
+    // Test 116: needs_lifetime_parameter - 2+ ref params and ref return
+    #[test]
+    fn test_needs_lifetime_parameter_requires_lifetime() {
+        let transpiler = Transpiler::new();
+        let ref_type = Type {
+            kind: TypeKind::Reference {
+                is_mut: false,
+                lifetime: None,
+                inner: Box::new(Type { kind: TypeKind::Named("str".to_string()), span: Span::default() }),
+            },
+            span: Span::default(),
+        };
+        let params = vec![
+            Param { name: "a".to_string(), ty: ref_type.clone(), default: None },
+            Param { name: "b".to_string(), ty: ref_type.clone(), default: None },
+        ];
+        let return_type = Some(&ref_type);
+        assert!(transpiler.needs_lifetime_parameter(&params, return_type));
+    }
+
+    // Test 117: is_reference_type - detects reference
+    #[test]
+    fn test_is_reference_type_true() {
+        let transpiler = Transpiler::new();
+        let ref_ty = Type {
+            kind: TypeKind::Reference {
+                is_mut: false,
+                lifetime: None,
+                inner: Box::new(Type { kind: TypeKind::Named("str".to_string()), span: Span::default() }),
+            },
+            span: Span::default(),
+        };
+        assert!(transpiler.is_reference_type(&ref_ty));
+    }
+
+    // Test 118: is_reference_type - non-reference type
+    #[test]
+    fn test_is_reference_type_false() {
+        let transpiler = Transpiler::new();
+        let named_ty = Type { kind: TypeKind::Named("String".to_string()), span: Span::default() };
+        assert!(!transpiler.is_reference_type(&named_ty));
+    }
+
+    // Test 119: is_string_type - detects String
+    #[test]
+    fn test_is_string_type_true() {
+        let transpiler = Transpiler::new();
+        let string_ty = Type { kind: TypeKind::Named("String".to_string()), span: Span::default() };
+        assert!(transpiler.is_string_type(&string_ty));
+    }
+
+    // Test 120: is_string_type - non-String type
+    #[test]
+    fn test_is_string_type_false() {
+        let transpiler = Transpiler::new();
+        let int_ty = Type { kind: TypeKind::Named("i32".to_string()), span: Span::default() };
+        assert!(!transpiler.is_string_type(&int_ty));
+    }
+
+    // Test 121: body_needs_string_conversion - string literal
+    #[test]
+    fn test_body_needs_string_conversion_string_literal() {
+        let transpiler = Transpiler::new();
+        let body = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        assert!(transpiler.body_needs_string_conversion(&body));
+    }
+
+    // Test 122: body_needs_string_conversion - identifier
+    #[test]
+    fn test_body_needs_string_conversion_identifier() {
+        let transpiler = Transpiler::new();
+        let body = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
+        assert!(transpiler.body_needs_string_conversion(&body));
+    }
+
+    // Test 123: body_needs_string_conversion - integer literal
+    #[test]
+    fn test_body_needs_string_conversion_integer() {
+        let transpiler = Transpiler::new();
+        let body = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        assert!(!transpiler.body_needs_string_conversion(&body));
+    }
+
+    // Test 124: transpile_iterator_methods - map
+    #[test]
+    fn test_transpile_iterator_methods_map() {
+        use quote::quote;
+        let transpiler = Transpiler::new();
+        let obj = quote! { vec };
+        let f = quote! { |x| x * 2 };
+        let result = transpiler.transpile_iterator_methods(&obj, "map", &[f]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("iter"));
+        assert!(code.contains("map"));
+        assert!(code.contains("collect"));
+    }
+
+    // Test 125: transpile_iterator_methods - filter
+    #[test]
+    fn test_transpile_iterator_methods_filter() {
+        use quote::quote;
+        let transpiler = Transpiler::new();
+        let obj = quote! { vec };
+        let f = quote! { |x| x > 10 };
+        let result = transpiler.transpile_iterator_methods(&obj, "filter", &[f]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("into_iter"));
+        assert!(code.contains("filter"));
+        assert!(code.contains("collect"));
+    }
+
+    // Test 126: transpile_iterator_methods - reduce
+    #[test]
+    fn test_transpile_iterator_methods_reduce() {
+        use quote::quote;
+        let transpiler = Transpiler::new();
+        let obj = quote! { vec };
+        let f = quote! { |acc, x| acc + x };
+        let result = transpiler.transpile_iterator_methods(&obj, "reduce", &[f]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("into_iter"));
+        assert!(code.contains("reduce"));
+        assert!(!code.contains("collect")); // reduce doesn't collect
+    }
+
+    // Test 127: transpile_map_set_methods - items
+    #[test]
+    fn test_transpile_map_set_methods_items() {
+        use quote::quote;
+        use proc_macro2::Span as ProcSpan;
+        let transpiler = Transpiler::new();
+        let obj = quote! { map };
+        let method_ident = proc_macro2::Ident::new("items", ProcSpan::call_site());
+        let result = transpiler.transpile_map_set_methods(&obj, &method_ident, "items", &[]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("iter"));
+        assert!(code.contains("clone"));
+    }
+
+    // Test 128: transpile_map_set_methods - update
+    #[test]
+    fn test_transpile_map_set_methods_update() {
+        use quote::quote;
+        use proc_macro2::Span as ProcSpan;
+        let transpiler = Transpiler::new();
+        let obj = quote! { map };
+        let method_ident = proc_macro2::Ident::new("update", ProcSpan::call_site());
+        let arg = quote! { other_map };
+        let result = transpiler.transpile_map_set_methods(&obj, &method_ident, "update", &[arg]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("extend"));
+    }
+
+    // Test 129: transpile_set_operations - union
+    #[test]
+    fn test_transpile_set_operations_union() {
+        use quote::quote;
+        let transpiler = Transpiler::new();
+        let obj = quote! { set1 };
+        let arg = quote! { set2 };
+        let result = transpiler.transpile_set_operations(&obj, "union", &[arg]).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("union"));
+        assert!(code.contains("cloned"));
+        assert!(code.contains("HashSet"));
+    }
 }
