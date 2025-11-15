@@ -959,7 +959,7 @@ mod tests {
                 arms: vec![MatchArm {
                     pattern: Pattern::Wildcard,
                     guard: None,
-                    body: Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
+                    body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
                 }],
             },
             Span::default(),

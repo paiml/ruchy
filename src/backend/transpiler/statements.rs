@@ -7784,7 +7784,7 @@ mod property_tests_statements {
                 arms: vec![MatchArm {
                     pattern: Pattern::Wildcard,
                     guard: None,
-                    body: assign,
+                    body: Box::new(assign),
                 }],
             },
             span: Span::default(),
