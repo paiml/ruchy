@@ -562,4 +562,327 @@ mod tests {
         // Should NOT collect recursive function
         assert!(!functions.contains_key("factorial"));
     }
+
+    // Helper: Create integer literal
+    fn int_lit(n: i64) -> Expr {
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
+    }
+
+    // Helper: Create identifier
+    fn ident(name: &str) -> Expr {
+        Expr::new(
+            ExprKind::Identifier(name.to_string()),
+            Span::default(),
+        )
+    }
+
+    // Helper: Create binary expression
+    fn binary(left: Expr, op: BinaryOp, right: Expr) -> Expr {
+        Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+            },
+            Span::default(),
+        )
+    }
+
+    // Test 4: estimate_body_size - single expression
+    #[test]
+    fn test_estimate_body_size_single() {
+        let expr = int_lit(42);
+        assert_eq!(estimate_body_size(&expr), 1);
+    }
+
+    // Test 5: estimate_body_size - block with multiple expressions
+    #[test]
+    fn test_estimate_body_size_block() {
+        let block = Expr::new(
+            ExprKind::Block(vec![int_lit(1), int_lit(2), int_lit(3)]),
+            Span::default(),
+        );
+        assert_eq!(estimate_body_size(&block), 3);
+    }
+
+    // Test 6: estimate_body_size - let expression
+    #[test]
+    fn test_estimate_body_size_let() {
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(int_lit(10)),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::default(),
+        );
+        assert_eq!(estimate_body_size(&let_expr), 2); // 1 + body size
+    }
+
+    // Test 7: estimate_body_size - if expression with else
+    #[test]
+    fn test_estimate_body_size_if_else() {
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("x")),
+                then_branch: Box::new(int_lit(1)),
+                else_branch: Some(Box::new(int_lit(2))),
+            },
+            Span::default(),
+        );
+        assert_eq!(estimate_body_size(&if_expr), 3); // 1 + then + else
+    }
+
+    // Test 8: check_recursion - direct recursion
+    #[test]
+    fn test_check_recursion_direct() {
+        let call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("factorial")),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(check_recursion("factorial", &call));
+    }
+
+    // Test 9: check_recursion - recursion in binary expression
+    #[test]
+    fn test_check_recursion_binary() {
+        let expr = binary(
+            Expr::new(
+                ExprKind::Call {
+                    func: Box::new(ident("fib")),
+                    args: vec![],
+                },
+                Span::default(),
+            ),
+            BinaryOp::Add,
+            int_lit(1),
+        );
+        assert!(check_recursion("fib", &expr));
+    }
+
+    // Test 10: check_recursion - recursion in if expression
+    #[test]
+    fn test_check_recursion_if() {
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("x")),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(ident("recurse")),
+                        args: vec![],
+                    },
+                    Span::default(),
+                )),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        assert!(check_recursion("recurse", &if_expr));
+    }
+
+    // Test 11: check_recursion - no recursion
+    #[test]
+    fn test_check_recursion_none() {
+        let expr = binary(int_lit(1), BinaryOp::Add, int_lit(2));
+        assert!(!check_recursion("foo", &expr));
+    }
+
+    // Test 12: accesses_global_variables - no globals (all params)
+    #[test]
+    fn test_accesses_global_variables_none() {
+        let params = vec![Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            span: Span::default(),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let body = ident("x");
+        assert!(!accesses_global_variables(&params, &body));
+    }
+
+    // Test 13: accesses_global_variables - accesses global
+    #[test]
+    fn test_accesses_global_variables_global() {
+        let params = vec![Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            span: Span::default(),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let body = binary(ident("x"), BinaryOp::Add, ident("global_var"));
+        assert!(accesses_global_variables(&params, &body));
+    }
+
+    // Test 14: accesses_global_variables - let binding not global
+    #[test]
+    fn test_accesses_global_variables_let_binding() {
+        let params = vec![];
+        let body = Expr::new(
+            ExprKind::Let {
+                name: "y".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(ident("y")), // References let binding, not global
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::default(),
+        );
+        assert!(!accesses_global_variables(&params, &body));
+    }
+
+    // Test 15: check_for_external_refs - identifier in allowed set
+    #[test]
+    fn test_check_for_external_refs_allowed() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("x".to_string());
+        assert!(!check_for_external_refs(&ident("x"), &allowed));
+    }
+
+    // Test 16: check_for_external_refs - identifier not allowed
+    #[test]
+    fn test_check_for_external_refs_external() {
+        use std::collections::HashSet;
+        let allowed = HashSet::new();
+        assert!(check_for_external_refs(&ident("external"), &allowed));
+    }
+
+    // Test 17: check_for_external_refs - compound assign
+    #[test]
+    fn test_check_for_external_refs_compound_assign() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("total".to_string());
+        let expr = Expr::new(
+            ExprKind::CompoundAssign {
+                target: Box::new(ident("total")),
+                op: BinaryOp::Add,
+                value: Box::new(ident("x")), // x is external
+            },
+            Span::default(),
+        );
+        assert!(check_for_external_refs(&expr, &allowed));
+    }
+
+    // Test 18: substitute_identifiers - identifier substitution
+    #[test]
+    fn test_substitute_identifiers_identifier() {
+        let mut subs = HashMap::new();
+        subs.insert("x".to_string(), int_lit(42));
+        let result = substitute_identifiers(ident("x"), &subs);
+        assert!(matches!(result.kind, ExprKind::Literal(Literal::Integer(42, None))));
+    }
+
+    // Test 19: substitute_identifiers - binary expression
+    #[test]
+    fn test_substitute_identifiers_binary() {
+        let mut subs = HashMap::new();
+        subs.insert("x".to_string(), int_lit(5));
+        let expr = binary(ident("x"), BinaryOp::Add, int_lit(1));
+        let result = substitute_identifiers(expr, &subs);
+        if let ExprKind::Binary { left, .. } = result.kind {
+            assert!(matches!(left.kind, ExprKind::Literal(Literal::Integer(5, None))));
+        } else {
+            panic!("Expected binary expression");
+        }
+    }
+
+    // Test 20: substitute_identifiers - call expression
+    #[test]
+    fn test_substitute_identifiers_call() {
+        let mut subs = HashMap::new();
+        subs.insert("x".to_string(), int_lit(10));
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("foo")),
+                args: vec![ident("x")],
+            },
+            Span::default(),
+        );
+        let result = substitute_identifiers(expr, &subs);
+        if let ExprKind::Call { args, .. } = result.kind {
+            assert!(matches!(args[0].kind, ExprKind::Literal(Literal::Integer(10, None))));
+        } else {
+            panic!("Expected call expression");
+        }
+    }
+
+    // Test 21: substitute_identifiers - block
+    #[test]
+    fn test_substitute_identifiers_block() {
+        let mut subs = HashMap::new();
+        subs.insert("x".to_string(), int_lit(7));
+        let block = Expr::new(
+            ExprKind::Block(vec![ident("x"), ident("x")]),
+            Span::default(),
+        );
+        let result = substitute_identifiers(block, &subs);
+        if let ExprKind::Block(exprs) = result.kind {
+            assert_eq!(exprs.len(), 2);
+            assert!(matches!(exprs[0].kind, ExprKind::Literal(Literal::Integer(7, None))));
+            assert!(matches!(exprs[1].kind, ExprKind::Literal(Literal::Integer(7, None))));
+        } else {
+            panic!("Expected block");
+        }
+    }
+
+    // Test 22: substitute_identifiers - if expression
+    #[test]
+    fn test_substitute_identifiers_if() {
+        let mut subs = HashMap::new();
+        subs.insert("x".to_string(), int_lit(1));
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("x")),
+                then_branch: Box::new(ident("x")),
+                else_branch: Some(Box::new(int_lit(0))),
+            },
+            Span::default(),
+        );
+        let result = substitute_identifiers(if_expr, &subs);
+        if let ExprKind::If { condition, then_branch, .. } = result.kind {
+            assert!(matches!(condition.kind, ExprKind::Literal(Literal::Integer(1, None))));
+            assert!(matches!(then_branch.kind, ExprKind::Literal(Literal::Integer(1, None))));
+        } else {
+            panic!("Expected if expression");
+        }
+    }
+
+    // Test 23: substitute_identifiers - return expression
+    #[test]
+    fn test_substitute_identifiers_return() {
+        let mut subs = HashMap::new();
+        subs.insert("result".to_string(), int_lit(99));
+        let ret = Expr::new(
+            ExprKind::Return {
+                value: Some(Box::new(ident("result"))),
+            },
+            Span::default(),
+        );
+        let result = substitute_identifiers(ret, &subs);
+        if let ExprKind::Return { value } = result.kind {
+            let val = value.unwrap();
+            assert!(matches!(val.kind, ExprKind::Literal(Literal::Integer(99, None))));
+        } else {
+            panic!("Expected return expression");
+        }
+    }
 }
