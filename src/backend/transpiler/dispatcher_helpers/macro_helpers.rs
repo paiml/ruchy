@@ -660,4 +660,287 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
     }
+
+    // Test 28: transpile_println_macro with multiple non-string literals
+    #[test]
+    fn test_println_multiple_non_string_literals() {
+        let transpiler = Transpiler::new();
+        let arg1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let arg2 = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_println_macro(&[arg1, arg2]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("println"));
+        assert!(tokens.contains("{:?}"));
+        assert!(tokens.contains("42"));
+        assert!(tokens.contains("true"));
+    }
+
+    // Test 29: transpile_print_macro with mixed string and non-string arguments
+    #[test]
+    fn test_print_mixed_arguments() {
+        let transpiler = Transpiler::new();
+        let arg1 = Expr::new(
+            ExprKind::Literal(Literal::String("Value: ".to_string())),
+            Span::default(),
+        );
+        let arg2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_print_macro(&[arg1, arg2]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("print"));
+    }
+
+    // Test 30: transpile_println_macro with format string containing multiple placeholders
+    #[test]
+    fn test_println_multiple_placeholders() {
+        let transpiler = Transpiler::new();
+        let format_str = Expr::new(
+            ExprKind::Literal(Literal::String("x={}, y={}".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_println_macro(&[format_str]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("println"));
+    }
+
+    // Test 31: transpile_vec_macro with many elements
+    #[test]
+    fn test_vec_many_elements() {
+        let transpiler = Transpiler::new();
+        let elem1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let elem2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let elem3 = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Span::default(),
+        );
+        let elem4 = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_vec_macro(&[elem1, elem2, elem3, elem4]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("vec"));
+        assert!(tokens.contains("1"));
+        assert!(tokens.contains("4"));
+    }
+
+    // Test 32: transpile_assert_macro with three arguments (condition + message + extra)
+    #[test]
+    fn test_assert_three_arguments() {
+        let transpiler = Transpiler::new();
+        let condition = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let message = Expr::new(
+            ExprKind::Literal(Literal::String("Failed".to_string())),
+            Span::default(),
+        );
+        let extra = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_assert_macro(&[condition, message, extra]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("assert"));
+    }
+
+    // Test 33: transpile_assert_ne_macro with one arg (ERROR PATH)
+    #[test]
+    fn test_assert_ne_one_arg_error() {
+        let transpiler = Transpiler::new();
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_assert_ne_macro(&[arg]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+    }
+
+    // Test 34: transpile_passthrough_macro with different macro names
+    #[test]
+    fn test_passthrough_different_names() {
+        let transpiler = Transpiler::new();
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::String("test".to_string())),
+            Span::default(),
+        );
+
+        // Test different macro names
+        let result1 = transpiler.transpile_passthrough_macro("custom_macro", &[arg.clone()]);
+        assert!(result1.is_ok());
+        assert!(result1.unwrap().to_string().contains("custom_macro"));
+
+        let result2 = transpiler.transpile_passthrough_macro("another", &[arg]);
+        assert!(result2.is_ok());
+        assert!(result2.unwrap().to_string().contains("another"));
+    }
+
+    // Test 35: transpile_panic_macro with single format string argument
+    #[test]
+    fn test_panic_single_format_arg() {
+        let transpiler = Transpiler::new();
+        let format_str = Expr::new(
+            ExprKind::Literal(Literal::String("Error: {}".to_string())),
+            Span::default(),
+        );
+        let result = transpiler.transpile_panic_macro(&[format_str]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("panic"));
+    }
+
+    // Test 36: transpile_print_macro with integer literal
+    #[test]
+    fn test_print_integer_literal() {
+        let transpiler = Transpiler::new();
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Integer(999, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_print_macro(&[arg]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("print"));
+        assert!(tokens.contains("{:?}"));
+        assert!(tokens.contains("999"));
+    }
+
+    // Test 37: transpile_assert_eq_macro with exact 2 arguments
+    #[test]
+    fn test_assert_eq_exact_two_args() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_assert_eq_macro(&[left, right]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("assert_eq"));
+        assert!(tokens.contains("5"));
+    }
+
+    // Test 38: transpile_vec_macro with boolean elements
+    #[test]
+    fn test_vec_boolean_elements() {
+        let transpiler = Transpiler::new();
+        let elem1 = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let elem2 = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_vec_macro(&[elem1, elem2]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("vec"));
+        assert!(tokens.contains("true"));
+        assert!(tokens.contains("false"));
+    }
+
+    // Test 39: transpile_println_macro with boolean literal
+    #[test]
+    fn test_println_boolean_literal() {
+        let transpiler = Transpiler::new();
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_println_macro(&[arg]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("println"));
+        assert!(tokens.contains("{:?}"));
+        assert!(tokens.contains("false"));
+    }
+
+    // Test 40: transpile_panic_macro with multiple arguments
+    #[test]
+    fn test_panic_multiple_arguments() {
+        let transpiler = Transpiler::new();
+        let arg1 = Expr::new(
+            ExprKind::Literal(Literal::String("Error".to_string())),
+            Span::default(),
+        );
+        let arg2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(404, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_panic_macro(&[arg1, arg2]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("panic"));
+    }
+
+    // Test 41: transpile_assert_ne_macro with exact 2 arguments
+    #[test]
+    fn test_assert_ne_exact_two_args() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(20, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_assert_ne_macro(&[left, right]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("assert_ne"));
+        assert!(tokens.contains("10"));
+        assert!(tokens.contains("20"));
+    }
+
+    // Test 42: transpile_passthrough_macro with multiple arguments
+    #[test]
+    fn test_passthrough_multiple_args() {
+        let transpiler = Transpiler::new();
+        let arg1 = Expr::new(
+            ExprKind::Literal(Literal::String("arg1".to_string())),
+            Span::default(),
+        );
+        let arg2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let arg3 = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_passthrough_macro("complex_macro", &[arg1, arg2, arg3]);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("complex_macro"));
+        assert!(tokens.contains("arg1"));
+        assert!(tokens.contains("42"));
+        assert!(tokens.contains("true"));
+    }
 }
