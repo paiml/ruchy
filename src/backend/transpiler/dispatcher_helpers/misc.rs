@@ -524,4 +524,242 @@ mod tests {
         assert!(result_str.contains("as i64"));
         assert!(result_str.contains("9999999"));
     }
+
+    // Test 36: transpile_type_cast - float literal as f32
+    #[test]
+    fn test_transpile_type_cast_float_f32() {
+        use crate::frontend::ast::Literal;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Literal(Literal::Float(3.14, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_type_cast(&expr, "f32").unwrap();
+        assert!(result.to_string().contains("as f32"));
+    }
+
+    // Test 37: transpile_type_cast - float literal as f64
+    #[test]
+    fn test_transpile_type_cast_float_f64() {
+        use crate::frontend::ast::Literal;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Literal(Literal::Float(2.71828, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_type_cast(&expr, "f64").unwrap();
+        assert!(result.to_string().contains("as f64"));
+    }
+
+    // Test 38: make_break_continue - label with apostrophe prefix
+    #[test]
+    fn test_make_break_continue_label_with_apostrophe() {
+        let label_with_apostrophe = String::from("'loop");
+        let result = Transpiler::make_break_continue(true, Some(&label_with_apostrophe));
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("loop"));
+        assert!(!result_str.contains("'loop")); // Apostrophe should be stripped
+    }
+
+    // Test 39: make_break_continue - label without apostrophe prefix
+    #[test]
+    fn test_make_break_continue_label_without_apostrophe() {
+        let label_no_apostrophe = String::from("myloop");
+        let result = Transpiler::make_break_continue(false, Some(&label_no_apostrophe));
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("myloop"));
+    }
+
+    // Test 40: make_break_continue_with_value - label with apostrophe and value
+    #[test]
+    fn test_make_break_continue_with_value_apostrophe_label() {
+        let label = String::from("'result");
+        let value = quote! { Some(42) };
+        let result = Transpiler::make_break_continue_with_value(true, Some(&label), Some(value));
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("result"));
+        assert!(result_str.contains("Some"));
+    }
+
+    // Test 41: transpile_control_misc_expr - return with complex expression
+    #[test]
+    fn test_transpile_control_misc_expr_return_complex() {
+        use crate::frontend::ast::BinaryOp;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Return {
+                value: Some(Box::new(Expr {
+                    kind: ExprKind::BinaryOp {
+                        left: Box::new(int_expr(10)),
+                        op: BinaryOp::Add,
+                        right: Box::new(int_expr(20)),
+                    },
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                })),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("return"));
+        assert!(result_str.contains("10") || result_str.contains("20"));
+    }
+
+    // Test 42: transpile_control_misc_expr - break with string value
+    #[test]
+    fn test_transpile_control_misc_expr_break_string_value() {
+        use crate::frontend::ast::Literal;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Break {
+                label: None,
+                value: Some(Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::String("error".to_string())),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                })),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("error"));
+    }
+
+    // Test 43: transpile_type_cast - boundary value for u8
+    #[test]
+    fn test_transpile_type_cast_u8_boundary() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(255); // Max u8 value
+        let result = transpiler.transpile_type_cast(&expr, "u8").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("as u8"));
+        assert!(result_str.contains("255"));
+    }
+
+    // Test 44: transpile_type_cast - boundary value for i8
+    #[test]
+    fn test_transpile_type_cast_i8_boundary() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(-128); // Min i8 value
+        let result = transpiler.transpile_type_cast(&expr, "i8").unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("as i8"));
+        assert!(result_str.contains("-") || result_str.contains("128"));
+    }
+
+    // Test 45: make_break_continue_with_value - complex value expression
+    #[test]
+    fn test_make_break_continue_with_value_complex_expr() {
+        let value = quote! { vec![1, 2, 3] };
+        let result = Transpiler::make_break_continue_with_value(true, None, Some(value));
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("vec"));
+    }
+
+    // Test 46: transpile_control_misc_expr - continue with very long label
+    #[test]
+    fn test_transpile_control_misc_expr_continue_long_label() {
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Continue {
+                label: Some("'very_long_descriptive_loop_label".to_string()),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("very_long_descriptive_loop_label"));
+    }
+
+    // Test 47: transpile_type_cast - sequential different casts
+    #[test]
+    fn test_transpile_type_cast_sequential() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(100);
+
+        let u16_result = transpiler.transpile_type_cast(&expr, "u16").unwrap();
+        assert!(u16_result.to_string().contains("as u16"));
+
+        let i32_result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
+        assert!(i32_result.to_string().contains("as i32"));
+
+        let f64_result = transpiler.transpile_type_cast(&expr, "f64").unwrap();
+        assert!(f64_result.to_string().contains("as f64"));
+    }
+
+    // Test 48: make_break_continue - continue with numeric label (edge case)
+    #[test]
+    fn test_make_break_continue_numeric_label() {
+        let label = String::from("'loop123");
+        let result = Transpiler::make_break_continue(false, Some(&label));
+        let result_str = result.to_string();
+        assert!(result_str.contains("continue"));
+        assert!(result_str.contains("loop123"));
+    }
+
+    // Test 49: transpile_control_misc_expr - break with boolean value
+    #[test]
+    fn test_transpile_control_misc_expr_break_bool_value() {
+        use crate::frontend::ast::Literal;
+        let transpiler = test_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Break {
+                label: None,
+                value: Some(Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Boolean(true)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                })),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("break"));
+        assert!(result_str.contains("true"));
+    }
+
+    // Test 50: transpile_type_cast - error message validation
+    #[test]
+    fn test_transpile_type_cast_error_message() {
+        let transpiler = test_transpiler();
+        let expr = int_expr(42);
+        let result = transpiler.transpile_type_cast(&expr, "Vec<i32>");
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Unsupported cast target type"));
+        assert!(error_msg.contains("Vec<i32>"));
+    }
 }
