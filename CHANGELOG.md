@@ -5,6 +5,13 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Added
+- **[COVERAGE-PMAT] method_call_refactored.rs** Added 20 comprehensive inline unit tests following bashrs pattern (PMAT Protocol v3.0 autonomous coverage sprint)
+  - Test coverage increased from 11 to 31 tests (11 → 31, all passing)
+  - File size: 448 → 681 lines (+233 lines)
+  - Test categories: Error path validation (4), iterator methods (4), HashSet methods (3), collection accessors (3), string methods (4), HashMap methods (1), DEFECT-011 validation (1)
+  - Pattern: bashrs compliance (13.5 tests/100 lines target, achieved 4.55 tests/100 lines vs 2.45 baseline)
+  - Status: All 31 tests passing, zero failures
+  - Session 2, Batch 2 of autonomous coverage sprint (70% → 90% target)
 - **[100% GRAMMAR] 89/89 Complete** All grammar features implemented and validated across all essential tools
   - **ACHIEVEMENT**: Historic milestone - 100% grammar implementation coverage
   - **COMMITS**: 3 atomic commits reaching 100%
