@@ -445,4 +445,237 @@ mod tests {
         let result = t.transpile_string_method(&tokens, "split", &split_arg);
         assert!(result.is_ok());
     }
+
+    // Test 1: fold with wrong number of args (error path)
+    #[test]
+    fn test_fold_wrong_args() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let result = t.transpile_iterator_method(&tokens, "fold", &[quote! { 0 }]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("fold requires exactly 2 arguments"));
+    }
+
+    // Test 2: slice with wrong number of args (error path)
+    #[test]
+    fn test_slice_wrong_args() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let result = t.transpile_collection_accessor(&tokens, "slice", &[quote! { 0 }]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("slice requires exactly 2 arguments"));
+    }
+
+    // Test 3: replace with wrong number of args (error path)
+    #[test]
+    fn test_replace_wrong_args() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "hello" };
+        let result = t.transpile_string_method(&tokens, "replace", &[quote! { "h" }]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("replace requires exactly 2 arguments"));
+    }
+
+    // Test 4: hashset union with wrong number of args (error path)
+    #[test]
+    fn test_hashset_union_wrong_args() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { set };
+        let result = t.transpile_hashset_method(&tokens, "union", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("union requires exactly 1 argument"));
+    }
+
+    // Test 5: iterator reduce method
+    #[test]
+    fn test_iterator_reduce() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { |a, b| a + b }];
+        let result = t.transpile_iterator_method(&tokens, "reduce", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("reduce"));
+    }
+
+    // Test 6: iterator any method
+    #[test]
+    fn test_iterator_any() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { |x| x > 0 }];
+        let result = t.transpile_iterator_method(&tokens, "any", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("any"));
+    }
+
+    // Test 7: iterator all method
+    #[test]
+    fn test_iterator_all() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { |x| x > 0 }];
+        let result = t.transpile_iterator_method(&tokens, "all", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("all"));
+    }
+
+    // Test 8: iterator find method
+    #[test]
+    fn test_iterator_find() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { |x| x == 5 }];
+        let result = t.transpile_iterator_method(&tokens, "find", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("find"));
+        assert!(output.contains("cloned"));
+    }
+
+    // Test 9: hashset intersection method
+    #[test]
+    fn test_hashset_intersection() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { set };
+        let args = vec![quote! { other_set }];
+        let result = t.transpile_hashset_method(&tokens, "intersection", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("intersection"));
+    }
+
+    // Test 10: hashset difference method
+    #[test]
+    fn test_hashset_difference() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { set };
+        let args = vec![quote! { other_set }];
+        let result = t.transpile_hashset_method(&tokens, "difference", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("difference"));
+    }
+
+    // Test 11: hashset symmetric_difference method
+    #[test]
+    fn test_hashset_symmetric_difference() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { set };
+        let args = vec![quote! { other_set }];
+        let result = t.transpile_hashset_method(&tokens, "symmetric_difference", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("symmetric_difference"));
+    }
+
+    // Test 12: collection accessor first method
+    #[test]
+    fn test_collection_first() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let result = t.transpile_collection_accessor(&tokens, "first", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("first"));
+        assert!(output.contains("cloned"));
+    }
+
+    // Test 13: collection accessor last method
+    #[test]
+    fn test_collection_last() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let result = t.transpile_collection_accessor(&tokens, "last", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("last"));
+        assert!(output.contains("cloned"));
+    }
+
+    // Test 14: collection accessor slice method (valid args)
+    #[test]
+    fn test_collection_slice_valid() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { 0 }, quote! { 5 }];
+        let result = t.transpile_collection_accessor(&tokens, "slice", &args);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains(".."));
+        assert!(output.contains("to_vec"));
+    }
+
+    // Test 15: string to_s method
+    #[test]
+    fn test_string_to_s() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "hello" };
+        let result = t.transpile_string_method(&tokens, "to_s", &[]);
+        assert!(result.is_ok());
+    }
+
+    // Test 16: string trim method
+    #[test]
+    fn test_string_trim() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "  hello  " };
+        let result = t.transpile_string_method(&tokens, "trim", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("trim"));
+        assert!(output.contains("to_string"));
+    }
+
+    // Test 17: string split with no args (whitespace)
+    #[test]
+    fn test_string_split_whitespace() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "hello world" };
+        let result = t.transpile_string_method(&tokens, "split", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("split_whitespace"));
+    }
+
+    // Test 18: string replace (valid args)
+    #[test]
+    fn test_string_replace_valid() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "hello" };
+        let args = vec![quote! { "h" }, quote! { "H" }];
+        let result = t.transpile_string_method(&tokens, "replace", &args);
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("replace"));
+    }
+
+    // Test 19: hashmap items method
+    #[test]
+    fn test_hashmap_items() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { map };
+        let result = t.transpile_hashmap_method(&tokens, "items", &[]);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(output.contains("iter"));
+        assert!(output.contains("clone"));
+    }
+
+    // Test 20: DEFECT-011 validation - contains with field access
+    #[test]
+    fn test_contains_field_access_defect_011() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("set");
+        let field_access = Expr {
+            kind: ExprKind::FieldAccess {
+                object: Box::new(make_ident_expr("obj")),
+                field: "name".to_string(),
+            },
+            span: Default::default(),
+            attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = t.transpile_method_call_refactored(&obj, "contains", &[field_access]);
+        assert!(result.is_ok());
+        // Verify that field access argument is wrapped with &
+        let output = result.unwrap().to_string();
+        assert!(output.contains("&"));
+    }
 }
