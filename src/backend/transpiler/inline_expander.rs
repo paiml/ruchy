@@ -885,4 +885,324 @@ mod tests {
             panic!("Expected return expression");
         }
     }
+
+    // Test 24: collect_inline_candidates - function too large (>10 LOC)
+    #[test]
+    fn test_collect_inline_candidates_too_large() {
+        let mut functions = HashMap::new();
+        let large_body = Expr::new(
+            ExprKind::Block(vec![int_lit(1); 15]), // 15 lines > 10 threshold
+            Span::default(),
+        );
+        let func = Expr::new(
+            ExprKind::Function {
+                name: "large".to_string(),
+                params: vec![],
+                body: Box::new(large_body),
+                return_type: None,
+                is_pub: false,
+                is_async: false,
+            },
+            Span::default(),
+        );
+        collect_inline_candidates(&func, &mut functions);
+        assert!(functions.is_empty()); // Should not inline large functions
+    }
+
+    // Test 25: collect_inline_candidates - pub function not inlined
+    #[test]
+    fn test_collect_inline_candidates_pub_function() {
+        let mut functions = HashMap::new();
+        let func = Expr::new(
+            ExprKind::Function {
+                name: "pub_fn".to_string(),
+                params: vec![],
+                body: Box::new(int_lit(42)),
+                return_type: None,
+                is_pub: true, // Public function
+                is_async: false,
+            },
+            Span::default(),
+        );
+        collect_inline_candidates(&func, &mut functions);
+        assert!(functions.is_empty()); // TRANSPILER-136: Don't inline pub functions
+    }
+
+    // Test 26: collect_inline_candidates - nested blocks
+    #[test]
+    fn test_collect_inline_candidates_nested_blocks() {
+        let mut functions = HashMap::new();
+        let inner_func = Expr::new(
+            ExprKind::Function {
+                name: "inner".to_string(),
+                params: vec![],
+                body: Box::new(int_lit(10)),
+                return_type: None,
+                is_pub: false,
+                is_async: false,
+            },
+            Span::default(),
+        );
+        let block = Expr::new(ExprKind::Block(vec![inner_func]), Span::default());
+        collect_inline_candidates(&block, &mut functions);
+        assert_eq!(functions.len(), 1);
+        assert!(functions.contains_key("inner"));
+    }
+
+    // Test 27: inline_function_calls - non-identifier function call
+    #[test]
+    fn test_inline_function_calls_method_call() {
+        let functions = HashMap::new();
+        // Method call: obj.method() - should not inline
+        let method_call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::FieldAccess {
+                        object: Box::new(ident("obj")),
+                        field: "method".to_string(),
+                    },
+                    Span::default(),
+                )),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        let result = inline_function_calls(method_call.clone(), &functions);
+        // Should return unchanged (method calls don't get inlined)
+        assert!(matches!(result.kind, ExprKind::Call { .. }));
+    }
+
+    // Test 28: inline_function_calls - undefined function
+    #[test]
+    fn test_inline_function_calls_undefined() {
+        let functions = HashMap::new(); // Empty map
+        let call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("undefined")),
+                args: vec![int_lit(1)],
+            },
+            Span::default(),
+        );
+        let result = inline_function_calls(call, &functions);
+        // Should return unchanged call
+        if let ExprKind::Call { func, .. } = result.kind {
+            assert!(matches!(func.kind, ExprKind::Identifier(ref name) if name == "undefined"));
+        } else {
+            panic!("Expected Call expression");
+        }
+    }
+
+    // Test 29: substitute_params - empty params
+    #[test]
+    fn test_substitute_params_empty() {
+        let body = int_lit(42);
+        let params = vec![];
+        let args = vec![];
+        let result = substitute_params(&body, &params, &args);
+        assert!(matches!(result.kind, ExprKind::Literal(Literal::Integer(42, None))));
+    }
+
+    // Test 30: substitute_params - multiple params
+    #[test]
+    fn test_substitute_params_multiple() {
+        use crate::frontend::ast::Param;
+        let body = binary(ident("a"), BinaryOp::Add, ident("b"));
+        let params = vec![
+            Param {
+                name: "a".to_string(),
+                ty: crate::frontend::ast::Type {
+                    kind: crate::frontend::ast::TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+                default: None,
+            },
+            Param {
+                name: "b".to_string(),
+                ty: crate::frontend::ast::Type {
+                    kind: crate::frontend::ast::TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+                default: None,
+            },
+        ];
+        let args = vec![int_lit(10), int_lit(20)];
+        let result = substitute_params(&body, &params, &args);
+        if let ExprKind::Binary { left, right, .. } = result.kind {
+            assert!(matches!(left.kind, ExprKind::Literal(Literal::Integer(10, None))));
+            assert!(matches!(right.kind, ExprKind::Literal(Literal::Integer(20, None))));
+        } else {
+            panic!("Expected binary expression");
+        }
+    }
+
+    // Test 31: inline_small_functions - end-to-end with inlined set
+    #[test]
+    fn test_inline_small_functions_returns_inlined_set() {
+        let add_fn = Expr::new(
+            ExprKind::Function {
+                name: "add_one".to_string(),
+                params: vec![],
+                body: Box::new(binary(ident("x"), BinaryOp::Add, int_lit(1))),
+                return_type: None,
+                is_pub: false,
+                is_async: false,
+            },
+            Span::default(),
+        );
+        let call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("add_one")),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        let program = Expr::new(ExprKind::Block(vec![add_fn, call]), Span::default());
+
+        let (result, inlined) = inline_small_functions(program);
+        assert!(inlined.contains("add_one"));
+        assert!(matches!(result.kind, ExprKind::Block(_)));
+    }
+
+    // Test 32: check_for_external_refs - let binding
+    #[test]
+    fn test_check_for_external_refs_let() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("x".to_string());
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "y".to_string(),
+                type_annotation: None,
+                value: Box::new(ident("x")),
+                body: Box::new(ident("y")),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::default(),
+        );
+        let result = check_for_external_refs(&let_expr, &allowed);
+        assert!(!result); // "y" is bound locally, "x" is allowed
+    }
+
+    // Test 33: check_for_external_refs - match expression
+    #[test]
+    fn test_check_for_external_refs_match() {
+        use crate::frontend::ast::{MatchArm, Pattern};
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("value".to_string());
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                value: Box::new(ident("value")),
+                arms: vec![MatchArm {
+                    pattern: Pattern::Literal(Literal::Integer(1, None)),
+                    guard: None,
+                    body: ident("value"),
+                }],
+            },
+            Span::default(),
+        );
+        let result = check_for_external_refs(&match_expr, &allowed);
+        assert!(!result); // "value" is allowed
+    }
+
+    // Test 34: estimate_body_size - nested blocks
+    #[test]
+    fn test_estimate_body_size_nested() {
+        let nested = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(ExprKind::Block(vec![int_lit(1), int_lit(2)]), Span::default()),
+                int_lit(3),
+            ]),
+            Span::default(),
+        );
+        let size = estimate_body_size(&nested);
+        assert_eq!(size, 4); // 3 int literals + 1 nested block
+    }
+
+    // Test 35: estimate_body_size - for loop
+    #[test]
+    fn test_estimate_body_size_for_loop() {
+        let for_loop = Expr::new(
+            ExprKind::For {
+                var: "i".to_string(),
+                iterable: Box::new(ident("items")),
+                body: Box::new(int_lit(1)),
+            },
+            Span::default(),
+        );
+        let size = estimate_body_size(&for_loop);
+        assert_eq!(size, 2); // for + body
+    }
+
+    // Test 36: check_recursion - match arms
+    #[test]
+    fn test_check_recursion_in_match() {
+        use crate::frontend::ast::{MatchArm, Pattern};
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                value: Box::new(int_lit(1)),
+                arms: vec![MatchArm {
+                    pattern: Pattern::Literal(Literal::Integer(1, None)),
+                    guard: None,
+                    body: Expr::new(
+                        ExprKind::Call {
+                            func: Box::new(ident("factorial")),
+                            args: vec![int_lit(1)],
+                        },
+                        Span::default(),
+                    ),
+                }],
+            },
+            Span::default(),
+        );
+        assert!(check_recursion("factorial", &match_expr));
+    }
+
+    // Test 37: accesses_global_variables - block with let
+    #[test]
+    fn test_accesses_global_variables_nested_block() {
+        use crate::frontend::ast::Param;
+        let params = vec![];
+        let body = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(
+                    ExprKind::Let {
+                        name: "local".to_string(),
+                        type_annotation: None,
+                        value: Box::new(ident("global")),
+                        body: Box::new(ident("local")),
+                        is_mutable: false,
+                        else_block: None,
+                    },
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        assert!(accesses_global_variables(&params, &body));
+    }
+
+    // Test 38: substitute_identifiers - while loop
+    #[test]
+    fn test_substitute_identifiers_while() {
+        let mut subs = HashMap::new();
+        subs.insert("n".to_string(), int_lit(10));
+        let while_loop = Expr::new(
+            ExprKind::While {
+                condition: Box::new(binary(ident("n"), BinaryOp::Gt, int_lit(0))),
+                body: Box::new(ident("n")),
+            },
+            Span::default(),
+        );
+        let result = substitute_identifiers(while_loop, &subs);
+        if let ExprKind::While { condition, body } = result.kind {
+            if let ExprKind::Binary { left, .. } = condition.kind {
+                assert!(matches!(left.kind, ExprKind::Literal(Literal::Integer(10, None))));
+            } else {
+                panic!("Expected binary in condition");
+            }
+            assert!(matches!(body.kind, ExprKind::Literal(Literal::Integer(10, None))));
+        } else {
+            panic!("Expected while expression");
+        }
+    }
 }
