@@ -4,6 +4,16 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[RUNTIME-ISSUE-148] Interpreter &mut self Mutations** Fixed struct method mutations not persisting in interpreter mode (EXTREME TDD)
+  - **Root Cause**: Value::Struct method calls created new struct with modified fields but didn't update original variable binding
+  - **Solution**: Modified eval_method_call to track receiver variable, execute method with self capture, update variable with modified struct
+  - **Tests**: 6/6 comprehensive tests passing (single mutation, multiple mutations, mixed &self/&mut self, isolation)
+  - **Files Modified**: src/runtime/interpreter.rs (eval_method_call:4447-4472, eval_struct_instance_method_with_self_capture:4968-5053)
+  - **Verification**: Calculator example outputs 15 (was 0), all 18 tools validated, 5099 library tests pass
+  - **Related**: GitHub Issue #148, PARSER-147 (separate parser fix in commit f33b8710)
+  - **Commit**: faf46106
+
 ### Added
 - **[PMAT] Quality Gates Configuration** Created .pmat-gates.toml with quality thresholds
   - **Coverage baseline**: 68.0% (current: 68.42%, target: 80%)

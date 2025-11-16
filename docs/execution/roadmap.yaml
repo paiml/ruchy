@@ -10547,3 +10547,77 @@ next_sprint:
         - "✅ examples/02_functions.ruchy default params working"
         - "✅ Default value evaluation working"
         - "✅ Required param count checking working"
+
+  - id: "RUNTIME-ISSUE-148"
+    title: "Fix &mut self mutations not persisting in interpreter mode"
+    status: "COMPLETE"
+    completed: "2025-11-16"
+    priority: "🔴 CRITICAL"
+    github_issue: "https://github.com/paiml/ruchy/issues/148"
+    category: "Runtime Interpreter"
+    time_estimated: "4 hours"
+    time_actual: "2.5 hours"
+    efficiency: "160%"
+    description: |
+      Fixed critical interpreter bug where &mut self method calls modified struct fields
+      but changes didn't persist to original variable. Discovered via comprehensive
+      multi-tool testing (18 tools, 2,628 validations).
+    root_cause: |
+      Value::Struct method calls created new struct with modified fields in method
+      environment, but eval_method_call didn't update the original variable binding
+      after method execution. Architecture mismatch: struct instances use value semantics
+      (Arc<HashMap>), but variable binding wasn't updated post-mutation.
+    five_whys:
+      - "Why? Mutations don't persist → eval_struct_instance_method_mut doesn't write back"
+      - "Why? It calls eval_struct_instance_method expecting HashMap modification"
+      - "Why? Method creates Value::Struct for self, not direct HashMap access"
+      - "Why? Value::Struct uses Arc<HashMap> (immutable), modifications create new struct"
+      - "Why (ROOT)? Variable binding not updated after method execution"
+    solution: |
+      Modified eval_method_call to detect Value::Struct receiver on identifier,
+      execute method with self capture via eval_struct_instance_method_with_self_capture,
+      extract modified struct fields, and update variable with modified struct.
+    implementation:
+      files:
+        - "src/runtime/interpreter.rs (eval_method_call:4447-4472)"
+        - "src/runtime/interpreter.rs (eval_struct_instance_method_with_self_capture:4968-5053 - NEW helper)"
+        - "tests/runtime_issue_148_struct_mut_self.rs (NEW, 6 comprehensive tests, 218 lines)"
+      changes:
+        - "Added Value::Struct handling in eval_method_call after ObjectMut handling"
+        - "Track receiver variable name from Expr::Identifier"
+        - "Execute method with new helper that captures modified self before env pop"
+        - "Update variable binding with modified struct fields if method mutated self"
+    extreme_tdd_validation:
+      red: "6/6 tests initially failing (single mutation, multiple mutations, mixed calls, isolation)"
+      green: "6/6 tests passing after complete fix"
+      refactor: "Helper function with ≤10 complexity, proper error handling"
+      validate: "5099 library tests pass, all 18 tools validated"
+    tests:
+      test_file: "tests/runtime_issue_148_struct_mut_self.rs"
+      unit: 6
+      passing: "6/6 (100%)"
+      coverage:
+        - "test_issue_148_01_single_mut_self_mutation (Counter::increment)"
+        - "test_issue_148_02_multiple_mut_self_mutations (Calculator::add twice)"
+        - "test_issue_148_03_mutation_persists_across_method_calls (Point::move_x twice)"
+        - "test_issue_148_04_mixed_self_mut_self_calls (Account deposit/withdraw)"
+        - "test_issue_148_05_self_mutation_via_assignment (Temperature::set)"
+        - "test_issue_148_06_multiple_instances_isolated (Two Counter instances)"
+    verification:
+      - "✅ Calculator example: outputs 15 (was 0 before fix)"
+      - "✅ ruchy check: Syntax valid"
+      - "✅ ruchy transpile: Correct Rust code generated"
+      - "✅ ruchy compile: Binary compiles successfully"
+      - "✅ ruchy run: Correct execution (15)"
+      - "✅ All 18 tools validated (check, transpile, -e, lint, compile, run, etc.)"
+      - "✅ 5099 library tests pass, 0 failed"
+    quality:
+      complexity_actual: 8
+      complexity_max: 10
+      tdg_grade: "A+"
+      satd: 0
+      pre_commit_passes: true
+    related_work:
+      - "PARSER-147: Separate parser fix for struct method syntax (commit f33b8710)"
+      - "GitHub Issue #148: Original bug report from multi-tool testing"
+    commit: "faf46106"
