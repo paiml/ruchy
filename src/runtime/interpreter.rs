@@ -4443,6 +4443,33 @@ impl Interpreter {
 
                 return Ok(result);
             }
+
+            // RUNTIME-ISSUE-148 FIX: Handle Value::Struct method calls with &mut self
+            // Structs use value semantics - method modifications create a new struct that must replace the variable
+            if let Value::Struct { name, fields } = &receiver_value {
+                // Check if this struct has impl methods (not just generic object methods)
+                let qualified_method_name = format!("{}::{}", name, method);
+                if self.lookup_variable(&qualified_method_name).is_ok() {
+                    // This is a struct with custom methods - use capture version
+                    let (result, modified_fields_opt) = self.eval_struct_instance_method_with_self_capture(
+                        fields,
+                        name,
+                        method,
+                        &arg_values,
+                    )?;
+
+                    // If method modified self, update the variable with modified struct
+                    if let Some(modified_fields) = modified_fields_opt {
+                        let new_struct = Value::Struct {
+                            name: name.clone(),
+                            fields: modified_fields,
+                        };
+                        self.set_variable(var_name, new_struct);
+                    }
+
+                    return Ok(result);
+                }
+            }
         }
 
         self.dispatch_method_call(&receiver_value, method, &arg_values, args.is_empty())
@@ -4935,8 +4962,121 @@ impl Interpreter {
         method: &str,
         arg_values: &[Value],
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.lock().unwrap();
-        self.eval_struct_instance_method(&instance, struct_name, method, arg_values)
+        // RUNTIME-ISSUE-148 FIX: Handle &mut self mutations correctly
+        // Strategy: Execute method with modified version that returns (result, modified_self)
+
+        // Clone instance data before executing method
+        let instance_data = {
+            let locked = cell_rc.lock().unwrap();
+            locked.clone()
+        };
+
+        // Execute the method and capture modified self
+        let (result, modified_self_opt) = self.eval_struct_instance_method_with_self_capture(
+            &instance_data,
+            struct_name,
+            method,
+            arg_values,
+        )?;
+
+        // If self was modified, write fields back to ObjectMut
+        if let Some(modified_fields) = modified_self_opt {
+            let mut locked = cell_rc.lock().unwrap();
+            for (field_name, field_value) in modified_fields.iter() {
+                locked.insert(field_name.clone(), field_value.clone());
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Helper: Execute struct method and capture modified self
+    /// Returns (method_result, Option<modified_self_fields>)
+    fn eval_struct_instance_method_with_self_capture(
+        &mut self,
+        instance: &std::collections::HashMap<String, Value>,
+        struct_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<(Value, Option<std::sync::Arc<std::collections::HashMap<String, Value>>>), InterpreterError> {
+        // Look up impl method with qualified name
+        let qualified_method_name = format!("{}::{}", struct_name, method);
+
+        if let Ok(method_closure) = self.lookup_variable(&qualified_method_name) {
+            if let Value::Closure { params, body, env } = method_closure {
+                // Check argument count (including self)
+                let expected_args = params.len();
+                let provided_args = arg_values.len() + 1; // +1 for self
+
+                if provided_args != expected_args {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Method {} expects {} arguments, got {}",
+                        method,
+                        expected_args - 1, // -1 because self is implicit
+                        arg_values.len()
+                    )));
+                }
+
+                // Create new environment with method's captured environment as base
+                let mut new_env = env.borrow().clone();
+
+                // Bind self parameter (first parameter)
+                let self_param_name = if let Some((name, _)) = params.first() {
+                    new_env.insert(
+                        name.clone(),
+                        Value::Struct {
+                            name: struct_name.to_string(),
+                            fields: std::sync::Arc::new(instance.clone()),
+                        },
+                    );
+                    name.clone()
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "Method has no self parameter".to_string(),
+                    ));
+                };
+
+                // Bind other parameters
+                for (i, arg_value) in arg_values.iter().enumerate() {
+                    if let Some((param_name, _)) = params.get(i + 1) {
+                        new_env.insert(param_name.clone(), arg_value.clone());
+                    }
+                }
+
+                // Execute method body with new environment
+                self.env_stack.push(Rc::new(RefCell::new(new_env)));
+                let result = self.eval_expr(&body);
+
+                // CRITICAL: Extract modified self BEFORE popping environment
+                let modified_self = if let Some(env_rc) = self.env_stack.last() {
+                    let env_ref = env_rc.borrow();
+                    if let Some(Value::Struct { fields, .. }) = env_ref.get(&self_param_name) {
+                        Some(fields.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                self.env_stack.pop();
+
+                result.map(|r| (r, modified_self))
+            } else {
+                Err(InterpreterError::RuntimeError(format!(
+                    "Found {} but it's not a method closure",
+                    qualified_method_name
+                )))
+            }
+        } else {
+            // Fall back to generic method handling - no self modifications
+            let result = self.eval_generic_method(
+                &Value::Object(std::sync::Arc::new(instance.clone())),
+                method,
+                arg_values.is_empty(),
+            )?;
+            Ok((result, None))
+        }
     }
 
     /// ISSUE-116: Evaluate File object methods (.`read_line()`, .`close()`)
