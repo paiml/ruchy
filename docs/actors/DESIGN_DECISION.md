@@ -166,7 +166,7 @@ This is **faster than Actix for single-actor workloads** because:
 
 - [Erlang Scheduler Internals](http://erlang.org/doc/efficiency_guide/processes.html)
 - [JavaScript Event Loop](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop)
-- [Actix Performance](https://github.com/actix/actix/blob/master/BENCHMARKS.md)
+- [Actix Framework](https://github.com/actix/actix)
 - [Rc vs Arc Performance](https://doc.rust-lang.org/std/rc/struct.Rc.html)
 
 ---

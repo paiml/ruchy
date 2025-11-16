@@ -257,4 +257,4 @@ Futures are the foundation of async programming in Ruchy. Use high-level combina
 
 ---
 
-[← Previous: Async/Await](./04-async-await.md) | [Next: Concurrency →](./06-concurrency.md)
+[← Previous: Async/Await](./04-async-await.md)

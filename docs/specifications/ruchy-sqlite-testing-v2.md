@@ -792,7 +792,7 @@ mod type_soundness_proofs {
              * Example: Γ ⊢ (λx:Int. x + 1) 5 : Int
              *   - Γ, x:Int ⊢ x + 1 : Int
              *   - Γ ⊢ 5 : Int
-             *   - Therefore: Γ ⊢ `[x ↦ 5](x + 1)` = 5 + 1 : Int
+             *   - Therefore: Γ ⊢ substitution&#91;x ↦ 5&#93;(x + 1) = 5 + 1 : Int
              */
             
             // Type check e1 in context Γ

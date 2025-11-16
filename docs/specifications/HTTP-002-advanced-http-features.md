@@ -756,7 +756,6 @@ ruchy scrape https://example.com --selector "h1" --output data.json
 
 ## References
 
-- [BUG_ZSH_COMMAND_EXECUTION.md](../../../interactive.paiml.com/wasm/ruchy/BUG_ZSH_COMMAND_EXECUTION.md)
 - [ApacheBench Documentation](https://httpd.apache.org/docs/2.4/programs/ab.html)
 - [Scraper Crate Documentation](https://docs.rs/scraper/latest/scraper/)
-- [HTTP-001 Specification](./HTTP-001-basic-http-server.md)
+- [Axum Framework](https://docs.rs/axum/latest/axum/)
