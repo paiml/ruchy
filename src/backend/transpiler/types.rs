@@ -1771,7 +1771,11 @@ mod tests {
     #[test]
     fn test_transpile_reference_type_mut_with_lifetime() {
         let transpiler = Transpiler::new();
-        let inner = make_type(TypeKind::Named("Vec<i32>".to_string()));
+        // Use Generic instead of Named for Vec<i32>
+        let inner = make_type(TypeKind::Generic {
+            base: "Vec".to_string(),
+            params: vec![make_type(TypeKind::Named("i32".to_string()))],
+        });
         let result = transpiler.transpile_reference_type(true, Some("'b"), &inner).unwrap();
         let code = result.to_string();
         assert!(code.contains("'b"));
@@ -1802,16 +1806,15 @@ mod tests {
         Constructor {
             name: name.map(|n| n.to_string()),
             params: vec![],
-            body: Expr {
+            body: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(0, None)),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            },
+            }),
             return_type,
             is_pub: true,
-            span: crate::frontend::ast::Span::new(0, 0),
         }
     }
 
@@ -1832,7 +1835,14 @@ mod tests {
     #[test]
     fn test_transpile_constructors_with_return_type() {
         let transpiler = Transpiler::new();
-        let ret_type = make_type(TypeKind::Named("Result<Self, Error>".to_string()));
+        // Use Generic instead of Named for Result<Self, Error>
+        let ret_type = make_type(TypeKind::Generic {
+            base: "Result".to_string(),
+            params: vec![
+                make_type(TypeKind::Named("Self".to_string())),
+                make_type(TypeKind::Named("Error".to_string())),
+            ],
+        });
         let ctors = vec![make_constructor(None, Some(ret_type))];
         let result = transpiler.transpile_constructors(&ctors).unwrap();
         assert_eq!(result.len(), 1);
@@ -1843,21 +1853,25 @@ mod tests {
 
     // Helper: Create ClassMethod for testing
     fn make_class_method(name: &str, is_pub: bool) -> ClassMethod {
-        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        use crate::frontend::ast::{Expr, ExprKind, Literal, SelfType};
         ClassMethod {
             name: name.to_string(),
             params: vec![],
             return_type: None,
-            body: Expr {
+            body: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            },
+            }),
             is_pub,
             is_async: false,
-            span: crate::frontend::ast::Span::new(0, 0),
+            is_static: false,
+            is_override: false,
+            is_final: false,
+            is_abstract: false,
+            self_type: SelfType::None,
         }
     }
 
@@ -1888,7 +1902,6 @@ mod tests {
                 trailing_comment: None,
             },
             is_pub,
-            span: crate::frontend::ast::Span::new(0, 0),
         }
     }
 

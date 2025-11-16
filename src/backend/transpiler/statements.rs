@@ -1026,11 +1026,14 @@ impl Transpiler {
     }
 
     /// Check if function body returns a Vec/array (ISSUE-113)
-    /// Detects: [], `array.push()`, array literals
+    /// Detects: [], `array.push()`, array literals, vec! macro
     fn returns_vec(&self, body: &Expr) -> bool {
         match &body.kind {
             // Array literal []
             ExprKind::List(_) => true,
+
+            // vec! macro invocation
+            ExprKind::MacroInvocation { name, .. } if name == "vec!" => true,
 
             // Return statement with vec
             ExprKind::Return { value: Some(val) } => self.returns_vec(val),
@@ -1164,6 +1167,7 @@ impl Transpiler {
         matches!(&expr.kind,
             ExprKind::Literal(Literal::String(_))
             | ExprKind::Binary { op: BinaryOp::Add, .. }
+            | ExprKind::StringInterpolation { .. }
         )
     }
 
@@ -7727,8 +7731,9 @@ mod property_tests_statements {
         };
         let for_expr = Expr {
             kind: ExprKind::For {
-                pattern: Pattern::Identifier("item".to_string()),
-                iterable: Box::new(Expr {
+                var: "item".to_string(),
+                pattern: Some(Pattern::Identifier("item".to_string())),
+                iter: Box::new(Expr {
                     kind: ExprKind::List(vec![]),
                     span: Span::default(),
                     attributes: vec![],
@@ -7785,6 +7790,7 @@ mod property_tests_statements {
                     pattern: Pattern::Wildcard,
                     guard: None,
                     body: Box::new(assign),
+                    span: Span::default(),
                 }],
             },
             span: Span::default(),
@@ -7826,6 +7832,7 @@ mod property_tests_statements {
                 body: Box::new(inc),
                 type_annotation: None,
                 is_mutable: false,
+                else_block: None,
             },
             span: Span::default(),
             attributes: vec![],
@@ -7985,7 +7992,6 @@ mod property_tests_statements {
                 receiver: Box::new(assign),
                 method: "process".to_string(),
                 args: vec![],
-                turbofish: None,
             },
             span: Span::default(),
             attributes: vec![],
@@ -8023,9 +8029,11 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
         let params = vec![
             Param {
-                name: "x".to_string(),
+                pattern: Pattern::Identifier("x".to_string()),
                 ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::default() },
-                default: None,
+                default_value: None,
+                span: Span::default(),
+                is_mutable: false,
             }
         ];
         assert!(!transpiler.needs_lifetime_parameter(&params, None));
@@ -8044,8 +8052,8 @@ mod property_tests_statements {
             span: Span::default(),
         };
         let params = vec![
-            Param { name: "a".to_string(), ty: ref_type.clone(), default: None },
-            Param { name: "b".to_string(), ty: ref_type.clone(), default: None },
+            Param { pattern: Pattern::Identifier("a".to_string()), ty: ref_type.clone(), default_value: None, span: Span::default(), is_mutable: false },
+            Param { pattern: Pattern::Identifier("b".to_string()), ty: ref_type.clone(), default_value: None, span: Span::default(), is_mutable: false },
         ];
         let return_type = Some(&ref_type);
         assert!(transpiler.needs_lifetime_parameter(&params, return_type));
@@ -8221,32 +8229,68 @@ mod property_tests_statements {
     // Test 132: returns_boolean - with boolean literal
     #[test]
     fn test_returns_boolean_literal() {
-        let body = create_literal_expr(crate::frontend::ast::Literal::Boolean(true));
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::Bool(true)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(Transpiler::returns_boolean(&body));
     }
 
     // Test 133: returns_boolean - with comparison
     #[test]
     fn test_returns_boolean_comparison() {
-        let body = create_binary_expr(
-            create_literal_expr(crate::frontend::ast::Literal::Integer(5, None)),
-            crate::frontend::ast::BinaryOp::Eq,
-            create_literal_expr(crate::frontend::ast::Literal::Integer(5, None)),
-        );
+        let body = Expr {
+            kind: ExprKind::Binary {
+                left: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(5, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+                op: BinaryOp::Equal,
+                right: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(5, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(Transpiler::returns_boolean(&body));
     }
 
     // Test 134: returns_string_literal - with string
     #[test]
     fn test_returns_string_literal_true() {
-        let body = create_literal_expr(crate::frontend::ast::Literal::String("test".to_string()));
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::String("test".to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(Transpiler::returns_string_literal(&body));
     }
 
     // Test 135: returns_string_literal - with non-string
     #[test]
     fn test_returns_string_literal_false() {
-        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(!Transpiler::returns_string_literal(&body));
     }
 
@@ -8254,7 +8298,16 @@ mod property_tests_statements {
     #[test]
     fn test_returns_vec_macro() {
         let transpiler = Transpiler::new();
-        let body = create_macro_expr("vec!", vec![]);
+        let body = Expr {
+            kind: ExprKind::MacroInvocation {
+                name: "vec!".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.returns_vec(&body));
     }
 
@@ -8262,9 +8315,21 @@ mod property_tests_statements {
     #[test]
     fn test_returns_vec_list() {
         let transpiler = Transpiler::new();
-        let body = create_list_expr(vec![
-            create_literal_expr(crate::frontend::ast::Literal::Integer(1, None)),
-        ]);
+        let body = Expr {
+            kind: ExprKind::List(vec![
+                Expr {
+                    kind: ExprKind::Literal(Literal::Integer(1, None)),
+                    span: Span::default(),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }
+            ]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.returns_vec(&body));
     }
 
@@ -8272,7 +8337,15 @@ mod property_tests_statements {
     #[test]
     fn test_returns_object_literal_true() {
         let transpiler = Transpiler::new();
-        let body = create_object_expr(vec![]);
+        let body = Expr {
+            kind: ExprKind::ObjectLiteral {
+                fields: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.returns_object_literal(&body));
     }
 
@@ -8280,7 +8353,13 @@ mod property_tests_statements {
     #[test]
     fn test_returns_object_literal_false() {
         let transpiler = Transpiler::new();
-        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(!transpiler.returns_object_literal(&body));
     }
 
@@ -8288,7 +8367,13 @@ mod property_tests_statements {
     #[test]
     fn test_expr_is_string_literal() {
         let transpiler = Transpiler::new();
-        let expr = create_literal_expr(crate::frontend::ast::Literal::String("test".to_string()));
+        let expr = Expr {
+            kind: ExprKind::Literal(Literal::String("test".to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.expr_is_string(&expr));
     }
 
@@ -8296,7 +8381,15 @@ mod property_tests_statements {
     #[test]
     fn test_expr_is_string_interpolation() {
         let transpiler = Transpiler::new();
-        let expr = create_string_interpolation_expr(vec![]);
+        let expr = Expr {
+            kind: ExprKind::StringInterpolation {
+                parts: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.expr_is_string(&expr));
     }
 
@@ -8304,7 +8397,13 @@ mod property_tests_statements {
     #[test]
     fn test_has_non_unit_expression_true() {
         let transpiler = Transpiler::new();
-        let body = create_literal_expr(crate::frontend::ast::Literal::Integer(42, None));
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.has_non_unit_expression(&body));
     }
 
@@ -8312,7 +8411,13 @@ mod property_tests_statements {
     #[test]
     fn test_has_non_unit_expression_false() {
         let transpiler = Transpiler::new();
-        let body = create_literal_expr(crate::frontend::ast::Literal::Unit);
+        let body = Expr {
+            kind: ExprKind::Literal(Literal::Unit),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(!transpiler.has_non_unit_expression(&body));
     }
 
@@ -8320,7 +8425,13 @@ mod property_tests_statements {
     #[test]
     fn test_is_void_expression_unit() {
         let transpiler = Transpiler::new();
-        let expr = create_literal_expr(crate::frontend::ast::Literal::Unit);
+        let expr = Expr {
+            kind: ExprKind::Literal(Literal::Unit),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
         assert!(transpiler.is_void_expression(&expr));
     }
 }
