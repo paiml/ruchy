@@ -277,10 +277,9 @@ code block
 \`\`\`
 ```
 
-**Links & Images**:
+**Links**:
 ```markdown
 [Link text](https://example.com)
-![Alt text](image.jpg)
 ```
 
 **Tables**:

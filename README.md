@@ -529,8 +529,6 @@ make qa-help
 
 - [Language Specification](docs/SPECIFICATION.md)
 - [Development Roadmap](docs/execution/roadmap.yaml)
-- [Contributing Guide](CONTRIBUTING.md)
-- [Architecture Overview](docs/architecture/README.md)
 
 ## Related Resources
 
@@ -541,7 +539,7 @@ make qa-help
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and development process.
+We welcome contributions! See the repository for development guidelines and our code of conduct.
 
 ## License
 

@@ -47,7 +47,7 @@ let config = ConfigBuilder::new()
   .build()
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/patterns.rs](../../../../tests/lang_comp/advanced/patterns.rs)
+**Test Coverage**: ✅ [tests/lang_comp/pattern_matching.rs](../../../../../tests/lang_comp/pattern_matching.rs)
 
 **Expected Output**: Config object built
 

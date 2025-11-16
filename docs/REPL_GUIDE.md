@@ -571,7 +571,7 @@ Once comfortable with the REPL basics:
 3. Use `:transpile` to generate minimal Rust code for self-hosting
 4. Use `:compile` to see optimized generated Rust code
 5. Read the [Language Specification](./SPECIFICATION.md) for advanced features
-6. Check [ROADMAP.md](../ROADMAP.md) to see what's coming next
+6. Check docs/execution/roadmap.yaml to see what's coming next
 7. Explore the self-hosting achievement in [SELF_HOSTING_ACHIEVEMENT.md](../SELF_HOSTING_ACHIEVEMENT.md)
 
 Remember: The REPL is your friend and now supports self-hosting development! It's the fastest way to learn Ruchy and test compiler ideas. Keep it open while coding and use it to verify your understanding.

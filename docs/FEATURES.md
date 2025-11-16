@@ -548,8 +548,7 @@ RUCHY_COLORS=1                      # Enable colored output
 
 ### Documentation
 - [API Documentation](https://docs.rs/ruchy)
-- [Language Specification](docs/SPECIFICATION.md)
-- [Standard Library Reference](docs/STANDARD_LIBRARY_SPEC.md)
+- [Language Specification](SPECIFICATION.md)
 - [Tutorial](https://ruchy-lang.org/tutorial)
 
 ### Community

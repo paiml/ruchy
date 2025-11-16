@@ -14,7 +14,7 @@ let duration = start.elapsed()
 println!("Time: {:?}", duration)
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/optimization.rs](../../../../tests/lang_comp/advanced/optimization.rs)
+**Test Coverage**: ✅ [tests/lang_comp/functions.rs](../../../../../tests/lang_comp/functions.rs)
 
 **Expected Output**: Execution time measured
 

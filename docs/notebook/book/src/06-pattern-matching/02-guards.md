@@ -16,7 +16,7 @@ match value {
 // Returns: "Normal"
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/pattern_matching/guards.rs](../../../../tests/lang_comp/pattern_matching/guards.rs)
+**Test Coverage**: ✅ [tests/lang_comp/pattern_matching.rs](../../../../../tests/lang_comp/pattern_matching.rs)
 
 ### Try It in the Notebook
 

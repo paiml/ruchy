@@ -17,7 +17,7 @@ struct Person {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/data_structures/structs.rs](../../../../tests/lang_comp/data_structures/structs.rs)
+**Test Coverage**: ✅ [tests/lang_comp/structs.rs](../../../../../tests/lang_comp/structs.rs)
 
 ### Try It in the Notebook
 

@@ -5,6 +5,18 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[DOCS] Documentation Link Fixes** Reduced broken documentation links from 115 to 37 (64.8% reduction, 68 links fixed)
+  - **Files modified**: 58 documentation files (README.md, docs/, ruchy-wasm/)
+  - **Fixes applied**:
+    - Created LICENSE-MIT symlink
+    - Removed dual-license references (project is MIT-only)
+    - Fixed 40+ relative path errors in notebook book chapters
+    - Removed references to non-existent files (CONTRIBUTING.md, architecture/README.md, SELF_HOSTING_ACHIEVEMENT.md)
+    - Updated roadmap.md references to roadmap.yaml (single source of truth)
+    - Fixed test file references to point to consolidated test files
+  - **Remaining**: 37 broken links (14 HTTP 404s from unpublished crates, 23 missing internal files)
+  - **Validation**: `pmat validate-docs --fail-on-error` (561 valid, 37 broken, 5410ms)
+  - **Approach**: Systematic fix-and-verify following PMAT documentation workflow
 - **[COVERAGE-SPRINT] AST Structure Fixes** Fixed all 68 compilation errors and test failures from coverage sprint batches 20-23 (Toyota Way: zero tolerance for defects)
   - **Compilation errors**: 58 → 0 (systematically fixed across 6 files)
   - **Test failures**: 10 → 0 (fixed helper functions and test assertions)

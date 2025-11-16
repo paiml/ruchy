@@ -24,7 +24,7 @@ text.to_lower()  // Returns: "hello world"
 
 **Expected Output**: `"hello world"`
 
-**Test Coverage**: ✅ [tests/lang_comp/strings/methods.rs](../../../../tests/lang_comp/strings/methods.rs)
+**Test Coverage**: ✅ [tests/lang_comp/string_interpolation.rs](../../../../../tests/lang_comp/string_interpolation.rs)
 
 ### Try It in the Notebook
 

@@ -438,11 +438,10 @@ ruchy score . --min=0.8
 
 ## Examples
 
-See the [examples directory](../../examples/testing/) for comprehensive test examples and patterns.
+See the [examples directory](../../examples/) for comprehensive examples demonstrating various Ruchy features.
 
 ## See Also
 
 - [`ruchy lint`](ruchy-lint.md) - Code quality analysis
 - [`ruchy prove`](ruchy-prove.md) - Mathematical proof verification
 - [`ruchy score`](ruchy-score.md) - Unified quality scoring
-- [Testing Guide](../guides/testing.md) - Comprehensive testing strategies

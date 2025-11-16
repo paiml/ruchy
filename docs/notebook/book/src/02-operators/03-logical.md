@@ -27,7 +27,7 @@ can_drive  // Returns: true
 
 **Expected Output**: `true`
 
-**Test Coverage**: ✅ [tests/lang_comp/operators/logical.rs](../../../../tests/lang_comp/operators/logical.rs)
+**Test Coverage**: ✅ [tests/lang_comp/operators.rs](../../../../../tests/lang_comp/operators.rs)
 
 ### OR (`||`)
 
@@ -648,4 +648,4 @@ Logical operators are fundamental for creating complex conditions and controllin
 
 ---
 
-[← Previous: Comparison Operators](./02-comparison.md) | [Next: If-Else Expressions →](../../03-control-flow/01-if-else.md)
+[← Previous: Comparison Operators](./02-comparison.md) | [Next: If-Else Expressions →](../03-control-flow/01-if-else.md)

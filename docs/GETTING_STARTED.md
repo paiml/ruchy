@@ -436,7 +436,6 @@ text.contains("World") // true
 
 - Explore the [Language Reference](SPECIFICATION.md) for complete feature documentation
 - Check out [Examples](../examples/) for more code samples
-- Read about [Advanced Features](advanced.md) like actors and macros
 - Join the community at [GitHub Discussions](https://github.com/paiml/ruchy/discussions)
 
 ## Getting Help

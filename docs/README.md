@@ -15,11 +15,10 @@
 ### Core Documents
 - [SPECIFICATION.md](SPECIFICATION.md) - Complete self-hosting language specification (v14.0)
 - [REPL_GUIDE.md](REPL_GUIDE.md) - Interactive development guide with self-hosting features
-- [Self-Hosting Achievement](../SELF_HOSTING_ACHIEVEMENT.md) - Historic milestone documentation
 
 ### Self-Hosting Specifications
 - [specifications/ruchy-group5-mvp-self-hosting.spec.md](specifications/ruchy-group5-mvp-self-hosting.spec.md) - Complete self-hosting specification
-- [execution/roadmap.md](execution/roadmap.md) - Self-hosting implementation roadmap
+- [execution/roadmap.yaml](execution/roadmap.yaml) - Development roadmap
 
 ### Architecture  
 - [architecture/](architecture/) - System design documents
@@ -37,8 +36,8 @@ Following CLAUDE.md quality requirements:
 
 ## 📝 Updates
 
-All specification changes must update [SPECIFICATION.md](SPECIFICATION.md). 
-All planning and tracking goes in [../ROADMAP.md](../ROADMAP.md).
+All specification changes must update [SPECIFICATION.md](SPECIFICATION.md).
+All planning and tracking goes in [execution/roadmap.yaml](execution/roadmap.yaml).
 
 ---
 *Consolidated: 2025-01-17*

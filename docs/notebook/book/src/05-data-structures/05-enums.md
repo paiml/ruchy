@@ -20,7 +20,7 @@ enum Direction {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/data_structures/enums.rs](../../../../tests/lang_comp/data_structures/enums.rs)
+**Test Coverage**: ✅ [tests/lang_comp/enums.rs](../../../../../tests/lang_comp/enums.rs)
 
 ### Try It in the Notebook
 
