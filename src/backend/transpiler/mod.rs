@@ -2595,6 +2595,7 @@ mod tests {
                 body: Box::new(create_test_literal_expr(0)),
                 type_annotation: None,
                 is_mutable: false,
+                else_block: None,
             },
             span: Span::default(),
             attributes: vec![],
@@ -2853,7 +2854,8 @@ mod tests {
         let ref_type = Type {
             kind: TypeKind::Reference {
                 inner: Box::new(create_simple_type("i64")),
-                is_mutable: false,
+                is_mut: false,
+                lifetime: None,
             },
             span: Span::default(),
         };

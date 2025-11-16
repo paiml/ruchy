@@ -531,7 +531,7 @@ mod tests {
         use crate::frontend::ast::Literal;
         let transpiler = test_transpiler();
         let expr = Expr {
-            kind: ExprKind::Literal(Literal::Float(3.14, None)),
+            kind: ExprKind::Literal(Literal::Float(3.14)),
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -547,7 +547,7 @@ mod tests {
         use crate::frontend::ast::Literal;
         let transpiler = test_transpiler();
         let expr = Expr {
-            kind: ExprKind::Literal(Literal::Float(2.71828, None)),
+            kind: ExprKind::Literal(Literal::Float(2.71828)),
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -598,7 +598,7 @@ mod tests {
         let expr = Expr {
             kind: ExprKind::Return {
                 value: Some(Box::new(Expr {
-                    kind: ExprKind::BinaryOp {
+                    kind: ExprKind::Binary {
                         left: Box::new(int_expr(10)),
                         op: BinaryOp::Add,
                         right: Box::new(int_expr(20)),
@@ -733,7 +733,7 @@ mod tests {
             kind: ExprKind::Break {
                 label: None,
                 value: Some(Box::new(Expr {
-                    kind: ExprKind::Literal(Literal::Boolean(true)),
+                    kind: ExprKind::Literal(Literal::Bool(true)),
                     span: Span::default(),
                     attributes: vec![],
                     leading_comments: vec![],

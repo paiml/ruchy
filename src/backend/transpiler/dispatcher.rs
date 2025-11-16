@@ -960,6 +960,7 @@ mod tests {
                     pattern: Pattern::Wildcard,
                     guard: None,
                     body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                    span: Span::default(),
                 }],
             },
             Span::default(),
@@ -1031,7 +1032,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::IfLet {
                 pattern: Pattern::Wildcard,
-                value: Box::new(Expr::new(ExprKind::Identifier("opt".to_string()), Span::default())),
+                expr: Box::new(Expr::new(ExprKind::Identifier("opt".to_string()), Span::default())),
                 then_branch: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 else_branch: None,
             },
@@ -1051,7 +1052,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::WhileLet {
                 pattern: Pattern::Wildcard,
-                value: Box::new(Expr::new(ExprKind::Identifier("iter".to_string()), Span::default())),
+                expr: Box::new(Expr::new(ExprKind::Identifier("iter".to_string()), Span::default())),
                 body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 label: None,
             },
