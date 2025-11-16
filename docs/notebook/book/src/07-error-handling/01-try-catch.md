@@ -13,7 +13,7 @@ try {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/error_handling/try_catch.rs](../../../../../tests/lang_comp/error_handling/try_catch.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/error_handling/try_catch.rs -->
 
 ### Try It in the Notebook
 

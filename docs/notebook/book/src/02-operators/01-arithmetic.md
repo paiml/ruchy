@@ -26,7 +26,7 @@ total  // Returns: 21.59
 
 **Expected Output**: `21.59`
 
-**Test Coverage**: ✅ [tests/lang_comp/operators.rs](../../../../../tests/lang_comp/operators.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/operators.rs -->
 
 ### Subtraction (`-`)
 

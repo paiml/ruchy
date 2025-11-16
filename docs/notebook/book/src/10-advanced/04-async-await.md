@@ -16,7 +16,7 @@ async fn main() {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/async_await.rs](../../../../../tests/lang_comp/advanced/async_await.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/advanced/async_await.rs -->
 
 **Expected Output**: Fetched data from API
 

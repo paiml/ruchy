@@ -20,7 +20,7 @@ age  // Returns: 25
 
 **Expected Output**: `25`
 
-**Test Coverage**: ✅ [tests/lang_comp/variables.rs](../../../tests/lang_comp/variables.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/variables.rs -->
 
 ## Variable Naming Rules
 

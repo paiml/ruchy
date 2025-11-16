@@ -15,7 +15,7 @@ vec.get(1)     // Returns: Some(2)
 vec.pop()      // Returns: Some(3)
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/data_structures.rs](../../../../../tests/lang_comp/data_structures.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/data_structures.rs -->
 
 ### Try It in the Notebook
 

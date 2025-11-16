@@ -1420,7 +1420,7 @@ make wasm-quality-gate
 - [Playwright Documentation](https://playwright.dev/)
 - [proptest Guide](https://github.com/proptest-rs/proptest)
 - [cargo-mutants](https://github.com/sourcefrog/cargo-mutants)
-- [wasm-bindgen Guide](https://rustwasm.github.io/wasm-bindgen/)
+- [wasm-bindgen Guide](https://rustwasm.github.io/docs/wasm-bindgen/)
 
 ### 13.2 Internal Resources
 

@@ -11,7 +11,7 @@ let empty = ()
 let single = (42,)  // Note trailing comma for single element
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/tuples.rs](../../../../../tests/lang_comp/tuples.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/tuples.rs -->
 
 ### Try It in the Notebook
 

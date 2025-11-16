@@ -14,7 +14,7 @@ identity("hello")   // Returns: "hello" (&str)
 identity(true)      // Returns: true (bool)
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/type_annotations.rs](../../../../../tests/lang_comp/type_annotations.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/type_annotations.rs -->
 
 ### Try It in the Notebook
 

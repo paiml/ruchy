@@ -14,7 +14,7 @@ let s2 = "world"
 longest(s1, s2)  // Returns: "hello"
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/type_annotations.rs](../../../../../tests/lang_comp/type_annotations.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/type_annotations.rs -->
 
 **Expected Output**: `"hello"`
 

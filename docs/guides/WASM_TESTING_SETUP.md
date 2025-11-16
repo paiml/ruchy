@@ -651,7 +651,7 @@ fn main() {{
 - [WASM Specification](https://webassembly.github.io/spec/)
 
 ### Tools
-- [Playwright Inspector](https://playwright.dev/docs/inspector)
+- [Playwright Debugging](https://playwright.dev/docs/debug)
 - [WASM Binary Toolkit (wabt)](https://github.com/WebAssembly/wabt)
 - [wasm2wat](https://webassembly.github.io/wabt/demo/wasm2wat/) - WASM to WAT converter
 

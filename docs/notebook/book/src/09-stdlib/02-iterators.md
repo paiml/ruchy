@@ -17,7 +17,7 @@ let iter = vec.into_iter()
 let range = 0..10
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/iterators.rs](../../../../../tests/lang_comp/iterators.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/iterators.rs -->
 
 ### Try It in the Notebook
 

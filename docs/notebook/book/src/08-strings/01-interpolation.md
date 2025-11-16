@@ -12,7 +12,7 @@ f"Hello, {name}!"              // Returns: "Hello, Alice!"
 f"{name} is {age} years old"   // Returns: "Alice is 30 years old"
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/string_interpolation.rs](../../../../../tests/lang_comp/string_interpolation.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/string_interpolation.rs -->
 
 ### Try It in the Notebook
 
