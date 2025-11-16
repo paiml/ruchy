@@ -683,7 +683,7 @@ chmod +x scripts/wasm-dashboard.sh
 - [WASM Testing Setup Guide](WASM_TESTING_SETUP.md)
 - [WASM Memory Model Achievement](../execution/WASM_MEMORY_MODEL_ACHIEVEMENT.md)
 - [Playwright Test Reports](https://playwright.dev/docs/test-reporters)
-- [PMAT Documentation](https://github.com/paiml/pmat)
+- [PMAT Toolkit](https://github.com/paiml/paiml-mcp-agent-toolkit)
 
 ---
 

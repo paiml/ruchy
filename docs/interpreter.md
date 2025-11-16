@@ -349,5 +349,5 @@ All interpreter changes must pass:
 - [SPECIFICATION.md](./SPECIFICATION.md) - Language specification
 - [CLAUDE.md](../CLAUDE.md) - Development protocol
 - [Revolutionary Tools](./tools/README.md) - v0.10.0 tool documentation
-- [repl.rs](../src/runtime/repl.rs) - Interpreter source
-- [display.rs](../src/runtime/repl/display.rs) - Display formatting
+- [repl/mod.rs](../src/runtime/repl/mod.rs) - REPL main module
+- [repl/formatting.rs](../src/runtime/repl/formatting.rs) - Display formatting

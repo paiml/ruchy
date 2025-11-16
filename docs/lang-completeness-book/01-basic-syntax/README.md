@@ -119,4 +119,4 @@ x
 
 ## Next Chapter
 
-→ [Chapter 2: Operators](../02-operators/README.md) (Coming Soon)
+→ Chapter 2: Operators (Coming Soon)

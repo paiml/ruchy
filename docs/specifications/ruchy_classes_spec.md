@@ -475,7 +475,7 @@ Each OOP feature requires:
 
 ## Appendix A: Actor Implementation Detail
 
-Full 200-line actor expansion available in [`actor-transpilation.md`](actor-transpilation.md).
+Actor implementation details to be documented.
 
 ## Appendix B: Extension Method Resolution
 
