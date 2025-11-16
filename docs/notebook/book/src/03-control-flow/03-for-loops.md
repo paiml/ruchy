@@ -15,7 +15,7 @@ for i in 0..5 {
 
 **Expected Output**: `0 1 2 3 4`
 
-**Test Coverage**: ✅ [tests/lang_comp/control_flow/for_loops.rs](../../../../../tests/lang_comp/control_flow/for_loops.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/control_flow/for_loops.rs -->
 
 ### Try It in the Notebook
 

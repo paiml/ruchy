@@ -11,7 +11,7 @@ enum Option<T> {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/error_handling.rs](../../../../../tests/lang_comp/error_handling.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/error_handling.rs -->
 
 ### Try It in the Notebook
 

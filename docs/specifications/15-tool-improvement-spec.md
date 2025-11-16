@@ -798,13 +798,13 @@ jobs:
             ```
             
             ### Action Required
-            1. Review the [CI run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            1. Review the CI run at: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
             2. Fix the root cause using Five Whys analysis
             3. Add regression test
             4. Close this issue when gate passes
-            
+
             ### Quality Dashboard
-            See [QUALITY_GATES.md](QUALITY_GATES.md) for full report.
+            See quality gates documentation for full report.
 ```
 
 **This closes the loop**:

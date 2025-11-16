@@ -15,7 +15,7 @@ if type_id == TypeId::of::<i32>() {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/functions.rs](../../../../../tests/lang_comp/functions.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/functions.rs -->
 
 **Expected Output**: `"It's an i32!"`
 

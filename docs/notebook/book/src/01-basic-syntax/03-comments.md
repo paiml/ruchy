@@ -24,7 +24,7 @@ area  // Returns: 78.53975
 
 **Expected Output**: `78.53975`
 
-**Test Coverage**: ✅ [tests/lang_comp/comments.rs](../../../tests/lang_comp/comments.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/comments.rs -->
 
 ## Multi-Line Comments
 

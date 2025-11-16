@@ -11,7 +11,7 @@ let empty = []
 let mixed = [1, "two", 3.0, true]
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/data_structures.rs](../../../../../tests/lang_comp/data_structures.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/data_structures.rs -->
 
 ### Try It in the Notebook
 

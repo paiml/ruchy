@@ -553,15 +553,11 @@ RUCHY_COLORS=1                      # Enable colored output
 
 ### Community
 - [GitHub Repository](https://github.com/paiml/ruchy)
-- [Discord Server](https://discord.gg/ruchy)
-- [Forum](https://forum.ruchy-lang.org)
-- [Stack Overflow Tag](https://stackoverflow.com/questions/tagged/ruchy)
+- [GitHub Issues](https://github.com/paiml/ruchy/issues)
 
 ### Learning Resources
-- [Ruchy by Example](https://ruchy-by-example.org)
-- [The Ruchy Book](https://book.ruchy-lang.org)
-- [Video Tutorials](https://youtube.com/ruchy-lang)
-- [Interactive Playground](https://play.ruchy-lang.org)
+- [Examples Directory](https://github.com/paiml/ruchy/tree/main/examples)
+- [Language Completeness Documentation](../docs/lang-completeness-book/)
 
 ---
 

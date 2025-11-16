@@ -16,7 +16,7 @@ greet()  // Prints: Hello!
 
 **Expected Output**: `Hello!`
 
-**Test Coverage**: ✅ [tests/lang_comp/functions.rs](../../../../../tests/lang_comp/functions.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/functions.rs -->
 
 ### Try It in the Notebook
 

@@ -16,7 +16,7 @@ unsafe {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/ffi_unsafe.rs](../../../../../tests/lang_comp/advanced/ffi_unsafe.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/advanced/ffi_unsafe.rs -->
 
 **Expected Output**: `42`
 

@@ -626,9 +626,8 @@ Based on pforge's successful mutation testing:
 
 - [cargo-mutants documentation](https://mutants.rs/)
 - [Mutation Testing: A Comprehensive Survey](https://ieeexplore.ieee.org/document/5487526)
-- [pforge MUTATION_TESTING.md](../pforge/MUTATION_TESTING.md)
-- [pforge CLAUDE.md - TDD Methodology](../pforge/CLAUDE.md)
 - [State of Mutation Testing at Google (2018)](https://research.google/pubs/pub46584/)
+- [CLAUDE.md - TDD Methodology](../../CLAUDE.md)
 
 ## Appendix: Example Mutation Test Session
 

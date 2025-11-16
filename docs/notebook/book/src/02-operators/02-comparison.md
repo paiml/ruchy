@@ -25,7 +25,7 @@ is_adult  // Returns: true
 
 **Expected Output**: `true`
 
-**Test Coverage**: ✅ [tests/lang_comp/operators.rs](../../../../../tests/lang_comp/operators.rs)
+**Test Coverage**: ✅ <!-- FIXME: tests/lang_comp/operators.rs -->
 
 ### Not Equal To (`!=`)
 
