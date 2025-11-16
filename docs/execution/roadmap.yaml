@@ -2,7 +2,7 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.211"
+  version: "3.213"
   last_updated: "2025-11-12"
   current_sprint: "🚧 IN PROGRESS - EXTREME TDD Coverage Sprint (TDG-driven quality improvement)"
   latest_release: "v3.211.0"
