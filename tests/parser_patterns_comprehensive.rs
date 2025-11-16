@@ -1,7 +1,7 @@
-//! Comprehensive tests for parser/expressions_helpers/patterns.rs (1,352 lines → TDG target)
+//! Comprehensive tests for `parser/expressions_helpers/patterns.rs` (1,352 lines → TDG target)
 //!
 //! EXTREME TDD: TDG-driven testing for pattern matching and destructuring
-//! Target: src/frontend/parser/expressions_helpers/patterns.rs
+//! Target: `src/frontend/parser/expressions_helpers/patterns.rs`
 //! Coverage: Identifier, tuple, list, struct, variant, or, literal, range patterns
 
 use assert_cmd::Command;
@@ -40,12 +40,12 @@ fn test_identifier_pattern_underscore() {
 
 #[test]
 fn test_identifier_pattern_multiple() {
-    let code = r#"
+    let code = r"
         let a = 1;
         let b = 2;
         let c = 3;
         println(a + b + c)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -60,10 +60,10 @@ fn test_identifier_pattern_multiple() {
 
 #[test]
 fn test_tuple_pattern_two_elements() {
-    let code = r#"
+    let code = r"
         let (a, b) = (10, 20);
         println(a + b)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -74,10 +74,10 @@ fn test_tuple_pattern_two_elements() {
 
 #[test]
 fn test_tuple_pattern_three_elements() {
-    let code = r#"
+    let code = r"
         let (x, y, z) = (1, 2, 3);
         println(x * y * z)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -88,10 +88,10 @@ fn test_tuple_pattern_three_elements() {
 
 #[test]
 fn test_tuple_pattern_nested() {
-    let code = r#"
+    let code = r"
         let ((a, b), c) = ((1, 2), 3);
         println(a + b + c)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -103,10 +103,10 @@ fn test_tuple_pattern_nested() {
 #[test]
 fn test_tuple_pattern_with_underscore() {
     // Ignore some elements
-    let code = r#"
+    let code = r"
         let (x, _, z) = (10, 20, 30);
         println(x + z)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -121,10 +121,10 @@ fn test_tuple_pattern_with_underscore() {
 
 #[test]
 fn test_list_pattern_simple() {
-    let code = r#"
+    let code = r"
         let [a, b, c] = [1, 2, 3];
         println(a + b + c)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -137,10 +137,10 @@ fn test_list_pattern_simple() {
 #[ignore = "Parser feature gap: Rest patterns in list destructuring ([first, ...rest]) not yet implemented"]
 fn test_list_pattern_with_rest() {
     // Rest pattern: [first, ...rest]
-    let code = r#"
+    let code = r"
         let [first, ...rest] = [1, 2, 3, 4, 5];
         println(first)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -153,10 +153,10 @@ fn test_list_pattern_with_rest() {
 #[ignore = "Parser feature gap: Rest patterns in list destructuring ([first, second, ...rest]) not yet implemented"]
 fn test_list_pattern_multiple_with_rest() {
     // Multiple elements + rest
-    let code = r#"
+    let code = r"
         let [first, second, ...rest] = [10, 20, 30, 40, 50];
         println(first + second)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -171,12 +171,12 @@ fn test_list_pattern_multiple_with_rest() {
 
 #[test]
 fn test_struct_pattern_basic() {
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let p = Point { x: 10, y: 20 };
         let Point { x, y } = p;
         println(x + y)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -188,12 +188,12 @@ fn test_struct_pattern_basic() {
 #[test]
 fn test_struct_pattern_renamed_fields() {
     // Rename fields: { x: a, y: b }
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let p = Point { x: 100, y: 200 };
         let Point { x: a, y: b } = p;
         println(a + b)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -205,12 +205,12 @@ fn test_struct_pattern_renamed_fields() {
 #[test]
 fn test_struct_pattern_partial_destructure() {
     // Destructure only some fields
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32, z: i32 }
         let p = Point { x: 1, y: 2, z: 3 };
         let Point { x, .. } = p;
         println(x)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -225,13 +225,13 @@ fn test_struct_pattern_partial_destructure() {
 
 #[test]
 fn test_variant_pattern_some() {
-    let code = r#"
+    let code = r"
         let opt = Some(42);
         match opt {
             Some(x) => println(x),
             None => println(0)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -242,13 +242,13 @@ fn test_variant_pattern_some() {
 
 #[test]
 fn test_variant_pattern_none() {
-    let code = r#"
+    let code = r"
         let opt: Option<i32> = None;
         match opt {
             Some(x) => println(x),
             None => println(999)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -259,13 +259,13 @@ fn test_variant_pattern_none() {
 
 #[test]
 fn test_variant_pattern_ok() {
-    let code = r#"
+    let code = r"
         let res: Result<i32, String> = Ok(100);
         match res {
             Ok(x) => println(x),
             Err(_) => println(0)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -294,13 +294,13 @@ fn test_variant_pattern_err() {
 #[test]
 fn test_variant_pattern_nested() {
     // Some(Ok(x))
-    let code = r#"
+    let code = r"
         let nested = Some(Ok(42));
         match nested {
             Some(Ok(x)) => println(x),
             _ => println(0)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -464,12 +464,12 @@ fn test_range_pattern_multiple() {
 #[test]
 #[ignore = "Parser limitation: Struct patterns inside tuple patterns not supported - raises 'Expected ',' or ')' in pattern' error"]
 fn test_complex_tuple_struct_pattern() {
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let pair = (Point { x: 10, y: 20 }, Point { x: 30, y: 40 });
         let (Point { x: x1, y: y1 }, Point { x: x2, y: y2 }) = pair;
         println(x1 + y1 + x2 + y2)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -480,13 +480,13 @@ fn test_complex_tuple_struct_pattern() {
 
 #[test]
 fn test_complex_nested_variants() {
-    let code = r#"
+    let code = r"
         let data = Some(Ok((1, 2)));
         match data {
             Some(Ok((a, b))) => println(a + b),
             _ => println(0)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -497,13 +497,13 @@ fn test_complex_nested_variants() {
 
 #[test]
 fn test_complex_list_in_match() {
-    let code = r#"
+    let code = r"
         let items = [1, 2, 3];
         match items {
             [a, b, c] => println(a + b + c),
             _ => println(0)
         }
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -519,10 +519,10 @@ fn test_complex_list_in_match() {
 #[test]
 #[ignore = "Runtime limitation: Empty tuple pattern `let () = ()` not supported - raises 'Pattern did not match the value' error"]
 fn edge_case_empty_tuple() {
-    let code = r#"
+    let code = r"
         let () = ();
         println(42)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -533,10 +533,10 @@ fn edge_case_empty_tuple() {
 
 #[test]
 fn edge_case_single_element_tuple() {
-    let code = r#"
+    let code = r"
         let (x,) = (42,);
         println(x)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -547,10 +547,10 @@ fn edge_case_single_element_tuple() {
 
 #[test]
 fn edge_case_wildcard_in_tuple() {
-    let code = r#"
+    let code = r"
         let (_, _, x) = (1, 2, 3);
         println(x)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -561,10 +561,10 @@ fn edge_case_wildcard_in_tuple() {
 
 #[test]
 fn edge_case_deeply_nested_pattern() {
-    let code = r#"
+    let code = r"
         let (((x,),),) = (((42,),),);
         println(x)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -580,10 +580,10 @@ fn edge_case_deeply_nested_pattern() {
 #[test]
 fn error_case_pattern_mismatch_tuple_size() {
     // (a, b) = (1, 2, 3) should fail
-    let code = r#"
+    let code = r"
         let (a, b) = (1, 2, 3);
         println(a)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -594,10 +594,10 @@ fn error_case_pattern_mismatch_tuple_size() {
 #[test]
 fn error_case_pattern_mismatch_list_size() {
     // [a, b] = [1, 2, 3] should fail
-    let code = r#"
+    let code = r"
         let [a, b] = [1, 2, 3];
         println(a)
-    "#;
+    ";
     ruchy_cmd()
         .arg("-e")
         .arg(code)
@@ -614,7 +614,7 @@ fn property_tuple_patterns_1_to_10() {
     // Property: Tuple patterns work for any size 2-10 (size 1 requires trailing comma)
     for size in 2..=10 {
         let bindings = (1..=size)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(", ");
         let values = (1..=size)
@@ -622,14 +622,13 @@ fn property_tuple_patterns_1_to_10() {
             .collect::<Vec<_>>()
             .join(", ");
         let sum_expr = (1..=size)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(" + ");
         let expected_sum: i32 = (1..=size).sum();
 
         let code = format!(
-            "let ({}) = ({}); println({})",
-            bindings, values, sum_expr
+            "let ({bindings}) = ({values}); println({sum_expr})"
         );
         ruchy_cmd()
             .arg("-e")
@@ -645,7 +644,7 @@ fn property_list_patterns_1_to_10() {
     // Property: List patterns work for any size 1-10
     for size in 1..=10 {
         let bindings = (1..=size)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(", ");
         let values = (1..=size)
@@ -653,14 +652,13 @@ fn property_list_patterns_1_to_10() {
             .collect::<Vec<_>>()
             .join(", ");
         let sum_expr = (1..=size)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(" + ");
         let expected_sum: i32 = (1..=size).sum();
 
         let code = format!(
-            "let [{}] = [{}]; println({})",
-            bindings, values, sum_expr
+            "let [{bindings}] = [{values}]; println({sum_expr})"
         );
         ruchy_cmd()
             .arg("-e")
@@ -679,10 +677,10 @@ fn property_nested_tuple_depth_1_to_5() {
         let mut pattern = "x".to_string();
         let mut value = "42".to_string();
         for _ in 0..depth {
-            pattern = format!("({})", pattern);
-            value = format!("({})", value);
+            pattern = format!("({pattern})");
+            value = format!("({value})");
         }
-        let code = format!("let {} = {}; println(x)", pattern, value);
+        let code = format!("let {pattern} = {value}; println(x)");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -707,13 +705,12 @@ fn property_match_literal_ranges() {
         let expected_output = if expected_match { "match" } else { "no match" };
         let code = format!(
             r#"
-            let x = {};
+            let x = {value};
             match x {{
-                {} => println("match"),
+                {range} => println("match"),
                 _ => println("no match")
             }}
-        "#,
-            value, range
+        "#
         );
         ruchy_cmd()
             .arg("-e")

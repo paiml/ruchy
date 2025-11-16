@@ -12,7 +12,7 @@ fn eval_ruchy(code: &str) -> Result<String, String> {
     let mut parser = Parser::new(code);
     let ast = match parser.parse() {
         Ok(expr) => expr,
-        Err(e) => return Err(format!("Parse error: {:?}", e)),
+        Err(e) => return Err(format!("Parse error: {e:?}")),
     };
 
     let mut interpreter = Interpreter::new();
@@ -38,7 +38,7 @@ fn test_issue_094_basic_string_slice() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "String slicing should work: {:?}", result);
+    assert!(result.is_ok(), "String slicing should work: {result:?}");
     assert_eq!(result.unwrap(), "Hello", "Should slice first 5 characters");
 }
 
@@ -51,7 +51,7 @@ fn test_issue_094_mid_string_slice() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Mid-string slicing should work: {:?}", result);
+    assert!(result.is_ok(), "Mid-string slicing should work: {result:?}");
     assert_eq!(result.unwrap(), "World", "Should slice middle section");
 }
 
@@ -64,7 +64,7 @@ fn test_issue_094_open_ended_slice_from_start() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Open-start slice should work: {:?}", result);
+    assert!(result.is_ok(), "Open-start slice should work: {result:?}");
     assert_eq!(result.unwrap(), "Hello", "Should slice from beginning");
 }
 
@@ -77,7 +77,7 @@ fn test_issue_094_open_ended_slice_to_end() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Open-end slice should work: {:?}", result);
+    assert!(result.is_ok(), "Open-end slice should work: {result:?}");
     assert_eq!(result.unwrap(), "World!", "Should slice to end");
 }
 
@@ -90,7 +90,7 @@ fn test_issue_094_full_range_slice() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Full range slice should work: {:?}", result);
+    assert!(result.is_ok(), "Full range slice should work: {result:?}");
     assert_eq!(result.unwrap(), "Hello, World!", "Should return full string");
 }
 
@@ -103,7 +103,7 @@ fn test_issue_094_empty_slice() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Empty slice should work: {:?}", result);
+    assert!(result.is_ok(), "Empty slice should work: {result:?}");
     assert_eq!(result.unwrap(), "", "Empty slice should return empty string");
 }
 
@@ -120,8 +120,7 @@ fn test_issue_094_out_of_bounds_slice() {
     let err_msg = result.unwrap_err();
     assert!(
         err_msg.contains("out of bounds") || err_msg.contains("range"),
-        "Error should mention bounds, got: {}",
-        err_msg
+        "Error should mention bounds, got: {err_msg}"
     );
 }
 
@@ -148,7 +147,7 @@ fn test_issue_094_slice_assignment() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Slice assignment should work: {:?}", result);
+    assert!(result.is_ok(), "Slice assignment should work: {result:?}");
     assert_eq!(result.unwrap(), "Ruchy Language", "Should concatenate slices");
 }
 
@@ -164,7 +163,7 @@ fn test_issue_094_slice_in_function() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Slicing in function should work: {:?}", result);
+    assert!(result.is_ok(), "Slicing in function should work: {result:?}");
     assert_eq!(result.unwrap(), "Hello", "Should return sliced string");
 }
 
@@ -178,7 +177,7 @@ fn test_issue_094_chained_operations() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "Chained operations should work: {:?}", result);
+    assert!(result.is_ok(), "Chained operations should work: {result:?}");
     assert_eq!(result.unwrap(), "5", "Slice length should be 5");
 }
 
@@ -191,7 +190,7 @@ fn test_issue_094_utf8_ascii_slice() {
     "#;
 
     let result = eval_ruchy(code);
-    assert!(result.is_ok(), "ASCII UTF-8 slice should work: {:?}", result);
+    assert!(result.is_ok(), "ASCII UTF-8 slice should work: {result:?}");
     assert_eq!(result.unwrap(), "AB", "Should slice ASCII correctly");
 }
 

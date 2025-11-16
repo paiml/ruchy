@@ -1,6 +1,6 @@
 //! Property-Based Tests for `eval_builtin.rs`
 //!
-//! Target: runtime/eval_builtin.rs (32.24% → 60-65% coverage)
+//! Target: `runtime/eval_builtin.rs` (32.24% → 60-65% coverage)
 //! Strategy: Property testing with 10K+ cases per function
 //! Focus: Pure functions (math, utility, conversion)
 //!
@@ -159,7 +159,7 @@ proptest! {
     fn prop_pow_two_powers(n in 0u32..20u32) {
         let expected = 2i64.pow(n);
         let result = eval_builtin_function("__builtin_pow__",
-            &[Value::Integer(2), Value::Integer(n as i64)]);
+            &[Value::Integer(2), Value::Integer(i64::from(n))]);
 
         prop_assert!(result.is_ok());
         prop_assert_eq!(result.unwrap(), Some(Value::Integer(expected)),
@@ -245,8 +245,8 @@ proptest! {
 
 }
 
-/// Property: random() returns value in [0.0, 1.0)
-/// Coverage target: eval_random (lines 604-610)
+/// Property: `random()` returns value in [0.0, 1.0)
+/// Coverage target: `eval_random` (lines 604-610)
 #[test]
 fn prop_random_bounds() {
     // Run random() 100 times and check all values are in valid range
@@ -255,8 +255,8 @@ fn prop_random_bounds() {
         assert!(result.is_ok());
 
         if let Ok(Some(Value::Float(r))) = result {
-            assert!(r >= 0.0 && r < 1.0,
-                "random() = {} not in [0.0, 1.0)", r);
+            assert!((0.0..1.0).contains(&r),
+                "random() = {r} not in [0.0, 1.0)");
         }
     }
 }
@@ -336,7 +336,7 @@ proptest! {
     #[test]
     fn prop_reverse_involution(elements in prop::collection::vec(0i64..100i64, 0..50)) {
         let values: Vec<Value> = elements.iter().map(|&x| Value::Integer(x)).collect();
-        let array = Value::from_array(values.clone());
+        let array = Value::from_array(values);
 
         // First reverse
         let result1 = eval_builtin_function("__builtin_reverse__", &[array]);
@@ -601,8 +601,8 @@ proptest! {
 // Unit Tests: Type Inspection (Fixed Test Cases)
 // ============================================================================
 
-/// Property: type() distinguishes between types correctly
-/// Coverage target: eval_type (lines 746-755)
+/// Property: `type()` distinguishes between types correctly
+/// Coverage target: `eval_type` (lines 746-755)
 #[test]
 fn prop_type_distinguishes_types() {
     let test_cases = vec![
@@ -619,13 +619,13 @@ fn prop_type_distinguishes_types() {
 
         if let Ok(Some(Value::String(type_name))) = result {
             assert_eq!(type_name.as_ref(), expected_type,
-                "type() mismatch for {}", expected_type);
+                "type() mismatch for {expected_type}");
         }
     }
 }
 
-/// Property: is_nil() correctly identifies nil values
-/// Coverage target: eval_is_nil (lines 766-774)
+/// Property: `is_nil()` correctly identifies nil values
+/// Coverage target: `eval_is_nil` (lines 766-774)
 #[test]
 fn prop_is_nil_detection() {
     // Test nil value
@@ -648,13 +648,13 @@ fn prop_is_nil_detection() {
         let result = eval_builtin_function("__builtin_is_nil__", &[value.clone()]);
         assert!(result.is_ok());
         if let Ok(Some(Value::Bool(is_nil))) = result {
-            assert!(!is_nil, "is_nil({:?}) should return false", value);
+            assert!(!is_nil, "is_nil({value:?}) should return false");
         }
     }
 }
 
-/// Unit test: assert_eq passes on equal values
-/// Coverage target: eval_assert_eq (lines 780-790)
+/// Unit test: `assert_eq` passes on equal values
+/// Coverage target: `eval_assert_eq` (lines 780-790)
 #[test]
 fn test_assert_eq_success() {
     let result = eval_builtin_function("__builtin_assert_eq__",
@@ -664,8 +664,8 @@ fn test_assert_eq_success() {
     assert_eq!(result.unwrap(), Some(Value::Nil));
 }
 
-/// Unit test: assert_eq fails on unequal values
-/// Coverage target: eval_assert_eq error path (line 787)
+/// Unit test: `assert_eq` fails on unequal values
+/// Coverage target: `eval_assert_eq` error path (line 787)
 #[test]
 fn test_assert_eq_failure() {
     let result = eval_builtin_function("__builtin_assert_eq__",
@@ -675,7 +675,7 @@ fn test_assert_eq_failure() {
 }
 
 /// Unit test: assert passes on true
-/// Coverage target: eval_assert (lines 795-805)
+/// Coverage target: `eval_assert` (lines 795-805)
 #[test]
 fn test_assert_true() {
     let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(true)]);
@@ -684,7 +684,7 @@ fn test_assert_true() {
 }
 
 /// Unit test: assert fails on false
-/// Coverage target: eval_assert error path (line 802)
+/// Coverage target: `eval_assert` error path (line 802)
 #[test]
 fn test_assert_false() {
     let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(false)]);
@@ -692,21 +692,21 @@ fn test_assert_false() {
 }
 
 /// Unit test: dbg returns its input unchanged
-/// Coverage target: eval_dbg (lines 810-815)
+/// Coverage target: `eval_dbg` (lines 810-815)
 #[test]
 fn test_dbg_passthrough() {
     // dbg should return the value it receives
     let test_value = Value::Integer(42);
-    let result = eval_builtin_function("__builtin_dbg__", &[test_value.clone()]);
+    let result = eval_builtin_function("__builtin_dbg__", &[test_value]);
     assert!(result.is_ok());
     match result.unwrap() {
         Some(Value::Integer(42)) => (),  // Expected
-        other => panic!("dbg should return input value, got {:?}", other),
+        other => panic!("dbg should return input value, got {other:?}"),
     }
 }
 
-/// Unit test: to_string converts values to strings
-/// Coverage target: eval_to_string (lines 820-830)
+/// Unit test: `to_string` converts values to strings
+/// Coverage target: `eval_to_string` (lines 820-830)
 #[test]
 fn test_to_string_integer() {
     let input = Value::Integer(42);
@@ -720,7 +720,7 @@ fn test_to_string_integer() {
 }
 
 /// Unit test: glob pattern matching returns array
-/// Coverage target: eval_glob (lines 840-860)
+/// Coverage target: `eval_glob` (lines 840-860)
 #[test]
 fn test_glob_returns_array() {
     // Simple glob pattern for test files
@@ -741,8 +741,8 @@ fn test_glob_returns_array() {
 // Coverage target: String::new, String::from, String::from_utf8
 // ============================================================================
 
-/// Unit test: String::new creates empty string
-/// Coverage target: eval_string_new (lines 3187-3190)
+/// Unit test: `String::new` creates empty string
+/// Coverage target: `eval_string_new` (lines 3187-3190)
 #[test]
 fn test_string_new_creates_empty() {
     let result = eval_builtin_function("__builtin_String_new__", &[]);
@@ -755,8 +755,8 @@ fn test_string_new_creates_empty() {
     }
 }
 
-/// Unit test: String::from converts values to strings
-/// Coverage target: eval_string_from (lines 3195-3201)
+/// Unit test: `String::from` converts values to strings
+/// Coverage target: `eval_string_from` (lines 3195-3201)
 #[test]
 fn test_string_from_integer() {
     let input = Value::Integer(42);
@@ -770,7 +770,7 @@ fn test_string_from_integer() {
     }
 }
 
-/// Unit test: String::from handles string input
+/// Unit test: `String::from` handles string input
 #[test]
 fn test_string_from_string() {
     let input = Value::String(Arc::from("hello"));
@@ -784,8 +784,8 @@ fn test_string_from_string() {
     }
 }
 
-/// Unit test: String::from_utf8 with valid UTF-8 bytes
-/// Coverage target: eval_string_from_utf8 (lines 3207-3247)
+/// Unit test: `String::from_utf8` with valid UTF-8 bytes
+/// Coverage target: `eval_string_from_utf8` (lines 3207-3247)
 #[test]
 fn test_string_from_utf8_valid() {
     // UTF-8 encoding of "hello": [104, 101, 108, 108, 111]
@@ -820,7 +820,7 @@ fn test_string_from_utf8_valid() {
     }
 }
 
-/// Unit test: String::from_utf8 with invalid UTF-8 bytes
+/// Unit test: `String::from_utf8` with invalid UTF-8 bytes
 #[test]
 fn test_string_from_utf8_invalid() {
     // Invalid UTF-8 sequence: [0xFF, 0xFE]
@@ -846,13 +846,13 @@ fn test_string_from_utf8_invalid() {
 // ============================================================================
 
 /// Unit test: push adds element to array
-/// Coverage target: eval_push
+/// Coverage target: `eval_push`
 #[test]
 fn test_push_adds_element() {
     let arr = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
     let elem = Value::Integer(3);
 
-    let result = eval_builtin_function("__builtin_push__", &[arr.clone(), elem]);
+    let result = eval_builtin_function("__builtin_push__", &[arr, elem]);
     assert!(result.is_ok(), "push should succeed");
 
     if let Ok(Some(Value::Array(new_arr))) = result {
@@ -867,7 +867,7 @@ fn test_push_adds_element() {
 }
 
 /// Unit test: pop removes last element
-/// Coverage target: eval_pop
+/// Coverage target: `eval_pop`
 #[test]
 fn test_pop_removes_element() {
     let arr = Value::from_array(vec![
@@ -888,7 +888,7 @@ fn test_pop_removes_element() {
 }
 
 /// Unit test: sort orders array elements
-/// Coverage target: eval_sort
+/// Coverage target: `eval_sort`
 #[test]
 fn test_sort_integers() {
     let arr = Value::from_array(vec![
@@ -922,8 +922,8 @@ fn test_sort_integers() {
 // Coverage target: eval_parse_float
 // ============================================================================
 
-/// Unit test: parse_float converts string to float
-/// Coverage target: eval_parse_float
+/// Unit test: `parse_float` converts string to float
+/// Coverage target: `eval_parse_float`
 #[test]
 fn test_parse_float_valid() {
     let input = Value::String(Arc::from("3.14"));
@@ -938,7 +938,7 @@ fn test_parse_float_valid() {
     }
 }
 
-/// Unit test: parse_float handles negative numbers
+/// Unit test: `parse_float` handles negative numbers
 #[test]
 fn test_parse_float_negative() {
     let input = Value::String(Arc::from("-2.5"));
@@ -959,7 +959,7 @@ fn test_parse_float_negative() {
 // ============================================================================
 
 /// Unit test: timestamp returns current Unix timestamp
-/// Coverage target: eval_timestamp
+/// Coverage target: `eval_timestamp`
 #[test]
 fn test_timestamp_returns_integer() {
     let result = eval_builtin_function("__builtin_timestamp__", &[]);
@@ -976,8 +976,8 @@ fn test_timestamp_returns_integer() {
     }
 }
 
-/// Unit test: chrono_utc_now returns UTC time string
-/// Coverage target: eval_chrono_utc_now
+/// Unit test: `chrono_utc_now` returns UTC time string
+/// Coverage target: `eval_chrono_utc_now`
 #[test]
 fn test_chrono_utc_now_returns_string() {
     let result = eval_builtin_function("__builtin_chrono_utc_now__", &[]);
@@ -1000,7 +1000,7 @@ fn test_chrono_utc_now_returns_string() {
 // ============================================================================
 
 /// Unit test: walk returns array of file entries
-/// Coverage target: eval_walk
+/// Coverage target: `eval_walk`
 #[test]
 fn test_walk_returns_array() {
     // Walk current directory (tests/)
@@ -1019,7 +1019,7 @@ fn test_walk_returns_array() {
 }
 
 /// Unit test: search finds text in files
-/// Coverage target: eval_search
+/// Coverage target: `eval_search`
 #[test]
 fn test_search_finds_matches() {
     // Search for "property_eval_builtin" in test files
@@ -1043,8 +1043,8 @@ fn test_search_finds_matches() {
 // Coverage target: Environment information functions
 // ============================================================================
 
-/// Unit test: env_args returns array of command-line arguments
-/// Coverage target: eval_env_args
+/// Unit test: `env_args` returns array of command-line arguments
+/// Coverage target: `eval_env_args`
 #[test]
 fn test_env_args_returns_array() {
     let result = eval_builtin_function("__builtin_env_args__", &[]);
@@ -1060,8 +1060,8 @@ fn test_env_args_returns_array() {
     }
 }
 
-/// Unit test: env_vars returns object of environment variables
-/// Coverage target: eval_env_vars
+/// Unit test: `env_vars` returns object of environment variables
+/// Coverage target: `eval_env_vars`
 #[test]
 fn test_env_vars_returns_object() {
     let result = eval_builtin_function("__builtin_env_vars__", &[]);
@@ -1075,8 +1075,8 @@ fn test_env_vars_returns_object() {
     }
 }
 
-/// Unit test: env_current_dir returns current directory path
-/// Coverage target: eval_env_current_dir
+/// Unit test: `env_current_dir` returns current directory path
+/// Coverage target: `eval_env_current_dir`
 #[test]
 fn test_env_current_dir_returns_string() {
     let result = eval_builtin_function("__builtin_env_current_dir__", &[]);
@@ -1095,8 +1095,8 @@ fn test_env_current_dir_returns_string() {
     }
 }
 
-/// Unit test: env_temp_dir returns temp directory path
-/// Coverage target: eval_env_temp_dir
+/// Unit test: `env_temp_dir` returns temp directory path
+/// Coverage target: `eval_env_temp_dir`
 #[test]
 fn test_env_temp_dir_returns_string() {
     let result = eval_builtin_function("__builtin_env_temp_dir__", &[]);
@@ -1116,7 +1116,7 @@ fn test_env_temp_dir_returns_string() {
 // ============================================================================
 
 /// Unit test: mean calculates average of numbers
-/// Coverage target: eval_mean (if exists)
+/// Coverage target: `eval_mean` (if exists)
 #[test]
 fn test_mean_integers() {
     let arr = Value::from_array(vec![
@@ -1136,7 +1136,7 @@ fn test_mean_integers() {
 }
 
 /// Unit test: median finds middle value
-/// Coverage target: eval_median (if exists)
+/// Coverage target: `eval_median` (if exists)
 #[test]
 fn test_median_odd_count() {
     let arr = Value::from_array(vec![
@@ -1161,7 +1161,7 @@ fn test_median_odd_count() {
 // ============================================================================
 
 /// Unit test: sleep delays execution (tests with minimal delay)
-/// Coverage target: eval_sleep
+/// Coverage target: `eval_sleep`
 #[test]
 fn test_sleep_minimal_delay() {
     // Sleep for 1 millisecond (minimal delay for testing)
@@ -1183,8 +1183,8 @@ fn test_sleep_minimal_delay() {
 // Coverage target: Type predicate functions
 // ============================================================================
 
-/// Unit test: is_string checks if value is string
-/// Coverage target: eval_is_string (if exists)
+/// Unit test: `is_string` checks if value is string
+/// Coverage target: `eval_is_string` (if exists)
 #[test]
 fn test_is_string_true() {
     let val = Value::String(Arc::from("test"));
@@ -1199,8 +1199,8 @@ fn test_is_string_true() {
     }
 }
 
-/// Unit test: is_integer checks if value is integer
-/// Coverage target: eval_is_integer (if exists)
+/// Unit test: `is_integer` checks if value is integer
+/// Coverage target: `eval_is_integer` (if exists)
 #[test]
 fn test_is_integer_true() {
     let val = Value::Integer(42);
@@ -1215,8 +1215,8 @@ fn test_is_integer_true() {
     }
 }
 
-/// Unit test: is_float checks if value is float
-/// Coverage target: eval_is_float (if exists)
+/// Unit test: `is_float` checks if value is float
+/// Coverage target: `eval_is_float` (if exists)
 #[test]
 fn test_is_float_true() {
     let val = Value::Float(3.14);
@@ -1231,8 +1231,8 @@ fn test_is_float_true() {
     }
 }
 
-/// Unit test: is_bool checks if value is boolean
-/// Coverage target: eval_is_bool (if exists)
+/// Unit test: `is_bool` checks if value is boolean
+/// Coverage target: `eval_is_bool` (if exists)
 #[test]
 fn test_is_bool_true() {
     let val = Value::Bool(true);
@@ -1247,8 +1247,8 @@ fn test_is_bool_true() {
     }
 }
 
-/// Unit test: is_array checks if value is array
-/// Coverage target: eval_is_array (if exists)
+/// Unit test: `is_array` checks if value is array
+/// Coverage target: `eval_is_array` (if exists)
 #[test]
 fn test_is_array_true() {
     let val = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
@@ -1268,8 +1268,8 @@ fn test_is_array_true() {
 // Coverage target: JSON manipulation and validation
 // ============================================================================
 
-/// Unit test: json_parse parses valid JSON string
-/// Coverage target: eval_json_parse
+/// Unit test: `json_parse` parses valid JSON string
+/// Coverage target: `eval_json_parse`
 #[test]
 fn test_json_parse_object() {
     let json_str = Value::String(Arc::from(r#"{"name":"test","value":42}"#));
@@ -1286,8 +1286,8 @@ fn test_json_parse_object() {
     }
 }
 
-/// Unit test: json_stringify converts value to JSON string
-/// Coverage target: eval_json_stringify
+/// Unit test: `json_stringify` converts value to JSON string
+/// Coverage target: `eval_json_stringify`
 #[test]
 fn test_json_stringify_integer() {
     let val = Value::Integer(42);
@@ -1303,8 +1303,8 @@ fn test_json_stringify_integer() {
     }
 }
 
-/// Unit test: json_validate checks if string is valid JSON
-/// Coverage target: eval_json_validate
+/// Unit test: `json_validate` checks if string is valid JSON
+/// Coverage target: `eval_json_validate`
 #[test]
 fn test_json_validate_valid() {
     let json_str = Value::String(Arc::from(r#"{"valid":true}"#));
@@ -1321,8 +1321,8 @@ fn test_json_validate_valid() {
     }
 }
 
-/// Unit test: json_pretty formats JSON with indentation
-/// Coverage target: eval_json_pretty
+/// Unit test: `json_pretty` formats JSON with indentation
+/// Coverage target: `eval_json_pretty`
 #[test]
 fn test_json_pretty_formatting() {
     let json_str = Value::String(Arc::from(r#"{"a":1,"b":2}"#));
@@ -1340,8 +1340,8 @@ fn test_json_pretty_formatting() {
     }
 }
 
-/// Unit test: json_merge combines two JSON objects
-/// Coverage target: eval_json_merge
+/// Unit test: `json_merge` combines two JSON objects
+/// Coverage target: `eval_json_merge`
 #[test]
 fn test_json_merge_objects() {
     let obj1 = Value::String(Arc::from(r#"{"a":1}"#));
@@ -1360,7 +1360,7 @@ fn test_json_merge_objects() {
 // Path Functions (Pure, Deterministic)
 // ============================================================================
 
-/// Unit test: path_join combines path components
+/// Unit test: `path_join` combines path components
 #[test]
 fn test_path_join_two_components() {
     let part1 = Value::String(Arc::from("/home/user"));
@@ -1380,7 +1380,7 @@ fn test_path_join_two_components() {
     }
 }
 
-/// Unit test: path_parent returns parent directory
+/// Unit test: `path_parent` returns parent directory
 #[test]
 fn test_path_parent() {
     let path = Value::String(Arc::from("/home/user/documents/file.txt"));
@@ -1399,7 +1399,7 @@ fn test_path_parent() {
     }
 }
 
-/// Unit test: path_file_name extracts filename from path
+/// Unit test: `path_file_name` extracts filename from path
 #[test]
 fn test_path_file_name() {
     let path = Value::String(Arc::from("/home/user/documents/test.txt"));
@@ -1419,7 +1419,7 @@ fn test_path_file_name() {
     }
 }
 
-/// Unit test: path_file_stem extracts filename without extension
+/// Unit test: `path_file_stem` extracts filename without extension
 #[test]
 fn test_path_file_stem() {
     let path = Value::String(Arc::from("/home/user/report.pdf"));
@@ -1435,7 +1435,7 @@ fn test_path_file_stem() {
     }
 }
 
-/// Unit test: path_extension extracts file extension
+/// Unit test: `path_extension` extracts file extension
 #[test]
 fn test_path_extension() {
     let path = Value::String(Arc::from("/home/user/document.txt"));
@@ -1451,7 +1451,7 @@ fn test_path_extension() {
     }
 }
 
-/// Unit test: path_is_absolute checks if path is absolute
+/// Unit test: `path_is_absolute` checks if path is absolute
 #[test]
 fn test_path_is_absolute() {
     let abs_path = Value::String(Arc::from("/home/user/file.txt"));
@@ -1467,7 +1467,7 @@ fn test_path_is_absolute() {
     }
 }
 
-/// Unit test: path_is_relative checks if path is relative
+/// Unit test: `path_is_relative` checks if path is relative
 #[test]
 fn test_path_is_relative() {
     let rel_path = Value::String(Arc::from("documents/file.txt"));
@@ -1483,8 +1483,8 @@ fn test_path_is_relative() {
     }
 }
 
-/// Unit test: path_join_many combines array of path components
-/// Coverage target: eval_path_join_many (line 2275)
+/// Unit test: `path_join_many` combines array of path components
+/// Coverage target: `eval_path_join_many` (line 2275)
 #[test]
 fn test_path_join_many() {
     let components = Value::Array(vec![
@@ -1503,8 +1503,8 @@ fn test_path_join_many() {
     }
 }
 
-/// Unit test: path_with_extension changes file extension
-/// Coverage target: eval_path_with_extension (line 2385)
+/// Unit test: `path_with_extension` changes file extension
+/// Coverage target: `eval_path_with_extension` (line 2385)
 #[test]
 fn test_path_with_extension() {
     let path = Value::String(Arc::from("/path/to/file.txt"));
@@ -1521,8 +1521,8 @@ fn test_path_with_extension() {
     }
 }
 
-/// Unit test: path_with_file_name changes file name
-/// Coverage target: eval_path_with_file_name (line 2398)
+/// Unit test: `path_with_file_name` changes file name
+/// Coverage target: `eval_path_with_file_name` (line 2398)
 #[test]
 fn test_path_with_file_name() {
     let path = Value::String(Arc::from("/path/to/old_file.txt"));
@@ -1539,8 +1539,8 @@ fn test_path_with_file_name() {
     }
 }
 
-/// Unit test: path_components splits path into parts
-/// Coverage target: eval_path_components (line 2411)
+/// Unit test: `path_components` splits path into parts
+/// Coverage target: `eval_path_components` (line 2411)
 #[test]
 fn test_path_components() {
     let path = Value::String(Arc::from("/home/user/docs"));
@@ -1555,8 +1555,8 @@ fn test_path_components() {
     }
 }
 
-/// Unit test: path_normalize resolves . and ..
-/// Coverage target: eval_path_normalize (line 2427)
+/// Unit test: `path_normalize` resolves . and ..
+/// Coverage target: `eval_path_normalize` (line 2427)
 #[test]
 fn test_path_normalize() {
     let path = Value::String(Arc::from("/home/user/../admin/./config"));
@@ -1573,8 +1573,8 @@ fn test_path_normalize() {
     }
 }
 
-/// Unit test: path_canonicalize resolves to absolute path
-/// Coverage target: eval_path_canonicalize (line 2372)
+/// Unit test: `path_canonicalize` resolves to absolute path
+/// Coverage target: `eval_path_canonicalize` (line 2372)
 #[test]
 fn test_path_canonicalize() {
     // Use a path that exists - current directory
@@ -1594,7 +1594,7 @@ fn test_path_canonicalize() {
 // Hash Functions
 // ============================================================================
 
-/// Unit test: compute_hash generates MD5 hash of file contents
+/// Unit test: `compute_hash` generates MD5 hash of file contents
 #[test]
 fn test_compute_hash() {
     use std::fs;
@@ -1620,7 +1620,7 @@ fn test_compute_hash() {
 // Filesystem Operations (Phase 2)
 // ============================================================================
 
-/// Unit test: fs_read reads file content and returns Result::Ok
+/// Unit test: `fs_read` reads file content and returns `Result::Ok`
 #[test]
 fn test_fs_read() {
     let temp_dir = TempDir::new().unwrap();
@@ -1639,7 +1639,7 @@ fn test_fs_read() {
     }
 }
 
-/// Unit test: fs_write writes content to file and returns Result::Ok
+/// Unit test: `fs_write` writes content to file and returns `Result::Ok`
 #[test]
 fn test_fs_write() {
     let temp_dir = TempDir::new().unwrap();
@@ -1660,7 +1660,7 @@ fn test_fs_write() {
     assert_eq!(written, "test write", "Content should match");
 }
 
-/// Unit test: fs_exists checks if path exists
+/// Unit test: `fs_exists` checks if path exists
 #[test]
 fn test_fs_exists() {
     let temp_dir = TempDir::new().unwrap();
@@ -1684,7 +1684,7 @@ fn test_fs_exists() {
     }
 }
 
-/// Unit test: fs_create_dir creates directory
+/// Unit test: `fs_create_dir` creates directory
 #[test]
 fn test_fs_create_dir() {
     let temp_dir = TempDir::new().unwrap();
@@ -1703,7 +1703,7 @@ fn test_fs_create_dir() {
     assert!(new_dir.is_dir(), "Path should be a directory");
 }
 
-/// Unit test: fs_remove_file removes a file
+/// Unit test: `fs_remove_file` removes a file
 #[test]
 fn test_fs_remove_file() {
     let temp_dir = TempDir::new().unwrap();
@@ -1724,7 +1724,7 @@ fn test_fs_remove_file() {
     assert!(!file_path.exists(), "File should be removed");
 }
 
-/// Unit test: fs_remove_dir removes a directory
+/// Unit test: `fs_remove_dir` removes a directory
 #[test]
 fn test_fs_remove_dir() {
     let temp_dir = TempDir::new().unwrap();
@@ -1745,7 +1745,7 @@ fn test_fs_remove_dir() {
     assert!(!dir_path.exists(), "Directory should be removed");
 }
 
-/// Unit test: fs_copy copies a file
+/// Unit test: `fs_copy` copies a file
 #[test]
 fn test_fs_copy() {
     let temp_dir = TempDir::new().unwrap();
@@ -1765,7 +1765,7 @@ fn test_fs_copy() {
     assert_eq!(content, "copy me", "Content should match source");
 }
 
-/// Unit test: fs_rename renames/moves a file
+/// Unit test: `fs_rename` renames/moves a file
 #[test]
 fn test_fs_rename() {
     let temp_dir = TempDir::new().unwrap();
@@ -1786,7 +1786,7 @@ fn test_fs_rename() {
     assert_eq!(content, "rename me", "Content should be preserved");
 }
 
-/// Unit test: fs_metadata returns file metadata
+/// Unit test: `fs_metadata` returns file metadata
 #[test]
 fn test_fs_metadata() {
     let temp_dir = TempDir::new().unwrap();
@@ -1812,7 +1812,7 @@ fn test_fs_metadata() {
     }
 }
 
-/// Unit test: fs_read_dir reads directory contents
+/// Unit test: `fs_read_dir` reads directory contents
 #[test]
 fn test_fs_read_dir() {
     let temp_dir = TempDir::new().unwrap();
@@ -1832,7 +1832,7 @@ fn test_fs_read_dir() {
     }
 }
 
-/// Unit test: fs_canonicalize returns absolute path
+/// Unit test: `fs_canonicalize` returns absolute path
 #[test]
 fn test_fs_canonicalize() {
     let path = Value::String(Arc::from("."));
@@ -1844,7 +1844,7 @@ fn test_fs_canonicalize() {
     }
 }
 
-/// Unit test: fs_is_file checks if path is a file
+/// Unit test: `fs_is_file` checks if path is a file
 #[test]
 fn test_fs_is_file() {
     let temp_dir = TempDir::new().unwrap();
@@ -1874,7 +1874,7 @@ fn test_fs_is_file() {
 // Environment Functions (Phase 3)
 // ============================================================================
 
-/// Unit test: env_var reads environment variable
+/// Unit test: `env_var` reads environment variable
 #[test]
 fn test_env_var() {
     // Set a test variable
@@ -1897,7 +1897,7 @@ fn test_env_var() {
     std::env::remove_var("RUCHY_TEST_VAR");
 }
 
-/// Unit test: env_set_var sets environment variable
+/// Unit test: `env_set_var` sets environment variable
 #[test]
 fn test_env_set_var() {
     let key = Value::String(Arc::from("RUCHY_TEST_SET_VAR"));
@@ -1917,7 +1917,7 @@ fn test_env_set_var() {
     std::env::remove_var("RUCHY_TEST_SET_VAR");
 }
 
-/// Unit test: env_remove_var removes environment variable
+/// Unit test: `env_remove_var` removes environment variable
 #[test]
 fn test_env_remove_var() {
     // Set a variable first
@@ -1935,7 +1935,7 @@ fn test_env_remove_var() {
     assert!(var.is_err(), "Variable should be removed");
 }
 
-/// Unit test: env_set_current_dir changes working directory
+/// Unit test: `env_set_current_dir` changes working directory
 #[test]
 fn test_env_set_current_dir() {
     // Save current directory
@@ -1967,7 +1967,7 @@ fn test_env_set_current_dir() {
 // Additional JSON Functions
 // ============================================================================
 
-/// Unit test: json_type returns type of JSON value
+/// Unit test: `json_type` returns type of JSON value
 #[test]
 fn test_json_type_string() {
     let json_str = Value::String(Arc::from(r#""hello""#));
@@ -1985,7 +1985,7 @@ fn test_json_type_string() {
     }
 }
 
-/// Unit test: json_get retrieves value from JSON object by key
+/// Unit test: `json_get` retrieves value from JSON object by key
 #[test]
 fn test_json_get_existing_key() {
     // Create JSON object using json_parse first
@@ -2010,7 +2010,7 @@ fn test_json_get_existing_key() {
 // Additional Utility Functions
 // ============================================================================
 
-/// Unit test: type_of returns type name of value
+/// Unit test: `type_of` returns type name of value
 #[test]
 fn test_type_of_integer() {
     let val = Value::Integer(42);
@@ -2029,7 +2029,7 @@ fn test_type_of_integer() {
     }
 }
 
-/// Unit test: type returns type name (alias for type_of)
+/// Unit test: type returns type name (alias for `type_of`)
 #[test]
 fn test_type_function() {
     let val = Value::String(Arc::from("hello"));
@@ -2048,7 +2048,7 @@ fn test_type_function() {
     }
 }
 
-/// Unit test: parse_int converts string to integer
+/// Unit test: `parse_int` converts string to integer
 #[test]
 fn test_parse_int_positive() {
     let val = Value::String(Arc::from("123"));
@@ -2068,8 +2068,8 @@ fn test_parse_int_positive() {
 // JSON Functions Tests (10 functions - COVERAGE TARGET)
 // ============================================================================
 
-/// Unit test: json_parse parses valid JSON string
-/// Coverage target: eval_json_parse (line 2522)
+/// Unit test: `json_parse` parses valid JSON string
+/// Coverage target: `eval_json_parse` (line 2522)
 #[test]
 fn test_json_parse_simple_object() {
     let json_str = Value::String(Arc::from(r#"{"name": "Alice", "age": 30}"#));
@@ -2084,7 +2084,7 @@ fn test_json_parse_simple_object() {
     }
 }
 
-/// Unit test: json_parse handles arrays
+/// Unit test: `json_parse` handles arrays
 #[test]
 fn test_json_parse_array() {
     let json_str = Value::String(Arc::from(r#"[1, 2, 3, "test"]"#));
@@ -2093,8 +2093,8 @@ fn test_json_parse_array() {
     assert!(result.is_ok(), "json_parse should succeed on array");
 }
 
-/// Unit test: json_stringify converts object to JSON string
-/// Coverage target: eval_json_stringify (line 2619)
+/// Unit test: `json_stringify` converts object to JSON string
+/// Coverage target: `eval_json_stringify` (line 2619)
 #[test]
 fn test_json_stringify_basic() {
     use std::collections::HashMap;
@@ -2121,24 +2121,24 @@ fn test_json_roundtrip_simple() {
     let json_str = Value::String(Arc::from(r#"{"test": 42}"#));
 
     // Parse
-    let parsed = eval_builtin_function("__builtin_json_parse__", &[json_str.clone()]);
+    let parsed = eval_builtin_function("__builtin_json_parse__", &[json_str]);
     assert!(parsed.is_ok(), "Initial parse should succeed");
 
     if let Ok(Some(obj)) = parsed {
         // Stringify
-        let stringified = eval_builtin_function("__builtin_json_stringify__", &[obj.clone()]);
+        let stringified = eval_builtin_function("__builtin_json_stringify__", &[obj]);
         assert!(stringified.is_ok(), "Stringify should succeed");
 
         if let Ok(Some(Value::String(_json_str2))) = stringified {
             // Parse again
-            let reparsed = eval_builtin_function("__builtin_json_parse__", &[Value::String(_json_str2.clone())]);
+            let reparsed = eval_builtin_function("__builtin_json_parse__", &[Value::String(_json_str2)]);
             assert!(reparsed.is_ok(), "Re-parse should succeed");
 
             // Values should be equivalent (though string representation may differ)
         }
     }
 }
-/// Unit test: json_validate rejects invalid JSON
+/// Unit test: `json_validate` rejects invalid JSON
 #[test]
 fn test_json_validate_invalid() {
     let json_str = Value::String(Arc::from(r#"{"invalid": }"#)); // Missing value
@@ -2154,8 +2154,8 @@ fn test_json_validate_invalid() {
     }
 }
 
-/// Unit test: json_type identifies JSON value types
-/// Coverage target: eval_json_type (line 2685)
+/// Unit test: `json_type` identifies JSON value types
+/// Coverage target: `eval_json_type` (line 2685)
 #[test]
 fn test_json_type_object() {
     let json_str = Value::String(Arc::from(r#"{"test": "value"}"#));
@@ -2171,10 +2171,10 @@ fn test_json_type_object() {
     }
 }
 
-/// Unit test: json_type identifies array
+/// Unit test: `json_type` identifies array
 #[test]
 fn test_json_type_array() {
-    let json_str = Value::String(Arc::from(r#"[1, 2, 3]"#));
+    let json_str = Value::String(Arc::from(r"[1, 2, 3]"));
 
     let result = eval_builtin_function("__builtin_json_type__", &[json_str]);
     assert!(result.is_ok(), "json_type should succeed");
@@ -2185,8 +2185,8 @@ fn test_json_type_array() {
         panic!("json_type should return String");
     }
 }
-/// Unit test: json_merge combines two JSON objects
-/// Coverage target: eval_json_merge (line 2712)
+/// Unit test: `json_merge` combines two JSON objects
+/// Coverage target: `eval_json_merge` (line 2712)
 #[test]
 fn test_json_merge_basic() {
     let json1 = Value::String(Arc::from(r#"{"a": 1}"#));
@@ -2199,8 +2199,8 @@ fn test_json_merge_basic() {
     assert!(result.is_ok(), "Merged result should be valid");
 }
 
-/// Unit test: json_get retrieves value by path
-/// Coverage target: eval_json_get (line 2752)
+/// Unit test: `json_get` retrieves value by path
+/// Coverage target: `eval_json_get` (line 2752)
 #[test]
 fn test_json_get_simple_path() {
     let json = Value::String(Arc::from(r#"{"name": "Alice", "age": 30}"#));
@@ -2218,8 +2218,8 @@ fn test_json_get_simple_path() {
     }
 }
 
-/// Unit test: json_set modifies value at path
-/// Coverage target: eval_json_set (line 2790)
+/// Unit test: `json_set` modifies value at path
+/// Coverage target: `eval_json_set` (line 2790)
 #[test]
 fn test_json_set_simple_path() {
     let json = Value::String(Arc::from(r#"{"name": "Alice"}"#));
@@ -2233,8 +2233,8 @@ fn test_json_set_simple_path() {
     assert!(result.is_ok());
 }
 
-/// Unit test: json_write writes JSON to file
-/// Coverage target: eval_json_write (line 2655)
+/// Unit test: `json_write` writes JSON to file
+/// Coverage target: `eval_json_write` (line 2655)
 #[test]
 fn test_json_write_basic() {
     let temp_dir = TempDir::new().unwrap();
@@ -2255,8 +2255,8 @@ fn test_json_write_basic() {
     assert!(content.contains("name"), "JSON should contain written data");
 }
 
-/// Unit test: json_read reads JSON from file
-/// Coverage target: eval_json_read (line 2641)
+/// Unit test: `json_read` reads JSON from file
+/// Coverage target: `eval_json_read` (line 2641)
 #[test]
 fn test_json_read_basic() {
     let temp_dir = TempDir::new().unwrap();
@@ -2278,7 +2278,7 @@ fn test_json_read_basic() {
     }
 }
 
-/// Unit test: json_write and json_read round-trip
+/// Unit test: `json_write` and `json_read` round-trip
 /// Property: write(read(file)) preserves data
 #[test]
 fn test_json_write_read_roundtrip() {
@@ -2291,7 +2291,7 @@ fn test_json_write_read_roundtrip() {
 
     // Write
     let path_val = Value::String(Arc::clone(&file_path_str));
-    let write_result = eval_builtin_function("__builtin_json_write__", &[path_val, original.clone()]);
+    let write_result = eval_builtin_function("__builtin_json_write__", &[path_val, original]);
     assert!(write_result.is_ok(), "json_write should succeed");
 
     // Read back

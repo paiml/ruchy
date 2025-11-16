@@ -52,7 +52,7 @@ pub struct BytecodeChunk {
     pub match_exprs: Vec<(Arc<Expr>, Vec<crate::frontend::ast::MatchArm>)>,
     /// Closures (for hybrid execution - OPT-019)
     /// Stores AST for closures to enable interpreter delegation
-    /// Each entry: (params_with_defaults, body) - environment captured at runtime
+    /// Each entry: (`params_with_defaults`, body) - environment captured at runtime
     /// RUNTIME-DEFAULT-PARAMS: Params now include default values
     pub closures: Vec<(Vec<(String, Option<Arc<Expr>>)>, Arc<Expr>)>,
     /// Array element registers (for runtime array construction - OPT-020)

@@ -9,7 +9,7 @@ use assert_cmd::Command;
 use std::fs;
 use tempfile::TempDir;
 
-/// Sample code covering recent grammar additions (handler_expr, effect_decl)
+/// Sample code covering recent grammar additions (`handler_expr`, `effect_decl`)
 const GRAMMAR_SAMPLE: &str = r#"
 effect State {
     get() -> i32,
@@ -228,7 +228,7 @@ fn test_all_essential_tools_integrated() {
     // All tools succeeded - complete grammar is validated
 }
 
-/// Verify tools work with handler_expr specifically
+/// Verify tools work with `handler_expr` specifically
 #[test]
 fn test_handler_expr_all_tools() {
     let handler_code = r#"

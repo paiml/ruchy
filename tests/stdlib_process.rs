@@ -1,4 +1,4 @@
-//! EXTREME TDD Coverage Tests for stdlib::process Module
+//! EXTREME TDD Coverage Tests for `stdlib::process` Module
 //!
 //! Target: 0% → 80% coverage (+11 lines)
 //! Protocol: RED → GREEN → REFACTOR → VALIDATE
@@ -113,7 +113,7 @@ proptest! {
         let result = process::execute("echo", &[&input]).unwrap();
         let (stdout, _stderr, exit_code) = result;
 
-        prop_assert!(stdout.contains(&input.trim()));
+        prop_assert!(stdout.contains(input.trim()));
         prop_assert_eq!(exit_code, 0);
     }
 
@@ -235,7 +235,7 @@ fn test_process_workflow() {
 fn test_multiple_executions() {
     // Execute same command multiple times
     for i in 0..5 {
-        let arg = format!("test{}", i);
+        let arg = format!("test{i}");
         let result = process::execute("echo", &[&arg]);
 
         assert!(result.is_ok());

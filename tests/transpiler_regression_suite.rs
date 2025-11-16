@@ -24,8 +24,8 @@ fn verify_compiles(rust_code: &str, crate_type: &str) {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
     let id = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let temp_file = format!("/tmp/transpiler_regression_{}.rs", id);
-    let temp_output = format!("/tmp/transpiler_regression_{}", id);
+    let temp_file = format!("/tmp/transpiler_regression_{id}.rs");
+    let temp_output = format!("/tmp/transpiler_regression_{id}");
 
     std::fs::write(&temp_file, rust_code)
         .expect("Failed to write test file");
@@ -51,7 +51,7 @@ fn verify_compiles(rust_code: &str, crate_type: &str) {
 
 #[test]
 fn test_regression_009_standalone_function_appears_in_output() {
-    let code = r#"
+    let code = r"
 pub fun standalone_helper() -> i32 {
     42
 }
@@ -59,7 +59,7 @@ pub fun standalone_helper() -> i32 {
 pub fun main() -> i32 {
     standalone_helper()
 }
-"#;
+";
 
     let rust = transpile(code);
 
@@ -75,11 +75,11 @@ pub fun main() -> i32 {
 
 #[test]
 fn test_regression_009_multiple_standalone_functions() {
-    let code = r#"
+    let code = r"
 pub fun add(a: i32, b: i32) -> i32 { a + b }
 pub fun mul(a: i32, b: i32) -> i32 { a * b }
 pub fun calculate() -> i32 { add(5, 3) * mul(2, 4) }
-"#;
+";
 
     let rust = transpile(code);
 
@@ -94,11 +94,11 @@ pub fun calculate() -> i32 { add(5, 3) * mul(2, 4) }
 
 #[test]
 fn test_regression_011_nested_field_access_uses_dot_not_double_colon() {
-    let code = r#"
+    let code = r"
 pub fun handler(event: LambdaEvent) -> String {
     event.requestContext.requestId
 }
-"#;
+";
 
     let rust = transpile(code);
 
@@ -120,11 +120,11 @@ pub fun handler(event: LambdaEvent) -> String {
 
 #[test]
 fn test_regression_011_deeply_nested_field_access() {
-    let code = r#"
+    let code = r"
 pub fun get_value(obj: Wrapper) -> i32 {
     obj.inner.data.value
 }
-"#;
+";
 
     let rust = transpile(code);
 
@@ -195,13 +195,13 @@ pub fun create_config() -> Object {
 
 #[test]
 fn test_regression_method_call_preserves_receiver_mutability() {
-    let code = r#"
+    let code = r"
 pub fun process(data: Vec<i32>) -> Vec<i32> {
     let mut result = data;
     result.push(42);
     result
 }
-"#;
+";
 
     let rust = transpile(code);
 
@@ -290,11 +290,11 @@ pub fun handler(event: LambdaEvent) -> Object {
 
 #[test]
 fn test_regression_string_methods_compile() {
-    let code = r#"
+    let code = r"
 pub fun process(text: String) -> usize {
     text.len()
 }
-"#;
+";
 
     let rust = transpile(code);
     verify_compiles(&rust, "lib");
@@ -304,7 +304,7 @@ pub fun process(text: String) -> usize {
 
 #[test]
 fn test_regression_for_loop_basic() {
-    let code = r#"
+    let code = r"
 pub fun sum_range(n: i32) -> i32 {
     let mut total = 0;
     for i in 0..n {
@@ -312,7 +312,7 @@ pub fun sum_range(n: i32) -> i32 {
     }
     total
 }
-"#;
+";
 
     let rust = transpile(code);
     verify_compiles(&rust, "lib");
@@ -340,7 +340,7 @@ pub fun classify(x: i32) -> String {
 
 #[test]
 fn test_regression_if_expression_with_blocks() {
-    let code = r#"
+    let code = r"
 pub fun abs(x: i32) -> i32 {
     if x < 0 {
         -x
@@ -348,7 +348,7 @@ pub fun abs(x: i32) -> i32 {
         x
     }
 }
-"#;
+";
 
     let rust = transpile(code);
     verify_compiles(&rust, "lib");
@@ -358,12 +358,12 @@ pub fun abs(x: i32) -> i32 {
 
 #[test]
 fn test_regression_lambda_closure() {
-    let code = r#"
+    let code = r"
 pub fun apply() -> i32 {
     let f = |x: i32| x * 2;
     f(21)
 }
-"#;
+";
 
     let rust = transpile(code);
     verify_compiles(&rust, "lib");

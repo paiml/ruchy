@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::env module
+//! Integration tests for `stdlib::env` module
 //!
 //! Target: 0% → 100% coverage for stdlib/env.rs (43 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage
@@ -80,7 +80,7 @@ fn test_env_vars_returns_hashmap() {
     let vars = env::vars().unwrap();
 
     // Should be a HashMap
-    assert!(vars.len() > 0, "Environment should have at least some variables");
+    assert!(!vars.is_empty(), "Environment should have at least some variables");
 
     // PATH should be in the environment
     assert!(vars.contains_key("PATH"), "PATH should be in environment variables");

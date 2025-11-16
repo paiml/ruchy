@@ -28,10 +28,10 @@ fn test_issue_117_parse_json_simple_object() {
 #[test]
 fn test_issue_117_parse_json_array() {
     // RED: Array parsing
-    let code = r#"
+    let code = r"
         let arr = parse_json('[1, 2, 3]')
         println(arr[1])
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -64,11 +64,11 @@ fn test_issue_117_stringify_json_object() {
 #[test]
 fn test_issue_117_stringify_json_array() {
     // RED: Array stringification
-    let code = r#"
+    let code = r"
         let arr = [10, 20, 30]
         let json = stringify_json(arr)
         println(json)
-    "#;
+    ";
 
     Command::cargo_bin("ruchy")
         .unwrap()

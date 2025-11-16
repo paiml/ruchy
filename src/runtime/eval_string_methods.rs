@@ -40,7 +40,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "to_lower" | "to_lowercase" | "lower" => Ok(Value::from_string(s.to_lowercase())),
         "to_string" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
-        "is_numeric" => Ok(Value::Bool(s.chars().all(|c| c.is_numeric()))),
+        "is_numeric" => Ok(Value::Bool(s.chars().all(char::is_numeric))),
         "is_alphabetic" => Ok(Value::Bool(s.chars().all(char::is_alphabetic))),
         "is_alphanumeric" => Ok(Value::Bool(s.chars().all(char::is_alphanumeric))),
         "trim" => Ok(Value::from_string(s.trim().to_string())),

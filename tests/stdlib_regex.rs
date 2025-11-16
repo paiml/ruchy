@@ -1,4 +1,4 @@
-//! EXTREME TDD Coverage Tests for stdlib::regex Module
+//! EXTREME TDD Coverage Tests for `stdlib::regex` Module
 //!
 //! Target: 0% → 80% coverage (+52 lines)
 //! Protocol: RED → GREEN → REFACTOR → VALIDATE
@@ -149,7 +149,7 @@ proptest! {
 fn test_empty_patterns() {
     // Empty pattern should work
     assert!(regex::is_match("", "test").unwrap());
-    assert_eq!(regex::find_first("", "test").unwrap(), Some("".to_string()));
+    assert_eq!(regex::find_first("", "test").unwrap(), Some(String::new()));
 }
 
 #[test]

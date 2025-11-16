@@ -162,13 +162,13 @@ fun main() {
 
 #[test]
 fn test_spec_001_for_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     for i in 0..3 {
         println(i.to_string())
     }
 }
-"#;
+";
 
     let result = validate_three_modes(code, "for_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -176,7 +176,7 @@ fun main() {
 
 #[test]
 fn test_spec_001_while_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let mut i = 0
     while i < 3 {
@@ -184,7 +184,7 @@ fun main() {
         i += 1
     }
 }
-"#;
+";
 
     let result = validate_three_modes(code, "while_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -192,7 +192,7 @@ fun main() {
 
 #[test]
 fn test_spec_001_loop_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let mut i = 0
     loop {
@@ -202,7 +202,7 @@ fun main() {
         i += 1
     }
 }
-"#;
+";
 
     let result = validate_three_modes(code, "loop_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -210,13 +210,13 @@ fun main() {
 
 #[test]
 fn test_spec_001_lambda_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let add = |x: i32, y: i32| -> i32 { x + y }
     let result = add(2, 3)
     println(result.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "lambda_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -225,7 +225,7 @@ fun main() {
 #[test]
 fn test_spec_001_pipeline_expr_three_modes() {
     // SPEC-001-C: Pipeline operator is |> (F#/Elixir style), NOT >> (bitwise shift)
-    let code = r#"
+    let code = r"
 fun double(x: i32) -> i32 { x * 2 }
 fun add_one(x: i32) -> i32 { x + 1 }
 
@@ -233,7 +233,7 @@ fun main() {
     let result = 5 |> double |> add_one
     println(result.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "pipeline_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -279,12 +279,12 @@ fun main() {
 
 #[test]
 fn test_spec_001_tuple_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let t = (1, 2, 3)
     println(t.0.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "tuple_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -292,12 +292,12 @@ fun main() {
 
 #[test]
 fn test_spec_001_array_expr_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let arr = [1, 2, 3]
     println(arr[0].to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "array_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -305,7 +305,7 @@ fun main() {
 
 #[test]
 fn test_spec_001_struct_expr_three_modes() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32
@@ -315,7 +315,7 @@ fun main() {
     let p = Point { x: 1, y: 2 }
     println(p.x.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "struct_expr");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -327,7 +327,7 @@ fun main() {
 
 #[test]
 fn test_spec_001_function_decl_three_modes() {
-    let code = r#"
+    let code = r"
 fun add(x: i32, y: i32) -> i32 {
     x + y
 }
@@ -335,7 +335,7 @@ fun add(x: i32, y: i32) -> i32 {
 fun main() {
     println(add(2, 3).to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "function_decl");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -384,13 +384,13 @@ fun main() {
 
 #[test]
 fn test_spec_001_const_decl_three_modes() {
-    let code = r#"
+    let code = r"
 const MAX_SIZE: i32 = 100
 
 fun main() {
     println(MAX_SIZE.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "const_decl");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -398,7 +398,7 @@ fun main() {
 
 #[test]
 fn test_spec_001_impl_block_three_modes() {
-    let code = r#"
+    let code = r"
 struct Counter {
     value: i32
 }
@@ -418,7 +418,7 @@ fun main() {
     c.increment()
     println(c.value.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "impl_block");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -462,7 +462,7 @@ fun main() {
 fn test_spec_001_refined_type_three_modes() {
     // SPEC-001-H: Refined types - Type constraints with predicates
     // Syntax: x: i32 where x > 0
-    let code = r#"
+    let code = r"
 fun positive(x: i32 where x > 0) -> i32 {
     x
 }
@@ -471,7 +471,7 @@ fun main() {
     let y = positive(5)
     println(y.to_string())
 }
-"#;
+";
 
     let result = validate_three_modes(code, "refined_type");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -560,14 +560,14 @@ fun main() {
 
 #[test]
 fn test_spec_001_tuple_pattern_three_modes() {
-    let code = r#"
+    let code = r"
 fun main() {
     let t = (1, 2)
     match t {
         (a, b) => println(a.to_string())
     }
 }
-"#;
+";
 
     let result = validate_three_modes(code, "tuple_pattern");
     assert!(result.all_pass(), "{}", result.failure_report());
@@ -585,11 +585,11 @@ fn test_spec_001_full_grammar_validation_report() {
     let features = vec![
         ("if_expr", r#"fun main() { if true { println("ok") } }"#),
         ("match_expr", r#"fun main() { match 1 { 1 => println("one"), _ => println("other") } }"#),
-        ("for_expr", r#"fun main() { for i in 0..3 { println(i.to_string()) } }"#),
-        ("while_expr", r#"fun main() { let mut i = 0; while i < 3 { i += 1 } }"#),
-        ("loop_expr", r#"fun main() { let mut i = 0; loop { if i >= 3 { break }; i += 1 } }"#),
-        ("tuple_expr", r#"fun main() { let t = (1, 2); println(t.0.to_string()) }"#),
-        ("array_expr", r#"fun main() { let arr = [1, 2]; println(arr[0].to_string()) }"#),
+        ("for_expr", r"fun main() { for i in 0..3 { println(i.to_string()) } }"),
+        ("while_expr", r"fun main() { let mut i = 0; while i < 3 { i += 1 } }"),
+        ("loop_expr", r"fun main() { let mut i = 0; loop { if i >= 3 { break }; i += 1 } }"),
+        ("tuple_expr", r"fun main() { let t = (1, 2); println(t.0.to_string()) }"),
+        ("array_expr", r"fun main() { let arr = [1, 2]; println(arr[0].to_string()) }"),
     ];
 
     let mut all_pass = true;
@@ -607,7 +607,9 @@ fn test_spec_001_full_grammar_validation_report() {
 
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    if !all_pass {
+    if all_pass {
+        println!("✅ ALL FEATURES PASS IN ALL THREE MODES");
+    } else {
         println!("\n❌ FAILURES DETECTED:");
         for failure in &failures {
             println!("   - {}: interpreter={}, transpile={}, compile={}",
@@ -619,7 +621,5 @@ fn test_spec_001_full_grammar_validation_report() {
         }
         println!("\n🚨 CREATE ROADMAP TICKETS FOR EACH FAILURE (EXTREME TDD)");
         panic!("Three-mode validation failed - see report above");
-    } else {
-        println!("✅ ALL FEATURES PASS IN ALL THREE MODES");
     }
 }

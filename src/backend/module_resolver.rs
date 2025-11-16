@@ -893,7 +893,7 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 0 },
         );
-        let resolved = resolver.resolve_imports(literal_expr.clone())?;
+        let resolved = resolver.resolve_imports(literal_expr)?;
 
         // Literals should pass through unchanged
         match resolved.kind {

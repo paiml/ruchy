@@ -1514,7 +1514,7 @@ mod tests {
             default_value: None,
             decorators: vec![],
         };
-        assert!(transpiler.has_reference_fields(&vec![ref_field]));
+        assert!(transpiler.has_reference_fields(&[ref_field]));
     }
 
     // Test 13: has_lifetime_params - no lifetimes
@@ -1537,7 +1537,7 @@ mod tests {
     #[test]
     fn test_generate_derive_attributes_empty() {
         let transpiler = Transpiler::new();
-        let result = transpiler.generate_derive_attributes(&vec![]);
+        let result = transpiler.generate_derive_attributes(&[]);
         assert_eq!(result.to_string(), "");
     }
 
@@ -1568,7 +1568,7 @@ mod tests {
     #[test]
     fn test_generate_class_type_param_tokens_empty() {
         let transpiler = Transpiler::new();
-        let result = transpiler.generate_class_type_param_tokens(&vec![]);
+        let result = transpiler.generate_class_type_param_tokens(&[]);
         assert_eq!(result.len(), 0);
     }
 
@@ -1579,7 +1579,7 @@ mod tests {
         let type_params = vec!["T".to_string()];
         let result = transpiler.generate_class_type_param_tokens(&type_params);
         assert_eq!(result.len(), 1);
-        assert!(result[0].to_string().contains("T"));
+        assert!(result[0].to_string().contains('T'));
     }
 
     // Test 20: generate_class_type_param_tokens - with lifetime
@@ -1597,7 +1597,7 @@ mod tests {
     #[test]
     fn test_transpile_params_empty() {
         let transpiler = Transpiler::new();
-        let result = transpiler.transpile_params(&vec![]).unwrap();
+        let result = transpiler.transpile_params(&[]).unwrap();
         assert_eq!(result.len(), 0);
     }
 
@@ -1615,7 +1615,7 @@ mod tests {
         let result = transpiler.transpile_params(&params).unwrap();
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
-        assert!(code.contains("x"));
+        assert!(code.contains('x'));
         assert!(code.contains("i32"));
     }
 
@@ -1657,7 +1657,7 @@ mod tests {
         let result = transpiler.transpile_params(&params).unwrap();
         let code = result[0].to_string();
         assert!(code.contains("mut"));
-        assert!(code.contains("x"));
+        assert!(code.contains('x'));
     }
 
     // Test 25: transpile_struct - basic struct
@@ -1668,13 +1668,13 @@ mod tests {
             make_field("x", "i32"),
             make_field("y", "String"),
         ];
-        let result = transpiler.transpile_struct("Point", &vec![], &fields, &vec![], false);
+        let result = transpiler.transpile_struct("Point", &[], &fields, &[], false);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("struct"));
         assert!(code.contains("Point"));
-        assert!(code.contains("x"));
-        assert!(code.contains("y"));
+        assert!(code.contains('x'));
+        assert!(code.contains('y'));
     }
 
     // Test 26: transpile_struct - with derives
@@ -1683,7 +1683,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let fields = vec![make_field("value", "i32")];
         let derives = vec!["Debug".to_string(), "Clone".to_string()];
-        let result = transpiler.transpile_struct("Data", &vec![], &fields, &derives, false);
+        let result = transpiler.transpile_struct("Data", &[], &fields, &derives, false);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("derive"));
@@ -1699,7 +1699,7 @@ mod tests {
             make_type(TypeKind::Named("i32".to_string())),
             make_type(TypeKind::Named("String".to_string())),
         ];
-        let result = transpiler.transpile_tuple_struct("Wrapper", &vec![], &field_types, &vec![], false);
+        let result = transpiler.transpile_tuple_struct("Wrapper", &[], &field_types, &[], false);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("struct"));
@@ -1804,7 +1804,7 @@ mod tests {
     fn make_constructor(name: Option<&str>, return_type: Option<Type>) -> Constructor {
         use crate::frontend::ast::{Expr, ExprKind, Literal};
         Constructor {
-            name: name.map(|n| n.to_string()),
+            name: name.map(std::string::ToString::to_string),
             params: vec![],
             body: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(0, None)),
@@ -1926,15 +1926,15 @@ mod tests {
         let struct_name = format_ident!("MyStruct");
         let result = transpiler.generate_impl_block(
             &struct_name,
-            &vec![],
-            &vec![],
-            &vec![],
-            &vec![]
+            &[],
+            &[],
+            &[],
+            &[]
         );
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains("MyStruct"));
-        assert!(!code.contains("<")); // No angle brackets for type params
+        assert!(!code.contains('<')); // No angle brackets for type params
     }
 
     // Test 40: generate_impl_block - with type params
@@ -1946,15 +1946,15 @@ mod tests {
         let result = transpiler.generate_impl_block(
             &struct_name,
             &type_params,
-            &vec![],
-            &vec![],
-            &vec![]
+            &[],
+            &[],
+            &[]
         );
         let code = result.to_string();
         assert!(code.contains("impl"));
-        assert!(code.contains("<")); // Has type params
-        assert!(code.contains("T"));
-        assert!(code.contains("U"));
+        assert!(code.contains('<')); // Has type params
+        assert!(code.contains('T'));
+        assert!(code.contains('U'));
     }
 
     // Test 41: generate_default_impl - no defaults (returns empty)
@@ -1963,7 +1963,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let struct_name = format_ident!("NoDefaults");
         let fields = vec![make_field("x", "i32")]; // No default values
-        let result = transpiler.generate_default_impl(&fields, &struct_name, &vec![]).unwrap();
+        let result = transpiler.generate_default_impl(&fields, &struct_name, &[]).unwrap();
         let code = result.to_string();
         assert!(code.is_empty()); // Should return empty TokenStream
     }
@@ -1988,7 +1988,7 @@ mod tests {
             }),
             decorators: vec![],
         };
-        let result = transpiler.generate_default_impl(&vec![field_with_default], &struct_name, &vec![]).unwrap();
+        let result = transpiler.generate_default_impl(&[field_with_default], &struct_name, &[]).unwrap();
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains("Default"));

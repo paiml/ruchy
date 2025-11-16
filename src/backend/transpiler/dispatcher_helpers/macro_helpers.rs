@@ -354,8 +354,8 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("vec"));
-        assert!(tokens.contains("1"));
-        assert!(tokens.contains("2"));
+        assert!(tokens.contains('1'));
+        assert!(tokens.contains('2'));
     }
 
     // Test 10: transpile_assert_macro with empty args
@@ -514,8 +514,8 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("my_macro"));
-        assert!(tokens.contains("1"));
-        assert!(tokens.contains("2"));
+        assert!(tokens.contains('1'));
+        assert!(tokens.contains('2'));
     }
 
     // Test 20: transpile_print_macro with format string and multiple args
@@ -563,7 +563,7 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("assert_eq"));
-        assert!(tokens.contains("5"));
+        assert!(tokens.contains('5'));
         assert!(tokens.contains("Values should be equal"));
     }
 
@@ -587,7 +587,7 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("assert_ne"));
-        assert!(tokens.contains("5"));
+        assert!(tokens.contains('5'));
         assert!(tokens.contains("10"));
         assert!(tokens.contains("Values should differ"));
     }
@@ -738,8 +738,8 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("vec"));
-        assert!(tokens.contains("1"));
-        assert!(tokens.contains("4"));
+        assert!(tokens.contains('1'));
+        assert!(tokens.contains('4'));
     }
 
     // Test 32: transpile_assert_macro with three arguments (condition + message + extra)
@@ -842,7 +842,7 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("assert_eq"));
-        assert!(tokens.contains("5"));
+        assert!(tokens.contains('5'));
     }
 
     // Test 38: transpile_vec_macro with boolean elements
@@ -1006,7 +1006,7 @@ mod tests {
     fn test_println_empty_string() {
         let transpiler = Transpiler::new();
         let arg = Expr::new(
-            ExprKind::Literal(Literal::String("".to_string())),
+            ExprKind::Literal(Literal::String(String::new())),
             Span::default(),
         );
         let result = transpiler.transpile_println_macro(&[arg]);

@@ -83,7 +83,7 @@ fun main() {
         .success(); // RED: Will fail with E0308
 }
 
-/// Test 3: Baseline - String::from should work
+/// Test 3: Baseline - `String::from` should work
 #[test]
 fn test_defect_012_baseline_string_from() {
     let temp = temp_dir();

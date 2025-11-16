@@ -12,7 +12,7 @@
 /// Test that Repl is Send (can cross thread boundaries)
 ///
 /// This is the RED phase test - it MUST fail with Rc, MUST pass with Arc.
-/// Currently fails due to Rc<markup5ever_rcdom::Node> in HTML parsing.
+/// Currently fails due to Rc<`markup5ever_rcdom::Node`> in HTML parsing.
 #[test]
 #[ignore = "RED phase: Fails due to Rc in markup5ever_rcdom - requires Arc refactoring"]
 fn test_repl_is_send() {

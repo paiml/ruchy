@@ -2,7 +2,7 @@
 //!
 //! EXTREME TDD: TDG-driven testing for under-tested module
 //! Target: src/frontend/parser/functions.rs (23.8 lines/test ratio)
-//! Coverage: Functions, lambdas, calls, methods, DataFrame ops, turbofish, where clauses
+//! Coverage: Functions, lambdas, calls, methods, `DataFrame` ops, turbofish, where clauses
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -48,12 +48,12 @@ fn test_function_with_type_params() {
 #[test]
 fn test_function_pub_visibility() {
     // Test pub function (PARSER-063)
-    let code = r#"
+    let code = r"
         pub fun public_fn() -> i32 {
             42
         }
         println(public_fn())
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -61,14 +61,14 @@ fn test_function_pub_visibility() {
 #[test]
 fn test_function_with_comments_before_body() {
     // Test PARSER-063: skip_comments() before function body
-    let code = r#"
+    let code = r"
         fun test()
         // Comment before body
         {
             42
         }
         println(test())
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -76,12 +76,12 @@ fn test_function_with_comments_before_body() {
 #[test]
 fn test_function_with_where_clause() {
     // Test where clause parsing (currently skipped but should parse)
-    let code = r#"
+    let code = r"
         fun generic_fn<T>(value: T) -> T where T: Clone {
             value
         }
         println(generic_fn(42))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -100,7 +100,7 @@ fn test_function_with_multiple_type_params() {
 
 #[test]
 fn test_function_recursive() {
-    let code = r#"
+    let code = r"
         fun factorial(n: i32) -> i32 {
             if n <= 1 {
                 1
@@ -109,7 +109,7 @@ fn test_function_recursive() {
             }
         }
         println(factorial(5))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("120"));
 }
@@ -157,12 +157,12 @@ fn test_lambda_with_type_annotations() {
 
 #[test]
 fn test_lambda_as_argument() {
-    let code = r#"
+    let code = r"
         fun apply(f, x) {
             f(x)
         }
         println(apply(|x| x * 2, 21))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -176,11 +176,11 @@ fn test_lambda_iife() {
 
 #[test]
 fn test_lambda_closure_capture() {
-    let code = r#"
+    let code = r"
         let x = 10;
         let f = |y| x + y;
         println(f(32))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -210,34 +210,34 @@ fn test_function_call_multiple_args() {
 #[test]
 fn test_function_call_named_args() {
     // Test struct literal conversion for named args
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let p = Point(x: 10, y: 32);
         println(p.x + p.y)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
 
 #[test]
 fn test_function_call_nested() {
-    let code = r#"
+    let code = r"
         fun inner(x) { x + 2 }
         fun outer(x) { inner(x * 2) }
         println(outer(20))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
 
 #[test]
 fn test_function_call_with_lambda_arg() {
-    let code = r#"
+    let code = r"
         fun apply_twice(f, x) {
             f(f(x))
         }
         println(apply_twice(|x| x + 1, 40))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -255,7 +255,7 @@ fn test_method_call_no_args() {
 #[test]
 fn test_method_call_with_args() {
     // Test function call with arguments
-    ruchy_cmd().arg("-e").arg(r#"fun sum(a, b) { a + b }; println(sum(20, 22))"#)
+    ruchy_cmd().arg("-e").arg(r"fun sum(a, b) { a + b }; println(sum(20, 22))")
         .assert().success().stdout(predicate::str::contains("42"));
 }
 
@@ -273,11 +273,11 @@ fn test_method_call_chained() {
 #[test]
 fn test_method_call_field_access() {
     // Test field access (not method call)
-    let code = r#"
+    let code = r"
         struct Point { x: i32, y: i32 }
         let p = Point { x: 10, y: 32 };
         println(p.x + p.y)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -297,12 +297,12 @@ fn test_method_call_turbofish_generics() {
 #[ignore = "Await operator not yet implemented in runtime"]
 fn test_method_call_await_operator() {
     // Test await operator (special postfix)
-    let code = r#"
+    let code = r"
         async fun get_value() -> i32 {
             42
         }
         println(get_value().await)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -311,13 +311,13 @@ fn test_method_call_await_operator() {
 #[ignore = "Actor system not yet fully implemented"]
 fn test_method_call_actor_send() {
     // Test actor 'send' method (special Token::Send handling)
-    let code = r#"
+    let code = r"
         actor Counter {
             count: i32
         }
         let c = Counter { count: 0 };
         c.send(Increment)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -326,13 +326,13 @@ fn test_method_call_actor_send() {
 #[ignore = "Actor system not yet fully implemented"]
 fn test_method_call_actor_ask() {
     // Test actor 'ask' method (special Token::Ask handling)
-    let code = r#"
+    let code = r"
         actor Counter {
             count: i32
         }
         let c = Counter { count: 42 };
         println(c.ask(GetCount))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -344,10 +344,10 @@ fn test_method_call_actor_ask() {
 #[test]
 #[ignore = "OptionalFieldAccess not yet implemented in runtime evaluator"]
 fn test_optional_chaining_field_access() {
-    let code = r#"
+    let code = r"
         let x = Some({ value: 42 });
         println(x?.value)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -367,10 +367,10 @@ fn test_optional_chaining_method_call() {
 #[ignore = "OptionalFieldAccess not yet implemented in runtime evaluator"]
 fn test_optional_chaining_tuple_access() {
     // Test optional tuple access: t?.0
-    let code = r#"
+    let code = r"
         let x = Some((42, 10));
         println(x?.0)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -378,10 +378,10 @@ fn test_optional_chaining_tuple_access() {
 #[test]
 #[ignore = "OptionalFieldAccess not yet implemented in runtime evaluator"]
 fn test_optional_chaining_nested() {
-    let code = r#"
+    let code = r"
         let x = Some({ inner: Some({ value: 42 }) });
         println(x?.inner?.value)
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success();
 }
@@ -447,14 +447,14 @@ fn test_dataframe_select() {
 
 #[test]
 fn edge_case_function_with_block_body() {
-    let code = r#"
+    let code = r"
         fun complex(x) {
             let y = x + 1;
             let z = y * 2;
             z
         }
         println(complex(20))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -467,11 +467,11 @@ fn edge_case_deeply_nested_calls() {
 
 #[test]
 fn edge_case_lambda_returning_lambda() {
-    let code = r#"
+    let code = r"
         let make_adder = |x| |y| x + y;
         let add_10 = make_adder(10);
         println(add_10(32))
-    "#;
+    ";
     ruchy_cmd().arg("-e").arg(code)
         .assert().success().stdout(predicate::str::contains("42"));
 }
@@ -523,15 +523,15 @@ fn property_function_param_counts_0_to_10() {
     // Property: Functions with varying parameter counts should parse
     for n in 0..=10 {
         let params = (0..n)
-            .map(|i| format!("x{}: i32", i))
+            .map(|i| format!("x{i}: i32"))
             .collect::<Vec<_>>()
             .join(", ");
         let args = (0..n)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(" + ");
         let body = if n == 0 { "42".to_string() } else { args };
-        let code = format!("fun test({}) {{ {} }}", params, body);
+        let code = format!("fun test({params}) {{ {body} }}");
 
         ruchy_cmd().arg("-e").arg(&code)
             .assert().success();
@@ -543,12 +543,12 @@ fn property_lambda_param_counts_0_to_10() {
     // Property: Lambdas with varying parameter counts should parse
     for n in 0..=10 {
         let params = (0..n)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(", ");
         let body = if n == 0 { "42" } else { "x0" };
         let code = if n == 0 {
-            format!("let f = || {}; println(f())", body)
+            format!("let f = || {body}; println(f())")
         } else {
             format!("let f = |{}| {}; println(f({}))", params, body, (0..n).map(|_| "1").collect::<Vec<_>>().join(", "))
         };
@@ -563,14 +563,14 @@ fn property_function_call_arg_counts_0_to_10() {
     // Property: Function calls with varying argument counts should parse
     for n in 0..=10 {
         let params = (0..n)
-            .map(|i| format!("x{}", i))
+            .map(|i| format!("x{i}"))
             .collect::<Vec<_>>()
             .join(", ");
         let args = (0..n)
             .map(|i| i.to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        let code = format!("fun test({}) {{ 42 }}; println(test({}))", params, args);
+        let code = format!("fun test({params}) {{ 42 }}; println(test({args}))");
 
         ruchy_cmd().arg("-e").arg(&code)
             .assert().success();
@@ -583,9 +583,9 @@ fn property_method_chaining_depth_1_to_5() {
     for depth in 1..=5 {
         let mut code = "42".to_string();
         for _ in 0..depth {
-            code = format!("int(str({}))", code);
+            code = format!("int(str({code}))");
         }
-        code = format!("println({})", code);
+        code = format!("println({code})");
 
         ruchy_cmd().arg("-e").arg(&code)
             .assert().success().stdout(predicate::str::contains("42"));

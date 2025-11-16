@@ -312,7 +312,7 @@ pub fn test(x: i32) -> String {
     let rust_code = result.unwrap().to_string();
 
     assert!(
-        rust_code.contains("_"),
+        rust_code.contains('_'),
         "Should contain wildcard, got:\n{rust_code}"
     );
 }
@@ -399,14 +399,14 @@ pub fn test() {
 
 #[test]
 fn test_while_simple() {
-    let code = r#"
+    let code = r"
 pub fn test() {
     let mut i = 0;
     while i < 10 {
         i = i + 1;
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -423,7 +423,7 @@ pub fn test() {
 
 #[test]
 fn test_while_with_break() {
-    let code = r#"
+    let code = r"
 pub fn test() {
     let mut i = 0;
     while true {
@@ -433,7 +433,7 @@ pub fn test() {
         }
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -503,11 +503,11 @@ pub fn greet() {
 
 #[test]
 fn test_fn_with_params() {
-    let code = r#"
+    let code = r"
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -524,11 +524,11 @@ pub fn add(a: i32, b: i32) -> i32 {
 
 #[test]
 fn test_fn_with_return_type() {
-    let code = r#"
+    let code = r"
 pub fn get_answer() -> i32 {
     42
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -549,14 +549,14 @@ pub fn get_answer() -> i32 {
 
 #[test]
 fn test_return_early() {
-    let code = r#"
+    let code = r"
 pub fn test(x: i32) -> i32 {
     if x < 0 {
         return 0;
     }
     x * 2
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -573,11 +573,11 @@ pub fn test(x: i32) -> i32 {
 
 #[test]
 fn test_return_value() {
-    let code = r#"
+    let code = r"
 pub fn test() -> i32 {
     return 42;
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -591,12 +591,12 @@ pub fn test() -> i32 {
 
 #[test]
 fn test_assignment_simple() {
-    let code = r#"
+    let code = r"
 pub fn test() {
     let mut x = 10;
     x = 20;
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -613,12 +613,12 @@ pub fn test() {
 
 #[test]
 fn test_assignment_with_expression() {
-    let code = r#"
+    let code = r"
 pub fn test() {
     let mut x = 10;
     x = x + 5;
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -650,7 +650,7 @@ pub fn test() {
 
 #[test]
 fn test_integration_multiple_statements() {
-    let code = r#"
+    let code = r"
 pub fn calculate(x: i32) -> i32 {
     let mut result = 0;
 
@@ -669,7 +669,7 @@ pub fn calculate(x: i32) -> i32 {
         _ => result
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);

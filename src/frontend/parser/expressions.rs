@@ -576,7 +576,7 @@ fn parse_lazy_token(state: &mut ParserState) -> Result<Expr> {
 
     // Parse the expression to be lazily evaluated
     let expr = parse_expr_recursive(state)?;
-    let start_span = expr.span.clone();
+    let start_span = expr.span;
 
     Ok(Expr::new(
         ExprKind::Lazy {

@@ -264,7 +264,7 @@ mod tests {
     // Helper function to create test transpiler with module names
     fn test_transpiler_with_modules(modules: Vec<&str>) -> Transpiler {
         let mut transpiler = Transpiler::new();
-        transpiler.module_names = modules.iter().map(|s| s.to_string()).collect();
+        transpiler.module_names = modules.iter().map(std::string::ToString::to_string).collect();
         transpiler
     }
 
@@ -496,7 +496,7 @@ mod tests {
         let index = int_expr(0);
         let result = transpiler.transpile_index_access(&array, &index).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains("[") && result_str.contains("clone"));
+        assert!(result_str.contains("arr") && result_str.contains('[') && result_str.contains("clone"));
     }
 
     // Test 22: transpile_slice - full slice [..]
@@ -506,7 +506,7 @@ mod tests {
         let array = ident_expr("arr");
         let result = transpiler.transpile_slice(&array, None, None).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("& arr") && result_str.contains("[") && result_str.contains(".."));
+        assert!(result_str.contains("& arr") && result_str.contains('[') && result_str.contains(".."));
     }
 
     // Test 23: transpile_slice - from beginning [..end]
@@ -517,7 +517,7 @@ mod tests {
         let end = int_expr(5);
         let result = transpiler.transpile_slice(&array, None, Some(&end)).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains("..") && result_str.contains("5"));
+        assert!(result_str.contains("arr") && result_str.contains("..") && result_str.contains('5'));
     }
 
     // Test 24: transpile_slice - from start [start..]
@@ -528,7 +528,7 @@ mod tests {
         let start = int_expr(2);
         let result = transpiler.transpile_slice(&array, Some(&start), None).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains("2") && result_str.contains(".."));
+        assert!(result_str.contains("arr") && result_str.contains('2') && result_str.contains(".."));
     }
 
     // Test 25: transpile_slice - range [start..end]
@@ -540,6 +540,6 @@ mod tests {
         let end = int_expr(4);
         let result = transpiler.transpile_slice(&array, Some(&start), Some(&end)).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains("1") && result_str.contains("4") && result_str.contains(".."));
+        assert!(result_str.contains("arr") && result_str.contains('1') && result_str.contains('4') && result_str.contains(".."));
     }
 }

@@ -844,7 +844,7 @@ mod tests {
     fn test_mcp_message_empty_method() -> Result<(), Box<dyn std::error::Error>> {
         let msg = McpMessage {
             jsonrpc: "2.0".to_string(),
-            method: "".to_string(),
+            method: String::new(),
             params: serde_json::Value::Null,
             id: Some("empty".to_string()),
         };
@@ -936,15 +936,15 @@ mod tests {
     #[test]
     fn test_supervision_strategy_debug() {
         let one_for_one = SupervisionStrategy::OneForOne;
-        let debug_str = format!("{:?}", one_for_one);
+        let debug_str = format!("{one_for_one:?}");
         assert!(debug_str.contains("OneForOne"));
 
         let one_for_all = SupervisionStrategy::OneForAll;
-        let debug_str = format!("{:?}", one_for_all);
+        let debug_str = format!("{one_for_all:?}");
         assert!(debug_str.contains("OneForAll"));
 
         let rest_for_one = SupervisionStrategy::RestForOne;
-        let debug_str = format!("{:?}", rest_for_one);
+        let debug_str = format!("{rest_for_one:?}");
         assert!(debug_str.contains("RestForOne"));
     }
 
@@ -952,7 +952,7 @@ mod tests {
     #[test]
     fn test_supervision_strategy_clone() {
         let original = SupervisionStrategy::OneForOne;
-        let cloned = original.clone();
+        let cloned = original;
         assert!(matches!(cloned, SupervisionStrategy::OneForOne));
     }
 
@@ -986,7 +986,7 @@ mod tests {
                     "name": tool_name,
                     "arguments": {}
                 }),
-                id: Some(format!("test_{}", tool_name)),
+                id: Some(format!("test_{tool_name}")),
             };
 
             let response = handle.ask(msg).await?;

@@ -12,7 +12,7 @@ use assert_cmd::Command;
 #[test]
 fn test_tool_defect_001_01_lint_recognizes_enums_red() {
     // Minimal enum definition + usage
-    let ruchy_code = r#"
+    let ruchy_code = r"
 enum Priority {
     High,
     Medium,
@@ -24,7 +24,7 @@ fun get_priority() -> Priority {
 }
 
 let p = get_priority();
-"#;
+";
 
     // Write test file
     std::fs::write("/tmp/test_enum_lint.ruchy", ruchy_code).unwrap();
@@ -43,16 +43,12 @@ let p = get_priority();
     // Assertions: Should NOT report "undefined variable: Priority"
     assert!(
         !stdout.contains("undefined variable: Priority"),
-        "ruchy lint incorrectly reports Priority enum as undefined.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy lint incorrectly reports Priority enum as undefined.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     assert!(
         !stdout.contains("undefined variable") || stdout.contains("No linting issues"),
-        "ruchy lint should recognize enum types.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy lint should recognize enum types.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Cleanup
@@ -62,7 +58,7 @@ let p = get_priority();
 /// RED TEST 2: ruchy lint should NOT report "undefined variable" for struct types
 #[test]
 fn test_tool_defect_001_02_lint_recognizes_structs_red() {
-    let ruchy_code = r#"
+    let ruchy_code = r"
 struct Config {
     max_retries: i32,
     timeout_ms: i32,
@@ -76,7 +72,7 @@ fun create_config() -> Config {
 }
 
 let cfg = create_config();
-"#;
+";
 
     std::fs::write("/tmp/test_struct_lint.ruchy", ruchy_code).unwrap();
 
@@ -93,16 +89,12 @@ let cfg = create_config();
     // Assertions: Should NOT report "undefined variable: Config"
     assert!(
         !stdout.contains("undefined variable: Config"),
-        "ruchy lint incorrectly reports Config struct as undefined.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy lint incorrectly reports Config struct as undefined.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     assert!(
         !stdout.contains("undefined variable") || stdout.contains("No linting issues"),
-        "ruchy lint should recognize struct types.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy lint should recognize struct types.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     std::fs::remove_file("/tmp/test_struct_lint.ruchy").ok();
@@ -111,7 +103,7 @@ let cfg = create_config();
 /// RED TEST 3: ruchy mutations should find mutants in enum/struct code
 #[test]
 fn test_tool_defect_001_03_mutations_finds_enum_mutants_red() {
-    let ruchy_code = r#"
+    let ruchy_code = r"
 enum Priority {
     High,
     Medium,
@@ -127,7 +119,7 @@ fun priority_score(p: Priority) -> i32 {
 }
 
 println(priority_score(Priority::High));
-"#;
+";
 
     std::fs::write("/tmp/test_mutations_enum.ruchy", ruchy_code).unwrap();
 
@@ -144,17 +136,13 @@ println(priority_score(Priority::High));
     // Assertions: Should find mutants (e.g., changing 10 to 11, 5 to 6, etc.)
     assert!(
         stdout.contains("mutants") || stdout.contains("mutations"),
-        "ruchy mutations should analyze enum-based code.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy mutations should analyze enum-based code.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should NOT say "0 mutants found" - there are clear mutation opportunities
     assert!(
         !stdout.contains("0 mutants"),
-        "ruchy mutations should find mutants in match arms (10 → 11, 5 → 6, 1 → 2).\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy mutations should find mutants in match arms (10 → 11, 5 → 6, 1 → 2).\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     std::fs::remove_file("/tmp/test_mutations_enum.ruchy").ok();
@@ -164,7 +152,7 @@ println(priority_score(Priority::High));
 #[test]
 fn test_tool_defect_001_04_quality_gate_enum_complexity_red() {
     // Simple enum with low complexity (should pass quality gates)
-    let ruchy_code = r#"
+    let ruchy_code = r"
 enum Status {
     Active,
     Inactive,
@@ -178,7 +166,7 @@ fun is_active(s: Status) -> bool {
 }
 
 println(is_active(Status::Active));
-"#;
+";
 
     std::fs::write("/tmp/test_quality_enum.ruchy", ruchy_code).unwrap();
 
@@ -197,17 +185,13 @@ println(is_active(Status::Active));
     // Should pass (simple enum with complexity ≤10)
     assert!(
         output.status.success(),
-        "ruchy quality-gate should pass for simple enum code (complexity ≤10).\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy quality-gate should pass for simple enum code (complexity ≤10).\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should NOT report false SATD violations
     assert!(
         !stdout.contains("SATD") || !stdout.contains("TODO") || !stdout.contains("FIXME"),
-        "ruchy quality-gate should not report false SATD violations for enum keywords.\nStdout: {}\nStderr: {}",
-        stdout,
-        stderr
+        "ruchy quality-gate should not report false SATD violations for enum keywords.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     std::fs::remove_file("/tmp/test_quality_enum.ruchy").ok();

@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::regex module
+//! Integration tests for `stdlib::regex` module
 //!
 //! Target: 0% → 100% coverage for stdlib/regex.rs (269 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage

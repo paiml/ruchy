@@ -79,7 +79,7 @@ pub enum Value {
     /// Tuple of values
     Tuple(Arc<[Value]>),
     /// Function closure
-    /// RUNTIME-DEFAULT-PARAMS: Params now store (name, default_value) to support default parameters
+    /// RUNTIME-DEFAULT-PARAMS: Params now store (name, `default_value`) to support default parameters
     Closure {
         params: Vec<(String, Option<Arc<Expr>>)>, // (param_name, default_value)
         body: Arc<Expr>,
@@ -4991,7 +4991,7 @@ impl Interpreter {
     }
 
     /// Helper: Execute struct method and capture modified self
-    /// Returns (method_result, Option<modified_self_fields>)
+    /// Returns (`method_result`, Option<`modified_self_fields`>)
     fn eval_struct_instance_method_with_self_capture(
         &mut self,
         instance: &std::collections::HashMap<String, Value>,

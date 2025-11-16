@@ -1,4 +1,4 @@
-//! Integration tests for runtime::interpreter module
+//! Integration tests for `runtime::interpreter` module
 //!
 //! Target: 23.05% → 80% coverage for runtime/interpreter.rs (5,949 uncovered lines)
 //! Protocol: EXTREME TDD - Integration tests via "cargo run --example" pattern

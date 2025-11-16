@@ -274,7 +274,7 @@ mod tests {
         let elements = vec![int_expr(1), int_expr(2), int_expr(3)];
         let result = transpiler.transpile_list(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("1") && result_str.contains("2") && result_str.contains("3"));
+        assert!(result_str.contains('1') && result_str.contains('2') && result_str.contains('3'));
     }
 
     // Test 4: transpile_set - empty set
@@ -302,7 +302,7 @@ mod tests {
         let elements = vec![int_expr(1), int_expr(2), int_expr(3)];
         let result = transpiler.transpile_set(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("HashSet") && result_str.contains("1") && result_str.contains("2"));
+        assert!(result_str.contains("HashSet") && result_str.contains('1') && result_str.contains('2'));
     }
 
     // Test 7: transpile_tuple - empty tuple
@@ -329,7 +329,7 @@ mod tests {
         let elements = vec![int_expr(1), string_expr("hello")];
         let result = transpiler.transpile_tuple(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("(") && result_str.contains("1") && result_str.contains("hello"));
+        assert!(result_str.contains('(') && result_str.contains('1') && result_str.contains("hello"));
     }
 
     // Test 10: transpile_range - exclusive range
@@ -429,7 +429,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_struct_literal("EmptyStruct", &[], None).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("EmptyStruct") && result_str.contains("{") && result_str.contains("}"));
+        assert!(result_str.contains("EmptyStruct") && result_str.contains('{') && result_str.contains('}'));
     }
 
     // Test 18: collect_hashmap_field_tokens - key-value field

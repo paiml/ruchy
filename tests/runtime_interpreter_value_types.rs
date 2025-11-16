@@ -2,7 +2,7 @@
 //!
 //! Target: src/runtime/interpreter.rs (7,908 lines, 73.4/100 TDG → 85+ target)
 //! Strategy: Test Value type operations, type conversions, edge cases
-//! Coverage: Value::Int, Float, String, Bool, Array, Function, Nil, DataFrame
+//! Coverage: `Value::Int`, Float, String, Bool, Array, Function, Nil, `DataFrame`
 //!
 //! TDG-driven testing: Focus on interpreter.rs quality improvement
 
@@ -216,14 +216,14 @@ fn test_value_array_mutation() {
 
 #[test]
 fn test_value_array_iteration() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let arr = [1, 2, 3];
         let mut sum = 0;
         for x in arr {
             sum = sum + x
         };
         println(sum)
-    "#).assert().success().stdout(predicate::str::contains("6"));
+    ").assert().success().stdout(predicate::str::contains("6"));
 }
 
 // ============================================================================
@@ -244,32 +244,32 @@ fn test_value_function_closure() {
 
 #[test]
 fn test_value_function_higher_order() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn apply(f, x) { f(x) };
         let double = |n| n * 2;
         println(apply(double, 21))
-    "#).assert().success().stdout(predicate::str::contains("42"));
+    ").assert().success().stdout(predicate::str::contains("42"));
 }
 
 #[test]
 fn test_value_function_recursive() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn factorial(n) {
             if n <= 1 { 1 } else { n * factorial(n - 1) }
         };
         println(factorial(5))
-    "#).assert().success().stdout(predicate::str::contains("120"));
+    ").assert().success().stdout(predicate::str::contains("120"));
 }
 
 #[test]
 fn test_value_function_returning_function() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn make_adder(x) {
             |y| x + y
         };
         let add10 = make_adder(10);
         println(add10(32))
-    "#).assert().success().stdout(predicate::str::contains("42"));
+    ").assert().success().stdout(predicate::str::contains("42"));
 }
 
 // ============================================================================
@@ -361,7 +361,7 @@ fn test_integration_array_of_functions() {
 
 #[test]
 fn test_integration_nested_data_structures() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
         let mut sum = 0;
         for row in data {
@@ -370,28 +370,28 @@ fn test_integration_nested_data_structures() {
             }
         };
         println(sum)
-    "#).assert().success().stdout(predicate::str::contains("45"));
+    ").assert().success().stdout(predicate::str::contains("45"));
 }
 
 #[test]
 fn test_integration_closure_with_multiple_captures() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let x = 10;
         let y = 20;
         let z = 30;
         let f = || x + y + z;
         println(f())
-    "#).assert().success().stdout(predicate::str::contains("60"));
+    ").assert().success().stdout(predicate::str::contains("60"));
 }
 
 #[test]
 fn test_integration_function_composition() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn double(x) { x * 2 };
         fn increment(x) { x + 1 };
         fn compose(f, g, x) { f(g(x)) };
         println(compose(double, increment, 5))
-    "#).assert().success().stdout(predicate::str::contains("12"));
+    ").assert().success().stdout(predicate::str::contains("12"));
 }
 
 // ============================================================================
@@ -424,13 +424,13 @@ fn edge_case_function_with_no_params() {
 
 #[test]
 fn edge_case_zero_iterations() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let mut count = 0;
         for i in range(0) {
             count = count + 1
         };
         println(count)
-    "#).assert().success().stdout(predicate::str::contains("0"));
+    ").assert().success().stdout(predicate::str::contains("0"));
 }
 
 // ============================================================================
@@ -442,7 +442,7 @@ fn property_int_addition_commutative() {
     // Property: a + b == b + a
     for (a, b) in [(1, 2), (5, 10), (100, 200)] {
         ruchy_cmd().arg("-e")
-            .arg(format!("assert_eq({} + {}, {} + {})", a, b, b, a))
+            .arg(format!("assert_eq({a} + {b}, {b} + {a})"))
             .assert().success();
     }
 }
@@ -453,7 +453,7 @@ fn property_array_length_nonnegative() {
     for n in [0, 1, 5, 10, 100] {
         let elements = (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
         ruchy_cmd().arg("-e")
-            .arg(format!("let arr = [{}]; assert(len(arr) >= 0)", elements))
+            .arg(format!("let arr = [{elements}]; assert(len(arr) >= 0)"))
             .assert().success();
     }
 }

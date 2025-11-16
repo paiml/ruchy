@@ -737,7 +737,7 @@ mod tests {
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("result_value"));
-        assert!(tokens.contains("?"));
+        assert!(tokens.contains('?'));
     }
 
     // Test 17: transpile_error_only_expr with None
@@ -859,7 +859,7 @@ mod tests {
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("5") && tokens.contains("3"));
+        assert!(tokens.contains('5') && tokens.contains('3'));
     }
 
     // Test 25: transpile_operator_only_expr handles Unary
@@ -877,7 +877,7 @@ mod tests {
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("-"));
+        assert!(tokens.contains('-'));
     }
 
     // Test 26: transpile_operator_only_expr handles Assign
@@ -894,7 +894,7 @@ mod tests {
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("x"));
+        assert!(tokens.contains('x'));
     }
 
     // Test 27: transpile_operator_only_expr handles CompoundAssign

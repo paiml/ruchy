@@ -991,7 +991,7 @@ mod tests {
             },
             Span::default(),
         );
-        let result = inline_function_calls(method_call.clone(), &functions);
+        let result = inline_function_calls(method_call, &functions);
         // Should return unchanged (method calls don't get inlined)
         assert!(matches!(result.kind, ExprKind::Call { .. }));
     }
