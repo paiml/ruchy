@@ -14,13 +14,10 @@ Ruchy v0.10.0 introduces groundbreaking development tools that don't exist in an
 
 1. **[Formal Verification](./provability.md)** - Mathematical correctness guarantees
 2. **[Performance Analysis](./runtime.md)** - Automatic BigO complexity detection
-3. **[AST Analysis](./ast.md)** - Enhanced syntax tree visualization and metrics
 
 ### 🛠️ Professional Development Tools
 
-4. **[Test Framework](./test.md)** - Coverage analysis and parallel execution
-5. **[Code Formatter](./fmt.md)** - Configurable style enforcement
-6. **[Linter](./lint.md)** - Grammar-based code analysis
+See the main documentation for information on testing, formatting, and linting tools.
 
 ## Quick Start
 
@@ -123,10 +120,6 @@ ruchy runtime --profile script.ruchy
 
 - **[Formal Verification Guide](./provability.md)** - Complete guide to mathematical verification
 - **[Performance Analysis Guide](./runtime.md)** - BigO detection and profiling
-- **[AST Analysis Guide](./ast.md)** - Syntax tree visualization and metrics
-- **[Test Framework Guide](./test.md)** - Testing and coverage analysis
-- **[Formatter Guide](./fmt.md)** - Code style configuration
-- **[Linter Guide](./lint.md)** - Code quality rules and auto-fix
 
 ## Philosophy
 

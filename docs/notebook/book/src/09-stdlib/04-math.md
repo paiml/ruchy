@@ -12,7 +12,7 @@ x.pow(2)      // Returns: 256.0
 x.abs()       // Returns: 16.0
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/stdlib/math.rs](../../../../tests/lang_comp/stdlib/math.rs)
+**Test Coverage**: ✅ [tests/lang_comp/operators.rs](../../../../../tests/lang_comp/operators.rs)
 
 ### Try It in the Notebook
 

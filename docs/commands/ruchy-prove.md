@@ -637,7 +637,5 @@ assert forall arr: Vec<i32>. sorted(insertion_sort(arr));
 ## See Also
 
 - [`ruchy test`](ruchy-test.md) - Dynamic testing and coverage
-- [`ruchy lint`](ruchy-lint.md) - Static code analysis  
+- [`ruchy lint`](ruchy-lint.md) - Static code analysis
 - [`ruchy score`](ruchy-score.md) - Unified quality scoring
-- [Formal Methods Guide](../guides/formal-methods.md) - Advanced verification techniques
-- [SMT Solver Integration](../guides/smt-integration.md) - Solver configuration and optimization

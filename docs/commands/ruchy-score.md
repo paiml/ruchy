@@ -765,12 +765,10 @@ cat quality-history.jsonl | jq -s 'sort_by(.date)'
 
 ## Examples
 
-See the [examples directory](../../examples/scoring/) for comprehensive scoring examples, configurations, and integration patterns.
+See the [examples directory](../../examples/) for comprehensive examples demonstrating various Ruchy features.
 
 ## See Also
 
 - [`ruchy test`](ruchy-test.md) - Test execution and coverage metrics
-- [`ruchy lint`](ruchy-lint.md) - Code quality analysis  
+- [`ruchy lint`](ruchy-lint.md) - Code quality analysis
 - [`ruchy prove`](ruchy-prove.md) - Formal verification
-- [Quality Assessment Guide](../guides/quality-assessment.md) - Comprehensive quality strategies
-- [Team Quality Standards](../guides/team-standards.md) - Establishing team-wide quality practices

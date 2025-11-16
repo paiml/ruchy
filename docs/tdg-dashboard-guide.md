@@ -306,6 +306,3 @@ For issues or feature requests:
 
 ## Related Documentation
 
-- [TDG Tracking Guide](./tdg-tracking-guide.md)
-- [PMAT Quality Gates](./pmat-quality-gates.md)
-- [Development Workflow](./development-workflow.md)

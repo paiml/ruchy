@@ -618,11 +618,10 @@ fun legacy_complex_function() {
 
 ## Examples
 
-See the [examples directory](../../examples/linting/) for comprehensive linting examples and configurations.
+See the [examples directory](../../examples/) for comprehensive examples demonstrating various Ruchy features.
 
 ## See Also
 
 - [`ruchy test`](ruchy-test.md) - Test execution and coverage
-- [`ruchy prove`](ruchy-prove.md) - Mathematical proof verification  
+- [`ruchy prove`](ruchy-prove.md) - Mathematical proof verification
 - [`ruchy score`](ruchy-score.md) - Unified quality scoring
-- [Code Quality Guide](../guides/code-quality.md) - Best practices for maintainable code

@@ -14,7 +14,7 @@ macro_rules! say_hello {
 say_hello!()  // Expands to: println!("Hello!")
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/macros.rs](../../../../tests/lang_comp/advanced/macros.rs)
+**Test Coverage**: ✅ [tests/lang_comp/functions.rs](../../../../../tests/lang_comp/functions.rs)
 
 **Expected Output**: `"Hello!"`
 

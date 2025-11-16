@@ -18,7 +18,7 @@ impl Drawable for Circle {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/traits.rs](../../../../tests/lang_comp/advanced/traits.rs)
+**Test Coverage**: ✅ [tests/lang_comp/methods.rs](../../../../../tests/lang_comp/methods.rs)
 
 ### Try It in the Notebook
 

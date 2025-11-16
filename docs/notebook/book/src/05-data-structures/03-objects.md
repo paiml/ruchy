@@ -14,7 +14,7 @@ let person = {
 let empty = {}
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/data_structures/objects.rs](../../../../tests/lang_comp/data_structures/objects.rs)
+**Test Coverage**: ✅ [tests/lang_comp/data_structures.rs](../../../../../tests/lang_comp/data_structures.rs)
 
 ### Try It in the Notebook
 

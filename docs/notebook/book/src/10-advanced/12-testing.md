@@ -231,4 +231,3 @@ Testing in Ruchy uses unit tests, property tests, and mutation testing to achiev
 
 ---
 
-[← Previous: Optimization](./11-optimization.md) | [Return to Introduction →](../01-getting-started/01-introduction.md)

@@ -390,13 +390,10 @@ nil
 
 ## Proof
 
-✅ **Test**: `tests/notebook/test_literals.rs::test_integer_literal`
+✅ **Test**: `tests/lang_comp/operators.rs::test_literals`
 ✅ **Coverage**: 100% (5/5 lines)
 ✅ **Mutation**: 100% (3/3 mutants caught)
 ✅ **E2E**: `tests/e2e/notebook-features.spec.ts::test_literals`
-
-[View test source](../../tests/notebook/test_literals.rs)
-[View coverage report](../../target/llvm-cov/html/test_literals.html)
 ```
 
 ---

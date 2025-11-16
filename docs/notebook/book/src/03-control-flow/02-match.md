@@ -21,7 +21,7 @@ color  // Returns: "green"
 
 **Expected Output**: `"green"`
 
-**Test Coverage**: ✅ [tests/lang_comp/control_flow/match.rs](../../../../tests/lang_comp/control_flow/match.rs)
+**Test Coverage**: ✅ [tests/lang_comp/pattern_matching.rs](../../../../../tests/lang_comp/pattern_matching.rs)
 
 ### Try It in the Notebook
 

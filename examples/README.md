@@ -383,5 +383,5 @@ To add a new example:
 ## Additional Resources
 
 - [Getting Started Guide](../docs/GETTING_STARTED.md)
-- [Language Specification](../SPECIFICATION.md)
+- [Language Specification](../docs/SPECIFICATION.md)
 - [API Documentation](https://docs.rs/ruchy)

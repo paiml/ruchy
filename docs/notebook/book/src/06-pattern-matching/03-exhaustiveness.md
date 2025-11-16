@@ -30,7 +30,7 @@ fn describe_incomplete(status) {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/pattern_matching/exhaustiveness.rs](../../../../tests/lang_comp/pattern_matching/exhaustiveness.rs)
+**Test Coverage**: ✅ [tests/lang_comp/pattern_matching.rs](../../../../../tests/lang_comp/pattern_matching.rs)
 
 ## Wildcard Pattern
 

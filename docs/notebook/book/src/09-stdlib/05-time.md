@@ -10,7 +10,7 @@ use std::time::SystemTime
 let now = SystemTime::now()
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/stdlib/time.rs](../../../../tests/lang_comp/stdlib/time.rs)
+**Test Coverage**: ✅ [tests/lang_comp/operators.rs](../../../../../tests/lang_comp/operators.rs)
 
 ### Try It in the Notebook
 

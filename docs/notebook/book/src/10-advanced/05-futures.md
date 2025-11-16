@@ -16,7 +16,7 @@ trait Future {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/advanced/futures.rs](../../../../tests/lang_comp/advanced/futures.rs)
+**Test Coverage**: ✅ [tests/lang_comp/functions.rs](../../../../../tests/lang_comp/functions.rs)
 
 **Expected Output**: Future trait definition
 

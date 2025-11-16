@@ -11,7 +11,7 @@ enum Result<T, E> {
 }
 ```
 
-**Test Coverage**: ✅ [tests/lang_comp/error_handling/result.rs](../../../../tests/lang_comp/error_handling/result.rs)
+**Test Coverage**: ✅ [tests/lang_comp/error_handling.rs](../../../../../tests/lang_comp/error_handling.rs)
 
 ### Try It in the Notebook
 
