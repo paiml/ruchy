@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::dataframe module
+//! Integration tests for `stdlib::dataframe` module
 //!
 //! Target: 0% → 100% coverage for stdlib/dataframe.rs (178 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage

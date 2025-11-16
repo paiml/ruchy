@@ -32,7 +32,7 @@ fn arb_string_literal() -> impl Strategy<Value = String> {
     // Simple strings to avoid escaping complexity in first iteration
     prop::string::string_regex("[a-zA-Z0-9 ]{0,20}")
         .expect("valid string pattern")
-        .prop_map(|s| format!("\"{}\"", s))
+        .prop_map(|s| format!("\"{s}\""))
 }
 
 /// Generate variable names
@@ -62,18 +62,18 @@ fn arb_literal() -> impl Strategy<Value = String> {
 /// Generate simple binary expressions: literal op literal
 fn arb_binary_expr() -> impl Strategy<Value = String> {
     (arb_literal(), arb_binary_op(), arb_literal()).prop_map(|(left, op, right)| {
-        format!("{} {} {}", left, op, right)
+        format!("{left} {op} {right}")
     })
 }
 
 /// Generate parenthesized expressions
 fn arb_paren_expr() -> impl Strategy<Value = String> {
-    arb_literal().prop_map(|expr| format!("({})", expr))
+    arb_literal().prop_map(|expr| format!("({expr})"))
 }
 
-/// Generate simple function calls: identifier()
+/// Generate simple function calls: `identifier()`
 fn arb_simple_call() -> impl Strategy<Value = String> {
-    arb_identifier().prop_map(|name| format!("{}()", name))
+    arb_identifier().prop_map(|name| format!("{name}()"))
 }
 
 /// Generate simple expressions (literals, binary, parenthesized)
@@ -95,7 +95,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_literals_parse_without_panic(literal in arb_literal()) {
-        let code = format!("fun main() {{ {} }}", literal);
+        let code = format!("fun main() {{ {literal} }}");
         let result = std::panic::catch_unwind(|| {
             Parser::new(&code).parse()
         });
@@ -106,7 +106,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_literal_roundtrip(literal in arb_literal()) {
-        let code = format!("fun main() {{ {} }}", literal);
+        let code = format!("fun main() {{ {literal} }}");
 
         // Parse original
         let ast1 = Parser::new(&code).parse();
@@ -138,7 +138,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_binary_roundtrip(expr in arb_binary_expr()) {
-        let code = format!("fun main() {{ {} }}", expr);
+        let code = format!("fun main() {{ {expr} }}");
 
         let ast1 = Parser::new(&code).parse();
         if ast1.is_err() {
@@ -165,7 +165,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_simple_expr_roundtrip(expr in arb_simple_expr()) {
-        let code = format!("fun main() {{ {} }}", expr);
+        let code = format!("fun main() {{ {expr} }}");
 
         let ast1 = Parser::new(&code).parse();
         if ast1.is_err() {
@@ -192,7 +192,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_formatting_deterministic(literal in arb_literal()) {
-        let code = format!("fun main() {{ {} }}", literal);
+        let code = format!("fun main() {{ {literal} }}");
 
         let ast = Parser::new(&code).parse();
         if ast.is_err() {
@@ -224,7 +224,7 @@ proptest! {
     #[test]
     #[ignore]
     fn prop_double_roundtrip_stabilizes(expr in arb_simple_expr()) {
-        let code = format!("fun main() {{ {} }}", expr);
+        let code = format!("fun main() {{ {expr} }}");
 
         // First roundtrip
         let ast1 = Parser::new(&code).parse();

@@ -1060,16 +1060,13 @@ impl Transpiler {
                             self.transpile_type(type_ann)?
                         } else {
                             // Infer type from literal for const
-                            match &value.kind {
-                                ExprKind::Literal(lit) => match lit {
-                                    crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
-                                    crate::frontend::ast::Literal::Float(_) => quote! { f64 },
-                                    crate::frontend::ast::Literal::String(_) => quote! { &str },
-                                    crate::frontend::ast::Literal::Bool(_) => quote! { bool },
-                                    _ => quote! { i32 },
-                                },
+                            if let ExprKind::Literal(lit) = &value.kind { match lit {
+                                crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
+                                crate::frontend::ast::Literal::Float(_) => quote! { f64 },
+                                crate::frontend::ast::Literal::String(_) => quote! { &str },
+                                crate::frontend::ast::Literal::Bool(_) => quote! { bool },
                                 _ => quote! { i32 },
-                            }
+                            } } else { quote! { i32 } }
                         };
 
                         // Generate module-level const declaration
@@ -2860,7 +2857,7 @@ mod tests {
             span: Span::default(),
         };
         let result = transpiler.type_to_string(&ref_type);
-        assert!(result.contains("&") || result.contains("i64"));
+        assert!(result.contains('&') || result.contains("i64"));
     }
 
     // Test 45: collect_signatures_from_expr - block with multiple functions
@@ -2906,7 +2903,7 @@ mod tests {
         };
         transpiler.collect_signatures_from_expr(&block_expr);
         // Should collect both function signatures
-        assert!(transpiler.function_signatures.len() >= 0);
+        assert_eq!(transpiler.function_signatures.len(), 2);
     }
 
     // Test 46: collect_module_names_from_expr - nested modules

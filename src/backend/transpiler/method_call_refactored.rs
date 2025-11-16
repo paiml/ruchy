@@ -676,6 +676,6 @@ mod tests {
         assert!(result.is_ok());
         // Verify that field access argument is wrapped with &
         let output = result.unwrap().to_string();
-        assert!(output.contains("&"));
+        assert!(output.contains('&'));
     }
 }

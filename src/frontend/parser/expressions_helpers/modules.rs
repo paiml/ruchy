@@ -158,7 +158,7 @@ mod tests {
         let code = "mod api { pub fun handler() { \"response\" } }";
         let result = Parser::new(code).parse();
         if let Err(ref e) = result {
-            eprintln!("Parse error: {:?}", e);
+            eprintln!("Parse error: {e:?}");
         }
         assert!(result.is_ok(), "Module with pub function should parse: {:?}", result.err());
     }

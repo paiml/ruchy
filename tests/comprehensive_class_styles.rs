@@ -22,7 +22,7 @@ use ruchy::backend::transpiler::Transpiler;
 #[test]
 fn test_extreme_tdd_impl_blocks() {
     // Style 1: Impl blocks (fully working)
-    let style1_code = r#"
+    let style1_code = r"
 struct Calculator {
     value: i32,
 }
@@ -45,10 +45,10 @@ let mut calc = Calculator::new()
 calc.add(5)
 calc.add(10)
 let result = calc.get()
-"#;
+";
 
     // Style 2: Methods in struct body with pub (PARSER-147 fix)
-    let style2_code = r#"
+    let style2_code = r"
 struct Calculator {
     value: i32,
 
@@ -69,7 +69,7 @@ let mut calc = Calculator::new()
 calc.add(5)
 calc.add(10)
 let result = calc.get()
-"#;
+";
 
     test_single_style("Style 1: Impl Blocks", style1_code, true);
     test_single_style("Style 2: Pub Methods in Struct", style2_code, true);
@@ -114,16 +114,14 @@ fn test_single_style(style_name: &str, code: &str, expect_pub: bool) {
     let temp_file = format!("/tmp/test_{}.rs",
         style_name
             .replace(' ', "_")
-            .replace('(', "")
-            .replace(')', "")
-            .replace(':', "")
+            .replace(['(', ')', ':'], "")
             .to_lowercase());
     std::fs::write(&temp_file, &rust_code)
         .unwrap_or_else(|e| panic!("{style_name} failed to write temp file: {e}"));
 
     let output = std::process::Command::new("rustc")
         .args(["--crate-type", "lib", &temp_file])
-        .args(["-o", &format!("{}.rlib", temp_file)])
+        .args(["-o", &format!("{temp_file}.rlib")])
         .output()
         .unwrap_or_else(|e| panic!("{style_name} failed to run rustc: {e}"));
 
@@ -138,7 +136,7 @@ fn test_single_style(style_name: &str, code: &str, expect_pub: bool) {
 #[test]
 fn test_comprehensive_class_features() {
     // Test all features in one comprehensive example
-    let code = r#"
+    let code = r"
 // Style 1: Simple struct with methods
 struct Point {
     x: i32,
@@ -204,7 +202,7 @@ let count = c.get_count()
 let mut calc = Calculator::new(10)
 calc.add(5)
 let value = calc.result()
-"#;
+";
 
     println!("\n=== Testing Comprehensive Class Features ===");
 
@@ -254,7 +252,7 @@ let value = calc.result()
 #[test]
 fn test_method_receivers_all_styles() {
     // Test that all three receiver types work in all styles
-    let code = r#"
+    let code = r"
 struct Widget {
     id: i32,
 
@@ -282,7 +280,7 @@ let id1 = w.get_id()
 w.set_id(2)
 let id2 = w.get_id()
 let w2 = w.duplicate()
-"#;
+";
 
     println!("\n=== Testing Method Receivers ===");
 
@@ -309,7 +307,7 @@ let w2 = w.duplicate()
 #[test]
 fn test_visibility_all_styles() {
     // Test pub and private methods in all styles
-    let code = r#"
+    let code = r"
 struct Vault {
     secret: i32,
 
@@ -334,7 +332,7 @@ impl Vault {
 
 let v = Vault::new(123)
 let result = v.verify()
-"#;
+";
 
     println!("\n=== Testing Visibility Modifiers ===");
 

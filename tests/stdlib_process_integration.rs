@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::process module
+//! Integration tests for `stdlib::process` module
 //!
 //! Target: 0% → 100% coverage for stdlib/process.rs (52 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage

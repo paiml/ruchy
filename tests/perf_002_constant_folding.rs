@@ -15,10 +15,10 @@ use predicates::prelude::*;
 #[test]
 fn test_perf_002a_fold_simple_arithmetic() {
     // Pattern: 2 + 3 → 5 (compile-time)
-    let code = r#"
+    let code = r"
         let x = 2 + 3;
         println(x);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -32,10 +32,10 @@ fn test_perf_002a_fold_simple_arithmetic() {
 #[test]
 fn test_perf_002a_fold_operator_precedence() {
     // Pattern: 2 + 3 * 4 → 2 + 12 → 14 (respects precedence)
-    let code = r#"
+    let code = r"
         let result = 2 + 3 * 4;
         println(result);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -49,10 +49,10 @@ fn test_perf_002a_fold_operator_precedence() {
 #[test]
 fn test_perf_002a_fold_nested_expressions() {
     // Pattern: (10 - 2) * (3 + 1) → 8 * 4 → 32
-    let code = r#"
+    let code = r"
         let x = (10 - 2) * (3 + 1);
         println(x);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -89,10 +89,10 @@ fn test_perf_002a_fold_comparison_true() {
 #[test]
 fn test_perf_002a_fold_comparison_false() {
     // Pattern: 3 <= 2 → false (compile-time)
-    let code = r#"
+    let code = r"
         let x = 3 <= 2;
         println(x);
-    "#;
+    ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
@@ -137,10 +137,10 @@ fn property_constant_folding_preserves_semantics() {
     use proptest::prelude::*;
 
     proptest!(|(a in 0..100i32, b in 1..100i32)| {
-        let code = format!(r#"
-            let x = {} + {};
+        let code = format!(r"
+            let x = {a} + {b};
             println(x);
-        "#, a, b);
+        ");
 
         // Evaluate original expression
         let expected = a + b;
@@ -149,9 +149,9 @@ fn property_constant_folding_preserves_semantics() {
         let mut cmd = Command::cargo_bin("ruchy").unwrap();
         cmd.arg("transpile")
             .arg("-")  // Read from stdin
-            .write_stdin(code.clone())
+            .write_stdin(code)
             .assert()
             .success()
-            .stdout(predicate::str::contains(format!("let x = {}", expected)));
+            .stdout(predicate::str::contains(format!("let x = {expected}")));
     });
 }

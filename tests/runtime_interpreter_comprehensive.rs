@@ -300,7 +300,7 @@ fn test_eval_bool_to_int() {
 fn property_variable_assignment() {
     // Property: Assigned values are retrievable
     for val in [0, 42, -100, 999] {
-        ruchy_cmd().arg("-e").arg(format!("let x = {}; assert_eq(x, {})", val, val))
+        ruchy_cmd().arg("-e").arg(format!("let x = {val}; assert_eq(x, {val})"))
             .assert().success();
     }
 }
@@ -309,7 +309,7 @@ fn property_variable_assignment() {
 fn property_function_return_values() {
     // Property: Functions return correct values
     for val in [1, 10, 100] {
-        ruchy_cmd().arg("-e").arg(format!("fn f() {{ {} }}; assert_eq(f(), {})", val, val))
+        ruchy_cmd().arg("-e").arg(format!("fn f() {{ {val} }}; assert_eq(f(), {val})"))
             .assert().success();
     }
 }
@@ -319,7 +319,7 @@ fn property_array_length() {
     // Property: Array length matches element count
     for n in 0..10 {
         let elements = (0..n).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
-        ruchy_cmd().arg("-e").arg(format!("let arr = [{}]; assert_eq(len(arr), {})", elements, n))
+        ruchy_cmd().arg("-e").arg(format!("let arr = [{elements}]; assert_eq(len(arr), {n})"))
             .assert().success();
     }
 }
@@ -328,7 +328,7 @@ fn property_array_length() {
 fn property_closure_captures() {
     // Property: Closures capture environment variables
     for val in [5, 10, 20] {
-        ruchy_cmd().arg("-e").arg(format!("let x = {}; let f = || x; assert_eq(f(), {})", val, val))
+        ruchy_cmd().arg("-e").arg(format!("let x = {val}; let f = || x; assert_eq(f(), {val})"))
             .assert().success();
     }
 }
@@ -339,7 +339,7 @@ fn property_closure_captures() {
 
 #[test]
 fn integration_factorial_iterative() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn factorial(n) {
             let mut result = 1;
             let mut i = 1;
@@ -350,12 +350,12 @@ fn integration_factorial_iterative() {
             result
         };
         println(factorial(6))
-    "#).assert().success().stdout(predicate::str::contains("720"));
+    ").assert().success().stdout(predicate::str::contains("720"));
 }
 
 #[test]
 fn integration_fibonacci_recursive() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn fib(n) {
             if n <= 1 {
                 n
@@ -364,24 +364,24 @@ fn integration_fibonacci_recursive() {
             }
         };
         println(fib(10))
-    "#).assert().success().stdout(predicate::str::contains("55"));
+    ").assert().success().stdout(predicate::str::contains("55"));
 }
 
 #[test]
 fn integration_array_sum() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let arr = [1, 2, 3, 4, 5];
         let mut sum = 0;
         for x in arr {
             sum = sum + x
         };
         println(sum)
-    "#).assert().success().stdout(predicate::str::contains("15"));
+    ").assert().success().stdout(predicate::str::contains("15"));
 }
 
 #[test]
 fn integration_nested_functions() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         fn outer(x) {
             fn inner(y) {
                 x + y
@@ -389,16 +389,16 @@ fn integration_nested_functions() {
             inner(10)
         };
         println(outer(32))
-    "#).assert().success().stdout(predicate::str::contains("42"));
+    ").assert().success().stdout(predicate::str::contains("42"));
 }
 
 #[test]
 fn integration_closure_with_state() {
-    ruchy_cmd().arg("-e").arg(r#"
+    ruchy_cmd().arg("-e").arg(r"
         let x = 10;
         let add_x = |y| x + y;
         println(add_x(32))
-    "#).assert().success().stdout(predicate::str::contains("42"));
+    ").assert().success().stdout(predicate::str::contains("42"));
 }
 
 // ============================================================================

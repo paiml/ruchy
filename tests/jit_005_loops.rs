@@ -386,16 +386,15 @@ fn test_jit_005_performance_iterative_sum() {
     let avg_elapsed = total_elapsed / iterations;
 
     println!("\n=== JIT-005 Performance Benchmark ===");
-    println!("sum_to_n(1000) JIT avg over {} runs: {:?}", iterations, avg_elapsed);
+    println!("sum_to_n(1000) JIT avg over {iterations} runs: {avg_elapsed:?}");
     println!("Target: <1ms per run (includes compilation overhead)");
 
     // Performance assertion: Should be faster than 1ms
     let avg_micros = avg_elapsed.as_micros();
     assert!(
         avg_micros < 1000,
-        "JIT should be faster than 1ms. Actual: {}µs",
-        avg_micros
+        "JIT should be faster than 1ms. Actual: {avg_micros}µs"
     );
 
-    println!("Actual: {}µs - ✅ Performance target met", avg_micros);
+    println!("Actual: {avg_micros}µs - ✅ Performance target met");
 }

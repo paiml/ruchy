@@ -575,8 +575,8 @@ mod tests {
         let lit = Literal::Unit;
         let result = Transpiler::transpile_literal(&lit);
         let tokens_str = result.to_string();
-        assert!(tokens_str.contains("("));
-        assert!(tokens_str.contains(")"));
+        assert!(tokens_str.contains('('));
+        assert!(tokens_str.contains(')'));
     }
 
     // Test 5: transpile_literal with Null

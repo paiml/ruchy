@@ -601,7 +601,7 @@ mod tests {
         assert!(result.is_ok());
         let output = result.unwrap().to_string();
         assert!(output.contains("head"));
-        assert!(output.contains("5"));
+        assert!(output.contains('5'));
     }
 
     // Test 6: transpile_dataframe_method with tail (with arg)

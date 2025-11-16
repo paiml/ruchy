@@ -236,7 +236,7 @@ mod tests {
         let result_str = result.to_string();
         assert!(result_str.contains("String"));
         assert!(result_str.contains("i32"));
-        assert!(result_str.contains(","));
+        assert!(result_str.contains(','));
     }
 
     // Test 11: transpile_turbofish - with whitespace
@@ -336,9 +336,9 @@ mod tests {
     fn test_transpile_turbofish_three_types() {
         let result = Transpiler::transpile_turbofish("<K, V, H>");
         let result_str = result.to_string();
-        assert!(result_str.contains("K"));
-        assert!(result_str.contains("V"));
-        assert!(result_str.contains("H"));
+        assert!(result_str.contains('K'));
+        assert!(result_str.contains('V'));
+        assert!(result_str.contains('H'));
     }
 
     // Test 19: transpile_identifier - reserved keyword "match"
@@ -426,10 +426,10 @@ mod tests {
     fn test_transpile_turbofish_four_types() {
         let result = Transpiler::transpile_turbofish("<A, B, C, D>");
         let result_str = result.to_string();
-        assert!(result_str.contains("A"));
-        assert!(result_str.contains("B"));
-        assert!(result_str.contains("C"));
-        assert!(result_str.contains("D"));
+        assert!(result_str.contains('A'));
+        assert!(result_str.contains('B'));
+        assert!(result_str.contains('C'));
+        assert!(result_str.contains('D'));
     }
 
     // Test 27: transpile_turbofish - five types (stress test)
@@ -437,11 +437,11 @@ mod tests {
     fn test_transpile_turbofish_five_types() {
         let result = Transpiler::transpile_turbofish("<T, U, V, W, X>");
         let result_str = result.to_string();
-        assert!(result_str.contains("T"));
-        assert!(result_str.contains("U"));
-        assert!(result_str.contains("V"));
-        assert!(result_str.contains("W"));
-        assert!(result_str.contains("X"));
+        assert!(result_str.contains('T'));
+        assert!(result_str.contains('U'));
+        assert!(result_str.contains('V'));
+        assert!(result_str.contains('W'));
+        assert!(result_str.contains('X'));
     }
 
     // Test 28: transpile_identifier - module path with multiple turbofishes
@@ -461,10 +461,10 @@ mod tests {
     fn test_transpile_qualified_name_very_deep() {
         let result = Transpiler::transpile_qualified_name("a::b::c::d", "Function");
         let result_str = result.to_string();
-        assert!(result_str.contains("a"));
-        assert!(result_str.contains("b"));
-        assert!(result_str.contains("c"));
-        assert!(result_str.contains("d"));
+        assert!(result_str.contains('a'));
+        assert!(result_str.contains('b'));
+        assert!(result_str.contains('c'));
+        assert!(result_str.contains('d'));
         assert!(result_str.contains("Function"));
     }
 

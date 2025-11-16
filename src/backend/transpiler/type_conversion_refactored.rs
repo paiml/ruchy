@@ -384,7 +384,7 @@ mod tests {
         let tokens = result.unwrap().unwrap();
         let output = tokens.to_string();
         // TokenStream formats as "format ! (...)" with spaces
-        assert!(output.contains("format") && output.contains("!"));
+        assert!(output.contains("format") && output.contains('!'));
     }
 
     // Test 7: convert_to_int - string literal

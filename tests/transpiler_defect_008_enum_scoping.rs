@@ -1,9 +1,9 @@
-//! TRANSPILER-DEFECT-008: Enum declarations must be at top-level, not inside main()
+//! TRANSPILER-DEFECT-008: Enum declarations must be at top-level, not inside `main()`
 //!
-//! Root Cause: categorize_single_expression() in mod.rs:938 was missing ExprKind::Enum,
-//! causing enums to fall through to _ case and be categorized as statements (inside main()).
+//! Root Cause: `categorize_single_expression()` in mod.rs:938 was missing `ExprKind::Enum`,
+//! causing enums to fall through to _ case and be categorized as statements (inside `main()`).
 //!
-//! Fix: Added ExprKind::Enum { .. } to top-level functions vector (line 941)
+//! Fix: Added `ExprKind::Enum` { .. } to top-level functions vector (line 941)
 //!
 //! Tests: 4 tests validating enum placement at file top-level
 
@@ -45,8 +45,7 @@ fn test_transpiler_defect_008_enum_at_top_level() {
         .expect("main function not found");
 
     assert!(enum_pos < main_pos,
-        "Enum must be before main function. Enum at {}, main at {}. Output:\n{}",
-        enum_pos, main_pos, transpiled);
+        "Enum must be before main function. Enum at {enum_pos}, main at {main_pos}. Output:\n{transpiled}");
 }
 
 #[test]
@@ -118,8 +117,7 @@ fn test_transpiler_defect_008_multiple_enums_at_top_level() {
         .expect("main function not found");
 
     assert!(status_pos < main_pos && priority_pos < main_pos,
-        "Both enums must be before main. Status: {}, Priority: {}, main: {}",
-        status_pos, priority_pos, main_pos);
+        "Both enums must be before main. Status: {status_pos}, Priority: {priority_pos}, main: {main_pos}");
 }
 
 #[test]
@@ -159,6 +157,5 @@ fn test_transpiler_defect_008_enum_with_struct_fields() {
         .expect("main function not found");
 
     assert!(struct_pos < main_pos && enum_pos < main_pos,
-        "Struct and enum must be before main. Struct: {}, Enum: {}, main: {}",
-        struct_pos, enum_pos, main_pos);
+        "Struct and enum must be before main. Struct: {struct_pos}, Enum: {enum_pos}, main: {main_pos}");
 }

@@ -1,4 +1,4 @@
-//! EXTREME TDD Coverage Tests for stdlib::env Module
+//! EXTREME TDD Coverage Tests for `stdlib::env` Module
 //!
 //! Target: 0% → 80% coverage (+26 lines)
 //! Protocol: RED → GREEN → REFACTOR → VALIDATE
@@ -172,7 +172,7 @@ proptest! {
         value in "[ -~]{1,100}" // Printable ASCII
     ) {
         // Property: set_var → var should return same value
-        let test_key = format!("RUCHY_PROP_{}", key);
+        let test_key = format!("RUCHY_PROP_{key}");
 
         env::set_var(&test_key, &value).unwrap();
         let result = env::var(&test_key).unwrap();
@@ -189,7 +189,7 @@ proptest! {
         key in "[A-Z_]{5,20}"
     ) {
         // Property: remove_var → var should fail
-        let test_key = format!("RUCHY_REM_{}", key);
+        let test_key = format!("RUCHY_REM_{key}");
 
         env::set_var(&test_key, "temp").unwrap();
         env::remove_var(&test_key).unwrap();

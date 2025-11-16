@@ -65,7 +65,7 @@ fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<Str
             // Parse type parameters
             loop {
                 let type_param = utils::parse_type(state)?;
-                name.push_str(&format!("{:?}", type_param)); // Format type as string
+                name.push_str(&format!("{type_param:?}")); // Format type as string
 
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
@@ -99,7 +99,7 @@ fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<Str
                 // Parse type parameters
                 loop {
                     let type_param = utils::parse_type(state)?;
-                    name.push_str(&format!("{:?}", type_param)); // Format type as string
+                    name.push_str(&format!("{type_param:?}")); // Format type as string
 
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();

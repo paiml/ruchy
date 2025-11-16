@@ -278,9 +278,9 @@ mod tests {
         let body = ident_expr("result");
         let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("a"));
-        assert!(result_str.contains("b"));
-        assert!(result_str.contains("c"));
+        assert!(result_str.contains('a'));
+        assert!(result_str.contains('b'));
+        assert!(result_str.contains('c'));
         assert!(result_str.contains("async move"));
     }
 

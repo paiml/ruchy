@@ -18,7 +18,7 @@ use ruchy::backend::transpiler::Transpiler;
 
 #[test]
 fn test_parser_147_01_pub_fun_constructor() {
-    let code = r#"
+    let code = r"
 struct Calculator {
     value: i32,
 
@@ -26,7 +26,7 @@ struct Calculator {
         Calculator { value: 0 }
     }
 }
-"#;
+";
 
     // RED: This MUST fail initially
     let result = Parser::new(code).parse();
@@ -35,7 +35,7 @@ struct Calculator {
 
 #[test]
 fn test_parser_147_02_pub_fun_with_self() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
 
@@ -43,7 +43,7 @@ struct Point {
         self.x
     }
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Should parse pub fun with &self");
@@ -51,7 +51,7 @@ struct Point {
 
 #[test]
 fn test_parser_147_03_pub_fun_with_mut_self() {
-    let code = r#"
+    let code = r"
 struct Counter {
     count: i32,
 
@@ -59,7 +59,7 @@ struct Counter {
         self.count = self.count + 1
     }
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Should parse pub fun with &mut self");
@@ -67,7 +67,7 @@ struct Counter {
 
 #[test]
 fn test_parser_147_04_mixed_pub_private_methods() {
-    let code = r#"
+    let code = r"
 struct Widget {
     id: i32,
 
@@ -79,7 +79,7 @@ struct Widget {
         self.internal_id()
     }
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Should parse mixed pub/private methods");
@@ -87,7 +87,7 @@ struct Widget {
 
 #[test]
 fn test_parser_147_05_multiple_pub_methods() {
-    let code = r#"
+    let code = r"
 struct Calculator {
     value: i32,
 
@@ -103,7 +103,7 @@ struct Calculator {
         self.value
     }
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Should parse multiple pub methods");
@@ -111,13 +111,13 @@ struct Calculator {
 
 #[test]
 fn test_parser_147_06_pub_fun_with_params() {
-    let code = r#"
+    let code = r"
 struct Math {
     pub fun add(&self, a: i32, b: i32) -> i32 {
         a + b
     }
 }
-"#;
+";
 
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "Should parse pub fun with multiple params");
@@ -125,7 +125,7 @@ struct Math {
 
 #[test]
 fn test_parser_147_07_transpile_pub_methods() {
-    let code = r#"
+    let code = r"
 struct Calculator {
     value: i32,
 
@@ -137,7 +137,7 @@ struct Calculator {
         self.value
     }
 }
-"#;
+";
 
     // Parse
     let ast = Parser::new(code).parse()
@@ -160,7 +160,7 @@ struct Calculator {
 
 #[test]
 fn test_parser_147_08_compile_and_execute() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32,
@@ -176,7 +176,7 @@ struct Point {
 
 let p = Point::new(3, 4)
 let x = p.get_x()
-"#;
+";
 
     // Parse
     let ast = Parser::new(code).parse()

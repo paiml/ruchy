@@ -2160,10 +2160,10 @@ impl Transpiler {
                 .iter()
                 .map(|p| {
                     let name = p.name();
-                    let ty_str = self.transpile_type(&p.ty).map(|t| t.to_string()).unwrap_or_else(|_| "_".to_string());
+                    let ty_str = self.transpile_type(&p.ty).map_or_else(|_| "_".to_string(), |t| t.to_string());
                     if ty_str == "_" {
                         // No type annotation (inferred)
-                        name.to_string()
+                        name
                     } else {
                         // Explicit type annotation
                         format!("{name}: {ty_str}")

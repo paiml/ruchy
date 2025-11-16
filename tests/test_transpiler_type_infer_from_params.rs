@@ -1,7 +1,7 @@
 //! TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
 //!
 //! **Bug**: Functions returning parameter values default to i32 instead of parameter type
-//! **Found By**: Property test suite (property_01_type_inference_correctness)
+//! **Found By**: Property test suite (`property_01_type_inference_correctness`)
 //! **Example**: fun a(a: f64) { a } transpiles to fn a(a: f64) -> i32 (WRONG!)
 //! **Expected**: Should infer -> f64 from parameter type
 

@@ -1,7 +1,7 @@
-/// ISSUE-140: time_micros() in ruchy compile command
+/// ISSUE-140: `time_micros()` in ruchy compile command
 ///
-/// This test verifies that `ruchy compile` correctly transpiles time_micros()
-/// to SystemTime API, not raw time_micros() function calls
+/// This test verifies that `ruchy compile` correctly transpiles `time_micros()`
+/// to `SystemTime` API, not raw `time_micros()` function calls
 
 use assert_cmd::Command;
 use std::fs;

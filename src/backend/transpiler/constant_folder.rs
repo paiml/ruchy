@@ -1077,7 +1077,7 @@ mod tests {
             int_lit(2),
             int_lit(3),
         ];
-        let result = remove_dead_statements(stmts.clone());
+        let result = remove_dead_statements(stmts);
         assert_eq!(result.len(), 3); // All statements preserved
     }
 

@@ -3,7 +3,7 @@
 /// GitHub Issue: ruchy-lambda blocker
 /// Blocks: ruchy-lambda v3.207.0 deployment
 ///
-/// BUG: User-defined add() methods are transpiled to insert()
+/// BUG: User-defined `add()` methods are transpiled to `insert()`
 /// IMPACT: error[E0599]: no method named `insert` found for struct
 /// ROOT CAUSE: "add" hardcoded in map/set methods match arm (line 2403)
 /// FIX: Remove "add" from hardcoded list (same pattern as TRANSPILER-002 get/cloned fix)
@@ -11,7 +11,7 @@
 use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
 
-/// Test 1: Calculator.add() should NOT become insert()
+/// Test 1: `Calculator.add()` should NOT become `insert()`
 #[test]
 fn test_transpiler_007_01_calculator_add_not_insert() {
     let code = r#"
@@ -50,15 +50,13 @@ fun main() {
     // CRITICAL: Should NOT rename add() to insert()
     assert!(
         !rust_code.contains("insert"),
-        "BUG: calc.add() was renamed to calc.insert():\n{}",
-        rust_code
+        "BUG: calc.add() was renamed to calc.insert():\n{rust_code}"
     );
 
     // Should preserve original method name (handle whitespace in transpiled code)
     assert!(
         rust_code.contains("add") && rust_code.contains("calc"),
-        "User-defined add() method should be preserved:\n{}",
-        rust_code
+        "User-defined add() method should be preserved:\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -74,22 +72,21 @@ fun main() {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Calculator.add() fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Calculator.add() fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
 
-/// Test 2: HashSet.add() SHOULD become insert() (Python compat)
+/// Test 2: `HashSet.add()` SHOULD become `insert()` (Python compat)
 #[test]
 #[ignore] // Enable when we have proper type inference for HashSet
 fn test_transpiler_007_02_hashset_add_becomes_insert() {
-    let code = r#"
+    let code = r"
 fun main() {
     let mut s: HashSet<i32> = HashSet::new();
     s.add(5);
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -101,15 +98,14 @@ fun main() {
     // For HashSet, add() SHOULD become insert() (Python compatibility)
     assert!(
         rust_code.contains("s.insert"),
-        "HashSet.add() should become insert() for Python compat:\n{}",
-        rust_code
+        "HashSet.add() should become insert() for Python compat:\n{rust_code}"
     );
 }
 
 /// Test 3: Multiple user methods (add, update, items) should NOT be mangled
 #[test]
 fn test_transpiler_007_03_multiple_methods_preserved() {
-    let code = r#"
+    let code = r"
 pub struct CustomCollection {
     data: Vec<i32>,
 }
@@ -135,7 +131,7 @@ fun main() {
     coll.update(0, 10);
     let _ = coll.items();
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -153,8 +149,7 @@ fun main() {
 
     assert!(
         has_add,
-        "User-defined add() should be preserved:\n{}",
-        rust_code
+        "User-defined add() should be preserved:\n{rust_code}"
     );
 
     // TODO: Fix "update" and "items" similarly to how we fixed "add"
@@ -179,7 +174,7 @@ fun main() {
 /// Test 4: Dataframe methods should NOT be affected
 #[test]
 fn test_transpiler_007_04_dataframe_methods_unaffected() {
-    let code = r#"
+    let code = r"
 pub struct DataFrame {
     data: Vec<i32>,
 }
@@ -194,7 +189,7 @@ fun main() {
     let mut df = DataFrame { data: vec![] };
     df.add(42);
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
@@ -206,13 +201,11 @@ fun main() {
     // DataFrame.add() should NOT become insert() (handle whitespace)
     assert!(
         rust_code.contains("add") && rust_code.contains("df"),
-        "DataFrame.add() should be preserved:\n{}",
-        rust_code
+        "DataFrame.add() should be preserved:\n{rust_code}"
     );
 
     assert!(
         !rust_code.contains("insert"),
-        "DataFrame.add() should NOT become insert():\n{}",
-        rust_code
+        "DataFrame.add() should NOT become insert():\n{rust_code}"
     );
 }

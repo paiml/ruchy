@@ -2,7 +2,7 @@
 ///
 /// GitHub Issue: #147 - "pub pub fn" bug (actually: impl blocks not supported)
 /// Impact: BLOCKER - all impl blocks fail to parse
-/// Root Cause: Parser stub at expressions_helpers/impls.rs:42 just bails
+/// Root Cause: Parser stub at `expressions_helpers/impls.rs:42` just bails
 /// Fix: Implement full impl block parsing
 
 use ruchy::frontend::parser::Parser;
@@ -34,15 +34,13 @@ impl Runtime {
     // CRITICAL: Should generate "pub fn" NOT "pub pub fn"
     assert!(
         !rust_code.contains("pub pub fn"),
-        "BUG: Generated duplicate pub keyword:\n{}",
-        rust_code
+        "BUG: Generated duplicate pub keyword:\n{rust_code}"
     );
 
     // Should have single pub fn
     assert!(
         rust_code.contains("pub fn new"),
-        "Should have 'pub fn new':\n{}",
-        rust_code
+        "Should have 'pub fn new':\n{rust_code}"
     );
 
     // Verify rustc compilation
@@ -58,8 +56,7 @@ impl Runtime {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Impl block fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Impl block fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -67,7 +64,7 @@ impl Runtime {
 /// Test 2: Impl block with multiple pub methods
 #[test]
 fn test_transpiler_147_02_multiple_pub_methods() {
-    let code = r#"
+    let code = r"
 pub struct Calculator {
     value: i32,
 }
@@ -85,7 +82,7 @@ impl Calculator {
         self.value
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
@@ -97,8 +94,7 @@ impl Calculator {
     // NO duplicate pub keywords
     assert!(
         !rust_code.contains("pub pub"),
-        "BUG: Found duplicate pub:\n{}",
-        rust_code
+        "BUG: Found duplicate pub:\n{rust_code}"
     );
 
     // All three methods should be pub fn
@@ -119,8 +115,7 @@ impl Calculator {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Multiple methods fail compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Multiple methods fail compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -128,7 +123,7 @@ impl Calculator {
 /// Test 3: Impl block with mixed pub/private visibility
 #[test]
 fn test_transpiler_147_03_mixed_visibility() {
-    let code = r#"
+    let code = r"
 struct Counter {
     count: i32,
 }
@@ -146,7 +141,7 @@ impl Counter {
         self.internal_increment();
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
@@ -178,8 +173,7 @@ impl Counter {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Mixed visibility fails compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Mixed visibility fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }
@@ -187,7 +181,7 @@ impl Counter {
 /// Test 4: Impl block with self receivers
 #[test]
 fn test_transpiler_147_04_self_receivers() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32,
@@ -207,7 +201,7 @@ impl Point {
         self.y = self.y + dy;
     }
 }
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
@@ -241,8 +235,7 @@ impl Point {
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
         panic!(
-            "CRITICAL: Self receivers fail compilation:\n{}\n\nCode:\n{}",
-            stderr, rust_code
+            "CRITICAL: Self receivers fail compilation:\n{stderr}\n\nCode:\n{rust_code}"
         );
     }
 }

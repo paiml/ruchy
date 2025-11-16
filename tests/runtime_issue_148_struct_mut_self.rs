@@ -5,7 +5,7 @@
 /// EVIDENCE:
 /// - Compiled binary works correctly (outputs 15)
 /// - Interpreter shows mutations happening (logs show 5, 10)
-/// - But final get() returns 0 instead of 10
+/// - But final `get()` returns 0 instead of 10
 ///
 /// EXTREME TDD Test Suite
 /// Coverage:
@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 #[test]
 fn test_issue_148_01_single_mut_self_mutation() {
-    let code = r#"
+    let code = r"
 struct Counter {
     value: i32,
 
@@ -39,18 +39,18 @@ struct Counter {
 let mut counter = Counter::new()
 counter.increment()
 counter.get()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: This will fail - interpreter returns 0 instead of 1
-    assert_eq!(result.to_string(), "1", "After increment(), get() should return 1");
+    assert_eq!(result, "1", "After increment(), get() should return 1");
 }
 
 #[test]
 fn test_issue_148_02_multiple_mut_self_mutations() {
-    let code = r#"
+    let code = r"
 struct Calculator {
     value: i32,
 
@@ -71,18 +71,18 @@ let mut calc = Calculator::new()
 calc.add(5)
 calc.add(10)
 calc.get()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: This will fail - interpreter returns 0 instead of 15
-    assert_eq!(result.to_string(), "15", "After add(5) and add(10), get() should return 15");
+    assert_eq!(result, "15", "After add(5) and add(10), get() should return 15");
 }
 
 #[test]
 fn test_issue_148_03_mutation_persists_across_method_calls() {
-    let code = r#"
+    let code = r"
 struct Point {
     x: i32,
     y: i32,
@@ -104,18 +104,18 @@ let mut p = Point::new(0, 0)
 p.move_x(3)
 p.move_x(7)
 p.get_x()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: This will fail - should return 10 (0 + 3 + 7)
-    assert_eq!(result.to_string(), "10", "After move_x(3) and move_x(7), get_x() should return 10");
+    assert_eq!(result, "10", "After move_x(3) and move_x(7), get_x() should return 10");
 }
 
 #[test]
 fn test_issue_148_04_mixed_self_mut_self_calls() {
-    let code = r#"
+    let code = r"
 struct Account {
     balance: i32,
 
@@ -142,18 +142,18 @@ acc.deposit(50)
 let after_deposit = acc.get_balance()
 acc.withdraw(30)
 acc.get_balance()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: Should return 120 (100 + 50 - 30)
-    assert_eq!(result.to_string(), "120", "Final balance should be 120");
+    assert_eq!(result, "120", "Final balance should be 120");
 }
 
 #[test]
 fn test_issue_148_05_self_mutation_via_assignment() {
-    let code = r#"
+    let code = r"
 struct Temperature {
     celsius: i32,
 
@@ -173,18 +173,18 @@ struct Temperature {
 let mut temp = Temperature::new()
 temp.set(25)
 temp.get()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: Should return 25
-    assert_eq!(result.to_string(), "25", "After set(25), get() should return 25");
+    assert_eq!(result, "25", "After set(25), get() should return 25");
 }
 
 #[test]
 fn test_issue_148_06_multiple_instances_isolated() {
-    let code = r#"
+    let code = r"
 struct Counter {
     count: i32,
 
@@ -207,11 +207,11 @@ c1.inc()
 c1.inc()
 c2.inc()
 c1.get()
-"#;
+";
 
     let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
     let result = repl.eval(code).expect("Should execute");
 
     // RED: c1 should be 2, c2 should be 1
-    assert_eq!(result.to_string(), "2", "c1 should be 2 after two inc() calls");
+    assert_eq!(result, "2", "c1 should be 2 after two inc() calls");
 }

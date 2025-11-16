@@ -2,11 +2,11 @@
 //! Grammar Validator - Validates parser implementation against canonical YAML grammar
 //!
 //! Usage:
-//!   cargo run --example grammar_validator              # Summary report
-//!   cargo run --example grammar_validator -- --full    # Detailed report
-//!   cargo run --example grammar_validator -- --json    # JSON output
-//!   cargo run --example grammar_validator -- --ci      # CI mode (exit code only)
-//!   cargo run --example grammar_validator -- --missing # Show missing only
+//!   cargo run --example `grammar_validator`              # Summary report
+//!   cargo run --example `grammar_validator` -- --full    # Detailed report
+//!   cargo run --example `grammar_validator` -- --json    # JSON output
+//!   cargo run --example `grammar_validator` -- --ci      # CI mode (exit code only)
+//!   cargo run --example `grammar_validator` -- --missing # Show missing only
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -268,15 +268,15 @@ fn calculate_test_coverage_percentage(grammar: &Grammar) -> f64 {
     let mut count = 0;
 
     // Literals coverage
-    total_coverage += grammar.lexical.literals.integer.test_coverage as f64;
-    total_coverage += grammar.lexical.literals.float.test_coverage as f64;
-    total_coverage += grammar.lexical.literals.string.test_coverage as f64;
-    total_coverage += grammar.lexical.literals.char.test_coverage as f64;
-    total_coverage += grammar.lexical.literals.boolean.test_coverage as f64;
+    total_coverage += f64::from(grammar.lexical.literals.integer.test_coverage);
+    total_coverage += f64::from(grammar.lexical.literals.float.test_coverage);
+    total_coverage += f64::from(grammar.lexical.literals.string.test_coverage);
+    total_coverage += f64::from(grammar.lexical.literals.char.test_coverage);
+    total_coverage += f64::from(grammar.lexical.literals.boolean.test_coverage);
     count += 5;
 
     // Grammar components coverage
-    total_coverage += grammar.grammar.program.test_coverage as f64;
+    total_coverage += f64::from(grammar.grammar.program.test_coverage);
     count += 1;
 
     for components in [
@@ -286,7 +286,7 @@ fn calculate_test_coverage_percentage(grammar: &Grammar) -> f64 {
         &grammar.grammar.patterns,
     ] {
         for component in components.values() {
-            total_coverage += component.test_coverage as f64;
+            total_coverage += f64::from(component.test_coverage);
             count += 1;
         }
     }
@@ -295,7 +295,7 @@ fn calculate_test_coverage_percentage(grammar: &Grammar) -> f64 {
         return 0.0;
     }
 
-    total_coverage / count as f64
+    total_coverage / f64::from(count)
 }
 
 fn calculate_property_test_percentage(grammar: &Grammar) -> f64 {
@@ -324,7 +324,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
                 name: name.clone(),
                 category: "items".to_string(),
                 reason: component.reason.clone().unwrap_or_default(),
-                action: format!("Implement {}", name),
+                action: format!("Implement {name}"),
                 file: component.file.clone(),
             });
         }
@@ -337,7 +337,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
                 name: name.clone(),
                 category: "expressions".to_string(),
                 reason: component.reason.clone().unwrap_or_default(),
-                action: format!("Implement {} expression", name),
+                action: format!("Implement {name} expression"),
                 file: component.file.clone(),
             });
         }
@@ -350,7 +350,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
                 name: name.clone(),
                 category: "effects".to_string(),
                 reason: component.reason.clone().unwrap_or_default(),
-                action: format!("Implement effect system: {}", name),
+                action: format!("Implement effect system: {name}"),
                 file: component.file.clone(),
             });
         }
@@ -363,7 +363,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
                 name: name.clone(),
                 category: "macros".to_string(),
                 reason: component.reason.clone().unwrap_or_default(),
-                action: format!("Implement macro system: {}", name),
+                action: format!("Implement macro system: {name}"),
                 file: component.file.clone(),
             });
         }
@@ -391,7 +391,7 @@ fn generate_report(grammar: &Grammar, execution_time: u128) -> ValidationReport 
         "C"
     };
 
-    let pass = impl_pct >= grammar.thresholds.implementation as f64;
+    let pass = impl_pct >= f64::from(grammar.thresholds.implementation);
 
     let missing = collect_missing_components(grammar);
 
@@ -546,7 +546,7 @@ fn print_full_report(report: &ValidationReport) {
             println!("{}. {} ({}) - {}", i + 1, missing.name, missing.category, missing.reason);
             println!("   → Action: {}", missing.action);
             if let Some(file) = &missing.file {
-                println!("   → File: {}", file);
+                println!("   → File: {file}");
             }
             println!();
         }
@@ -561,14 +561,14 @@ fn print_category(name: &str, category: &CategoryReport) {
         let coverage_str = if comp.test_coverage > 0 {
             format!(" [coverage: {}%]", comp.test_coverage)
         } else {
-            "".to_string()
+            String::new()
         };
 
         println!("{} {}{}", status, comp.name, coverage_str);
 
         if let Some(reason) = &comp.reason {
             if !comp.implemented {
-                println!("   → {}", reason);
+                println!("   → {reason}");
             }
         }
     }
@@ -577,7 +577,7 @@ fn print_category(name: &str, category: &CategoryReport) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    let mode = args.get(1).map(|s| s.as_str()).unwrap_or("summary");
+    let mode = args.get(1).map_or("summary", std::string::String::as_str);
 
     let start = Instant::now();
 
@@ -591,13 +591,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "--json" => println!("{}", serde_json::to_string_pretty(&report)?),
         "--ci" => {
             // CI mode: exit code only
-            std::process::exit(if report.summary.pass { 0 } else { 1 });
+            std::process::exit(i32::from(!report.summary.pass));
         }
         "--missing" => {
             for missing in &report.missing {
                 println!("{}: {}", missing.name, missing.reason);
             }
-            std::process::exit(if report.missing.is_empty() { 0 } else { 1 });
+            std::process::exit(i32::from(!report.missing.is_empty()));
         }
         _ => print_summary(&report),
     }

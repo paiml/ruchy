@@ -1,4 +1,4 @@
-//! EXTREME TDD Coverage Tests for stdlib::time Module
+//! EXTREME TDD Coverage Tests for `stdlib::time` Module
 //!
 //! Target: 0% → 80% coverage (+72 lines)
 //! Protocol: RED → GREEN → REFACTOR → VALIDATE
@@ -172,7 +172,7 @@ fn test_format_parse_roundtrip() {
     for m in millis {
         let formatted = time::format_duration(m).unwrap();
         let parsed = time::parse_duration(&formatted).unwrap();
-        assert_eq!(parsed, m, "Roundtrip failed for {}", m);
+        assert_eq!(parsed, m, "Roundtrip failed for {m}");
     }
 }
 
@@ -202,7 +202,7 @@ proptest! {
         time::sleep_millis(sleep_ms).ok();
         let elapsed = time::elapsed_millis(start).unwrap();
 
-        prop_assert!(elapsed >= sleep_ms as u128);
+        prop_assert!(elapsed >= u128::from(sleep_ms));
     }
 
     #[test]
@@ -237,8 +237,8 @@ proptest! {
         time::sleep_millis(sleep_ms).unwrap();
         let elapsed = time::elapsed_millis(start).unwrap();
 
-        prop_assert!(elapsed >= sleep_ms as u128);
-        prop_assert!(elapsed < (sleep_ms as u128 + 100)); // Allow variance
+        prop_assert!(elapsed >= u128::from(sleep_ms));
+        prop_assert!(elapsed < (u128::from(sleep_ms) + 100)); // Allow variance
     }
 }
 

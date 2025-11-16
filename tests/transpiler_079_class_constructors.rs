@@ -19,7 +19,7 @@ use ruchy::backend::transpiler::Transpiler;
 
 #[test]
 fn test_transpiler_079_01_simple_constructor() {
-    let code = r#"
+    let code = r"
 class Counter {
     count: i32
 
@@ -29,7 +29,7 @@ class Counter {
 }
 
 let c = Counter::new()
-"#;
+";
 
     // Parse
     let ast = Parser::new(code).parse()
@@ -70,7 +70,7 @@ let c = Counter::new()
 
 #[test]
 fn test_transpiler_079_02_constructor_with_params() {
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -81,7 +81,7 @@ class Point {
 }
 
 let p = Point::new(3, 4)
-"#;
+";
 
     let ast = Parser::new(code).parse()
         .expect("Should parse");
@@ -111,7 +111,7 @@ let p = Point::new(3, 4)
 
 #[test]
 fn test_transpiler_079_03_constructor_with_methods() {
-    let code = r#"
+    let code = r"
 class Calculator {
     value: i32
 
@@ -131,7 +131,7 @@ class Calculator {
 let mut calc = Calculator::new()
 calc.add(5)
 let result = calc.get()
-"#;
+";
 
     let ast = Parser::new(code).parse().expect("Should parse");
     let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
@@ -145,12 +145,12 @@ let result = calc.get()
         if line.contains("fn new(") {
             in_new_fn = true;
         }
-        if in_new_fn && line.contains("}") {
+        if in_new_fn && line.contains('}') {
             in_new_fn = false;
         }
         if in_new_fn {
             assert!(!line.contains("self.value"),
-                "Constructor should not use self.value:\n{}", rust_code);
+                "Constructor should not use self.value:\n{rust_code}");
         }
     }
 
@@ -214,7 +214,7 @@ let cfg = Config::new(String::from("localhost"), 8080)
 #[test]
 fn test_transpiler_079_05_runtime_execution() {
     // This test will use the runtime to verify the constructor actually works
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -230,7 +230,7 @@ class Point {
 
 let p = Point::new(10, 20)
 p.get_x()
-"#;
+";
 
     // Parse and transpile
     let ast = Parser::new(code).parse().expect("Should parse");

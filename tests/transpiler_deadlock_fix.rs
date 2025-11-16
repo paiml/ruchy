@@ -2,13 +2,13 @@
 ///
 /// ROOT CAUSE: Double-locking when assigning to globals
 /// Example: counter = counter + 1 transpiles to:
-///   *counter.lock().unwrap() = *counter.lock().unwrap() + 1;
+///   *`counter.lock().unwrap()` = *`counter.lock().unwrap()` + 1;
 ///   ^^^^^^^^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^
 ///   Lock #1                     Lock #2 → DEADLOCK!
 ///
 /// EXPECTED: Should lock once and operate on guard
 ///   {
-///       let mut guard = counter.lock().unwrap();
+///       let mut guard = `counter.lock().unwrap()`;
 ///       *guard = *guard + 1;
 ///   }
 
@@ -97,9 +97,8 @@ println!("{}", counter)
     // Verify output
     let output_str = String::from_utf8_lossy(&run.stdout);
     assert!(
-        output_str.contains("1"),
-        "Expected output '1', got: {}",
-        output_str
+        output_str.contains('1'),
+        "Expected output '1', got: {output_str}"
     );
 
     // Cleanup
@@ -177,8 +176,7 @@ println!("{}", total)
     let output_str = String::from_utf8_lossy(&run.stdout);
     assert!(
         output_str.contains("15"),
-        "Expected '15', got: {}",
-        output_str
+        "Expected '15', got: {output_str}"
     );
 
     // Cleanup
@@ -253,8 +251,7 @@ println!("{}", x)
     let output_str = String::from_utf8_lossy(&run.stdout);
     assert!(
         output_str.contains("30"),
-        "Expected '30', got: {}",
-        output_str
+        "Expected '30', got: {output_str}"
     );
 
     // Cleanup
@@ -284,16 +281,15 @@ mod property_tests {
         )| {
             let code = format!(
                 r#"
-let mut {} = {}
+let mut {var_name} = {init_val}
 
 fn update() {{
-    {} = {} + {}
+    {var_name} = {var_name} + {op_val}
 }}
 
 update()
-println!("{{}}", {})
-"#,
-                var_name, init_val, var_name, var_name, op_val, var_name
+println!("{{}}", {var_name})
+"#
             );
 
             let temp = NamedTempFile::new().unwrap();
@@ -352,16 +348,15 @@ println!("{{}}", {})
             // Use fixed value to avoid return type inference bug
             let code = format!(
                 r#"
-let mut {} = {}
+let mut {var_name} = {init_val}
 
 fn add_five() {{
-    {} += 5
+    {var_name} += 5
 }}
 
 add_five()
-println!("{{}}", {})
-"#,
-                var_name, init_val, var_name, var_name
+println!("{{}}", {var_name})
+"#
             );
 
             let temp = NamedTempFile::new().unwrap();
@@ -807,7 +802,7 @@ println!("{}", status)
     assert!(run.status.success());
 
     let output_str = String::from_utf8_lossy(&run.stdout);
-    assert!(output_str.contains("1"));
+    assert!(output_str.contains('1'));
 
     let _ = fs::remove_file(&ruchy_path);
     let _ = fs::remove_file(&rs_path);
@@ -866,7 +861,7 @@ println!("{}", index)
     assert!(run.status.success());
 
     let output_str = String::from_utf8_lossy(&run.stdout);
-    assert!(output_str.contains("0"));  // (9 + 1) % 10 = 0
+    assert!(output_str.contains('0'));  // (9 + 1) % 10 = 0
 
     let _ = fs::remove_file(&ruchy_path);
     let _ = fs::remove_file(&rs_path);

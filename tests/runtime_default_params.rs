@@ -3,7 +3,7 @@
 //! Target: Implement default parameter support in interpreter
 //! Protocol: EXTREME TDD - RED phase (all tests MUST fail initially)
 //!
-//! Root Cause: Value::Closure only stores Vec<String>, not default values
+//! Root Cause: `Value::Closure` only stores Vec<String>, not default values
 //! Fix: Change to store Vec<(String, Option<Expr>)> + update call logic
 
 use assert_cmd::Command;
@@ -67,7 +67,7 @@ fn test_default_param_expression_not_just_literal() {
     Command::cargo_bin("ruchy")
         .unwrap()
         .arg("-e")
-        .arg(r#"fn multiply(x, factor = 2 + 3) { println(x * factor) }; multiply(10)"#)
+        .arg(r"fn multiply(x, factor = 2 + 3) { println(x * factor) }; multiply(10)")
         .assert()
         .success()
         .stdout(predicate::str::contains("50"));

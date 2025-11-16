@@ -805,7 +805,7 @@ mod tests {
     // Test 7: arrow_array_to_polars_series with unsupported type (ERROR PATH)
     #[test]
     fn test_arrow_array_to_polars_series_unsupported_error() {
-        use arrow::array::{BinaryArray, ArrayRef};
+        use arrow::array::BinaryArray;
 
         // Create a Binary array (unsupported in this function)
         let values: Vec<&[u8]> = vec![b"hello", b"world"];
@@ -945,7 +945,7 @@ mod tests {
         ).unwrap();
 
         let df1 = ArrowDataFrame::new(schema.clone(), vec![batch1]);
-        let df2 = ArrowDataFrame::new(schema.clone(), vec![batch2]);
+        let df2 = ArrowDataFrame::new(schema, vec![batch2]);
 
         let result = ArrowDataFrame::concat(&[df1, df2]).unwrap();
         assert_eq!(result.num_rows(), 6); // 3 + 3 rows
@@ -1055,8 +1055,8 @@ mod tests {
         let array = result.as_any().downcast_ref::<BooleanArray>().unwrap();
         assert!(!array.is_null(0));
         assert!(array.is_null(1));
-        assert_eq!(array.value(0), true);
-        assert_eq!(array.value(2), false);
+        assert!(array.value(0));
+        assert!(!array.value(2));
     }
 
     // Test 22: polars_series_to_arrow with String including nulls

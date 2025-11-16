@@ -12,11 +12,11 @@
 /// - Test error recovery paths
 ///
 /// Priority areas (from function analysis):
-/// 1. parse_inheritance - multiple traits, error cases
-/// 2. parse_decorator - decorator parsing and validation
-/// 3. parse_operator_method - operator overloading
-/// 4. parse_class_property - property accessors
-/// 5. parse_class_constant - constants with types
+/// 1. `parse_inheritance` - multiple traits, error cases
+/// 2. `parse_decorator` - decorator parsing and validation
+/// 3. `parse_operator_method` - operator overloading
+/// 4. `parse_class_property` - property accessors
+/// 5. `parse_class_constant` - constants with types
 /// 6. Error handling paths
 
 use ruchy::frontend::parser::Parser;
@@ -27,11 +27,11 @@ use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_class_inheritance_01_superclass_only() {
-    let code = r#"
+    let code = r"
 class Child : Parent {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with superclass");
@@ -39,11 +39,11 @@ class Child : Parent {
 
 #[test]
 fn test_class_inheritance_02_single_trait() {
-    let code = r#"
+    let code = r"
 class MyClass : + Trait1 {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with single trait");
@@ -51,11 +51,11 @@ class MyClass : + Trait1 {
 
 #[test]
 fn test_class_inheritance_03_multiple_traits() {
-    let code = r#"
+    let code = r"
 class MyClass : + Trait1 + Trait2 + Trait3 {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with multiple traits");
@@ -63,11 +63,11 @@ class MyClass : + Trait1 + Trait2 + Trait3 {
 
 #[test]
 fn test_class_inheritance_04_superclass_and_traits() {
-    let code = r#"
+    let code = r"
 class Child : Parent + Trait1 + Trait2 {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with superclass and traits");
@@ -75,11 +75,11 @@ class Child : Parent + Trait1 + Trait2 {
 
 #[test]
 fn test_class_inheritance_05_error_missing_trait_name() {
-    let code = r#"
+    let code = r"
 class MyClass : Parent + {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_err(), "Should error on missing trait name after '+'");
@@ -91,11 +91,11 @@ class MyClass : Parent + {
 
 #[test]
 fn test_class_constant_01_simple_integer() {
-    let code = r#"
+    let code = r"
 class MyClass {
     const MAX_SIZE: i32 = 100
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class constant with type annotation");
@@ -129,11 +129,11 @@ class MyClass {
 
 #[test]
 fn test_class_constant_04_expression_value() {
-    let code = r#"
+    let code = r"
 class MyClass {
     const COMPUTED: i32 = 10 + 20
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse constant with expression");
@@ -145,7 +145,7 @@ class MyClass {
 
 #[test]
 fn test_class_property_01_readonly_property() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
 
@@ -153,7 +153,7 @@ class MyClass {
         get => self.value
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse readonly property with getter");
@@ -161,7 +161,7 @@ class MyClass {
 
 #[test]
 fn test_class_property_02_read_write_property() {
-    let code = r#"
+    let code = r"
 class MyClass {
     _value: i32
 
@@ -170,7 +170,7 @@ class MyClass {
         set(v) => { self._value = v }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse read-write property with getter and setter");
@@ -178,7 +178,7 @@ class MyClass {
 
 #[test]
 fn test_class_property_03_computed_property() {
-    let code = r#"
+    let code = r"
 class Rectangle {
     width: i32
     height: i32
@@ -187,7 +187,7 @@ class Rectangle {
         get => self.width * self.height
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse computed property");
@@ -199,7 +199,7 @@ class Rectangle {
 
 #[test]
 fn test_operator_method_01_add_operator() {
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -208,7 +208,7 @@ class Point {
         Point { x: self.x + other.x, y: self.y + other.y }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse __add__ operator method");
@@ -216,7 +216,7 @@ class Point {
 
 #[test]
 fn test_operator_method_02_eq_operator() {
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -225,7 +225,7 @@ class Point {
         self.x == other.x && self.y == other.y
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse __eq__ operator method");
@@ -269,14 +269,14 @@ class MyClass {
 
 #[test]
 fn test_decorator_02_decorator_with_args() {
-    let code = r#"
+    let code = r"
 class MyClass {
     @cache(ttl=60)
     pub fun expensive_method() -> i32 {
         42
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse decorator with arguments");
@@ -305,7 +305,7 @@ class MyClass {
 
 #[test]
 fn test_type_params_01_single_generic() {
-    let code = r#"
+    let code = r"
 class Box<T> {
     value: T
 
@@ -313,7 +313,7 @@ class Box<T> {
         Box { value: val }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with single type parameter");
@@ -321,7 +321,7 @@ class Box<T> {
 
 #[test]
 fn test_type_params_02_multiple_generics() {
-    let code = r#"
+    let code = r"
 class Pair<K, V> {
     key: K
     value: V
@@ -330,7 +330,7 @@ class Pair<K, V> {
         Pair { key: k, value: v }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with multiple type parameters");
@@ -342,10 +342,10 @@ class Pair<K, V> {
 
 #[test]
 fn test_edge_case_01_empty_class() {
-    let code = r#"
+    let code = r"
 class Empty {
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse empty class");
@@ -353,13 +353,13 @@ class Empty {
 
 #[test]
 fn test_edge_case_02_class_with_only_fields() {
-    let code = r#"
+    let code = r"
 class OnlyFields {
     a: i32
     b: String
     c: bool
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with only fields");
@@ -367,12 +367,12 @@ class OnlyFields {
 
 #[test]
 fn test_edge_case_03_class_with_only_methods() {
-    let code = r#"
+    let code = r"
 class OnlyMethods {
     pub fun method1() { }
     pub fun method2() -> i32 { 42 }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with only methods");
@@ -380,7 +380,7 @@ class OnlyMethods {
 
 #[test]
 fn test_edge_case_04_nested_class_reference() {
-    let code = r#"
+    let code = r"
 class Outer {
     pub new() -> Outer {
         Outer { }
@@ -396,7 +396,7 @@ class Inner {
         Inner { }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class referencing another class");
@@ -404,9 +404,9 @@ class Inner {
 
 #[test]
 fn test_error_01_missing_class_body() {
-    let code = r#"
+    let code = r"
 class MyClass
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_err(), "Should error on missing class body");
@@ -414,10 +414,10 @@ class MyClass
 
 #[test]
 fn test_error_02_unclosed_class_body() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_err(), "Should error on unclosed class body");
@@ -429,7 +429,7 @@ class MyClass {
 
 #[test]
 fn test_constructor_01_no_params() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
 
@@ -437,7 +437,7 @@ class MyClass {
         MyClass { value: 0 }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse constructor with no parameters");
@@ -445,7 +445,7 @@ class MyClass {
 
 #[test]
 fn test_constructor_02_multiple_params() {
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -454,7 +454,7 @@ class Point {
         Point { x: x, y: y }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse constructor with multiple parameters");
@@ -462,7 +462,7 @@ class Point {
 
 #[test]
 fn test_constructor_03_default_params() {
-    let code = r#"
+    let code = r"
 class Point {
     x: i32
     y: i32
@@ -471,7 +471,7 @@ class Point {
         Point { x: x, y: y }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse constructor with default parameters");
@@ -483,11 +483,11 @@ class Point {
 
 #[test]
 fn test_visibility_01_public_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     pub fun public_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse public method");
@@ -495,11 +495,11 @@ class MyClass {
 
 #[test]
 fn test_visibility_02_private_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     fun private_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse private method (no visibility)");
@@ -507,13 +507,13 @@ class MyClass {
 
 #[test]
 fn test_visibility_03_mixed_visibility() {
-    let code = r#"
+    let code = r"
 class MyClass {
     pub fun public_method() { }
     fun private_method() { }
     pub fun another_public() -> i32 { 42 }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with mixed visibility");
@@ -525,7 +525,7 @@ class MyClass {
 
 #[test]
 fn test_self_param_01_immutable_self() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
 
@@ -533,7 +533,7 @@ class MyClass {
         self.value
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse method with &self");
@@ -541,7 +541,7 @@ class MyClass {
 
 #[test]
 fn test_self_param_02_mutable_self() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
 
@@ -549,7 +549,7 @@ class MyClass {
         self.value = val
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse method with &mut self");
@@ -557,7 +557,7 @@ class MyClass {
 
 #[test]
 fn test_self_param_03_owned_self() {
-    let code = r#"
+    let code = r"
 class MyClass {
     value: i32
 
@@ -565,7 +565,7 @@ class MyClass {
         self.value
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse method with owned self");
@@ -576,11 +576,11 @@ class MyClass {
 
 #[test]
 fn test_visibility_04_protected_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     protected fun protected_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse protected method");
@@ -588,11 +588,11 @@ class MyClass {
 
 #[test]
 fn test_visibility_05_pub_crate_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     pub(crate) fun crate_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse pub(crate) method");
@@ -600,11 +600,11 @@ class MyClass {
 
 #[test]
 fn test_visibility_06_pub_super_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     pub(super) fun super_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse pub(super) method");
@@ -612,11 +612,11 @@ class MyClass {
 
 #[test]
 fn test_visibility_07_private_explicit() {
-    let code = r#"
+    let code = r"
 class MyClass {
     private fun private_method() { }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse explicit private method");
@@ -628,13 +628,13 @@ class MyClass {
 
 #[test]
 fn test_modifier_01_static_method() {
-    let code = r#"
+    let code = r"
 class MyClass {
     pub static fun create() -> MyClass {
         MyClass { }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse static method");
@@ -642,11 +642,11 @@ class MyClass {
 
 #[test]
 fn test_modifier_02_abstract_method() {
-    let code = r#"
+    let code = r"
 abstract class MyClass {
     pub abstract fun do_something()
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse abstract method");
@@ -705,7 +705,7 @@ class MyClass {
 
 #[test]
 fn test_property_accessor_02_setter_only() {
-    let code = r#"
+    let code = r"
 class MyClass {
     _value: i32
 
@@ -713,7 +713,7 @@ class MyClass {
         set(v) => { self._value = v }
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse setter-only property");
@@ -725,11 +725,11 @@ class MyClass {
 
 #[test]
 fn test_type_constraint_01_where_clause() {
-    let code = r#"
+    let code = r"
 class Container<T> where T: Display {
     value: T
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     // May not be implemented yet - document behavior
@@ -742,11 +742,11 @@ class Container<T> where T: Display {
 
 #[test]
 fn test_complex_inheritance_01_generic_parent() {
-    let code = r#"
+    let code = r"
 class Child : Parent<i32> {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse inheritance from generic parent");
@@ -754,11 +754,11 @@ class Child : Parent<i32> {
 
 #[test]
 fn test_complex_inheritance_02_multiple_generic_traits() {
-    let code = r#"
+    let code = r"
 class MyClass : + Trait1<i32> + Trait2<String> {
     value: i32
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse multiple generic trait implementations");
@@ -787,7 +787,7 @@ class MyClass {
 
 #[test]
 fn test_mixed_members_01_all_types() {
-    let code = r#"
+    let code = r"
 class MyClass {
     const MAX: i32 = 100
     value: i32
@@ -804,7 +804,7 @@ class MyClass {
         self.value
     }
 }
-"#;
+";
     let mut parser = Parser::new(code);
     let result = parser.parse();
     assert!(result.is_ok(), "Should parse class with all member types");

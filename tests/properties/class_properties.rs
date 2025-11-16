@@ -1,9 +1,9 @@
 /// Property-based tests for class parsing and evaluation
 ///
 /// COVERAGE TARGET: >85% for class-related code paths
-/// - src/frontend/parser/expressions_helpers/classes.rs (897 lines)
-/// - src/frontend/parser/expressions_helpers/structs.rs (370 lines)
-/// - src/frontend/parser/expressions_helpers/impls.rs (141 lines)
+/// - `src/frontend/parser/expressions_helpers/classes.rs` (897 lines)
+/// - `src/frontend/parser/expressions_helpers/structs.rs` (370 lines)
+/// - `src/frontend/parser/expressions_helpers/impls.rs` (141 lines)
 /// - src/runtime/interpreter.rs class methods (6 functions)
 ///
 /// TEST STRATEGY:
@@ -17,7 +17,7 @@
 /// - Property 8: Type parameters preserved
 ///
 /// IMPORTANT: Interpreter is NOT thread-safe (by design).
-/// Run these tests with: cargo test --test class_property_tests -- --test-threads=1
+/// Run these tests with: cargo test --test `class_property_tests` -- --test-threads=1
 
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;
@@ -32,7 +32,7 @@ proptest! {
         field_count in 0usize..10,
     ) {
         let fields: Vec<String> = (0..field_count)
-            .map(|i| format!("field{}: i32", i))
+            .map(|i| format!("field{i}: i32"))
             .collect();
 
         let code = format!(
@@ -54,20 +54,18 @@ proptest! {
         initial_value in 0i32..1000,
     ) {
         let code = format!(
-            r#"
-class {class} {{
+            r"
+class {class_name} {{
     value: i32
 
-    pub new(val: i32) -> {class} {{
-        {class} {{ value: val }}
+    pub new(val: i32) -> {class_name} {{
+        {class_name} {{ value: val }}
     }}
 }}
 
-let instance = {class}::new({val})
+let instance = {class_name}::new({initial_value})
 instance.value
-"#,
-            class = class_name,
-            val = initial_value
+"
         );
 
         let mut parser = Parser::new(&code);
@@ -148,7 +146,7 @@ proptest! {
         y_val in -100i32..100,
     ) {
         let code = format!(
-            r#"
+            r"
 struct Point {{
     x: i32,
     y: i32,
@@ -160,10 +158,9 @@ impl Point {{
     }}
 }}
 
-let p = Point::new({}, {})
+let p = Point::new({x_val}, {y_val})
 p.x
-"#,
-            x_val, y_val
+"
         );
 
         let mut parser = Parser::new(&code);
@@ -186,7 +183,7 @@ proptest! {
         val2 in 51i32..100,
     ) {
         let code = format!(
-            r#"
+            r"
 class Counter {{
     count: i32
 
@@ -199,12 +196,11 @@ class Counter {{
     }}
 }}
 
-let c1 = Counter::new({})
-let c2 = Counter::new({})
+let c1 = Counter::new({val1})
+let c2 = Counter::new({val2})
 let sum = c1.get_count() + c2.get_count()
 sum
-"#,
-            val1, val2
+"
         );
 
         let mut parser = Parser::new(&code);
@@ -228,7 +224,7 @@ proptest! {
         add2 in 1i32..20,
     ) {
         let code = format!(
-            r#"
+            r"
 class Calculator {{
     value: i32
 
@@ -243,10 +239,9 @@ class Calculator {{
 }}
 
 let mut calc = Calculator::new()
-calc.add({})
-calc.add({})
-"#,
-            add1, add2
+calc.add({add1})
+calc.add({add2})
+"
         );
 
         let mut parser = Parser::new(&code);
@@ -273,8 +268,7 @@ proptest! {
         prop_assume!(class_name != parent_name);
 
         let code = format!(
-            "class {} : {} {{\n    extra_field: i32\n}}",
-            class_name, parent_name
+            "class {class_name} : {parent_name} {{\n    extra_field: i32\n}}"
         );
 
         let result = Parser::new(&code).parse();
@@ -292,8 +286,7 @@ proptest! {
     ) {
         let visibility = if has_pub { "pub " } else { "" };
         let code = format!(
-            "struct {} {{\n    value: i32,\n\n    {}fun get_value(&self) -> i32 {{\n        self.value\n    }}\n}}",
-            struct_name, visibility
+            "struct {struct_name} {{\n    value: i32,\n\n    {visibility}fun get_value(&self) -> i32 {{\n        self.value\n    }}\n}}"
         );
 
         let result = Parser::new(&code).parse();
@@ -309,19 +302,18 @@ proptest! {
         class_name in "[A-Z][a-zA-Z0-9]{0,15}",
     ) {
         let code = format!(
-            r#"
-class {} {{
+            r"
+class {class_name} {{
     value: i32
 
-    pub new() -> {} {{
-        {} {{ value: 42 }}
+    pub new() -> {class_name} {{
+        {class_name} {{ value: 42 }}
     }}
 }}
 
-let instance = {}::new()
+let instance = {class_name}::new()
 instance.value
-"#,
-            class_name, class_name, class_name, class_name
+"
         );
 
         let mut parser = Parser::new(&code);

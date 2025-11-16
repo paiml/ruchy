@@ -1,12 +1,11 @@
 //! Comprehensive tests for numeric field access (tuple fields)
 //!
 //! DEFECT-PROPERTY-001: Property test found panic on input "A.0"
-//! Root Cause: format_ident!() called on pure numbers
-//! Fix: Check numeric fields BEFORE calling format_ident!()
+//! Root Cause: `format_ident`!() called on pure numbers
+//! Fix: Check numeric fields BEFORE calling `format_ident`!()
 //! Coverage: All object types × all numeric field patterns
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn ruchy_cmd() -> Command {
     Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
@@ -28,7 +27,7 @@ fn test_numeric_field_single_digit_0() {
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
     // Should transpile to: A.0 (Rust tuple access)
-    assert!(output.contains("A.0"), "Should generate tuple access: {}", output);
+    assert!(output.contains("A.0"), "Should generate tuple access: {output}");
 }
 
 #[test]
@@ -190,9 +189,9 @@ fn test_numeric_field_zero_leading() {
 #[test]
 fn test_numeric_field_in_expression() {
     // Tuple access as part of larger expression
-    let code = r#"
+    let code = r"
         let x = data.0 + data.1
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -208,9 +207,9 @@ fn test_numeric_field_in_expression() {
 #[test]
 fn test_numeric_field_in_function_call() {
     // Tuple field as function argument
-    let code = r#"
+    let code = r"
         println(result.0)
-    "#;
+    ";
     let result = ruchy_cmd()
         .arg("transpile")
         .arg("-")
@@ -230,7 +229,7 @@ fn test_numeric_field_in_function_call() {
 fn property_numeric_fields_0_to_20() {
     // Property: All single/double digit tuple indices should transpile
     for i in 0..=20 {
-        let code = format!("obj.{}", i);
+        let code = format!("obj.{i}");
         let result = ruchy_cmd()
             .arg("transpile")
             .arg("-")
@@ -240,10 +239,8 @@ fn property_numeric_fields_0_to_20() {
 
         let output = String::from_utf8_lossy(&result.get_output().stdout);
         assert!(
-            output.contains(&format!("obj.{}", i)),
-            "Failed for index {}: {:?}",
-            i,
-            output
+            output.contains(&format!("obj.{i}")),
+            "Failed for index {i}: {output:?}"
         );
     }
 }
@@ -254,7 +251,7 @@ fn property_numeric_fields_all_object_types() {
     let identifiers = vec!["obj", "Result", "my_module", "X", "data123"];
 
     for ident in identifiers {
-        let code = format!("{}.0", ident);
+        let code = format!("{ident}.0");
         let result = ruchy_cmd()
             .arg("transpile")
             .arg("-")
@@ -264,10 +261,8 @@ fn property_numeric_fields_all_object_types() {
 
         let output = String::from_utf8_lossy(&result.get_output().stdout);
         assert!(
-            output.contains(&format!("{}.0", ident)),
-            "Failed for identifier '{}': {:?}",
-            ident,
-            output
+            output.contains(&format!("{ident}.0")),
+            "Failed for identifier '{ident}': {output:?}"
         );
     }
 }
@@ -278,7 +273,7 @@ fn property_nested_depth_1_to_5() {
     for depth in 1..=5 {
         let mut code = "obj.0".to_string();
         for i in 1..depth {
-            code = format!("({}).{}", code, i);
+            code = format!("({code}).{i}");
         }
 
         let result = ruchy_cmd()
@@ -292,11 +287,8 @@ fn property_nested_depth_1_to_5() {
         // Should contain all indices 0 to depth-1
         for i in 0..depth {
             assert!(
-                output.contains(&format!(".{}", i)),
-                "Missing index {} at depth {}: {:?}",
-                i,
-                depth,
-                output
+                output.contains(&format!(".{i}")),
+                "Missing index {i} at depth {depth}: {output:?}"
             );
         }
     }

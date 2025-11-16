@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::time module
+//! Integration tests for `stdlib::time` module
 //!
 //! Target: 0% → 100% coverage for stdlib/time.rs (131 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage

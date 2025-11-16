@@ -1,4 +1,4 @@
-//! Integration tests for stdlib::logging module
+//! Integration tests for `stdlib::logging` module
 //!
 //! Target: 0% → 100% coverage for stdlib/logging.rs (96 lines)
 //! Protocol: EXTREME TDD - External integration tests provide llvm-cov coverage

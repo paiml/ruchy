@@ -16,7 +16,7 @@ fn ruchy_cmd() -> Command {
 
 /// Helper to test a .ruchy file runs without errors
 fn test_example_file(file_path: &str) {
-    assert!(Path::new(file_path).exists(), "Example file not found: {}", file_path);
+    assert!(Path::new(file_path).exists(), "Example file not found: {file_path}");
 
     ruchy_cmd()
         .arg("run")
@@ -230,7 +230,7 @@ fn test_all_core_examples_comprehensive() {
     }
 
     println!("Core examples: {}/{} passed", passed, core_examples.len());
-    assert!(passed >= 3, "At least 3 core examples should pass, got {}", passed);
+    assert!(passed >= 3, "At least 3 core examples should pass, got {passed}");
 }
 
 // ============================================================================
@@ -252,11 +252,11 @@ fn test_property_all_examples_are_valid_utf8() {
 
         if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
             let content = fs::read_to_string(&path)
-                .expect(&format!("Failed to read {:?}", path));
+                .unwrap_or_else(|_| panic!("Failed to read {path:?}"));
 
             // Property: All example files are valid UTF-8
             assert!(content.is_ascii() || content.chars().all(|c| c != '\u{FFFD}'),
-                    "Example {:?} contains invalid UTF-8", path);
+                    "Example {path:?} contains invalid UTF-8");
         }
     }
 }
@@ -276,17 +276,17 @@ fn test_property_all_examples_have_main_or_top_level_code() {
 
         if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
             let content = fs::read_to_string(&path)
-                .expect(&format!("Failed to read {:?}", path));
+                .unwrap_or_else(|_| panic!("Failed to read {path:?}"));
 
             // Property: All examples have either main() or top-level code
             let has_main = content.contains("fun main()") || content.contains("fn main()");
             let has_code = content.lines().any(|l| {
                 let trimmed = l.trim();
-                !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with("#")
+                !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with('#')
             });
 
             assert!(has_main || has_code,
-                    "Example {:?} has no main() and no top-level code", path);
+                    "Example {path:?} has no main() and no top-level code");
         }
     }
 }

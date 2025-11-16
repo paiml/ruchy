@@ -328,7 +328,7 @@ mod tests {
     // Test 19: make_break_continue_with_value - empty label treated as no label
     #[test]
     fn test_make_break_continue_with_value_empty_label() {
-        let label = String::from("");
+        let label = String::new();
         let result = Transpiler::make_break_continue_with_value(true, Some(&label), None);
         assert_eq!(result.to_string(), "break");
     }
@@ -450,7 +450,7 @@ mod tests {
     // Test 28: make_break_continue - empty label defaults to no label
     #[test]
     fn test_make_break_continue_empty_label() {
-        let label = String::from("");
+        let label = String::new();
         let result = Transpiler::make_break_continue(true, Some(&label));
         assert_eq!(result.to_string(), "break");
     }
@@ -490,7 +490,7 @@ mod tests {
         let result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("as i32"));
-        assert!(result_str.contains("-") || result_str.contains("42"));
+        assert!(result_str.contains('-') || result_str.contains("42"));
     }
 
     // Test 33: transpile_type_cast - zero value
@@ -501,7 +501,7 @@ mod tests {
         let result = transpiler.transpile_type_cast(&expr, "usize").unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("as usize"));
-        assert!(result_str.contains("0"));
+        assert!(result_str.contains('0'));
     }
 
     // Test 34: make_break_continue_with_value - label without prefix
@@ -666,7 +666,7 @@ mod tests {
         let result = transpiler.transpile_type_cast(&expr, "i8").unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("as i8"));
-        assert!(result_str.contains("-") || result_str.contains("128"));
+        assert!(result_str.contains('-') || result_str.contains("128"));
     }
 
     // Test 45: make_break_continue_with_value - complex value expression
