@@ -1,2 +1,0 @@
-Found 0 mutants to test
- WARN No mutants found under the active filters

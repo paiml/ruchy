@@ -4,7 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[PMAT] Quality Gates Configuration** Created .pmat-gates.toml with quality thresholds
+  - **Coverage baseline**: 68.0% (current: 68.42%, target: 80%)
+  - **Complexity limit**: ≤10 cyclomatic complexity
+  - **Quality enforcement**: Clippy strict mode, test timeout 300s
+  - **Repository score**: 89.5 → 92.0/100 (A- → A)
+  - **PMAT compliance**: 50% → 100%
+
 ### Fixed
+- **[REPO] Repository Hygiene** Removed cruft files and improved .gitignore
+  - **Removed**: 5 mutation test output files (mutation*.txt, mutations_*.txt)
+  - **Added to .gitignore**: mutation*.txt, mutations_*.txt patterns
+  - **Status**: .idea/ already properly ignored
+  - **Impact**: Repository hygiene score improved
 - **[DOCS] Documentation Link Fixes** Reduced broken documentation links from 115 to 37 (64.8% reduction, 68 links fixed)
   - **Files modified**: 58 documentation files (README.md, docs/, ruchy-wasm/)
   - **Fixes applied**:
