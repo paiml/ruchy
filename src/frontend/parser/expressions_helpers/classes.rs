@@ -432,12 +432,57 @@ fn parse_decorator_value(state: &mut ParserState) -> Result<String> {
     }
 }
 
+/// Parse a single decorator argument (string, identifier, or key=value)
+fn parse_decorator_argument(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::String(s), _)) => {
+            let value = s.clone();
+            state.tokens.advance();
+            Ok(value)
+        }
+        Some((Token::Identifier(key), _)) => {
+            let key = key.clone();
+            state.tokens.advance();
+
+            if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+                state.tokens.advance(); // consume '='
+                let value = parse_decorator_value(state)?;
+                Ok(format!("{key}={value}"))
+            } else {
+                Ok(key)
+            }
+        }
+        _ => bail!("Expected argument in decorator"),
+    }
+}
+
+/// Parse decorator arguments list: ("arg1", key=value, ...)
+fn parse_decorator_args(state: &mut ParserState) -> Result<Vec<String>> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(Vec::new());
+    }
+
+    state.tokens.advance(); // consume (
+    let mut args = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        args.push(parse_decorator_argument(state)?);
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            bail!("Expected ',' or ')' in decorator arguments");
+        }
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(args)
+}
+
 /// Parse decorator: @Name or @Name("args", ...)
 fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
-    // Expect @ token
     state.tokens.expect(&Token::At)?;
 
-    // Parse decorator name
     let name = match state.tokens.peek() {
         Some((Token::Identifier(n), _)) => {
             let name = n.clone();
@@ -447,51 +492,7 @@ fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
         _ => bail!("Expected decorator name after '@'"),
     };
 
-    // Check for arguments
-    let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        state.tokens.advance(); // consume (
-        let mut args = Vec::new();
-
-        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            // Support both positional string literals and named arguments
-            let arg = match state.tokens.peek() {
-                Some((Token::String(s), _)) => {
-                    let value = s.clone();
-                    state.tokens.advance();
-                    value
-                }
-                Some((Token::Identifier(key), _)) => {
-                    // Check for named argument: key=value
-                    let key = key.clone();
-                    state.tokens.advance();
-
-                    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-                        state.tokens.advance(); // consume '='
-                        let value = parse_decorator_value(state)?;
-                        format!("{key}={value}")
-                    } else {
-                        // Just an identifier (positional)
-                        key
-                    }
-                }
-                _ => bail!("Expected argument in decorator"),
-            };
-
-            args.push(arg);
-
-            // Check for comma
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance();
-            } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                bail!("Expected ',' or ')' in decorator arguments");
-            }
-        }
-
-        state.tokens.expect(&Token::RightParen)?;
-        args
-    } else {
-        Vec::new()
-    };
+    let args = parse_decorator_args(state)?;
 
     Ok(Decorator { name, args })
 }
