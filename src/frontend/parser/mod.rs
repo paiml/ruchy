@@ -720,33 +720,36 @@ fn parse_optional_slice_end(state: &mut ParserState) -> Result<Option<Box<Expr>>
         Ok(Some(Box::new(parse_expr_recursive(state)?)))
     }
 }
-/// Parse index access `[index]` (complexity: 2)
-fn parse_index_access(state: &mut ParserState, left: Expr, index: Expr) -> Result<Expr> {
-    state.tokens.expect(&Token::RightBracket)?;
-    Ok(Expr {
-        kind: ExprKind::IndexAccess {
-            object: Box::new(left),
-            index: Box::new(index),
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    })
-}
-/// Create slice expression (complexity: 1)
-fn create_slice_expr(object: Expr, start: Option<Box<Expr>>, end: Option<Box<Expr>>) -> Expr {
+
+/// Helper: Create Expr with default span and empty attributes (CERTEZA-001: Reduce duplication)
+/// Complexity: 1 (within Toyota Way limits)
+/// Used to eliminate ~130 lines of boilerplate across 13 Expr constructions
+#[inline]
+fn create_expr(kind: ExprKind) -> Expr {
     Expr {
-        kind: ExprKind::Slice {
-            object: Box::new(object),
-            start,
-            end,
-        },
+        kind,
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
     }
+}
+
+/// Parse index access `[index]` (complexity: 2)
+fn parse_index_access(state: &mut ParserState, left: Expr, index: Expr) -> Result<Expr> {
+    state.tokens.expect(&Token::RightBracket)?;
+    Ok(create_expr(ExprKind::IndexAccess {
+        object: Box::new(left),
+        index: Box::new(index),
+    }))
+}
+/// Create slice expression (complexity: 1)
+fn create_slice_expr(object: Expr, start: Option<Box<Expr>>, end: Option<Box<Expr>>) -> Expr {
+    create_expr(ExprKind::Slice {
+        object: Box::new(object),
+        start,
+        end,
+    })
 }
 /// Try to parse struct literal
 fn try_parse_struct_literal(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
@@ -761,27 +764,15 @@ fn try_parse_struct_literal(state: &mut ParserState, left: &Expr) -> Result<Opti
 }
 /// Create post-increment expression
 fn create_post_increment(left: Expr) -> Expr {
-    Expr {
-        kind: ExprKind::PostIncrement {
-            target: Box::new(left),
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }
+    create_expr(ExprKind::PostIncrement {
+        target: Box::new(left),
+    })
 }
 /// Create post-decrement expression
 fn create_post_decrement(left: Expr) -> Expr {
-    Expr {
-        kind: ExprKind::PostDecrement {
-            target: Box::new(left),
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }
+    create_expr(ExprKind::PostDecrement {
+        target: Box::new(left),
+    })
 }
 /// Try to parse binary operators
 fn try_binary_operators(
@@ -822,17 +813,11 @@ fn try_binary_operators(
         state.tokens.advance(); // consume operator
 
         let right = parse_expr_with_precedence_recursive(state, prec + 1)?;
-        Ok(Some(Expr {
-            kind: ExprKind::Binary {
-                left: Box::new(left),
-                op: bin_op,
-                right: Box::new(right),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: Vec::new(),
-            trailing_comment: None,
-        }))
+        Ok(Some(create_expr(ExprKind::Binary {
+            left: Box::new(left),
+            op: bin_op,
+            right: Box::new(right),
+        })))
     } else {
         Ok(None)
     }
@@ -895,17 +880,11 @@ fn parse_ternary_expression(
 
 /// Create ternary expression AST node (complexity: 1, cognitive: 1)
 fn create_ternary_expr(condition: Expr, true_expr: Expr, false_expr: Expr) -> Expr {
-    Expr {
-        kind: ExprKind::Ternary {
-            condition: Box::new(condition),
-            true_expr: Box::new(true_expr),
-            false_expr: Box::new(false_expr),
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }
+    create_expr(ExprKind::Ternary {
+        condition: Box::new(condition),
+        true_expr: Box::new(true_expr),
+        false_expr: Box::new(false_expr),
+    })
 }
 
 /// Try to parse type cast operator (as) - complexity: 5
@@ -928,16 +907,10 @@ fn try_type_cast_operator(
         }
         _ => bail!("Expected type name after 'as'"),
     };
-    Ok(Some(Expr {
-        kind: ExprKind::TypeCast {
-            expr: Box::new(left),
-            target_type,
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }))
+    Ok(Some(create_expr(ExprKind::TypeCast {
+        expr: Box::new(left),
+        target_type,
+    })))
 }
 /// Helper: Parse actor-style binary operation with precedence check
 /// Reduces cognitive complexity by extracting common actor op pattern
@@ -985,7 +958,7 @@ fn try_new_actor_operators(
         }
         _ => return Ok(None),
     };
-    Ok(Some(create_actor_expr(expr_kind)))
+    Ok(Some(create_expr(expr_kind)))
 }
 
 /// Parse actor send operator (<-) using helper
@@ -1025,16 +998,6 @@ fn parse_actor_bang_op(
     })
 }
 
-/// Create actor expression AST node (complexity: 1, cognitive: 1)
-fn create_actor_expr(kind: ExprKind) -> Expr {
-    Expr {
-        kind,
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }
-}
 /// Try to parse assignment operators
 fn try_assignment_operators(
     state: &mut ParserState,
@@ -1052,29 +1015,17 @@ fn try_assignment_operators(
     state.tokens.advance();
     let value = parse_expr_with_precedence_recursive(state, prec)?;
     let expr = if *token == Token::Equal {
-        Expr {
-            kind: ExprKind::Assign {
-                target: Box::new(left),
-                value: Box::new(value),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: Vec::new(),
-            trailing_comment: None,
-        }
+        create_expr(ExprKind::Assign {
+            target: Box::new(left),
+            value: Box::new(value),
+        })
     } else {
         let bin_op = get_compound_assignment_op(token);
-        Expr {
-            kind: ExprKind::CompoundAssign {
-                target: Box::new(left),
-                op: bin_op,
-                value: Box::new(value),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: Vec::new(),
-            trailing_comment: None,
-        }
+        create_expr(ExprKind::CompoundAssign {
+            target: Box::new(left),
+            op: bin_op,
+            value: Box::new(value),
+        })
     };
     Ok(Some(expr))
 }
@@ -1115,27 +1066,15 @@ fn try_pipeline_operators(
             op: Box::new(stage_expr),
             span: Span { start: 0, end: 0 },
         });
-        Expr {
-            kind: ExprKind::Pipeline { expr, stages },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: Vec::new(),
-            trailing_comment: None,
-        }
+        create_expr(ExprKind::Pipeline { expr, stages })
     } else {
-        Expr {
-            kind: ExprKind::Pipeline {
-                expr: Box::new(left),
-                stages: vec![PipelineStage {
-                    op: Box::new(stage_expr),
-                    span: Span { start: 0, end: 0 },
-                }],
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: Vec::new(),
-            trailing_comment: None,
-        }
+        create_expr(ExprKind::Pipeline {
+            expr: Box::new(left),
+            stages: vec![PipelineStage {
+                op: Box::new(stage_expr),
+                span: Span { start: 0, end: 0 },
+            }],
+        })
     };
     Ok(Some(expr))
 }
@@ -1169,17 +1108,11 @@ fn try_range_operators(
         }
     };
 
-    Ok(Some(Expr {
-        kind: ExprKind::Range {
-            start: Box::new(left),
-            end: Box::new(end),
-            inclusive,
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-        leading_comments: Vec::new(),
-        trailing_comment: None,
-    }))
+    Ok(Some(create_expr(ExprKind::Range {
+        start: Box::new(left),
+        end: Box::new(end),
+        inclusive,
+    })))
 }
 /// Try to parse a macro call: identifier!( args ) or identifier![ args ]
 /// Refactored to reduce complexity from 105 to <10
