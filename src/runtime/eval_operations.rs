@@ -465,9 +465,9 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         // Objects - delegate to helper
         (Value::Object(a), Value::Object(b)) => equal_objects(a, b),
         // Arrays - delegate to helper
-        (Value::Array(a), Value::Array(b)) => equal_arrays(a, b),
-        // Tuples - delegate to helper
-        (Value::Tuple(a), Value::Tuple(b)) => equal_tuples(a, b),
+        (Value::Array(a), Value::Array(b)) => equal_slices(a, b),
+        // Tuples - delegate to helper (same logic as arrays)
+        (Value::Tuple(a), Value::Tuple(b)) => equal_slices(a, b),
         // Class - identity comparison (Arc pointer equality)
         (Value::Class { fields: f1, .. }, Value::Class { fields: f2, .. }) => {
             std::sync::Arc::ptr_eq(f1, f2)
@@ -513,15 +513,10 @@ fn equal_objects(
         .all(|(key, val_a)| b.get(key).is_some_and(|val_b| equal_values(val_a, val_b)))
 }
 
-/// QUALITY-017: Compare array values element-by-element
+/// QUALITY-017: Compare array/tuple values element-by-element
 /// Complexity: 2 (within Toyota Way limits)
-fn equal_arrays(a: &[Value], b: &[Value]) -> bool {
-    a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
-}
-
-/// QUALITY-017: Compare tuple values element-by-element
-/// Complexity: 2 (within Toyota Way limits)
-fn equal_tuples(a: &[Value], b: &[Value]) -> bool {
+/// Used for both arrays and tuples (identical comparison logic)
+fn equal_slices(a: &[Value], b: &[Value]) -> bool {
     a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| equal_values(x, y))
 }
 
