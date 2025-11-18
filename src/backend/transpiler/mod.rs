@@ -972,6 +972,40 @@ impl Transpiler {
             )
         }
     }
+
+    /// Helper: Infer type token from expression value
+    /// Reduces cognitive complexity by extracting duplicated type inference patterns
+    fn infer_type_from_value(value: &Expr) -> TokenStream {
+        match &value.kind {
+            ExprKind::Literal(lit) => match lit {
+                crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
+                crate::frontend::ast::Literal::Float(_) => quote! { f64 },
+                crate::frontend::ast::Literal::String(_) => quote! { &str },
+                crate::frontend::ast::Literal::Bool(_) => quote! { bool },
+                _ => quote! { i32 },
+            },
+            ExprKind::List(elements) => {
+                if elements.is_empty() {
+                    quote! { Vec<i32> }
+                } else {
+                    // Infer element type from first element
+                    match &elements[0].kind {
+                        ExprKind::Literal(lit) => match lit {
+                            crate::frontend::ast::Literal::Integer(_, _) => quote! { Vec<i32> },
+                            crate::frontend::ast::Literal::Float(_) => quote! { Vec<f64> },
+                            crate::frontend::ast::Literal::String(_) => quote! { Vec<String> },
+                            crate::frontend::ast::Literal::Bool(_) => quote! { Vec<bool> },
+                            _ => quote! { Vec<i32> },
+                        },
+                        ExprKind::List(_) => quote! { Vec<Vec<i32>> },
+                        _ => quote! { Vec<i32> },
+                    }
+                }
+            }
+            _ => quote! { i32 },
+        }
+    }
+
     fn categorize_block_expressions<'a>(
         &self,
         exprs: &'a [Expr],
@@ -1059,14 +1093,8 @@ impl Transpiler {
                         let type_token = if let Some(ref type_ann) = type_annotation {
                             self.transpile_type(type_ann)?
                         } else {
-                            // Infer type from literal for const
-                            if let ExprKind::Literal(lit) = &value.kind { match lit {
-                                crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
-                                crate::frontend::ast::Literal::Float(_) => quote! { f64 },
-                                crate::frontend::ast::Literal::String(_) => quote! { &str },
-                                crate::frontend::ast::Literal::Bool(_) => quote! { bool },
-                                _ => quote! { i32 },
-                            } } else { quote! { i32 } }
+                            // Use helper to infer type from literal
+                            Self::infer_type_from_value(value)
                         };
 
                         // Generate module-level const declaration
@@ -1099,37 +1127,8 @@ impl Transpiler {
                         let type_token = if let Some(ref type_ann) = type_annotation {
                             self.transpile_type(type_ann)?
                         } else {
-                            // Simple literal type inference for MVP
-                            match &value.kind {
-                                ExprKind::Literal(lit) => match lit {
-                                    crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
-                                    crate::frontend::ast::Literal::Float(_) => quote! { f64 },
-                                    crate::frontend::ast::Literal::String(_) => quote! { &str },
-                                    crate::frontend::ast::Literal::Bool(_) => quote! { bool },
-                                    _ => quote! { i32 },  // Default fallback
-                                },
-                                // TRANSPILER-TYPE: Infer Vec type for array literals
-                                ExprKind::List(elements) => {
-                                    if elements.is_empty() {
-                                        // Empty arrays default to Vec<i32>
-                                        quote! { Vec<i32> }
-                                    } else {
-                                        // Infer element type from first element
-                                        match &elements[0].kind {
-                                            ExprKind::Literal(lit) => match lit {
-                                                crate::frontend::ast::Literal::Integer(_, _) => quote! { Vec<i32> },
-                                                crate::frontend::ast::Literal::Float(_) => quote! { Vec<f64> },
-                                                crate::frontend::ast::Literal::String(_) => quote! { Vec<String> },
-                                                crate::frontend::ast::Literal::Bool(_) => quote! { Vec<bool> },
-                                                _ => quote! { Vec<i32> },
-                                            },
-                                            ExprKind::List(_) => quote! { Vec<Vec<i32>> }, // Nested arrays
-                                            _ => quote! { Vec<i32> },
-                                        }
-                                    }
-                                },
-                                _ => quote! { i32 },  // Default for non-literals
-                            }
+                            // Use helper for type inference
+                            Self::infer_type_from_value(value)
                         };
 
                         // Generate thread-safe global using LazyLock<Mutex<T>>
