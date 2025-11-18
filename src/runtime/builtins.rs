@@ -187,6 +187,62 @@ impl BuiltinRegistry {
     }
 }
 
+// Argument validation helpers (CERTEZA-001: Reduce duplication)
+
+/// Helper: Validate no arguments
+/// Complexity: 1 (within Toyota Way limits)
+#[inline]
+fn require_no_args(args: &[Value], fn_name: &str) -> Result<(), InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(format!(
+            "{fn_name}() expects no arguments"
+        )));
+    }
+    Ok(())
+}
+
+/// Helper: Validate exact argument count
+/// Complexity: 1 (within Toyota Way limits)
+#[inline]
+fn require_args_count(args: &[Value], expected: usize, fn_name: &str) -> Result<(), InterpreterError> {
+    if args.len() != expected {
+        return Err(InterpreterError::RuntimeError(format!(
+            "{fn_name}() expects {expected} argument{}",
+            if expected == 1 { "" } else { "s" }
+        )));
+    }
+    Ok(())
+}
+
+/// Helper: Extract single string argument
+/// Complexity: 2 (within Toyota Way limits)
+#[inline]
+fn extract_string_arg<'a>(args: &'a [Value], fn_name: &str) -> Result<&'a str, InterpreterError> {
+    require_args_count(args, 1, fn_name)?;
+    match &args[0] {
+        Value::String(s) => Ok(s.as_ref()),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "{fn_name}() expects a string argument"
+        ))),
+    }
+}
+
+/// Helper: Extract two string arguments
+/// Complexity: 2 (within Toyota Way limits)
+#[inline]
+fn extract_two_string_args<'a>(
+    args: &'a [Value],
+    fn_name: &str,
+) -> Result<(&'a str, &'a str), InterpreterError> {
+    require_args_count(args, 2, fn_name)?;
+    match (&args[0], &args[1]) {
+        (Value::String(s1), Value::String(s2)) => Ok((s1.as_ref(), s2.as_ref())),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "{fn_name}() expects two string arguments"
+        ))),
+    }
+}
+
 // I/O Functions
 
 /// Built-in println function (DEPRECATED - use `eval_builtin.rs` instead)
@@ -683,91 +739,47 @@ fn builtin_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 // Get environment variable by key
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "env_var() expects 1 argument".to_string(),
-        ));
-    }
-
-    match &args[0] {
-        Value::String(key) => match std::env::var(key.as_ref()) {
-            Ok(val) => Ok(Value::from_string(val)),
-            Err(_) => Err(InterpreterError::RuntimeError(
-                format!("Environment variable '{key}' not found"),
-            )),
-        },
-        _ => Err(InterpreterError::RuntimeError(
-            "env_var() expects a string argument".to_string(),
+    let key = extract_string_arg(args, "env_var")?;
+    match std::env::var(key) {
+        Ok(val) => Ok(Value::from_string(val)),
+        Err(_) => Err(InterpreterError::RuntimeError(
+            format!("Environment variable '{key}' not found"),
         )),
     }
 }
 
 // Set environment variable
-// Complexity: 3 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_set_var(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError(
-            "env_set_var() expects 2 arguments".to_string(),
-        ));
-    }
-
-    match (&args[0], &args[1]) {
-        (Value::String(key), Value::String(value)) => {
-            std::env::set_var(key.as_ref(), value.as_ref());
-            Ok(Value::Nil)
-        }
-        _ => Err(InterpreterError::RuntimeError(
-            "env_set_var() expects two string arguments".to_string(),
-        )),
-    }
+    let (key, value) = extract_two_string_args(args, "env_set_var")?;
+    std::env::set_var(key, value);
+    Ok(Value::Nil)
 }
 
 // Remove environment variable
-// Complexity: 2 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_remove_var(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "env_remove_var() expects 1 argument".to_string(),
-        ));
-    }
-
-    match &args[0] {
-        Value::String(key) => {
-            std::env::remove_var(key.as_ref());
-            Ok(Value::Nil)
-        }
-        _ => Err(InterpreterError::RuntimeError(
-            "env_remove_var() expects a string argument".to_string(),
-        )),
-    }
+    let key = extract_string_arg(args, "env_remove_var")?;
+    std::env::remove_var(key);
+    Ok(Value::Nil)
 }
 
 // Get all environment variables
-// Complexity: 1 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_vars(args: &[Value]) -> Result<Value, InterpreterError> {
-    if !args.is_empty() {
-        return Err(InterpreterError::RuntimeError(
-            "env_vars() expects no arguments".to_string(),
-        ));
-    }
-
+    require_no_args(args, "env_vars")?;
     let vars: HashMap<String, Value> = std::env::vars()
         .map(|(k, v)| (k, Value::from_string(v)))
         .collect();
-
     Ok(Value::Object(Arc::new(vars)))
 }
 
 // Get current working directory
-// Complexity: 2 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
-    if !args.is_empty() {
-        return Err(InterpreterError::RuntimeError(
-            "env_current_dir() expects no arguments".to_string(),
-        ));
-    }
-
+    require_no_args(args, "env_current_dir")?;
     match std::env::current_dir() {
         Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
         Err(e) => Err(InterpreterError::RuntimeError(
@@ -777,36 +789,21 @@ fn builtin_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 // Set current working directory
-// Complexity: 2 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
-    if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError(
-            "env_set_current_dir() expects 1 argument".to_string(),
-        ));
-    }
-
-    match &args[0] {
-        Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(
-                format!("Failed to set current directory: {e}"),
-            )),
-        },
-        _ => Err(InterpreterError::RuntimeError(
-            "env_set_current_dir() expects a string argument".to_string(),
+    let path = extract_string_arg(args, "env_set_current_dir")?;
+    match std::env::set_current_dir(path) {
+        Ok(()) => Ok(Value::Nil),
+        Err(e) => Err(InterpreterError::RuntimeError(
+            format!("Failed to set current directory: {e}"),
         )),
     }
 }
 
 // Get system temp directory
-// Complexity: 1 (within Toyota Way limits)
+// Complexity: 1 (reduced via helper extraction)
 fn builtin_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
-    if !args.is_empty() {
-        return Err(InterpreterError::RuntimeError(
-            "env_temp_dir() expects no arguments".to_string(),
-        ));
-    }
-
+    require_no_args(args, "env_temp_dir")?;
     let temp = std::env::temp_dir();
     Ok(Value::from_string(temp.to_string_lossy().to_string()))
 }
