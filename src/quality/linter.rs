@@ -263,6 +263,63 @@ impl Linter {
         Ok(issues)
     }
 
+    /// Helper: Create shadowing LintIssue (CERTEZA-001: Reduce duplication)
+    /// Complexity: 1 (within Toyota Way limits)
+    #[inline]
+    fn create_shadowing_issue(name: &str) -> LintIssue {
+        LintIssue {
+            line: 3, // Simplified line tracking
+            column: 1,
+            severity: "warning".to_string(),
+            rule: "shadowing".to_string(),
+            message: format!("variable shadowing: {name}"),
+            suggestion: format!("Consider renaming variable '{name}'"),
+            issue_type: "variable_shadowing".to_string(),
+            name: name.to_string(),
+        }
+    }
+
+    /// Helper: Create undefined variable LintIssue (CERTEZA-001: Reduce duplication)
+    /// Complexity: 1 (within Toyota Way limits)
+    #[inline]
+    fn create_undefined_variable_issue(name: &str) -> LintIssue {
+        LintIssue {
+            line: 3,
+            column: 1,
+            severity: "error".to_string(),
+            rule: "undefined".to_string(),
+            message: format!("undefined variable: {name}"),
+            suggestion: format!("Define '{name}' before using it"),
+            issue_type: "undefined_variable".to_string(),
+            name: name.to_string(),
+        }
+    }
+
+    /// Helper: Create unused variable/parameter/binding LintIssue (CERTEZA-001: Reduce duplication)
+    /// Complexity: 3 (within Toyota Way limits)
+    #[inline]
+    fn create_unused_issue(name: &str, var_type: VarType, defined_at: (usize, usize)) -> LintIssue {
+        let (rule_type, message_prefix, suggestion_suffix) = match var_type {
+            VarType::Local => ("unused_variable", "unused variable", "variable"),
+            VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
+            VarType::LoopVariable => ("unused_loop_variable", "unused loop variable", "loop variable"),
+            VarType::MatchBinding => ("unused_match_binding", "unused match binding", "match binding"),
+            VarType::Function => ("unused_function", "unused function", "function"),
+            VarType::TypeName => ("unused_type", "unused type", "type"),
+        };
+
+        LintIssue {
+            line: defined_at.0,
+            column: defined_at.1,
+            severity: "warning".to_string(),
+            rule: rule_type.to_string(),
+            message: format!("{message_prefix}: {name}"),
+            suggestion: format!("Remove unused {suggestion_suffix}"),
+            issue_type: rule_type.to_string(),
+            name: name.to_string(),
+        }
+    }
+
     /// LINTER-086: Pass 1 - Collect all function definitions for forward reference resolution
     /// Complexity: 4 (≤10 target)
     fn collect_definitions(&self, expr: &Expr, scope: &mut Scope) {
@@ -306,16 +363,7 @@ impl Linter {
                         .any(|r| matches!(r, LintRule::VariableShadowing))
                         && scope.is_shadowing(name)
                     {
-                        issues.push(LintIssue {
-                            line: 3, // Simplified line tracking
-                            column: 1,
-                            severity: "warning".to_string(),
-                            rule: "shadowing".to_string(),
-                            message: format!("variable shadowing: {name}"),
-                            suggestion: format!("Consider renaming variable '{name}'"),
-                            issue_type: "variable_shadowing".to_string(),
-                            name: name.clone(),
-                        });
+                        issues.push(Self::create_shadowing_issue(name));
                     }
                     // Define in current scope for visibility in subsequent block statements
                     scope.define(name.clone(), 2, 1, VarType::Local);
@@ -331,16 +379,7 @@ impl Linter {
                         .any(|r| matches!(r, LintRule::VariableShadowing))
                         && let_scope.is_shadowing(name)
                     {
-                        issues.push(LintIssue {
-                            line: 3, // Simplified line tracking
-                            column: 1,
-                            severity: "warning".to_string(),
-                            rule: "shadowing".to_string(),
-                            message: format!("variable shadowing: {name}"),
-                            suggestion: format!("Consider renaming variable '{name}'"),
-                            issue_type: "variable_shadowing".to_string(),
-                            name: name.clone(),
-                        });
+                        issues.push(Self::create_shadowing_issue(name));
                     }
                     // Define the variable in the new scope
                     let_scope.define(name.clone(), 2, 1, VarType::Local);
@@ -371,16 +410,7 @@ impl Linter {
                         .iter()
                         .any(|r| matches!(r, LintRule::UndefinedVariable))
                 {
-                    issues.push(LintIssue {
-                        line: 3,
-                        column: 1,
-                        severity: "error".to_string(),
-                        rule: "undefined".to_string(),
-                        message: format!("undefined variable: {name}"),
-                        suggestion: format!("Define '{name}' before using it"),
-                        issue_type: "undefined_variable".to_string(),
-                        name: name.clone(),
-                    });
+                    issues.push(Self::create_undefined_variable_issue(name));
                 }
             }
             ExprKind::Function {
@@ -400,16 +430,7 @@ impl Linter {
                 // Parameters might be part of public API
                 for (name, info) in &func_scope.variables {
                     if !info.used && matches!(info.var_type, VarType::Local) {
-                        issues.push(LintIssue {
-                            line: info.defined_at.0,
-                            column: info.defined_at.1,
-                            severity: "warning".to_string(),
-                            rule: "unused_variable".to_string(),
-                            message: format!("unused variable: {name}"),
-                            suggestion: format!("Remove unused variable '{name}'"),
-                            issue_type: "unused_variable".to_string(),
-                            name: name.clone(),
-                        });
+                        issues.push(Self::create_unused_issue(name, info.var_type.clone(), info.defined_at));
                     }
                 }
             }
@@ -669,88 +690,19 @@ impl Linter {
     fn check_unused_in_scope(&self, scope: &Scope, issues: &mut Vec<LintIssue>) {
         for (name, info) in &scope.variables {
             if !info.used {
-                let (rule_type, message) = match info.var_type {
-                    VarType::Local => {
-                        if self
-                            .rules
-                            .iter()
-                            .any(|r| matches!(r, LintRule::UnusedVariable))
-                        {
-                            ("unused_variable", format!("unused variable: {name}"))
-                        } else {
-                            continue;
-                        }
-                    }
-                    VarType::Parameter => {
-                        if self
-                            .rules
-                            .iter()
-                            .any(|r| matches!(r, LintRule::UnusedParameter))
-                        {
-                            ("unused_parameter", format!("unused parameter: {name}"))
-                        } else {
-                            continue;
-                        }
-                    }
-                    VarType::Function => {
-                        // Functions are not checked for unused status (QUALITY-015)
-                        // Future: implement separate "unused function" detection
-                        continue;
-                    }
-                    VarType::LoopVariable => {
-                        if self
-                            .rules
-                            .iter()
-                            .any(|r| matches!(r, LintRule::UnusedLoopVariable))
-                        {
-                            (
-                                "unused_loop_variable",
-                                format!("unused loop variable: {name}"),
-                            )
-                        } else {
-                            continue;
-                        }
-                    }
-                    VarType::MatchBinding => {
-                        if self
-                            .rules
-                            .iter()
-                            .any(|r| matches!(r, LintRule::UnusedMatchBinding))
-                        {
-                            (
-                                "unused_match_binding",
-                                format!("unused match binding: {name}"),
-                            )
-                        } else {
-                            continue;
-                        }
-                    }
-                    VarType::TypeName => {
-                        // Issue #107: Type names (enum/struct) are not checked for unused
-                        // They are part of type system, not runtime values
-                        continue;
-                    }
+                // Check if rule is enabled for this variable type
+                let should_check = match info.var_type {
+                    VarType::Local => self.rules.iter().any(|r| matches!(r, LintRule::UnusedVariable)),
+                    VarType::Parameter => self.rules.iter().any(|r| matches!(r, LintRule::UnusedParameter)),
+                    VarType::Function => false, // QUALITY-015: Functions not checked for unused
+                    VarType::LoopVariable => self.rules.iter().any(|r| matches!(r, LintRule::UnusedLoopVariable)),
+                    VarType::MatchBinding => self.rules.iter().any(|r| matches!(r, LintRule::UnusedMatchBinding)),
+                    VarType::TypeName => false, // Issue #107: Type names not checked
                 };
-                issues.push(LintIssue {
-                    line: info.defined_at.0,
-                    column: info.defined_at.1,
-                    severity: "warning".to_string(),
-                    rule: rule_type.to_string(),
-                    message: message.clone(),
-                    suggestion: format!(
-                        "Remove unused {}",
-                        match info.var_type {
-                            VarType::Local => "variable",
-                            VarType::Parameter => "parameter",
-                            VarType::Function => "function", // Unreachable (functions skip check)
-                            VarType::LoopVariable => "loop variable",
-                            VarType::MatchBinding => "match binding",
-                            VarType::TypeName => "type", // Unreachable (types skip check)
-                        }
-                    ),
-                    issue_type: rule_type.to_string(),
-                    name: name.clone(),
-                });
+
+                if should_check {
+                    issues.push(Self::create_unused_issue(name, info.var_type.clone(), info.defined_at));
+                }
             }
         }
     }
