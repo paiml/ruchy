@@ -5,6 +5,15 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Changed
+- **[CERTEZA-001] Parser Code Quality Refactoring** Consolidated duplicate Expr creation patterns in src/frontend/parser/mod.rs
+  - **Extracted Helper**: create_expr(kind) - Creates Expr with default span and empty attributes
+  - **Duplication Reduction**: 13 occurrences of identical Expr struct construction consolidated
+  - **Deleted**: create_actor_expr() function (duplicate of create_expr)
+  - **Net Code Reduction**: -67 lines (133 deletions, 66 insertions)
+  - **File Size**: 2071→2004 lines
+  - **Tests**: 401/401 passing ✓
+  - **TDG Score**: B (75.7→76.2), Duplication: 15.7→16.2/20
+  - **Commit**: 060d9b32
 - **[CERTEZA-001] Linter Code Quality Refactoring** Consolidated duplicate LintIssue creation patterns in src/quality/linter.rs
   - **Extracted Helpers**: create_shadowing_issue(), create_undefined_variable_issue(), create_unused_issue()
   - **Duplication Reduction**: 2 shadowing issues, 1 undefined issue, 5 unused issue types consolidated
