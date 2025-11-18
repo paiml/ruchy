@@ -15,6 +15,18 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Commit**: faf46106
 
 ### Added
+- **[CERTEZA-002] Phase 2 Risk Stratification and Gap Analysis** Classified all 305 modules by risk level and identified critical testing gaps
+  - **Risk Classification**: Very High (14 modules), High (87 modules), Medium (~120 modules), Low (~40 modules)
+  - **Very High Risk**: Unsafe code blocks (3 files), static mut (1 file), WASM bindings (9 files)
+  - **High Risk**: Parser (46 files), type checker (10 files), transpiler (30 files)
+  - **Gap Analysis**: Parser property tests: 0 (P0 CRITICAL), Type checker: 4 (P0 CRITICAL), Transpiler: 7 (P1 HIGH)
+  - **Critical Finding**: Parser has ZERO property tests despite being High-Risk (target: 80%+ coverage)
+  - **Blocking Issue**: static mut in transpiler violates ZERO UNSAFE CODE POLICY (GitHub #132)
+  - **Target Metrics**: Very High (100% coverage, 95%+ mutation, formal verification), High (95% coverage, 85%+ mutation, property tests)
+  - **Resource Allocation**: 25% Very High, 35% High, 30% Medium, 10% Low (per Certeza framework)
+  - **Documentation**: docs/testing/risk-stratification.yaml (~800 lines), docs/testing/gap-analysis.md (~600 lines)
+  - **Next Phase**: Phase 3 (Sprint 5-6) - Property Testing Expansion to achieve 80%+ coverage for High-Risk modules
+  - **Location**: docs/testing/risk-stratification.yaml (NEW), docs/testing/gap-analysis.md (NEW), docs/execution/roadmap.yaml (session summary added)
 - **[CERTEZA-001] Phase 1 Infrastructure Implementation** Implemented three-tiered testing framework (Tier 1: sub-second, Tier 2: 1-5min, Tier 3: hours)
   - **Tier 1**: cargo-watch installed, `make tier1-on-save` + `make tier1-watch` targets (sub-second feedback)
   - **Tier 2**: Enhanced `make tier2-on-commit` with branch coverage tracking (≥90% target)
