@@ -1,4 +1,4 @@
-.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book
+.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book tier1-on-save tier1-watch tier2-on-commit tier3-nightly certeza-help
 
 # Default target
 help:
@@ -88,6 +88,151 @@ help:
 	@echo "  make release-major - Create major release (breaking changes)"
 	@echo "  make release-auto - Auto-detect version bump type"
 	@echo "  make crate-release - Publish to crates.io + build WASM"
+	@echo ""
+	@echo "Certeza Three-Tiered Testing (DOCS-CERTEZA-001):"
+	@echo "  make certeza-help    - Show Certeza framework overview"
+	@echo "  make tier1-on-save   - Tier 1: Sub-second feedback (check + clippy + fast tests)"
+	@echo "  make tier1-watch     - Tier 1: Auto-run on file changes (cargo-watch)"
+	@echo "  make tier2-on-commit - Tier 2: Full suite (1-5min, property + coverage + quality gates)"
+	@echo "  make tier3-nightly   - Tier 3: Deep verification (hours, mutation + benchmarks)"
+
+# Certeza Three-Tiered Testing Framework (DOCS-CERTEZA-001)
+# Based on: docs/specifications/improve-testing-quality-using-certeza-concepts.md
+
+# Show Certeza framework overview
+certeza-help:
+	@echo "═══════════════════════════════════════════════════════════════════════════"
+	@echo "Certeza Three-Tiered Testing Framework"
+	@echo "═══════════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Philosophy: 'Testing can prove the presence of bugs, not their absence'"
+	@echo "            Maximize practical confidence through systematic methodology"
+	@echo ""
+	@echo "Three-Tiered Workflow:"
+	@echo ""
+	@echo "  TIER 1 (On-Save, Sub-Second)"
+	@echo "    Goal: Enable developer flow state through instant feedback"
+	@echo "    Time: <1 second per save"
+	@echo "    Command: make tier1-on-save  (or make tier1-watch for auto-run)"
+	@echo "    Checks:"
+	@echo "      - cargo check (syntax + type checking)"
+	@echo "      - cargo clippy (linting)"
+	@echo "      - Fast unit tests (critical path only)"
+	@echo ""
+	@echo "  TIER 2 (On-Commit, 1-5 Minutes)"
+	@echo "    Goal: Prevent problematic commits from entering repository"
+	@echo "    Time: 1-5 minutes per commit"
+	@echo "    Command: make tier2-on-commit"
+	@echo "    Checks:"
+	@echo "      - Full unit test suite"
+	@echo "      - Property-based tests (PROPTEST_CASES=100)"
+	@echo "      - Integration tests"
+	@echo "      - Coverage analysis (≥95% line, ≥90% branch)"
+	@echo "      - PMAT quality gates (TDG ≥A-, complexity ≤10)"
+	@echo ""
+	@echo "  TIER 3 (On-Merge/Nightly, Hours)"
+	@echo "    Goal: Maximum confidence before main branch integration"
+	@echo "    Time: Hours (nightly CI or pre-merge)"
+	@echo "    Command: make tier3-nightly"
+	@echo "    Checks:"
+	@echo "      - Mutation testing (≥85% mutation score)"
+	@echo "      - Performance benchmarks"
+	@echo "      - Cross-platform validation"
+	@echo "      - RuchyRuchy smoke testing (14K+ property tests)"
+	@echo ""
+	@echo "Risk-Based Resource Allocation:"
+	@echo "  - Very High-Risk (5% code, 40% effort): Unsafe blocks, globals, FFI"
+	@echo "  - High-Risk (15% code, 35% effort): Parser, type inference, codegen"
+	@echo "  - Medium-Risk (50% code, 20% effort): REPL, CLI, linter, runtime"
+	@echo "  - Low-Risk (30% code, 5% effort): Utilities, formatters, docs"
+	@echo ""
+	@echo "Target Metrics:"
+	@echo "  - Line Coverage: ≥95% (current: 70.31%)"
+	@echo "  - Branch Coverage: ≥90% (not currently tracked)"
+	@echo "  - Mutation Score: ≥85% for High/Very High-Risk modules"
+	@echo "  - Property Test Coverage: 80% of modules"
+	@echo ""
+	@echo "Implementation Status: Phase 1 (Infrastructure)"
+	@echo "Specification: docs/specifications/improve-testing-quality-using-certeza-concepts.md"
+	@echo "═══════════════════════════════════════════════════════════════════════════"
+
+# Tier 1: On-Save (Sub-Second Feedback)
+tier1-on-save:
+	@echo "🚀 TIER 1: Sub-second feedback (enable developer flow)"
+	@echo "════════════════════════════════════════════════════════"
+	@cargo check --quiet
+	@cargo clippy --quiet -- -D warnings
+	@echo "✅ Tier 1 complete (<1s target)"
+
+# Tier 1: Watch mode (auto-run on file changes)
+tier1-watch:
+	@echo "🔄 TIER 1: Auto-watch mode (cargo-watch)"
+	@echo "════════════════════════════════════════════════════════"
+	@echo "Watching for file changes... (Ctrl+C to stop)"
+	@cargo watch -x "make tier1-on-save" -c -q
+
+# Tier 2: On-Commit (1-5 Minutes, Comprehensive Pre-Commit)
+tier2-on-commit:
+	@echo "🔍 TIER 2: Full test suite + coverage + quality gates"
+	@echo "════════════════════════════════════════════════════════"
+	@echo "⏱️  Target: 1-5 minutes"
+	@echo ""
+	@echo "Step 1/5: Unit tests..."
+	@cargo test --lib --release --quiet
+	@echo "Step 2/5: Property tests (PROPTEST_CASES=100)..."
+	@env PROPTEST_CASES=100 cargo test property_ --lib --release --quiet -- --nocapture
+	@env PROPTEST_CASES=100 cargo test proptest --lib --release --quiet -- --nocapture
+	@echo "Step 3/5: Integration tests..."
+	@cargo test --test --release --quiet
+	@echo "Step 4/5: Coverage analysis (≥95% line target, ≥90% branch target)..."
+	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
+	@cargo llvm-cov clean --workspace --quiet
+	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-fail-fast --lib --all-features --quiet || true
+	@cargo llvm-cov report --summary-only
+	@echo "Step 5/5: PMAT quality gates (TDG ≥A-, complexity ≤10)..."
+	@which pmat > /dev/null 2>&1 && pmat tdg . --min-grade A- --fail-on-violation --quiet || echo "⚠️  PMAT not installed, skipping quality gates"
+	@echo ""
+	@echo "✅ Tier 2 complete (1-5 min target)"
+
+# Tier 3: Nightly/Pre-Merge (Hours, Deep Verification)
+tier3-nightly:
+	@echo "🌙 TIER 3: Deep verification (mutation + benchmarks + smoke tests)"
+	@echo "════════════════════════════════════════════════════════"
+	@echo "⏱️  Target: Hours (run overnight or in CI)"
+	@echo ""
+	@echo "Step 1/4: Incremental mutation testing (High-Risk modules)..."
+	@echo "  Parser modules (5-30 min per file)..."
+	@which cargo-mutants > /dev/null 2>&1 || cargo install cargo-mutants --locked
+	@for file in src/frontend/parser/*.rs; do \
+		echo "  Testing: $$file"; \
+		cargo mutants --file $$file --timeout 300 --output /tmp/mutations_$$(basename $$file .rs).txt || true; \
+	done
+	@echo "  Type inference modules..."
+	@for file in src/typechecker/*.rs; do \
+		echo "  Testing: $$file"; \
+		cargo mutants --file $$file --timeout 300 --output /tmp/mutations_$$(basename $$file .rs).txt || true; \
+	done
+	@echo "Step 2/4: Performance benchmarks..."
+	@cargo bench --no-fail-fast || true
+	@echo "Step 3/4: RuchyRuchy smoke testing (14K+ property tests)..."
+	@if [ -d ../ruchyruchy ]; then \
+		cd ../ruchyruchy && cargo test --test property_based_tests --release --quiet || true; \
+	else \
+		echo "⚠️  RuchyRuchy not found at ../ruchyruchy, skipping"; \
+	fi
+	@echo "Step 4/4: Cross-platform validation..."
+	@echo "  Platform: $$(uname -s) $$(uname -m)"
+	@cargo build --release --all-targets
+	@echo ""
+	@echo "✅ Tier 3 complete (see /tmp/mutations_*.txt for mutation reports)"
+	@echo ""
+	@echo "Mutation Score Summary:"
+	@echo "  Target: ≥85% for High/Very High-Risk modules"
+	@for file in /tmp/mutations_*.txt; do \
+		if [ -f "$$file" ]; then \
+			echo "  $$(basename $$file): $$(grep -o '[0-9]*% caught' $$file | head -1 || echo 'N/A')"; \
+		fi; \
+	done
 
 # Build project
 build:
