@@ -372,6 +372,33 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
+
+    /// Helper: Generate increment/decrement operation
+    /// Pre operations return new value, post operations return old value
+    fn generate_inc_dec_op(
+        target_tokens: TokenStream,
+        is_increment: bool,
+        is_pre: bool,
+    ) -> TokenStream {
+        let op = if is_increment {
+            quote! { += 1 }
+        } else {
+            quote! { -= 1 }
+        };
+
+        if is_pre {
+            quote! { { #target_tokens #op; #target_tokens } }
+        } else {
+            quote! {
+                {
+                    let _tmp = #target_tokens;
+                    #target_tokens #op;
+                    _tmp
+                }
+            }
+        }
+    }
+
     /// Transpiles pre-increment
     /// # Examples
     ///
@@ -383,8 +410,9 @@ impl Transpiler {
     /// ```
     pub fn transpile_pre_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
-        Ok(quote! { { #target_tokens += 1; #target_tokens } })
+        Ok(Self::generate_inc_dec_op(target_tokens, true, true))
     }
+
     /// Transpiles post-increment
     /// # Examples
     ///
@@ -396,14 +424,9 @@ impl Transpiler {
     /// ```
     pub fn transpile_post_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
-        Ok(quote! {
-            {
-                let _tmp = #target_tokens;
-                #target_tokens += 1;
-                _tmp
-            }
-        })
+        Ok(Self::generate_inc_dec_op(target_tokens, true, false))
     }
+
     /// Transpiles pre-decrement
     /// # Examples
     ///
@@ -415,8 +438,9 @@ impl Transpiler {
     /// ```
     pub fn transpile_pre_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
-        Ok(quote! { { #target_tokens -= 1; #target_tokens } })
+        Ok(Self::generate_inc_dec_op(target_tokens, false, true))
     }
+
     /// Transpiles post-decrement
     /// # Examples
     ///
@@ -428,13 +452,7 @@ impl Transpiler {
     /// ```
     pub fn transpile_post_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
-        Ok(quote! {
-            {
-                let _tmp = #target_tokens;
-                #target_tokens -= 1;
-                _tmp
-            }
-        })
+        Ok(Self::generate_inc_dec_op(target_tokens, false, false))
     }
     /// Transpiles array initialization syntax [value; size]
     /// # Examples
