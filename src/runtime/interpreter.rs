@@ -1760,6 +1760,43 @@ impl Interpreter {
         }
     }
 
+    /// Helper: Extract message type and data from actor message Value
+    /// Complexity: 5 (within Toyota Way limits)
+    fn extract_message_type_and_data(
+        message: &Value,
+    ) -> Result<(String, Vec<Value>), InterpreterError> {
+        if let Value::Object(msg_obj) = message {
+            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
+                if type_str.as_ref() == "Message" {
+                    let msg_type = msg_obj
+                        .get("type")
+                        .and_then(|v| {
+                            if let Value::String(s) = v {
+                                Some(s.to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(|| "Unknown".to_string());
+                    let msg_data = msg_obj
+                        .get("data")
+                        .and_then(|v| {
+                            if let Value::Array(arr) = v {
+                                Some(arr.to_vec())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(Vec::new);
+                    return Ok((msg_type, msg_data));
+                }
+            }
+        }
+        Err(InterpreterError::RuntimeError(
+            "Invalid message format - expected Message object".to_string(),
+        ))
+    }
+
     fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
         eval_expr::is_control_flow_expr(expr_kind)
     }
@@ -5391,46 +5428,7 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         // Parse the message to extract type and arguments
         // Messages come as function calls like Push(1) or SetCount(5)
-        let (msg_type, msg_args) = if let Value::Object(msg_obj) = message {
-            // Check if it's a Message object
-            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
-                if type_str.as_ref() == "Message" {
-                    let msg_type = msg_obj
-                        .get("type")
-                        .and_then(|v| {
-                            if let Value::String(s) = v {
-                                Some(s.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(|| "Unknown".to_string());
-                    let msg_args = msg_obj
-                        .get("data")
-                        .and_then(|v| {
-                            if let Value::Array(arr) = v {
-                                Some(arr.to_vec())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(Vec::new);
-                    (msg_type, msg_args)
-                } else {
-                    return Err(InterpreterError::RuntimeError(
-                        "Invalid message format".to_string(),
-                    ));
-                }
-            } else {
-                return Err(InterpreterError::RuntimeError(
-                    "Invalid message format".to_string(),
-                ));
-            }
-        } else {
-            return Err(InterpreterError::RuntimeError(
-                "Message must be an object".to_string(),
-            ));
-        };
+        let (msg_type, msg_args) = Self::extract_message_type_and_data(message)?;
 
         // Find the matching handler
         if let Some(Value::Array(handlers)) = instance.get("__handlers") {
@@ -5495,45 +5493,7 @@ impl Interpreter {
         let instance = cell_rc.lock().unwrap();
 
         // Parse the message to extract type and arguments
-        let (msg_type, msg_args) = if let Value::Object(msg_obj) = message {
-            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
-                if type_str.as_ref() == "Message" {
-                    let msg_type = msg_obj
-                        .get("type")
-                        .and_then(|v| {
-                            if let Value::String(s) = v {
-                                Some(s.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(|| "Unknown".to_string());
-                    let msg_args = msg_obj
-                        .get("data")
-                        .and_then(|v| {
-                            if let Value::Array(arr) = v {
-                                Some(arr.to_vec())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(Vec::new);
-                    (msg_type, msg_args)
-                } else {
-                    return Err(InterpreterError::RuntimeError(
-                        "Invalid message format".to_string(),
-                    ));
-                }
-            } else {
-                return Err(InterpreterError::RuntimeError(
-                    "Invalid message format".to_string(),
-                ));
-            }
-        } else {
-            return Err(InterpreterError::RuntimeError(
-                "Message must be an object".to_string(),
-            ));
-        };
+        let (msg_type, msg_args) = Self::extract_message_type_and_data(message)?;
 
         // Find the matching handler
         if let Some(Value::Array(handlers)) = instance.get("__handlers") {
