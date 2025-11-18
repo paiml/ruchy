@@ -76,21 +76,30 @@ fn collect_inline_candidates(expr: &Expr, functions: &mut HashMap<String, Functi
     }
 }
 
+/// Try to inline a function call if it's in the candidates
+fn try_inline_call(
+    func: &Expr,
+    args: &[Expr],
+    functions: &HashMap<String, FunctionDef>,
+) -> Option<Expr> {
+    if let ExprKind::Identifier(func_name) = &func.kind {
+        if let Some(func_def) = functions.get(func_name) {
+            return Some(substitute_params(&func_def.body, &func_def.params, args));
+        }
+    }
+    None
+}
+
 /// Inline function calls by substituting function bodies
 ///
 /// # Complexity
-/// Cyclomatic: 5 (≤10 target)
+/// Cyclomatic: 5 (≤10 target), Cognitive: reduced via helpers
 fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -> Expr {
     match expr.kind {
         ExprKind::Call { func, args } => {
-            // Check if this is a simple function call (not method call)
-            if let ExprKind::Identifier(func_name) = &func.kind {
-                if let Some(func_def) = functions.get(func_name) {
-                    // Inline: substitute parameters with arguments
-                    return substitute_params(&func_def.body, &func_def.params, &args);
-                }
+            if let Some(inlined) = try_inline_call(&func, &args, functions) {
+                return inlined;
             }
-            // Not inlineable - recursively process children
             Expr::new(
                 ExprKind::Call {
                     func: Box::new(inline_function_calls(*func, functions)),
@@ -100,8 +109,8 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
             )
         }
         ExprKind::Block(exprs) => {
-            let inlined_exprs = exprs.into_iter().map(|e| inline_function_calls(e, functions)).collect();
-            Expr::new(ExprKind::Block(inlined_exprs), expr.span)
+            let inlined = exprs.into_iter().map(|e| inline_function_calls(e, functions)).collect();
+            Expr::new(ExprKind::Block(inlined), expr.span)
         }
         ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
             Expr::new(
@@ -117,7 +126,6 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
             )
         }
         ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
-            // Recursively inline calls inside function body, but keep the function definition itself
             Expr::new(
                 ExprKind::Function {
                     name,
@@ -132,7 +140,6 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
             )
         }
         ExprKind::Binary { left, op, right } => {
-            // Recursively inline calls in binary expressions (critical for nested inlining)
             Expr::new(
                 ExprKind::Binary {
                     left: Box::new(inline_function_calls(*left, functions)),
@@ -143,7 +150,6 @@ fn inline_function_calls(expr: Expr, functions: &HashMap<String, FunctionDef>) -
             )
         }
         ExprKind::If { condition, then_branch, else_branch } => {
-            // Recursively inline calls in if expressions
             Expr::new(
                 ExprKind::If {
                     condition: Box::new(inline_function_calls(*condition, functions)),
@@ -271,22 +277,19 @@ fn estimate_body_size(body: &Expr) -> usize {
     }
 }
 
+/// Check if Call expression is direct recursion
+fn is_direct_recursion(func_name: &str, func_expr: &Expr) -> bool {
+    matches!(&func_expr.kind, ExprKind::Identifier(name) if name == func_name)
+}
+
 /// Check if function body calls itself (recursion detection)
 ///
 /// # Complexity
-/// Cyclomatic: 8 (≤10 target)
+/// Cyclomatic: 8 (≤10 target), Cognitive: reduced via helpers
 fn check_recursion(func_name: &str, body: &Expr) -> bool {
     match &body.kind {
-        ExprKind::Call { func, .. } => {
-            if let ExprKind::Identifier(called_name) = &func.kind {
-                if called_name == func_name {
-                    return true; // Direct recursion
-                }
-            }
-            false
-        }
+        ExprKind::Call { func, .. } => is_direct_recursion(func_name, func),
         ExprKind::Binary { left, right, .. } => {
-            // ISSUE-128 FIX: Check for recursion inside binary expressions (e.g., fib(n-1) + fib(n-2))
             check_recursion(func_name, left) || check_recursion(func_name, right)
         }
         ExprKind::Block(exprs) => exprs.iter().any(|e| check_recursion(func_name, e)),
@@ -299,11 +302,9 @@ fn check_recursion(func_name: &str, body: &Expr) -> bool {
             check_recursion(func_name, value) || check_recursion(func_name, body)
         }
         ExprKind::Return { value } => {
-            // ISSUE-128 FIX: Check for recursion inside return expressions
             value.as_ref().is_some_and(|v| check_recursion(func_name, v))
         }
         ExprKind::Match { expr, arms } => {
-            // Check recursion in match expression and all arm bodies
             check_recursion(func_name, expr)
                 || arms.iter().any(|arm| check_recursion(func_name, &arm.body))
         }
@@ -333,23 +334,44 @@ fn accesses_global_variables(params: &[Param], body: &Expr) -> bool {
     check_for_external_refs(body, &param_names)
 }
 
+/// Check pair of expressions for external refs (reduces cognitive complexity)
+fn check_pair_external_refs(
+    left: &Expr,
+    right: &Expr,
+    allowed: &std::collections::HashSet<String>,
+) -> bool {
+    check_for_external_refs(left, allowed) || check_for_external_refs(right, allowed)
+}
+
+/// Check Let binding for external refs with scope tracking
+fn check_let_external_refs(
+    name: &str,
+    value: &Expr,
+    body: &Expr,
+    allowed: &std::collections::HashSet<String>,
+) -> bool {
+    // Check value first (binding not yet available)
+    if check_for_external_refs(value, allowed) {
+        return true;
+    }
+    // Add bound variable to allowed set for checking body
+    let mut allowed_with_binding = allowed.clone();
+    allowed_with_binding.insert(name.to_string());
+    check_for_external_refs(body, &allowed_with_binding)
+}
+
 /// Recursively check if expression references identifiers outside the allowed set
 ///
 /// # Complexity
-/// Cyclomatic: 9 (≤10 target)
+/// Cyclomatic: 9 (≤10 target), Cognitive: reduced via helpers
 fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<String>) -> bool {
     match &expr.kind {
         ExprKind::Identifier(name) => !allowed.contains(name),
-        ExprKind::Assign { target, value } => {
-            check_for_external_refs(target, allowed) || check_for_external_refs(value, allowed)
-        }
+        ExprKind::Assign { target, value } => check_pair_external_refs(target, value, allowed),
         ExprKind::CompoundAssign { target, value, .. } => {
-            // FIX: Detect globals in compound assignments (total += x)
-            check_for_external_refs(target, allowed) || check_for_external_refs(value, allowed)
+            check_pair_external_refs(target, value, allowed)
         }
-        ExprKind::Binary { left, right, .. } => {
-            check_for_external_refs(left, allowed) || check_for_external_refs(right, allowed)
-        }
+        ExprKind::Binary { left, right, .. } => check_pair_external_refs(left, right, allowed),
         ExprKind::Block(exprs) => exprs.iter().any(|e| check_for_external_refs(e, allowed)),
         ExprKind::If { condition, then_branch, else_branch } => {
             check_for_external_refs(condition, allowed)
@@ -357,16 +379,7 @@ fn check_for_external_refs(expr: &Expr, allowed: &std::collections::HashSet<Stri
                 || else_branch.as_ref().is_some_and(|e| check_for_external_refs(e, allowed))
         }
         ExprKind::Let { name, value, body, .. } => {
-            // Check value first (binding not yet available)
-            if check_for_external_refs(value, allowed) {
-                return true;
-            }
-
-            // Add bound variable to allowed set for checking body
-            // OPT-CODEGEN-004 FIX: Track Let bindings to avoid false "global access" detection
-            let mut allowed_with_binding = allowed.clone();
-            allowed_with_binding.insert(name.clone());
-            check_for_external_refs(body, &allowed_with_binding)
+            check_let_external_refs(name, value, body, allowed)
         }
         ExprKind::Return { value } => {
             value.as_ref().is_some_and(|v| check_for_external_refs(v, allowed))
