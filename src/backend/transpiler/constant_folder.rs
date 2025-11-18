@@ -424,13 +424,45 @@ fn remove_dead_statements(exprs: Vec<Expr>) -> Vec<Expr> {
     result
 }
 
+/// Check if a function should be removed (inlined and no longer called)
+fn should_remove_function(
+    name: &str,
+    used_functions: &HashSet<String>,
+    inlined_functions: &std::collections::HashSet<String>,
+) -> bool {
+    inlined_functions.contains(name)
+        && !used_functions.contains(name)
+        && name != "main"
+}
+
+/// Process let binding elimination and return replacement expressions if eliminated
+fn process_let_elimination(
+    name: &str,
+    value: &Expr,
+    body: &Expr,
+    used_variables: &HashSet<String>,
+) -> Option<Vec<Expr>> {
+    let body_is_unit = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+
+    // Keep binding if variable is used, has side effects, or is top-level
+    if used_variables.contains(name) || has_side_effects(value) || body_is_unit {
+        return None;
+    }
+
+    // Eliminate unused binding - return cleaned body
+    let cleaned_body = eliminate_dead_code(body.clone(), std::collections::HashSet::new());
+
+    Some(if let ExprKind::Block(inner_exprs) = cleaned_body.kind {
+        inner_exprs
+    } else {
+        vec![cleaned_body]
+    })
+}
+
 /// Remove dead statements, unused function definitions, AND unused variables from a block
 ///
 /// ISSUE-128 FIX: Preserve functions that weren't successfully inlined
 /// PERF-002-C: Remove unused variable bindings via liveness analysis
-///
-/// # Complexity
-/// Cyclomatic: 9 (≤10 target)
 fn remove_dead_statements_and_unused_functions_and_variables(
     exprs: Vec<Expr>,
     used_functions: &HashSet<String>,
@@ -440,58 +472,25 @@ fn remove_dead_statements_and_unused_functions_and_variables(
     let mut result = Vec::new();
 
     for expr in exprs {
-        // ISSUE-128 FIX: Only remove functions that were BOTH inlined AND no longer used
+        // Check for function removal
         if let ExprKind::Function { name, .. } = &expr.kind {
-            // Keep function if:
-            // 1. It's main (always preserve)
-            // 2. It's still called somewhere (in used_functions)
-            // 3. It wasn't inlined (not in inlined_functions, so preserve it)
-            //
-            // Remove function only if:
-            // - It was marked for inlining AND
-            // - It's no longer called anywhere
-            let should_remove = inlined_functions.contains(name)
-                && !used_functions.contains(name)
-                && name != "main";
-
-            if should_remove {
-                // Skip this function - successfully inlined and no longer called
+            if should_remove_function(name, used_functions, inlined_functions) {
                 continue;
             }
         }
 
-        // PERF-002-C: Remove unused variable bindings
+        // Check for let binding elimination
         if let ExprKind::Let { name, value, body, .. } = &expr.kind {
-            // TRANSPILER-BUG FIX: Don't eliminate Let bindings with Unit body
-            // These are top-level statements (let x = 0;) not scoped bindings (let x = 0 in expr)
-            // The variable may be used in subsequent statements outside this Let expression
-            let body_is_unit = matches!(body.kind, ExprKind::Literal(Literal::Unit));
-
-            // Skip this let binding if the variable is never used
-            // BUT keep it if:
-            // 1. The value has side effects (like function calls)
-            // 2. The body is Unit (top-level statement, may be used in subsequent statements)
-            if !used_variables.contains(name) && !has_side_effects(value) && !body_is_unit {
-                // Variable is unused and value has no side effects - eliminate it
-                // Continue with the body instead
-                let cleaned_body = eliminate_dead_code((**body).clone(), std::collections::HashSet::new());
-
-                // If body is a block, unwrap it
-                if let ExprKind::Block(inner_exprs) = cleaned_body.kind {
-                    result.extend(inner_exprs);
-                } else {
-                    result.push(cleaned_body);
-                }
+            if let Some(replacement) = process_let_elimination(name, value, body, used_variables) {
+                result.extend(replacement);
                 continue;
             }
         }
 
-        // Recursively eliminate dead code in child expressions
+        // Recursively eliminate dead code
         let cleaned = eliminate_dead_code(expr, std::collections::HashSet::new());
-
         result.push(cleaned.clone());
 
-        // Stop processing after early exit (return/break/continue)
         if has_early_exit(&cleaned) {
             break;
         }
