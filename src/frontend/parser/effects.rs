@@ -27,6 +27,18 @@ pub fn parse_effect(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(ExprKind::Effect { name, operations }, start_span))
 }
 
+/// Parse a single handler case: operation(params) => body
+fn parse_single_handler(state: &mut ParserState) -> Result<EffectHandler> {
+    let operation = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => { let n = n.clone(); state.tokens.advance(); n }
+        _ => bail!("Expected operation name in handler"),
+    };
+    let params = parse_handler_params(state)?;
+    state.tokens.expect(&Token::FatArrow)?;
+    let body = Box::new(super::parse_expr_recursive(state)?);
+    Ok(EffectHandler { operation, params, body })
+}
+
 /// SPEC-001-J: Parse effect handler expression
 /// Syntax: handle expr with { operation => body, operation(params) => body }
 pub fn parse_handler(state: &mut ParserState) -> Result<Expr> {
@@ -37,14 +49,7 @@ pub fn parse_handler(state: &mut ParserState) -> Result<Expr> {
 
     let mut handlers = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let operation = match state.tokens.peek() {
-            Some((Token::Identifier(n), _)) => { let n = n.clone(); state.tokens.advance(); n }
-            _ => bail!("Expected operation name in handler"),
-        };
-        let params = parse_handler_params(state)?;
-        state.tokens.expect(&Token::FatArrow)?;
-        let body = Box::new(super::parse_expr_recursive(state)?);
-        handlers.push(EffectHandler { operation, params, body });
+        handlers.push(parse_single_handler(state)?);
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) { state.tokens.advance(); }
     }
 
