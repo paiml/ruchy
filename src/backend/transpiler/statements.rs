@@ -154,6 +154,26 @@ impl Transpiler {
         }
     }
 
+    /// Helper: Validate exact argument count (CERTEZA-001: Reduce duplication)
+    /// Complexity: 1 (within Toyota Way limits)
+    #[inline]
+    fn require_exact_args(method: &str, args: &[TokenStream], expected: usize) -> Result<()> {
+        if args.len() != expected {
+            bail!("{method} requires exactly {expected} argument{}", if expected == 1 { "" } else { "s" });
+        }
+        Ok(())
+    }
+
+    /// Helper: Validate no arguments (CERTEZA-001: Reduce duplication)
+    /// Complexity: 1 (within Toyota Way limits)
+    #[inline]
+    fn require_no_args(method: &str, args: &[TokenStream]) -> Result<()> {
+        if !args.is_empty() {
+            bail!("{method} requires no arguments");
+        }
+        Ok(())
+    }
+
     /// Transpiles let bindings
     /// # Examples
     ///
@@ -2636,9 +2656,7 @@ impl Transpiler {
         method: &str,
         arg_tokens: &[TokenStream],
     ) -> Result<TokenStream> {
-        if arg_tokens.len() != 1 {
-            bail!("{method} requires exactly 1 argument");
-        }
+        Self::require_exact_args(method, arg_tokens, 1)?;
         let other = &arg_tokens[0];
         let method_ident = format_ident!("{}", method);
         Ok(quote! {
@@ -2687,9 +2705,7 @@ impl Transpiler {
             }
             "substring" => {
                 // string.substring(start, end) -> string.chars().skip(start).take(end-start).collect()
-                if arg_tokens.len() != 2 {
-                    bail!("substring requires exactly 2 arguments");
-                }
+                Self::require_exact_args("substring", arg_tokens, 2)?;
                 let start = &arg_tokens[0];
                 let end = &arg_tokens[1];
                 Ok(quote! {
@@ -2715,33 +2731,25 @@ impl Transpiler {
         match method {
             "slice" => {
                 // vec.slice(start, end) -> vec[start..end].to_vec()
-                if arg_tokens.len() != 2 {
-                    bail!("slice requires exactly 2 arguments");
-                }
+                Self::require_exact_args("slice", arg_tokens, 2)?;
                 let start = &arg_tokens[0];
                 let end = &arg_tokens[1];
                 Ok(quote! { #obj_tokens[#start as usize..#end as usize].to_vec() })
             }
             "concat" => {
                 // vec.concat(other) -> [vec, other].concat()
-                if arg_tokens.len() != 1 {
-                    bail!("concat requires exactly 1 argument");
-                }
+                Self::require_exact_args("concat", arg_tokens, 1)?;
                 let other = &arg_tokens[0];
                 Ok(quote! { [#obj_tokens, #other].concat() })
             }
             "flatten" => {
                 // vec.flatten() -> vec.into_iter().flatten().collect()
-                if !arg_tokens.is_empty() {
-                    bail!("flatten requires no arguments");
-                }
+                Self::require_no_args("flatten", arg_tokens)?;
                 Ok(quote! { #obj_tokens.into_iter().flatten().collect::<Vec<_>>() })
             }
             "unique" => {
                 // vec.unique() -> vec.into_iter().collect::<HashSet<_>>().into_iter().collect()
-                if !arg_tokens.is_empty() {
-                    bail!("unique requires no arguments");
-                }
+                Self::require_no_args("unique", arg_tokens)?;
                 Ok(quote! {
                     {
                         use std::collections::HashSet;
@@ -2751,9 +2759,7 @@ impl Transpiler {
             }
             "join" => {
                 // vec.join(separator) -> vec.join(separator) (for Vec<String>)
-                if arg_tokens.len() != 1 {
-                    bail!("join requires exactly 1 argument");
-                }
+                Self::require_exact_args("join", arg_tokens, 1)?;
                 let separator = &arg_tokens[0];
                 Ok(quote! { #obj_tokens.join(&#separator) })
             }
