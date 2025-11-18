@@ -128,10 +128,45 @@ fn eval_float_method(f: f64, method: &str, args_empty: bool) -> Result<Value, In
     }
 }
 
+/// Helper: Validate no-argument method call
+fn require_no_args(method: &str, arg_values: &[Value]) -> Result<(), InterpreterError> {
+    if !arg_values.is_empty() {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Integer method '{method}' takes no arguments"
+        )));
+    }
+    Ok(())
+}
+
+/// Helper: Evaluate integer pow method
+fn eval_integer_pow(n: i64, arg_values: &[Value]) -> Result<Value, InterpreterError> {
+    if arg_values.len() != 1 {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Integer method 'pow' requires exactly 1 argument, got {}",
+            arg_values.len()
+        )));
+    }
+    match &arg_values[0] {
+        Value::Integer(exp) => {
+            if *exp < 0 {
+                return Err(InterpreterError::RuntimeError(
+                    "Integer pow() exponent must be non-negative".to_string(),
+                ));
+            }
+            Ok(Value::Integer(n.pow(*exp as u32)))
+        }
+        _ => Err(InterpreterError::TypeError(format!(
+            "Integer pow() requires integer exponent, got {}",
+            arg_values[0].type_name()
+        ))),
+    }
+}
+
 /// Evaluate integer methods with mathematical operations
 ///
 /// # Complexity
 /// Cyclomatic complexity: 6 (within Toyota Way limits)
+/// Cognitive complexity: reduced via helpers
 fn eval_integer_method(
     n: i64,
     method: &str,
@@ -139,70 +174,50 @@ fn eval_integer_method(
 ) -> Result<Value, InterpreterError> {
     match method {
         "abs" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'abs' takes no arguments".to_string(),
-                ));
-            }
+            require_no_args(method, arg_values)?;
             Ok(Value::Integer(n.abs()))
         }
         "sqrt" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'sqrt' takes no arguments".to_string(),
-                ));
-            }
+            require_no_args(method, arg_values)?;
             Ok(Value::Float((n as f64).sqrt()))
         }
         "to_float" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'to_float' takes no arguments".to_string(),
-                ));
-            }
+            require_no_args(method, arg_values)?;
             Ok(Value::Float(n as f64))
         }
         "to_string" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'to_string' takes no arguments".to_string(),
-                ));
-            }
+            require_no_args(method, arg_values)?;
             Ok(Value::from_string(n.to_string()))
         }
         "signum" => {
-            if !arg_values.is_empty() {
-                return Err(InterpreterError::RuntimeError(
-                    "Integer method 'signum' takes no arguments".to_string(),
-                ));
-            }
+            require_no_args(method, arg_values)?;
             Ok(Value::Integer(n.signum()))
         }
-        "pow" => {
-            if arg_values.len() != 1 {
-                return Err(InterpreterError::RuntimeError(format!(
-                    "Integer method 'pow' requires exactly 1 argument, got {}",
-                    arg_values.len()
-                )));
-            }
-            match &arg_values[0] {
-                Value::Integer(exp) => {
-                    if *exp < 0 {
-                        return Err(InterpreterError::RuntimeError(
-                            "Integer pow() exponent must be non-negative".to_string(),
-                        ));
-                    }
-                    let result = n.pow(*exp as u32);
-                    Ok(Value::Integer(result))
-                }
-                _ => Err(InterpreterError::TypeError(format!(
-                    "Integer pow() requires integer exponent, got {}",
-                    arg_values[0].type_name()
-                ))),
-            }
-        }
+        "pow" => eval_integer_pow(n, arg_values),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown integer method: {method}"
+        ))),
+    }
+}
+
+/// Helper: Try to dispatch builtin function from object method
+fn try_dispatch_builtin(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    let Some(Value::String(builtin_marker)) = obj.get(method) else {
+        return Ok(None);
+    };
+
+    if !builtin_marker.starts_with("__builtin_") {
+        return Ok(None);
+    }
+
+    match crate::runtime::eval_builtin::eval_builtin_function(builtin_marker, arg_values)? {
+        Some(value) => Ok(Some(value)),
+        None => Err(InterpreterError::RuntimeError(format!(
+            "Unknown builtin function: {builtin_marker}"
         ))),
     }
 }
@@ -213,6 +228,7 @@ fn eval_integer_method(
 ///
 /// # Complexity
 /// Cyclomatic complexity: 5 (within Toyota Way limits)
+/// Cognitive complexity: reduced via helpers
 fn eval_object_method(
     obj: &std::collections::HashMap<String, Value>,
     method: &str,
@@ -220,40 +236,23 @@ fn eval_object_method(
 ) -> Result<Value, InterpreterError> {
     // Check __type marker to route to appropriate handler
     if let Some(Value::String(type_name)) = obj.get("__type") {
-        match &**type_name {
+        return match &**type_name {
             "Command" => eval_command_method(obj, method, arg_values),
             "ExitStatus" => eval_exit_status_method(obj, method, arg_values),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unknown object type: {type_name}"
             ))),
-        }
-    } else {
-        // Issue #96: Fallback for module functions (std::env, std::fs, etc.)
-        // Module objects contain builtin string markers as field values
-        // Example: env.args() where env.args = "__builtin_env_args__"
-        if let Some(Value::String(builtin_marker)) = obj.get(method) {
-            // Check if this is a builtin function marker
-            if builtin_marker.starts_with("__builtin_") {
-                // Dispatch to builtin function with args
-                // Use eval_builtin to handle the call
-                match crate::runtime::eval_builtin::eval_builtin_function(
-                    builtin_marker,
-                    arg_values,
-                )? {
-                    Some(value) => return Ok(value),
-                    None => {
-                        return Err(InterpreterError::RuntimeError(format!(
-                            "Unknown builtin function: {builtin_marker}"
-                        )))
-                    }
-                }
-            }
-        }
-
-        Err(InterpreterError::RuntimeError(
-            "Object is missing __type marker".to_string()
-        ))
+        };
     }
+
+    // Issue #96: Fallback for module functions (std::env, std::fs, etc.)
+    if let Some(value) = try_dispatch_builtin(obj, method, arg_values)? {
+        return Ok(value);
+    }
+
+    Err(InterpreterError::RuntimeError(
+        "Object is missing __type marker".to_string()
+    ))
 }
 
 /// Evaluate methods on Command objects (RUNTIME-090, Issue #75)
