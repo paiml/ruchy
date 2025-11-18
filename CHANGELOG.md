@@ -15,6 +15,15 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Commit**: faf46106
 
 ### Added
+- **[DOCS] Testing Quality Specification** Created improve-testing-quality-using-certeza-concepts.md (47KB specification)
+  - **Framework**: Certeza three-tiered testing workflow (sub-second → 1-5min → hours)
+  - **Risk-Based Allocation**: Stratified verification (40% time on 5-10% highest-risk code)
+  - **Research Foundation**: 10 peer-reviewed publications (IEEE TSE, ICSE, ACM, NASA FM)
+  - **Key Papers**: Google mutation testing at scale, ICSE 2024 property-based testing, Prusti formal verification for Rust
+  - **Implementation Roadmap**: 5 phases (Infrastructure, Risk Stratification, Property Testing, Mutation Testing, Formal Verification)
+  - **Target Metrics**: 95% line coverage, 90% branch coverage, 85% mutation score, 80% property test coverage
+  - **Integration**: Aligns with EXTREME TDD, PMAT quality gates, RuchyRuchy smoke testing
+  - **Location**: docs/specifications/improve-testing-quality-using-certeza-concepts.md
 - **[PMAT] Quality Gates Configuration** Created .pmat-gates.toml with quality thresholds
   - **Coverage baseline**: 68.0% (current: 68.42%, target: 80%)
   - **Complexity limit**: ≤10 cyclomatic complexity
