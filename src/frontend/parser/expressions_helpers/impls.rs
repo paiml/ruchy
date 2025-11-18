@@ -38,9 +38,20 @@ use crate::frontend::parser::{ParserState, Result};
 use crate::frontend::parser::utils::{parse_params, parse_type, parse_type_parameters};
 use crate::frontend::parser::collections::parse_block;
 
+/// Parse trait and type names: impl [Trait for] Type
+fn parse_impl_target(state: &mut ParserState) -> Result<(Option<String>, String)> {
+    let first_ident = expect_identifier(state)?;
+
+    if matches!(state.tokens.peek(), Some((Token::For, _))) {
+        state.tokens.advance(); // consume 'for'
+        let type_name = expect_identifier(state)?;
+        Ok((Some(first_ident), type_name))
+    } else {
+        Ok((None, first_ident))
+    }
+}
+
 /// Parse impl block: impl [Trait for] Type { methods }
-///
-/// Complexity: 8 (within Toyota Way limits)
 pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let start = state.tokens.expect(&Token::Impl)?.start;
 
@@ -51,19 +62,7 @@ pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> 
         vec![]
     };
 
-    // Parse trait name and for_type
-    // Could be: impl TraitName for TypeName OR impl TypeName
-    let first_ident = expect_identifier(state)?;
-
-    let (trait_name, for_type) = if matches!(state.tokens.peek(), Some((Token::For, _))) {
-        // impl TraitName for TypeName
-        state.tokens.advance(); // consume 'for'
-        let type_name = expect_identifier(state)?;
-        (Some(first_ident), type_name)
-    } else {
-        // impl TypeName (no trait)
-        (None, first_ident)
-    };
+    let (trait_name, for_type) = parse_impl_target(state)?;
 
     // Parse methods block
     state.tokens.expect(&Token::LeftBrace)?;
@@ -81,7 +80,7 @@ pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> 
             trait_name,
             for_type,
             methods,
-            is_pub: false, // Impl blocks themselves are not pub
+            is_pub: false,
         },
         crate::frontend::ast::Span::new(start, end),
     ))
