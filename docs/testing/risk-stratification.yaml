@@ -1,0 +1,559 @@
+# Ruchy Compiler Risk Stratification
+# CERTEZA Phase 2: Risk-Based Testing Resource Allocation
+# Document ID: CERTEZA-002
+# Version: 1.0.0
+# Date: 2025-11-18
+# Status: Active
+
+metadata:
+  specification: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
+  phase: "Phase 2: Risk Stratification (Sprint 3-4)"
+  goal: "Map Ruchy modules to risk levels, allocate verification accordingly"
+  total_modules: 305
+  classification_criteria:
+    very_high_risk: "Unsafe code, global state, FFI boundaries, WASM bindings"
+    high_risk: "Parser, type checker, code generation (correctness critical)"
+    medium_risk: "REPL, CLI, linter, runtime (user-facing errors)"
+    low_risk: "Utils, helpers, stdlib wrappers (simple utilities)"
+
+# ============================================================================
+# VERY HIGH RISK - 100% line, 100% branch, 95%+ mutation
+# ============================================================================
+# Rationale: Memory safety violations, thread safety issues, undefined behavior
+# Effort Allocation: 25% of testing resources
+
+very_high_risk:
+  description: "Modules with unsafe code, global state, or FFI boundaries"
+  target_metrics:
+    line_coverage: "100%"
+    branch_coverage: "100%"
+    mutation_score: "95%+"
+    verification_method: "Tier 3 + Formal verification (Kani)"
+
+  modules:
+    # Unsafe code blocks (3 files)
+    - path: "src/jit/compiler.rs"
+      reason: "Contains unsafe blocks for JIT compilation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "JIT compiler with unsafe memory operations"
+
+    - path: "src/runtime/arena.rs"
+      reason: "Contains unsafe blocks for memory arena management"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "Manual memory management with unsafe"
+
+    - path: "src/runtime/bytecode/vm.rs"
+      reason: "Contains unsafe blocks in VM implementation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "VM interpreter with unsafe optimizations"
+
+    # static mut (1 file - MUST BE REFACTORED per GitHub #132)
+    - path: "src/backend/transpiler/mod.rs"
+      reason: "Contains static mut (violates ZERO UNSAFE CODE POLICY)"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "MUST refactor to LazyLock<Mutex<T>> per CLAUDE.md"
+      action_required: "Refactor static mut to thread-safe alternative"
+
+    # WASM bindings (9 files)
+    - path: "src/wasm/shared_session.rs"
+      reason: "WASM FFI boundary - potential unsafe interactions"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/wasm/component.rs"
+      reason: "WASM component model integration"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/wasm/portability.rs"
+      reason: "WASM portability layer"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/wasm/notebook.rs"
+      reason: "WASM notebook integration"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/wasm/demo_converter.rs"
+      reason: "WASM demo conversion"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/wasm/mod.rs"
+      reason: "WASM module root"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/wasm/deployment.rs"
+      reason: "WASM deployment infrastructure"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/wasm/repl.rs"
+      reason: "WASM REPL implementation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/wasm/wit.rs"
+      reason: "WASM Interface Types (WIT) handling"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/wasm_bindings.rs"
+      reason: "Root WASM bindings module"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+  total_files: 14
+  action_items:
+    - "Audit all unsafe blocks for memory safety"
+    - "Add Kani formal verification for unsafe code"
+    - "Refactor static mut to LazyLock<Mutex<T>> (BLOCKING)"
+    - "Property tests for WASM bindings (cross-platform)"
+    - "Mutation testing ≥95% on all Very High Risk modules"
+
+# ============================================================================
+# HIGH RISK - 95% line, 90% branch, 85%+ mutation
+# ============================================================================
+# Rationale: Correctness bugs cause wrong transpilation, type errors, crashes
+# Effort Allocation: 35% of testing resources (per CLAUDE.md)
+
+high_risk:
+  description: "Parser, type checker, code generation - correctness critical"
+  target_metrics:
+    line_coverage: "95%+"
+    branch_coverage: "90%+"
+    mutation_score: "85%+"
+    verification_method: "Tier 2 + Property tests + Mutation tests"
+
+  modules:
+    # Parser (46 files)
+    - path: "src/frontend/parser/"
+      reason: "Parser correctness is critical - bugs cause syntax errors"
+      file_count: 46
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "Pratt parser with operator precedence and error recovery"
+      property_tests:
+        - "parse_always_produces_valid_ast"
+        - "parse_roundtrip_preserves_semantics"
+        - "parse_never_panics_on_invalid_input"
+        - "parse_error_recovery_produces_partial_ast"
+
+    # Type checker (10 files)
+    - path: "src/middleend/infer.rs"
+      reason: "Type inference correctness - bugs cause wrong types"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "Bidirectional type checking and unification"
+      property_tests:
+        - "type_inference_is_deterministic"
+        - "unification_is_idempotent"
+        - "type_inference_never_panics"
+
+    - path: "src/middleend/unify.rs"
+      reason: "Type unification - bugs cause type soundness violations"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      property_tests:
+        - "unification_is_commutative"
+        - "unification_is_associative"
+
+    - path: "src/middleend/types.rs"
+      reason: "Type representation and operations"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/middleend/environment.rs"
+      reason: "Type environment management"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/middleend/mir.rs"
+      reason: "Mid-level IR for type checking"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/middleend/mir/lower.rs"
+      reason: "MIR lowering from AST"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/middleend/mir/builder.rs"
+      reason: "MIR construction"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/middleend/mir/optimize.rs"
+      reason: "MIR optimization passes"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/middleend/mir/types.rs"
+      reason: "MIR type system"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "HIGH"
+
+    - path: "src/middleend/mod.rs"
+      reason: "Middleend module root"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    # Transpiler/Code generation (30 files)
+    - path: "src/backend/transpiler/"
+      reason: "Code generation correctness - bugs cause wrong Rust code"
+      file_count: 30
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "CRITICAL"
+      notes: "Transpiler must generate safe, correct, idiomatic Rust"
+      property_tests:
+        - "generated_rust_always_compiles"
+        - "no_unsafe_in_generated_code (GitHub #132)"
+        - "no_static_mut_in_generated_code"
+        - "generated_code_preserves_semantics"
+      known_issues:
+        - "GitHub #132: Must use LazyLock<Mutex<T>> not static mut"
+
+  total_files: 87
+  action_items:
+    - "Property tests for parser (roundtrip, error recovery)"
+    - "Property tests for type inference (determinism, soundness)"
+    - "Property tests for transpiler (correctness, safety)"
+    - "Mutation testing ≥85% on all High Risk modules"
+    - "Fix GitHub #132: Eliminate unsafe code generation"
+
+# ============================================================================
+# MEDIUM RISK - 85% line, 80% branch, mutation as time permits
+# ============================================================================
+# Rationale: User-facing bugs, runtime errors, but not memory safety issues
+# Effort Allocation: 30% of testing resources
+
+medium_risk:
+  description: "REPL, runtime, CLI, linter - user-facing errors"
+  target_metrics:
+    line_coverage: "85%+"
+    branch_coverage: "80%+"
+    mutation_score: "As time permits"
+    verification_method: "Tier 2 + Integration tests"
+
+  modules:
+    # Runtime interpreter (72 files)
+    - path: "src/runtime/"
+      reason: "Runtime errors visible to users but not memory unsafe"
+      file_count: 72
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+      notes: "Interpreter, evaluator, builtins"
+      excluded_from_medium:
+        - "src/runtime/arena.rs (Very High Risk - unsafe)"
+        - "src/runtime/bytecode/vm.rs (Very High Risk - unsafe)"
+
+    # REPL
+    - path: "src/runtime/repl/"
+      reason: "REPL bugs are user-facing but recoverable"
+      file_count: 8
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    # CLI commands
+    - path: "src/cli/mod.rs"
+      reason: "CLI errors user-facing but not critical"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    # Quality tools (linter, formatter)
+    - path: "src/quality/"
+      reason: "Quality tools - bugs are annoying but not critical"
+      file_count: 10
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+      notes: "Linter, formatter, coverage analysis"
+
+    # JIT compiler (excluding unsafe parts)
+    - path: "src/jit/"
+      reason: "JIT optimization bugs affect performance not correctness"
+      file_count: 3
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+      notes: "JIT lowering and optimization (unsafe parts in Very High Risk)"
+
+    # Backend compiler
+    - path: "src/backend/compiler.rs"
+      reason: "Compilation orchestration"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/backend/module_loader.rs"
+      reason: "Module loading logic"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    - path: "src/backend/module_resolver.rs"
+      reason: "Module resolution"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    # Actors and concurrency
+    - path: "src/actors.rs"
+      reason: "Actor system implementation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+      notes: "Concurrency bugs are tricky but runtime catches them"
+
+    # Notebook integration
+    - path: "src/notebook/"
+      reason: "Notebook integration - user-facing but not critical"
+      file_count: "TBD"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # LSP server
+    - path: "src/lsp/"
+      reason: "LSP errors affect IDE experience but not compilation"
+      file_count: "TBD"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Package manager
+    - path: "src/package/"
+      reason: "Package management errors user-facing"
+      file_count: "TBD"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "MEDIUM"
+
+    # Server infrastructure
+    - path: "src/server/"
+      reason: "Server bugs affect deployment but not correctness"
+      file_count: "TBD"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+  total_files: "~120"
+  action_items:
+    - "Integration tests for REPL scenarios"
+    - "E2E tests for CLI commands"
+    - "Coverage ≥85% for runtime modules"
+    - "Property tests for actor system (concurrency)"
+
+# ============================================================================
+# LOW RISK - 70% line, doctests for public API
+# ============================================================================
+# Rationale: Simple utilities, wrappers - bugs are localized and obvious
+# Effort Allocation: 10% of testing resources
+
+low_risk:
+  description: "Utils, helpers, stdlib wrappers - simple utilities"
+  target_metrics:
+    line_coverage: "70%+"
+    branch_coverage: "N/A"
+    mutation_score: "Doctests only"
+    verification_method: "Tier 1 + Doctests"
+
+  modules:
+    # Utils
+    - path: "src/utils/common_patterns.rs"
+      reason: "Common patterns and helpers"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    - path: "src/utils/mod.rs"
+      reason: "Utils module root"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Stdlib wrappers
+    - path: "src/stdlib/"
+      reason: "Standard library wrappers - thin layer over Rust stdlib"
+      file_count: "~20"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+      notes: "json, env, http, regex, time, process, logging, etc."
+
+    # Documentation and API helpers
+    - path: "src/api_docs.rs"
+      reason: "API documentation generation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Build scripts
+    - path: "src/build_transpiler.rs"
+      reason: "Build-time transpiler invocation"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Performance utilities
+    - path: "src/performance_optimizations.rs"
+      reason: "Performance helpers - bugs affect speed not correctness"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Test utilities
+    - path: "src/test_transpiler_method.rs"
+      reason: "Test helper code"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # MCP integration
+    - path: "src/mcp.rs"
+      reason: "MCP protocol wrapper"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+
+    # Proving/verification helpers
+    - path: "src/proving/"
+      reason: "Formal verification helpers"
+      file_count: "TBD"
+      loc: "TBD"
+      current_coverage: "TBD"
+      severity: "LOW"
+      notes: "Used for proofs, not runtime"
+
+  total_files: "~40"
+  action_items:
+    - "Doctests for all public API functions"
+    - "Basic unit tests for happy path"
+    - "Code review for obvious bugs"
+
+# ============================================================================
+# UNCLASSIFIED / NEEDS REVIEW
+# ============================================================================
+
+unclassified:
+  description: "Modules that need manual review for risk classification"
+  modules:
+    - path: "src/error_recovery_enhanced.rs"
+      reason: "Error recovery - needs assessment"
+      notes: "May be High Risk if affects parser correctness"
+
+    - path: "src/lib.rs"
+      reason: "Library root - typically Low Risk"
+      notes: "Main library entry point"
+
+    - path: "src/bench/"
+      reason: "Benchmarking code - Low Risk"
+
+    - path: "src/bin/"
+      reason: "Binary entry points - Low Risk"
+
+    - path: "src/docs/"
+      reason: "Documentation code - Low Risk"
+
+    - path: "src/lints/"
+      reason: "Linter rules - Medium Risk"
+
+    - path: "src/macros/"
+      reason: "Macro implementations - depends on usage"
+
+    - path: "src/self_hosting/"
+      reason: "Self-hosting infrastructure - Medium Risk"
+
+    - path: "src/testing/"
+      reason: "Test infrastructure - Low Risk"
+
+    - path: "src/parser/"
+      reason: "Old parser? Check if duplicate of frontend/parser/"
+
+    - path: "src/transpiler/"
+      reason: "Old transpiler? Check if duplicate of backend/transpiler/"
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+summary:
+  total_modules: 305
+  classified_files:
+    very_high_risk: 14
+    high_risk: 87
+    medium_risk: "~120"
+    low_risk: "~40"
+    unclassified: "~44"
+
+  resource_allocation:
+    very_high_risk: "25% effort (100% cov, 95%+ mutation, formal verification)"
+    high_risk: "35% effort (95% cov, 85%+ mutation, property tests)"
+    medium_risk: "30% effort (85% cov, integration tests)"
+    low_risk: "10% effort (70% cov, doctests)"
+
+  next_steps:
+    - "Measure current coverage by risk level (cargo llvm-cov per module)"
+    - "Gap analysis: Identify under-tested high-risk modules"
+    - "Create property test suite for High Risk modules (Phase 3)"
+    - "Run mutation testing on Very High + High Risk (Phase 4)"
+    - "Apply Kani formal verification to unsafe blocks (Phase 5)"
+
+  critical_actions:
+    - "🚨 FIX GitHub #132: Refactor static mut to LazyLock<Mutex<T>> in transpiler"
+    - "🚨 Audit all unsafe blocks (3 files) for memory safety"
+    - "🚨 Property tests for parser (46 files)"
+    - "🚨 Property tests for transpiler (30 files)"
+    - "🚨 Mutation testing ≥85% for High Risk modules"
+
+# ============================================================================
+# REFERENCES
+# ============================================================================
+
+references:
+  specification: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
+  github_issue_132: "https://github.com/paiml/ruchy/issues/132 - ZERO UNSAFE CODE POLICY"
+  claude_md: "CLAUDE.md - Certeza Three-Tiered Testing Framework"
+  certeza_framework: "https://github.com/paiml/certeza/"
+
+  academic_foundations:
+    - "Petrović et al. (2021) - Practical Mutation Testing at Scale (Google)"
+    - "Goldstein et al. (2024) - Property-Based Testing in Practice (Jane Street)"
+    - "Hughes & Norell (2016) - QuickCheck: Testing the Hard Stuff (Volvo/Klarna)"
+    - "Astrauskas et al. (2022) - Prusti: Formal Verification for Rust"
+    - "Denis et al. (2022) - Modular Verification of Rust Programs with Unsafe Blocks"
