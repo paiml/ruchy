@@ -360,6 +360,174 @@ grep "MISSED" core_mutations.txt
 - Success criteria
 - Copy-paste ready prompts
 
+## 🚀 Certeza Three-Tiered Testing Framework (DOCS-CERTEZA-001)
+
+**CRITICAL**: Ruchy implements the Certeza testing framework for systematic quality assurance.
+
+**Philosophy**: "Testing can prove the presence of bugs, not their absence" (Dijkstra). Maximize practical confidence through tiered verification, not theoretical perfection.
+
+**Specification**: `docs/specifications/improve-testing-quality-using-certeza-concepts.md` (47KB, 10 peer-reviewed papers)
+
+### Three-Tiered Workflow
+
+#### Tier 1: On-Save (Sub-Second Feedback)
+
+**Goal**: Enable developer flow state through instant feedback.
+
+**Time Budget**: <1 second per save.
+
+**Usage**:
+```bash
+# Manual execution
+make tier1-on-save
+
+# Auto-watch mode (recommended for development)
+make tier1-watch    # Runs on every file save
+```
+
+**What it does**:
+- `cargo check` - Syntax and type checking (0.1-0.5s)
+- `cargo clippy` - Linting (0.2-0.8s)
+- Fast unit tests - Critical path only (0.1-0.3s)
+
+**When to use**: During active development for continuous validation.
+
+---
+
+#### Tier 2: On-Commit (1-5 Minutes)
+
+**Goal**: Prevent problematic commits from entering repository.
+
+**Time Budget**: 1-5 minutes per commit.
+
+**Usage**:
+```bash
+make tier2-on-commit
+```
+
+**What it does**:
+- Full unit test suite
+- Property-based tests (PROPTEST_CASES=100)
+- Integration tests
+- Coverage analysis (≥95% line target, ≥90% branch target)
+- PMAT quality gates (TDG ≥A-, complexity ≤10)
+
+**When to use**: Before every commit (can be added to pre-commit hook).
+
+**Integration with PMAT**: This tier implements existing PMAT pre-commit hooks with enhanced coverage tracking.
+
+---
+
+#### Tier 3: Nightly/Pre-Merge (Hours)
+
+**Goal**: Maximum confidence before main branch integration.
+
+**Time Budget**: Hours (run overnight or in CI).
+
+**Usage**:
+```bash
+# Manual execution (long-running)
+make tier3-nightly
+
+# GitHub Actions (automated)
+# Runs nightly at 2 AM UTC via .github/workflows/certeza-tier3-nightly.yml
+```
+
+**What it does**:
+- **Mutation testing**: Incremental, file-by-file (5-30 min per file)
+  - Parser modules (High-Risk: ≥85% mutation score target)
+  - Type inference modules (High-Risk: ≥85% mutation score target)
+  - Code generation modules (High-Risk: ≥85% mutation score target)
+- **Performance benchmarks**: Regression detection
+- **RuchyRuchy smoke testing**: 14,000+ property test cases
+- **Cross-platform validation**: Linux, macOS, Windows
+
+**When to use**: Nightly CI (automated), before major releases, pre-merge to main.
+
+---
+
+### Risk-Based Resource Allocation
+
+Certeza allocates verification effort based on risk level: **"Spend 40% of verification time on the 5-10% highest-risk code"**.
+
+**Risk Stratification**:
+
+| Risk Level | Components | Coverage Target | Mutation Target | Allocation |
+|------------|-----------|-----------------|-----------------|------------|
+| **Very High** | Unsafe blocks, globals, FFI | 100% line/branch | 95% mutation | 40% effort |
+| **High** | Parser, type inference, codegen | 95% line, 90% branch | 85% mutation | 35% effort |
+| **Medium** | REPL, CLI, linter, runtime | 85% line, 80% branch | As time permits | 20% effort |
+| **Low** | Utilities, formatters, docs | 70% line | Doctests only | 5% effort |
+
+**Application to Ruchy**:
+- **Very High-Risk**: `src/codegen/unsafe_globals.rs` (if any), WASM FFI bindings
+- **High-Risk**: `src/frontend/parser/`, `src/typechecker/`, `src/codegen/`
+- **Medium-Risk**: `src/runtime/`, `src/cli/`, `src/linter/`
+- **Low-Risk**: `src/utils/`, `src/formatter/`
+
+---
+
+### Target Metrics (Phase 1 Complete, Phases 2-5 In Progress)
+
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| **Line Coverage** | 70.31% | 95%+ | 🟡 In Progress |
+| **Branch Coverage** | Not tracked | 90%+ | 🟡 Infrastructure added |
+| **Mutation Score** | Ad-hoc | ≥85% (High-Risk) | 🟡 Tier 3 CI running |
+| **Property Test Coverage** | ~40% modules | 80% modules | 🟡 Phase 3 pending |
+| **Tier 1 Feedback** | N/A | <1 second | ✅ cargo-watch installed |
+| **Tier 2 Feedback** | ~5 min | 1-5 min | ✅ Makefile target added |
+| **Tier 3 CI** | None | Nightly | ✅ GitHub Actions workflow |
+
+---
+
+### Implementation Status
+
+**Phase 1: Infrastructure (COMPLETE - 2025-11-18)**:
+- ✅ Installed cargo-watch for Tier 1 automation
+- ✅ Added branch coverage tracking to Tier 2
+- ✅ Created GitHub Actions nightly CI for Tier 3
+- ✅ Documented three-tiered workflow in CLAUDE.md
+- ✅ Created Makefile targets: `tier1-on-save`, `tier1-watch`, `tier2-on-commit`, `tier3-nightly`
+
+**Next Phases**:
+- Phase 2: Risk Stratification (Sprint 3-4)
+- Phase 3: Property Testing Expansion (Sprint 5-6)
+- Phase 4: Mutation Testing Systematic Coverage (Sprint 7-8)
+- Phase 5: Selective Formal Verification (Sprint 9-10)
+
+---
+
+### Certeza Help
+
+**Quick Reference**:
+```bash
+# Show Certeza framework overview
+make certeza-help
+
+# Development workflow (Tier 1)
+make tier1-watch              # Start auto-watch mode
+
+# Pre-commit validation (Tier 2)
+make tier2-on-commit          # Run before git commit
+
+# Check nightly results (Tier 3)
+# View GitHub Actions: .github/workflows/certeza-tier3-nightly.yml
+```
+
+**Scientific Foundation**: 10 peer-reviewed publications (IEEE TSE, ICSE, ACM, NASA FM)
+- Google mutation testing at scale (16.9M mutants)
+- Jane Street property-based testing (30 interviews)
+- Microsoft/IBM TDD case studies (40-90% defect reduction)
+- Prusti formal verification for Rust
+
+**Economic Reality**:
+- **Time Investment**: 25% of development time (10 hours per 40-hour sprint)
+- **Defect Reduction**: 40-90% (empirical evidence)
+- **Break-even**: 3-6 months (amortized over reduced debugging)
+
+---
+
 ## PMAT Quality Gates & Enforcement (v2.70+)
 
 **Standards**: A- (≥85), Complexity ≤10, SATD=0, Duplication <10%, Docs >70%, Coverage ≥80%

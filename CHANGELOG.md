@@ -15,6 +15,26 @@ All notable changes to the Ruchy programming language will be documented in this
   - **Commit**: faf46106
 
 ### Added
+- **[CERTEZA-001] Phase 1 Infrastructure Implementation** Implemented three-tiered testing framework (Tier 1: sub-second, Tier 2: 1-5min, Tier 3: hours)
+  - **Tier 1**: cargo-watch installed, `make tier1-on-save` + `make tier1-watch` targets (sub-second feedback)
+  - **Tier 2**: Enhanced `make tier2-on-commit` with branch coverage tracking (≥90% target)
+  - **Tier 3**: GitHub Actions nightly CI workflow `.github/workflows/certeza-tier3-nightly.yml`
+  - **Mutation Testing**: Incremental file-by-file for parser, typechecker, codegen (≥85% score target)
+  - **Benchmarks**: Performance regression detection
+  - **Smoke Tests**: RuchyRuchy 14K+ property tests integration
+  - **Cross-Platform**: Linux, macOS, Windows validation
+  - **Documentation**: Added 168-line section to CLAUDE.md with usage examples, risk stratification, metrics
+  - **Makefile**: Added `certeza-help`, `tier1-on-save`, `tier1-watch`, `tier2-on-commit`, `tier3-nightly` targets (137 lines)
+  - **Location**: Makefile, CLAUDE.md, .github/workflows/certeza-tier3-nightly.yml (NEW), docs/execution/roadmap.yaml
+- **[DOCS] Testing Quality Specification** Created improve-testing-quality-using-certeza-concepts.md (47KB specification)
+  - **Framework**: Certeza three-tiered testing workflow (sub-second → 1-5min → hours)
+  - **Risk-Based Allocation**: Stratified verification (40% time on 5-10% highest-risk code)
+  - **Research Foundation**: 10 peer-reviewed publications (IEEE TSE, ICSE, ACM, NASA FM)
+  - **Key Papers**: Google mutation testing at scale, ICSE 2024 property-based testing, Prusti formal verification for Rust
+  - **Implementation Roadmap**: 5 phases (Infrastructure, Risk Stratification, Property Testing, Mutation Testing, Formal Verification)
+  - **Target Metrics**: 95% line coverage, 90% branch coverage, 85% mutation score, 80% property test coverage
+  - **Integration**: Aligns with EXTREME TDD, PMAT quality gates, RuchyRuchy smoke testing
+  - **Location**: docs/specifications/improve-testing-quality-using-certeza-concepts.md
 - **[PMAT] Quality Gates Configuration** Created .pmat-gates.toml with quality thresholds
   - **Coverage baseline**: 68.0% (current: 68.42%, target: 80%)
   - **Complexity limit**: ≤10 cyclomatic complexity
