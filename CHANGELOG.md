@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Changed
+- **[CERTEZA-001] Linter Code Quality Refactoring** Consolidated duplicate LintIssue creation patterns in src/quality/linter.rs
+  - **Extracted Helpers**: create_shadowing_issue(), create_undefined_variable_issue(), create_unused_issue()
+  - **Duplication Reduction**: 2 shadowing issues, 1 undefined issue, 5 unused issue types consolidated
+  - **Complexity Improvements**: analyze_expr (7→2), check_unused_in_scope (8→4)
+  - **Net Code Reduction**: -48 lines (121 deletions, 73 insertions)
+  - **File Size**: 2790→2742 lines
+  - **Tests**: 105/105 passing ✓
+  - **TDG Score**: B (75.5/100) - Structural 0.0 (>2500 lines), Duplication 15.5/20
+  - **Commit**: 0f63a2d6
+
 ### Fixed
 - **[RUNTIME-ISSUE-148] Interpreter &mut self Mutations** Fixed struct method mutations not persisting in interpreter mode (EXTREME TDD)
   - **Root Cause**: Value::Struct method calls created new struct with modified fields but didn't update original variable binding
