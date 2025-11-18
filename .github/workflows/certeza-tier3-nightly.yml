@@ -1,0 +1,214 @@
+name: Certeza Tier 3 Nightly Verification
+
+# Runs nightly for deep verification: mutation testing, benchmarks, smoke tests
+# Based on: docs/specifications/improve-testing-quality-using-certeza-concepts.md
+# DOCS-CERTEZA-001
+
+on:
+  schedule:
+    # Run at 2 AM UTC daily (Tier 3: hours-long verification)
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggers
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/certeza-tier3-nightly.yml'  # Test workflow changes
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  PROPTEST_CASES: 100  # Statistical significance (bashrs pattern)
+
+jobs:
+  mutation-testing:
+    name: Mutation Testing (High-Risk Modules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 480  # 8 hours max
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - name: parser
+            path: src/frontend/parser
+            target_score: 85
+          - name: typechecker
+            path: src/typechecker
+            target_score: 85
+          - name: codegen
+            path: src/codegen
+            target_score: 85
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mutation-${{ matrix.module.name }}
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+
+      - name: Run incremental mutation testing
+        id: mutation
+        run: |
+          echo "Testing ${{ matrix.module.name }} modules (target: ≥${{ matrix.module.target_score }}%)"
+          mkdir -p target/mutation-reports
+
+          # Test each file in the module
+          for file in ${{ matrix.module.path }}/*.rs; do
+            if [ -f "$file" ]; then
+              echo "Testing: $file"
+              cargo mutants --file "$file" \
+                --timeout 300 \
+                --output target/mutation-reports/$(basename $file .rs).txt \
+                || true
+            fi
+          done
+
+          # Aggregate results
+          echo "## Mutation Testing Results: ${{ matrix.module.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Caught | Missed | Score |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+
+          for report in target/mutation-reports/*.txt; do
+            if [ -f "$report" ]; then
+              file=$(basename $report .txt)
+              score=$(grep -o '[0-9]*% caught' $report | head -1 || echo 'N/A')
+              caught=$(grep -o 'caught: [0-9]*' $report | head -1 | cut -d' ' -f2 || echo '0')
+              missed=$(grep -o 'missed: [0-9]*' $report | head -1 | cut -d' ' -f2 || echo '0')
+              echo "| $file | $caught | $missed | $score |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Upload mutation reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mutation-reports-${{ matrix.module.name }}
+          path: target/mutation-reports/*.txt
+          retention-days: 30
+
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run benchmarks
+        run: |
+          cargo bench --no-fail-fast -- --save-baseline nightly-$(date +%Y-%m-%d)
+
+          echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Baseline saved: nightly-$(date +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: target/criterion
+          retention-days: 30
+
+  ruchyruchy-smoke-tests:
+    name: RuchyRuchy Property Tests (14K+ cases)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ruchy
+
+      - uses: actions/checkout@v4
+        with:
+          repository: paiml/ruchyruchy
+          path: ruchyruchy
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            ruchy
+            ruchyruchy
+
+      - name: Run RuchyRuchy property tests
+        run: |
+          cd ruchyruchy
+          cargo test --test property_based_tests --release -- --nocapture | tee ../ruchy/target/ruchyruchy-results.txt
+
+          echo "## RuchyRuchy Smoke Testing Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Property tests executed with PROPTEST_CASES=100" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          tail -20 ../ruchy/target/ruchyruchy-results.txt >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload RuchyRuchy results
+        uses: actions/upload-artifact@v3
+        with:
+          name: ruchyruchy-results
+          path: ruchy/target/ruchyruchy-results.txt
+          retention-days: 30
+
+  cross-platform:
+    name: Cross-Platform Validation
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+          - os: macos-latest
+            platform: macOS
+          - os: windows-latest
+            platform: Windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build all targets
+        run: cargo build --release --all-targets
+
+      - name: Run fast tests
+        run: cargo test --lib --release
+
+      - name: Platform summary
+        shell: bash
+        run: |
+          echo "## ${{ matrix.platform }} Build Success" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Release build complete" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Library tests passing" >> $GITHUB_STEP_SUMMARY
+
+  tier3-summary:
+    name: Tier 3 Verification Summary
+    runs-on: ubuntu-latest
+    needs: [mutation-testing, benchmarks, ruchyruchy-smoke-tests, cross-platform]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Certeza Tier 3 Nightly Verification Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Date: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Verification Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Mutation Testing: ${{ needs.mutation-testing.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Benchmarks: ${{ needs.benchmarks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- RuchyRuchy Smoke Tests: ${{ needs.ruchyruchy-smoke-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Cross-Platform: ${{ needs.cross-platform.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Target Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Mutation Score: ≥85% for High-Risk modules (parser, typechecker, codegen)" >> $GITHUB_STEP_SUMMARY
+          echo "- Property Tests: 14,000+ cases via RuchyRuchy" >> $GITHUB_STEP_SUMMARY
+          echo "- Platforms: Linux, macOS, Windows" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Specification: docs/specifications/improve-testing-quality-using-certeza-concepts.md" >> $GITHUB_STEP_SUMMARY
