@@ -138,6 +138,22 @@ impl Transpiler {
             })
         }
     }
+    /// Helper: Generate let binding statement with mutability and optional Vec type hint
+    /// Reduces cognitive complexity by extracting repeated 4-branch pattern
+    fn generate_let_binding(
+        name_ident: &proc_macro2::Ident,
+        is_mutable: bool,
+        needs_vec_type_hint: bool,
+        value_tokens: &TokenStream,
+    ) -> TokenStream {
+        match (is_mutable, needs_vec_type_hint) {
+            (true, true) => quote! { let mut #name_ident: Vec<_> = #value_tokens; },
+            (true, false) => quote! { let mut #name_ident = #value_tokens; },
+            (false, true) => quote! { let #name_ident: Vec<_> = #value_tokens; },
+            (false, false) => quote! { let #name_ident = #value_tokens; },
+        }
+    }
+
     /// Transpiles let bindings
     /// # Examples
     ///
@@ -182,17 +198,12 @@ impl Transpiler {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)
         ) {
             // Standalone let statement - no wrapping needed
-            if effective_mutability {
-                if needs_vec_type_hint {
-                    Ok(quote! { let mut #name_ident: Vec<_> = #value_tokens; })
-                } else {
-                    Ok(quote! { let mut #name_ident = #value_tokens; })
-                }
-            } else if needs_vec_type_hint {
-                Ok(quote! { let #name_ident: Vec<_> = #value_tokens; })
-            } else {
-                Ok(quote! { let #name_ident = #value_tokens; })
-            }
+            Ok(Self::generate_let_binding(
+                &name_ident,
+                effective_mutability,
+                needs_vec_type_hint,
+                &value_tokens,
+            ))
         } else {
             // Check if body is a Block containing sequential let statements
             // This flattens nested let expressions to avoid excessive nesting
@@ -200,17 +211,12 @@ impl Transpiler {
                 // Flatten sequential let statements into a single block
                 let mut statements = Vec::new();
                 // Add the current let statement
-                if effective_mutability {
-                    if needs_vec_type_hint {
-                        statements.push(quote! { let mut #name_ident: Vec<_> = #value_tokens; });
-                    } else {
-                        statements.push(quote! { let mut #name_ident = #value_tokens; });
-                    }
-                } else if needs_vec_type_hint {
-                    statements.push(quote! { let #name_ident: Vec<_> = #value_tokens; });
-                } else {
-                    statements.push(quote! { let #name_ident = #value_tokens; });
-                }
+                statements.push(Self::generate_let_binding(
+                    &name_ident,
+                    effective_mutability,
+                    needs_vec_type_hint,
+                    &value_tokens,
+                ));
                 // Add all the block expressions
                 for (i, expr) in exprs.iter().enumerate() {
                     let expr_tokens = self.transpile_expr(expr)?;
@@ -248,17 +254,12 @@ impl Transpiler {
                 // Body is another Let - flatten nested let expressions into sequential statements
                 let mut statements = Vec::new();
                 // Add the current let statement
-                if effective_mutability {
-                    if needs_vec_type_hint {
-                        statements.push(quote! { let mut #name_ident: Vec<_> = #value_tokens; });
-                    } else {
-                        statements.push(quote! { let mut #name_ident = #value_tokens; });
-                    }
-                } else if needs_vec_type_hint {
-                    statements.push(quote! { let #name_ident: Vec<_> = #value_tokens; });
-                } else {
-                    statements.push(quote! { let #name_ident = #value_tokens; });
-                }
+                statements.push(Self::generate_let_binding(
+                    &name_ident,
+                    effective_mutability,
+                    needs_vec_type_hint,
+                    &value_tokens,
+                ));
                 // Recursively flatten the inner Let expression
                 let inner_tokens =
                     self.transpile_let(inner_name, inner_value, inner_body, *inner_mutable)?;
@@ -267,37 +268,18 @@ impl Transpiler {
             } else {
                 // Traditional let-in expression with proper scoping
                 let body_tokens = self.transpile_expr(body)?;
-                if effective_mutability {
-                    if needs_vec_type_hint {
-                        Ok(quote! {
-                            {
-                                let mut #name_ident: Vec<_> = #value_tokens;
-                                #body_tokens
-                            }
-                        })
-                    } else {
-                        Ok(quote! {
-                            {
-                                let mut #name_ident = #value_tokens;
-                                #body_tokens
-                            }
-                        })
+                let let_binding = Self::generate_let_binding(
+                    &name_ident,
+                    effective_mutability,
+                    needs_vec_type_hint,
+                    &value_tokens,
+                );
+                Ok(quote! {
+                    {
+                        #let_binding
+                        #body_tokens
                     }
-                } else if needs_vec_type_hint {
-                    Ok(quote! {
-                        {
-                            let #name_ident: Vec<_> = #value_tokens;
-                            #body_tokens
-                        }
-                    })
-                } else {
-                    Ok(quote! {
-                        {
-                            let #name_ident = #value_tokens;
-                            #body_tokens
-                        }
-                    })
-                }
+                })
             }
         }
     }
@@ -1749,6 +1731,47 @@ impl Transpiler {
         }
     }
 
+    /// Helper: Transpile match expression with string literal arm conversion
+    /// Reduces cognitive complexity by extracting duplicated match arm handling
+    fn transpile_match_with_string_arms(
+        &self,
+        expr: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+    ) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        let mut arm_tokens = Vec::new();
+
+        for arm in arms {
+            let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
+
+            // Check if arm body is a string literal - if so, add .to_string()
+            let body_tokens = match &arm.body.kind {
+                ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
+                    quote! { #s.to_string() }
+                }
+                _ => self.transpile_expr(&arm.body)?,
+            };
+
+            // Handle pattern guards if present
+            if let Some(guard_expr) = &arm.guard {
+                let guard_tokens = self.transpile_expr(guard_expr)?;
+                arm_tokens.push(quote! {
+                    #pattern_tokens if #guard_tokens => #body_tokens
+                });
+            } else {
+                arm_tokens.push(quote! {
+                    #pattern_tokens => #body_tokens
+                });
+            }
+        }
+
+        Ok(quote! {
+            match #expr_tokens {
+                #(#arm_tokens,)*
+            }
+        })
+    }
+
     /// DEFECT-012: Generate body tokens with .`to_string()` wrapper on last expression
     fn generate_body_tokens_with_string_conversion(
         &self,
@@ -1868,37 +1891,7 @@ impl Transpiler {
                     }
                     // DEFECT-016-C: Handle Match expression in single-expression block
                     ExprKind::Match { expr, arms } => {
-                        let expr_tokens = self.transpile_expr(expr)?;
-                        let mut arm_tokens = Vec::new();
-                        for arm in arms {
-                            let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
-
-                            // Check if arm body is a string literal - if so, add .to_string()
-                            let body_tokens = match &arm.body.kind {
-                                ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
-                                    // String literal in match arm - auto-convert to String
-                                    quote! { #s.to_string() }
-                                }
-                                _ => self.transpile_expr(&arm.body)?
-                            };
-
-                            // Handle pattern guards if present
-                            if let Some(guard_expr) = &arm.guard {
-                                let guard_tokens = self.transpile_expr(guard_expr)?;
-                                arm_tokens.push(quote! {
-                                    #pattern_tokens if #guard_tokens => #body_tokens
-                                });
-                            } else {
-                                arm_tokens.push(quote! {
-                                    #pattern_tokens => #body_tokens
-                                });
-                            }
-                        }
-                        Ok(quote! {
-                            match #expr_tokens {
-                                #(#arm_tokens,)*
-                            }
-                        })
+                        self.transpile_match_with_string_arms(expr, arms)
                     }
                     _ => {
                         // Not a Let - wrap entire expression
@@ -1909,37 +1902,7 @@ impl Transpiler {
             }
             // DEFECT-016-C FIX: Match expressions returning String need .to_string() on string literal arms
             ExprKind::Match { expr, arms } => {
-                let expr_tokens = self.transpile_expr(expr)?;
-                let mut arm_tokens = Vec::new();
-                for arm in arms {
-                    let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
-
-                    // Check if arm body is a string literal - if so, add .to_string()
-                    let body_tokens = match &arm.body.kind {
-                        ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
-                            // String literal in match arm - auto-convert to String
-                            quote! { #s.to_string() }
-                        }
-                        _ => self.transpile_expr(&arm.body)?
-                    };
-
-                    // Handle pattern guards if present
-                    if let Some(guard_expr) = &arm.guard {
-                        let guard_tokens = self.transpile_expr(guard_expr)?;
-                        arm_tokens.push(quote! {
-                            #pattern_tokens if #guard_tokens => #body_tokens
-                        });
-                    } else {
-                        arm_tokens.push(quote! {
-                            #pattern_tokens => #body_tokens
-                        });
-                    }
-                }
-                Ok(quote! {
-                    match #expr_tokens {
-                        #(#arm_tokens,)*
-                    }
-                })
+                self.transpile_match_with_string_arms(expr, arms)
             }
             _ => {
                 // Single expression or simple body - wrap entire body
