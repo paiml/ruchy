@@ -7,10 +7,9 @@
 // #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
-// TECH-DEBT: 33 self_only_used_in_recursion errors remain (12/45 fixed in PR #144)
+// TECH-DEBT: 33 only_used_in_recursion errors remain (12/45 fixed in PR #144)
 // Remaining files: statements.rs(4), transpiler/mod.rs(4), wasm/mod.rs(6), quality/linter.rs(5), etc.
-// TODO: Complete fix in follow-up sprint - each function needs &self removed + recursive calls updated
-#![allow(clippy::self_only_used_in_recursion)]
+// Note: Lint renamed from self_only_used_in_recursion in Rust 1.91.0
 #![allow(clippy::large_stack_arrays)] // Test fixtures with large arrays
 // Clippy allows for RUCHY-0801 commit - will be addressed in quality sprint
 #![allow(clippy::case_sensitive_file_extension_comparisons)]

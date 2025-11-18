@@ -46,6 +46,39 @@ pub(in crate::frontend::parser) fn parse_class_definition(
     ))
 }
 
+/// Parse an identifier with optional generic type parameters (e.g., `Parent<i32>`)
+/// Returns the full name including generics as a string.
+fn parse_identifier_with_generics(state: &mut ParserState) -> Result<String> {
+    let Some((Token::Identifier(name), _)) = state.tokens.peek() else {
+        bail!("Expected identifier");
+    };
+    let mut name = name.clone();
+    state.tokens.advance();
+
+    // Parse generic type parameters if present
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        state.tokens.advance(); // consume '<'
+        name.push('<');
+
+        loop {
+            let type_param = utils::parse_type(state)?;
+            name.push_str(&format!("{type_param:?}"));
+
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+                name.push_str(", ");
+            } else {
+                break;
+            }
+        }
+
+        state.tokens.expect(&Token::Greater)?;
+        name.push('>');
+    }
+
+    Ok(name)
+}
+
 fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<String>)> {
     if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         return Ok((None, Vec::new()));
@@ -53,67 +86,19 @@ fn parse_inheritance(state: &mut ParserState) -> Result<(Option<String>, Vec<Str
 
     state.tokens.advance(); // consume ':'
 
-    let superclass = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let mut name = name.clone();
-        state.tokens.advance();
-
-        // Parse generic type parameters if present (e.g., Parent<i32>)
-        if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-            state.tokens.advance(); // consume '<'
-            name.push('<');
-
-            // Parse type parameters
-            loop {
-                let type_param = utils::parse_type(state)?;
-                name.push_str(&format!("{type_param:?}")); // Format type as string
-
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                    name.push_str(", ");
-                } else {
-                    break;
-                }
-            }
-
-            state.tokens.expect(&Token::Greater)?;
-            name.push('>');
-        }
-
-        Some(name)
+    // Parse superclass
+    let superclass = if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+        Some(parse_identifier_with_generics(state)?)
     } else {
         None
     };
 
+    // Parse traits
     let mut traits = Vec::new();
     while matches!(state.tokens.peek(), Some((Token::Plus, _))) {
         state.tokens.advance();
-        if let Some((Token::Identifier(trait_name), _)) = state.tokens.peek() {
-            let mut name = trait_name.clone();
-            state.tokens.advance();
-
-            // Parse generic type parameters if present (e.g., Trait<i32>)
-            if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-                state.tokens.advance(); // consume '<'
-                name.push('<');
-
-                // Parse type parameters
-                loop {
-                    let type_param = utils::parse_type(state)?;
-                    name.push_str(&format!("{type_param:?}")); // Format type as string
-
-                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                        state.tokens.advance();
-                        name.push_str(", ");
-                    } else {
-                        break;
-                    }
-                }
-
-                state.tokens.expect(&Token::Greater)?;
-                name.push('>');
-            }
-
-            traits.push(name);
+        if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
+            traits.push(parse_identifier_with_generics(state)?);
         } else {
             bail!("Expected trait name after '+'");
         }
