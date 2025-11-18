@@ -939,6 +939,27 @@ fn try_type_cast_operator(
         trailing_comment: None,
     }))
 }
+/// Helper: Parse actor-style binary operation with precedence check
+/// Reduces cognitive complexity by extracting common actor op pattern
+fn parse_actor_style_op<F>(
+    state: &mut ParserState,
+    left: Expr,
+    min_prec: i32,
+    op_name: &str,
+    make_kind: F,
+) -> Result<ExprKind>
+where
+    F: FnOnce(Box<Expr>, Box<Expr>) -> ExprKind,
+{
+    const PREC: i32 = 1; // Same as assignment
+    if PREC < min_prec {
+        bail!("Precedence check failed for {}", op_name);
+    }
+    state.tokens.advance();
+    let message = parse_expr_with_precedence_recursive(state, PREC)?;
+    Ok(make_kind(Box::new(left), Box::new(message)))
+}
+
 /// Try to parse actor operations (<-, <?, !) (complexity: 4, cognitive: 4)
 /// PARSER-068: Fixed Bang token ambiguity - don't treat ! as infix if there's whitespace before it
 fn try_new_actor_operators(
@@ -967,58 +988,40 @@ fn try_new_actor_operators(
     Ok(Some(create_actor_expr(expr_kind)))
 }
 
-/// Parse actor send operator (<-) (complexity: 3, cognitive: 3)
+/// Parse actor send operator (<-) using helper
 fn parse_actor_send_op(
     state: &mut ParserState,
     actor: Expr,
     min_prec: i32,
 ) -> Result<ExprKind> {
-    const PREC: i32 = 1; // Same as assignment
-    if PREC < min_prec {
-        bail!("Precedence check failed for actor send");
-    }
-    state.tokens.advance();
-    let message = parse_expr_with_precedence_recursive(state, PREC)?;
-    Ok(ExprKind::ActorSend {
-        actor: Box::new(actor),
-        message: Box::new(message),
+    parse_actor_style_op(state, actor, min_prec, "actor send", |actor, message| {
+        ExprKind::ActorSend { actor, message }
     })
 }
 
-/// Parse actor query operator (<?) (complexity: 3, cognitive: 3)
+/// Parse actor query operator (<?) using helper
 fn parse_actor_query_op(
     state: &mut ParserState,
     actor: Expr,
     min_prec: i32,
 ) -> Result<ExprKind> {
-    const PREC: i32 = 1; // Same as assignment
-    if PREC < min_prec {
-        bail!("Precedence check failed for actor query");
-    }
-    state.tokens.advance();
-    let message = parse_expr_with_precedence_recursive(state, PREC)?;
-    Ok(ExprKind::ActorQuery {
-        actor: Box::new(actor),
-        message: Box::new(message),
+    parse_actor_style_op(state, actor, min_prec, "actor query", |actor, message| {
+        ExprKind::ActorQuery { actor, message }
     })
 }
 
-/// Parse actor bang operator (!) (complexity: 3, cognitive: 3)
+/// Parse actor bang operator (!) using helper
 fn parse_actor_bang_op(
     state: &mut ParserState,
     left: Expr,
     min_prec: i32,
 ) -> Result<ExprKind> {
-    const PREC: i32 = 1; // Same as assignment
-    if PREC < min_prec {
-        bail!("Precedence check failed for actor bang");
-    }
-    state.tokens.advance();
-    let message = parse_expr_with_precedence_recursive(state, PREC)?;
-    Ok(ExprKind::Binary {
-        op: BinaryOp::Send,
-        left: Box::new(left),
-        right: Box::new(message),
+    parse_actor_style_op(state, left, min_prec, "actor bang", |left, right| {
+        ExprKind::Binary {
+            op: BinaryOp::Send,
+            left,
+            right,
+        }
     })
 }
 
