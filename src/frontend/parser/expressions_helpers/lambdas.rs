@@ -96,6 +96,28 @@ pub(in crate::frontend::parser) fn parse_lambda_from_expr(
     Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
 }
 
+/// Parse a single lambda parameter with optional type annotation
+fn parse_lambda_param(state: &mut ParserState, default_span: Span) -> Result<(Pattern, Type)> {
+    let Some((Token::Identifier(name), _)) = state.tokens.peek() else {
+        bail!("Expected parameter name in lambda");
+    };
+    let param_name = name.clone();
+    state.tokens.advance();
+
+    // PARSER-077: Check for type annotation (|x: i32| support)
+    let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        parse_type(state)?
+    } else {
+        Type {
+            kind: TypeKind::Named("_".to_string()),
+            span: default_span,
+        }
+    };
+
+    Ok((Pattern::Identifier(param_name), ty))
+}
+
 /// Parse pipe-delimited lambda: `|param, param| body`
 ///
 /// Supports zero or more parameters separated by commas.
@@ -105,32 +127,12 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
     let start_span = state.tokens.expect(&Token::Pipe)?;
     let mut params = Vec::new();
 
-    // Parse parameters (with optional type annotations)
+    // Parse parameters
     while !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let param_name = name.clone();
+        params.push(parse_lambda_param(state, start_span)?);
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
-
-            // PARSER-077: Check for type annotation (|x: i32| support)
-            let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-                state.tokens.advance(); // consume :
-                parse_type(state)?
-            } else {
-                // Inferred type
-                Type {
-                    kind: TypeKind::Named("_".to_string()),
-                    span: start_span,
-                }
-            };
-
-            params.push((Pattern::Identifier(param_name), ty));
-
-            // Check for comma
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance();
-            }
-        } else {
-            bail!("Expected parameter name in lambda");
         }
     }
 
@@ -139,20 +141,14 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
         .expect(&Token::Pipe)
         .map_err(|_| anyhow::anyhow!("Expected '|' after lambda parameters"))?;
 
-    // SPEC-001-A: Parse optional return type annotation (|x: i32| -> i32 support)
-    let _return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
-        state.tokens.advance(); // consume ->
-        Some(parse_type(state)?)
-    } else {
-        None
-    };
-    // Note: return_type is parsed but not yet stored in Lambda AST node
-    // This is intentional - keeps AST simple while allowing syntax to parse
+    // SPEC-001-A: Parse optional return type annotation
+    if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        let _return_type = parse_type(state)?;
+    }
 
-    // Parse body
+    // Parse body and convert params to Param structs
     let body = Box::new(parse_expr_recursive(state)?);
-
-    // Convert (Pattern, Type) pairs to Param structs
     let params = params
         .into_iter()
         .map(|(pattern, ty)| Param {
