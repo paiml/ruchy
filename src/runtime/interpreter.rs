@@ -1149,6 +1149,80 @@ impl Interpreter {
         }
     }
 
+    /// Helper: Resolve module path through nested objects in global environment
+    /// Reduces cognitive complexity by extracting duplicated module navigation logic
+    fn resolve_module_path(&self, module: &str) -> Option<Value> {
+        let parts: Vec<&str> = module.split("::").collect();
+        let first_part = parts.first()?;
+
+        // Access global environment (first element of env_stack)
+        let global_env_ref = self.env_stack.first()?;
+        let global_env = global_env_ref.borrow();
+        let mut current_value = global_env.get(*first_part)?.clone();
+
+        // Navigate through remaining parts
+        for &part in parts.iter().skip(1) {
+            if let Value::Object(obj) = current_value {
+                current_value = obj.get(part)?.clone();
+            } else {
+                return None;
+            }
+        }
+
+        Some(current_value)
+    }
+
+    /// Helper: Format string with placeholder replacement
+    /// Reduces cognitive complexity by extracting duplicated format logic
+    fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
+        let mut result = String::new();
+        let mut chars = format_str.chars().peekable();
+        let mut value_index = 0;
+
+        while let Some(ch) = chars.next() {
+            if ch == '{' {
+                if chars.peek() == Some(&':') {
+                    chars.next();
+                    if chars.peek() == Some(&'?') {
+                        chars.next();
+                        if chars.peek() == Some(&'}') {
+                            chars.next();
+                            if value_index < values.len() {
+                                result.push_str(&format!("{:?}", values[value_index]));
+                                value_index += 1;
+                            } else {
+                                result.push_str("{:?}");
+                            }
+                        } else {
+                            result.push_str("{:?");
+                        }
+                    } else {
+                        result.push_str("{:");
+                    }
+                } else if chars.peek() == Some(&'}') {
+                    chars.next();
+                    if value_index < values.len() {
+                        // Extract raw string without Display quotes
+                        let display_val = match &values[value_index] {
+                            Value::String(ref s) => s.as_ref().to_string(),
+                            _ => values[value_index].to_string(),
+                        };
+                        result.push_str(&display_val);
+                        value_index += 1;
+                    } else {
+                        result.push_str("{}");
+                    }
+                } else {
+                    result.push(ch);
+                }
+            } else {
+                result.push(ch);
+            }
+        }
+
+        result
+    }
+
     /// Evaluate miscellaneous expressions
     /// Complexity: 7 (was 5, added import handling)
     fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
@@ -1166,39 +1240,11 @@ impl Interpreter {
         // Issue #82: Implement basic module resolution for use statements
         match expr_kind {
             ExprKind::ImportAll { module, alias } => {
-                // Extract symbol from global environment using module path
-                // Example: "chrono::Utc" → ["chrono", "Utc"]
+                // Use helper to resolve module path through nested objects
                 let parts: Vec<&str> = module.split("::").collect();
 
-                // Navigate through nested objects to find the symbol
-                let mut current_value: Option<Value> = None;
-                if let Some(first_part) = parts.first() {
-                    // Access global environment (first element of env_stack)
-                    if let Some(global_env_ref) = self.env_stack.first() {
-                        let global_env = global_env_ref.borrow(); // ISSUE-119: Borrow from RefCell
-                        if let Some(root) = global_env.get(*first_part) {
-                            current_value = Some(root.clone());
-
-                            // Navigate through remaining parts
-                            for &part in parts.iter().skip(1) {
-                                if let Some(Value::Object(obj)) = current_value {
-                                    if let Some(next_val) = obj.get(part) {
-                                        current_value = Some(next_val.clone());
-                                    } else {
-                                        current_value = None;
-                                        break;
-                                    }
-                                } else {
-                                    current_value = None;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Import the symbol into current environment with the appropriate name
-                if let Some(value) = current_value {
+                if let Some(value) = self.resolve_module_path(module) {
                     // Determine the name to use: alias if provided, otherwise last part of path
                     let import_name = if alias == "*" {
                         // Wildcard import - not yet implemented
@@ -1229,43 +1275,16 @@ impl Interpreter {
                 // Check if this is a stdlib import
                 if module.starts_with("std::") {
                     // Issue #96: stdlib imports must make the module available in current scope
-                    // Example: "use std::env;" should make "env" accessible
+                    // Use helper to resolve module path through nested objects
                     let parts: Vec<&str> = module.split("::").collect();
 
-                    // Navigate through nested objects to find the symbol
-                    let mut current_value: Option<Value> = None;
-                    if let Some(first_part) = parts.first() {
-                        // Access global environment (first element of env_stack)
-                        if let Some(global_env_ref) = self.env_stack.first() {
-                            let global_env = global_env_ref.borrow(); // ISSUE-119: Borrow from RefCell
-                            if let Some(root) = global_env.get(*first_part) {
-                                current_value = Some(root.clone());
-
-                                // Navigate through remaining parts
-                                for &part in parts.iter().skip(1) {
-                                    if let Some(Value::Object(obj)) = current_value {
-                                        if let Some(next_val) = obj.get(part) {
-                                            current_value = Some(next_val.clone());
-                                        } else {
-                                            current_value = None;
-                                            break;
-                                        }
-                                    } else {
-                                        current_value = None;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     // Import the module into current environment
-                    if let Some(value) = current_value {
+                    if let Some(value) = self.resolve_module_path(module) {
                         let import_name = (*parts.last().unwrap_or(&"")).to_string();
 
                         // Add to global environment
                         if let Some(global_env_ref) = self.env_stack.first() {
-                            global_env_ref.borrow_mut().insert(import_name, value); // ISSUE-119: Mutable borrow
+                            global_env_ref.borrow_mut().insert(import_name, value);
                         }
                     }
 
@@ -1335,7 +1354,6 @@ impl Interpreter {
                     } else {
                         // Multiple arguments: use format! logic (Issue #82, #83)
                         let format_val = self.eval_expr(&args[0])?;
-                        // OPT-022: Extract raw string without Display quotes
                         let format_str = match format_val {
                             Value::String(ref s) => s.as_ref().to_string(),
                             _ => format_val.to_string(),
@@ -1346,52 +1364,8 @@ impl Interpreter {
                             values.push(self.eval_expr(arg)?);
                         }
 
-                        // Apply same format logic as format! macro
-                        let mut result = String::new();
-                        let mut chars = format_str.chars().peekable();
-                        let mut value_index = 0;
-
-                        while let Some(ch) = chars.next() {
-                            if ch == '{' {
-                                if chars.peek() == Some(&':') {
-                                    chars.next();
-                                    if chars.peek() == Some(&'?') {
-                                        chars.next();
-                                        if chars.peek() == Some(&'}') {
-                                            chars.next();
-                                            if value_index < values.len() {
-                                                result.push_str(&format!("{:?}", values[value_index]));
-                                                value_index += 1;
-                                            } else {
-                                                result.push_str("{:?}");
-                                            }
-                                        } else {
-                                            result.push_str("{:?");
-                                        }
-                                    } else {
-                                        result.push_str("{:");
-                                    }
-                                } else if chars.peek() == Some(&'}') {
-                                    chars.next();
-                                    if value_index < values.len() {
-                                        // OPT-022: Extract raw string without Display quotes for {} placeholder
-                                        let display_val = match &values[value_index] {
-                                            Value::String(ref s) => s.as_ref().to_string(),
-                                            _ => values[value_index].to_string(),
-                                        };
-                                        result.push_str(&display_val);
-                                        value_index += 1;
-                                    } else {
-                                        result.push_str("{}");
-                                    }
-                                } else {
-                                    result.push(ch);
-                                }
-                            } else {
-                                result.push(ch);
-                            }
-                        }
-
+                        // Use helper for format string replacement
+                        let result = Self::format_string_with_values(&format_str, &values);
                         println!("{}", result);
                     }
                     Ok(Value::Nil)
@@ -1486,7 +1460,6 @@ impl Interpreter {
                     } else {
                         // Multiple arguments: use format! logic (Issue #82, #83)
                         let format_val = self.eval_expr(&args[0])?;
-                        // OPT-022: Extract raw string without Display quotes
                         let format_str = match format_val {
                             Value::String(ref s) => s.as_ref().to_string(),
                             _ => format_val.to_string(),
@@ -1497,52 +1470,8 @@ impl Interpreter {
                             values.push(self.eval_expr(arg)?);
                         }
 
-                        // Apply same format logic as format! macro
-                        let mut result = String::new();
-                        let mut chars = format_str.chars().peekable();
-                        let mut value_index = 0;
-
-                        while let Some(ch) = chars.next() {
-                            if ch == '{' {
-                                if chars.peek() == Some(&':') {
-                                    chars.next();
-                                    if chars.peek() == Some(&'?') {
-                                        chars.next();
-                                        if chars.peek() == Some(&'}') {
-                                            chars.next();
-                                            if value_index < values.len() {
-                                                result.push_str(&format!("{:?}", values[value_index]));
-                                                value_index += 1;
-                                            } else {
-                                                result.push_str("{:?}");
-                                            }
-                                        } else {
-                                            result.push_str("{:?");
-                                        }
-                                    } else {
-                                        result.push_str("{:");
-                                    }
-                                } else if chars.peek() == Some(&'}') {
-                                    chars.next();
-                                    if value_index < values.len() {
-                                        // OPT-022: Extract raw string without Display quotes for {} placeholder
-                                        let display_val = match &values[value_index] {
-                                            Value::String(ref s) => s.as_ref().to_string(),
-                                            _ => values[value_index].to_string(),
-                                        };
-                                        result.push_str(&display_val);
-                                        value_index += 1;
-                                    } else {
-                                        result.push_str("{}");
-                                    }
-                                } else {
-                                    result.push(ch);
-                                }
-                            } else {
-                                result.push(ch);
-                            }
-                        }
-
+                        // Use helper for format string replacement
+                        let result = Self::format_string_with_values(&format_str, &values);
                         println!("{}", result);
                     }
                     Ok(Value::Nil)
