@@ -135,7 +135,7 @@ metadata:
   session_summary_2025_11_18_certeza_complexity_refactoring:
     date: "2025-11-18"
     ticket: "CERTEZA-001"
-    status: "🚧 IN PROGRESS - High-Risk module complexity reduction"
+    status: "✅ COMPLETE - All High-Risk module complexity violations eliminated"
     goal: "Reduce complexity in High-Risk modules per Certeza risk allocation (35% effort)"
     specification: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
     phase: "Phase 1.5 (Complexity Reduction before Phase 2 Risk Stratification)"
@@ -196,18 +196,25 @@ metadata:
             after: 9
             helper: "parse_impl_target"
 
-    remaining_violations:
-      - function: "parse_handler"
-        complexity: 11
-        location: "effects.rs"
-      - function: "parse_decorator"
-        complexity: 11
-        location: "expressions.rs"
+    remaining_violations: []  # All parser violations eliminated!
+
+    additional_commits:
+      - hash: "216d20f9"
+        message: "[CERTEZA-001] Reduce parse_handler complexity: 11 → 8"
+        changes:
+          - "effects.rs: Extracted parse_single_handler helper"
+      - hash: "ed61e2ee"
+        message: "[CERTEZA-001] Reduce parse_decorator complexity: 11 → 4"
+        changes:
+          - "classes.rs: Extracted parse_decorator_argument and parse_decorator_args helpers"
+
+    achievement: "✅ ALL PARSER COMPLEXITY VIOLATIONS ELIMINATED - 0 functions with cyclomatic >10"
 
     quality_gates:
       tdg_score: "A+ (99.9/100)"
       dead_code: "0%"
       build: "Passes"
+      parser_complexity: "All functions ≤10 cyclomatic"
 
   session_summary_2025_11_18_certeza_phase1_implementation:
     date: "2025-11-18"
