@@ -131,30 +131,41 @@ fn match_tuple_variant_pattern(
     }
 }
 
+/// Helper: Match slice of patterns against slice of values
+///
+/// # Complexity
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
+fn match_pattern_slice(
+    patterns: &[Pattern],
+    values: &[Value],
+) -> Result<PatternMatchResult, InterpreterError> {
+    if patterns.len() != values.len() {
+        return Ok(PatternMatchResult::failure());
+    }
+
+    let mut all_bindings = HashMap::new();
+
+    for (pattern, val) in patterns.iter().zip(values.iter()) {
+        let result = match_pattern(pattern, val)?;
+        if !result.matches {
+            return Ok(PatternMatchResult::failure());
+        }
+        all_bindings.extend(result.bindings);
+    }
+
+    Ok(PatternMatchResult::success(all_bindings))
+}
+
 /// Match array pattern with support for destructuring
 ///
 /// # Complexity
-/// Cyclomatic complexity: 7 (within Toyota Way limits)
+/// Cyclomatic complexity: 2 (reduced via helper extraction)
 fn match_array_pattern(
     patterns: &[Pattern],
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
     if let Value::Array(arr) = value {
-        if patterns.len() != arr.len() {
-            return Ok(PatternMatchResult::failure());
-        }
-
-        let mut all_bindings = HashMap::new();
-
-        for (pattern, val) in patterns.iter().zip(arr.iter()) {
-            let result = match_pattern(pattern, val)?;
-            if !result.matches {
-                return Ok(PatternMatchResult::failure());
-            }
-            all_bindings.extend(result.bindings);
-        }
-
-        Ok(PatternMatchResult::success(all_bindings))
+        match_pattern_slice(patterns, arr)
     } else {
         Ok(PatternMatchResult::failure())
     }
@@ -163,27 +174,13 @@ fn match_array_pattern(
 /// Match tuple pattern with positional destructuring
 ///
 /// # Complexity
-/// Cyclomatic complexity: 7 (within Toyota Way limits)
+/// Cyclomatic complexity: 2 (reduced via helper extraction)
 fn match_tuple_pattern(
     patterns: &[Pattern],
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
     if let Value::Tuple(elements) = value {
-        if patterns.len() != elements.len() {
-            return Ok(PatternMatchResult::failure());
-        }
-
-        let mut all_bindings = HashMap::new();
-
-        for (pattern, val) in patterns.iter().zip(elements.iter()) {
-            let result = match_pattern(pattern, val)?;
-            if !result.matches {
-                return Ok(PatternMatchResult::failure());
-            }
-            all_bindings.extend(result.bindings);
-        }
-
-        Ok(PatternMatchResult::success(all_bindings))
+        match_pattern_slice(patterns, elements)
     } else {
         Ok(PatternMatchResult::failure())
     }
@@ -291,18 +288,18 @@ pub fn check_pattern_exhaustiveness(
     }
 }
 
-/// Match Ok pattern - Result success case
+/// Helper: Match Result pattern (Ok or Err)
 ///
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
-fn match_ok_pattern(
+fn match_result_pattern(
     inner_pattern: &Pattern,
     value: &Value,
+    expected_type: &str,
 ) -> Result<PatternMatchResult, InterpreterError> {
-    // Ok(x) creates an Object: {data: [x], __type: "Message", type: "Ok"}
     let fields = match_extract_object_fields(value)?;
 
-    if !match_is_ok_type(fields) {
+    if !match_has_type(fields, expected_type) {
         return Ok(PatternMatchResult::failure());
     }
 
@@ -312,6 +309,17 @@ fn match_ok_pattern(
     }
 
     match_pattern(inner_pattern, &data[0])
+}
+
+/// Match Ok pattern - Result success case
+///
+/// # Complexity
+/// Cyclomatic complexity: 1 (reduced via helper extraction)
+fn match_ok_pattern(
+    inner_pattern: &Pattern,
+    value: &Value,
+) -> Result<PatternMatchResult, InterpreterError> {
+    match_result_pattern(inner_pattern, value, "Ok")
 }
 
 /// Extract object fields from Value
@@ -330,13 +338,13 @@ fn match_extract_object_fields(
     }
 }
 
-/// Check if object has type field matching "Ok"
+/// Check if object has type field matching expected type
 ///
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
-fn match_is_ok_type(fields: &std::collections::HashMap<String, Value>) -> bool {
+fn match_has_type(fields: &std::collections::HashMap<String, Value>, expected: &str) -> bool {
     if let Some(Value::String(type_str)) = fields.get("type") {
-        &**type_str == "Ok"
+        &**type_str == expected
     } else {
         false
     }
@@ -358,39 +366,15 @@ fn match_extract_data_array(
     }
 }
 
-/// Check if object has type field matching "Err"
-///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
-fn match_is_err_type(fields: &std::collections::HashMap<String, Value>) -> bool {
-    if let Some(Value::String(type_str)) = fields.get("type") {
-        &**type_str == "Err"
-    } else {
-        false
-    }
-}
-
 /// Match Err pattern - Result error case
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 1 (reduced via helper extraction)
 fn match_err_pattern(
     inner_pattern: &Pattern,
     value: &Value,
 ) -> Result<PatternMatchResult, InterpreterError> {
-    // Err(x) creates an Object: {data: [x], __type: "Message", type: "Err"}
-    let fields = match_extract_object_fields(value)?;
-
-    if !match_is_err_type(fields) {
-        return Ok(PatternMatchResult::failure());
-    }
-
-    let data = match_extract_data_array(fields)?;
-    if data.is_empty() {
-        return Ok(PatternMatchResult::failure());
-    }
-
-    match_pattern(inner_pattern, &data[0])
+    match_result_pattern(inner_pattern, value, "Err")
 }
 
 #[cfg(test)]
