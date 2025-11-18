@@ -3,13 +3,14 @@
 
 metadata:
   version: "3.213"
-  last_updated: "2025-11-12"
-  current_sprint: "🚧 IN PROGRESS - EXTREME TDD Coverage Sprint (TDG-driven quality improvement)"
+  last_updated: "2025-11-18"
+  current_sprint: "🚧 IN PROGRESS - CERTEZA Phase 2: High-Risk Module Complexity Reduction"
   latest_release: "v3.211.0"
-  latest_commit_message: "[100% GRAMMAR] handler_expr + expression_roundtrip (89/89 complete)"
-  latest_commit_hash: "61eede29"
-  current_work: "✅ 100% GRAMMAR COMPLETE (89/89): All grammar features implemented and validated across all tools (handler_expr + expression_roundtrip). 47+ validation tests passing (26 three-mode, 11 property with 1,536+ cases, 10 essential tools)."
-  next_phase: "Continue EXTREME TDD: Target low-TDG modules (< 85) + increase coverage to 85%"
+  latest_commit_message: "[CERTEZA-001] Reduce parse_impl_block complexity: 11 → 9"
+  latest_commit_hash: "ea3e0106"
+  current_work: "CERTEZA Phase 1.5: Complexity reduction in High-Risk parser/transpiler modules per Certeza risk allocation (35% effort on parser/transpiler/codegen)."
+  next_phase: "CERTEZA Phase 2: Risk Stratification (Sprint 3-4) - Classify modules by risk, audit coverage"
+  next_priority: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
   test_status: "✅ All tests passing (62 VM tests, 2 ignored), zero regressions"
   build_health: "✅ PERFECT - All examples/benchmarks compile, PMAT quality gates passing"
   benchmark_validation_status: "✅ 12/12 BENCHMARKS WORKING (100%) in run mode - All validated with ruchydbg v1.24.0"
@@ -130,6 +131,83 @@ metadata:
         priority: "Medium"
         status: "Open"
         note: "Currently using unsafe code - should be refactored to safe alternative"
+
+  session_summary_2025_11_18_certeza_complexity_refactoring:
+    date: "2025-11-18"
+    ticket: "CERTEZA-001"
+    status: "🚧 IN PROGRESS - High-Risk module complexity reduction"
+    goal: "Reduce complexity in High-Risk modules per Certeza risk allocation (35% effort)"
+    specification: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
+    phase: "Phase 1.5 (Complexity Reduction before Phase 2 Risk Stratification)"
+
+    commits:
+      - hash: "b51d3b61"
+        message: "[CERTEZA-001] Reduce complexity in High-Risk modules per Certeza framework"
+        changes:
+          - "type_inference.rs: Added traverse_expr_for_check generic AST visitor (-68 lines)"
+          - "classes.rs: Extracted parse_identifier_with_generics, parse_inheritance 15→7"
+          - "CLAUDE.md: 28% reduction, added renacer documentation"
+          - "lib.rs: Fixed deprecated clippy lint"
+      - hash: "09b3d2d8"
+        message: "[CERTEZA-001] Reduce parse_vec_macro complexity: 11 → 8"
+        changes:
+          - "macro_parsing.rs: Extracted parse_remaining_elements helper"
+      - hash: "9bef21cc"
+        message: "[CERTEZA-001] Reduce parse_lambda_expression complexity: 11 → 9"
+        changes:
+          - "lambdas.rs: Extracted parse_lambda_param helper"
+      - hash: "ea3e0106"
+        message: "[CERTEZA-001] Reduce parse_impl_block complexity: 11 → 9"
+        changes:
+          - "impls.rs: Extracted parse_impl_target helper"
+
+    complexity_fixes:
+      transpiler_high_risk:
+        module: "src/backend/transpiler/type_inference.rs"
+        before: "cyclomatic 11-42 (multiple functions)"
+        after: "All functions ≤10"
+        helper_added: "traverse_expr_for_check (generic AST visitor)"
+        functions_refactored:
+          - "is_param_used_as_array: cyclomatic 4, cognitive 10"
+          - "is_param_used_with_len: cyclomatic 7, cognitive 28"
+          - "is_param_used_as_index: cyclomatic 3, cognitive 6"
+
+      parser_high_risk:
+        module: "src/frontend/parser"
+        fixes:
+          - file: "classes.rs"
+            function: "parse_inheritance"
+            before: 15
+            after: 7
+            helper: "parse_identifier_with_generics"
+          - file: "macro_parsing.rs"
+            function: "parse_vec_macro"
+            before: 11
+            after: 8
+            helper: "parse_remaining_elements"
+          - file: "lambdas.rs"
+            function: "parse_lambda_expression"
+            before: 11
+            after: 9
+            helper: "parse_lambda_param"
+          - file: "impls.rs"
+            function: "parse_impl_block"
+            before: 11
+            after: 9
+            helper: "parse_impl_target"
+
+    remaining_violations:
+      - function: "parse_handler"
+        complexity: 11
+        location: "effects.rs"
+      - function: "parse_decorator"
+        complexity: 11
+        location: "expressions.rs"
+
+    quality_gates:
+      tdg_score: "A+ (99.9/100)"
+      dead_code: "0%"
+      build: "Passes"
 
   session_summary_2025_11_18_certeza_phase1_implementation:
     date: "2025-11-18"
