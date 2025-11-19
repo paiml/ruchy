@@ -1596,7 +1596,7 @@ mod tests {
             ExprKind::Unary {
                 op: crate::frontend::ast::UnaryOp::Negate,
                 operand: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Float(3.14)),
+                    ExprKind::Literal(Literal::Float(std::f64::consts::PI)),
                     Span::default(),
                 )),
             },
@@ -1608,7 +1608,7 @@ mod tests {
         let mut vm = VM::new();
         let result = vm.execute(&chunk).unwrap();
 
-        assert_eq!(result, Value::Float(-3.14));
+        assert_eq!(result, Value::Float(-std::f64::consts::PI));
     }
 
     #[test]
@@ -2627,7 +2627,7 @@ mod tests {
             ExprKind::Unary {
                 op: UnaryOp::BitwiseNot,
                 operand: Box::new(Expr::new(
-                    ExprKind::Literal(Literal::Float(3.14)),
+                    ExprKind::Literal(Literal::Float(std::f64::consts::PI)),
                     Span::default(),
                 )),
             },

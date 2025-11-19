@@ -409,7 +409,7 @@ mod tests {
     #[test]
     fn test_convert_to_int_float_literal() {
         let transpiler = test_transpiler();
-        let result = transpiler.convert_to_int(&float_expr(3.14));
+        let result = transpiler.convert_to_int(&float_expr(std::f64::consts::PI));
         assert!(result.is_ok());
         let tokens = result.unwrap().unwrap();
         let output = tokens.to_string();
