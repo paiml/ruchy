@@ -1,51 +1,18 @@
-[env]
-# Limit test parallelism to prevent resource exhaustion
-RUST_TEST_THREADS = "4"
-
-# Reduce property test cases for development
-PROPTEST_CASES = "32"
-PROPTEST_MAX_SHRINK_ITERS = "100"
-
-# Enable for debugging test memory issues
-# RUST_BACKTRACE = "1"
-
-[alias]
-# Test aliases with controlled parallelism
-t = "test --lib -- --test-threads=4"
-t1 = "test --lib -- --test-threads=1"
-tq = "test --lib -- --test-threads=4 --quiet"
-th = "test --lib -- --test-threads=1 --nocapture"
-
-# Test categories
-test-unit = "test --lib -- --test-threads=4"
-test-prop = "test property_ --lib -- --test-threads=2"
-test-heavy = "test --lib -- --ignored --test-threads=1"
-test-quick = "test --lib -- --test-threads=4 --skip property_"
-
-# WASM QA Framework aliases (following spec)
-wasm-test = "test --target wasm32-unknown-unknown"
-coverage = "llvm-cov --branch --fail-under-branches 90"
-quick-check = """sh -c '
-    cargo fmt --check &&
-    cargo clippy -- -D warnings -W clippy::cognitive_complexity
-'"""
-
-# Coverage aliases - Production two-phase pattern (actix-web/tokio/serde)
-cov = "llvm-cov --no-report nextest"
-cov-report = "llvm-cov report --html --open"
-cov-lcov = "llvm-cov report --lcov --output-path lcov.info"
-cov-clean = "llvm-cov clean --workspace"
-cov-summary = "llvm-cov report --summary-only"
+# Cargo configuration for Ruchy project
+# See: https://doc.rust-lang.org/cargo/reference/config.html
 
 [build]
-# Optimize build for test runs
+# Use all available CPU cores for parallel builds
+jobs = -1
+
+[term]
+# Use colored output for better readability
+color = 'auto'
+
+[profile.dev]
+# Faster incremental builds during development
 incremental = true
 
-[profile.test]
-# Optimize test builds for faster compilation
-opt-level = 1
-debug = 1
-
-[target.wasm32-unknown-unknown]
-# Runner for local testing only - CI uses explicit wasm-pack
-runner = "wasmtime run --dir . --"
+[profile.release]
+# These are already in Cargo.toml but documented here for reference
+# opt-level = 3, lto = "fat", codegen-units = 1
