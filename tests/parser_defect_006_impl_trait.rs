@@ -6,7 +6,7 @@
 use assert_cmd::Command;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // Test 1: Basic impl Fn return type

@@ -33,7 +33,7 @@ use tempfile::{NamedTempFile, TempDir};
 
 /// Create ruchy command
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 /// Create temp file with content
