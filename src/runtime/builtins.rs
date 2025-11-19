@@ -1931,7 +1931,7 @@ mod tests {
         map.insert("key".to_string(), Value::Integer(1));
         let args = vec![
             Value::Integer(42),
-            Value::Float(3.14),
+            Value::Float(std::f64::consts::PI),
             Value::Bool(true),
             Value::Object(Arc::new(map)),
         ];
@@ -2002,7 +2002,7 @@ mod tests {
 
     #[test]
     fn test_builtin_type_of_float() {
-        let result = builtin_type_of(&[Value::Float(3.14)]).unwrap();
+        let result = builtin_type_of(&[Value::Float(std::f64::consts::PI)]).unwrap();
         assert_eq!(result, Value::from_string("float".to_string()));
     }
 
@@ -2071,8 +2071,8 @@ mod tests {
     // EXTREME TDD Sprint 4 TIER 2: abs() edge cases
     #[test]
     fn test_builtin_abs_negative_float() {
-        let result = builtin_abs(&[Value::Float(-3.14)]).unwrap();
-        assert_eq!(result, Value::Float(3.14));
+        let result = builtin_abs(&[Value::Float(-std::f64::consts::PI)]).unwrap();
+        assert_eq!(result, Value::Float(std::f64::consts::PI));
     }
 
     #[test]
@@ -2815,8 +2815,8 @@ mod tests {
 
     #[test]
     fn test_builtin_to_string_float() {
-        let result = builtin_to_string(&[Value::Float(3.14)]).unwrap();
-        assert_eq!(result, Value::from_string("3.14".to_string()));
+        let result = builtin_to_string(&[Value::Float(std::f64::consts::PI)]).unwrap();
+        assert_eq!(result, Value::from_string(std::f64::consts::PI.to_string()));
     }
 
     #[test]
@@ -2876,8 +2876,8 @@ mod tests {
 
     #[test]
     fn test_builtin_parse_float_valid() {
-        let result = builtin_parse_float(&[Value::from_string("3.14".to_string())]).unwrap();
-        assert_eq!(result, Value::Float(3.14));
+        let result = builtin_parse_float(&[Value::from_string(std::f64::consts::PI.to_string())]).unwrap();
+        assert_eq!(result, Value::Float(std::f64::consts::PI));
     }
 
     #[test]
@@ -2997,7 +2997,7 @@ mod tests {
         let mut map = HashMap::new();
         map.insert("test".to_string(), Value::Integer(99));
         let args = vec![
-            Value::Float(3.14),
+            Value::Float(std::f64::consts::PI),
             Value::from_string("debug".to_string()),
             Value::Object(Arc::new(map)),
         ];
