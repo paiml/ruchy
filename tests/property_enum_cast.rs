@@ -29,8 +29,7 @@ fun main() {{
 }}
 ");
 
-                    Command::cargo_bin("ruchy")
-                        .unwrap()
+                    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&code)
                         .timeout(std::time::Duration::from_secs(5))
@@ -57,8 +56,7 @@ fun main() {{
 ");
 
                     let expected = disc + add_val;
-                    Command::cargo_bin("ruchy")
-                        .unwrap()
+                    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&code)
                         .timeout(std::time::Duration::from_secs(5))
@@ -88,8 +86,7 @@ fun main() {{
 }}
 ");
 
-                    Command::cargo_bin("ruchy")
-                        .unwrap()
+                    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&code)
                         .timeout(std::time::Duration::from_secs(5))
@@ -122,8 +119,7 @@ fun main() {{
 }}
 ");
 
-                    Command::cargo_bin("ruchy")
-                        .unwrap()
+                    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&code)
                         .timeout(std::time::Duration::from_secs(5))
@@ -152,8 +148,7 @@ fun main() {{
 ");
 
                     let expected = disc * 2;
-                    Command::cargo_bin("ruchy")
-                        .unwrap()
+                    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&code)
                         .timeout(std::time::Duration::from_secs(5))

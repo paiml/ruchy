@@ -61,8 +61,7 @@ impl ThreeModeResult {
 }
 
 fn test_interpreter_mode(ruchy_file: &PathBuf) -> bool {
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(ruchy_file)
         .assert()
@@ -73,8 +72,7 @@ fn test_interpreter_mode(ruchy_file: &PathBuf) -> bool {
 fn test_transpile_mode(ruchy_file: &PathBuf, temp_dir: &TempDir) -> bool {
     let rs_file = temp_dir.path().join("output.rs");
 
-    let transpile_result = Command::cargo_bin("ruchy")
-        .unwrap()
+    let transpile_result = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(ruchy_file)
         .arg("-o")
@@ -94,8 +92,7 @@ fn test_compile_mode(ruchy_file: &PathBuf, temp_dir: &TempDir) -> bool {
     let rs_file = temp_dir.path().join("compiled.rs");
 
     // First transpile
-    let transpile_ok = Command::cargo_bin("ruchy")
-        .unwrap()
+    let transpile_ok = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(ruchy_file)
         .arg("-o")

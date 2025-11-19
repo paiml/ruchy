@@ -20,7 +20,7 @@ fn test_perf_002a_fold_simple_arithmetic() {
         println(x);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -37,7 +37,7 @@ fn test_perf_002a_fold_operator_precedence() {
         println(result);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -54,7 +54,7 @@ fn test_perf_002a_fold_nested_expressions() {
         println(x);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -77,7 +77,7 @@ fn test_perf_002a_fold_comparison_true() {
         }
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -94,7 +94,7 @@ fn test_perf_002a_fold_comparison_false() {
         println(x);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -118,7 +118,7 @@ fn test_perf_002a_eliminate_dead_if_branch() {
         println("done");
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -146,7 +146,7 @@ fn property_constant_folding_preserves_semantics() {
         let expected = a + b;
 
         // Run transpiled code and verify folded constant equals original result
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")  // Read from stdin
             .write_stdin(code)

@@ -26,7 +26,7 @@ fn test_issue_116_read_line_basic() {
         file.close();
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -48,7 +48,7 @@ fn test_issue_116_read_line_multiple() {
         file.close();
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -69,7 +69,7 @@ fn test_issue_116_read_line_eof() {
         file.close();
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -92,7 +92,7 @@ fn test_issue_116_close_explicit() {
         println(content);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -110,7 +110,7 @@ fn test_issue_116_read_after_close_error() {
         let content = file.read_line();  // Should error or return None
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(code).assert().failure(); // Should fail or handle gracefully
 }
 
@@ -126,7 +126,7 @@ fn test_issue_116_transpile_file_methods() {
         file.close();
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -160,7 +160,7 @@ fn property_read_line_preserves_content() {
             println(count);
         "#.to_string();
 
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         let output = cmd.arg("-e").arg(&code).output().unwrap();
         let stdout = String::from_utf8_lossy(&output.stdout);
 

@@ -26,7 +26,7 @@ fn test_opt_global_001_01_pgo_instrumentation_build() {
 #[test]
 fn test_opt_global_001_02_profile_data_collection() {
     // Run a simple ruchy command to generate profile data
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin("fun main() { println(42); }")
@@ -103,7 +103,7 @@ fn test_opt_global_001_05_benchmark_baseline() {
 
     let start = Instant::now();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile").arg("-").write_stdin(code.to_string());
 
     cmd.assert().success();
@@ -131,7 +131,7 @@ fn test_opt_global_001_06_statistical_validation_baseline() {
     for _ in 0..30 {
         let start = Instant::now();
 
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code.to_string())
@@ -186,7 +186,7 @@ fn test_opt_global_001_07_pgo_speedup_validation() {
     for _ in 0..30 {
         let start = Instant::now();
 
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code.to_string())

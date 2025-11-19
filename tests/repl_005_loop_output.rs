@@ -12,7 +12,7 @@ use tempfile::NamedTempFile;
 /// Test #1: for loop in REPL should NOT print nil/() after execution
 #[test]
 fn test_repl_005_for_loop_no_unit_output() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.write_stdin("for i in [1,2] { println(i) }\n:quit\n")
         .assert()
         .success()
@@ -24,7 +24,7 @@ fn test_repl_005_for_loop_no_unit_output() {
 /// Test #2: while loop in REPL should NOT print nil/() after execution
 #[test]
 fn test_repl_005_while_loop_no_unit_output() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.write_stdin("let mut i = 0\nwhile i < 3 { println(i); i = i + 1 }\n:quit\n")
         .assert()
         .success()
@@ -36,7 +36,7 @@ fn test_repl_005_while_loop_no_unit_output() {
 /// Test #3: if statement (returns Unit) should NOT print nil/()
 #[test]
 fn test_repl_005_if_statement_no_unit_output() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.write_stdin("if true { println(\"yes\") }\n:quit\n")
         .assert()
         .success()
@@ -48,7 +48,7 @@ fn test_repl_005_if_statement_no_unit_output() {
 /// Test #4: Variable assignment (returns Unit) should NOT print nil/()
 #[test]
 fn test_repl_005_let_binding_no_unit_output() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.write_stdin("let x = 42\n:quit\n")
         .assert()
         .success()
@@ -59,7 +59,7 @@ fn test_repl_005_let_binding_no_unit_output() {
 /// Test #5: Expressions that return values SHOULD still print
 #[test]
 fn test_repl_005_value_expressions_do_print() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.write_stdin("2 + 2\n\"hello\"\ntrue\n:quit\n")
         .assert()
         .success()
@@ -77,7 +77,7 @@ fn test_repl_005_script_no_loop_output_baseline() -> Result<(), Box<dyn std::err
         "for i in [1,2] {{ println(i) }}\nprintln(\"done\")"
     )?;
 
-    Command::cargo_bin("ruchy")?
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(temp_file.path())
         .assert()
         .success()

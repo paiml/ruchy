@@ -35,7 +35,7 @@ fun main() {
     .unwrap();
 
     // OPTIMIZATION-001: Test ruchy compile --optimize none
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")
@@ -81,7 +81,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")
@@ -129,7 +129,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")
@@ -174,7 +174,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")
@@ -230,7 +230,7 @@ fun main() {
     let mut sizes = Vec::new();
 
     for (level, output) in &binaries {
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("compile")
             .arg(&test_file)
             .arg("--output")
@@ -285,7 +285,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")
@@ -319,7 +319,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--optimize")
@@ -359,7 +359,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
         .arg("--output")

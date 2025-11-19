@@ -25,8 +25,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_args_basic.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -58,8 +57,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_args_multiple.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .arg("arg1")
         .arg("arg2")
@@ -91,8 +89,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_var_get.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .env("RUCHY_TEST_VAR", "test_value_123")
         .arg(&temp_file)
         .assert()
@@ -120,8 +117,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_var_not_found.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .env_remove("RUCHY_NONEXISTENT_VAR_XYZ") // Ensure it doesn't exist
         .arg(&temp_file)
         .assert()
@@ -151,8 +147,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_args_nonempty.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -176,8 +171,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_std_env_import.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -205,8 +199,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_env_var_common.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -237,8 +230,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_096_cli_tool_pattern.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()

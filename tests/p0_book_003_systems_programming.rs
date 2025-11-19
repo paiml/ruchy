@@ -24,8 +24,7 @@ println("Signal handler registered")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -50,8 +49,7 @@ println("Port: " + service_config.port.to_s())
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -74,8 +72,7 @@ println("Should not reach here")
     fs::write(&file_path, code).unwrap();
 
     // For now, test that it parses without panic (may fail at runtime)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or controlled failure, but not panic
@@ -96,8 +93,7 @@ for item in items {
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -129,8 +125,7 @@ println("Size: " + size)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -151,8 +146,7 @@ println("System modules imported successfully")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -181,8 +175,7 @@ println("System functions accessible")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -222,8 +215,7 @@ fn main() {
     fs::write(&file_path, code).unwrap();
 
     // Should not panic, even if compilation fails
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or failure, but not panic

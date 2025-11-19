@@ -16,8 +16,7 @@ fn test_issue_117_parse_json_simple_object() {
         println(obj["name"])
     "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -33,8 +32,7 @@ fn test_issue_117_parse_json_array() {
         println(arr[1])
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -51,8 +49,7 @@ fn test_issue_117_stringify_json_object() {
         println(json)
     "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -70,8 +67,7 @@ fn test_issue_117_stringify_json_array() {
         println(json)
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -88,8 +84,7 @@ fn test_issue_117_roundtrip() {
         println(json)
     "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -106,8 +101,7 @@ fn test_issue_117_nested_object() {
         println(data["users"][0]["name"])
     "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()

@@ -23,7 +23,7 @@ println!("{}", global_state);
 "#;
 
     // Transpile
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -87,7 +87,7 @@ println!("{}", counter);
     fs::write(&ruchy_path, code).unwrap();
 
     // CRITICAL: Must compile successfully
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile").arg(&ruchy_path).assert().success(); // ❌ This will FAIL until we fix the bug
 
     // Clean up
@@ -115,7 +115,7 @@ println!("{}", total);
     fs::write(&ruchy_path, code).unwrap();
 
     // CRITICAL: Must execute and output "42"
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&ruchy_path)
         .assert()

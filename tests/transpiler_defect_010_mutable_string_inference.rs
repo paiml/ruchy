@@ -236,8 +236,7 @@ fun main() {{
                 .success();
 
             // Additional check: Verify transpiled output uses String::from()
-            let transpiled = Command::cargo_bin("ruchy")
-                .expect("Failed to find ruchy binary")
+            let transpiled = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("transpile")
                 .arg(&source)
                 .output()
@@ -285,8 +284,7 @@ fun main() {{
                 .success();
 
             // Check: Immutable strings should NOT use String::from()
-            let transpiled = Command::cargo_bin("ruchy")
-                .expect("Failed to find ruchy binary")
+            let transpiled = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("transpile")
                 .arg(&source)
                 .output()

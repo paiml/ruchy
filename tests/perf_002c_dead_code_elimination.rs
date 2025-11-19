@@ -28,7 +28,7 @@ fn test_perf_002c_dce_after_return() {
         println(example());
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -54,7 +54,7 @@ fn test_perf_002c_dce_multiple_returns() {
         println(check(5));
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -81,7 +81,7 @@ fn test_perf_002c_dce_false_branch() {
         println(x);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -101,7 +101,7 @@ fn test_perf_002c_dce_true_branch_no_else() {
         let dead = 5;  // Not actually dead, for now
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -124,7 +124,7 @@ fn test_perf_002c_dce_unused_variable() {
         println(used);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -143,7 +143,7 @@ fn test_perf_002c_dce_unused_computation() {
         println(x);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -172,7 +172,7 @@ fn test_perf_002c_dce_after_break() {
         println(i);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -198,7 +198,7 @@ fn test_perf_002c_dce_after_continue() {
         println(sum);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -221,7 +221,7 @@ fn test_perf_002c_dce_empty_block_cleanup() {
         println("After empty block");
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -249,7 +249,7 @@ fn test_perf_002c_dce_with_constant_propagation() {
         }
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -284,7 +284,7 @@ fn property_dce_preserves_semantics() {
         let expected = live_val;
 
         // Verify DCE preserves semantics
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code)
@@ -312,7 +312,7 @@ fn property_dce_idempotent() {
         ");
 
         // Run transpile twice and verify identical output
-        let mut cmd1 = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd1 = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         let output1 = cmd1.arg("transpile")
             .arg("-")
             .write_stdin(code.clone())
@@ -323,7 +323,7 @@ fn property_dce_idempotent() {
             .clone();
 
         // Second transpile (DCE already applied)
-        let mut cmd2 = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd2 = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         let output2 = cmd2.arg("transpile")
             .arg("-")
             .write_stdin(code)
@@ -357,7 +357,7 @@ fn property_no_live_code_eliminated() {
         let expected_result = a + b;
 
         // Verify live code is NOT eliminated
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code)
@@ -391,7 +391,7 @@ fn test_perf_002c_dce_async_function_not_eliminated() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -426,7 +426,7 @@ fn test_perf_002c_dce_multiple_async_functions() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())

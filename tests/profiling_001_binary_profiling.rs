@@ -35,7 +35,7 @@ fun main() {
     .unwrap();
 
     // PROFILING-001: Test ruchy runtime --profile --binary fibonacci.ruchy
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary") // NEW FLAG - will fail initially
@@ -72,7 +72,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")
@@ -113,7 +113,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")
@@ -151,7 +151,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")
@@ -189,7 +189,7 @@ fun main() {
     .unwrap();
 
     // Without --binary flag, should use interpreter profiling
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile") // No --binary flag
         .arg(&test_file);
@@ -217,7 +217,7 @@ fun broken() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")
@@ -257,7 +257,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")
@@ -291,7 +291,7 @@ fun main() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("runtime")
         .arg("--profile")
         .arg("--binary")

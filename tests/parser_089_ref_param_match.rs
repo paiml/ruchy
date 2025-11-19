@@ -22,7 +22,7 @@ fn write_and_check(code: &str) {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(temp_file.path(), code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("check").arg(temp_file.path()).assert().success();
 }
 

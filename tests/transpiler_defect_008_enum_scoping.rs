@@ -10,7 +10,7 @@
 use assert_cmd::Command;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 #[test]

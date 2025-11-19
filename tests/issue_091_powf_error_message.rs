@@ -27,7 +27,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .failure()
@@ -46,7 +46,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .failure()
@@ -68,7 +68,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()
@@ -85,7 +85,7 @@ fun main() {
 }
 ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
 
     // Should NOT contain the misleading phrase "takes no arguments"
@@ -105,7 +105,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_sqrt);
     cmd.assert()
         .success()
@@ -118,7 +118,7 @@ fun main() {
 }
 ";
 
-    let mut cmd2 = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd2 = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd2.arg("-e").arg(script_unknown);
     cmd2.assert().failure().stderr(
         predicate::str::contains("Unknown float method")

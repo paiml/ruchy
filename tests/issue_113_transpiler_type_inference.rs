@@ -33,8 +33,7 @@ fun is_prime(n) {
 ";
 
     // Transpile and check the generated Rust code
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -53,8 +52,7 @@ fun is_even(n) {
 }
 ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -80,8 +78,7 @@ fun count_up_to(limit) {
 ";
 
     // Parameter `limit` is used in comparison (i < limit), should be i32
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -105,8 +102,7 @@ fun fill_array(count) {
 ";
 
     // Parameter `count` is compared with arr.len() (usize), should infer i32/usize
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -133,8 +129,7 @@ fun make_array() {
 ";
 
     // Function returns array literal with .push(), should be Vec<i32>
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -153,8 +148,7 @@ fun empty_array() {
 }
 ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -208,8 +202,7 @@ fun main() {
 ";
 
     // Full transpilation should succeed with correct types
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -240,8 +233,7 @@ fun main() {
 ";
 
     // Transpile to Rust
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)

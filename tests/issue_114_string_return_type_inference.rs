@@ -27,8 +27,7 @@ fun returns_string() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -57,8 +56,7 @@ fun string_concatenation(iterations) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -80,8 +78,7 @@ fun get_message() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -102,8 +99,7 @@ fun mixed(flag) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -127,8 +123,7 @@ fun concat_strings(a, b) {
 }
 ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -153,8 +148,7 @@ fun conditional_string(flag) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -178,8 +172,7 @@ fun explicit_return(n) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -215,8 +208,7 @@ fun main() {
 "#;
 
     // First, transpile to Rust
-    let transpile_output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let transpile_output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)

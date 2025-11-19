@@ -22,8 +22,7 @@ println(line2)
 file.close()
 "#;
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .output()
@@ -56,8 +55,7 @@ fn test_issue_116_open_function_missing_file() {
 let file = open("/tmp/nonexistent_file_test.txt", "r")
 "#;
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .output()

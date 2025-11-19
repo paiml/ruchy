@@ -52,8 +52,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -93,8 +92,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -132,8 +130,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -173,8 +170,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -197,8 +193,7 @@ while i < 10 {
 println!("Success: {} elements", vec.len());
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))

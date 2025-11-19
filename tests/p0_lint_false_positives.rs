@@ -21,8 +21,7 @@ println(greeting)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -45,8 +44,7 @@ println(message)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -68,8 +66,7 @@ println(result)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -93,8 +90,7 @@ println(result)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -121,8 +117,7 @@ println(is_positive(5))
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -146,8 +141,7 @@ println(greet("Alice"))
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -168,8 +162,7 @@ println(result)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -191,8 +184,7 @@ println(message)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -213,8 +205,7 @@ println(used)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -240,8 +231,7 @@ println(process(5, 10))
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["lint", file_path.to_str().unwrap()])
         .assert()
         .success()

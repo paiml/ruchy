@@ -24,7 +24,7 @@ fn test_perf_002b_propagate_simple_variable() {
         println(y);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -43,7 +43,7 @@ fn test_perf_002b_propagate_chained_variables() {
         println(z);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -61,7 +61,7 @@ fn test_perf_002b_propagate_multiple_uses() {
         println(result);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -84,7 +84,7 @@ fn test_perf_002b_propagate_arithmetic_chain() {
         println(c);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -103,7 +103,7 @@ fn test_perf_002b_propagate_with_folding() {
         println(y);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -125,7 +125,7 @@ fn test_perf_002b_no_propagate_mutable() {
         println(y);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -148,7 +148,7 @@ fn test_perf_002b_no_propagate_across_conditional() {
         println(z);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -173,7 +173,7 @@ fn test_perf_002b_propagate_boolean() {
         println(result);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -193,7 +193,7 @@ fn test_perf_002b_propagate_comparison_result() {
         println(x);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -225,7 +225,7 @@ fn test_perf_002b_fibonacci_constants_propagated() {
         println(result);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -258,7 +258,7 @@ fn property_propagation_preserves_semantics() {
         let expected = a + b;
 
         // Verify constant propagation produces correct folded result
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code)
@@ -283,7 +283,7 @@ fn property_no_propagate_mutable() {
         ");
 
         // Verify mutable variable is NOT propagated (should see "x + 1", not constant)
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code)
@@ -312,7 +312,7 @@ fn property_arithmetic_chain() {
         let expected = a * b;
 
         // Verify propagation + folding produces correct result
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         cmd.arg("transpile")
             .arg("-")
             .write_stdin(code)

@@ -27,8 +27,7 @@ while i < 10 {
 println!("Success: {} elements", vec.len());
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -51,8 +50,7 @@ while count < 5 {
 println!("Messages: {}", messages.len());
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -75,8 +73,7 @@ while i < 100 {
 println!("Created vector with {} elements", vec.len());
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -94,8 +91,7 @@ let boxed = Box::new(42);
 println!("Boxed value: {}", boxed);
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -113,8 +109,7 @@ map.insert("key", "value");
 println!("Map size: {}", map.len());
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .timeout(std::time::Duration::from_secs(5))
@@ -133,8 +128,7 @@ let cmd = Command::new("echo");
 println!("Command created");
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .write_stdin(script)
         .timeout(std::time::Duration::from_secs(5))

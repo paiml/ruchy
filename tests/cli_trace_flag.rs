@@ -9,8 +9,7 @@ use assert_cmd::Command;
 /// Test #1: Verify --trace flag is recognized (doesn't error)
 #[test]
 fn test_debugger_014_trace_flag_recognized() {
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("--trace")
         .arg("--help")
         .assert()
@@ -26,8 +25,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("--trace")
         .arg("-e")
         .arg(code)
@@ -43,8 +41,7 @@ fn test_debugger_014_trace_with_run() {
     let temp_file = std::env::temp_dir().join("test_trace.ruchy");
     std::fs::write(&temp_file, "fun main() { println(\"test\"); }").unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("--trace")
         .arg("run")
         .arg(&temp_file)

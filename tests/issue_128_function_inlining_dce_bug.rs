@@ -27,8 +27,7 @@ println("Result: " + result)
     std::fs::write("/tmp/issue_128_test.ruchy", script).unwrap();
 
     // Test 1: Interpret mode should work (baseline)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .assert()
@@ -36,8 +35,7 @@ println("Result: " + result)
         .stdout(predicate::str::contains("Result: 5"));
 
     // Test 2: Transpiled code must compile (either function def OR correct inlining)
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_test.ruchy")
         .output()
@@ -76,8 +74,7 @@ println(a + b)
     std::fs::write("/tmp/issue_128_multi.ruchy", script).unwrap();
 
     // The key test: does it execute correctly?
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .assert()
@@ -105,8 +102,7 @@ println(result)
     std::fs::write("/tmp/issue_128_unused.ruchy", script).unwrap();
 
     // Key test: execution must work correctly (unused code doesn't break it)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .assert()
@@ -129,16 +125,14 @@ println(result)
 
     std::fs::write("/tmp/issue_128_inline_once.ruchy", script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_inline_once.ruchy")
         .assert()
         .success(); // Either has function def OR inlined body (both valid)
 
     // Verify it executes correctly regardless
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .assert()
@@ -166,8 +160,7 @@ println("Result: " + result)
     std::fs::write("/tmp/issue_128_exact.ruchy", script).unwrap();
 
     // Check transpiled output doesn't have undefined variables
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_exact.ruchy")
         .output()
@@ -213,8 +206,7 @@ println(result)
 
     std::fs::write("/tmp/issue_128_recursive.ruchy", script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_recursive.ruchy")
         .assert()
@@ -247,8 +239,7 @@ println(result)
 
     std::fs::write("/tmp/issue_128_large.ruchy", script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_large.ruchy")
         .assert()
@@ -277,8 +268,7 @@ println(fib(10))
     std::fs::write("/tmp/issue_128_fib.ruchy", script).unwrap();
 
     // Test 1: Interpret mode works (baseline)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .assert()
@@ -286,8 +276,7 @@ println(fib(10))
         .stdout(predicate::str::contains("55")); // fib(10) = 55
 
     // Test 2: Transpile and verify output compiles
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("/tmp/issue_128_fib.ruchy")
         .output()

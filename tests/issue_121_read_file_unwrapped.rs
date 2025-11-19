@@ -24,8 +24,7 @@ fn test_issue_121_read_file_returns_string() {
         file.path().display()
     );
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(&code)
         .assert()
@@ -48,8 +47,7 @@ fn test_issue_121_read_file_with_json_parsing() {
         file.path().display()
     );
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(&code)
         .assert()
@@ -71,8 +69,7 @@ fn test_issue_121_read_file_string_operations() {
         file.path().display()
     );
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(&code)
         .assert()
@@ -94,8 +91,7 @@ fn test_issue_121_read_file_multiline() {
         file.path().display()
     );
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(&code)
         .assert()
@@ -129,8 +125,7 @@ fn test_issue_121_bench_006_pattern() {
         file.path().display()
     );
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(&code)
         .assert()
@@ -149,8 +144,7 @@ fn test_issue_121_fs_read_still_returns_result() {
         }
     "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()

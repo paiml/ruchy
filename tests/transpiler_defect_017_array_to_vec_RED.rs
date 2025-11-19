@@ -48,8 +48,7 @@ println(processes.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -87,8 +86,7 @@ println(configs.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -121,8 +119,7 @@ println(items.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -152,8 +149,7 @@ println(items.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -173,8 +169,7 @@ println(numbers.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -195,8 +190,7 @@ println(numbers.len());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()

@@ -27,8 +27,7 @@ println(counter)      // Expect: 3, Actual: 6 ❌
 
     std::fs::write("/tmp/issue_119_double_eval.ruchy", script).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .output()
@@ -76,8 +75,7 @@ println(result)
 println(counter)
 ";
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(script)
         .output()

@@ -38,7 +38,7 @@ println!("{}", counter)
     fs::write(&ruchy_path, code).unwrap();
 
     // Transpile
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg(&ruchy_path)
@@ -127,7 +127,7 @@ println!("{}", total)
     fs::write(&ruchy_path, code).unwrap();
 
     // Transpile
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg(&ruchy_path)
@@ -204,7 +204,7 @@ println!("{}", x)
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg(&ruchy_path)
@@ -296,7 +296,7 @@ println!("{{}}", {var_name})
             fs::write(&ruchy_path, code).unwrap();
 
             // Transpile
-            let mut cmd = Command::cargo_bin("ruchy").unwrap();
+            let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
             let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
             prop_assert!(output.status.success(), "Transpile failed");
 
@@ -362,7 +362,7 @@ println!("{{}}", {var_name})
             let ruchy_path = temp.path().with_extension("ruchy");
             fs::write(&ruchy_path, code).unwrap();
 
-            let mut cmd = Command::cargo_bin("ruchy").unwrap();
+            let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
             let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
             prop_assert!(output.status.success());
 
@@ -419,7 +419,7 @@ compute()
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success(), "Transpile failed");
 
@@ -457,7 +457,7 @@ println!("{}", result)
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success());
 
@@ -517,7 +517,7 @@ println!("{}", value)
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success());
 
@@ -582,7 +582,7 @@ process()
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success());
 
@@ -612,7 +612,7 @@ println!("{}", num)
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success());
 
@@ -674,7 +674,7 @@ println!("{}", x)
     let ruchy_path = temp.path().with_extension("ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
     assert!(output.status.success());
 

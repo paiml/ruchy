@@ -20,8 +20,7 @@ fun main() {
     // Test: ruchy compile should successfully compile code with time_micros()
     let output_binary = format!("{}_binary", temp_file.path().display());
 
-    let result = Command::cargo_bin("ruchy")
-        .unwrap()
+    let result = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(temp_file.path())
         .arg("-o")
@@ -61,8 +60,7 @@ fun main() {
     let output_binary = format!("{}_benchmark", temp_file.path().display());
 
     // Test: Should compile successfully
-    let result = Command::cargo_bin("ruchy")
-        .unwrap()
+    let result = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(temp_file.path())
         .arg("-o")
@@ -96,8 +94,7 @@ fun main() {
 
     let output_binary = format!("{}_multiple", temp_file.path().display());
 
-    let result = Command::cargo_bin("ruchy")
-        .unwrap()
+    let result = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(temp_file.path())
         .arg("-o")

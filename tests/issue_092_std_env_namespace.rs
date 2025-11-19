@@ -47,7 +47,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()
@@ -92,7 +92,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()
@@ -121,7 +121,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert().success().stdout(predicate::str::contains(
         "✓ Flat builtin env_args() still works",
@@ -152,7 +152,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()
@@ -195,7 +195,7 @@ fun main() {
 }
 "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()

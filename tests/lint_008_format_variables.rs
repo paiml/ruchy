@@ -23,8 +23,7 @@ fun main() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&test_file)
         .timeout(std::time::Duration::from_secs(5))
@@ -48,8 +47,7 @@ fun main() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&test_file)
         .timeout(std::time::Duration::from_secs(5))
@@ -74,8 +72,7 @@ fun main() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&test_file)
         .timeout(std::time::Duration::from_secs(5))
@@ -100,8 +97,7 @@ fun main() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&test_file)
         .timeout(std::time::Duration::from_secs(5))
@@ -126,8 +122,7 @@ fun main() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&test_file)
         .timeout(std::time::Duration::from_secs(5))
