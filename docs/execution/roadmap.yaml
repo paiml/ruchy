@@ -2,17 +2,17 @@
 # Extreme TDD + Toyota Way + Mutation Testing Enforcement
 
 metadata:
-  version: "3.214"
-  last_updated: "2025-11-18"
-  current_sprint: "✅ COMPLETE - CERTEZA Phase 2: Risk Stratification and Gap Analysis"
+  version: "3.215"
+  last_updated: "2025-11-19"
+  current_sprint: "✅ COMPLETE - PMAT Code Quality Improvements: assert_cmd Migration"
   latest_release: "v3.211.0"
-  latest_commit_message: "[CERTEZA-002] Phase 2 COMPLETE - Risk stratification and gap analysis for all 305 modules"
-  latest_commit_hash: "9b62424"
-  current_work: "CERTEZA Phase 2 COMPLETE: Risk stratification (305 modules classified), gap analysis (parser/typechecker property tests critical gap), documentation (risk-stratification.yaml + gap-analysis.md)."
-  next_phase: "CERTEZA Phase 3: Property Testing Expansion (Sprint 5-6) - Achieve 80% property test coverage for High-Risk modules"
-  next_priority: "docs/specifications/improve-testing-quality-using-certeza-concepts.md"
-  test_status: "✅ All tests passing (62 VM tests, 2 ignored), zero regressions"
-  build_health: "✅ PERFECT - All examples/benchmarks compile, PMAT quality gates passing"
+  latest_commit_message: "[PMAT] Complete assert_cmd migration - ALL 684 instances fixed"
+  latest_commit_hash: "030189b9"
+  current_work: "PMAT Score Improvement: Migrated all 684 deprecated Command::cargo_bin() calls to cargo_bin_cmd!() macro across 254 test files. Code reduction: -325 lines. All tests passing."
+  next_phase: "Continue PMAT improvements targeting Grade A (90+/114) - Address remaining clippy warnings and code quality issues"
+  next_priority: "PMAT rust-project-score improvements - target remaining Code Quality warnings"
+  test_status: "✅ All tests passing (254 test files migrated), zero regressions"
+  build_health: "✅ PERFECT - All examples/benchmarks compile, all 254 test files compile successfully"
   benchmark_validation_status: "✅ 12/12 BENCHMARKS WORKING (100%) in run mode - All validated with ruchydbg v1.24.0"
   perf_002_status: "✅ Phase 2, 3, & 4 COMPLETE - release-dist fixed + --show-profile-info + --pgo automation"
   perf_002c_status: "⏸️ PAUSED - Core DCE working (9/12 tests passing = 75%), liveness analysis required for completion (~800 LOC, 3-5 days)"
@@ -9147,6 +9147,50 @@ metrics:
 
 # Historical Context
 previous_sprints:
+  - name: "PMAT-001: Complete assert_cmd Migration (684 instances)"
+    status: "COMPLETE"
+    completion_date: "2025-11-19"
+    time_actual: "2h"
+    commits: 6
+    tickets: ["PMAT-001"]
+    results:
+      test_pass_rate: "100% (254 test files migrated, all passing)"
+      feature: "Migrated all deprecated Command::cargo_bin() to cargo_bin_cmd!() macro"
+      code_reduction: "-325 lines net reduction"
+      instances_fixed: "684/684 (100%)"
+      files_modified: 254
+      compilation_status: "✅ All tests compile successfully"
+    tasks_complete:
+      - "Migrate 4 helper function patterns (tests/bug_032, bug_033, bug_035, bug_036)"
+      - "Bulk migrate 176 files with helper function pattern"
+      - "Clippy --fix for unused imports"
+      - "Python script migration for remaining 74 files"
+      - "Cleanup script to remove trailing .unwrap()/.expect()"
+      - "Manual fix for AssertCommand type alias corruption"
+    files_modified:
+      - "254 test files migrated from Command::cargo_bin() to cargo_bin_cmd!()"
+    migration_details:
+      method: "Combination of sed, Python scripts, and manual fixes"
+      patterns_handled:
+        - "Command::cargo_bin(\"ruchy\").unwrap()"
+        - "Command::cargo_bin(\"ruchy\").expect(...)"
+        - "Command::cargo_bin(\"ruchy\") (bare)"
+        - "Helper functions: fn ruchy_cmd() -> Command"
+      cleanup: "Removed trailing .unwrap()/.expect() after macro calls"
+    lessons:
+      - "Python regex-based migration more reliable than sed for complex patterns"
+      - "Cleanup pass essential after bulk replacements"
+      - "Type alias corruption (AssertCommand) required manual fix"
+      - "All 684 deprecated warnings eliminated"
+    toyota_way:
+      jidoka: "Systematic migration with verification at each step"
+      genchi_genbutsu: "Verified all test files compile successfully"
+      kaizen: "Incremental batches (4 → 176 → 74 files) with verification"
+    next_steps:
+      - "Run fresh PMAT to measure Code Quality score improvement"
+      - "Address remaining clippy warnings"
+      - "Target PMAT Grade A (90+/114 points)"
+
   - name: "OPTIMIZATION-001: NASA-Grade Compilation Optimization Presets"
     status: "COMPLETE"
     completion_date: "2025-11-05"
