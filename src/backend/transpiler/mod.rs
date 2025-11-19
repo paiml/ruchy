@@ -2772,8 +2772,7 @@ mod tests {
         let condition = create_test_literal_expr(1);
         let then_branch = create_test_variable_expr("z");
         transpiler.analyze_if_mutability(&condition, &then_branch, None);
-        // Function should not panic
-        assert!(true);
+        // Function should not panic - test passes if no panic occurs
     }
 
     // Test 38: analyze_two_expr_mutability - two literals
@@ -2794,8 +2793,7 @@ mod tests {
         let match_expr = create_test_variable_expr("val");
         let arms = vec![];
         transpiler.analyze_match_mutability(&match_expr, &arms);
-        // Should not panic with empty arms
-        assert!(true);
+        // Should not panic with empty arms - test passes if no panic occurs
     }
 
     // Test 40: analyze_call_mutability - function call
@@ -2805,8 +2803,7 @@ mod tests {
         let func = create_test_variable_expr("my_func");
         let args = vec![create_test_literal_expr(42)];
         transpiler.analyze_call_mutability(&func, &args);
-        // Should analyze without panicking
-        assert!(true);
+        // Should analyze without panicking - test passes if no panic occurs
     }
 
     // Test 41: has_standalone_functions - single function
