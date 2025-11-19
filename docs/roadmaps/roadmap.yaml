@@ -1,0 +1,19 @@
+roadmap_version: '1.0'
+github_enabled: true
+github_repo: null
+roadmap:
+  - id: QUALITY-001
+    title: Achieve Grade A on pmat rust-score
+    status: in_progress
+    priority: high
+    description: |
+      Install pmat tooling and improve project quality metrics to achieve Grade A (≥85%)
+      Current: 62.5/114 (54.8%, Grade C)
+      Target: ≥97/114 (≥85%, Grade A)
+    tasks:
+      - Install quality tools (cargo-llvm-cov, cargo-mutants, miri)
+      - Run cargo fmt and clippy --fix
+      - Improve test coverage to ≥85%
+      - Improve mutation score to ≥80%
+      - Fix clippy warnings
+      - Address dead code issues
