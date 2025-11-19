@@ -30,9 +30,10 @@
   - ✅ Unsafe casts: usize→i64 try_into() (7 instances, 2 files)
   - ✅ #[ignore] reasons: converted to proper attribute format (19 files)
   - ✅ PI approximation: started fixes (1/14 files)
+  - ✅ assert!(true): removed 3 useless assertions
   - **Progress**: +2.0 points (60.5 → 62.5)
-  - **Commits**: 7 commits documenting all improvements
-  - **Remaining**: 360 clippy warnings (down from 363)
+  - **Commits**: 9 commits documenting all improvements
+  - **Warnings**: 180 (down from ~360, after deduplication)
 
 **Tools Installed**:
 - ✅ Miri (nightly)
