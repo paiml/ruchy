@@ -291,7 +291,7 @@ fn test_logging_complete_workflow() {
     assert!(!level.is_empty(), "level should not be empty after init");
 
     // Check that debug is enabled
-    let debug_enabled = logging::is_level_enabled("debug").unwrap();
+    let _debug_enabled = logging::is_level_enabled("debug").unwrap();
     // Result may be true or false depending on configuration
 
     // Log messages at different levels
