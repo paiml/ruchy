@@ -1215,10 +1215,10 @@ mod tests {
         let result = arrow_df.slice(10, 5);
         // This might return an error or empty result depending on implementation
         // Either is acceptable as long as it doesn't panic
-        match result {
-            Ok(sliced) => assert_eq!(sliced.num_rows(), 0),
-            Err(_) => {} // Error is also acceptable
+        if let Ok(sliced) = result {
+            assert_eq!(sliced.num_rows(), 0);
         }
+        // Error is also acceptable
     }
 
     // Test 30: dataframe_to_arrow with multi-type columns
