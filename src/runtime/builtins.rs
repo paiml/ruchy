@@ -2876,7 +2876,8 @@ mod tests {
 
     #[test]
     fn test_builtin_parse_float_valid() {
-        let result = builtin_parse_float(&[Value::from_string(std::f64::consts::PI.to_string())]).unwrap();
+        let result =
+            builtin_parse_float(&[Value::from_string(std::f64::consts::PI.to_string())]).unwrap();
         assert_eq!(result, Value::Float(std::f64::consts::PI));
     }
 
