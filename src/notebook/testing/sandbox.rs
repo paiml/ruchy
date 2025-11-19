@@ -979,7 +979,7 @@ mod tests {
 
     #[test]
     fn test_binary_operations() {
-        let ops = vec![
+        let ops = [
             BinaryOp::Add,
             BinaryOp::Sub,
             BinaryOp::Mul,

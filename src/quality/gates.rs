@@ -913,7 +913,7 @@ mod tests {
     #[test]
     fn test_violation_enums_coverage() {
         // Test all ViolationType variants can be created and compared
-        let types = vec![
+        let types = [
             ViolationType::OverallScore,
             ViolationType::Grade,
             ViolationType::Correctness,

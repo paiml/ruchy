@@ -1136,7 +1136,7 @@ mod tests {
         builder.start_function("test_binops".to_string(), Type::Unit);
         let block = builder.new_block();
 
-        let ops = vec![
+        let ops = [
             BinOp::Add,
             BinOp::Sub,
             BinOp::Mul,
