@@ -120,7 +120,7 @@ fn test_opt_global_001_05_benchmark_baseline() {
 
 /// Test 6: Statistical validation - collect N=30 runs
 #[test]
-#[ignore] // Run manually: cargo test opt_global_001_06 -- --ignored --nocapture
+#[ignore = "Run manually: cargo test opt_global_001_06 -- --ignored --nocapture"]
 fn test_opt_global_001_06_statistical_validation_baseline() {
     use std::time::Instant;
 
@@ -169,7 +169,7 @@ fn test_opt_global_001_06_statistical_validation_baseline() {
 
 /// Test 7: PGO speedup validation (requires baseline)
 #[test]
-#[ignore] // Run after PGO build: cargo test opt_global_001_07 -- --ignored --nocapture
+#[ignore = "Run after PGO build: cargo test opt_global_001_07 -- --ignored --nocapture"]
 fn test_opt_global_001_07_pgo_speedup_validation() {
     use std::time::Instant;
 

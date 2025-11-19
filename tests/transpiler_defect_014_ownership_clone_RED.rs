@@ -28,7 +28,7 @@ fn temp_dir() -> TempDir {
 
 /// Test 1: Vec indexing with non-Copy struct should auto-clone
 #[test]
-#[ignore] // RED: This test MUST fail until fix is implemented
+#[ignore = "RED: This test MUST fail until fix is implemented"]
 fn test_defect_014_red_vec_index_non_copy_struct() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
@@ -66,7 +66,7 @@ fun main() {
 
 /// Test 2: Vec indexing in variable assignment should auto-clone
 #[test]
-#[ignore] // RED: This test MUST fail until fix is implemented
+#[ignore = "RED: This test MUST fail until fix is implemented"]
 fn test_defect_014_red_vec_index_variable_assignment() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");

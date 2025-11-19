@@ -150,7 +150,7 @@ let cell = matrix[0][1]
 }
 
 #[test]
-#[ignore] // TODO: Blocked by parameter type inference bug - transpiler infers `a`, `b`, `i`, `j` as `&str`
+#[ignore = "TODO: Blocked by parameter type inference bug - transpiler infers `a`, `b`, `i`, `j` as `&str`"]
 fn test_transpiler_type_compile_bench_002() {
     // Integration test: BENCH-002 should compile successfully
     use std::fs;

@@ -74,7 +74,7 @@ fn test_perf_002_phase4_01_pgo_flag_exists() {
 /// Test 2: PGO displays initial build message
 /// Expected: Output contains "Building with profile generation"
 #[test]
-#[ignore] // Requires interactive input - run manually
+#[ignore = "Requires interactive input - run manually"]
 fn test_perf_002_phase4_02_displays_initial_build_message() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -99,7 +99,7 @@ fn test_perf_002_phase4_02_displays_initial_build_message() {
 /// Test 3: PGO creates intermediate profiled binary
 /// Expected: Creates binary with -profiled suffix
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_03_creates_profiled_binary() {
     let temp = TempDir::new().unwrap();
     let _file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -119,7 +119,7 @@ fn test_perf_002_phase4_03_creates_profiled_binary() {
 /// Test 4: PGO displays workload prompt
 /// Expected: Prompts user to run workload
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_04_displays_workload_prompt() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -144,7 +144,7 @@ fn test_perf_002_phase4_04_displays_workload_prompt() {
 /// Test 5: PGO displays final build message
 /// Expected: Shows "Building with profile-guided optimization"
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_05_displays_final_build_message() {
     // This would be tested in integration test with mocked input
     // Cannot test easily without automation
@@ -153,7 +153,7 @@ fn test_perf_002_phase4_05_displays_final_build_message() {
 /// Test 6: PGO creates final optimized binary
 /// Expected: Creates the requested output binary
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_06_creates_final_binary() {
     // This would verify the final binary exists after PGO process
 }
@@ -161,7 +161,7 @@ fn test_perf_002_phase4_06_creates_final_binary() {
 /// Test 7: PGO shows profile data location
 /// Expected: Displays path to profile data directory
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_07_shows_profile_data_location() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -186,7 +186,7 @@ fn test_perf_002_phase4_07_shows_profile_data_location() {
 /// Test 8: PGO without --profile uses default
 /// Expected: Works with default optimization level
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_08_works_without_profile_flag() {
     // PGO should work even without explicit --profile flag
 }
@@ -194,7 +194,7 @@ fn test_perf_002_phase4_08_works_without_profile_flag() {
 /// Test 9: PGO with --profile release-ultra
 /// Expected: Combines PGO with release-ultra profile
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_09_works_with_release_ultra() {
     let temp = TempDir::new().unwrap();
     let _file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -206,7 +206,7 @@ fn test_perf_002_phase4_09_works_with_release_ultra() {
 /// Test 10: PGO displays visual progress indicators
 /// Expected: Shows checkmarks or progress for each step
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_10_displays_progress_indicators() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_ruchy_file(&temp, "test.ruchy", simple_ruchy_program());
@@ -248,7 +248,7 @@ fn test_perf_002_phase4_11_pgo_in_help() {
 /// Test 12: --pgo without --profile defaults to release
 /// Expected: Uses release profile settings
 #[test]
-#[ignore] // Requires compilation
+#[ignore = "Requires compilation"]
 fn test_perf_002_phase4_12_pgo_defaults_to_release() {
     // Would verify that PGO without explicit profile uses release settings
 }
@@ -260,7 +260,7 @@ fn test_perf_002_phase4_12_pgo_defaults_to_release() {
 /// Property Test 1: PGO always creates two binaries
 /// Expected: Creates both profiled and final binary
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_property_creates_two_binaries() {
     // Property: PGO process always creates exactly 2 binaries:
     // 1. <output>-profiled (intermediate)
@@ -270,7 +270,7 @@ fn test_perf_002_phase4_property_creates_two_binaries() {
 /// Property Test 2: Profile data directory is always in /tmp/ruchy-pgo-*
 /// Expected: Consistent naming pattern for profile data
 #[test]
-#[ignore] // Requires interactive input
+#[ignore = "Requires interactive input"]
 fn test_perf_002_phase4_property_profile_data_location() {
     // Property: Profile data is always stored in /tmp/ruchy-pgo-XXXXX
 }
@@ -278,7 +278,7 @@ fn test_perf_002_phase4_property_profile_data_location() {
 /// Property Test 3: PGO binaries are executable
 /// Expected: Both profiled and final binaries have execute permissions
 #[test]
-#[ignore] // Requires compilation
+#[ignore = "Requires compilation"]
 fn test_perf_002_phase4_property_binaries_executable() {
     // Property: All generated binaries have execute permission
 }

@@ -140,7 +140,7 @@ fn test_issue_116_transpile_file_methods() {
 // ============================================================================
 
 #[test]
-#[ignore] // Run with: cargo test --test issue_116_file_methods -- --ignored
+#[ignore = "Run with: cargo test --test issue_116_file_methods -- --ignored"]
 fn property_read_line_preserves_content() {
     use proptest::prelude::*;
 

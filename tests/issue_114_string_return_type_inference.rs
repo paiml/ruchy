@@ -116,7 +116,7 @@ fun mixed(flag) {
 }
 
 #[test]
-#[ignore] // Parameter type inference from + operator is ambiguous without type annotations
+#[ignore = "Parameter type inference from + operator is ambiguous without type annotations"]
 fn test_issue_114_string_concatenation_with_plus() {
     // Test 5: String concatenation with + operator
     // NOTE: This is ambiguous - we can't determine if a+b is string concat or int addition

@@ -266,7 +266,7 @@ fn test_perf_002c_dce_with_constant_propagation() {
 /// Property Test 1: Dead Code Elimination preserves semantics
 /// Invariant: Optimized code produces same result as original
 #[test]
-#[ignore] // Run with: cargo test property_dce -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_dce -- --ignored --nocapture"]
 fn property_dce_preserves_semantics() {
     use proptest::prelude::*;
 
@@ -297,7 +297,7 @@ fn property_dce_preserves_semantics() {
 /// Property Test 2: DCE is idempotent
 /// Invariant: DCE(DCE(code)) == DCE(code) - applying twice produces same result
 #[test]
-#[ignore] // Run with: cargo test property_idempotent -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_idempotent -- --ignored --nocapture"]
 fn property_dce_idempotent() {
     use proptest::prelude::*;
 
@@ -341,7 +341,7 @@ fn property_dce_idempotent() {
 /// Property Test 3: Live code is never eliminated
 /// Invariant: Variables that are used must remain in output
 #[test]
-#[ignore] // Run with: cargo test property_no_live_eliminated -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_no_live_eliminated -- --ignored --nocapture"]
 fn property_no_live_code_eliminated() {
     use proptest::prelude::*;
 

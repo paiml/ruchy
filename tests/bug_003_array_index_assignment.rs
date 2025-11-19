@@ -158,7 +158,7 @@ fn test_bug_003_bench_002_matrix_multiplication() {
 // ============================================================================
 
 #[test]
-#[ignore] // Run with: cargo test --test bug_003_array_index_assignment -- --ignored
+#[ignore = "Run with: cargo test --test bug_003_array_index_assignment -- --ignored"]
 fn property_array_assignment_preserves_others() {
     use proptest::prelude::*;
 
