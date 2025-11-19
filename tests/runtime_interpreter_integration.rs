@@ -88,7 +88,7 @@ fn test_interpreter_basics_mutability() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_basic_calls() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -101,7 +101,7 @@ fn test_interpreter_functions_basic_calls() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_return_values() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -114,7 +114,7 @@ fn test_interpreter_functions_return_values() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_default_params() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -127,7 +127,7 @@ fn test_interpreter_functions_default_params() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_lambdas() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -140,7 +140,7 @@ fn test_interpreter_functions_lambdas() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_higher_order() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -152,7 +152,7 @@ fn test_interpreter_functions_higher_order() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_recursion() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -164,7 +164,7 @@ fn test_interpreter_functions_recursion() {
 }
 
 #[test]
-#[ignore] // TODO: Fix closure/function handling in 02_functions.ruchy
+#[ignore = "TODO: Fix closure/function handling in 02_functions.ruchy"]
 fn test_interpreter_functions_nested() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -180,7 +180,7 @@ fn test_interpreter_functions_nested() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_if_else() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -193,7 +193,7 @@ fn test_interpreter_control_if_else() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_pattern_matching() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -207,7 +207,7 @@ fn test_interpreter_control_pattern_matching() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_for_loop() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -224,7 +224,7 @@ fn test_interpreter_control_for_loop() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_while_loop() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -238,7 +238,7 @@ fn test_interpreter_control_while_loop() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_loop_with_break() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -252,7 +252,7 @@ fn test_interpreter_control_loop_with_break() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_loop_with_continue() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -267,7 +267,7 @@ fn test_interpreter_control_loop_with_continue() {
 }
 
 #[test]
-#[ignore] // TODO: Fix control flow issues in 03_control_flow.ruchy
+#[ignore = "TODO: Fix control flow issues in 03_control_flow.ruchy"]
 fn test_interpreter_control_pattern_guards() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -285,7 +285,7 @@ fn test_interpreter_control_pattern_guards() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix collections functionality
+#[ignore = "TODO: Fix collections functionality"]
 fn test_interpreter_collections_arrays() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -314,7 +314,7 @@ fn test_interpreter_strings_operations() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Implement proper error handling
+#[ignore = "TODO: Implement proper error handling"]
 fn test_interpreter_error_handling() {
     // Note: Error handling examples may intentionally demonstrate errors
     // We test that the file can be parsed and executed, even if it contains error examples
@@ -333,7 +333,7 @@ fn test_interpreter_error_handling() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix pipeline operator len() method support
+#[ignore = "TODO: Fix pipeline operator len() method support"]
 fn test_interpreter_pipeline_operator() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -348,7 +348,7 @@ fn test_interpreter_pipeline_operator() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix pattern matching edge cases
+#[ignore = "TODO: Fix pattern matching edge cases"]
 fn test_interpreter_pattern_matching_comprehensive() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -363,7 +363,7 @@ fn test_interpreter_pattern_matching_comprehensive() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix iterator functionality
+#[ignore = "TODO: Fix iterator functionality"]
 fn test_interpreter_iterators() {
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -378,7 +378,7 @@ fn test_interpreter_iterators() {
 // ============================================================================
 
 #[test]
-#[ignore] // TODO: Fix algorithm examples
+#[ignore = "TODO: Fix algorithm examples"]
 fn test_interpreter_algorithms() {
     Command::cargo_bin("ruchy")
         .unwrap()

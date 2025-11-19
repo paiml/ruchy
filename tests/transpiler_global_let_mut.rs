@@ -220,7 +220,7 @@ println!("{}", x);"#;
 
 /// Test case 7: Verify the bug exists (this test documents the current buggy behavior)
 #[test]
-#[ignore] // Remove this once bug is fixed
+#[ignore = "Remove this once bug is fixed"]
 fn test_transpiler_bug_documented() {
     let code = "let mut x = 0;";
 

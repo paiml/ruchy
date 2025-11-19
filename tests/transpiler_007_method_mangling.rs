@@ -76,7 +76,7 @@ fun main() {
 
 /// Test 2: `HashSet.add()` SHOULD become `insert()` (Python compat)
 #[test]
-#[ignore] // Enable when we have proper type inference for HashSet
+#[ignore = "Enable when we have proper type inference for HashSet"]
 fn test_transpiler_007_02_hashset_add_becomes_insert() {
     let code = r"
 fun main() {

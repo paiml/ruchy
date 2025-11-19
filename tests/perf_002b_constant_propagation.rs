@@ -242,7 +242,7 @@ fn test_perf_002b_fibonacci_constants_propagated() {
 /// Property Test 1: Constant propagation preserves semantics
 /// Invariant: Optimized code produces same result as original
 #[test]
-#[ignore] // Run with: cargo test property_propagation -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_propagation -- --ignored --nocapture"]
 fn property_propagation_preserves_semantics() {
     use proptest::prelude::*;
 
@@ -271,7 +271,7 @@ fn property_propagation_preserves_semantics() {
 /// Property Test 2: Mutable variables are never propagated
 /// Invariant: If variable is mutable, its value is NOT substituted
 #[test]
-#[ignore] // Run with: cargo test property_no_propagate_mutable -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_no_propagate_mutable -- --ignored --nocapture"]
 fn property_no_propagate_mutable() {
     use proptest::prelude::*;
 
@@ -296,7 +296,7 @@ fn property_no_propagate_mutable() {
 /// Property Test 3: Propagation with arithmetic operations
 /// Invariant: Chained arithmetic produces correct folded result
 #[test]
-#[ignore] // Run with: cargo test property_arithmetic_chain -- --ignored --nocapture
+#[ignore = "Run with: cargo test property_arithmetic_chain -- --ignored --nocapture"]
 fn property_arithmetic_chain() {
     use proptest::prelude::*;
 

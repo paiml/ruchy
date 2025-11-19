@@ -20,7 +20,7 @@ mod property_tests {
     use assert_cmd::Command;
 
     #[test]
-    #[ignore] // Run with: cargo test --test issue_114_usize_casting property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test --test issue_114_usize_casting property_tests -- --ignored --nocapture"]
     fn property_all_comparison_operators_generate_usize_cast() {
         // Property: For ANY comparison operator, .len() comparisons should cast to usize
         let operators = vec!["<", ">", "<=", ">=", "==", "!="];

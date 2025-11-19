@@ -202,7 +202,7 @@ mod property_tests {
     /// Invariant: If a string literal is assigned to a variable that gets reassigned,
     /// the transpiled output MUST use `String::from()` or .`to_string()`, NOT raw &str
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn property_mutable_strings_always_use_string_type() {
         proptest!(|(
             initial_value in "[a-zA-Z]{3,10}",
@@ -258,7 +258,7 @@ fun main() {{
     ///
     /// Invariant: If a string literal is never reassigned, it should stay as &str
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn property_immutable_strings_stay_str() {
         proptest!(|(value in "[a-zA-Z]{3,10}")| {
             let temp = temp_dir();
@@ -307,7 +307,7 @@ fun main() {{
     ///
     /// Tests that any number of string concatenations (1-10) compile successfully
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn property_nary_string_concatenations_compile() {
         proptest!(|(
             values in prop::collection::vec("[a-zA-Z]{2,5}", 2..=10)

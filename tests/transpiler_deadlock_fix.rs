@@ -271,7 +271,7 @@ mod property_tests {
     /// Property: Any global variable assignment should not deadlock
     /// Strategy: Generate random variable names and values
     #[test]
-    #[ignore] // Run with: cargo test property_tests -- --ignored --nocapture
+    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn prop_no_deadlock_on_any_global_assignment() {
         proptest!(|(
             var_name in "[a-z]{3,8}",

@@ -194,7 +194,7 @@ fn test_issue_117_transpile_json_methods() {
 // ============================================================================
 
 #[test]
-#[ignore] // Run with: cargo test --test issue_117_json_parsing -- --ignored
+#[ignore = "Run with: cargo test --test issue_117_json_parsing -- --ignored"]
 fn property_json_roundtrip_preserves_data() {
     use proptest::prelude::*;
 
