@@ -789,7 +789,7 @@ mod tests {
     #[test]
     fn test_float_log() {
         assert_eq!(
-            eval_float_method(2.718_281_828_459_045, "ln", true).unwrap(),
+            eval_float_method(std::f64::consts::E, "ln", true).unwrap(),
             Value::Float(1.0)
         );
         assert_eq!(
@@ -804,9 +804,9 @@ mod tests {
 
     #[test]
     fn test_float_to_string() {
-        let result = eval_float_method(3.14, "to_string", true).unwrap();
+        let result = eval_float_method(std::f64::consts::PI, "to_string", true).unwrap();
         match result {
-            Value::String(s) => assert_eq!(s.as_ref(), "3.14"),
+            Value::String(s) => assert_eq!(s.as_ref(), &std::f64::consts::PI.to_string()),
             _ => panic!("Expected String"),
         }
     }
