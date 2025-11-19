@@ -5,6 +5,16 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Changed
+- **[PMAT] Code Quality Improvements** Implemented rust-project-score recommendations
+  - **cargo fmt**: Fixed trailing whitespace in tests/transpiler_009_standalone_functions.rs
+  - **cargo clippy --fix**: Auto-fixed 4 critical issues + 300+ file improvements
+  - **Security**: Updated wasmtime 38.0.2 → 38.0.4 (fixes RUSTSEC-2025-0118)
+  - **Profiling**: Added [profile.profiling] with debug symbols for flamegraph/perf
+  - **Score Impact**: 56.5/114 (49.6%, D) → 58.5/114 (51.3%, D)
+  - **Code Quality**: 7.0/26 → 9.0/26 (+2.0)
+  - **Rust Tooling Compliance**: 11.0/25 → 15.0/25 (+4.0)
+  - **Files Modified**: 411 (25409 insertions, 12691 deletions)
+  - **Commit**: a0ac9668
 - **[CERTEZA-001] Parser Code Quality Refactoring** Consolidated duplicate Expr creation patterns in src/frontend/parser/mod.rs
   - **Extracted Helper**: create_expr(kind) - Creates Expr with default span and empty attributes
   - **Duplication Reduction**: 13 occurrences of identical Expr struct construction consolidated
