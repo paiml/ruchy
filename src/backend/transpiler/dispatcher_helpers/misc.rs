@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn test_transpile_type_cast_large_value() {
         let transpiler = test_transpiler();
-        let expr = int_expr(9999999);
+        let expr = int_expr(9_999_999);
         let result = transpiler.transpile_type_cast(&expr, "i64").unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("as i64"));

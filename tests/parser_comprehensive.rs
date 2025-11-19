@@ -654,7 +654,7 @@ fn test_parse_complex_arithmetic() {
 #[test]
 fn property_parse_all_integers() {
     // Property: Parser handles all integer ranges
-    for n in [-1000, -1, 0, 1, 42, 999, 1000000] {
+    for n in [-1000, -1, 0, 1, 42, 999, 1_000_000] {
         ruchy_cmd()
             .arg("-e")
             .arg(format!("println({n})"))
