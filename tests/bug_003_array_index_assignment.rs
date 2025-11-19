@@ -2,7 +2,6 @@
 // EXTREME TDD Protocol: RED → GREEN → REFACTOR → VALIDATE
 // GitHub Issue: https://github.com/paiml/ruchy-book/blob/main/docs/bugs/ruchy-runtime-bugs.md#bug-003
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until array index assignment is implemented
