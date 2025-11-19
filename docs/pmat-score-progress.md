@@ -35,7 +35,7 @@
   - **Commits**: 11 commits
   - **Warnings**: 180 (down from ~360)
 
-- **Session 2025-11-19 (Part 2 - Continuation)**: Completing PI fixes
+- **Session 2025-11-19 (Part 2 - Continuation)**: Completing systematic fixes
   - ✅ PI approximation: completed all remaining (8 instances in builtins.rs)
     - test_builtin_type_of_float
     - test_builtin_abs_negative_float (input + assertion)
@@ -43,10 +43,16 @@
     - test_builtin_parse_float_valid (parse + assertion)
     - test_builtin_dbg_different_types
   - ✅ Long literals: fixed 3 more instances (100000 → 100_000 in property tests)
-  - **Total PI fixes**: 14/14 complete across entire project
-  - **Progress**: All PI approximation warnings eliminated
-  - **Commits**: 2 commits (batch 3 + long literals)
-  - **Warnings**: ~105 (down from 180)
+  - ✅ Math constants: fixed E and PI approximations in eval_method_dispatch.rs
+    - Euler's constant: 2.718... → std::f64::consts::E
+    - PI constant: 3.14 → std::f64::consts::PI
+  - ✅ Dead code removal: deleted 2 unused property test generators
+    - arb_simple_expr() from property_jit_002.rs
+    - arb_generic_params() from property_type_parsing.rs
+  - **Total fixes**: 16 PI/E constants, 6 long literals, 2 dead functions
+  - **Progress**: All approx_constant warnings eliminated
+  - **Commits**: 6 commits (batch 3, long literals, math constants, dead code, docs x2)
+  - **Warnings**: ~152 actual warnings (75 deprecated assert_cmd, 7 similar names, casting)
 
 **Tools Installed**:
 - ✅ Miri (nightly)
