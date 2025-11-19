@@ -310,11 +310,11 @@ proptest! {
         let columns = vec![
             DataFrameColumn {
                 name: "row_id".to_string(),
-                values: (0..num_rows).map(|i| Value::Integer(i as i64)).collect(),
+                values: (0..num_rows).map(|i| Value::Integer(i.try_into().expect("test values fit in i64"))).collect(),
             },
             DataFrameColumn {
                 name: "data".to_string(),
-                values: (0..num_rows).map(|i| Value::Integer((i * 10) as i64)).collect(),
+                values: (0..num_rows).map(|i| Value::Integer((i * 10).try_into().expect("test values fit in i64"))).collect(),
             },
         ];
 
@@ -362,11 +362,11 @@ proptest! {
         let columns = vec![
             DataFrameColumn {
                 name: "value".to_string(),
-                values: (0..num_rows).map(|i| Value::Integer(i as i64)).collect(),
+                values: (0..num_rows).map(|i| Value::Integer(i.try_into().expect("test values fit in i64"))).collect(),
             },
         ];
 
-        let expected_count = (0..num_rows).filter(|&i| (i as i64) > threshold).count();
+        let expected_count = (0..num_rows).filter(|&i| i.try_into().map(|v: i64| v > threshold).unwrap_or(false)).count();
 
         let condition = Expr::new(
             ExprKind::Literal(Literal::Bool(true)),

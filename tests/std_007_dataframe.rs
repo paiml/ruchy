@@ -416,7 +416,7 @@ mod property_tests {
             let columns: Vec<(&str, Vec<i64>)> = col_names.iter()
                 .enumerate()
                 .map(|(i, name)| {
-                    let values: Vec<i64> = (0..rows).map(|j| (i * 100 + j) as i64).collect();
+                    let values: Vec<i64> = (0..rows).map(|j| (i * 100 + j).try_into().expect("test values fit in i64")).collect();
                     (name.as_str(), values)
                 })
                 .collect();
@@ -460,8 +460,8 @@ mod property_tests {
             // Property: head and tail should preserve column count
 
             let df = ruchy::stdlib::dataframe::from_columns(vec![
-                ("col1", (0..n_rows).map(|x| x as i64).collect()),
-                ("col2", (0..n_rows).map(|x| (x * 2) as i64).collect()),
+                ("col1", (0..n_rows).map(|x| x.try_into().expect("test values fit in i64")).collect()),
+                ("col2", (0..n_rows).map(|x| (x * 2).try_into().expect("test values fit in i64")).collect()),
             ]).unwrap();
 
             let original_cols = df.shape().1;
