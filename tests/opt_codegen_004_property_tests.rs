@@ -3,7 +3,9 @@
 // Pattern: Based on PERF-002-B/C property tests (inline proptest! in #[ignore] tests)
 
 use ruchy::backend::transpiler::inline_expander::inline_small_functions;
-use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind};
+use ruchy::frontend::ast::{
+    BinaryOp, Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind,
+};
 
 // ============================================================================
 // PROPERTY 1: Idempotence (256 × 100 = 25,600 cases)

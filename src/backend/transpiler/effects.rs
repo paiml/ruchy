@@ -1,7 +1,7 @@
 //! Effect system transpilation - SPEC-001-I, SPEC-001-J
-use anyhow::bail;
 use super::{Result, Transpiler};
-use crate::frontend::ast::{EffectOperation, EffectHandler, Expr, Pattern};
+use crate::frontend::ast::{EffectHandler, EffectOperation, Expr, Pattern};
+use anyhow::bail;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -11,7 +11,11 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if transpilation fails
-    pub fn transpile_effect(&self, name: &str, operations: &[EffectOperation]) -> Result<TokenStream> {
+    pub fn transpile_effect(
+        &self,
+        name: &str,
+        operations: &[EffectOperation],
+    ) -> Result<TokenStream> {
         let effect_name = syn::parse_str::<syn::Ident>(name)?;
         let methods = transpile_effect_operations(self, operations)?;
 
@@ -27,7 +31,11 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if transpilation fails
-    pub fn transpile_handler(&self, expr: &Expr, _handlers: &[EffectHandler]) -> Result<TokenStream> {
+    pub fn transpile_handler(
+        &self,
+        expr: &Expr,
+        _handlers: &[EffectHandler],
+    ) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         Ok(quote! {
             {
@@ -55,7 +63,7 @@ fn transpile_single_operation(
     let op_name = syn::parse_str::<syn::Ident>(&op.name)?;
     let params = transpile_operation_params(transpiler, op)?;
     let return_type = transpile_operation_return_type(transpiler, op)?;
-    
+
     Ok(quote! {
         fn #op_name(&self, #(#params),*) #return_type;
     })
@@ -127,10 +135,7 @@ mod tests {
     #[test]
     fn test_transpile_handler_identifier() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Identifier("result".to_string()),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Identifier("result".to_string()), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -141,10 +146,7 @@ mod tests {
     #[test]
     fn test_transpile_handler_boolean() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -506,10 +508,7 @@ mod tests {
     #[test]
     fn test_transpile_handler_float() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Float(3.14)),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -520,10 +519,7 @@ mod tests {
     #[test]
     fn test_transpile_handler_null() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Null),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();

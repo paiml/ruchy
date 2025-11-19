@@ -584,11 +584,7 @@ fn error_case_pattern_mismatch_tuple_size() {
         let (a, b) = (1, 2, 3);
         println(a)
     ";
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg(code).assert().failure();
 }
 
 #[test]
@@ -598,11 +594,7 @@ fn error_case_pattern_mismatch_list_size() {
         let [a, b] = [1, 2, 3];
         println(a)
     ";
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg(code).assert().failure();
 }
 
 // ============================================================================
@@ -627,9 +619,7 @@ fn property_tuple_patterns_1_to_10() {
             .join(" + ");
         let expected_sum: i32 = (1..=size).sum();
 
-        let code = format!(
-            "let ({bindings}) = ({values}); println({sum_expr})"
-        );
+        let code = format!("let ({bindings}) = ({values}); println({sum_expr})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)
@@ -657,9 +647,7 @@ fn property_list_patterns_1_to_10() {
             .join(" + ");
         let expected_sum: i32 = (1..=size).sum();
 
-        let code = format!(
-            "let [{bindings}] = [{values}]; println({sum_expr})"
-        );
+        let code = format!("let [{bindings}] = [{values}]; println({sum_expr})");
         ruchy_cmd()
             .arg("-e")
             .arg(&code)

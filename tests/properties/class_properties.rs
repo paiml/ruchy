@@ -18,7 +18,6 @@
 ///
 /// IMPORTANT: Interpreter is NOT thread-safe (by design).
 /// Run these tests with: cargo test --test `class_property_tests` -- --test-threads=1
-
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::Interpreter;

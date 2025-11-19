@@ -7,7 +7,11 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
-    pub(in crate::backend::transpiler) fn transpile_type_cast(&self, expr: &Expr, target_type: &str) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_type_cast(
+        &self,
+        expr: &Expr,
+        target_type: &str,
+    ) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         // Map Ruchy types to Rust types
         let rust_type = match target_type {
@@ -27,19 +31,24 @@ impl Transpiler {
         Ok(quote! { (#expr_tokens as #rust_type) })
     }
 
-    pub(in crate::backend::transpiler) fn transpile_control_misc_expr(&self, expr: &Expr) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_control_misc_expr(
+        &self,
+        expr: &Expr,
+    ) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Break { label, value } => {
                 if let Some(val_expr) = value {
                     let val_tokens = self.transpile_expr(val_expr)?;
-                    Ok(Self::make_break_continue_with_value(true, label.as_ref(), Some(val_tokens)))
+                    Ok(Self::make_break_continue_with_value(
+                        true,
+                        label.as_ref(),
+                        Some(val_tokens),
+                    ))
                 } else {
                     Ok(Self::make_break_continue(true, label.as_ref()))
                 }
             }
-            ExprKind::Continue { label } => {
-                Ok(Self::make_break_continue(false, label.as_ref()))
-            }
+            ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label.as_ref())),
             ExprKind::Return { value } => {
                 // ISSUE-103: Don't add semicolon - will be added by statement context
                 // In match arms, return is an expression and shouldn't have trailing semicolon
@@ -54,7 +63,10 @@ impl Transpiler {
         }
     }
 
-    pub(in crate::backend::transpiler) fn make_break_continue(is_break: bool, label: Option<&String>) -> TokenStream {
+    pub(in crate::backend::transpiler) fn make_break_continue(
+        is_break: bool,
+        label: Option<&String>,
+    ) -> TokenStream {
         let keyword = if is_break {
             quote! { break }
         } else {
@@ -182,7 +194,10 @@ mod tests {
         let expr = int_expr(42);
         let result = transpiler.transpile_type_cast(&expr, "CustomType");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unsupported cast target type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unsupported cast target type"));
     }
 
     // Test 8: transpile_control_misc_expr - break without value or label
@@ -190,7 +205,10 @@ mod tests {
     fn test_transpile_control_misc_expr_break_simple() {
         let transpiler = test_transpiler();
         let expr = Expr {
-            kind: ExprKind::Break { label: None, value: None },
+            kind: ExprKind::Break {
+                label: None,
+                value: None,
+            },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],

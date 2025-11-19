@@ -161,7 +161,10 @@ fn try_match_some_pattern(
     value: &Value,
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         if variant_name == "Some" {
             if let Some(values) = data {
                 if values.len() == 1 {
@@ -178,7 +181,10 @@ fn try_match_some_pattern(
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn try_match_none_pattern(value: &Value) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         if variant_name == "None" && data.is_none() {
             return Ok(Some(vec![]));
         }
@@ -198,7 +204,10 @@ fn try_match_ok_pattern(
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
     // NEW: EnumVariant representation (Issue #85)
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         if variant_name == "Ok" {
             if let Some(values) = data {
                 if !values.is_empty() {
@@ -235,7 +244,10 @@ fn try_match_err_pattern(
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
     // NEW: EnumVariant representation (Issue #85)
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         if variant_name == "Err" {
             if let Some(values) = data {
                 if !values.is_empty() {
@@ -270,7 +282,10 @@ fn try_match_qualified_name_pattern(
     path: &[String],
     value: &Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         // Check if variant is unit (no data) and name matches
         if data.is_none() && path.last() == Some(variant_name) {
             return Ok(Some(vec![]));
@@ -291,7 +306,10 @@ fn try_match_tuple_variant_pattern(
     value: &Value,
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
-    if let Value::EnumVariant { variant_name, data, .. } = value {
+    if let Value::EnumVariant {
+        variant_name, data, ..
+    } = value
+    {
         // Check if variant name matches the last component of path
         if path.last() == Some(variant_name) {
             // Check if variant has data

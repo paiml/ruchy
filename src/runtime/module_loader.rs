@@ -5,11 +5,11 @@
 
 use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::parser::Parser;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::cell::RefCell;
 
 /// Errors that can occur during module resolution
 #[derive(Debug, Clone)]
@@ -225,7 +225,7 @@ fn extract_symbols_from_ast(ast: &Expr) -> HashMap<String, Symbol> {
     // Get list of expressions to process
     let exprs: Vec<&Expr> = match &ast.kind {
         ExprKind::Block(exprs) => exprs.iter().collect(),
-        _ => vec![ast],  // Single expression
+        _ => vec![ast], // Single expression
     };
 
     for expr in exprs {

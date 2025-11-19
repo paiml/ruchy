@@ -46,7 +46,9 @@ fn measure_bytecode(source: &str, iterations: u32) -> u128 {
 
 /// Calculate speedup percentage: (`ast_time` - `bytecode_time`) / `ast_time` * 100
 fn speedup_percentage(ast_time: u128, bytecode_time: u128) -> f64 {
-    if ast_time == 0 { return 0.0; }
+    if ast_time == 0 {
+        return 0.0;
+    }
     ((ast_time as f64 - bytecode_time as f64) / ast_time as f64) * 100.0
 }
 
@@ -66,17 +68,31 @@ fn test_opt_010_arithmetic_speedup() {
         println!("Arithmetic/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
-        assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
+        assert!(
+            speedup > 0.0,
+            "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%"
+        );
     }
 }
 
 #[test]
 fn test_opt_010_loop_speedup() {
     let workloads = vec![
-        ("count_to_10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }", 1000),
-        ("sum_1_to_10", "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }", 1000),
-        ("countdown", "{ let mut i = 10; while i > 0 { i = i - 1 }; i }", 1000),
+        (
+            "count_to_10",
+            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
+            1000,
+        ),
+        (
+            "sum_1_to_10",
+            "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",
+            1000,
+        ),
+        (
+            "countdown",
+            "{ let mut i = 10; while i > 0 { i = i - 1 }; i }",
+            1000,
+        ),
     ];
 
     for (name, code, iterations) in workloads {
@@ -84,11 +100,15 @@ fn test_opt_010_loop_speedup() {
         let bytecode_time = measure_bytecode(code, iterations);
         let speedup = speedup_percentage(ast_time, bytecode_time);
 
-        println!("Loop/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
+        println!(
+            "Loop/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%"
+        );
 
         // Bytecode should be faster (positive speedup)
-        assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
+        assert!(
+            speedup > 0.0,
+            "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%"
+        );
     }
 }
 
@@ -109,8 +129,10 @@ fn test_opt_010_comparison_speedup() {
         println!("Comparison/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
-        assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
+        assert!(
+            speedup > 0.0,
+            "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%"
+        );
     }
 }
 
@@ -119,7 +141,11 @@ fn test_opt_010_control_flow_speedup() {
     let workloads = vec![
         ("if_true", "if true { 42 } else { 0 }", 10000),
         ("if_false", "if false { 0 } else { 42 }", 10000),
-        ("nested_if", "if true { if false { 0 } else { 42 } } else { 100 }", 10000),
+        (
+            "nested_if",
+            "if true { if false { 0 } else { 42 } } else { 100 }",
+            10000,
+        ),
         ("if_comparison", "if 10 > 5 { 42 } else { 0 }", 10000),
     ];
 
@@ -131,8 +157,10 @@ fn test_opt_010_control_flow_speedup() {
         println!("ControlFlow/{name}: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
         // Bytecode should be faster (positive speedup)
-        assert!(speedup > 0.0,
-                "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%");
+        assert!(
+            speedup > 0.0,
+            "Bytecode should be faster than AST for {name}: speedup={speedup:.1}%"
+        );
     }
 }
 
@@ -160,15 +188,21 @@ fn test_opt_010_fibonacci_speedup() {
     println!("Fibonacci: AST={ast_time}µs, Bytecode={bytecode_time}µs, Speedup={speedup:.1}%");
 
     // Bytecode should be faster (positive speedup)
-    assert!(speedup > 0.0,
-            "Bytecode should be faster than AST for fibonacci: speedup={speedup:.1}%");
+    assert!(
+        speedup > 0.0,
+        "Bytecode should be faster than AST for fibonacci: speedup={speedup:.1}%"
+    );
 
     // Verify correctness (Fib(20) = 6765)
     let mut parser = Parser::new(fib_code);
     let ast = parser.parse().expect("Parse failed");
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast).expect("Eval failed");
-    assert_eq!(result, Value::Integer(6765), "Fibonacci result should be 6765");
+    assert_eq!(
+        result,
+        Value::Integer(6765),
+        "Fibonacci result should be 6765"
+    );
 }
 
 #[test]
@@ -179,18 +213,37 @@ fn test_opt_010_comprehensive_performance_report() {
     let workloads = vec![
         ("Arithmetic/Simple", "10 + 32", 10000),
         ("Arithmetic/Complex", "(10 + 5) * 2 + 12", 10000),
-        ("Loop/Count10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }", 1000),
-        ("Loop/Sum10", "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }", 1000),
+        (
+            "Loop/Count10",
+            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
+            1000,
+        ),
+        (
+            "Loop/Sum10",
+            "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",
+            1000,
+        ),
         ("Comparison/Eq", "42 == 42", 10000),
-        ("Comparison/Chain", "(10 < 20) && (20 < 30) && (30 < 40)", 10000),
+        (
+            "Comparison/Chain",
+            "(10 < 20) && (20 < 30) && (30 < 40)",
+            10000,
+        ),
         ("ControlFlow/If", "if true { 42 } else { 0 }", 10000),
-        ("ControlFlow/Nested", "if true { if false { 0 } else { 42 } } else { 100 }", 10000),
+        (
+            "ControlFlow/Nested",
+            "if true { if false { 0 } else { 42 } } else { 100 }",
+            10000,
+        ),
     ];
 
     let mut total_ast = 0u128;
     let mut total_bytecode = 0u128;
 
-    println!("{:<30} {:>15} {:>15} {:>10}", "Workload", "AST (µs)", "Bytecode (µs)", "Speedup");
+    println!(
+        "{:<30} {:>15} {:>15} {:>10}",
+        "Workload", "AST (µs)", "Bytecode (µs)", "Speedup"
+    );
     println!("{:-<70}", "");
 
     for (name, code, iterations) in workloads {
@@ -206,8 +259,10 @@ fn test_opt_010_comprehensive_performance_report() {
 
     println!("{:-<70}", "");
     let overall_speedup = speedup_percentage(total_ast, total_bytecode);
-    println!("{:<30} {:>15} {:>15} {:>9.1}%",
-             "TOTAL", total_ast, total_bytecode, overall_speedup);
+    println!(
+        "{:<30} {:>15} {:>15} {:>9.1}%",
+        "TOTAL", total_ast, total_bytecode, overall_speedup
+    );
 
     println!("\nTarget: 40-60% speedup");
     println!("Actual: {overall_speedup:.1}% speedup");

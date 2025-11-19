@@ -71,28 +71,22 @@ fn arb_arithmetic_expr() -> impl Strategy<Value = String> {
         10, // max size
         3,  // items per collection
         |inner| {
-            (inner.clone(), arb_arithmetic_op(), inner).prop_map(|(left, op, right)| {
-                format!("({left} {op} {right})")
-            })
+            (inner.clone(), arb_arithmetic_op(), inner)
+                .prop_map(|(left, op, right)| format!("({left} {op} {right})"))
         },
     )
 }
 
 /// Generate arbitrary comparison expressions
 fn arb_comparison_expr() -> impl Strategy<Value = String> {
-    (arb_int_literal(), arb_comparison_op(), arb_int_literal()).prop_map(|(left, op, right)| {
-        format!("{left} {op} {right}")
-    })
+    (arb_int_literal(), arb_comparison_op(), arb_int_literal())
+        .prop_map(|(left, op, right)| format!("{left} {op} {right}"))
 }
 
 /// Generate arbitrary if/else expressions
 fn arb_if_expr() -> impl Strategy<Value = String> {
     (arb_comparison_expr(), arb_int_literal(), arb_int_literal()).prop_map(
-        |(cond, then_val, else_val)| {
-            format!(
-                "if {cond} {{ {then_val} }} else {{ {else_val} }}"
-            )
-        },
+        |(cond, then_val, else_val)| format!("if {cond} {{ {then_val} }} else {{ {else_val} }}"),
     )
 }
 

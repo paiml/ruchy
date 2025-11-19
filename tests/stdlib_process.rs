@@ -72,9 +72,7 @@ fn test_execute_invalid_command() {
     // Verify error
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(err.contains("No such file") ||
-            err.contains("not found") ||
-            err.contains("NotFound"));
+    assert!(err.contains("No such file") || err.contains("not found") || err.contains("NotFound"));
 }
 
 #[test]

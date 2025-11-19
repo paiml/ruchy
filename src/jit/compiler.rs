@@ -19,12 +19,12 @@
 
 use anyhow::{anyhow, Result};
 use cranelift::prelude::*;
-use cranelift_jit::{JITBuilder, JITModule};
-use cranelift_module::{Linkage, Module, FuncId};
 use cranelift_codegen::settings;
+use cranelift_jit::{JITBuilder, JITModule};
+use cranelift_module::{FuncId, Linkage, Module};
 use std::collections::HashMap;
 
-use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 
 /// JIT Compiler using Cranelift backend
 ///
@@ -73,12 +73,15 @@ impl JitCompiler {
         // Get native ISA (Instruction Set Architecture)
         let mut flag_builder = settings::builder();
         // Enable optimization
-        flag_builder.set("opt_level", "speed").map_err(|e| anyhow!("Failed to set opt_level: {e}"))?;
+        flag_builder
+            .set("opt_level", "speed")
+            .map_err(|e| anyhow!("Failed to set opt_level: {e}"))?;
         let flags = settings::Flags::new(flag_builder);
 
-        let isa = cranelift_native::builder().unwrap_or_else(|_| {
-            panic!("Cranelift native ISA not available on this platform")
-        }).finish(flags).map_err(|e| anyhow!("Failed to create ISA: {e}"))?;
+        let isa = cranelift_native::builder()
+            .unwrap_or_else(|_| panic!("Cranelift native ISA not available on this platform"))
+            .finish(flags)
+            .map_err(|e| anyhow!("Failed to create ISA: {e}"))?;
 
         // Create JIT builder with native target
         let builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
@@ -133,11 +136,9 @@ impl JitCompiler {
         sig.returns.push(AbiParam::new(types::I64));
 
         // Declare main function
-        let main_func_id = self.module.declare_function(
-            "main",
-            Linkage::Export,
-            &sig,
-        )?;
+        let main_func_id = self
+            .module
+            .declare_function("main", Linkage::Export, &sig)?;
 
         // Compile all nested functions first (so they're available for calls)
         self.compile_declared_functions(ast, &function_table)?;
@@ -188,7 +189,11 @@ impl JitCompiler {
     }
 
     /// Collect all function definitions and declare them (get `FuncIds`)
-    fn collect_and_declare_functions(&mut self, expr: &Expr, table: &mut HashMap<String, FuncId>) -> Result<()> {
+    fn collect_and_declare_functions(
+        &mut self,
+        expr: &Expr,
+        table: &mut HashMap<String, FuncId>,
+    ) -> Result<()> {
         if let ExprKind::Block(exprs) = &expr.kind {
             for e in exprs {
                 if let ExprKind::Function { name, params, .. } = &e.kind {
@@ -200,11 +205,7 @@ impl JitCompiler {
                     sig.returns.push(AbiParam::new(types::I64));
 
                     // Declare function
-                    let func_id = self.module.declare_function(
-                        name,
-                        Linkage::Local,
-                        &sig,
-                    )?;
+                    let func_id = self.module.declare_function(name, Linkage::Local, &sig)?;
 
                     table.insert(name.clone(), func_id);
                 }
@@ -214,10 +215,17 @@ impl JitCompiler {
     }
 
     /// Compile all declared functions
-    fn compile_declared_functions(&mut self, expr: &Expr, table: &HashMap<String, FuncId>) -> Result<()> {
+    fn compile_declared_functions(
+        &mut self,
+        expr: &Expr,
+        table: &HashMap<String, FuncId>,
+    ) -> Result<()> {
         if let ExprKind::Block(exprs) = &expr.kind {
             for e in exprs {
-                if let ExprKind::Function { name, params, body, .. } = &e.kind {
+                if let ExprKind::Function {
+                    name, params, body, ..
+                } = &e.kind
+                {
                     let func_id = *table.get(name).unwrap();
                     self.compile_function_body(func_id, params, body, table)?;
                 }
@@ -235,7 +243,12 @@ impl JitCompiler {
         function_table: &HashMap<String, FuncId>,
     ) -> Result<()> {
         // Set up function context
-        self.ctx.func.signature = self.module.declarations().get_function_decl(func_id).signature.clone();
+        self.ctx.func.signature = self
+            .module
+            .declarations()
+            .get_function_decl(func_id)
+            .signature
+            .clone();
 
         {
             let mut builder = FunctionBuilder::new(&mut self.ctx.func, &mut self.builder_context);
@@ -295,12 +308,14 @@ impl JitCompiler {
     /// Compile a Ruchy expression to Cranelift IR with variable context
     ///
     /// Returns the Cranelift value representing the expression result
-    fn compile_expr(builder: &mut FunctionBuilder, ctx: &mut CompileContext, expr: &Expr) -> Result<Value> {
+    fn compile_expr(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        expr: &Expr,
+    ) -> Result<Value> {
         match &expr.kind {
             // JIT-001: Integer literals
-            ExprKind::Literal(Literal::Integer(n, _)) => {
-                Ok(builder.ins().iconst(types::I64, *n))
-            }
+            ExprKind::Literal(Literal::Integer(n, _)) => Ok(builder.ins().iconst(types::I64, *n)),
 
             // JIT-002: Boolean literals
             ExprKind::Literal(Literal::Bool(b)) => {
@@ -308,9 +323,7 @@ impl JitCompiler {
             }
 
             // JIT-002: Unit literal ()
-            ExprKind::Literal(Literal::Unit) => {
-                Ok(builder.ins().iconst(types::I64, 0))
-            }
+            ExprKind::Literal(Literal::Unit) => Ok(builder.ins().iconst(types::I64, 0)),
 
             // JIT-001: Binary operations (+, -, *, /)
             // JIT-002: Comparisons (<=, ==, >, etc)
@@ -319,24 +332,22 @@ impl JitCompiler {
             }
 
             // JIT-002: Block expressions (sequence of statements, return last value)
-            ExprKind::Block(exprs) => {
-                Self::compile_block(builder, ctx, exprs)
-            }
+            ExprKind::Block(exprs) => Self::compile_block(builder, ctx, exprs),
 
             // JIT-002: If/else control flow
-            ExprKind::If { condition, then_branch, else_branch } => {
-                Self::compile_if(builder, ctx, condition, then_branch, else_branch.as_deref())
-            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => Self::compile_if(builder, ctx, condition, then_branch, else_branch.as_deref()),
 
             // JIT-002: Let bindings (variable declaration)
-            ExprKind::Let { name, value, body, .. } => {
-                Self::compile_let(builder, ctx, name, value, body)
-            }
+            ExprKind::Let {
+                name, value, body, ..
+            } => Self::compile_let(builder, ctx, name, value, body),
 
             // JIT-002: Identifier (variable lookup)
-            ExprKind::Identifier(name) => {
-                Self::compile_identifier(builder, ctx, name)
-            }
+            ExprKind::Identifier(name) => Self::compile_identifier(builder, ctx, name),
 
             // JIT-002: Function definition (skip in expression context - handled by Block)
             ExprKind::Function { .. } => {
@@ -345,49 +356,35 @@ impl JitCompiler {
             }
 
             // JIT-002: Call expression (function invocation)
-            ExprKind::Call { func, args } => {
-                Self::compile_call(builder, ctx, func, args)
-            }
+            ExprKind::Call { func, args } => Self::compile_call(builder, ctx, func, args),
 
             // JIT-003: Unary operations (negation, boolean NOT)
-            ExprKind::Unary { op, operand } => {
-                Self::compile_unary_op(builder, ctx, op, operand)
-            }
+            ExprKind::Unary { op, operand } => Self::compile_unary_op(builder, ctx, op, operand),
 
             // JIT-005: While loops
-            ExprKind::While { condition, body, .. } => {
-                Self::compile_while(builder, ctx, condition, body)
-            }
+            ExprKind::While {
+                condition, body, ..
+            } => Self::compile_while(builder, ctx, condition, body),
 
             // JIT-005: For loops (desugar to while)
-            ExprKind::For { var, iter, body, .. } => {
-                Self::compile_for(builder, ctx, var, iter, body)
-            }
+            ExprKind::For {
+                var, iter, body, ..
+            } => Self::compile_for(builder, ctx, var, iter, body),
 
             // JIT-005: Break statement
-            ExprKind::Break { .. } => {
-                Self::compile_break(builder, ctx)
-            }
+            ExprKind::Break { .. } => Self::compile_break(builder, ctx),
 
             // JIT-005B: Continue statement
-            ExprKind::Continue { .. } => {
-                Self::compile_continue(builder, ctx)
-            }
+            ExprKind::Continue { .. } => Self::compile_continue(builder, ctx),
 
             // JIT-008: Return statement
-            ExprKind::Return { value } => {
-                Self::compile_return(builder, ctx, value.as_deref())
-            }
+            ExprKind::Return { value } => Self::compile_return(builder, ctx, value.as_deref()),
 
             // JIT-005: Assignment (for loop variables)
-            ExprKind::Assign { target, value } => {
-                Self::compile_assign(builder, ctx, target, value)
-            }
+            ExprKind::Assign { target, value } => Self::compile_assign(builder, ctx, target, value),
 
             // JIT-007: Tuple literals
-            ExprKind::Tuple(elements) => {
-                Self::compile_tuple(builder, ctx, elements)
-            }
+            ExprKind::Tuple(elements) => Self::compile_tuple(builder, ctx, elements),
 
             // JIT-007: Field access (tuple.0, tuple.1, etc.)
             ExprKind::FieldAccess { object, field } => {
@@ -395,7 +392,10 @@ impl JitCompiler {
             }
 
             // JIT-002: Not yet implemented - fall back to error
-            _ => Err(anyhow!("JIT-002: Expression kind not yet supported: {:?}", expr.kind)),
+            _ => Err(anyhow!(
+                "JIT-002: Expression kind not yet supported: {:?}",
+                expr.kind
+            )),
         }
     }
 
@@ -448,7 +448,9 @@ impl JitCompiler {
                 builder.ins().uextend(types::I64, cmp)
             }
             BinaryOp::GreaterEqual => {
-                let cmp = builder.ins().icmp(IntCC::SignedGreaterThanOrEqual, lhs, rhs);
+                let cmp = builder
+                    .ins()
+                    .icmp(IntCC::SignedGreaterThanOrEqual, lhs, rhs);
                 builder.ins().uextend(types::I64, cmp)
             }
 
@@ -509,7 +511,9 @@ impl JitCompiler {
         let result_var = builder.declare_var(types::I64);
 
         // If left is true (non-zero), evaluate right; else short-circuit to false
-        builder.ins().brif(left_value, eval_right_block, &[], short_circuit_block, &[]);
+        builder
+            .ins()
+            .brif(left_value, eval_right_block, &[], short_circuit_block, &[]);
 
         // Left is true - evaluate right operand
         builder.switch_to_block(eval_right_block);
@@ -556,7 +560,9 @@ impl JitCompiler {
         let result_var = builder.declare_var(types::I64);
 
         // If left is true (non-zero), short-circuit to true; else evaluate right
-        builder.ins().brif(left_value, short_circuit_block, &[], eval_right_block, &[]);
+        builder
+            .ins()
+            .brif(left_value, short_circuit_block, &[], eval_right_block, &[]);
 
         // Left is true - short-circuit to true (1)
         builder.switch_to_block(short_circuit_block);
@@ -606,7 +612,9 @@ impl JitCompiler {
         // Loop block: Evaluate condition
         builder.switch_to_block(loop_block);
         let cond_value = Self::compile_expr(builder, ctx, condition)?;
-        builder.ins().brif(cond_value, body_block, &[], merge_block, &[]);
+        builder
+            .ins()
+            .brif(cond_value, body_block, &[], merge_block, &[]);
 
         // Body block: Execute loop body
         builder.switch_to_block(body_block);
@@ -646,7 +654,11 @@ impl JitCompiler {
     ) -> Result<Value> {
         // Extract range start/end from iterator
         let (start, end, inclusive) = match &iter.kind {
-            crate::frontend::ast::ExprKind::Range { start, end, inclusive } => (start, end, *inclusive),
+            crate::frontend::ast::ExprKind::Range {
+                start,
+                end,
+                inclusive,
+            } => (start, end, *inclusive),
             _ => return Err(anyhow!("JIT-005: For loop requires range iterator")),
         };
 
@@ -678,9 +690,17 @@ impl JitCompiler {
         builder.switch_to_block(loop_block);
         let current_val = builder.use_var(loop_var);
         let cond = if inclusive {
-            builder.ins().icmp(cranelift_codegen::ir::condcodes::IntCC::SignedLessThanOrEqual, current_val, end_val)
+            builder.ins().icmp(
+                cranelift_codegen::ir::condcodes::IntCC::SignedLessThanOrEqual,
+                current_val,
+                end_val,
+            )
         } else {
-            builder.ins().icmp(cranelift_codegen::ir::condcodes::IntCC::SignedLessThan, current_val, end_val)
+            builder.ins().icmp(
+                cranelift_codegen::ir::condcodes::IntCC::SignedLessThan,
+                current_val,
+                end_val,
+            )
         };
         builder.ins().brif(cond, body_block, &[], merge_block, &[]);
 
@@ -721,10 +741,7 @@ impl JitCompiler {
     /// Compile break statement - complexity ≤5
     ///
     /// Jump to current loop's merge block
-    fn compile_break(
-        builder: &mut FunctionBuilder,
-        ctx: &mut CompileContext,
-    ) -> Result<Value> {
+    fn compile_break(builder: &mut FunctionBuilder, ctx: &mut CompileContext) -> Result<Value> {
         match ctx.loop_merge_block {
             Some(merge_block) => {
                 // Create dummy value BEFORE terminating block
@@ -742,10 +759,7 @@ impl JitCompiler {
     /// Compile continue statement - complexity ≤5
     ///
     /// Jump to current loop's continue target (loop header or increment)
-    fn compile_continue(
-        builder: &mut FunctionBuilder,
-        ctx: &mut CompileContext,
-    ) -> Result<Value> {
+    fn compile_continue(builder: &mut FunctionBuilder, ctx: &mut CompileContext) -> Result<Value> {
         match ctx.loop_continue_block {
             Some(continue_block) => {
                 // Create dummy value BEFORE terminating block
@@ -805,7 +819,9 @@ impl JitCompiler {
         let new_val = Self::compile_expr(builder, ctx, value)?;
 
         // Look up variable
-        let var = ctx.variables.get(var_name)
+        let var = ctx
+            .variables
+            .get(var_name)
             .ok_or_else(|| anyhow!("JIT-005: Undefined variable: {var_name}"))?;
 
         // Update variable
@@ -816,7 +832,11 @@ impl JitCompiler {
     }
 
     /// Compile block expression (sequence of statements, return last value)
-    fn compile_block(builder: &mut FunctionBuilder, ctx: &mut CompileContext, exprs: &[Expr]) -> Result<Value> {
+    fn compile_block(
+        builder: &mut FunctionBuilder,
+        ctx: &mut CompileContext,
+        exprs: &[Expr],
+    ) -> Result<Value> {
         if exprs.is_empty() {
             // Empty block returns unit ()
             return Ok(builder.ins().iconst(types::I64, 0));
@@ -851,7 +871,9 @@ impl JitCompiler {
         let result_var = builder.declare_var(types::I64);
 
         // Branch based on condition
-        builder.ins().brif(cond_value, then_block, &[], else_block, &[]);
+        builder
+            .ins()
+            .brif(cond_value, then_block, &[], else_block, &[]);
 
         // Then branch
         builder.switch_to_block(then_block);
@@ -951,7 +973,9 @@ impl JitCompiler {
         name: &str,
     ) -> Result<Value> {
         // Lookup variable in context
-        let var = ctx.variables.get(name)
+        let var = ctx
+            .variables
+            .get(name)
             .ok_or_else(|| anyhow!("Undefined variable: {name}"))?;
 
         // Read variable value (Cranelift handles SSA)
@@ -972,7 +996,9 @@ impl JitCompiler {
         };
 
         // Lookup function reference in table (copy it to avoid borrow issues)
-        let func_ref = *ctx.functions.get(func_name)
+        let func_ref = *ctx
+            .functions
+            .get(func_name)
             .ok_or_else(|| anyhow!("Undefined function: {func_name}"))?;
 
         // Evaluate arguments
@@ -1018,7 +1044,8 @@ impl JitCompiler {
 
         // Track tuple size for field access
         ctx.tuple_sizes.insert(tuple_name.clone(), elements.len());
-        ctx.variables.insert(tuple_name, builder.declare_var(types::I64));
+        ctx.variables
+            .insert(tuple_name, builder.declare_var(types::I64));
 
         // Return tuple ID as handle
         Ok(builder.ins().iconst(types::I64, i64::from(tuple_id)))
@@ -1032,7 +1059,8 @@ impl JitCompiler {
         field: &str,
     ) -> Result<Value> {
         // Parse field index
-        let field_idx: usize = field.parse()
+        let field_idx: usize = field
+            .parse()
             .map_err(|_| anyhow!("JIT-007: Field must be numeric index: {field}"))?;
 
         // For tuple access, object must be an identifier
@@ -1040,7 +1068,9 @@ impl JitCompiler {
             // Check if this is a tuple variable
             if let Some(&tuple_size) = ctx.tuple_sizes.get(var_name) {
                 if field_idx >= tuple_size {
-                    return Err(anyhow!("JIT-007: Tuple index {field_idx} out of bounds (size {tuple_size})"));
+                    return Err(anyhow!(
+                        "JIT-007: Tuple index {field_idx} out of bounds (size {tuple_size})"
+                    ));
                 }
                 let elem_name = format!("{var_name}${field_idx}");
                 if let Some(&var) = ctx.variables.get(&elem_name) {
@@ -1061,7 +1091,9 @@ impl JitCompiler {
 
             Err(anyhow!("JIT-007: Variable '{var_name}' is not a tuple"))
         } else {
-            Err(anyhow!("JIT-007: Field access only supported on identifiers"))
+            Err(anyhow!(
+                "JIT-007: Field access only supported on identifiers"
+            ))
         }
     }
 
@@ -1081,7 +1113,10 @@ mod tests {
     #[test]
     fn test_jit_compiler_creation() {
         let compiler = JitCompiler::new();
-        assert!(compiler.is_ok(), "JIT compiler should initialize successfully");
+        assert!(
+            compiler.is_ok(),
+            "JIT compiler should initialize successfully"
+        );
     }
 
     #[test]
@@ -1110,7 +1145,10 @@ mod tests {
         let ast = Parser::new(code).parse().unwrap();
         let mut compiler = JitCompiler::new().unwrap();
         let result = compiler.compile_and_execute(&ast);
-        assert!(result.is_ok(), "JIT should compile complex arithmetic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "JIT should compile complex arithmetic: {result:?}"
+        );
         assert_eq!(result.unwrap(), 28); // (15) * 2 - 2 = 30 - 2 = 28
     }
 }

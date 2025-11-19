@@ -170,17 +170,15 @@ main()
     fs::write(&script, code).unwrap();
 
     // Transpile and check that return type is preserved
-    let output = ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .output()
-        .unwrap();
+    let output = ruchy_cmd().arg("transpile").arg(&script).output().unwrap();
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
 
     // Should have return type (not "fn test_helper() {")
-    assert!(transpiled.contains("fn test_helper() -> Result<i32, String>"),
-        "Function starting with 'test_' should retain return type annotation");
+    assert!(
+        transpiled.contains("fn test_helper() -> Result<i32, String>"),
+        "Function starting with 'test_' should retain return type annotation"
+    );
 
     // Should compile successfully
     ruchy_cmd()
@@ -218,19 +216,19 @@ main()
 "#;
     fs::write(&script, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .output()
-        .unwrap();
+    let output = ruchy_cmd().arg("transpile").arg(&script).output().unwrap();
 
     let transpiled = String::from_utf8(output.stdout).unwrap();
 
     // Should NOT have semicolon before comma
-    assert!(!transpiled.contains("return Err(e); ,"),
-        "Should not have semicolon before comma in match arm");
+    assert!(
+        !transpiled.contains("return Err(e); ,"),
+        "Should not have semicolon before comma in match arm"
+    );
 
     // Should have proper comma after return expression
-    assert!(transpiled.contains("return Err(e),") || transpiled.contains("return Err(e)"),
-        "Should have return expression without semicolon in match arm");
+    assert!(
+        transpiled.contains("return Err(e),") || transpiled.contains("return Err(e)"),
+        "Should have return expression without semicolon in match arm"
+    );
 }

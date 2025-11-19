@@ -49,10 +49,7 @@ fn test_dataframe_001_basic_compilation() {
     let source = temp.path().join("test.ruchy");
 
     // Create simple DataFrame code
-    fs::write(
-        &source,
-        r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#
-    ).unwrap();
+    fs::write(&source, r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#).unwrap();
 
     // Compile to binary
     let output_binary = temp.path().join("test_binary");
@@ -89,10 +86,7 @@ fn test_dataframe_001_cargo_toml_generation() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    fs::write(
-        &source,
-        r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#
-    ).unwrap();
+    fs::write(&source, r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#).unwrap();
 
     // Compile (this should generate Cargo.toml)
     let output_binary = temp.path().join("test_binary");
@@ -154,8 +148,9 @@ let df = df![{
     "age": [30, 25, 35]
 }];
 println(df);
-"#
-    ).unwrap();
+"#,
+    )
+    .unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -198,8 +193,9 @@ fn test_dataframe_001_filtering() {
 let df = df![{"x": [1, 2, 3, 4, 5]}];
 let filtered = df.filter(x > 3);
 println(filtered);
-"#
-    ).unwrap();
+"#,
+    )
+    .unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -239,8 +235,9 @@ let df1 = df![{"a": [1, 2, 3]}];
 let df2 = df![{"b": [4, 5, 6]}];
 println(df1);
 println(df2);
-"#
-    ).unwrap();
+"#,
+    )
+    .unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -276,10 +273,7 @@ fn test_dataframe_001_error_handling() {
     let source = temp.path().join("test.ruchy");
 
     // Invalid DataFrame syntax (missing column definition)
-    fs::write(
-        &source,
-        r"let df = df![]; println(df);"
-    ).unwrap();
+    fs::write(&source, r"let df = df![]; println(df);").unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -292,7 +286,7 @@ fn test_dataframe_001_error_handling() {
         .stderr(
             predicate::str::contains("df")
                 .or(predicate::str::contains("DataFrame"))
-                .or(predicate::str::contains("column"))
+                .or(predicate::str::contains("column")),
         );
 }
 
@@ -317,8 +311,9 @@ fn test_dataframe_001_large_dataframe() {
 
     fs::write(
         &source,
-        format!(r#"let df = df![{{"x": [{values_str}]}}]; println(df.len());"#)
-    ).unwrap();
+        format!(r#"let df = df![{{"x": [{values_str}]}}]; println(df.len());"#),
+    )
+    .unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -359,8 +354,9 @@ let df = df![{
     "string_col": ["a", "b", "c"]
 }];
 println(df);
-"#
-    ).unwrap();
+"#,
+    )
+    .unwrap();
 
     let output_binary = temp.path().join("test_binary");
     ruchy_cmd()
@@ -393,10 +389,7 @@ fn test_dataframe_001_cleanup() {
     let temp = temp_dir();
     let source = temp.path().join("test.ruchy");
 
-    fs::write(
-        &source,
-        r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#
-    ).unwrap();
+    fs::write(&source, r#"let df = df![{"x": [1, 2, 3]}]; println(df);"#).unwrap();
 
     // Count files before compilation
     let files_before: Vec<_> = fs::read_dir(temp.path())
@@ -421,7 +414,8 @@ fn test_dataframe_001_cleanup() {
 
     // Should only have: source file, output binary, and possibly a build directory
     // No scattered temp files
-    let new_files: Vec<_> = files_after.iter()
+    let new_files: Vec<_> = files_after
+        .iter()
         .filter(|f| !files_before.contains(f))
         .collect();
 
@@ -554,7 +548,10 @@ fn test_dataframe_001_red_phase_summary() {
     // 2. Run mutation tests (target ≥75%)
     // 3. Optimize if needed while maintaining tests
 
-    assert!(true, "RED phase: 10 tests created, all will fail when un-ignored");
+    assert!(
+        true,
+        "RED phase: 10 tests created, all will fail when un-ignored"
+    );
 }
 
 // ==================== REFACTOR PHASE: Property Tests ====================
@@ -716,4 +713,3 @@ mod property_tests {
         });
     }
 }
-

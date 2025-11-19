@@ -221,7 +221,7 @@ fn convert_to_trait_methods(methods: Vec<String>) -> Vec<TraitMethod> {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -263,7 +263,10 @@ mod tests {
     fn test_trait_with_keyword_method_name() {
         let code = "trait Convertible { fun from(value: String) -> Self }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Trait with 'from' keyword method should parse");
+        assert!(
+            result.is_ok(),
+            "Trait with 'from' keyword method should parse"
+        );
     }
 
     #[test]

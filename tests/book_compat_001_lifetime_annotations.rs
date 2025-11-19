@@ -33,7 +33,9 @@ fun main() {
         let ast = parser.parse().expect("Failed to parse");
 
         let mut transpiler = Transpiler::new();
-        let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+        let result = transpiler
+            .transpile_to_program(&ast)
+            .expect("Failed to transpile");
         let code = result.to_string();
 
         // ASSERTION 1: Struct should have lifetime parameter <'a> (with flexible spacing)
@@ -69,7 +71,9 @@ struct Point {
         let ast = parser.parse().expect("Failed to parse");
 
         let mut transpiler = Transpiler::new();
-        let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+        let result = transpiler
+            .transpile_to_program(&ast)
+            .expect("Failed to transpile");
         let code = result.to_string();
 
         // ASSERTION: Struct should NOT have lifetime parameter
@@ -94,7 +98,9 @@ struct Book {
         let ast = parser.parse().expect("Failed to parse");
 
         let mut transpiler = Transpiler::new();
-        let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+        let result = transpiler
+            .transpile_to_program(&ast)
+            .expect("Failed to transpile");
         let code = result.to_string();
 
         // ASSERTION: Struct should have lifetime parameter (with flexible spacing)
@@ -129,7 +135,9 @@ fun main() {
         let ast = parser.parse().expect("Failed to parse");
 
         let mut transpiler = Transpiler::new();
-        let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+        let result = transpiler
+            .transpile_to_program(&ast)
+            .expect("Failed to transpile");
         let code = result.to_string();
 
         // ASSERTION: String literals should NOT have .to_string() call

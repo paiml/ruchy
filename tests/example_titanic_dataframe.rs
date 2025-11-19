@@ -37,8 +37,7 @@ fn test_titanic_example_parses() {
         return;
     }
 
-    let code = std::fs::read_to_string(example_path)
-        .expect("Failed to read example file");
+    let code = std::fs::read_to_string(example_path).expect("Failed to read example file");
 
     let mut parser = Parser::new(&code);
     let result = parser.parse();
@@ -61,8 +60,7 @@ fn test_titanic_example_transpiles() {
         return;
     }
 
-    let code = std::fs::read_to_string(example_path)
-        .expect("Failed to read example file");
+    let code = std::fs::read_to_string(example_path).expect("Failed to read example file");
 
     let mut parser = Parser::new(&code);
     let ast = parser.parse().expect("Failed to parse example");
@@ -163,7 +161,9 @@ fn test_dataframe_builder_pattern() {
     let ast = parser.parse().expect("Failed to parse");
 
     let mut transpiler = Transpiler::new();
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let rust_code = result.to_string();
 
     // Verify correct builder pattern transpilation
@@ -214,13 +214,16 @@ fn test_multiple_dataframes() {
     let ast = parser.parse().expect("Failed to parse");
 
     let mut transpiler = Transpiler::new();
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let rust_code = result.to_string();
 
     // Verify both DataFrames are created correctly
     let dataframe_count = rust_code.matches("DataFrame :: new (vec !").count();
     assert_eq!(
-        dataframe_count, 2,
+        dataframe_count,
+        2,
         "Must create 2 DataFrames.\nGenerated:\n{}",
         &rust_code[..1000.min(rust_code.len())]
     );
@@ -228,7 +231,8 @@ fn test_multiple_dataframes() {
     // Verify polars import is only included once
     let import_count = rust_code.matches("use polars :: prelude :: *").count();
     assert_eq!(
-        import_count, 1,
+        import_count,
+        1,
         "Polars import should appear exactly once.\nGenerated:\n{}",
         &rust_code[..200.min(rust_code.len())]
     );

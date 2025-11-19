@@ -61,11 +61,7 @@ fun main() {
 }
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -154,18 +150,14 @@ struct Point {
 }
 ";
 
-    let output = ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .failure();
+    let output = ruchy_cmd().arg("-e").arg(code).assert().failure();
 
     // Should have helpful error message, not cryptic "Unexpected token: AttributeStart"
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(
-        stderr.contains("Attributes are not supported") ||
-        stderr.contains("does not support #[derive]") ||
-        stderr.contains("Ruchy does not use Rust-style attributes"),
+        stderr.contains("Attributes are not supported")
+            || stderr.contains("does not support #[derive]")
+            || stderr.contains("Ruchy does not use Rust-style attributes"),
         "Error message should explain that attributes are not supported. Got: {stderr}"
     );
 }
@@ -208,17 +200,13 @@ impl Point {
 }
 ";
 
-    let output = ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .failure();
+    let output = ruchy_cmd().arg("-e").arg(code).assert().failure();
 
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(
-        stderr.contains("impl") ||
-        stderr.contains("Methods should be defined inside struct") ||
-        stderr.contains("not supported"),
+        stderr.contains("impl")
+            || stderr.contains("Methods should be defined inside struct")
+            || stderr.contains("not supported"),
         "Error message should explain impl blocks. Got: {stderr}"
     );
 }

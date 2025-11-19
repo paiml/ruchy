@@ -1,12 +1,11 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-147: Impl block support with pub visibility
 ///
 /// GitHub Issue: #147 - "pub pub fn" bug (actually: impl blocks not supported)
 /// Impact: BLOCKER - all impl blocks fail to parse
 /// Root Cause: Parser stub at `expressions_helpers/impls.rs:42` just bails
 /// Fix: Implement full impl block parsing
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// Test 1: Basic impl block with pub fun
 #[test]
@@ -25,7 +24,9 @@ impl Runtime {
 "#;
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
 
     // Format with prettyplease (same as CLI does)
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
@@ -55,9 +56,7 @@ impl Runtime {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Impl block fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Impl block fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -85,7 +84,9 @@ impl Calculator {
 ";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
 
     // Format with prettyplease (same as CLI does)
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
@@ -114,9 +115,7 @@ impl Calculator {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Multiple methods fail compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Multiple methods fail compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -144,7 +143,9 @@ impl Counter {
 ";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
 
     // Format with prettyplease (same as CLI does)
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
@@ -155,10 +156,16 @@ impl Counter {
 
     // Public methods
     assert!(rust_code.contains("pub fn new"), "Missing pub fn new");
-    assert!(rust_code.contains("pub fn increment"), "Missing pub fn increment");
+    assert!(
+        rust_code.contains("pub fn increment"),
+        "Missing pub fn increment"
+    );
 
     // Private method (no pub prefix)
-    assert!(rust_code.matches("fn internal_increment").count() == 1, "Should have private fn internal_increment");
+    assert!(
+        rust_code.matches("fn internal_increment").count() == 1,
+        "Should have private fn internal_increment"
+    );
 
     // Verify compilation
     std::fs::write("/tmp/transpiler_147_03_output.rs", &rust_code)
@@ -172,9 +179,7 @@ impl Counter {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Mixed visibility fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Mixed visibility fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -204,7 +209,9 @@ impl Point {
 ";
 
     let ast = Parser::new(code).parse().expect("Parse should succeed");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
 
     // Format with prettyplease (same as CLI does)
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust syntax");
@@ -215,12 +222,21 @@ impl Point {
 
     // All methods should be pub fn
     assert!(rust_code.contains("pub fn new"), "Missing pub fn new");
-    assert!(rust_code.contains("pub fn distance"), "Missing pub fn distance");
-    assert!(rust_code.contains("pub fn move_by"), "Missing pub fn move_by");
+    assert!(
+        rust_code.contains("pub fn distance"),
+        "Missing pub fn distance"
+    );
+    assert!(
+        rust_code.contains("pub fn move_by"),
+        "Missing pub fn move_by"
+    );
 
     // Self receivers
     assert!(rust_code.contains("&self"), "Missing &self receiver");
-    assert!(rust_code.contains("&mut self"), "Missing &mut self receiver");
+    assert!(
+        rust_code.contains("&mut self"),
+        "Missing &mut self receiver"
+    );
 
     // Verify compilation
     std::fs::write("/tmp/transpiler_147_04_output.rs", &rust_code)
@@ -234,8 +250,6 @@ impl Point {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Self receivers fail compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Self receivers fail compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }

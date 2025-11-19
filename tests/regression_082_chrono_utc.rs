@@ -52,7 +52,7 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("202"));  // Check for year 202x
+        .stdout(predicate::str::contains("202")); // Check for year 202x
 }
 
 /// Test #2: `Chrono::Utc` with timestamp formatting

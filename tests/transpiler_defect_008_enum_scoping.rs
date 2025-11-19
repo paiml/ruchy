@@ -40,8 +40,12 @@ fn test_transpiler_defect_008_enum_at_top_level() {
     let transpiled = String::from_utf8_lossy(&output.stdout);
 
     // Enum should appear BEFORE fn main()
-    let enum_pos = transpiled.find("enum Status").expect("enum Status not found");
-    let main_pos = transpiled.find("fn __ruchy_main").or_else(|| transpiled.find("fn main"))
+    let enum_pos = transpiled
+        .find("enum Status")
+        .expect("enum Status not found");
+    let main_pos = transpiled
+        .find("fn __ruchy_main")
+        .or_else(|| transpiled.find("fn main"))
         .expect("main function not found");
 
     assert!(enum_pos < main_pos,
@@ -111,9 +115,15 @@ fn test_transpiler_defect_008_multiple_enums_at_top_level() {
     let transpiled = String::from_utf8_lossy(&output.stdout);
 
     // Both enums should be at top-level
-    let status_pos = transpiled.find("enum Status").expect("enum Status not found");
-    let priority_pos = transpiled.find("enum Priority").expect("enum Priority not found");
-    let main_pos = transpiled.find("fn __ruchy_main").or_else(|| transpiled.find("fn main"))
+    let status_pos = transpiled
+        .find("enum Status")
+        .expect("enum Status not found");
+    let priority_pos = transpiled
+        .find("enum Priority")
+        .expect("enum Priority not found");
+    let main_pos = transpiled
+        .find("fn __ruchy_main")
+        .or_else(|| transpiled.find("fn main"))
         .expect("main function not found");
 
     assert!(status_pos < main_pos && priority_pos < main_pos,
@@ -151,9 +161,13 @@ fn test_transpiler_defect_008_enum_with_struct_fields() {
     let transpiled = String::from_utf8_lossy(&output.stdout);
 
     // Struct and enum should both be at top-level, before main
-    let struct_pos = transpiled.find("struct Point").expect("struct Point not found");
+    let struct_pos = transpiled
+        .find("struct Point")
+        .expect("struct Point not found");
     let enum_pos = transpiled.find("enum Shape").expect("enum Shape not found");
-    let main_pos = transpiled.find("fn __ruchy_main").or_else(|| transpiled.find("fn main"))
+    let main_pos = transpiled
+        .find("fn __ruchy_main")
+        .or_else(|| transpiled.find("fn main"))
         .expect("main function not found");
 
     assert!(struct_pos < main_pos && enum_pos < main_pos,

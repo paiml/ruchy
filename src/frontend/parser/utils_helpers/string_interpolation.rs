@@ -16,7 +16,10 @@ use super::super::StringPart;
 /// let parts = parse_string_interpolation(&mut ParserState::new(""), "Hello {name}");
 /// assert_eq!(parts.len(), 2); // "Hello " and {name}
 /// ```
-pub fn parse_string_interpolation(_state: &mut super::super::ParserState, s: &str) -> Vec<StringPart> {
+pub fn parse_string_interpolation(
+    _state: &mut super::super::ParserState,
+    s: &str,
+) -> Vec<StringPart> {
     let mut parts = Vec::new();
     let mut chars = s.chars().peekable();
     let mut current_text = String::new();

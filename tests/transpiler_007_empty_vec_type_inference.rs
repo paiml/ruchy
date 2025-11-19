@@ -13,9 +13,7 @@ use ruchy::{compile, Parser, Transpiler};
 /// Helper: Transpile Ruchy code to Rust
 fn transpile_code(code: &str) -> Result<String, String> {
     let mut parser = Parser::new(code);
-    let ast = parser
-        .parse()
-        .map_err(|e| format!("Parse error: {e:?}"))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
 
     let mut transpiler = Transpiler::new();
     let tokens = transpiler

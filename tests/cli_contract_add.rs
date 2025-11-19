@@ -19,8 +19,5 @@ fn test_add_help() {
 
 #[test]
 fn test_add_missing_package() {
-    ruchy_cmd()
-        .arg("add")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("add").assert().failure();
 }

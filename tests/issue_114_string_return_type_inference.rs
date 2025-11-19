@@ -34,7 +34,9 @@ fun returns_string() {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn returns_string() -> &'static str"))
+        .stdout(predicate::str::contains(
+            "fn returns_string() -> &'static str",
+        ))
         .stdout(predicate::str::contains("-> i32").not());
 }
 
@@ -62,7 +64,9 @@ fun string_concatenation(iterations) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn string_concatenation(iterations: i32) -> String"))
+        .stdout(predicate::str::contains(
+            "fn string_concatenation(iterations: i32) -> String",
+        ))
         .stdout(predicate::str::contains("fn string_concatenation(iterations: i32) -> i32").not());
 }
 
@@ -105,7 +109,9 @@ fun mixed(flag) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn mixed(flag: i32) -> &'static str"))
+        .stdout(predicate::str::contains(
+            "fn mixed(flag: i32) -> &'static str",
+        ))
         .stdout(predicate::str::contains("fn mixed(flag: i32) -> i32").not());
 }
 
@@ -128,7 +134,9 @@ fun concat_strings(a, b) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn concat_strings(a: String, b: String) -> String"))
+        .stdout(predicate::str::contains(
+            "fn concat_strings(a: String, b: String) -> String",
+        ))
         .stdout(predicate::str::contains("-> i32").not());
 }
 
@@ -152,7 +160,9 @@ fun conditional_string(flag) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn conditional_string(flag: bool) -> &'static str"))
+        .stdout(predicate::str::contains(
+            "fn conditional_string(flag: bool) -> &'static str",
+        ))
         .stdout(predicate::str::contains("-> i32").not());
 }
 
@@ -175,7 +185,9 @@ fun explicit_return(n) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn explicit_return(n: i32) -> &'static str"))
+        .stdout(predicate::str::contains(
+            "fn explicit_return(n: i32) -> &'static str",
+        ))
         .stdout(predicate::str::contains("-> i32").not());
 }
 
@@ -248,9 +260,7 @@ fun main() {
         Ok(output) => {
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                panic!(
-                    "Compilation failed:\n{stderr}\n\nGenerated Rust code:\n{rust_code}"
-                );
+                panic!("Compilation failed:\n{stderr}\n\nGenerated Rust code:\n{rust_code}");
             }
         }
         Err(e) => {

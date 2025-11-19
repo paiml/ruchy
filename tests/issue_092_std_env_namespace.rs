@@ -51,8 +51,12 @@ fun main() {
     cmd.arg("-e").arg(script_code);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("✓ std::env::args() returned array with expected length"))
-        .stdout(predicate::str::contains("✓ std::env::args() matches env_args() (backward compatible)"));
+        .stdout(predicate::str::contains(
+            "✓ std::env::args() returned array with expected length",
+        ))
+        .stdout(predicate::str::contains(
+            "✓ std::env::args() matches env_args() (backward compatible)",
+        ));
 }
 
 /// Test 2: `std::env::args()` array can be indexed
@@ -119,9 +123,9 @@ fun main() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("-e").arg(script_code);
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("✓ Flat builtin env_args() still works"));
+    cmd.assert().success().stdout(predicate::str::contains(
+        "✓ Flat builtin env_args() still works",
+    ));
 }
 
 /// Test 4: `std::env` module exists alongside other std modules
@@ -153,9 +157,13 @@ fun main() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("✓ std::env::args() works"))
-        .stdout(predicate::str::contains("✓ std::time::now_millis() still works"))
+        .stdout(predicate::str::contains(
+            "✓ std::time::now_millis() still works",
+        ))
         .stdout(predicate::str::contains("✓ std::fs::exists() still works"))
-        .stdout(predicate::str::contains("All std modules coexist successfully"));
+        .stdout(predicate::str::contains(
+            "All std modules coexist successfully",
+        ));
 }
 
 /// Test 5: Real-world use case - script argument parsing
@@ -193,5 +201,7 @@ fun main() {
         .success()
         .stdout(predicate::str::contains("Process info:"))
         .stdout(predicate::str::contains("Binary:"))
-        .stdout(predicate::str::contains("✓ Argument structure correct for CLI tool pattern"));
+        .stdout(predicate::str::contains(
+            "✓ Argument structure correct for CLI tool pattern",
+        ));
 }

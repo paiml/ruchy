@@ -67,8 +67,14 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Testing Ruchy module import..."), "Expected greeting, got: {stdout}");
-    assert!(stdout.contains('5'), "Expected result 5 from mylib::add(2, 3), got: {stdout}");
+    assert!(
+        stdout.contains("Testing Ruchy module import..."),
+        "Expected greeting, got: {stdout}"
+    );
+    assert!(
+        stdout.contains('5'),
+        "Expected result 5 from mylib::add(2, 3), got: {stdout}"
+    );
 }
 
 /// RED: Test module import with multiple functions
@@ -111,8 +117,14 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("10"), "Expected 10 from double(5), got: {stdout}");
-    assert!(stdout.contains("15"), "Expected 15 from triple(5), got: {stdout}");
+    assert!(
+        stdout.contains("10"),
+        "Expected 10 from double(5), got: {stdout}"
+    );
+    assert!(
+        stdout.contains("15"),
+        "Expected 15 from triple(5), got: {stdout}"
+    );
 }
 
 /// RED: Test nested module calls
@@ -150,7 +162,10 @@ fun main() {
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     // square(2) = 4, square(4) = 16
-    assert!(stdout.contains("16"), "Expected 16 from square(square(2)), got: {stdout}");
+    assert!(
+        stdout.contains("16"),
+        "Expected 16 from square(square(2)), got: {stdout}"
+    );
 }
 
 /// RED: Test module with variables
@@ -190,7 +205,10 @@ fun main() {
         .success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains('3'), "Expected 3 from constants::get_pi(), got: {stdout}");
+    assert!(
+        stdout.contains('3'),
+        "Expected 3 from constants::get_pi(), got: {stdout}"
+    );
 }
 
 /// RED: Test module not found error

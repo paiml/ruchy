@@ -187,10 +187,7 @@ fun main() {
     fs::write(&test_file, code).unwrap();
 
     // RED: This should succeed but currently fails with syntax error
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert();
 
     // Expected to pass after fix
     output.success();
@@ -235,11 +232,7 @@ fun main() {
     fs::write(&test_file, code).unwrap();
 
     // This should work (and does work according to issue report)
-    ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&test_file).assert().success();
 }
 
 /// Test GREEN phase: Verify error messages include line numbers
@@ -264,11 +257,7 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .failure();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().failure();
 
     // After GREEN phase, error should include line number
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);

@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// Comprehensive EXTREME TDD: All Three Class Styles
 ///
 /// Tests all three ways to define classes/structs with methods:
@@ -15,9 +16,7 @@
 /// - Constructors work (new, new with params)
 /// - Field access works
 /// - Method calls work
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 #[test]
 fn test_extreme_tdd_impl_blocks() {
@@ -79,12 +78,14 @@ fn test_single_style(style_name: &str, code: &str, expect_pub: bool) {
     println!("\n=== Testing {style_name} ===");
 
     // Step 1: Parse
-    let ast = Parser::new(code).parse()
+    let ast = Parser::new(code)
+        .parse()
         .unwrap_or_else(|e| panic!("{style_name} failed to parse: {e:?}"));
     println!("✓ {style_name}: Parse successful");
 
     // Step 2: Transpile
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .unwrap_or_else(|e| panic!("{style_name} failed to transpile: {e:?}"));
     println!("✓ {style_name}: Transpile successful");
 
@@ -96,26 +97,46 @@ fn test_single_style(style_name: &str, code: &str, expect_pub: bool) {
 
     // Step 4: Validate generated Rust contains expected patterns
     if expect_pub {
-        assert!(rust_code.contains("pub fn new"), "{style_name}: Missing pub fn new");
-        assert!(rust_code.contains("pub fn add"), "{style_name}: Missing pub fn add");
-        assert!(rust_code.contains("pub fn get"), "{style_name}: Missing pub fn get");
+        assert!(
+            rust_code.contains("pub fn new"),
+            "{style_name}: Missing pub fn new"
+        );
+        assert!(
+            rust_code.contains("pub fn add"),
+            "{style_name}: Missing pub fn add"
+        );
+        assert!(
+            rust_code.contains("pub fn get"),
+            "{style_name}: Missing pub fn get"
+        );
     } else {
         // For private methods, just check they exist (no pub prefix)
         assert!(rust_code.contains("fn new"), "{style_name}: Missing fn new");
         assert!(rust_code.contains("fn add"), "{style_name}: Missing fn add");
         assert!(rust_code.contains("fn get"), "{style_name}: Missing fn get");
     }
-    assert!(rust_code.contains("&mut self"), "{style_name}: Missing &mut self receiver");
-    assert!(rust_code.contains("&self"), "{style_name}: Missing &self receiver");
-    assert!(!rust_code.contains("pub pub"), "{style_name}: Found duplicate pub keyword");
+    assert!(
+        rust_code.contains("&mut self"),
+        "{style_name}: Missing &mut self receiver"
+    );
+    assert!(
+        rust_code.contains("&self"),
+        "{style_name}: Missing &self receiver"
+    );
+    assert!(
+        !rust_code.contains("pub pub"),
+        "{style_name}: Found duplicate pub keyword"
+    );
     println!("✓ {style_name}: Rust code validation passed");
 
     // Step 5: Compile with rustc
-    let temp_file = format!("/tmp/test_{}.rs",
+    let temp_file = format!(
+        "/tmp/test_{}.rs",
         style_name
             .replace(' ', "_")
             .replace(['(', ')', ':'], "")
-            .to_lowercase());
+            .to_lowercase()
+    );
     std::fs::write(&temp_file, &rust_code)
         .unwrap_or_else(|e| panic!("{style_name} failed to write temp file: {e}"));
 
@@ -207,28 +228,38 @@ let value = calc.result()
     println!("\n=== Testing Comprehensive Class Features ===");
 
     // Parse
-    let ast = Parser::new(code).parse()
+    let ast = Parser::new(code)
+        .parse()
         .expect("Comprehensive example failed to parse");
     println!("✓ Parse successful");
 
     // Transpile
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .expect("Comprehensive example failed to transpile");
     println!("✓ Transpile successful");
 
     // Format
-    let syntax_tree = syn::parse2(tokens)
-        .expect("Failed to parse as Rust");
+    let syntax_tree = syn::parse2(tokens).expect("Failed to parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
     println!("✓ Format successful");
 
     // Validate all three styles present
     assert!(rust_code.contains("struct Point"), "Missing Point struct");
-    assert!(rust_code.contains("struct Counter"), "Missing Counter struct");
-    assert!(rust_code.contains("struct Calculator"), "Missing Calculator struct");
+    assert!(
+        rust_code.contains("struct Counter"),
+        "Missing Counter struct"
+    );
+    assert!(
+        rust_code.contains("struct Calculator"),
+        "Missing Calculator struct"
+    );
     assert!(rust_code.contains("impl Point"), "Missing Point impl");
     assert!(rust_code.contains("impl Counter"), "Missing Counter impl");
-    assert!(rust_code.contains("impl Calculator"), "Missing Calculator impl");
+    assert!(
+        rust_code.contains("impl Calculator"),
+        "Missing Calculator impl"
+    );
     println!("✓ All three styles present in output");
 
     // Compile
@@ -243,7 +274,9 @@ let value = calc.result()
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        panic!("Comprehensive example failed compilation:\n{stderr}\n\nGenerated code:\n{rust_code}");
+        panic!(
+            "Comprehensive example failed compilation:\n{stderr}\n\nGenerated code:\n{rust_code}"
+        );
     }
     println!("✓ Rustc compilation successful");
     println!("✅ COMPREHENSIVE TEST: ALL CHECKS PASSED\n");
@@ -285,22 +318,36 @@ let w2 = w.duplicate()
     println!("\n=== Testing Method Receivers ===");
 
     let ast = Parser::new(code).parse().expect("Failed to parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Failed to transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let syntax_tree = syn::parse2(tokens).expect("Failed to parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Validate both &self and &mut self are present
     assert!(rust_code.contains("&self"), "Missing &self receiver");
-    assert!(rust_code.contains("&mut self"), "Missing &mut self receiver");
+    assert!(
+        rust_code.contains("&mut self"),
+        "Missing &mut self receiver"
+    );
 
     // Compile
     std::fs::write("/tmp/test_receivers.rs", &rust_code).expect("Failed to write");
     let output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_receivers.rs", "-o", "/tmp/test_receivers.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_receivers.rs",
+            "-o",
+            "/tmp/test_receivers.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(), "Receiver test failed rustc compilation");
+    assert!(
+        output.status.success(),
+        "Receiver test failed rustc compilation"
+    );
     println!("✅ METHOD RECEIVERS: ALL CHECKS PASSED\n");
 }
 
@@ -337,23 +384,40 @@ let result = v.verify()
     println!("\n=== Testing Visibility Modifiers ===");
 
     let ast = Parser::new(code).parse().expect("Failed to parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Failed to transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let syntax_tree = syn::parse2(tokens).expect("Failed to parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Validate pub and private (no pub prefix) methods
     assert!(rust_code.contains("pub fn new"), "Missing pub fn new");
     assert!(rust_code.contains("pub fn verify"), "Missing pub fn verify");
-    assert!(rust_code.contains("pub fn public_method"), "Missing pub fn public_method");
-    assert!(rust_code.matches("fn internal_check").count() == 1, "Missing private fn internal_check");
+    assert!(
+        rust_code.contains("pub fn public_method"),
+        "Missing pub fn public_method"
+    );
+    assert!(
+        rust_code.matches("fn internal_check").count() == 1,
+        "Missing private fn internal_check"
+    );
 
     // Compile
     std::fs::write("/tmp/test_visibility.rs", &rust_code).expect("Failed to write");
     let output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_visibility.rs", "-o", "/tmp/test_visibility.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_visibility.rs",
+            "-o",
+            "/tmp/test_visibility.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(), "Visibility test failed rustc compilation");
+    assert!(
+        output.status.success(),
+        "Visibility test failed rustc compilation"
+    );
     println!("✅ VISIBILITY: ALL CHECKS PASSED\n");
 }

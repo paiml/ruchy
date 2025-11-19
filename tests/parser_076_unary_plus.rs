@@ -201,9 +201,5 @@ x
     let temp_file = "/tmp/test_parser_076_check.ruchy";
     std::fs::write(temp_file, code).expect("Failed to write temp file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(temp_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(temp_file).assert().success();
 }

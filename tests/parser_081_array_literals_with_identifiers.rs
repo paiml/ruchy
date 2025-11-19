@@ -28,7 +28,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with variable in array");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with variable in array");
 
     // Verify we got a Function with array containing identifier
     assert!(
@@ -49,7 +51,9 @@ fun test() {
 "#;
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with two variables in array");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with two variables in array");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -70,7 +74,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with three variables in array");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with three variables in array");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -89,7 +95,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with mixed array elements");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with mixed array elements");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -109,7 +117,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with nested arrays containing variables");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with nested arrays containing variables");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -131,7 +141,9 @@ fun get_pair(a, b) {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with array of parameters as return value");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with array of parameters as return value");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -152,7 +164,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with array in let binding");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with array in let binding");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -172,7 +186,9 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with array passed to function");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with array passed to function");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -195,7 +211,9 @@ fun test() {
 "#;
 
     let mut parser = Parser::new(code);
-    let ast = parser.parse().expect("Parse should succeed with method calls in array");
+    let ast = parser
+        .parse()
+        .expect("Parse should succeed with method calls in array");
 
     assert!(
         matches!(ast.kind, ruchy::frontend::ast::ExprKind::Function { .. }),
@@ -216,6 +234,8 @@ fun test() {
 ";
 
     let mut parser = Parser::new(code);
-    let _ast = parser.parse().expect("Parse should succeed with field access in array");
+    let _ast = parser
+        .parse()
+        .expect("Parse should succeed with field access in array");
     // Test passes if parsing succeeds - the fix allows [p.x, p.y] to be parsed as array literal
 }

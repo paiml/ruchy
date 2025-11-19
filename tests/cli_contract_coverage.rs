@@ -40,11 +40,7 @@ fn cli_coverage_valid_program_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "test.ruchy", "println(\"coverage test\")\n");
 
-    ruchy_cmd()
-        .arg("coverage")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("coverage").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -52,11 +48,7 @@ fn cli_coverage_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("coverage")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("coverage").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -112,9 +104,11 @@ fn cli_coverage_text_format_output() {
         .arg("text")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Coverage")
-            .or(predicate::str::contains("Lines"))
-            .or(predicate::str::contains("%")));
+        .stdout(
+            predicate::str::contains("Coverage")
+                .or(predicate::str::contains("Lines"))
+                .or(predicate::str::contains("%")),
+        );
 }
 
 #[test]
@@ -150,9 +144,11 @@ fn cli_coverage_html_format_output() {
         .arg("html")
         .assert()
         .success()
-        .stdout(predicate::str::contains("<")
-            .or(predicate::str::contains("html"))
-            .or(predicate::str::contains("Coverage")));
+        .stdout(
+            predicate::str::contains("<")
+                .or(predicate::str::contains("html"))
+                .or(predicate::str::contains("Coverage")),
+        );
 }
 
 // ============================================================================
@@ -293,8 +289,7 @@ println(fibonacci(8))
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Coverage")
-            .or(predicate::str::contains("%")));
+        .stdout(predicate::str::contains("Coverage").or(predicate::str::contains("%")));
 }
 
 #[test]

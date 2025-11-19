@@ -72,8 +72,16 @@ impl Value {
     }
 
     /// Create enum variant value
-    pub fn from_enum_variant(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Self {
-        Value::EnumVariant { enum_name, variant_name, data }
+    pub fn from_enum_variant(
+        enum_name: String,
+        variant_name: String,
+        data: Option<Vec<Value>>,
+    ) -> Self {
+        Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        }
     }
 
     /// Check if value is nil
@@ -175,11 +183,10 @@ impl Value {
     /// Supports: Integer + Integer, Float + Float, mixed numeric types, String + String, Array + Array
     pub fn add(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                a.checked_add(*b)
-                    .map(Value::Integer)
-                    .ok_or_else(|| "Integer overflow in addition".to_string())
-            }
+            (Value::Integer(a), Value::Integer(b)) => a
+                .checked_add(*b)
+                .map(Value::Integer)
+                .ok_or_else(|| "Integer overflow in addition".to_string()),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
             (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 + b)),
             (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a + *b as f64)),
@@ -191,37 +198,47 @@ impl Value {
                 result.extend_from_slice(b.as_ref());
                 Ok(Value::from_array(result))
             }
-            _ => Err(format!("Cannot add {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot add {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
     /// Subtract two values (for bytecode VM)
     pub fn subtract(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                a.checked_sub(*b)
-                    .map(Value::Integer)
-                    .ok_or_else(|| "Integer overflow in subtraction".to_string())
-            }
+            (Value::Integer(a), Value::Integer(b)) => a
+                .checked_sub(*b)
+                .map(Value::Integer)
+                .ok_or_else(|| "Integer overflow in subtraction".to_string()),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
             (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 - b)),
             (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a - *b as f64)),
-            _ => Err(format!("Cannot subtract {} from {}", other.type_name(), self.type_name())),
+            _ => Err(format!(
+                "Cannot subtract {} from {}",
+                other.type_name(),
+                self.type_name()
+            )),
         }
     }
 
     /// Multiply two values (for bytecode VM)
     pub fn multiply(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => {
-                a.checked_mul(*b)
-                    .map(Value::Integer)
-                    .ok_or_else(|| "Integer overflow in multiplication".to_string())
-            }
+            (Value::Integer(a), Value::Integer(b)) => a
+                .checked_mul(*b)
+                .map(Value::Integer)
+                .ok_or_else(|| "Integer overflow in multiplication".to_string()),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
             (Value::Integer(a), Value::Float(b)) => Ok(Value::Float(*a as f64 * b)),
             (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a * *b as f64)),
-            _ => Err(format!("Cannot multiply {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot multiply {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -252,7 +269,11 @@ impl Value {
                 }
                 Ok(Value::Float(a / *b as f64))
             }
-            _ => Err(format!("Cannot divide {} by {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot divide {} by {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -283,7 +304,11 @@ impl Value {
                 }
                 Ok(Value::Float(a % *b as f64))
             }
-            _ => Err(format!("Cannot modulo {} by {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot modulo {} by {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -393,7 +418,6 @@ mod tests {
         assert!(bool_val.as_f64().is_err());
     }
 }
-
 
 #[cfg(test)]
 mod mutation_tests {

@@ -195,8 +195,10 @@ mod tests {
 
         // Verify error message contains context
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("Failed to send GET request"),
-                "Error should contain context");
+        assert!(
+            err_msg.contains("Failed to send GET request"),
+            "Error should contain context"
+        );
     }
 
     #[test]
@@ -207,8 +209,10 @@ mod tests {
 
         // Verify error message contains URL
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("localhost:1"),
-                "Error should contain failed URL");
+        assert!(
+            err_msg.contains("localhost:1"),
+            "Error should contain failed URL"
+        );
     }
 
     #[test]
@@ -217,8 +221,10 @@ mod tests {
         assert!(result.is_err(), "POST with invalid URL should fail");
 
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("Failed to send POST request"),
-                "Error should contain POST context");
+        assert!(
+            err_msg.contains("Failed to send POST request"),
+            "Error should contain POST context"
+        );
     }
 
     #[test]
@@ -227,8 +233,10 @@ mod tests {
         assert!(result.is_err(), "PUT with invalid URL should fail");
 
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("Failed to send PUT request"),
-                "Error should contain PUT context");
+        assert!(
+            err_msg.contains("Failed to send PUT request"),
+            "Error should contain PUT context"
+        );
     }
 
     #[test]
@@ -237,8 +245,10 @@ mod tests {
         assert!(result.is_err(), "DELETE with invalid URL should fail");
 
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("Failed to send DELETE request"),
-                "Error should contain DELETE context");
+        assert!(
+            err_msg.contains("Failed to send DELETE request"),
+            "Error should contain DELETE context"
+        );
     }
 
     #[test]
@@ -272,7 +282,10 @@ mod tests {
         let result = get("https://httpbin.org/get");
         if let Ok(response) = result {
             assert!(!response.is_empty(), "Response should not be empty");
-            assert!(response.contains("httpbin"), "Response should be from httpbin");
+            assert!(
+                response.contains("httpbin"),
+                "Response should be from httpbin"
+            );
         }
         // If network fails, test is inconclusive (not a test failure)
     }
@@ -285,8 +298,10 @@ mod tests {
 
         if let Err(e) = result {
             let err_msg = e.to_string();
-            assert!(err_msg.contains("404") || err_msg.contains("failed"),
-                    "Error should indicate HTTP failure");
+            assert!(
+                err_msg.contains("404") || err_msg.contains("failed"),
+                "Error should indicate HTTP failure"
+            );
         }
     }
 
@@ -336,8 +351,14 @@ mod tests {
     #[test]
     fn test_url_without_scheme_fails() {
         // URLs without http:// or https:// should fail
-        assert!(get("example.com").is_err(), "URL without scheme should fail");
-        assert!(post("example.com", "{}").is_err(), "URL without scheme should fail");
+        assert!(
+            get("example.com").is_err(),
+            "URL without scheme should fail"
+        );
+        assert!(
+            post("example.com", "{}").is_err(),
+            "URL without scheme should fail"
+        );
     }
 
     // --------------------------------------------------------------------------
@@ -348,7 +369,10 @@ mod tests {
     fn test_empty_body_post() {
         // Empty body should not panic, just fail on connection
         let result = post("http://localhost:1", "");
-        assert!(result.is_err(), "POST with empty body should fail on connection");
+        assert!(
+            result.is_err(),
+            "POST with empty body should fail on connection"
+        );
     }
 
     #[test]
@@ -356,14 +380,20 @@ mod tests {
         // Large body should not panic
         let large_body = "x".repeat(10_000);
         let result = post("http://localhost:1", &large_body);
-        assert!(result.is_err(), "POST with large body should fail on connection");
+        assert!(
+            result.is_err(),
+            "POST with large body should fail on connection"
+        );
     }
 
     #[test]
     fn test_special_characters_in_url() {
         // Special characters should be handled (will fail on connection, not panic)
         let result = get("http://localhost:1/test?query=value&foo=bar");
-        assert!(result.is_err(), "URL with query params should fail on connection");
+        assert!(
+            result.is_err(),
+            "URL with query params should fail on connection"
+        );
     }
 }
 
@@ -391,8 +421,7 @@ mod property_tests {
 
         for url in invalid_urls {
             let result = get(url);
-            assert!(result.is_err(),
-                    "get('{url}') should return Err, not panic");
+            assert!(result.is_err(), "get('{url}') should return Err, not panic");
         }
     }
 
@@ -406,8 +435,7 @@ mod property_tests {
 
         for (url, body) in test_cases {
             let result = post(url, body);
-            assert!(result.is_err(),
-                    "post('{url}', '{body}') should return Err");
+            assert!(result.is_err(), "post('{url}', '{body}') should return Err");
         }
     }
 

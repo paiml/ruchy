@@ -37,11 +37,17 @@ println("Done!")
     let _ = std::fs::remove_file(&temp_file);
 
     // If we get here, timeout killed the process (proving hang)
-    assert!(!output.status.success(), "Command should timeout due to hang");
+    assert!(
+        !output.status.success(),
+        "Command should timeout due to hang"
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Starting..."), "Should print before hang");
-    assert!(!stdout.contains("Done!"), "Should NOT reach after .output() call");
+    assert!(
+        !stdout.contains("Done!"),
+        "Should NOT reach after .output() call"
+    );
 }
 
 #[test]
@@ -71,11 +77,17 @@ println("Done!")
 
     let _ = std::fs::remove_file(&temp_file);
 
-    assert!(!output.status.success(), "Command should timeout due to hang");
+    assert!(
+        !output.status.success(),
+        "Command should timeout due to hang"
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Starting..."), "Should print before hang");
-    assert!(!stdout.contains("Done!"), "Should NOT reach after .output() call");
+    assert!(
+        !stdout.contains("Done!"),
+        "Should NOT reach after .output() call"
+    );
 }
 
 #[test]
@@ -110,11 +122,20 @@ println("Done!")
 
     let _ = std::fs::remove_file(&temp_file);
 
-    assert!(!output.status.success(), "Command should timeout due to hang");
+    assert!(
+        !output.status.success(),
+        "Command should timeout due to hang"
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Checking command..."), "Should enter function");
-    assert!(!stdout.contains("Command completed"), "Should hang before completing");
+    assert!(
+        stdout.contains("Checking command..."),
+        "Should enter function"
+    );
+    assert!(
+        !stdout.contains("Command completed"),
+        "Should hang before completing"
+    );
 }
 
 #[test]
@@ -157,9 +178,18 @@ println("Done!")
 
     let _ = std::fs::remove_file(&temp_file);
 
-    assert!(!output.status.success(), "Command should timeout due to hang");
+    assert!(
+        !output.status.success(),
+        "Command should timeout due to hang"
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Executing..."), "Should reach .output() call");
-    assert!(!stdout.contains("Processing result..."), "Should hang at .output()");
+    assert!(
+        stdout.contains("Executing..."),
+        "Should reach .output() call"
+    );
+    assert!(
+        !stdout.contains("Processing result..."),
+        "Should hang at .output()"
+    );
 }

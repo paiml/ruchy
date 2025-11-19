@@ -31,13 +31,13 @@ pub fn init_global_environment() -> HashMap<String, Value> {
     add_random_time_functions(&mut global_env);
     add_environment_functions(&mut global_env);
     add_fs_functions(&mut global_env);
-    add_stdlib003_functions(&mut global_env);  // STDLIB-003: User-friendly file I/O
-    add_stdlib005_functions(&mut global_env);  // STDLIB-005: Directory walking
+    add_stdlib003_functions(&mut global_env); // STDLIB-003: User-friendly file I/O
+    add_stdlib005_functions(&mut global_env); // STDLIB-005: Directory walking
     add_path_functions(&mut global_env);
     add_json_functions(&mut global_env);
     add_http_functions(&mut global_env);
-    add_std_namespace(&mut global_env);  // STDLIB-003: std::time module
-    add_chrono_namespace(&mut global_env);  // Issue #82: chrono support
+    add_std_namespace(&mut global_env); // STDLIB-003: std::time module
+    add_chrono_namespace(&mut global_env); // Issue #82: chrono support
 
     global_env
 }
@@ -110,8 +110,8 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
 fn add_math_functions(global_env: &mut HashMap<String, Value>) {
     // STDLIB-002: Added log, log10, random
     let math_functions = [
-        "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round",
-        "sin", "cos", "tan", "log", "log10", "random",
+        "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan", "log",
+        "log10", "random",
     ];
 
     for func_name in &math_functions {
@@ -407,43 +407,127 @@ fn add_stdlib005_functions(global_env: &mut HashMap<String, Value>) {
 /// Register path functions in global environment
 /// Phase 3: `STDLIB_ACCESS_PLAN` - Path Module (13 functions)
 fn add_path_functions(global_env: &mut HashMap<String, Value>) {
-    global_env.insert("path_join".to_string(), Value::from_string("__builtin_path_join__".to_string()));
-    global_env.insert("path_join_many".to_string(), Value::from_string("__builtin_path_join_many__".to_string()));
-    global_env.insert("path_parent".to_string(), Value::from_string("__builtin_path_parent__".to_string()));
-    global_env.insert("path_file_name".to_string(), Value::from_string("__builtin_path_file_name__".to_string()));
-    global_env.insert("path_file_stem".to_string(), Value::from_string("__builtin_path_file_stem__".to_string()));
-    global_env.insert("path_extension".to_string(), Value::from_string("__builtin_path_extension__".to_string()));
-    global_env.insert("path_is_absolute".to_string(), Value::from_string("__builtin_path_is_absolute__".to_string()));
-    global_env.insert("path_is_relative".to_string(), Value::from_string("__builtin_path_is_relative__".to_string()));
-    global_env.insert("path_canonicalize".to_string(), Value::from_string("__builtin_path_canonicalize__".to_string()));
-    global_env.insert("path_with_extension".to_string(), Value::from_string("__builtin_path_with_extension__".to_string()));
-    global_env.insert("path_with_file_name".to_string(), Value::from_string("__builtin_path_with_file_name__".to_string()));
-    global_env.insert("path_components".to_string(), Value::from_string("__builtin_path_components__".to_string()));
-    global_env.insert("path_normalize".to_string(), Value::from_string("__builtin_path_normalize__".to_string()));
+    global_env.insert(
+        "path_join".to_string(),
+        Value::from_string("__builtin_path_join__".to_string()),
+    );
+    global_env.insert(
+        "path_join_many".to_string(),
+        Value::from_string("__builtin_path_join_many__".to_string()),
+    );
+    global_env.insert(
+        "path_parent".to_string(),
+        Value::from_string("__builtin_path_parent__".to_string()),
+    );
+    global_env.insert(
+        "path_file_name".to_string(),
+        Value::from_string("__builtin_path_file_name__".to_string()),
+    );
+    global_env.insert(
+        "path_file_stem".to_string(),
+        Value::from_string("__builtin_path_file_stem__".to_string()),
+    );
+    global_env.insert(
+        "path_extension".to_string(),
+        Value::from_string("__builtin_path_extension__".to_string()),
+    );
+    global_env.insert(
+        "path_is_absolute".to_string(),
+        Value::from_string("__builtin_path_is_absolute__".to_string()),
+    );
+    global_env.insert(
+        "path_is_relative".to_string(),
+        Value::from_string("__builtin_path_is_relative__".to_string()),
+    );
+    global_env.insert(
+        "path_canonicalize".to_string(),
+        Value::from_string("__builtin_path_canonicalize__".to_string()),
+    );
+    global_env.insert(
+        "path_with_extension".to_string(),
+        Value::from_string("__builtin_path_with_extension__".to_string()),
+    );
+    global_env.insert(
+        "path_with_file_name".to_string(),
+        Value::from_string("__builtin_path_with_file_name__".to_string()),
+    );
+    global_env.insert(
+        "path_components".to_string(),
+        Value::from_string("__builtin_path_components__".to_string()),
+    );
+    global_env.insert(
+        "path_normalize".to_string(),
+        Value::from_string("__builtin_path_normalize__".to_string()),
+    );
 }
 
 /// Register JSON functions in global environment
 /// Phase 4: `STDLIB_ACCESS_PLAN` - JSON Module (10 functions)
 fn add_json_functions(global_env: &mut HashMap<String, Value>) {
-    global_env.insert("json_parse".to_string(), Value::from_string("__builtin_json_parse__".to_string()));
-    global_env.insert("parse_json".to_string(), Value::from_string("__builtin_json_parse__".to_string()));  // ISSUE-131: Alias for json_parse
-    global_env.insert("json_stringify".to_string(), Value::from_string("__builtin_json_stringify__".to_string()));
-    global_env.insert("json_pretty".to_string(), Value::from_string("__builtin_json_pretty__".to_string()));
-    global_env.insert("json_read".to_string(), Value::from_string("__builtin_json_read__".to_string()));
-    global_env.insert("json_write".to_string(), Value::from_string("__builtin_json_write__".to_string()));
-    global_env.insert("json_validate".to_string(), Value::from_string("__builtin_json_validate__".to_string()));
-    global_env.insert("json_type".to_string(), Value::from_string("__builtin_json_type__".to_string()));
-    global_env.insert("json_merge".to_string(), Value::from_string("__builtin_json_merge__".to_string()));
-    global_env.insert("json_get".to_string(), Value::from_string("__builtin_json_get__".to_string()));
-    global_env.insert("json_set".to_string(), Value::from_string("__builtin_json_set__".to_string()));
+    global_env.insert(
+        "json_parse".to_string(),
+        Value::from_string("__builtin_json_parse__".to_string()),
+    );
+    global_env.insert(
+        "parse_json".to_string(),
+        Value::from_string("__builtin_json_parse__".to_string()),
+    ); // ISSUE-131: Alias for json_parse
+    global_env.insert(
+        "json_stringify".to_string(),
+        Value::from_string("__builtin_json_stringify__".to_string()),
+    );
+    global_env.insert(
+        "json_pretty".to_string(),
+        Value::from_string("__builtin_json_pretty__".to_string()),
+    );
+    global_env.insert(
+        "json_read".to_string(),
+        Value::from_string("__builtin_json_read__".to_string()),
+    );
+    global_env.insert(
+        "json_write".to_string(),
+        Value::from_string("__builtin_json_write__".to_string()),
+    );
+    global_env.insert(
+        "json_validate".to_string(),
+        Value::from_string("__builtin_json_validate__".to_string()),
+    );
+    global_env.insert(
+        "json_type".to_string(),
+        Value::from_string("__builtin_json_type__".to_string()),
+    );
+    global_env.insert(
+        "json_merge".to_string(),
+        Value::from_string("__builtin_json_merge__".to_string()),
+    );
+    global_env.insert(
+        "json_get".to_string(),
+        Value::from_string("__builtin_json_get__".to_string()),
+    );
+    global_env.insert(
+        "json_set".to_string(),
+        Value::from_string("__builtin_json_set__".to_string()),
+    );
 }
 
 /// Phase 5: STDLIB-PHASE-5 - HTTP Module (4 functions)
 fn add_http_functions(global_env: &mut HashMap<String, Value>) {
-    global_env.insert("http_get".to_string(), Value::from_string("__builtin_http_get__".to_string()));
-    global_env.insert("http_post".to_string(), Value::from_string("__builtin_http_post__".to_string()));
-    global_env.insert("http_put".to_string(), Value::from_string("__builtin_http_put__".to_string()));
-    global_env.insert("http_delete".to_string(), Value::from_string("__builtin_http_delete__".to_string()));
+    global_env.insert(
+        "http_get".to_string(),
+        Value::from_string("__builtin_http_get__".to_string()),
+    );
+    global_env.insert(
+        "http_post".to_string(),
+        Value::from_string("__builtin_http_post__".to_string()),
+    );
+    global_env.insert(
+        "http_put".to_string(),
+        Value::from_string("__builtin_http_put__".to_string()),
+    );
+    global_env.insert(
+        "http_delete".to_string(),
+        Value::from_string("__builtin_http_delete__".to_string()),
+    );
 }
 
 /// Add std namespace with time, process, fs, and env modules
@@ -474,34 +558,82 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
         "new".to_string(),
         Value::from_string("__builtin_command_new__".to_string()),
     );
-    process_module.insert("Command".to_string(), Value::Object(Arc::new(command_module)));
+    process_module.insert(
+        "Command".to_string(),
+        Value::Object(Arc::new(command_module)),
+    );
 
     // Create fs module object (Issue #90)
     // File system operations with Rust std::fs API compatibility
     let mut fs_module = HashMap::new();
-    fs_module.insert("write".to_string(), Value::from_string("__builtin_fs_write__".to_string()));
-    fs_module.insert("read_to_string".to_string(), Value::from_string("__builtin_fs_read__".to_string()));
-    fs_module.insert("read".to_string(), Value::from_string("__builtin_fs_read__".to_string()));
-    fs_module.insert("exists".to_string(), Value::from_string("__builtin_fs_exists__".to_string()));
-    fs_module.insert("create_dir".to_string(), Value::from_string("__builtin_fs_create_dir__".to_string()));
-    fs_module.insert("create_dir_all".to_string(), Value::from_string("__builtin_fs_create_dir__".to_string()));
-    fs_module.insert("remove_file".to_string(), Value::from_string("__builtin_fs_remove_file__".to_string()));
-    fs_module.insert("remove_dir".to_string(), Value::from_string("__builtin_fs_remove_dir__".to_string()));
-    fs_module.insert("copy".to_string(), Value::from_string("__builtin_fs_copy__".to_string()));
-    fs_module.insert("rename".to_string(), Value::from_string("__builtin_fs_rename__".to_string()));
-    fs_module.insert("metadata".to_string(), Value::from_string("__builtin_fs_metadata__".to_string()));
-    fs_module.insert("read_dir".to_string(), Value::from_string("__builtin_fs_read_dir__".to_string()));
+    fs_module.insert(
+        "write".to_string(),
+        Value::from_string("__builtin_fs_write__".to_string()),
+    );
+    fs_module.insert(
+        "read_to_string".to_string(),
+        Value::from_string("__builtin_fs_read__".to_string()),
+    );
+    fs_module.insert(
+        "read".to_string(),
+        Value::from_string("__builtin_fs_read__".to_string()),
+    );
+    fs_module.insert(
+        "exists".to_string(),
+        Value::from_string("__builtin_fs_exists__".to_string()),
+    );
+    fs_module.insert(
+        "create_dir".to_string(),
+        Value::from_string("__builtin_fs_create_dir__".to_string()),
+    );
+    fs_module.insert(
+        "create_dir_all".to_string(),
+        Value::from_string("__builtin_fs_create_dir__".to_string()),
+    );
+    fs_module.insert(
+        "remove_file".to_string(),
+        Value::from_string("__builtin_fs_remove_file__".to_string()),
+    );
+    fs_module.insert(
+        "remove_dir".to_string(),
+        Value::from_string("__builtin_fs_remove_dir__".to_string()),
+    );
+    fs_module.insert(
+        "copy".to_string(),
+        Value::from_string("__builtin_fs_copy__".to_string()),
+    );
+    fs_module.insert(
+        "rename".to_string(),
+        Value::from_string("__builtin_fs_rename__".to_string()),
+    );
+    fs_module.insert(
+        "metadata".to_string(),
+        Value::from_string("__builtin_fs_metadata__".to_string()),
+    );
+    fs_module.insert(
+        "read_dir".to_string(),
+        Value::from_string("__builtin_fs_read_dir__".to_string()),
+    );
 
     // Create env module object (Issue #92, Issue #96)
     // Environment access with Rust std::env API compatibility
     let mut env_module = HashMap::new();
-    env_module.insert("args".to_string(), Value::from_string("__builtin_env_args__".to_string()));
-    env_module.insert("var".to_string(), Value::from_string("__builtin_env_var__".to_string()));
+    env_module.insert(
+        "args".to_string(),
+        Value::from_string("__builtin_env_args__".to_string()),
+    );
+    env_module.insert(
+        "var".to_string(),
+        Value::from_string("__builtin_env_var__".to_string()),
+    );
 
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
-    std_namespace.insert("process".to_string(), Value::Object(Arc::new(process_module)));
+    std_namespace.insert(
+        "process".to_string(),
+        Value::Object(Arc::new(process_module)),
+    );
     std_namespace.insert("fs".to_string(), Value::Object(Arc::new(fs_module)));
     std_namespace.insert("env".to_string(), Value::Object(Arc::new(env_module)));
 
@@ -529,7 +661,10 @@ fn add_chrono_namespace(global_env: &mut HashMap<String, Value>) {
     chrono_namespace.insert("Utc".to_string(), Value::Object(Arc::new(utc_module)));
 
     // Add chrono to global environment
-    global_env.insert("chrono".to_string(), Value::Object(Arc::new(chrono_namespace.clone())));
+    global_env.insert(
+        "chrono".to_string(),
+        Value::Object(Arc::new(chrono_namespace.clone())),
+    );
 
     // Also add Utc directly to global environment for convenience (Issue #82)
     // This allows both `chrono::Utc` and `Utc` (after use statement) to work
@@ -641,7 +776,7 @@ mod tests {
 
         let expected_math = [
             "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan",
-            "log", "log10", "random",  // STDLIB-002: Advanced math functions
+            "log", "log10", "random", // STDLIB-002: Advanced math functions
         ];
 
         for func in &expected_math {

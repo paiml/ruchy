@@ -28,13 +28,28 @@ fun main() {
     let result = formatter.format(&ast).expect("Failed to format");
 
     // Should contain valid Ruchy code
-    assert!(result.contains("println"), "Formatted output should contain 'println'");
-    assert!(result.contains("Hello, World!"), "Formatted output should contain string literal");
+    assert!(
+        result.contains("println"),
+        "Formatted output should contain 'println'"
+    );
+    assert!(
+        result.contains("Hello, World!"),
+        "Formatted output should contain string literal"
+    );
 
     // Should NOT contain AST debug output
-    assert!(!result.contains("Call {"), "Formatted output should NOT contain 'Call {{' (AST debug)");
-    assert!(!result.contains("Expr {"), "Formatted output should NOT contain 'Expr {{' (AST debug)");
-    assert!(!result.contains("kind:"), "Formatted output should NOT contain 'kind:' (AST debug)");
+    assert!(
+        !result.contains("Call {"),
+        "Formatted output should NOT contain 'Call {{' (AST debug)"
+    );
+    assert!(
+        !result.contains("Expr {"),
+        "Formatted output should NOT contain 'Expr {{' (AST debug)"
+    );
+    assert!(
+        !result.contains("kind:"),
+        "Formatted output should NOT contain 'kind:' (AST debug)"
+    );
 }
 
 /// RED TEST: Formatter should handle method calls
@@ -53,10 +68,16 @@ fun example() {
     let result = formatter.format(&ast).expect("Failed to format");
 
     // Should contain valid Ruchy code
-    assert!(result.contains("to_uppercase"), "Should contain method name");
+    assert!(
+        result.contains("to_uppercase"),
+        "Should contain method name"
+    );
 
     // Should NOT contain AST debug output
-    assert!(!result.contains("MethodCall {"), "Should NOT contain 'MethodCall {{' (AST debug)");
+    assert!(
+        !result.contains("MethodCall {"),
+        "Should NOT contain 'MethodCall {{' (AST debug)"
+    );
 }
 
 /// RED TEST: Formatter should handle for loops with range
@@ -81,7 +102,10 @@ fun example() {
     assert!(result.contains("range"), "Should contain 'range' function");
 
     // Should NOT contain AST debug output
-    assert!(!result.contains("For {"), "Should NOT contain 'For {{' (AST debug)");
+    assert!(
+        !result.contains("For {"),
+        "Should NOT contain 'For {{' (AST debug)"
+    );
 }
 
 /// RED TEST: Formatter should handle variable assignments
@@ -106,7 +130,10 @@ fun example() {
     assert!(result.contains("hello"), "Should contain string literal");
 
     // Should NOT contain AST debug output
-    assert!(!result.contains("Assign {"), "Should NOT contain 'Assign {{' (AST debug)");
+    assert!(
+        !result.contains("Assign {"),
+        "Should NOT contain 'Assign {{' (AST debug)"
+    );
 }
 
 /// Property test: Formatter should NEVER output Debug representation
@@ -132,14 +159,22 @@ fn property_formatter_never_outputs_debug_format() {
                 // Should never contain AST debug markers (specific patterns)
                 // Note: legitimate code like "fun f() { ..." is fine
                 // We're checking for AST struct names like "Assign {", "Expr {", etc.
-                assert!(!result.contains("Assign {"),
-                    "Code: {code}\nFormatted output should not contain 'Assign {{' (AST debug)");
-                assert!(!result.contains("Expr {"),
-                    "Code: {code}\nFormatted output should not contain 'Expr {{' (AST debug)");
-                assert!(!result.contains("Stmt {"),
-                    "Code: {code}\nFormatted output should not contain 'Stmt {{' (AST debug)");
-                assert!(!result.contains("kind:"),
-                    "Code: {code}\nFormatted output should not contain 'kind:' field");
+                assert!(
+                    !result.contains("Assign {"),
+                    "Code: {code}\nFormatted output should not contain 'Assign {{' (AST debug)"
+                );
+                assert!(
+                    !result.contains("Expr {"),
+                    "Code: {code}\nFormatted output should not contain 'Expr {{' (AST debug)"
+                );
+                assert!(
+                    !result.contains("Stmt {"),
+                    "Code: {code}\nFormatted output should not contain 'Stmt {{' (AST debug)"
+                );
+                assert!(
+                    !result.contains("kind:"),
+                    "Code: {code}\nFormatted output should not contain 'kind:' field"
+                );
             }
         }
     }

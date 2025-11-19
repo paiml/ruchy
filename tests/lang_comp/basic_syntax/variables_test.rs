@@ -185,10 +185,7 @@ fn test_comments() {
 
     for (input, expected) in test_cases {
         let result = run_repl_code(input);
-        assert!(
-            result.is_ok(),
-            "Comment test failed: {input} - {result:?}"
-        );
+        assert!(result.is_ok(), "Comment test failed: {input} - {result:?}");
 
         let stdout = result.unwrap();
         assert!(

@@ -44,20 +44,19 @@ fn test_fs_read_basic() {
     fs::write(&test_file, "Hello, World!").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let content = fs_read("{}");
     println(content);
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_write() Tests ====================
@@ -68,20 +67,19 @@ fn test_fs_write_basic() {
     let output_file = temp.path().join("output.txt");
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_write("{}", "Test content");
     println("File written");
 }}
-"#, output_file.display());
+"#,
+        output_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_exists() Tests ====================
@@ -93,20 +91,19 @@ fn test_fs_exists_basic() {
     fs::write(&test_file, "exists").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let exists = fs_exists("{}");
     println(exists);
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_create_dir() Tests ====================
@@ -117,20 +114,19 @@ fn test_fs_create_dir_basic() {
     let new_dir = temp.path().join("new_directory");
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_create_dir("{}");
     println("Directory created");
 }}
-"#, new_dir.display());
+"#,
+        new_dir.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_remove_file() Tests ====================
@@ -142,20 +138,19 @@ fn test_fs_remove_file_basic() {
     fs::write(&test_file, "delete this").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_remove_file("{}");
     println("File removed");
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_remove_dir() Tests ====================
@@ -167,20 +162,19 @@ fn test_fs_remove_dir_basic() {
     fs::create_dir(&test_dir).unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_remove_dir("{}");
     println("Directory removed");
 }}
-"#, test_dir.display());
+"#,
+        test_dir.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_copy() Tests ====================
@@ -193,20 +187,20 @@ fn test_fs_copy_basic() {
     fs::write(&source_file, "copy me").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_copy("{}", "{}");
     println("File copied");
 }}
-"#, source_file.display(), dest_file.display());
+"#,
+        source_file.display(),
+        dest_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_rename() Tests ====================
@@ -219,20 +213,20 @@ fn test_fs_rename_basic() {
     fs::write(&old_name, "rename me").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     fs_rename("{}", "{}");
     println("File renamed");
 }}
-"#, old_name.display(), new_name.display());
+"#,
+        old_name.display(),
+        new_name.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_metadata() Tests ====================
@@ -244,20 +238,19 @@ fn test_fs_metadata_basic() {
     fs::write(&test_file, "some content").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let meta = fs_metadata("{}");
     println("Metadata retrieved");
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_read_dir() Tests ====================
@@ -269,20 +262,19 @@ fn test_fs_read_dir_basic() {
     fs::write(temp.path().join("file2.txt"), "2").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let entries = fs_read_dir("{}");
     println("Directory read");
 }}
-"#, temp.path().display());
+"#,
+        temp.path().display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_canonicalize() Tests ====================
@@ -294,20 +286,19 @@ fn test_fs_canonicalize_basic() {
     fs::write(&test_file, "canonical").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let canonical = fs_canonicalize("{}");
     println(canonical);
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== fs_is_file() Tests ====================
@@ -319,20 +310,19 @@ fn test_fs_is_file_basic() {
     fs::write(&test_file, "file").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let is_file = fs_is_file("{}");
     println(is_file);
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== Summary Test ====================

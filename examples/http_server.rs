@@ -98,7 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
     println!();
 
     println!("💡 To start the server:");
-    println!("   cargo run --features notebook --bin ruchy -- serve {} --port 8080", test_path.display());
+    println!(
+        "   cargo run --features notebook --bin ruchy -- serve {} --port 8080",
+        test_path.display()
+    );
     println!();
 
     println!("🎯 To start the server, run:");

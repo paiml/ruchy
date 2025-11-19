@@ -42,11 +42,7 @@ fn cli_provability_valid_program_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\nprintln(x)\n");
 
-    ruchy_cmd()
-        .arg("provability")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("provability").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -63,11 +59,7 @@ fn cli_provability_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("provability")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("provability").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -80,9 +72,11 @@ fn cli_provability_outputs_verification_report() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Verification")
-            .or(predicate::str::contains("Provability"))
-            .or(predicate::str::contains("Formal")));
+        .stdout(
+            predicate::str::contains("Verification")
+                .or(predicate::str::contains("Provability"))
+                .or(predicate::str::contains("Formal")),
+        );
 }
 
 // ============================================================================
@@ -100,9 +94,11 @@ fn cli_provability_verify_flag() {
         .arg("--verify")
         .assert()
         .success()
-        .stdout(predicate::str::contains("verif")
-            .or(predicate::str::contains("Verif"))
-            .or(predicate::str::contains("formal")));
+        .stdout(
+            predicate::str::contains("verif")
+                .or(predicate::str::contains("Verif"))
+                .or(predicate::str::contains("formal")),
+        );
 }
 
 #[test]
@@ -143,9 +139,11 @@ fn cli_provability_contracts_flag() {
         .arg("--contracts")
         .assert()
         .success()
-        .stdout(predicate::str::contains("contract")
-            .or(predicate::str::contains("Contract"))
-            .or(predicate::str::contains("condition")));
+        .stdout(
+            predicate::str::contains("contract")
+                .or(predicate::str::contains("Contract"))
+                .or(predicate::str::contains("condition")),
+        );
 }
 
 #[test]
@@ -189,9 +187,11 @@ fn cli_provability_invariants_flag() {
         .arg("--invariants")
         .assert()
         .success()
-        .stdout(predicate::str::contains("invariant")
-            .or(predicate::str::contains("Invariant"))
-            .or(predicate::str::contains("loop")));
+        .stdout(
+            predicate::str::contains("invariant")
+                .or(predicate::str::contains("Invariant"))
+                .or(predicate::str::contains("loop")),
+        );
 }
 
 #[test]
@@ -231,9 +231,11 @@ fn cli_provability_termination_flag() {
         .arg("--termination")
         .assert()
         .success()
-        .stdout(predicate::str::contains("terminat")
-            .or(predicate::str::contains("Terminat"))
-            .or(predicate::str::contains("halts")));
+        .stdout(
+            predicate::str::contains("terminat")
+                .or(predicate::str::contains("Terminat"))
+                .or(predicate::str::contains("halts")),
+        );
 }
 
 #[test]
@@ -300,9 +302,11 @@ fn cli_provability_bounds_flag() {
         .arg("--bounds")
         .assert()
         .success()
-        .stdout(predicate::str::contains("bounds")
-            .or(predicate::str::contains("Bounds"))
-            .or(predicate::str::contains("array")));
+        .stdout(
+            predicate::str::contains("bounds")
+                .or(predicate::str::contains("Bounds"))
+                .or(predicate::str::contains("array")),
+        );
 }
 
 #[test]
@@ -479,8 +483,10 @@ fn cli_provability_empty_file_fails() {
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unexpected end of input")
-            .or(predicate::str::contains("Parse error")));
+        .stderr(
+            predicate::str::contains("Unexpected end of input")
+                .or(predicate::str::contains("Parse error")),
+        );
 }
 
 #[test]
@@ -522,9 +528,11 @@ fn cli_provability_help_flag() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("provability")
-            .or(predicate::str::contains("Provability"))
-            .or(predicate::str::contains("verification")));
+        .stdout(
+            predicate::str::contains("provability")
+                .or(predicate::str::contains("Provability"))
+                .or(predicate::str::contains("verification")),
+        );
 }
 
 // ============================================================================

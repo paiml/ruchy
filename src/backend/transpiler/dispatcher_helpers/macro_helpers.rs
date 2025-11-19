@@ -18,7 +18,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `println!` macro.
     /// Empty args produce `println!()`, otherwise `println!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_println_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_println_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { println!() })
@@ -35,7 +38,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `print!` macro.
     /// Empty args produce `print!()`, otherwise `print!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_print_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_print_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { print!() })
@@ -52,7 +58,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles arguments and wraps them in Rust's `panic!` macro.
     /// Empty args produce `panic!()`, otherwise `panic!(arg1, arg2, ...)`
-    pub(in crate::backend::transpiler) fn transpile_panic_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_panic_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
             Ok(quote! { panic!() })
@@ -155,7 +164,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles list elements and wraps them in Rust's `vec!` macro.
     /// Produces `vec![elem1, elem2, ...]`
-    pub(in crate::backend::transpiler) fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_vec_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> =
             args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -170,7 +182,10 @@ impl Transpiler {
     /// # Example Usage
     /// Transpiles assertion condition and wraps it in Rust's `assert!` macro.
     /// Produces `assert!(condition, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> =
             args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -189,7 +204,10 @@ impl Transpiler {
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_eq!` macro.
     /// Produces `assert_eq!(left, right, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_eq_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_eq_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_eq! requires at least 2 arguments")
         }
@@ -207,7 +225,10 @@ impl Transpiler {
     /// # Example Usage
     /// Validates at least 2 arguments and transpiles to Rust's `assert_ne!` macro.
     /// Produces `assert_ne!(left, right, optional_message)`
-    pub(in crate::backend::transpiler) fn transpile_assert_ne_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_assert_ne_macro(
+        &self,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_ne! requires at least 2 arguments")
         }
@@ -218,7 +239,11 @@ impl Transpiler {
     }
 
     /// Pass through external macros without modification
-    pub(in crate::backend::transpiler) fn transpile_passthrough_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
+    pub(in crate::backend::transpiler) fn transpile_passthrough_macro(
+        &self,
+        name: &str,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let macro_ident = format_ident!("{}", name);
 
         let arg_tokens: Result<Vec<_>, _> =
@@ -372,10 +397,7 @@ mod tests {
     #[test]
     fn test_assert_with_condition() {
         let transpiler = Transpiler::new();
-        let arg = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let arg = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_assert_macro(&[arg]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -411,7 +433,10 @@ mod tests {
         );
         let result = transpiler.transpile_assert_eq_macro(&[arg]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires at least 2 arguments"));
     }
 
     // Test 14: transpile_assert_ne_macro with valid args
@@ -442,7 +467,10 @@ mod tests {
         );
         let result = transpiler.transpile_assert_ne_macro(&[arg]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires at least 2 arguments"));
     }
 
     // Test 16: transpile_passthrough_macro with custom macro name
@@ -596,10 +624,7 @@ mod tests {
     #[test]
     fn test_assert_with_condition_and_message() {
         let transpiler = Transpiler::new();
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let message = Expr::new(
             ExprKind::Literal(Literal::String("Assertion failed".to_string())),
             Span::default(),
@@ -658,7 +683,10 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_assert_eq_macro(&[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires at least 2 arguments"));
     }
 
     // Test 28: transpile_println_macro with multiple non-string literals
@@ -669,10 +697,7 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        let arg2 = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let arg2 = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_println_macro(&[arg1, arg2]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -746,10 +771,7 @@ mod tests {
     #[test]
     fn test_assert_three_arguments() {
         let transpiler = Transpiler::new();
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let message = Expr::new(
             ExprKind::Literal(Literal::String("Failed".to_string())),
             Span::default(),
@@ -774,7 +796,10 @@ mod tests {
         );
         let result = transpiler.transpile_assert_ne_macro(&[arg]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires at least 2 arguments"));
     }
 
     // Test 34: transpile_passthrough_macro with different macro names
@@ -849,14 +874,8 @@ mod tests {
     #[test]
     fn test_vec_boolean_elements() {
         let transpiler = Transpiler::new();
-        let elem1 = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
-        let elem2 = Expr::new(
-            ExprKind::Literal(Literal::Bool(false)),
-            Span::default(),
-        );
+        let elem1 = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let elem2 = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
         let result = transpiler.transpile_vec_macro(&[elem1, elem2]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -869,10 +888,7 @@ mod tests {
     #[test]
     fn test_println_boolean_literal() {
         let transpiler = Transpiler::new();
-        let arg = Expr::new(
-            ExprKind::Literal(Literal::Bool(false)),
-            Span::default(),
-        );
+        let arg = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
         let result = transpiler.transpile_println_macro(&[arg]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -931,10 +947,7 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        let arg3 = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let arg3 = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_passthrough_macro("complex_macro", &[arg1, arg2, arg3]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -971,10 +984,7 @@ mod tests {
             ExprKind::Literal(Literal::String("Pretty: {:#?}".to_string())),
             Span::default(),
         );
-        let arg = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let arg = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_print_macro(&[format_str, arg]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();

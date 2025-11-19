@@ -240,8 +240,7 @@ fun main() {
 
 /// Generate valid Ruchy function names (alphanumeric + underscore, starting with letter)
 fn function_name_strategy() -> impl Strategy<Value = String> {
-    prop::string::string_regex("[a-z][a-z0-9_]{0,15}")
-        .expect("valid regex")
+    prop::string::string_regex("[a-z][a-z0-9_]{0,15}").expect("valid regex")
 }
 
 /// Generate simple function bodies (avoid syntax errors)

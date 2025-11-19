@@ -18,7 +18,7 @@ impl Transpiler {
                 name == "std"  // stdlib module
                 || self.module_names.contains(name)  // known user module
                 || Self::is_module_like_identifier(name)  // lowercase_underscore pattern
-                || name.chars().next().is_some_and(char::is_uppercase)  // Type names (associated functions)
+                || name.chars().next().is_some_and(char::is_uppercase) // Type names (associated functions)
             }
             ExprKind::FieldAccess { object, .. } => self.is_module_path(object),
             _ => false,
@@ -69,7 +69,9 @@ impl Transpiler {
         // Must be all lowercase/digits/underscores AND contain at least one underscore
         // This distinguishes modules (http_client) from variables (obj, x)
         let has_underscore = name.contains('_');
-        let is_lowercase = name.chars().all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
+        let is_lowercase = name
+            .chars()
+            .all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
         has_underscore && is_lowercase
     }
 
@@ -105,13 +107,17 @@ impl Transpiler {
                     let index: usize = field.parse().unwrap();
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
-                } else if field.is_empty() || field.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+                } else if field.is_empty()
+                    || field.chars().next().is_some_and(|c| c.is_ascii_digit())
+                {
                     // DEFECT: Empty field or starts with digit - invalid identifier
                     // Return error instead of panicking in format_ident!
                     anyhow::bail!("Invalid field name '{field}': field names cannot be empty or start with a digit")
                 } else {
                     // Check for known instance methods that definitely need .
-                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
+                    let known_methods = [
+                        "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
+                    ];
                     let field_ident = format_ident!("{}", field);
 
                     if known_methods.contains(&field) {
@@ -170,7 +176,9 @@ impl Transpiler {
                 } else {
                     // TYPE-INFERENCE-001: Known stdlib methods need () for method calls
                     // ExitStatus::success, Path::exists, String::is_empty, etc.
-                    let known_methods = ["success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err"];
+                    let known_methods = [
+                        "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
+                    ];
                     let field_ident = format_ident!("{}", field);
 
                     if known_methods.contains(&field) {
@@ -264,7 +272,10 @@ mod tests {
     // Helper function to create test transpiler with module names
     fn test_transpiler_with_modules(modules: Vec<&str>) -> Transpiler {
         let mut transpiler = Transpiler::new();
-        transpiler.module_names = modules.iter().map(std::string::ToString::to_string).collect();
+        transpiler.module_names = modules
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect();
         transpiler
     }
 
@@ -435,7 +446,9 @@ mod tests {
     fn test_transpile_field_access_type_associated() {
         let transpiler = test_transpiler();
         let string_type = ident_expr("String");
-        let result = transpiler.transpile_field_access(&string_type, "from").unwrap();
+        let result = transpiler
+            .transpile_field_access(&string_type, "from")
+            .unwrap();
         assert_eq!(result.to_string(), "String :: from");
     }
 
@@ -446,7 +459,11 @@ mod tests {
         let obj = ident_expr("result");
         let result = transpiler.transpile_field_access(&obj, "is_ok").unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("result") && result_str.contains("is_ok") && result_str.contains("()"));
+        assert!(
+            result_str.contains("result")
+                && result_str.contains("is_ok")
+                && result_str.contains("()")
+        );
     }
 
     // Test 17: transpile_field_access - variable chain
@@ -463,7 +480,9 @@ mod tests {
     fn test_transpile_field_access_module_like_identifier() {
         let transpiler = test_transpiler();
         let http_client = ident_expr("http_client");
-        let result = transpiler.transpile_field_access(&http_client, "get").unwrap();
+        let result = transpiler
+            .transpile_field_access(&http_client, "get")
+            .unwrap();
         assert_eq!(result.to_string(), "http_client :: get");
     }
 
@@ -474,7 +493,10 @@ mod tests {
         let nested = field_access_expr(ident_expr("obj"), "field");
         let result = transpiler.transpile_field_access(&nested, "9field");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid field name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid field name"));
     }
 
     // Test 20: transpile_index_access - string key (HashMap)
@@ -496,7 +518,9 @@ mod tests {
         let index = int_expr(0);
         let result = transpiler.transpile_index_access(&array, &index).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains('[') && result_str.contains("clone"));
+        assert!(
+            result_str.contains("arr") && result_str.contains('[') && result_str.contains("clone")
+        );
     }
 
     // Test 22: transpile_slice - full slice [..]
@@ -506,7 +530,9 @@ mod tests {
         let array = ident_expr("arr");
         let result = transpiler.transpile_slice(&array, None, None).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("& arr") && result_str.contains('[') && result_str.contains(".."));
+        assert!(
+            result_str.contains("& arr") && result_str.contains('[') && result_str.contains("..")
+        );
     }
 
     // Test 23: transpile_slice - from beginning [..end]
@@ -515,9 +541,13 @@ mod tests {
         let transpiler = test_transpiler();
         let array = ident_expr("arr");
         let end = int_expr(5);
-        let result = transpiler.transpile_slice(&array, None, Some(&end)).unwrap();
+        let result = transpiler
+            .transpile_slice(&array, None, Some(&end))
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains("..") && result_str.contains('5'));
+        assert!(
+            result_str.contains("arr") && result_str.contains("..") && result_str.contains('5')
+        );
     }
 
     // Test 24: transpile_slice - from start [start..]
@@ -526,9 +556,13 @@ mod tests {
         let transpiler = test_transpiler();
         let array = ident_expr("arr");
         let start = int_expr(2);
-        let result = transpiler.transpile_slice(&array, Some(&start), None).unwrap();
+        let result = transpiler
+            .transpile_slice(&array, Some(&start), None)
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains('2') && result_str.contains(".."));
+        assert!(
+            result_str.contains("arr") && result_str.contains('2') && result_str.contains("..")
+        );
     }
 
     // Test 25: transpile_slice - range [start..end]
@@ -538,8 +572,15 @@ mod tests {
         let array = ident_expr("arr");
         let start = int_expr(1);
         let end = int_expr(4);
-        let result = transpiler.transpile_slice(&array, Some(&start), Some(&end)).unwrap();
+        let result = transpiler
+            .transpile_slice(&array, Some(&start), Some(&end))
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("arr") && result_str.contains('1') && result_str.contains('4') && result_str.contains(".."));
+        assert!(
+            result_str.contains("arr")
+                && result_str.contains('1')
+                && result_str.contains('4')
+                && result_str.contains("..")
+        );
     }
 }

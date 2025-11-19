@@ -149,10 +149,7 @@ mod tests {
         } // PidFile dropped here
 
         // PID file should be cleaned up
-        assert!(
-            !pid_path.exists(),
-            "PID file should be removed after drop"
-        );
+        assert!(!pid_path.exists(), "PID file should be removed after drop");
     }
 
     /// Test that stale PID file (non-existent process) is replaced

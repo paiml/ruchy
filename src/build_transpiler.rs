@@ -135,8 +135,12 @@ fn transpile_single_file(ruchy_file: &Path, source_dir: &Path, output_dir: &Path
     // Format the Rust code with prettyplease for proper multi-line output
     // TRANSPILER-DEFECT-009: build_transpiler was outputting single-line code
     // Solution: Use prettyplease like the CLI does
-    let syntax_tree: syn::File = syn::parse2(rust_tokens)
-        .with_context(|| format!("Failed to parse generated tokens as Rust syntax for file: {}", ruchy_file.display()))?;
+    let syntax_tree: syn::File = syn::parse2(rust_tokens).with_context(|| {
+        format!(
+            "Failed to parse generated tokens as Rust syntax for file: {}",
+            ruchy_file.display()
+        )
+    })?;
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Ensure output directory exists

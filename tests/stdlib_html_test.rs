@@ -20,10 +20,12 @@ fn ruchy_cmd() -> Command {
 fn test_html_parse() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div class='test'>Hello</div>")
             puts html.class
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("HtmlDocument"));
@@ -35,11 +37,13 @@ fn test_html_parse() {
 fn test_html_select() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div class='a'>1</div><div class='a'>2</div>")
             elements = html.select(".a")
             puts elements.length
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("2"));
@@ -51,11 +55,13 @@ fn test_html_select() {
 fn test_html_query_selector() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<p>Hello World</p>")
             p = html.query_selector("p")
             puts p.text()
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("Hello World"));
@@ -66,11 +72,13 @@ fn test_html_query_selector() {
 fn test_html_query_selector_no_match() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<p>Hello</p>")
             element = html.query_selector(".missing")
             puts element == nil
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("true"));
@@ -82,11 +90,13 @@ fn test_html_query_selector_no_match() {
 fn test_html_element_text() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<p>Hello World</p>")
             p = html.query_selector("p")
             puts p.text()
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("Hello World"));
@@ -98,11 +108,13 @@ fn test_html_element_text() {
 fn test_html_element_attr() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<a href='http://example.com'>Link</a>")
             link = html.query_selector("a")
             puts link.attr("href")
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("http://example.com"));
@@ -113,11 +125,13 @@ fn test_html_element_attr() {
 fn test_html_element_attr_missing() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<a>Link</a>")
             link = html.query_selector("a")
             puts link.attr("href") == nil
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("true"));
@@ -129,11 +143,13 @@ fn test_html_element_attr_missing() {
 fn test_html_element_html() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div><p>Test</p></div>")
             div = html.query_selector("div")
             puts div.html()
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("<p>Test</p>"));
@@ -145,13 +161,15 @@ fn test_html_element_html() {
 fn test_html_complex_selector() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div><ul><li class='item'>1</li><li class='item'>2</li></ul></div>")
             items = html.select("div ul li.item")
             puts items.length
             puts items[0].text()
             puts items[1].text()
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("2"))
@@ -164,11 +182,13 @@ fn test_html_complex_selector() {
 fn test_html_query_selector_all() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<p>1</p><p>2</p><p>3</p>")
             elements = html.query_selector_all("p")
             puts elements.length
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("3"));
@@ -179,11 +199,13 @@ fn test_html_query_selector_all() {
 fn test_html_parse_malformed() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div><p>Unclosed")
             elements = html.select("p")
             puts elements.length
-        "#)
+        "#,
+        )
         .assert()
         .success();
 }
@@ -193,11 +215,13 @@ fn test_html_parse_malformed() {
 fn test_html_parse_empty() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("")
             elements = html.select("*")
             puts elements.length
-        "#)
+        "#,
+        )
         .assert()
         .success()
         .stdout(predicate::str::contains("0"));
@@ -208,10 +232,12 @@ fn test_html_parse_empty() {
 fn test_html_invalid_selector() {
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             html = Html.parse("<div>Test</div>")
             elements = html.select(":::invalid")
-        "#)
+        "#,
+        )
         .assert()
         .failure(); // Should error on invalid selector
 }

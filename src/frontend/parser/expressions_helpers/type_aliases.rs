@@ -129,7 +129,7 @@ fn parse_type_bounds(state: &mut ParserState) -> Result<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -143,7 +143,11 @@ mod tests {
     fn test_type_alias_with_generic_target() {
         let code = "type StringResult = Result<String>";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Type alias with generic target should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Type alias with generic target should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -151,7 +155,11 @@ mod tests {
         // PARSER-058: Support generic type aliases
         let code = "type Result<T> = Result<T, Error>";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Generic type alias should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Generic type alias should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -159,7 +167,11 @@ mod tests {
         // PARSER-058: Simple type alias (baseline test)
         let code = "type UserId = i32";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Simple type alias should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Simple type alias should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -196,7 +208,10 @@ mod tests {
         // Lifetimes in generic parameters now work: struct Container<'a>
         let code = "struct Container<'a> { value: String }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Lifetime parameter in generics should parse");
+        assert!(
+            result.is_ok(),
+            "Lifetime parameter in generics should parse"
+        );
     }
 
     #[test]
@@ -212,7 +227,7 @@ mod tests {
 
 #[cfg(test)]
 mod property_tests {
-    
+
     use crate::frontend::parser::Parser;
     use proptest::prelude::*;
 

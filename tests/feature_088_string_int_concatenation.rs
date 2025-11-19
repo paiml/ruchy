@@ -42,14 +42,13 @@ fun main() {
 
     // RED: Currently fails with "Type error: Cannot add string and integer"
     // GREEN: Should output "Count: 42"
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Count: 42"), "Expected 'Count: 42', got: {stdout}");
+    assert!(
+        stdout.contains("Count: 42"),
+        "Expected 'Count: 42', got: {stdout}"
+    );
 }
 
 /// RED: Test integer + string concatenation (reversed order)
@@ -69,14 +68,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("42 items"), "Expected '42 items', got: {stdout}");
+    assert!(
+        stdout.contains("42 items"),
+        "Expected '42 items', got: {stdout}"
+    );
 }
 
 /// RED: Test string + negative integer
@@ -96,14 +94,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Temperature: -5"), "Expected 'Temperature: -5', got: {stdout}");
+    assert!(
+        stdout.contains("Temperature: -5"),
+        "Expected 'Temperature: -5', got: {stdout}"
+    );
 }
 
 /// RED: Test string + float concatenation
@@ -123,14 +120,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Price: $19.99"), "Expected 'Price: $19.99', got: {stdout}");
+    assert!(
+        stdout.contains("Price: $19.99"),
+        "Expected 'Price: $19.99', got: {stdout}"
+    );
 }
 
 /// RED: Test multiple concatenations in sequence
@@ -150,14 +146,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("x = 10, y = 20"), "Expected 'x = 10, y = 20', got: {stdout}");
+    assert!(
+        stdout.contains("x = 10, y = 20"),
+        "Expected 'x = 10, y = 20', got: {stdout}"
+    );
 }
 
 /// RED: Test concatenation in loop (from book ch05 examples)
@@ -180,16 +175,21 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Iteration: 0"), "Expected 'Iteration: 0', got: {stdout}");
-    assert!(stdout.contains("Iteration: 1"), "Expected 'Iteration: 1', got: {stdout}");
-    assert!(stdout.contains("Iteration: 2"), "Expected 'Iteration: 2', got: {stdout}");
+    assert!(
+        stdout.contains("Iteration: 0"),
+        "Expected 'Iteration: 0', got: {stdout}"
+    );
+    assert!(
+        stdout.contains("Iteration: 1"),
+        "Expected 'Iteration: 1', got: {stdout}"
+    );
+    assert!(
+        stdout.contains("Iteration: 2"),
+        "Expected 'Iteration: 2', got: {stdout}"
+    );
 }
 
 /// RED: Test boolean concatenation
@@ -209,14 +209,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Is ready: true"), "Expected 'Is ready: true', got: {stdout}");
+    assert!(
+        stdout.contains("Is ready: true"),
+        "Expected 'Is ready: true', got: {stdout}"
+    );
 }
 
 /// GREEN: Verify actual string + string still works
@@ -236,14 +235,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("Hello, World!"), "Expected 'Hello, World!', got: {stdout}");
+    assert!(
+        stdout.contains("Hello, World!"),
+        "Expected 'Hello, World!', got: {stdout}"
+    );
 }
 
 /// GREEN: Verify numeric addition still works
@@ -263,11 +261,7 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(stdout.contains("30"), "Expected '30', got: {stdout}");

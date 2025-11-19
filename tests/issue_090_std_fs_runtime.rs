@@ -20,7 +20,7 @@ fn ruchy_cmd() -> Command {
 fn test_std_fs_write_basic() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let test_file = "/tmp/ruchy_issue_90_test.txt";
@@ -31,13 +31,9 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
+
     // Test both run and compile modes
-    ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&script).assert().success();
 }
 
 /// RED: Test `std::fs::read_to_string`
@@ -45,7 +41,7 @@ main()
 fn test_std_fs_read_to_string() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let test_file = "/tmp/ruchy_issue_90_read.txt";
@@ -57,12 +53,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&script).assert().success();
 }
 
 /// RED: Test `std::fs::exists`
@@ -70,7 +62,7 @@ main()
 fn test_std_fs_exists() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let test_file = "/tmp/ruchy_issue_90_exists.txt";
@@ -87,12 +79,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("run").arg(&script).assert().success();
 }
 
 /// RED: Test `std::fs` with error handling (Result type)
@@ -115,11 +103,7 @@ main()
 "#;
     fs::write(&script, code).unwrap();
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&script).assert().success();
 }
 
 // ============================================================================

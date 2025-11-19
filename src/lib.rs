@@ -10,7 +10,8 @@
 // TECH-DEBT: 33 only_used_in_recursion errors remain (12/45 fixed in PR #144)
 // Remaining files: statements.rs(4), transpiler/mod.rs(4), wasm/mod.rs(6), quality/linter.rs(5), etc.
 // Note: Lint renamed from self_only_used_in_recursion in Rust 1.91.0
-#![allow(clippy::large_stack_arrays)] // Test fixtures with large arrays
+#![allow(clippy::large_stack_arrays)]
+// Test fixtures with large arrays
 // Clippy allows for RUCHY-0801 commit - will be addressed in quality sprint
 #![allow(clippy::case_sensitive_file_extension_comparisons)]
 #![allow(clippy::match_same_arms)]
@@ -21,7 +22,8 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
-#![allow(clippy::arc_with_non_send_sync)] // Single-threaded runtime, Arc used for shared ownership not thread-safety
+#![allow(clippy::arc_with_non_send_sync)]
+// Single-threaded runtime, Arc used for shared ownership not thread-safety
 // Additional clippy allows for P0 lint fixes
 #![allow(clippy::empty_line_after_doc_comments)]
 #![allow(clippy::manual_let_else)]
@@ -55,6 +57,7 @@
 pub mod actors;
 pub mod api_docs;
 pub mod backend;
+pub mod bench;
 pub mod build_transpiler;
 pub mod cli;
 pub mod debugger;
@@ -73,7 +76,6 @@ pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
 pub mod package;
-pub mod bench;
 pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;
@@ -246,8 +248,7 @@ mod tests {
     #[test]
     fn test_compile_impl() {
         // PARSER-009: impl blocks are now supported
-        let result =
-            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }");
+        let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }");
 
         assert!(
             result.is_ok(),

@@ -154,7 +154,9 @@ pub fn benchmark_http(
 
     // Wait for all workers to complete
     for handle in handles {
-        handle.join().map_err(|_| "Worker thread panicked".to_string())?;
+        handle
+            .join()
+            .map_err(|_| "Worker thread panicked".to_string())?;
     }
 
     let total_duration = start.elapsed();
@@ -199,10 +201,14 @@ mod tests {
             "GET",
             None,
             vec!["User-Agent: ruchy-bench/1.0".to_string()],
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(results.total_requests, 10);
-        assert!(results.successful_requests > 0, "Should have successful requests");
+        assert!(
+            results.successful_requests > 0,
+            "Should have successful requests"
+        );
         assert!(results.total_duration > Duration::ZERO);
         assert!(!results.request_times.is_empty());
     }
@@ -218,7 +224,8 @@ mod tests {
             "POST",
             Some(r#"{"test": "data"}"#),
             vec!["Content-Type: application/json".to_string()],
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(results.total_requests, 5);
         assert!(results.successful_requests > 0);
@@ -231,11 +238,12 @@ mod tests {
         let results = benchmark_http(
             "https://httpbin.org/delay/0",
             20,
-            5,  // 5 concurrent workers
+            5, // 5 concurrent workers
             "GET",
             None,
             Vec::new(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(results.total_requests, 20);
         // With concurrency, should be faster than sequential

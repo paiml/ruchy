@@ -59,10 +59,22 @@ fn bench_loops(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
 
     let workloads = vec![
-        ("count_to_10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }"),
-        ("count_to_100", "{ let mut i = 0; while i < 100 { i = i + 1 }; i }"),
-        ("sum_1_to_10", "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }"),
-        ("sum_1_to_50", "{ let mut sum = 0; let mut i = 1; while i <= 50 { sum = sum + i; i = i + 1 }; sum }"),
+        (
+            "count_to_10",
+            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
+        ),
+        (
+            "count_to_100",
+            "{ let mut i = 0; while i < 100 { i = i + 1 }; i }",
+        ),
+        (
+            "sum_1_to_10",
+            "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",
+        ),
+        (
+            "sum_1_to_50",
+            "{ let mut sum = 0; let mut i = 1; while i <= 50 { sum = sum + i; i = i + 1 }; sum }",
+        ),
     ];
 
     for (name, code) in workloads {
@@ -108,7 +120,10 @@ fn bench_control_flow(c: &mut Criterion) {
     let workloads = vec![
         ("if_true", "if true { 42 } else { 0 }"),
         ("if_false", "if false { 0 } else { 42 }"),
-        ("nested_if", "if true { if false { 0 } else { 42 } } else { 100 }"),
+        (
+            "nested_if",
+            "if true { if false { 0 } else { 42 } } else { 100 }",
+        ),
         ("if_comparison", "if 10 > 5 { 42 } else { 0 }"),
     ];
 

@@ -263,7 +263,7 @@ impl MinimalCodeGen {
             UnaryOp::Negate => "-",
             UnaryOp::BitwiseNot => "~",
             UnaryOp::Reference => "&",
-            UnaryOp::MutableReference => "&mut ",  // PARSER-085: Issue #71
+            UnaryOp::MutableReference => "&mut ", // PARSER-085: Issue #71
             UnaryOp::Deref => "*",
         }
     }
@@ -745,7 +745,10 @@ mod tests {
     // Test 7: gen_unary_op MutableReference
     #[test]
     fn test_gen_unary_op_mut_ref() {
-        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::MutableReference), "&mut ");
+        assert_eq!(
+            MinimalCodeGen::gen_unary_op(UnaryOp::MutableReference),
+            "&mut "
+        );
     }
 
     // Test 8: gen_unary_op Deref
@@ -760,12 +763,17 @@ mod tests {
         use crate::frontend::ast::ExprKind;
         // Use an ExprKind variant not supported by minimal codegen
         let expr = Expr::new(
-            ExprKind::Return { value: Some(Box::new(make_literal(Literal::Integer(42, None)))) },
+            ExprKind::Return {
+                value: Some(Box::new(make_literal(Literal::Integer(42, None)))),
+            },
             Span::new(0, 1),
         );
         let result = MinimalCodeGen::gen_expr(&expr);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Minimal codegen does not support"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Minimal codegen does not support"));
     }
 
     // Test 10: gen_expr with Ternary (syntactic sugar for if-else)

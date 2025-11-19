@@ -40,7 +40,7 @@ fn test_bug_003_array_assignment_transpile() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()

@@ -399,7 +399,10 @@ mod tests {
         assert!(exists(path_str), "Directory should exist after creation");
 
         remove_dir(path_str).unwrap();
-        assert!(!exists(path_str), "Directory should not exist after removal");
+        assert!(
+            !exists(path_str),
+            "Directory should not exist after removal"
+        );
     }
 
     #[test]
@@ -417,7 +420,10 @@ mod tests {
     #[test]
     fn test_remove_nonexistent_dir() {
         let result = remove_dir("/nonexistent/directory");
-        assert!(result.is_err(), "Removing nonexistent directory should fail");
+        assert!(
+            result.is_err(),
+            "Removing nonexistent directory should fail"
+        );
     }
 
     // --------------------------------------------------------------------------
@@ -616,8 +622,10 @@ mod tests {
     #[test]
     fn test_exists_directory() {
         let temp_dir = TempDir::new().unwrap();
-        assert!(exists(temp_dir.path().to_str().unwrap()),
-                "exists() should return true for directories");
+        assert!(
+            exists(temp_dir.path().to_str().unwrap()),
+            "exists() should return true for directories"
+        );
     }
 }
 
@@ -634,11 +642,13 @@ mod property_tests {
     #[test]
     fn prop_write_read_round_trip() {
         let temp_dir = TempDir::new().unwrap();
-        let test_cases = ["",
+        let test_cases = [
+            "",
             "Hello",
             "Multi\nLine\nContent",
             "Unicode: 世界🦀",
-            "Special: \t\r\n"];
+            "Special: \t\r\n",
+        ];
 
         for (i, content) in test_cases.iter().enumerate() {
             let file_path = temp_dir.path().join(format!("test_{i}.txt"));
@@ -647,8 +657,10 @@ mod property_tests {
             write(path_str, content).unwrap();
             let read_back = read_to_string(path_str).unwrap();
 
-            assert_eq!(*content, read_back,
-                       "Round-trip should preserve content: {content:?}");
+            assert_eq!(
+                *content, read_back,
+                "Round-trip should preserve content: {content:?}"
+            );
         }
     }
 
@@ -669,8 +681,10 @@ mod property_tests {
         let source_content = read_to_string(source_str).unwrap();
         let dest_content = read_to_string(dest_str).unwrap();
 
-        assert_eq!(source_content, dest_content,
-                   "Copied file should have identical content");
+        assert_eq!(
+            source_content, dest_content,
+            "Copied file should have identical content"
+        );
     }
 
     // Property: rename is a move (source disappears, dest appears)
@@ -742,12 +756,18 @@ mod property_tests {
         let path_str = file_path.to_str().unwrap();
 
         // Non-existent path
-        assert_eq!(exists(path_str), metadata(path_str).is_ok(),
-                   "exists() should match metadata() success");
+        assert_eq!(
+            exists(path_str),
+            metadata(path_str).is_ok(),
+            "exists() should match metadata() success"
+        );
 
         // Create file
         write(path_str, "content").unwrap();
-        assert_eq!(exists(path_str), metadata(path_str).is_ok(),
-                   "exists() should match metadata() success after creation");
+        assert_eq!(
+            exists(path_str),
+            metadata(path_str).is_ok(),
+            "exists() should match metadata() success after creation"
+        );
     }
 }

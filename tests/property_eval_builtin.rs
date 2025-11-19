@@ -255,8 +255,7 @@ fn prop_random_bounds() {
         assert!(result.is_ok());
 
         if let Ok(Some(Value::Float(r))) = result {
-            assert!((0.0..1.0).contains(&r),
-                "random() = {r} not in [0.0, 1.0)");
+            assert!((0.0..1.0).contains(&r), "random() = {r} not in [0.0, 1.0)");
         }
     }
 }
@@ -618,8 +617,11 @@ fn prop_type_distinguishes_types() {
         assert!(result.is_ok());
 
         if let Ok(Some(Value::String(type_name))) = result {
-            assert_eq!(type_name.as_ref(), expected_type,
-                "type() mismatch for {expected_type}");
+            assert_eq!(
+                type_name.as_ref(),
+                expected_type,
+                "type() mismatch for {expected_type}"
+            );
         }
     }
 }
@@ -657,8 +659,10 @@ fn prop_is_nil_detection() {
 /// Coverage target: `eval_assert_eq` (lines 780-790)
 #[test]
 fn test_assert_eq_success() {
-    let result = eval_builtin_function("__builtin_assert_eq__",
-        &[Value::Integer(42), Value::Integer(42)]);
+    let result = eval_builtin_function(
+        "__builtin_assert_eq__",
+        &[Value::Integer(42), Value::Integer(42)],
+    );
     assert!(result.is_ok());
     // assert_eq returns Nil on success
     assert_eq!(result.unwrap(), Some(Value::Nil));
@@ -668,8 +672,10 @@ fn test_assert_eq_success() {
 /// Coverage target: `eval_assert_eq` error path (line 787)
 #[test]
 fn test_assert_eq_failure() {
-    let result = eval_builtin_function("__builtin_assert_eq__",
-        &[Value::Integer(42), Value::Integer(99)]);
+    let result = eval_builtin_function(
+        "__builtin_assert_eq__",
+        &[Value::Integer(42), Value::Integer(99)],
+    );
     // Should return error
     assert!(result.is_err(), "assert_eq(42, 99) should fail");
 }
@@ -700,7 +706,7 @@ fn test_dbg_passthrough() {
     let result = eval_builtin_function("__builtin_dbg__", &[test_value]);
     assert!(result.is_ok());
     match result.unwrap() {
-        Some(Value::Integer(42)) => (),  // Expected
+        Some(Value::Integer(42)) => (), // Expected
         other => panic!("dbg should return input value, got {other:?}"),
     }
 }
@@ -778,7 +784,11 @@ fn test_string_from_string() {
     assert!(result.is_ok());
 
     if let Ok(Some(Value::String(s))) = result {
-        assert_eq!(s.as_ref(), "hello", "String::from(string) should preserve content");
+        assert_eq!(
+            s.as_ref(),
+            "hello",
+            "String::from(string) should preserve content"
+        );
     } else {
         panic!("String::from should return String");
     }
@@ -802,7 +812,12 @@ fn test_string_from_utf8_valid() {
     assert!(result.is_ok());
 
     // Should return Result::Ok(String)
-    if let Ok(Some(Value::EnumVariant { enum_name, variant_name, data })) = result {
+    if let Ok(Some(Value::EnumVariant {
+        enum_name,
+        variant_name,
+        data,
+    })) = result
+    {
         assert_eq!(enum_name, "Result", "Should return Result enum");
         assert_eq!(variant_name, "Ok", "Should be Ok variant for valid UTF-8");
 
@@ -831,9 +846,17 @@ fn test_string_from_utf8_invalid() {
     assert!(result.is_ok());
 
     // Should return Result::Err(error_message)
-    if let Ok(Some(Value::EnumVariant { enum_name, variant_name, data })) = result {
+    if let Ok(Some(Value::EnumVariant {
+        enum_name,
+        variant_name,
+        data,
+    })) = result
+    {
         assert_eq!(enum_name, "Result", "Should return Result enum");
-        assert_eq!(variant_name, "Err", "Should be Err variant for invalid UTF-8");
+        assert_eq!(
+            variant_name, "Err",
+            "Should be Err variant for invalid UTF-8"
+        );
         assert!(data.is_some(), "Err variant should contain error message");
     } else {
         panic!("String::from_utf8 should return Result enum");
@@ -970,7 +993,10 @@ fn test_timestamp_returns_integer() {
         // Timestamp should be positive and reasonable (after year 2000)
         assert!(ts > 946_684_800_000, "Timestamp should be after year 2000");
         // Should be before year 2100 (4102444800000ms)
-        assert!(ts < 4_102_444_800_000, "Timestamp should be before year 2100");
+        assert!(
+            ts < 4_102_444_800_000,
+            "Timestamp should be before year 2100"
+        );
     } else {
         panic!("timestamp should return Integer");
     }
@@ -1012,7 +1038,10 @@ fn test_walk_returns_array() {
     // walk returns array of file entries (may be Objects or Strings depending on implementation)
     if let Ok(Some(Value::Array(files))) = result {
         // Should find entries in tests/ directory
-        assert!(!files.is_empty(), "walk should find files in tests/ directory");
+        assert!(
+            !files.is_empty(),
+            "walk should find files in tests/ directory"
+        );
     } else {
         panic!("walk should return Array");
     }
@@ -1032,7 +1061,10 @@ fn test_search_finds_matches() {
     // search returns array of matching results
     if let Ok(Some(Value::Array(matches))) = result {
         // Should find matches for "property_eval_builtin" in this test file
-        assert!(!matches.is_empty(), "search should find matches in test files");
+        assert!(
+            !matches.is_empty(),
+            "search should find matches in test files"
+        );
     } else {
         panic!("search should return Array");
     }
@@ -1084,7 +1116,10 @@ fn test_env_current_dir_returns_string() {
 
     // env_current_dir returns String (directory path)
     if let Ok(Some(Value::String(path))) = result {
-        assert!(!path.is_empty(), "Current directory path should not be empty");
+        assert!(
+            !path.is_empty(),
+            "Current directory path should not be empty"
+        );
         // Path should contain at least one directory separator
         assert!(
             path.contains('/') || path.contains('\\'),
@@ -1429,7 +1464,11 @@ fn test_path_file_stem() {
 
     // path_file_stem returns String without extension
     if let Ok(Some(Value::String(stem))) = result {
-        assert_eq!(stem.as_ref(), "report", "Should return filename without extension");
+        assert_eq!(
+            stem.as_ref(),
+            "report",
+            "Should return filename without extension"
+        );
     } else {
         panic!("path_file_stem should return String");
     }
@@ -1487,11 +1526,14 @@ fn test_path_is_relative() {
 /// Coverage target: `eval_path_join_many` (line 2275)
 #[test]
 fn test_path_join_many() {
-    let components = Value::Array(vec![
-        Value::String(Arc::from("/home")),
-        Value::String(Arc::from("user")),
-        Value::String(Arc::from("documents")),
-    ].into());
+    let components = Value::Array(
+        vec![
+            Value::String(Arc::from("/home")),
+            Value::String(Arc::from("user")),
+            Value::String(Arc::from("documents")),
+        ]
+        .into(),
+    );
 
     let result = eval_builtin_function("__builtin_path_join_many__", &[components]);
     assert!(result.is_ok(), "path_join_many should succeed");
@@ -1532,7 +1574,10 @@ fn test_path_with_file_name() {
     assert!(result.is_ok(), "path_with_file_name should succeed");
 
     if let Ok(Some(Value::String(new_path))) = result {
-        assert!(new_path.ends_with("new_file.txt"), "Should have new file name");
+        assert!(
+            new_path.ends_with("new_file.txt"),
+            "Should have new file name"
+        );
         assert!(new_path.contains("/path/to"), "Should preserve directory");
     } else {
         panic!("path_with_file_name should return String");
@@ -1566,7 +1611,7 @@ fn test_path_normalize() {
 
     if let Ok(Some(Value::String(normalized))) = result {
         assert!(!normalized.contains(".."), "Should resolve ..");
-        assert!(!normalized.contains("/./"  ), "Should resolve .");
+        assert!(!normalized.contains("/./"), "Should resolve .");
         assert!(normalized.contains("admin"), "Should preserve real paths");
     } else {
         panic!("path_normalize should return String");
@@ -1581,10 +1626,16 @@ fn test_path_canonicalize() {
     let path = Value::String(Arc::from("."));
 
     let result = eval_builtin_function("__builtin_path_canonicalize__", &[path]);
-    assert!(result.is_ok(), "path_canonicalize should succeed for existing path");
+    assert!(
+        result.is_ok(),
+        "path_canonicalize should succeed for existing path"
+    );
 
     if let Ok(Some(Value::String(canonical))) = result {
-        assert!(canonical.starts_with('/'), "Canonical path should be absolute");
+        assert!(
+            canonical.starts_with('/'),
+            "Canonical path should be absolute"
+        );
     } else {
         panic!("path_canonicalize should return String");
     }
@@ -1610,7 +1661,10 @@ fn test_compute_hash() {
     assert!(result.is_ok(), "compute_hash should succeed");
     if let Ok(Some(Value::String(hash))) = result {
         assert_eq!(hash.len(), 32, "MD5 hash should be 32 hex characters");
-        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()), "Hash should be hex");
+        assert!(
+            hash.chars().all(|c| c.is_ascii_hexdigit()),
+            "Hash should be hex"
+        );
     } else {
         panic!("compute_hash should return String");
     }
@@ -1631,7 +1685,10 @@ fn test_fs_read() {
     let result = eval_builtin_function("__builtin_fs_read__", &[path]);
 
     assert!(result.is_ok(), "fs_read should succeed");
-    if let Ok(Some(Value::EnumVariant { variant_name, data, .. })) = result {
+    if let Ok(Some(Value::EnumVariant {
+        variant_name, data, ..
+    })) = result
+    {
         assert_eq!(variant_name, "Ok", "Should return Result::Ok");
         if let Some(values) = data {
             assert!(!values.is_empty(), "Should have content");
@@ -1838,7 +1895,10 @@ fn test_fs_canonicalize() {
     let path = Value::String(Arc::from("."));
     let result = eval_builtin_function("__builtin_fs_canonicalize__", &[path]);
 
-    assert!(result.is_ok(), "fs_canonicalize should succeed for existing path");
+    assert!(
+        result.is_ok(),
+        "fs_canonicalize should succeed for existing path"
+    );
     if let Ok(Some(Value::String(canonical))) = result {
         assert!(canonical.starts_with('/'), "Should be absolute path");
     }
@@ -1884,7 +1944,10 @@ fn test_env_var() {
     let result = eval_builtin_function("__builtin_env_var__", &[key]);
 
     assert!(result.is_ok(), "env_var should succeed");
-    if let Ok(Some(Value::EnumVariant { variant_name, data, .. })) = result {
+    if let Ok(Some(Value::EnumVariant {
+        variant_name, data, ..
+    })) = result
+    {
         assert_eq!(variant_name, "Ok", "Should return Result::Ok");
         if let Some(values) = data {
             if let Some(Value::String(val)) = values.first() {
@@ -1922,7 +1985,10 @@ fn test_env_set_var() {
 fn test_env_remove_var() {
     // Set a variable first
     std::env::set_var("RUCHY_TEST_REMOVE_VAR", "to_remove");
-    assert!(std::env::var("RUCHY_TEST_REMOVE_VAR").is_ok(), "Variable should exist");
+    assert!(
+        std::env::var("RUCHY_TEST_REMOVE_VAR").is_ok(),
+        "Variable should exist"
+    );
 
     let key = Value::String(Arc::from("RUCHY_TEST_REMOVE_VAR"));
     let result = eval_builtin_function("__builtin_env_remove_var__", &[key]);
@@ -2079,7 +2145,7 @@ fn test_json_parse_simple_object() {
 
     // Should return Object
     match result {
-        Ok(Some(Value::Object(_))) => { /* Success */ },
+        Ok(Some(Value::Object(_))) => { /* Success */ }
         _ => panic!("json_parse should return Object"),
     }
 }
@@ -2131,7 +2197,8 @@ fn test_json_roundtrip_simple() {
 
         if let Ok(Some(Value::String(_json_str2))) = stringified {
             // Parse again
-            let reparsed = eval_builtin_function("__builtin_json_parse__", &[Value::String(_json_str2)]);
+            let reparsed =
+                eval_builtin_function("__builtin_json_parse__", &[Value::String(_json_str2)]);
             assert!(reparsed.is_ok(), "Re-parse should succeed");
 
             // Values should be equivalent (though string representation may differ)
@@ -2144,7 +2211,10 @@ fn test_json_validate_invalid() {
     let json_str = Value::String(Arc::from(r#"{"invalid": }"#)); // Missing value
 
     let result = eval_builtin_function("__builtin_json_validate__", &[json_str]);
-    assert!(result.is_ok(), "json_validate should succeed even with invalid JSON");
+    assert!(
+        result.is_ok(),
+        "json_validate should succeed even with invalid JSON"
+    );
 
     // Should return Boolean false for invalid JSON
     if let Ok(Some(Value::Bool(is_valid))) = result {
@@ -2165,7 +2235,11 @@ fn test_json_type_object() {
 
     // Should return "object" for JSON objects
     if let Ok(Some(Value::String(type_str))) = result {
-        assert_eq!(type_str.as_ref(), "object", "Should identify as object type");
+        assert_eq!(
+            type_str.as_ref(),
+            "object",
+            "Should identify as object type"
+        );
     } else {
         panic!("json_type should return String");
     }

@@ -6,8 +6,8 @@
 //!
 //! This test file demonstrates and validates ALL supported import syntaxes in Ruchy.
 
-use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::ExprKind;
+use ruchy::frontend::parser::Parser;
 
 /// Test naming convention: `test_issue059`_<section>_<syntax>_<case>
 /// Traceability: issue059 → GitHub issue #59
@@ -20,7 +20,10 @@ fn test_issue059_01_use_simple() {
 
     // Should create Import expression
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. }),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. }
+        ),
         "Expected Import or ImportAll"
     );
 }
@@ -32,7 +35,10 @@ fn test_issue059_02_use_wildcard() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -44,7 +50,10 @@ fn test_issue059_03_use_aliased() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -56,7 +65,10 @@ fn test_issue059_04_use_grouped() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -68,7 +80,10 @@ fn test_issue059_05_import_simple() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -80,7 +95,10 @@ fn test_issue059_06_import_nested() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -92,7 +110,10 @@ fn test_issue059_07_from_import() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -104,7 +125,10 @@ fn test_issue059_08_from_import_multiple() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -116,7 +140,10 @@ fn test_issue059_09_from_import_wildcard() {
     let ast = Parser::new(source).parse().expect("Should parse");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -131,10 +158,15 @@ struct TestRunner {
     framework: DiscoveryFramework,
 }
 ";
-    let ast = Parser::new(source).parse().expect("Should parse struct with imports");
+    let ast = Parser::new(source)
+        .parse()
+        .expect("Should parse struct with imports");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -150,10 +182,15 @@ from utils import helper
 
 let x = 42
 ";
-    let ast = Parser::new(source).parse().expect("Should parse multiple imports");
+    let ast = Parser::new(source)
+        .parse()
+        .expect("Should parse multiple imports");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }
@@ -162,10 +199,15 @@ let x = 42
 fn test_issue059_12_nested_grouped_imports() {
     // Nested grouped imports: use module::{sub1::{item1, item2}, sub2::item3}
     let source = "use std::{collections::{HashMap, HashSet}, io::Read}";
-    let ast = Parser::new(source).parse().expect("Should parse nested grouped imports");
+    let ast = Parser::new(source)
+        .parse()
+        .expect("Should parse nested grouped imports");
 
     assert!(
-        matches!(ast.kind, ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)),
+        matches!(
+            ast.kind,
+            ExprKind::Import { .. } | ExprKind::ImportAll { .. } | ExprKind::Block(_)
+        ),
         "Expected Import, ImportAll, or Block"
     );
 }

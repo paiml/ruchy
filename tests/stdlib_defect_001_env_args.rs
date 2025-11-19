@@ -42,11 +42,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should run successfully
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 2: `env_args()` with iteration - CLI limitation: can't pass extra args
@@ -118,11 +114,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 5: Baseline - builtin functions work
@@ -141,11 +133,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Builtin functions should work NOW
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== GREEN PHASE SUMMARY ====================

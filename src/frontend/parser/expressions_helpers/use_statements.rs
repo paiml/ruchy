@@ -130,7 +130,10 @@ fn parse_use_first_segment(state: &mut ParserState, path_parts: &mut Vec<String>
 }
 
 /// Parse segment after :: in use path (identifier or keyword)
-fn parse_use_segment_after_colon(state: &mut ParserState, path_parts: &mut Vec<String>) -> Result<()> {
+fn parse_use_segment_after_colon(
+    state: &mut ParserState,
+    path_parts: &mut Vec<String>,
+) -> Result<()> {
     match state.tokens.peek() {
         Some((Token::Identifier(segment), _)) => {
             path_parts.push(segment.clone());
@@ -353,7 +356,7 @@ fn parse_simple_import_with_alias(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

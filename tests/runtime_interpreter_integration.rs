@@ -275,7 +275,9 @@ fn test_interpreter_control_pattern_guards() {
         .arg("examples/03_control_flow.ruchy")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Pattern guard result: positive value"));
+        .stdout(predicate::str::contains(
+            "Pattern guard result: positive value",
+        ));
 }
 
 // ============================================================================

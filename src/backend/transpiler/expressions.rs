@@ -158,19 +158,25 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Identifier(name) => name == var_name,
             ExprKind::Binary { left, right, .. } => {
-                Self::expr_references_var(left, var_name) || Self::expr_references_var(right, var_name)
+                Self::expr_references_var(left, var_name)
+                    || Self::expr_references_var(right, var_name)
             }
             ExprKind::Unary { operand, .. } => Self::expr_references_var(operand, var_name),
             ExprKind::Call { func, args } => {
                 Self::expr_references_var(func, var_name)
-                    || args.iter().any(|arg| Self::expr_references_var(arg, var_name))
+                    || args
+                        .iter()
+                        .any(|arg| Self::expr_references_var(arg, var_name))
             }
             ExprKind::MethodCall { receiver, args, .. } => {
                 Self::expr_references_var(receiver, var_name)
-                    || args.iter().any(|arg| Self::expr_references_var(arg, var_name))
+                    || args
+                        .iter()
+                        .any(|arg| Self::expr_references_var(arg, var_name))
             }
             ExprKind::IndexAccess { object, index } => {
-                Self::expr_references_var(object, var_name) || Self::expr_references_var(index, var_name)
+                Self::expr_references_var(object, var_name)
+                    || Self::expr_references_var(index, var_name)
             }
             _ => false,
         }
@@ -178,7 +184,11 @@ impl Transpiler {
 
     /// Transpile assignment to global that references itself (single-lock pattern)
     /// Prevents deadlock: counter = counter + 1
-    fn transpile_assign_global_self_ref(&self, var_name: &str, value: &Expr) -> Result<TokenStream> {
+    fn transpile_assign_global_self_ref(
+        &self,
+        var_name: &str,
+        value: &Expr,
+    ) -> Result<TokenStream> {
         let var_ident = format_ident!("{}", var_name);
 
         // Transpile value, but temporarily disable global wrapping
@@ -701,7 +711,10 @@ mod tests {
     #[test]
     fn test_expr_references_var_binary_expr() {
         let left = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
         let expr = Expr::new(
             ExprKind::Binary {
                 left: Box::new(left),
@@ -771,7 +784,10 @@ mod tests {
     #[test]
     fn test_is_definitely_string_integer_not_string() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
         let result = transpiler.is_definitely_string(&expr);
         assert!(!result);
     }
@@ -796,7 +812,10 @@ mod tests {
     #[test]
     fn test_looks_like_real_set_literal() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
         let result = transpiler.looks_like_real_set(&expr);
         assert!(result);
     }
@@ -805,8 +824,14 @@ mod tests {
     #[test]
     fn test_looks_like_real_set_binary_false() {
         let transpiler = Transpiler::new();
-        let left = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
         let expr = Expr::new(
             ExprKind::Binary {
                 left: Box::new(left),
@@ -823,7 +848,10 @@ mod tests {
     #[test]
     fn test_looks_like_real_set_let_false() {
         let transpiler = Transpiler::new();
-        let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
         let body = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
         let expr = Expr::new(
             ExprKind::Let {
@@ -924,7 +952,10 @@ mod tests {
     #[test]
     fn test_expr_references_var_index_access() {
         let object = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
-        let index = Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default());
+        let index = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
         let expr = Expr::new(
             ExprKind::IndexAccess {
                 object: Box::new(object),

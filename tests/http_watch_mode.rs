@@ -90,10 +90,7 @@ fn test_pid_file_creation_and_cleanup() {
     } // PID file dropped here
 
     // PID file should be cleaned up
-    assert!(
-        !pid_path.exists(),
-        "PID file should be removed after drop"
-    );
+    assert!(!pid_path.exists(), "PID file should be removed after drop");
 }
 
 #[test]
@@ -186,11 +183,7 @@ fn test_debounce_parameter_validation() {
     // Valid debounce values should work
     let _temp_dir = TempDir::new().unwrap();
 
-    ruchy_cmd()
-        .arg("serve")
-        .arg("--help")
-        .assert()
-        .success();
+    ruchy_cmd().arg("serve").arg("--help").assert().success();
 
     // Note: Actual debounce validation happens at runtime, not CLI parsing
     // This test verifies the CLI accepts the parameter

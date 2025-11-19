@@ -467,8 +467,8 @@ let b = {j}
 println(f"Result: {{a + b}}")
 "#
                 );
-                let temp_file = std::env::temp_dir()
-                    .join(format!("langcomp_005_prop_expr_eval_{i}_{j}.ruchy"));
+                let temp_file =
+                    std::env::temp_dir().join(format!("langcomp_005_prop_expr_eval_{i}_{j}.ruchy"));
                 std::fs::write(&temp_file, &code).unwrap();
 
                 let expected = format!("Result: {}", i + j);

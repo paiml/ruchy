@@ -231,7 +231,7 @@ pub fn eval_array_method_simple(
             let unique: Vec<Value> = arr
                 .iter()
                 .filter(|v| {
-                    let key = format!("{v:?}");  // Use debug representation as key
+                    let key = format!("{v:?}"); // Use debug representation as key
                     seen.insert(key)
                 })
                 .cloned()

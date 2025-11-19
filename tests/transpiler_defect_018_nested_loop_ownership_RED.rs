@@ -118,13 +118,17 @@ fun main() {
 
     // RED: This should fail with E0382 until fixed
     if !check_output.status.success()
-        && stderr.contains("E0382") && stderr.contains("use of moved value") {
-            println!("✅ RED TEST: E0382 ownership error confirmed");
-            println!("   Transpiler generates buggy code for nested loop pattern");
-            return; // RED test passes (confirms bug exists)
-        }
+        && stderr.contains("E0382")
+        && stderr.contains("use of moved value")
+    {
+        println!("✅ RED TEST: E0382 ownership error confirmed");
+        println!("   Transpiler generates buggy code for nested loop pattern");
+        return; // RED test passes (confirms bug exists)
+    }
 
-    panic!("RED TEST FAILED: Expected E0382 error but compilation succeeded or had different error");
+    panic!(
+        "RED TEST FAILED: Expected E0382 error but compilation succeeded or had different error"
+    );
 }
 
 /// RED TEST 2: Simpler nested loop with function call
@@ -190,10 +194,11 @@ fun main() {
     let stderr = String::from_utf8_lossy(&check_output.stderr);
 
     if !check_output.status.success()
-        && (stderr.contains("E0382") || stderr.contains("use of moved value")) {
-            println!("✅ RED TEST 2: Nested loop ownership error confirmed");
-            return;
-        }
+        && (stderr.contains("E0382") || stderr.contains("use of moved value"))
+    {
+        println!("✅ RED TEST 2: Nested loop ownership error confirmed");
+        return;
+    }
 
     panic!("RED TEST 2 FAILED: Expected E0382 but got different result");
 }

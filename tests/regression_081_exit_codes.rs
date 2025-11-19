@@ -10,8 +10,8 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Test 1: panic!() should return non-zero exit code
 #[test]

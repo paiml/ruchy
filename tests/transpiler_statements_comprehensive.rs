@@ -55,7 +55,11 @@ pub fn test() {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/transpiler_statements_let_immutable.rs"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/transpiler_statements_let_immutable.rs",
+        ])
         .output()
         .expect("Failed to run rustc");
 
@@ -167,7 +171,11 @@ pub fn test(x: i32) -> String {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/transpiler_statements_if_simple.rs"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/transpiler_statements_if_simple.rs",
+        ])
         .output()
         .expect("Failed to run rustc");
 
@@ -284,7 +292,11 @@ pub fn test(x: i32) -> String {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/transpiler_statements_match_literal.rs"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/transpiler_statements_match_literal.rs",
+        ])
         .output()
         .expect("Failed to run rustc");
 
@@ -348,7 +360,11 @@ pub fn test() {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/transpiler_statements_for_range.rs"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/transpiler_statements_for_range.rs",
+        ])
         .output()
         .expect("Failed to run rustc");
 
@@ -689,7 +705,11 @@ pub fn calculate(x: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/transpiler_statements_integration.rs"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/transpiler_statements_integration.rs",
+        ])
         .output()
         .expect("Failed to run rustc");
 

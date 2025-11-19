@@ -11,7 +11,8 @@
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
 use crate::frontend::ast::{
-    ClassConstant, ClassMethod, ClassProperty, Constructor, Decorator, Expr, ExprKind, Param, PropertySetter, SelfType, Span, StructField, Visibility,
+    ClassConstant, ClassMethod, ClassProperty, Constructor, Decorator, Expr, ExprKind, Param,
+    PropertySetter, SelfType, Span, StructField, Visibility,
 };
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
@@ -498,7 +499,9 @@ fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
 }
 
 /// Parse decorators for classes/fields
-pub(in crate::frontend::parser) fn parse_decorators(state: &mut ParserState) -> Result<Vec<Decorator>> {
+pub(in crate::frontend::parser) fn parse_decorators(
+    state: &mut ParserState,
+) -> Result<Vec<Decorator>> {
     let mut decorators = Vec::new();
 
     while matches!(state.tokens.peek(), Some((Token::At, _))) {
@@ -932,10 +935,9 @@ fn determine_self_type_from_params(params: &[Param]) -> SelfType {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

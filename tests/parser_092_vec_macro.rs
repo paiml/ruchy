@@ -33,7 +33,11 @@ fn test_parser_092_vec_repeat_u8() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![0u8; 1024]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![0u8; 1024]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -45,7 +49,11 @@ fn test_parser_092_vec_repeat_i32() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![0i32; 10]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![0i32; 10]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -57,7 +65,11 @@ fn test_parser_092_vec_repeat_literal() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![5; 100]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![5; 100]: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -73,7 +85,11 @@ fn test_parser_092_vec_element_list_simple() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![1, 2, 3]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![1, 2, 3]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -97,7 +113,11 @@ fn test_parser_092_vec_element_list_many() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![1..10]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![1..10]: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -116,7 +136,11 @@ fn test_parser_092_vec_expression_elements() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![x, y, z]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![x, y, z]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -131,7 +155,11 @@ fn test_parser_092_vec_computed_elements() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![x*2, y+1, z/3]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![x*2, y+1, z/3]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -144,7 +172,11 @@ fn test_parser_092_vec_repeat_expression() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![x*2; 5]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![x*2; 5]: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -176,7 +208,11 @@ fn test_parser_092_vec_nested_simple() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![vec![0; 5]; 10]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![vec![0; 5]; 10]: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -188,7 +224,11 @@ fn test_parser_092_vec_nested_element_list() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![vec![1,2], vec![3,4]]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![vec![1,2], vec![3,4]]: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -206,7 +246,11 @@ fn test_parser_092_vec_in_function() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![] in function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![] in function: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -220,7 +264,11 @@ fn test_parser_092_vec_as_argument() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![] as argument: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![] as argument: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -236,7 +284,11 @@ fn test_parser_092_vec_issue_137_reproduction() {
     "#;
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse Issue #137 example: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse Issue #137 example: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================================
@@ -252,7 +304,11 @@ fn test_parser_092_vec_trailing_comma() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse vec![1,2,3,] with trailing comma: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse vec![1,2,3,] with trailing comma: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -268,5 +324,9 @@ fn test_parser_092_vec_multiline() {
     ";
     let result = Parser::new(code).parse();
 
-    assert!(result.is_ok(), "Should parse multiline vec![]: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse multiline vec![]: {:?}",
+        result.err()
+    );
 }

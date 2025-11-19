@@ -107,12 +107,17 @@ fn parse_visibility_path(state: &mut ParserState) -> Result<()> {
 }
 
 /// Determine what expression follows pub keyword
-fn parse_pub_target_expression(state: &mut ParserState, visibility_args: Vec<String>) -> Result<Expr> {
+fn parse_pub_target_expression(
+    state: &mut ParserState,
+    visibility_args: Vec<String>,
+) -> Result<Expr> {
     match state.tokens.peek() {
         Some((Token::Use, _)) => parse_pub_use_statement(state, visibility_args),
         Some((Token::Const, _)) => parse_pub_const_function(state),
         Some((Token::Unsafe, _)) => parse_pub_unsafe_function(state),
-        Some((Token::Mod | Token::Module, _)) => parse_pub_module_declaration(state, visibility_args),
+        Some((Token::Mod | Token::Module, _)) => {
+            parse_pub_module_declaration(state, visibility_args)
+        }
         _ => super::super::parse_prefix(state),
     }
 }
@@ -129,7 +134,10 @@ fn parse_pub_use_statement(state: &mut ParserState, visibility_args: Vec<String>
 }
 
 /// Parse public module declaration (PARSER-093)
-fn parse_pub_module_declaration(state: &mut ParserState, visibility_args: Vec<String>) -> Result<Expr> {
+fn parse_pub_module_declaration(
+    state: &mut ParserState,
+    visibility_args: Vec<String>,
+) -> Result<Expr> {
     let mut expr = super::modules::parse_module_declaration(state)?;
     expr.attributes.push(Attribute {
         name: "pub".to_string(),
@@ -264,10 +272,7 @@ fn parse_const_variable(state: &mut ParserState, start_span: Span) -> Result<Exp
     let value = Box::new(parse_expr_recursive(state)?);
 
     // Const variables don't have 'in' clause - body is always unit
-    let body = Box::new(Expr::new(
-        ExprKind::Literal(Literal::Unit),
-        value.span,
-    ));
+    let body = Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span));
 
     // Create Let expression with is_mutable = false
     let end_span = value.span;
@@ -277,8 +282,8 @@ fn parse_const_variable(state: &mut ParserState, start_span: Span) -> Result<Exp
             type_annotation,
             value,
             body,
-            is_mutable: false,  // const is never mutable
-            else_block: None,    // const doesn't support else
+            is_mutable: false, // const is never mutable
+            else_block: None,  // const doesn't support else
         },
         start_span.merge(end_span),
     );
@@ -450,7 +455,7 @@ pub(in crate::frontend::parser) fn parse_unsafe_token(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     // ===== UNIT TESTS (from original expressions.rs) =====

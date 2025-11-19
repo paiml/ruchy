@@ -14,9 +14,9 @@ use std::path::PathBuf;
 /// Helper: Read Cargo.toml and parse as TOML Table
 fn read_cargo_toml() -> toml::Table {
     let cargo_toml_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
-    let content = fs::read_to_string(cargo_toml_path)
-        .expect("Failed to read Cargo.toml");
-    content.parse::<toml::Table>()
+    let content = fs::read_to_string(cargo_toml_path).expect("Failed to read Cargo.toml");
+    content
+        .parse::<toml::Table>()
         .expect("Failed to parse Cargo.toml as TOML table")
 }
 
@@ -43,7 +43,8 @@ fn get_profile_config(profile_name: &str) -> toml::Table {
 fn test_perf_002_01_release_dist_uses_speed_optimization() {
     let profile = get_profile_config("release-dist");
 
-    let opt_level = profile.get("opt-level")
+    let opt_level = profile
+        .get("opt-level")
         .expect("opt-level not found in release-dist profile");
 
     // CRITICAL: Must be 3 (speed), not "z" (size)
@@ -60,7 +61,8 @@ fn test_perf_002_01_release_dist_uses_speed_optimization() {
 fn test_perf_002_02_release_dist_inherits_from_release() {
     let profile = get_profile_config("release-dist");
 
-    let inherits = profile.get("inherits")
+    let inherits = profile
+        .get("inherits")
         .expect("inherits not found in release-dist profile");
 
     assert_eq!(
@@ -76,7 +78,8 @@ fn test_perf_002_02_release_dist_inherits_from_release() {
 fn test_perf_002_03_release_dist_uses_fat_lto() {
     let profile = get_profile_config("release-dist");
 
-    let lto = profile.get("lto")
+    let lto = profile
+        .get("lto")
         .expect("lto not found in release-dist profile");
 
     assert_eq!(
@@ -92,7 +95,8 @@ fn test_perf_002_03_release_dist_uses_fat_lto() {
 fn test_perf_002_04_release_dist_uses_single_codegen_unit() {
     let profile = get_profile_config("release-dist");
 
-    let codegen_units = profile.get("codegen-units")
+    let codegen_units = profile
+        .get("codegen-units")
         .expect("codegen-units not found in release-dist profile");
 
     assert_eq!(
@@ -108,7 +112,8 @@ fn test_perf_002_04_release_dist_uses_single_codegen_unit() {
 fn test_perf_002_05_release_dist_disables_overflow_checks() {
     let profile = get_profile_config("release-dist");
 
-    let overflow_checks = profile.get("overflow-checks")
+    let overflow_checks = profile
+        .get("overflow-checks")
         .expect("overflow-checks not found in release-dist profile");
 
     assert!(
@@ -123,7 +128,8 @@ fn test_perf_002_05_release_dist_disables_overflow_checks() {
 fn test_perf_002_06_release_dist_disables_debug_assertions() {
     let profile = get_profile_config("release-dist");
 
-    let debug_assertions = profile.get("debug-assertions")
+    let debug_assertions = profile
+        .get("debug-assertions")
         .expect("debug-assertions not found in release-dist profile");
 
     assert!(
@@ -138,7 +144,8 @@ fn test_perf_002_06_release_dist_disables_debug_assertions() {
 fn test_perf_002_07_release_dist_disables_incremental() {
     let profile = get_profile_config("release-dist");
 
-    let incremental = profile.get("incremental")
+    let incremental = profile
+        .get("incremental")
         .expect("incremental not found in release-dist profile");
 
     assert!(
@@ -157,7 +164,8 @@ fn test_perf_002_07_release_dist_disables_incremental() {
 fn test_perf_002_08_release_profile_uses_speed_optimization() {
     let profile = get_profile_config("release");
 
-    let opt_level = profile.get("opt-level")
+    let opt_level = profile
+        .get("opt-level")
         .expect("opt-level not found in release profile");
 
     assert_eq!(
@@ -173,7 +181,8 @@ fn test_perf_002_08_release_profile_uses_speed_optimization() {
 fn test_perf_002_09_release_tiny_uses_size_optimization() {
     let profile = get_profile_config("release-tiny");
 
-    let opt_level = profile.get("opt-level")
+    let opt_level = profile
+        .get("opt-level")
         .expect("opt-level not found in release-tiny profile");
 
     assert_eq!(
@@ -189,7 +198,8 @@ fn test_perf_002_09_release_tiny_uses_size_optimization() {
 fn test_perf_002_10_release_ultra_uses_speed_optimization() {
     let profile = get_profile_config("release-ultra");
 
-    let opt_level = profile.get("opt-level")
+    let opt_level = profile
+        .get("opt-level")
         .expect("opt-level not found in release-ultra profile");
 
     assert_eq!(
@@ -217,9 +227,26 @@ fn test_perf_002_11_profile_consistency() {
     assert_eq!(release_ultra.get("lto").unwrap().as_str().unwrap(), "fat");
 
     // All should use single codegen unit
-    assert_eq!(release.get("codegen-units").unwrap().as_integer().unwrap(), 1);
-    assert_eq!(release_dist.get("codegen-units").unwrap().as_integer().unwrap(), 1);
-    assert_eq!(release_ultra.get("codegen-units").unwrap().as_integer().unwrap(), 1);
+    assert_eq!(
+        release.get("codegen-units").unwrap().as_integer().unwrap(),
+        1
+    );
+    assert_eq!(
+        release_dist
+            .get("codegen-units")
+            .unwrap()
+            .as_integer()
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        release_ultra
+            .get("codegen-units")
+            .unwrap()
+            .as_integer()
+            .unwrap(),
+        1
+    );
 }
 
 /// Test 12: Profile documentation comment exists
@@ -227,8 +254,7 @@ fn test_perf_002_11_profile_consistency() {
 #[test]
 fn test_perf_002_12_profile_documentation() {
     let cargo_toml_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
-    let content = fs::read_to_string(cargo_toml_path)
-        .expect("Failed to read Cargo.toml");
+    let content = fs::read_to_string(cargo_toml_path).expect("Failed to read Cargo.toml");
 
     // Check for documentation comments about profiles
     assert!(
@@ -250,7 +276,8 @@ fn test_perf_002_property_speed_profiles_use_opt_level_3() {
     for profile_name in speed_profiles {
         let profile = get_profile_config(profile_name);
 
-        let opt_level = profile.get("opt-level")
+        let opt_level = profile
+            .get("opt-level")
             .unwrap_or_else(|| panic!("opt-level not found in {profile_name}"));
 
         assert_eq!(
@@ -270,7 +297,8 @@ fn test_perf_002_property_all_release_profiles_use_fat_lto() {
     for profile_name in profiles {
         let profile = get_profile_config(profile_name);
 
-        let lto = profile.get("lto")
+        let lto = profile
+            .get("lto")
             .unwrap_or_else(|| panic!("lto not found in {profile_name}"));
 
         assert_eq!(
@@ -287,7 +315,8 @@ fn test_perf_002_property_all_release_profiles_use_fat_lto() {
 fn test_perf_002_property_size_profiles_use_z_or_s() {
     let profile = get_profile_config("release-tiny");
 
-    let opt_level = profile.get("opt-level")
+    let opt_level = profile
+        .get("opt-level")
         .expect("opt-level not found in release-tiny");
 
     let opt_level_str = opt_level.as_str().unwrap();

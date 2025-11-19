@@ -77,11 +77,7 @@ fun main() {
 ",
     );
 
-    ruchy_cmd()
-        .arg("optimize")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("optimize").arg(&file).assert().success();
 }
 
 #[test]
@@ -105,11 +101,7 @@ fun main() {
 ",
     );
 
-    ruchy_cmd()
-        .arg("optimize")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("optimize").arg(&file).assert().success();
 }
 
 // ============================================================================
@@ -514,7 +506,10 @@ fun main() {
         .assert()
         .success();
 
-    assert!(output.exists(), "Comprehensive analysis output should be created");
+    assert!(
+        output.exists(),
+        "Comprehensive analysis output should be created"
+    );
 }
 
 // ============================================================================

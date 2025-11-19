@@ -291,7 +291,7 @@ fn test_std_004_normalize() {
 
 #[cfg(test)]
 mod property_tests {
-    
+
     use proptest::prelude::*;
 
     proptest! {

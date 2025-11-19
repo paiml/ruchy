@@ -72,9 +72,9 @@ pub(in crate::frontend::parser) fn parse_try_catch(state: &mut ParserState) -> R
 /// Delegates to collections module for block parsing.
 fn parse_try_block(state: &mut ParserState) -> Result<Box<Expr>> {
     // parse_block expects and consumes the left brace
-    Ok(Box::new(
-        crate::frontend::parser::collections::parse_block(state)?,
-    ))
+    Ok(Box::new(crate::frontend::parser::collections::parse_block(
+        state,
+    )?))
 }
 
 /// Parse catch clauses
@@ -122,9 +122,9 @@ fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
 /// Delegates to collections module for block parsing.
 fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
     // parse_block expects and consumes the left brace
-    Ok(Box::new(
-        crate::frontend::parser::collections::parse_block(state)?,
-    ))
+    Ok(Box::new(crate::frontend::parser::collections::parse_block(
+        state,
+    )?))
 }
 
 /// Parse optional finally block
@@ -157,7 +157,7 @@ fn validate_try_catch_structure(
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     // NOTE: Unit tests for basic try-catch removed due to API mismatch.
@@ -188,7 +188,10 @@ mod tests {
     fn test_try_multiple_catch() {
         let code = "try { process() } catch (NetworkError) { retry() } catch (e) { fallback(e) }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Try with multiple catch clauses should parse");
+        assert!(
+            result.is_ok(),
+            "Try with multiple catch clauses should parse"
+        );
     }
 
     #[test]

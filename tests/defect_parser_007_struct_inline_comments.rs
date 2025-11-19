@@ -39,7 +39,10 @@ fn test_defect_parser_007_inline_comment_after_field() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Inline comments after struct fields should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Inline comments after struct fields should work: {result:?}"
+    );
 }
 
 #[test]
@@ -54,7 +57,10 @@ fn test_defect_parser_007_multiple_inline_comments() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Multiple inline comments in struct should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Multiple inline comments in struct should work: {result:?}"
+    );
 }
 
 #[test]
@@ -68,7 +74,10 @@ fn test_defect_parser_007_block_comment_after_field() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Block comments after struct fields should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Block comments after struct fields should work: {result:?}"
+    );
 }
 
 #[test]
@@ -83,7 +92,10 @@ fn test_defect_parser_007_mixed_comments() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Mixed comments in struct should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Mixed comments in struct should work: {result:?}"
+    );
 }
 
 #[test]
@@ -97,7 +109,10 @@ fn test_defect_parser_007_no_comments_still_works() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Struct without comments should still work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Struct without comments should still work: {result:?}"
+    );
 }
 
 #[test]
@@ -113,7 +128,10 @@ fn test_defect_parser_007_comment_before_field() {
     ";
 
     let result = parse_ruchy(code);
-    assert!(result.is_ok(), "Comments before struct fields should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Comments before struct fields should work: {result:?}"
+    );
 }
 
 // ============================================================================

@@ -87,7 +87,10 @@ fn test_vars_contains_custom() {
     let vars = env::vars().unwrap();
 
     // Verify
-    assert_eq!(vars.get("RUCHY_CUSTOM_VAR"), Some(&"custom_value".to_string()));
+    assert_eq!(
+        vars.get("RUCHY_CUSTOM_VAR"),
+        Some(&"custom_value".to_string())
+    );
 
     // Cleanup
     env::remove_var("RUCHY_CUSTOM_VAR").unwrap();
@@ -131,9 +134,9 @@ fn test_set_current_dir_invalid() {
     // Verify error
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(err.contains("No such file") ||
-            err.contains("NotFound") ||
-            err.contains("cannot find"));
+    assert!(
+        err.contains("No such file") || err.contains("NotFound") || err.contains("cannot find")
+    );
 }
 
 #[test]

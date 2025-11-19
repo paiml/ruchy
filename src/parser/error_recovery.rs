@@ -368,7 +368,7 @@ impl RecoveryRules {
                         }),
                         body: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span)),
                         is_mutable: false,
-                        else_block: None,  // Error recovery doesn't support let-else
+                        else_block: None, // Error recovery doesn't support let-else
                     },
                     default_span,
                 )

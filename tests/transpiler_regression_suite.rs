@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-016B: Regression Test Suite
 ///
 /// Prevents re-introduction of past transpiler bugs:
@@ -6,15 +7,17 @@
 /// - TRANSPILER-013: Object literal return type inference
 ///
 /// GitHub Issue: #141
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// Helper: Parse and transpile Ruchy code to Rust
 fn transpile(code: &str) -> String {
     let ast = Parser::new(code).parse().expect("Parse should succeed");
     let result = Transpiler::new().transpile_to_program(&ast);
-    assert!(result.is_ok(), "Transpile should succeed, got: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Transpile should succeed, got: {:?}",
+        result.err()
+    );
     result.unwrap().to_string()
 }
 
@@ -27,8 +30,7 @@ fn verify_compiles(rust_code: &str, crate_type: &str) {
     let temp_file = format!("/tmp/transpiler_regression_{id}.rs");
     let temp_output = format!("/tmp/transpiler_regression_{id}");
 
-    std::fs::write(&temp_file, rust_code)
-        .expect("Failed to write test file");
+    std::fs::write(&temp_file, rust_code).expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
         .args(["--crate-type", crate_type, &temp_file, "-o", &temp_output])
@@ -41,9 +43,7 @@ fn verify_compiles(rust_code: &str, crate_type: &str) {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Transpiled code fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Transpiled code fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 

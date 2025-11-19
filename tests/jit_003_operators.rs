@@ -32,7 +32,11 @@ fn test_jit_003_division_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile division: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile division: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "10 / 2 should equal 5");
 }
 
@@ -44,8 +48,16 @@ fn test_jit_003_division_with_remainder() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile division: {:?}", result.err());
-    assert_eq!(result.unwrap(), 3, "17 / 5 should equal 3 (integer division)");
+    assert!(
+        result.is_ok(),
+        "Should compile division: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        3,
+        "17 / 5 should equal 3 (integer division)"
+    );
 }
 
 #[test]
@@ -56,7 +68,11 @@ fn test_jit_003_division_in_expression() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile division in expression: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile division in expression: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 12, "(100 / 10) + 2 should equal 12");
 }
 
@@ -102,7 +118,11 @@ fn test_jit_003_modulo_with_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile modulo in if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile modulo in if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 100, "7 % 2 == 1, should take true branch");
 }
 
@@ -118,7 +138,11 @@ fn test_jit_003_unary_negation_literal() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile unary negation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile unary negation: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), -42, "-42 should equal -42");
 }
 
@@ -133,7 +157,11 @@ fn test_jit_003_unary_negation_variable() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile unary negation of variable: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile unary negation of variable: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), -10, "-x where x=10 should equal -10");
 }
 
@@ -145,7 +173,11 @@ fn test_jit_003_unary_negation_expression() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile negation of expression: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile negation of expression: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), -8, "-(5 + 3) should equal -8");
 }
 
@@ -167,7 +199,11 @@ fn test_jit_003_boolean_not_true() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile boolean NOT: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile boolean NOT: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "!false should be true");
 }
 
@@ -185,7 +221,11 @@ fn test_jit_003_boolean_not_false() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile boolean NOT: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile boolean NOT: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 0, "!true should be false");
 }
 
@@ -203,7 +243,11 @@ fn test_jit_003_boolean_not_comparison() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile NOT of comparison: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile NOT of comparison: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "!(5 > 10) should be true");
 }
 
@@ -228,7 +272,11 @@ fn test_jit_003_gcd_base_case() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile gcd base case: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile gcd base case: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 10, "gcd(10, 0) should return 10");
 }
 
@@ -249,7 +297,11 @@ fn test_jit_003_gcd_recursive() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile recursive gcd: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile recursive gcd: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 6, "gcd(48, 18) should return 6");
 }
 
@@ -270,7 +322,11 @@ fn test_jit_003_gcd_coprime() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile gcd of coprime numbers: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile gcd of coprime numbers: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "gcd(17, 13) should return 1");
 }
 
@@ -298,7 +354,11 @@ fn test_jit_003_performance_gcd() {
     {
         let mut compiler = JitCompiler::new().unwrap();
         let warmup_result = compiler.compile_and_execute(&ast);
-        assert_eq!(warmup_result.unwrap(), 21, "gcd(1071, 462) should return 21");
+        assert_eq!(
+            warmup_result.unwrap(),
+            21,
+            "gcd(1071, 462) should return 21"
+        );
     }
 
     // Benchmark: Run 1000 iterations

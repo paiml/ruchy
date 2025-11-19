@@ -236,11 +236,7 @@ fn test_perf_002_phase4_10_displays_progress_indicators() {
 /// Expected: ruchy compile --help mentions --pgo flag
 #[test]
 fn test_perf_002_phase4_11_pgo_in_help() {
-    let output = ruchy_cmd()
-        .arg("compile")
-        .arg("--help")
-        .output()
-        .unwrap();
+    let output = ruchy_cmd().arg("compile").arg("--help").output().unwrap();
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(

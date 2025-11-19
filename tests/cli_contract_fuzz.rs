@@ -63,9 +63,7 @@ fn cli_fuzz_valid_program_runs() {
 
     // Should mention fuzz or error about missing cargo-fuzz
     assert!(
-        combined.contains("fuzz")
-            || combined.contains("cargo")
-            || combined.contains("not found"),
+        combined.contains("fuzz") || combined.contains("cargo") || combined.contains("not found"),
         "Output should mention fuzzing or missing dependencies"
     );
 }
@@ -190,8 +188,7 @@ fn cli_fuzz_text_format() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(
-        combined.contains("fuzz")
-            || combined.contains("not found"),
+        combined.contains("fuzz") || combined.contains("not found"),
         "Should handle text format"
     );
 }
@@ -218,10 +215,7 @@ fn cli_fuzz_json_format() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(
-        !combined.is_empty(),
-        "Should produce output in JSON format"
-    );
+    assert!(!combined.is_empty(), "Should produce output in JSON format");
 }
 
 // ============================================================================

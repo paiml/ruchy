@@ -16,7 +16,6 @@
 
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
 #![allow(missing_docs)]
-
 #![allow(clippy::expect_used)]
 #![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
@@ -81,17 +80,11 @@ fn arb_type_expr() -> impl Strategy<Value = String> {
                 // List types: [T]
                 inner.clone().prop_map(|ty| format!("[{ty}]")),
                 // Tuple types: (T1, T2)
-                prop::collection::vec(inner.clone(), 2..4).prop_map(|types| {
-                    format!("({})", types.join(", "))
-                }),
+                prop::collection::vec(inner.clone(), 2..4)
+                    .prop_map(|types| { format!("({})", types.join(", ")) }),
                 // Function types: fn(T1, T2) -> T3
-                (
-                    prop::collection::vec(inner.clone(), 0..3),
-                    inner
-                )
-                    .prop_map(|(params, ret)| {
-                        format!("fn({}) -> {}", params.join(", "), ret)
-                    }),
+                (prop::collection::vec(inner.clone(), 0..3), inner)
+                    .prop_map(|(params, ret)| { format!("fn({}) -> {}", params.join(", "), ret) }),
             ]
         },
     )

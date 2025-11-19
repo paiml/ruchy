@@ -40,11 +40,7 @@ fn cli_check_valid_file_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "valid.ruchy", "let x = 1 + 1\n");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("check").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -52,11 +48,7 @@ fn cli_check_invalid_syntax_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n"); // Missing value
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("check").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -136,11 +128,7 @@ fn cli_check_error_includes_line_number() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "error_line.ruchy", "let x = 1\nlet y = \n"); // Line 2 error
 
-    let output = ruchy_cmd()
-        .arg("check")
-        .arg(&file)
-        .assert()
-        .failure();
+    let output = ruchy_cmd().arg("check").arg(&file).assert().failure();
 
     // Should mention line number (either "line 2" or ":2:" format)
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);

@@ -18,7 +18,10 @@ match p {
 
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Struct pattern matching should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Struct pattern matching should work: {result:?}"
+    );
 }
 
 #[test]
@@ -33,7 +36,10 @@ match p {
 
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Multi-field struct pattern should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Multi-field struct pattern should work: {result:?}"
+    );
 }
 
 #[test]
@@ -49,5 +55,8 @@ match p {
 
     let mut repl = Repl::new(std::env::temp_dir()).unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Nested struct pattern should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Nested struct pattern should work: {result:?}"
+    );
 }

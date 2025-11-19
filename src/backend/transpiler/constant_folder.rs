@@ -3,10 +3,10 @@
 // Minimal implementation to make RED tests pass
 // Complexity target: ≤10 per function
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
-use std::collections::{HashMap, HashSet};
 #[cfg(test)]
 use crate::frontend::ast::Span;
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
+use std::collections::{HashMap, HashSet};
 
 /// Fold constant expressions at compile-time
 ///
@@ -32,7 +32,8 @@ pub fn fold_constants(expr: Expr) -> Expr {
 
             // Try to fold if both are literals
             if let (ExprKind::Literal(l), ExprKind::Literal(r)) =
-                (&left_folded.kind, &right_folded.kind) {
+                (&left_folded.kind, &right_folded.kind)
+            {
                 if let Some(result) = fold_binary_op(l, op, r) {
                     return Expr::new(ExprKind::Literal(result), expr.span);
                 }
@@ -48,7 +49,14 @@ pub fn fold_constants(expr: Expr) -> Expr {
                 expr.span,
             )
         }
-        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value,
+            body,
+            is_mutable,
+            else_block,
+        } => {
             // Fold the value expression
             let folded_value = Box::new(fold_constants((*value).clone()));
             let folded_body = Box::new(fold_constants((*body).clone()));
@@ -70,7 +78,11 @@ pub fn fold_constants(expr: Expr) -> Expr {
             let folded_exprs = exprs.into_iter().map(fold_constants).collect();
             Expr::new(ExprKind::Block(folded_exprs), expr.span)
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             // Fold condition and branches
             let folded_cond = Box::new(fold_constants((*condition).clone()));
             let folded_then = Box::new(fold_constants((*then_branch).clone()));
@@ -202,7 +214,11 @@ fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
         ExprKind::Function { body, .. } => {
             collect_used_functions_rec(body, used);
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             collect_used_functions_rec(condition, used);
             collect_used_functions_rec(then_branch, used);
             if let Some(else_expr) = else_branch {
@@ -262,7 +278,13 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
                 used.insert(name.clone());
             }
         }
-        ExprKind::Let { name, value, body, else_block, .. } => {
+        ExprKind::Let {
+            name,
+            value,
+            body,
+            else_block,
+            ..
+        } => {
             // First scan the value (before name is bound)
             collect_used_variables_rec(value, used, bound);
 
@@ -285,14 +307,20 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
             // Functions create new scope - don't propagate outer bindings
             collect_used_variables_rec(body, used, &HashSet::new());
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             collect_used_variables_rec(condition, used, bound);
             collect_used_variables_rec(then_branch, used, bound);
             if let Some(else_expr) = else_branch {
                 collect_used_variables_rec(else_expr, used, bound);
             }
         }
-        ExprKind::While { condition, body, .. } => {
+        ExprKind::While {
+            condition, body, ..
+        } => {
             collect_used_variables_rec(condition, used, bound);
             collect_used_variables_rec(body, used, bound);
         }
@@ -319,7 +347,10 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
 
 /// # Complexity
 /// Cyclomatic: 6 (≤10 target)
-pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::HashSet<String>) -> Expr {
+pub fn eliminate_dead_code(
+    expr: Expr,
+    inlined_functions: std::collections::HashSet<String>,
+) -> Expr {
     match expr.kind {
         ExprKind::Block(exprs) => {
             // PERF-002-C: Collect all used function names in the entire block
@@ -344,9 +375,20 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
             );
             Expr::new(ExprKind::Block(cleaned), expr.span)
         }
-        ExprKind::Function { name, type_params, params, return_type, body, is_async, is_pub } => {
+        ExprKind::Function {
+            name,
+            type_params,
+            params,
+            return_type,
+            body,
+            is_async,
+            is_pub,
+        } => {
             // For nested functions, pass empty set (no inlining at this level)
-            let cleaned_body = Box::new(eliminate_dead_code((*body).clone(), std::collections::HashSet::new()));
+            let cleaned_body = Box::new(eliminate_dead_code(
+                (*body).clone(),
+                std::collections::HashSet::new(),
+            ));
             Expr::new(
                 ExprKind::Function {
                     name,
@@ -360,9 +402,21 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
                 expr.span,
             )
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
-            let cleaned_then = Box::new(eliminate_dead_code((*then_branch).clone(), std::collections::HashSet::new()));
-            let cleaned_else = else_branch.map(|e| Box::new(eliminate_dead_code((*e).clone(), std::collections::HashSet::new())));
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            let cleaned_then = Box::new(eliminate_dead_code(
+                (*then_branch).clone(),
+                std::collections::HashSet::new(),
+            ));
+            let cleaned_else = else_branch.map(|e| {
+                Box::new(eliminate_dead_code(
+                    (*e).clone(),
+                    std::collections::HashSet::new(),
+                ))
+            });
             Expr::new(
                 ExprKind::If {
                     condition,
@@ -372,8 +426,15 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
                 expr.span,
             )
         }
-        ExprKind::While { condition, body, label } => {
-            let cleaned_body = Box::new(eliminate_dead_code((*body).clone(), std::collections::HashSet::new()));
+        ExprKind::While {
+            condition,
+            body,
+            label,
+        } => {
+            let cleaned_body = Box::new(eliminate_dead_code(
+                (*body).clone(),
+                std::collections::HashSet::new(),
+            ));
             Expr::new(
                 ExprKind::While {
                     condition,
@@ -385,7 +446,10 @@ pub fn eliminate_dead_code(expr: Expr, inlined_functions: std::collections::Hash
         }
         ExprKind::Call { func, args } => {
             // PERF-002-C: Recursively eliminate dead code in function arguments
-            let cleaned_func = Box::new(eliminate_dead_code((*func).clone(), inlined_functions.clone()));
+            let cleaned_func = Box::new(eliminate_dead_code(
+                (*func).clone(),
+                inlined_functions.clone(),
+            ));
             let cleaned_args: Vec<Expr> = args
                 .into_iter()
                 .map(|arg| eliminate_dead_code(arg, inlined_functions.clone()))
@@ -430,9 +494,7 @@ fn should_remove_function(
     used_functions: &HashSet<String>,
     inlined_functions: &std::collections::HashSet<String>,
 ) -> bool {
-    inlined_functions.contains(name)
-        && !used_functions.contains(name)
-        && name != "main"
+    inlined_functions.contains(name) && !used_functions.contains(name) && name != "main"
 }
 
 /// Process let binding elimination and return replacement expressions if eliminated
@@ -480,7 +542,10 @@ fn remove_dead_statements_and_unused_functions_and_variables(
         }
 
         // Check for let binding elimination
-        if let ExprKind::Let { name, value, body, .. } = &expr.kind {
+        if let ExprKind::Let {
+            name, value, body, ..
+        } = &expr.kind
+        {
             if let Some(replacement) = process_let_elimination(name, value, body, used_variables) {
                 result.extend(replacement);
                 continue;
@@ -508,10 +573,7 @@ fn remove_dead_statements_and_unused_functions_and_variables(
 /// # Complexity
 /// Cyclomatic: 3 (≤10 target)
 fn has_side_effects(expr: &Expr) -> bool {
-    matches!(
-        expr.kind,
-        ExprKind::Call { .. } | ExprKind::Assign { .. }
-    )
+    matches!(expr.kind, ExprKind::Call { .. } | ExprKind::Assign { .. })
 }
 
 /// Check if expression causes early exit
@@ -558,7 +620,14 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
 
     match expr.kind {
         // Track constant variable bindings
-        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value,
+            body,
+            is_mutable,
+            else_block,
+        } => {
             // Recursively propagate in value
             let folded_value = Box::new(propagate_with_env((*value).clone(), env));
 
@@ -616,7 +685,11 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
         }
 
         // Propagate in if expressions
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             let cond_prop = Box::new(propagate_with_env((*condition).clone(), env));
             let then_prop = Box::new(propagate_with_env((*then_branch).clone(), env));
             let else_prop = else_branch.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
@@ -636,7 +709,8 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
 
         // Propagate in blocks
         ExprKind::Block(exprs) => {
-            let folded_exprs = exprs.into_iter()
+            let folded_exprs = exprs
+                .into_iter()
                 .map(|e| propagate_with_env(e, env))
                 .collect();
             Expr::new(ExprKind::Block(folded_exprs), expr.span)
@@ -645,7 +719,8 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
         // Propagate in function calls
         ExprKind::Call { func, args } => {
             let func_prop = Box::new(propagate_with_env((*func).clone(), env));
-            let args_prop = args.into_iter()
+            let args_prop = args
+                .into_iter()
                 .map(|a| propagate_with_env(a, env))
                 .collect();
             Expr::new(
@@ -668,7 +743,10 @@ mod tests {
 
     // Helper: Create integer literal
     fn int_lit(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::new(0, 0))
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::new(0, 0),
+        )
     }
 
     // Helper: Create binary expression
@@ -851,10 +929,7 @@ mod tests {
     // Test 19: has_early_exit - Continue
     #[test]
     fn test_has_early_exit_continue() {
-        let expr = Expr::new(
-            ExprKind::Continue { label: None },
-            Span::new(0, 0),
-        );
+        let expr = Expr::new(ExprKind::Continue { label: None }, Span::new(0, 0));
         assert!(has_early_exit(&expr));
     }
 
@@ -1071,11 +1146,7 @@ mod tests {
     // Test 30: remove_dead_statements - no early exit
     #[test]
     fn test_remove_dead_statements_no_early_exit() {
-        let stmts = vec![
-            int_lit(1),
-            int_lit(2),
-            int_lit(3),
-        ];
+        let stmts = vec![int_lit(1), int_lit(2), int_lit(3)];
         let result = remove_dead_statements(stmts);
         assert_eq!(result.len(), 3); // All statements preserved
     }
@@ -1108,7 +1179,10 @@ mod tests {
         // After propagation: let x = 5; x + 1 → let x = 5; 5 + 1 → let x = 5; 6
         if let ExprKind::Let { body, .. } = result.kind {
             // Body should be folded to 6
-            assert!(matches!(body.kind, ExprKind::Literal(Literal::Integer(6, None))));
+            assert!(matches!(
+                body.kind,
+                ExprKind::Literal(Literal::Integer(6, None))
+            ));
         } else {
             panic!("Expected Let expression");
         }
@@ -1135,7 +1209,10 @@ mod tests {
         // After propagation: let x = 10; x → let x = 10; 10
         if let ExprKind::Let { body, .. } = result.kind {
             // Variable should be replaced with its constant value
-            assert!(matches!(body.kind, ExprKind::Literal(Literal::Integer(10, None))));
+            assert!(matches!(
+                body.kind,
+                ExprKind::Literal(Literal::Integer(10, None))
+            ));
         } else {
             panic!("Expected Let expression");
         }
@@ -1192,7 +1269,10 @@ mod tests {
         // Variable in argument should be replaced with constant
         if let ExprKind::Call { args, .. } = result.kind {
             assert_eq!(args.len(), 1);
-            assert!(matches!(args[0].kind, ExprKind::Literal(Literal::Integer(5, None))));
+            assert!(matches!(
+                args[0].kind,
+                ExprKind::Literal(Literal::Integer(5, None))
+            ));
         } else {
             panic!("Expected Call expression");
         }
@@ -1214,6 +1294,9 @@ mod tests {
         );
         let folded = fold_constants(expr);
         // Should eliminate else branch and return then branch
-        assert!(matches!(folded.kind, ExprKind::Literal(Literal::Integer(42, None))));
+        assert!(matches!(
+            folded.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 }

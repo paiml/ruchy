@@ -584,12 +584,30 @@ fn test_spec_001_full_grammar_validation_report() {
 
     let features = vec![
         ("if_expr", r#"fun main() { if true { println("ok") } }"#),
-        ("match_expr", r#"fun main() { match 1 { 1 => println("one"), _ => println("other") } }"#),
-        ("for_expr", r"fun main() { for i in 0..3 { println(i.to_string()) } }"),
-        ("while_expr", r"fun main() { let mut i = 0; while i < 3 { i += 1 } }"),
-        ("loop_expr", r"fun main() { let mut i = 0; loop { if i >= 3 { break }; i += 1 } }"),
-        ("tuple_expr", r"fun main() { let t = (1, 2); println(t.0.to_string()) }"),
-        ("array_expr", r"fun main() { let arr = [1, 2]; println(arr[0].to_string()) }"),
+        (
+            "match_expr",
+            r#"fun main() { match 1 { 1 => println("one"), _ => println("other") } }"#,
+        ),
+        (
+            "for_expr",
+            r"fun main() { for i in 0..3 { println(i.to_string()) } }",
+        ),
+        (
+            "while_expr",
+            r"fun main() { let mut i = 0; while i < 3 { i += 1 } }",
+        ),
+        (
+            "loop_expr",
+            r"fun main() { let mut i = 0; loop { if i >= 3 { break }; i += 1 } }",
+        ),
+        (
+            "tuple_expr",
+            r"fun main() { let t = (1, 2); println(t.0.to_string()) }",
+        ),
+        (
+            "array_expr",
+            r"fun main() { let arr = [1, 2]; println(arr[0].to_string()) }",
+        ),
     ];
 
     let mut all_pass = true;
@@ -612,11 +630,9 @@ fn test_spec_001_full_grammar_validation_report() {
     } else {
         println!("\n❌ FAILURES DETECTED:");
         for failure in &failures {
-            println!("   - {}: interpreter={}, transpile={}, compile={}",
-                failure.feature,
-                failure.interpreter,
-                failure.transpile,
-                failure.compile
+            println!(
+                "   - {}: interpreter={}, transpile={}, compile={}",
+                failure.feature, failure.interpreter, failure.transpile, failure.compile
             );
         }
         println!("\n🚨 CREATE ROADMAP TICKETS FOR EACH FAILURE (EXTREME TDD)");

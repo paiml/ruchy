@@ -6,8 +6,8 @@
 //! 2. Comparing their Debug output
 //! 3. Identifying any differences that cause hash mismatches
 
-use ruchy::runtime::Repl;
 use ruchy::runtime::replay::DeterministicRepl;
+use ruchy::runtime::Repl;
 
 #[test]
 #[ignore = "Diagnostic test - run manually to investigate Issue #86"]
@@ -55,7 +55,11 @@ fn test_issue_086_diagnose_non_determinism() {
     let bindings1 = repl1.get_bindings();
     let bindings2 = repl2.get_bindings();
 
-    println!("\nBinding count: {} vs {}", bindings1.len(), bindings2.len());
+    println!(
+        "\nBinding count: {} vs {}",
+        bindings1.len(),
+        bindings2.len()
+    );
 
     for (name, value1) in bindings1 {
         if let Some(value2) = bindings2.get(name) {
@@ -95,8 +99,12 @@ fn test_issue_086_repeated_runs() {
         let result1 = repl1.execute_with_seed("let x = 42", 12345);
         let result2 = repl2.execute_with_seed("let x = 42", 12345);
 
-        *hash_frequency.entry(result1.state_hash.clone()).or_insert(0) += 1;
-        *hash_frequency.entry(result2.state_hash.clone()).or_insert(0) += 1;
+        *hash_frequency
+            .entry(result1.state_hash.clone())
+            .or_insert(0) += 1;
+        *hash_frequency
+            .entry(result2.state_hash.clone())
+            .or_insert(0) += 1;
 
         let match_status = if result1.state_hash == result2.state_hash {
             "✓ MATCH"
@@ -104,7 +112,8 @@ fn test_issue_086_repeated_runs() {
             "✗ MISMATCH"
         };
 
-        println!("Run {}: {} (hash1: {}..., hash2: {}...)",
+        println!(
+            "Run {}: {} (hash1: {}..., hash2: {}...)",
             i,
             match_status,
             &result1.state_hash[..8],
@@ -118,7 +127,10 @@ fn test_issue_086_repeated_runs() {
     }
 
     if hash_frequency.len() > 1 {
-        println!("\n⚠️  NON-DETERMINISM DETECTED: {} different hashes", hash_frequency.len());
+        println!(
+            "\n⚠️  NON-DETERMINISM DETECTED: {} different hashes",
+            hash_frequency.len()
+        );
     } else {
         println!("\n✓ DETERMINISTIC: All hashes identical");
     }

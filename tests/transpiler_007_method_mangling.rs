@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-007: Method name mangling (add → insert)
 ///
 /// GitHub Issue: ruchy-lambda blocker
@@ -7,9 +8,7 @@
 /// IMPACT: error[E0599]: no method named `insert` found for struct
 /// ROOT CAUSE: "add" hardcoded in map/set methods match arm (line 2403)
 /// FIX: Remove "add" from hardcoded list (same pattern as TRANSPILER-002 get/cloned fix)
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// Test 1: `Calculator.add()` should NOT become `insert()`
 #[test]
@@ -71,9 +70,7 @@ fun main() {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Calculator.add() fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Calculator.add() fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 

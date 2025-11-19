@@ -90,7 +90,16 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
         variants.push(parse_single_variant(state)?);
 
         // Skip any inline comments after variant definition
-        while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::DocComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
             state.tokens.advance();
         }
 
@@ -98,7 +107,16 @@ fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
             state.tokens.advance();
 
             // Skip comments after comma
-            while matches!(state.tokens.peek(), Some((Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_) | Token::HashComment(_), _))) {
+            while matches!(
+                state.tokens.peek(),
+                Some((
+                    Token::LineComment(_)
+                        | Token::BlockComment(_)
+                        | Token::DocComment(_)
+                        | Token::HashComment(_),
+                    _
+                ))
+            ) {
                 state.tokens.advance();
             }
         }
@@ -151,9 +169,9 @@ fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
                 } else {
                     (val_str.as_str(), None)
                 };
-            let value = num_part.parse::<i64>().map_err(|_| {
-                anyhow::anyhow!("Invalid integer literal: {num_part}")
-            })?;
+            let value = num_part
+                .parse::<i64>()
+                .map_err(|_| anyhow::anyhow!("Invalid integer literal: {num_part}"))?;
             Ok(Some(value))
         }
         Some((Token::Minus, _)) => {
@@ -169,9 +187,9 @@ fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
                         } else {
                             (val_str.as_str(), None)
                         };
-                    let value = num_part.parse::<i64>().map_err(|_| {
-                        anyhow::anyhow!("Invalid integer literal: {num_part}")
-                    })?;
+                    let value = num_part
+                        .parse::<i64>()
+                        .map_err(|_| anyhow::anyhow!("Invalid integer literal: {num_part}"))?;
                     Ok(Some(-value))
                 }
                 _ => bail!("Expected integer after - in enum discriminant"),
@@ -264,7 +282,7 @@ fn parse_variant_struct_fields(state: &mut ParserState) -> Result<Vec<StructFiel
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

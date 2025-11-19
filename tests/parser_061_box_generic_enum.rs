@@ -18,10 +18,7 @@ enum Tree {
 }
 ";
 
-    let result = ruchy_cmd()
-        .arg("check")
-        .write_stdin(code)
-        .assert();
+    let result = ruchy_cmd().arg("check").write_stdin(code).assert();
 
     // Print the output to see what happens
     println!("Box<T> check result: {result:?}");

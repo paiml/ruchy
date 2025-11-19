@@ -26,10 +26,10 @@ fn extract_assert_sequence_from_block(exprs: &[Expr], assertions: &mut Vec<Strin
 fn process_expression_at_index(exprs: &[Expr], i: usize, assertions: &mut Vec<String>) -> usize {
     if is_assert_statement(exprs, i) {
         extract_assert_at_index(exprs, i, assertions);
-        2  // Skip assert + expression
+        2 // Skip assert + expression
     } else {
         extract_assertions_recursive(&exprs[i], assertions);
-        1  // Move to next expression
+        1 // Move to next expression
     }
 }
 
@@ -132,11 +132,7 @@ fn format_literal(lit: &crate::frontend::ast::Literal) -> String {
     }
 }
 
-fn format_binary(
-    op: &crate::frontend::ast::BinaryOp,
-    left: &Expr,
-    right: &Expr,
-) -> String {
+fn format_binary(op: &crate::frontend::ast::BinaryOp, left: &Expr, right: &Expr) -> String {
     let op_str = binary_op_to_string(op);
     format!(
         "{} {} {}",

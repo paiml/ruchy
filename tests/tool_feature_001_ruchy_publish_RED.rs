@@ -58,13 +58,17 @@ license = "MIT"
 
     // Should show validation messages
     assert!(
-        stdout.contains("Validating") || stdout.contains("package") || stdout.contains("test-package"),
+        stdout.contains("Validating")
+            || stdout.contains("package")
+            || stdout.contains("test-package"),
         "Should show package validation.\nStdout: {stdout}\nStderr: {stderr}"
     );
 
     // Should NOT actually publish in dry-run mode
     assert!(
-        stdout.contains("dry-run") || stdout.contains("Would publish") || !stdout.contains("Published"),
+        stdout.contains("dry-run")
+            || stdout.contains("Would publish")
+            || !stdout.contains("Published"),
         "Dry-run should not actually publish.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }
@@ -92,7 +96,9 @@ fn test_tool_feature_001_02_publish_requires_manifest_red() {
 
     // Should show helpful error message
     assert!(
-        stdout.contains("Ruchy.toml") || stderr.contains("Ruchy.toml") || stdout.contains("manifest"),
+        stdout.contains("Ruchy.toml")
+            || stderr.contains("Ruchy.toml")
+            || stdout.contains("manifest"),
         "Should mention missing Ruchy.toml.\nStdout: {stdout}\nStderr: {stderr}"
     );
 }

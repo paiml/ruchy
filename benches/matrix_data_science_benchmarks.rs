@@ -13,7 +13,7 @@
 
 #![allow(deprecated)] // black_box deprecated - will fix in separate ticket
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ruchy::runtime::repl::Repl;
 use std::path::PathBuf;
 
@@ -69,15 +69,25 @@ fn bench_csv_array_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_002_csv_operations");
 
     for size in &[10, 100, 1000] {
-        group.bench_with_input(BenchmarkId::new("array_creation", size), size, |b, &size| {
-            b.iter(|| {
-                let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
-                // Create array with 'size' elements
-                let code = format!("[{}]", (1..=size).map(|i| i.to_string()).collect::<Vec<_>>().join(", "));
-                let result = repl.eval(&code);
-                black_box(result)
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("array_creation", size),
+            size,
+            |b, &size| {
+                b.iter(|| {
+                    let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
+                    // Create array with 'size' elements
+                    let code = format!(
+                        "[{}]",
+                        (1..=size)
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    let result = repl.eval(&code);
+                    black_box(result)
+                });
+            },
+        );
     }
 
     group.finish();
@@ -125,7 +135,7 @@ fn bench_csv_filter_map_reduce_pipeline(c: &mut Criterion) {
                 "[[1, 25, 50000], [2, 35, 75000], [3, 45, 100000], [4, 32, 80000]]\
                 .filter(|row| row[1] > 30)\
                 .map(|row| row[2])\
-                .reduce(|acc, x| acc + x, 0)"
+                .reduce(|acc, x| acc + x, 0)",
             );
             black_box(result)
         });
@@ -144,8 +154,12 @@ fn bench_stats_mean_calculation(c: &mut Criterion) {
             b.iter(|| {
                 let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
                 // Generate array and calculate mean
-                let data = (1..=size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
-                let code = format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0) / data.len()");
+                let data = (1..=size)
+                    .map(|i| i.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let code =
+                    format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0) / data.len()");
                 let result = repl.eval(&code);
                 black_box(result)
             });
@@ -181,7 +195,7 @@ fn bench_stats_weighted_average(c: &mut Criterion) {
             let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
             let result = repl.eval(
                 "let data = [[80, 2], [90, 3], [85, 1]];\
-                data.map(|pair| pair[0] * pair[1]).reduce(|acc, x| acc + x, 0)"
+                data.map(|pair| pair[0] * pair[1]).reduce(|acc, x| acc + x, 0)",
             );
             black_box(result)
         });
@@ -210,7 +224,7 @@ fn bench_timeseries_moving_average(c: &mut Criterion) {
             // Simple moving average calculation
             let result = repl.eval(
                 "let window = [10, 20, 30];\
-                window.reduce(|acc, x| acc + x, 0) / window.len()"
+                window.reduce(|acc, x| acc + x, 0) / window.len()",
             );
             black_box(result)
         });
@@ -232,15 +246,22 @@ fn bench_timeseries_cumulative_sum(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_004_timeseries_operations");
 
     for size in &[10, 100, 1000] {
-        group.bench_with_input(BenchmarkId::new("cumulative_sum", size), size, |b, &size| {
-            b.iter(|| {
-                let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
-                let data = (1..=size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ");
-                let code = format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0)");
-                let result = repl.eval(&code);
-                black_box(result)
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("cumulative_sum", size),
+            size,
+            |b, &size| {
+                b.iter(|| {
+                    let mut repl = Repl::new(PathBuf::from(".")).expect("Failed to create REPL");
+                    let data = (1..=size)
+                        .map(|i| i.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let code = format!("let data = [{data}]; data.reduce(|acc, x| acc + x, 0)");
+                    let result = repl.eval(&code);
+                    black_box(result)
+                });
+            },
+        );
     }
 
     group.finish();

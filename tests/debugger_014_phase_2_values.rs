@@ -63,7 +63,9 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("TRACE: → add(10: integer, 20: integer)"))
+        .stdout(predicate::str::contains(
+            "TRACE: → add(10: integer, 20: integer)",
+        ))
         .stdout(predicate::str::contains("TRACE: ← add = 30: integer"));
 }
 
@@ -126,8 +128,12 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("TRACE: → greet(\"Alice\": string)"))
-        .stdout(predicate::str::contains("TRACE: ← greet = \"Hello, Alice\": string"));
+        .stdout(predicate::str::contains(
+            "TRACE: → greet(\"Alice\": string)",
+        ))
+        .stdout(predicate::str::contains(
+            "TRACE: ← greet = \"Hello, Alice\": string",
+        ));
 }
 
 /// Test #5: Trace function with no arguments

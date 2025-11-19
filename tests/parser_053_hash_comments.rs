@@ -20,7 +20,11 @@ fn test_parser_053_01_arithmetic_with_hash_comment() {
     let result = Parser::new(input).parse();
 
     // Should parse successfully
-    assert!(result.is_ok(), "Failed to parse arithmetic with hash comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse arithmetic with hash comments: {:?}",
+        result.err()
+    );
 
     // Parsing succeeds - hash comments properly handled
     let _ast = result.unwrap();
@@ -37,7 +41,11 @@ fn test_parser_053_02_method_chain_with_hash_comment() {
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse method chain with hash comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse method chain with hash comments: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -57,7 +65,11 @@ let result = add_three(
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse function args with hash comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse function args with hash comments: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -75,7 +87,11 @@ fn test_parser_053_04_array_literal_with_hash_comment() {
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse array literal with hash comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse array literal with hash comments: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -86,7 +102,11 @@ let x = 42";
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse simple hash comment: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse simple hash comment: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -96,7 +116,11 @@ fn test_parser_053_06_inline_hash_comment() {
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse inline hash comment: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse inline hash comment: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -109,7 +133,11 @@ let x = 1";
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse multiple hash comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse multiple hash comments: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -126,7 +154,11 @@ fn test_parser_053_08_hash_comment_in_block() {
 
     let result = Parser::new(input).parse();
 
-    assert!(result.is_ok(), "Failed to parse hash comment in block: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse hash comment in block: {:?}",
+        result.err()
+    );
 }
 
 #[cfg(test)]
@@ -141,29 +173,31 @@ mod lexer_tests {
 
         // First token: Identifier "x"
         match stream.next() {
-            Some((Token::Identifier(name), _)) if name == "x" => {},
+            Some((Token::Identifier(name), _)) if name == "x" => {}
             other => panic!("Expected Identifier(x), got: {other:?}"),
         }
 
         // Second token: HashComment " comment" (should skip hash symbol)
         match stream.next() {
-            Some((Token::HashComment(text), _)) if text == " comment" => {},
+            Some((Token::HashComment(text), _)) if text == " comment" => {}
             Some((Token::LineComment(text), _)) if text == " comment" => {
                 // TEMPORARY: If LineComment works, that's also acceptable
-                println!("WARNING: Got LineComment instead of HashComment (may need token variant)");
-            },
+                println!(
+                    "WARNING: Got LineComment instead of HashComment (may need token variant)"
+                );
+            }
             other => panic!("Expected HashComment or LineComment, got: {other:?}"),
         }
 
         // Third token: Plus
         match stream.next() {
-            Some((Token::Plus, _)) => {},
+            Some((Token::Plus, _)) => {}
             other => panic!("Expected Plus, got: {other:?}"),
         }
 
         // Fourth token: Identifier "y"
         match stream.next() {
-            Some((Token::Identifier(name), _)) if name == "y" => {},
+            Some((Token::Identifier(name), _)) if name == "y" => {}
             other => panic!("Expected Identifier(y), got: {other:?}"),
         }
     }
@@ -193,8 +227,8 @@ mod lexer_tests {
 
         // Hash comments should now tokenize as HashComment
         assert!(
-            matches!(comment2, Some((Token::HashComment(_), _))) ||
-            matches!(comment2, Some((Token::LineComment(_), _))),
+            matches!(comment2, Some((Token::HashComment(_), _)))
+                || matches!(comment2, Some((Token::LineComment(_), _))),
             "Expected HashComment or LineComment for #, got: {comment2:?}"
         );
 

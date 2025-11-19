@@ -46,7 +46,7 @@ fun main() {
         .arg(&temp_file)
         .assert()
         .success()
-        .stdout("1\n");  // Should print 1, NOT 0
+        .stdout("1\n"); // Should print 1, NOT 0
 
     let _ = fs::remove_file(&temp_file);
 }
@@ -174,7 +174,7 @@ fun main() {
         .arg(&temp_file)
         .assert()
         .success()
-        .stdout("1\n");  // Should be 1, not 0
+        .stdout("1\n"); // Should be 1, not 0
 
     let _ = fs::remove_file(&temp_file);
 }

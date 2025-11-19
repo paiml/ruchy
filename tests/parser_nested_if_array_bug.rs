@@ -23,7 +23,10 @@ fun bar() {
 
     let mut parser = Parser::new(source);
     let result = parser.parse();
-    assert!(result.is_ok(), "Parser should accept nested if-else with arrays");
+    assert!(
+        result.is_ok(),
+        "Parser should accept nested if-else with arrays"
+    );
 }
 
 #[test]
@@ -50,7 +53,10 @@ fun process(id, path) {
 
     let mut parser = Parser::new(source);
     let result = parser.parse();
-    assert!(result.is_ok(), "Parser should accept three-branch nested if-else");
+    assert!(
+        result.is_ok(),
+        "Parser should accept three-branch nested if-else"
+    );
 }
 
 #[test]
@@ -91,7 +97,10 @@ fun foo(x) {
 
     let mut parser = Parser::new(source);
     let result = parser.parse();
-    assert!(result.is_ok(), "Parser should accept single if-else with strings");
+    assert!(
+        result.is_ok(),
+        "Parser should accept single if-else with strings"
+    );
 }
 
 #[test]
@@ -123,7 +132,10 @@ fun third() {
 
     let mut parser = Parser::new(source);
     let result = parser.parse();
-    assert!(result.is_ok(), "Parser should handle multiple functions with let");
+    assert!(
+        result.is_ok(),
+        "Parser should handle multiple functions with let"
+    );
 }
 
 #[test]
@@ -209,5 +221,8 @@ println(bar(1, "/api/users"))
 
     let mut parser = Parser::new(source);
     let result = parser.parse();
-    assert!(result.is_ok(), "Parser should handle trailing code after functions");
+    assert!(
+        result.is_ok(),
+        "Parser should handle trailing code after functions"
+    );
 }

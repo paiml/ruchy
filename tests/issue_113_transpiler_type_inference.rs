@@ -216,7 +216,9 @@ fun main() {
         .assert()
         .success()
         .stdout(predicate::str::contains("fn is_prime(n: i32) -> bool"))
-        .stdout(predicate::str::contains("fn generate_primes(count: i32) -> Vec<i32>"));
+        .stdout(predicate::str::contains(
+            "fn generate_primes(count: i32) -> Vec<i32>",
+        ));
 }
 
 /// Compilation test: Transpiled code should compile with rustc

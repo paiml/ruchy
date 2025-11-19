@@ -27,8 +27,8 @@ pub mod lowering;
 
 pub use compiler::JitCompiler;
 
-use anyhow::Result;
 use crate::frontend::ast::Expr;
+use anyhow::Result;
 
 /// JIT compile and execute a Ruchy expression
 ///

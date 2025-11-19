@@ -38,7 +38,9 @@ use crate::frontend::parser::{bail, ParserState, Result};
 /// Syntax:
 /// - Inline module: `mod name { body }` or `module name { body }`
 /// - External module: `mod name;` (ISSUE-106)
-pub(in crate::frontend::parser) fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
+pub(in crate::frontend::parser) fn parse_module_declaration(
+    state: &mut ParserState,
+) -> Result<Expr> {
     // Accept both 'mod' and 'module' keywords
     let start_span = if matches!(state.tokens.peek(), Some((Token::Mod, _))) {
         state.tokens.expect(&Token::Mod)?
@@ -142,7 +144,7 @@ fn skip_optional_semicolon(state: &mut ParserState) {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -160,7 +162,11 @@ mod tests {
         if let Err(ref e) = result {
             eprintln!("Parse error: {e:?}");
         }
-        assert!(result.is_ok(), "Module with pub function should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Module with pub function should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]

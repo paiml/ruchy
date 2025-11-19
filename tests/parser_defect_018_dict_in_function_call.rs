@@ -19,7 +19,7 @@ fn ruchy_cmd() -> Command {
 fn test_dict_literal_in_function_call() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let items = [];
@@ -30,14 +30,10 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
+
     // RED: Currently fails with "Expected RightBrace, found Identifier(println)"
     // GREEN: Should parse and transpile successfully
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// RED: Test nested dict literal (real-world pattern from `21_concurrency.ruchy`)
@@ -45,7 +41,7 @@ main()
 fn test_transactions_append_pattern() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let transactions = [];
@@ -63,12 +59,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// RED: Test multiple dict literals in sequence
@@ -76,7 +68,7 @@ main()
 fn test_multiple_dict_literals_in_calls() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun main() {
     let list = [];
@@ -88,12 +80,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// RED: Test dict literal with computed values
@@ -101,7 +89,7 @@ main()
 fn test_dict_literal_with_expressions() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun process(data) {
     println!("Processing");
@@ -117,10 +105,6 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }

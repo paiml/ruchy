@@ -646,13 +646,7 @@ mod tests {
 
     #[test]
     fn prop_is_absolute_and_is_relative_are_inverses() {
-        let test_paths = vec![
-            "/home/user",
-            "relative/path",
-            ".",
-            "..",
-            "/",
-        ];
+        let test_paths = vec!["/home/user", "relative/path", ".", "..", "/"];
 
         for path in test_paths {
             assert_eq!(
@@ -681,8 +675,11 @@ mod tests {
         let modified = with_extension(path, new_ext).unwrap();
         let ext = extension(&modified).unwrap();
 
-        assert_eq!(ext, Some(new_ext.to_string()),
-                   "Extension of modified path should match new extension");
+        assert_eq!(
+            ext,
+            Some(new_ext.to_string()),
+            "Extension of modified path should match new extension"
+        );
     }
 
     #[test]
@@ -694,8 +691,11 @@ mod tests {
         let name = file_name(path).unwrap();
 
         if let (Some(s), Some(e), Some(n)) = (stem, ext, name) {
-            assert_eq!(format!("{s}.{e}"), n,
-                       "file_stem + extension should equal file_name");
+            assert_eq!(
+                format!("{s}.{e}"),
+                n,
+                "file_stem + extension should equal file_name"
+            );
         }
     }
 

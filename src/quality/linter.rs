@@ -45,10 +45,10 @@ struct VariableInfo {
 enum VarType {
     Local,
     Parameter,
-    Function,      // Function definitions (not checked for unused)
+    Function, // Function definitions (not checked for unused)
     LoopVariable,
     MatchBinding,
-    TypeName,      // Enum/Struct type names (Issue #107 fix)
+    TypeName, // Enum/Struct type names (Issue #107 fix)
 }
 impl Scope {
     fn new() -> Self {
@@ -263,7 +263,7 @@ impl Linter {
         Ok(issues)
     }
 
-    /// Helper: Create shadowing LintIssue (CERTEZA-001: Reduce duplication)
+    /// Helper: Create shadowing `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
     fn create_shadowing_issue(name: &str) -> LintIssue {
@@ -279,7 +279,7 @@ impl Linter {
         }
     }
 
-    /// Helper: Create undefined variable LintIssue (CERTEZA-001: Reduce duplication)
+    /// Helper: Create undefined variable `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
     fn create_undefined_variable_issue(name: &str) -> LintIssue {
@@ -295,15 +295,23 @@ impl Linter {
         }
     }
 
-    /// Helper: Create unused variable/parameter/binding LintIssue (CERTEZA-001: Reduce duplication)
+    /// Helper: Create unused variable/parameter/binding `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 3 (within Toyota Way limits)
     #[inline]
     fn create_unused_issue(name: &str, var_type: VarType, defined_at: (usize, usize)) -> LintIssue {
         let (rule_type, message_prefix, suggestion_suffix) = match var_type {
             VarType::Local => ("unused_variable", "unused variable", "variable"),
             VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
-            VarType::LoopVariable => ("unused_loop_variable", "unused loop variable", "loop variable"),
-            VarType::MatchBinding => ("unused_match_binding", "unused match binding", "match binding"),
+            VarType::LoopVariable => (
+                "unused_loop_variable",
+                "unused loop variable",
+                "loop variable",
+            ),
+            VarType::MatchBinding => (
+                "unused_match_binding",
+                "unused match binding",
+                "match binding",
+            ),
             VarType::Function => ("unused_function", "unused function", "function"),
             VarType::TypeName => ("unused_type", "unused type", "type"),
         };
@@ -430,7 +438,11 @@ impl Linter {
                 // Parameters might be part of public API
                 for (name, info) in &func_scope.variables {
                     if !info.used && matches!(info.var_type, VarType::Local) {
-                        issues.push(Self::create_unused_issue(name, info.var_type.clone(), info.defined_at));
+                        issues.push(Self::create_unused_issue(
+                            name,
+                            info.var_type.clone(),
+                            info.defined_at,
+                        ));
                     }
                 }
             }
@@ -692,16 +704,32 @@ impl Linter {
             if !info.used {
                 // Check if rule is enabled for this variable type
                 let should_check = match info.var_type {
-                    VarType::Local => self.rules.iter().any(|r| matches!(r, LintRule::UnusedVariable)),
-                    VarType::Parameter => self.rules.iter().any(|r| matches!(r, LintRule::UnusedParameter)),
+                    VarType::Local => self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::UnusedVariable)),
+                    VarType::Parameter => self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::UnusedParameter)),
                     VarType::Function => false, // QUALITY-015: Functions not checked for unused
-                    VarType::LoopVariable => self.rules.iter().any(|r| matches!(r, LintRule::UnusedLoopVariable)),
-                    VarType::MatchBinding => self.rules.iter().any(|r| matches!(r, LintRule::UnusedMatchBinding)),
+                    VarType::LoopVariable => self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::UnusedLoopVariable)),
+                    VarType::MatchBinding => self
+                        .rules
+                        .iter()
+                        .any(|r| matches!(r, LintRule::UnusedMatchBinding)),
                     VarType::TypeName => false, // Issue #107: Type names not checked
                 };
 
                 if should_check {
-                    issues.push(Self::create_unused_issue(name, info.var_type.clone(), info.defined_at));
+                    issues.push(Self::create_unused_issue(
+                        name,
+                        info.var_type.clone(),
+                        info.defined_at,
+                    ));
                 }
             }
         }

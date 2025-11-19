@@ -38,14 +38,13 @@ fn test_fmt_qualified_name() {
 
     fs::write(&test_file, "std::collections::HashMap::new()").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("::"), "Should preserve module path separator");
+    assert!(
+        formatted.contains("::"),
+        "Should preserve module path separator"
+    );
 }
 
 // ==================== TypeAlias ====================
@@ -57,11 +56,7 @@ fn test_fmt_type_alias() {
 
     fs::write(&test_file, "type UserId = int").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("type"), "Should preserve type keyword");
@@ -77,11 +72,7 @@ fn test_fmt_spread_operator() {
 
     fs::write(&test_file, "let arr = [1, 2, ...rest]").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("..."), "Should preserve spread operator");
@@ -96,14 +87,13 @@ fn test_fmt_optional_method_call() {
 
     fs::write(&test_file, "obj?.method()").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("?."), "Should preserve optional chaining operator");
+    assert!(
+        formatted.contains("?."),
+        "Should preserve optional chaining operator"
+    );
 }
 
 // ==================== Extension ====================
@@ -114,16 +104,16 @@ fn test_fmt_extension_block() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("extension.ruchy");
 
-    fs::write(&test_file, "extension String { fun reverse() { } }").expect("Failed to write test file");
+    fs::write(&test_file, "extension String { fun reverse() { } }")
+        .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("extension"), "Should preserve extension keyword");
+    assert!(
+        formatted.contains("extension"),
+        "Should preserve extension keyword"
+    );
 }
 
 // ==================== ReExport ====================
@@ -135,14 +125,13 @@ fn test_fmt_reexport() {
 
     fs::write(&test_file, "export { foo, bar } from utils").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("export"), "Should preserve export keyword");
+    assert!(
+        formatted.contains("export"),
+        "Should preserve export keyword"
+    );
     assert!(formatted.contains("from"), "Should preserve from keyword");
 }
 
@@ -154,13 +143,13 @@ fn test_fmt_macro_definition() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("macro_def.ruchy");
 
-    fs::write(&test_file, "macro debug($expr) { println!(stringify!($expr)) }").expect("Failed to write test file");
+    fs::write(
+        &test_file,
+        "macro debug($expr) { println!(stringify!($expr)) }",
+    )
+    .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("macro"), "Should preserve macro keyword");
@@ -176,14 +165,13 @@ fn test_fmt_macro_invocation() {
 
     fs::write(&test_file, "println!(\"Hello\")").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("println!"), "Should preserve macro invocation");
+    assert!(
+        formatted.contains("println!"),
+        "Should preserve macro invocation"
+    );
 }
 
 // ==================== DataFrame ====================
@@ -193,16 +181,19 @@ fn test_fmt_dataframe_literal() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("dataframe.ruchy");
 
-    fs::write(&test_file, r#"let df = df!["name" => ["Alice"], "age" => [30]]"#).expect("Failed to write test file");
+    fs::write(
+        &test_file,
+        r#"let df = df!["name" => ["Alice"], "age" => [30]]"#,
+    )
+    .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("df!"), "Should preserve DataFrame macro syntax");
+    assert!(
+        formatted.contains("df!"),
+        "Should preserve DataFrame macro syntax"
+    );
 }
 
 // ==================== DataFrameOperation ====================
@@ -215,12 +206,11 @@ fn test_fmt_dataframe_operation() {
 
     fs::write(&test_file, "df.select([\"name\", \"age\"])").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("select"), "Should preserve DataFrame operation");
+    assert!(
+        formatted.contains("select"),
+        "Should preserve DataFrame operation"
+    );
 }

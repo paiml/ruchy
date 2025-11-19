@@ -317,7 +317,9 @@ impl GlobalRegistry {
                 // Size of start value + end value + metadata
                 self.estimate_value_size(start) + self.estimate_value_size(end) + 8
             }
-            Value::EnumVariant { variant_name, data, .. } => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } => {
                 let mut size = variant_name.len(); // Variant name size
                 if let Some(values) = data {
                     size += 24; // Vec overhead

@@ -51,11 +51,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_join_many() Tests ====================
@@ -73,11 +69,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_parent() Tests ====================
@@ -95,11 +87,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_file_name() Tests ====================
@@ -117,11 +105,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_file_stem() Tests ====================
@@ -139,11 +123,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_extension() Tests ====================
@@ -161,11 +141,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_is_absolute() Tests ====================
@@ -183,11 +159,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_is_relative() Tests ====================
@@ -205,11 +177,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_canonicalize() Tests ====================
@@ -221,20 +189,19 @@ fn test_path_canonicalize_basic() {
     fs::write(&test_file, "content").unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let result = path_canonicalize("{}");
     println(result);
 }}
-"#, test_file.display());
+"#,
+        test_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_with_extension() Tests ====================
@@ -252,11 +219,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_with_file_name() Tests ====================
@@ -274,11 +237,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_components() Tests ====================
@@ -296,11 +255,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== path_normalize() Tests ====================
@@ -318,11 +273,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== Summary Test ====================

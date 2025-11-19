@@ -156,10 +156,7 @@ fn cli_mutations_json_format() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(
-        !combined.is_empty(),
-        "Should produce output in JSON format"
-    );
+    assert!(!combined.is_empty(), "Should produce output in JSON format");
 }
 
 // ============================================================================
@@ -350,6 +347,5 @@ fn cli_mutations_help_flag() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("mutation")
-            .or(predicate::str::contains("Mutations")));
+        .stdout(predicate::str::contains("mutation").or(predicate::str::contains("Mutations")));
 }

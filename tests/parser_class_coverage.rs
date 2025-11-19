@@ -18,7 +18,6 @@
 /// 4. `parse_class_property` - property accessors
 /// 5. `parse_class_constant` - constants with types
 /// 6. Error handling paths
-
 use ruchy::frontend::parser::Parser;
 
 // ============================================================================
@@ -70,7 +69,10 @@ class Child : Parent + Trait1 + Trait2 {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse class with superclass and traits");
+    assert!(
+        result.is_ok(),
+        "Should parse class with superclass and traits"
+    );
 }
 
 #[test]
@@ -82,7 +84,10 @@ class MyClass : Parent + {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_err(), "Should error on missing trait name after '+'");
+    assert!(
+        result.is_err(),
+        "Should error on missing trait name after '+'"
+    );
 }
 
 // ============================================================================
@@ -98,7 +103,10 @@ class MyClass {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse class constant with type annotation");
+    assert!(
+        result.is_ok(),
+        "Should parse class constant with type annotation"
+    );
 }
 
 #[test]
@@ -173,7 +181,10 @@ class MyClass {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse read-write property with getter and setter");
+    assert!(
+        result.is_ok(),
+        "Should parse read-write property with getter and setter"
+    );
 }
 
 #[test]
@@ -316,7 +327,10 @@ class Box<T> {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse class with single type parameter");
+    assert!(
+        result.is_ok(),
+        "Should parse class with single type parameter"
+    );
 }
 
 #[test]
@@ -333,7 +347,10 @@ class Pair<K, V> {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse class with multiple type parameters");
+    assert!(
+        result.is_ok(),
+        "Should parse class with multiple type parameters"
+    );
 }
 
 // ============================================================================
@@ -399,7 +416,10 @@ class Inner {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse class referencing another class");
+    assert!(
+        result.is_ok(),
+        "Should parse class referencing another class"
+    );
 }
 
 #[test]
@@ -440,7 +460,10 @@ class MyClass {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse constructor with no parameters");
+    assert!(
+        result.is_ok(),
+        "Should parse constructor with no parameters"
+    );
 }
 
 #[test]
@@ -457,7 +480,10 @@ class Point {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse constructor with multiple parameters");
+    assert!(
+        result.is_ok(),
+        "Should parse constructor with multiple parameters"
+    );
 }
 
 #[test]
@@ -474,7 +500,10 @@ class Point {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse constructor with default parameters");
+    assert!(
+        result.is_ok(),
+        "Should parse constructor with default parameters"
+    );
 }
 
 // ============================================================================
@@ -502,7 +531,10 @@ class MyClass {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse private method (no visibility)");
+    assert!(
+        result.is_ok(),
+        "Should parse private method (no visibility)"
+    );
 }
 
 #[test]
@@ -749,7 +781,10 @@ class Child : Parent<i32> {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse inheritance from generic parent");
+    assert!(
+        result.is_ok(),
+        "Should parse inheritance from generic parent"
+    );
 }
 
 #[test]
@@ -761,7 +796,10 @@ class MyClass : + Trait1<i32> + Trait2<String> {
 ";
     let mut parser = Parser::new(code);
     let result = parser.parse();
-    assert!(result.is_ok(), "Should parse multiple generic trait implementations");
+    assert!(
+        result.is_ok(),
+        "Should parse multiple generic trait implementations"
+    );
 }
 
 // ============================================================================

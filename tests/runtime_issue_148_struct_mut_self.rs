@@ -13,7 +13,6 @@
 /// - Multiple &mut self mutations
 /// - Mixed &self and &mut self calls
 /// - Mutation followed by read
-
 use ruchy::runtime::repl::Repl;
 use std::path::PathBuf;
 
@@ -77,7 +76,10 @@ calc.get()
     let result = repl.eval(code).expect("Should execute");
 
     // RED: This will fail - interpreter returns 0 instead of 15
-    assert_eq!(result, "15", "After add(5) and add(10), get() should return 15");
+    assert_eq!(
+        result, "15",
+        "After add(5) and add(10), get() should return 15"
+    );
 }
 
 #[test]
@@ -110,7 +112,10 @@ p.get_x()
     let result = repl.eval(code).expect("Should execute");
 
     // RED: This will fail - should return 10 (0 + 3 + 7)
-    assert_eq!(result, "10", "After move_x(3) and move_x(7), get_x() should return 10");
+    assert_eq!(
+        result, "10",
+        "After move_x(3) and move_x(7), get_x() should return 10"
+    );
 }
 
 #[test]

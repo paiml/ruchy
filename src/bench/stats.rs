@@ -272,7 +272,10 @@ mod tests {
 
         // Expected stddev for [10, 20, 30] is 10ms
         let stddev_ms = stats.std_dev().as_millis();
-        assert!((9..=11).contains(&stddev_ms), "StdDev should be ~10ms, got {stddev_ms}");
+        assert!(
+            (9..=11).contains(&stddev_ms),
+            "StdDev should be ~10ms, got {stddev_ms}"
+        );
     }
 
     /// Test percentiles

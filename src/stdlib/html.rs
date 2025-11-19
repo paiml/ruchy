@@ -95,7 +95,10 @@ impl HtmlDocument {
         self.validate_selector(selector)?;
 
         let elements = self.select_nodes(&self.dom.document, selector);
-        Ok(elements.into_iter().map(|handle| HtmlElement { handle }).collect())
+        Ok(elements
+            .into_iter()
+            .map(|handle| HtmlElement { handle })
+            .collect())
     }
 
     /// Query selector (returns first match)
@@ -155,7 +158,11 @@ impl HtmlDocument {
                 if let Some(class_name) = selector.strip_prefix('.') {
                     return attrs_borrowed.iter().any(|attr| {
                         attr.name.local.as_ref() == "class"
-                            && attr.value.as_ref().split_whitespace().any(|c| c == class_name)
+                            && attr
+                                .value
+                                .as_ref()
+                                .split_whitespace()
+                                .any(|c| c == class_name)
                     });
                 }
 
@@ -172,10 +179,13 @@ impl HtmlDocument {
                     if let Some((attr_name, attr_value)) = inner.split_once('=') {
                         let attr_value = attr_value.trim_matches('\'').trim_matches('"');
                         return attrs_borrowed.iter().any(|attr| {
-                            attr.name.local.as_ref() == attr_name && attr.value.as_ref() == attr_value
+                            attr.name.local.as_ref() == attr_name
+                                && attr.value.as_ref() == attr_value
                         });
                     }
-                    return attrs_borrowed.iter().any(|attr| attr.name.local.as_ref() == inner);
+                    return attrs_borrowed
+                        .iter()
+                        .any(|attr| attr.name.local.as_ref() == inner);
                 }
 
                 // Descendant selector: "div p" - match last element only (simplified)
@@ -258,15 +268,13 @@ impl HtmlElement {
     /// ```
     pub fn attr(&self, name: &str) -> Option<String> {
         match &self.handle.data {
-            NodeData::Element { attrs, .. } => {
-                attrs.borrow().iter().find_map(|attr| {
-                    if attr.name.local.as_ref() == name {
-                        Some(attr.value.to_string())
-                    } else {
-                        None
-                    }
-                })
-            }
+            NodeData::Element { attrs, .. } => attrs.borrow().iter().find_map(|attr| {
+                if attr.name.local.as_ref() == name {
+                    Some(attr.value.to_string())
+                } else {
+                    None
+                }
+            }),
             _ => None,
         }
     }

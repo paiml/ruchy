@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-008 (actually PARSER-008): pub visibility lost (pub fun → fn)
 ///
 /// GitHub Issue: #140 (ruchy-lambda blocker)
@@ -7,9 +8,7 @@
 /// IMPACT: Library methods not accessible (private by default)
 /// ROOT CAUSE: Parser checks for `pub` keyword (line 170) but doesn't store the flag
 /// FIX: Pass `is_pub` from `parse_impl_methods()` to `parse_impl_method()`
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// Test 1: pub fun should become pub fn
 #[test]
@@ -69,9 +68,7 @@ impl Library {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: pub methods should compile as library:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: pub methods should compile as library:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -214,8 +211,6 @@ impl Calculator {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "Calculator (ruchy-lambda example) should compile:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("Calculator (ruchy-lambda example) should compile:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }

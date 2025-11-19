@@ -174,7 +174,11 @@ fn test_regex_split_no_match() {
 fn test_regex_split_empty_parts() {
     // Split with trailing delimiter creates empty string
     let result = regex::split(r",", "a,b,").unwrap();
-    assert_eq!(result, vec!["a", "b", ""], "Should handle trailing delimiter");
+    assert_eq!(
+        result,
+        vec!["a", "b", ""],
+        "Should handle trailing delimiter"
+    );
 }
 
 #[test]
@@ -406,7 +410,9 @@ fn test_regex_unicode_support() {
         "Should match Cyrillic characters"
     );
     assert_eq!(
-        regex::find_all(r"😀|😃|😄", "Hello 😀 World 😃").unwrap().len(),
+        regex::find_all(r"😀|😃|😄", "Hello 😀 World 😃")
+            .unwrap()
+            .len(),
         2,
         "Should match emoji"
     );

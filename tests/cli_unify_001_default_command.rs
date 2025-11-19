@@ -16,9 +16,7 @@ fn test_ruchy_no_args_opens_repl() {
     // Current behavior: Shows help message (WRONG!)
 
     let mut cmd = ruchy_cmd();
-    let assert = cmd
-        .write_stdin("1 + 1\n:quit\n")
-        .assert();
+    let assert = cmd.write_stdin("1 + 1\n:quit\n").assert();
 
     // REPL should:
     // 1. Show banner
@@ -27,8 +25,8 @@ fn test_ruchy_no_args_opens_repl() {
     // 4. NOT show help text
     assert
         .success()
-        .stdout(predicate::str::contains("Welcome to Ruchy REPL"))  // REPL banner
-        .stdout(predicate::str::contains("2"))  // Evaluation result of 1 + 1
+        .stdout(predicate::str::contains("Welcome to Ruchy REPL")) // REPL banner
+        .stdout(predicate::str::contains("2")) // Evaluation result of 1 + 1
         .stdout(predicate::str::contains("Usage:").not()); // NOT help text
 }
 
@@ -57,10 +55,7 @@ fn test_ruchy_invalid_args_shows_error() {
 fn test_ruchy_repl_explicit_opens_repl() {
     // `ruchy repl` should open REPL (this should already work)
     let mut cmd = ruchy_cmd();
-    let assert = cmd
-        .arg("repl")
-        .write_stdin(":quit\n")
-        .assert();
+    let assert = cmd.arg("repl").write_stdin(":quit\n").assert();
 
     assert
         .success()

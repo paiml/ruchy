@@ -319,7 +319,7 @@ fun main() {{
             let mut assignments = String::from(r#"let x = "start";"#);
             for value in &values {
                 assignments.push_str(&format!(r#"
-    x = x + "{value}";"#));
+        x = x + "{value}";"#));
             }
 
             let code = format!(
@@ -358,5 +358,7 @@ fn test_defect_010_green_phase_summary() {
     println!("Fix location: src/backend/transpiler/statements.rs:361-386");
     println!("Fix approach: Auto-convert string literals to String::from() for mutable variables");
     println!();
-    println!("Real-world impact: Reaper project 42 → 13 errors (29 errors eliminated, 69% reduction)");
+    println!(
+        "Real-world impact: Reaper project 42 → 13 errors (29 errors eliminated, 69% reduction)"
+    );
 }

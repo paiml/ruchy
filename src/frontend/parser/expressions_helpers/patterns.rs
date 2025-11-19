@@ -40,7 +40,10 @@ use crate::frontend::ast::{Expr, ExprKind, Literal, MatchArm, Pattern, Span, Typ
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, parse_expr_recursive, utils, ParserState, Result};
 
-fn parse_variant_pattern_with_name(state: &mut ParserState, variant_name: String) -> Result<Pattern> {
+fn parse_variant_pattern_with_name(
+    state: &mut ParserState,
+    variant_name: String,
+) -> Result<Pattern> {
     // At this point, we've consumed the variant name and peeked '('
     state.tokens.expect(&Token::LeftParen)?;
 
@@ -75,7 +78,11 @@ fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> R
     // Special case for common Option/Result variants (single element)
     if patterns.len() == 1 {
         match variant_name.as_str() {
-            "Some" => return Ok(Pattern::Some(Box::new(patterns.into_iter().next().unwrap()))),
+            "Some" => {
+                return Ok(Pattern::Some(Box::new(
+                    patterns.into_iter().next().unwrap(),
+                )))
+            }
             "Ok" => return Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap()))),
             "Err" => return Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap()))),
             _ => {}
@@ -91,7 +98,10 @@ fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> R
 
 /// Parse pattern for let statement (identifier or destructuring)
 /// Extracted from `parse_let_statement` to reduce complexity
-pub(in crate::frontend::parser) fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Pattern> {
+pub(in crate::frontend::parser) fn parse_let_pattern(
+    state: &mut ParserState,
+    is_mutable: bool,
+) -> Result<Pattern> {
     match state.tokens.peek() {
         // Handle Option::Some pattern
         Some((Token::Some, _)) => {
@@ -194,7 +204,7 @@ fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
 fn parse_let_else_clause(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Else, _))) {
         state.tokens.advance(); // consume 'else'
-        // Must be followed by a block (diverging expression)
+                                // Must be followed by a block (diverging expression)
         if !matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
             bail!("let-else requires a block after 'else'");
         }
@@ -348,7 +358,7 @@ fn create_var_expression(
                 value,
                 body,
                 is_mutable,
-                else_block: None,  // var doesn't support let-else
+                else_block: None, // var doesn't support let-else
             },
             start_span.merge(end_span),
         )),
@@ -359,7 +369,7 @@ fn create_var_expression(
                 value,
                 body,
                 is_mutable,
-                else_block: None,  // var doesn't support let-else
+                else_block: None, // var doesn't support let-else
             },
             start_span.merge(end_span),
         )),
@@ -415,13 +425,18 @@ fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern
         Ok(pattern)
     }
 }
-pub(in crate::frontend::parser) fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
+pub(in crate::frontend::parser) fn parse_struct_pattern(
+    state: &mut ParserState,
+) -> Result<Pattern> {
     state.tokens.advance(); // consume '{'
     parse_struct_pattern_fields(state, String::new())
 }
 
 /// Parse struct pattern with a specific name: Point { x, y }
-pub(in crate::frontend::parser) fn parse_struct_pattern_with_name(state: &mut ParserState, name: String) -> Result<Pattern> {
+pub(in crate::frontend::parser) fn parse_struct_pattern_with_name(
+    state: &mut ParserState,
+    name: String,
+) -> Result<Pattern> {
     state.tokens.advance(); // consume '{'
     parse_struct_pattern_fields(state, name)
 }
@@ -620,9 +635,7 @@ fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<
     );
     // Parse then branch
     let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
-        anyhow::anyhow!(
-            "Expected body after if-let condition, typically {{ ... }}: {e}"
-        )
+        anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {e}")
     })?);
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
@@ -646,9 +659,7 @@ fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Res
     );
     // Parse then branch (expect block) with better error context
     let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
-        anyhow::anyhow!(
-            "Expected body after if condition, typically {{ ... }}: {e}"
-        )
+        anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {e}")
     })?);
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
@@ -741,7 +752,10 @@ fn parse_guard_expression(state: &mut ParserState) -> Result<Expr> {
     let expr = expr?;
 
     // Verify we stopped at a valid match arm delimiter
-    if !matches!(state.tokens.peek(), Some((Token::FatArrow | Token::Arrow, _))) {
+    if !matches!(
+        state.tokens.peek(),
+        Some((Token::FatArrow | Token::Arrow, _))
+    ) {
         bail!("Guard expression did not stop at match arm delimiter => or ->");
     }
 
@@ -764,7 +778,10 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     };
     // PARSER-053: Support both => and -> in match arms for user convenience
     // Accept either Token::FatArrow (=>) or Token::Arrow (->)
-    if !matches!(state.tokens.peek(), Some((Token::FatArrow | Token::Arrow, _))) {
+    if !matches!(
+        state.tokens.peek(),
+        Some((Token::FatArrow | Token::Arrow, _))
+    ) {
         bail!("Expected '=>' or '->' in match arm");
     }
     state.tokens.advance();
@@ -795,7 +812,9 @@ pub(in crate::frontend::parser) fn parse_match_pattern(state: &mut ParserState) 
 }
 /// Parse a single pattern (delegates to specific pattern parsers)
 /// Complexity: <8
-pub(in crate::frontend::parser) fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
+pub(in crate::frontend::parser) fn parse_single_pattern(
+    state: &mut ParserState,
+) -> Result<Pattern> {
     let Some((token, _span)) = state.tokens.peek() else {
         bail!("Expected pattern");
     };
@@ -809,7 +828,9 @@ pub(in crate::frontend::parser) fn parse_single_pattern(state: &mut ParserState)
         | Token::Bool(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
         Token::Ok | Token::Err => parse_result_pattern(state),
-        Token::Identifier(_) | Token::Result | Token::Var => parse_identifier_or_constructor_pattern(state),
+        Token::Identifier(_) | Token::Result | Token::Var => {
+            parse_identifier_or_constructor_pattern(state)
+        }
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
         _ => bail!("Unexpected token in pattern: {token:?}"),
@@ -850,9 +871,9 @@ fn parse_integer_literal_pattern(state: &mut ParserState, val: String) -> Result
     } else {
         (val.as_str(), None)
     };
-    let parsed_val = num_part.parse::<i64>().map_err(|_| {
-        anyhow::anyhow!("Invalid integer literal: {num_part}")
-    })?;
+    let parsed_val = num_part
+        .parse::<i64>()
+        .map_err(|_| anyhow::anyhow!("Invalid integer literal: {num_part}"))?;
 
     // Check for range patterns: 1..5 or 1..=5
     match state.tokens.peek() {
@@ -879,9 +900,9 @@ fn parse_integer_range_pattern(
             } else {
                 (end_val_str.as_str(), None)
             };
-        let end_val = num_part.parse::<i64>().map_err(|_| {
-            anyhow::anyhow!("Invalid integer literal: {num_part}")
-        })?;
+        let end_val = num_part
+            .parse::<i64>()
+            .map_err(|_| anyhow::anyhow!("Invalid integer literal: {num_part}"))?;
         Ok(Pattern::Range {
             start: Box::new(Pattern::Literal(Literal::Integer(start_val, None))),
             end: Box::new(Pattern::Literal(Literal::Integer(end_val, None))),
@@ -1198,7 +1219,7 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

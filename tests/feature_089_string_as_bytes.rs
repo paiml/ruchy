@@ -41,14 +41,13 @@ fun main() {
 
     // RED: Currently fails with "Unknown zero-argument string method: as_bytes"
     // GREEN: Should output array of byte values [72, 101, 108, 108, 111]
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("[72, 101, 108, 108, 111]"), "Expected byte array for 'Hello', got: {stdout}");
+    assert!(
+        stdout.contains("[72, 101, 108, 108, 111]"),
+        "Expected byte array for 'Hello', got: {stdout}"
+    );
 }
 
 /// RED: Test empty string
@@ -67,14 +66,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains('0'), "Expected length 0 for empty string, got: {stdout}");
+    assert!(
+        stdout.contains('0'),
+        "Expected length 0 for empty string, got: {stdout}"
+    );
 }
 
 /// RED: Test UTF-8 multi-byte characters
@@ -96,14 +94,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("65"), "Expected byte value 65 for 'A', got: {stdout}");
+    assert!(
+        stdout.contains("65"),
+        "Expected byte value 65 for 'A', got: {stdout}"
+    );
 }
 
 /// RED: Test indexing into returned byte array
@@ -126,11 +123,7 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(stdout.contains("65"), "Expected 65 (A), got: {stdout}");
@@ -156,14 +149,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains("10"), "Expected byte value 10 for newline, got: {stdout}");
+    assert!(
+        stdout.contains("10"),
+        "Expected byte value 10 for newline, got: {stdout}"
+    );
 }
 
 /// RED: Test iteration over byte array
@@ -186,11 +178,7 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(stdout.contains("72"), "Expected 72 (H), got: {stdout}");
@@ -215,14 +203,13 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
-    assert!(stdout.contains('4'), "Expected length 4 for 'Test', got: {stdout}");
+    assert!(
+        stdout.contains('4'),
+        "Expected length 4 for 'Test', got: {stdout}"
+    );
 }
 
 /// GREEN: Verify string methods still work
@@ -243,11 +230,7 @@ fun main() {
 
     fs::write(&test_file, code).unwrap();
 
-    let output = ruchy_cmd()
-        .arg("run")
-        .arg(&test_file)
-        .assert()
-        .success();
+    let output = ruchy_cmd().arg("run").arg(&test_file).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(stdout.contains('5'), "Expected length 5, got: {stdout}");

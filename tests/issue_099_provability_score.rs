@@ -163,10 +163,7 @@ fun main() {
 
     // Score should reflect verification results
     let score = extract_score(&stdout);
-    assert!(
-        score > 0.0,
-        "Verified code should score > 0.0, got {score}"
-    );
+    assert!(score > 0.0, "Verified code should score > 0.0, got {score}");
 }
 
 #[test]

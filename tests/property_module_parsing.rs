@@ -153,11 +153,7 @@ mod unit_tests {
     /// Sanity check: Empty module parses
     #[test]
     fn test_empty_module_parses() {
-        let test_cases = vec![
-            "module Math {}",
-            "module Utils {}",
-            "module MyModule {}",
-        ];
+        let test_cases = vec!["module Math {}", "module Utils {}", "module MyModule {}"];
 
         for code in test_cases {
             let result = Parser::new(code).parse();
@@ -220,8 +216,8 @@ mod unit_tests {
     #[test]
     fn test_missing_braces_error() {
         let test_cases = vec![
-            "module Math",           // No braces
-            "module Math {",         // Missing closing brace
+            "module Math",   // No braces
+            "module Math {", // Missing closing brace
         ];
 
         for code in test_cases {

@@ -44,15 +44,14 @@ fn test_fmt_loop_infinite() {
 
     fs::write(&test_file, "loop { break }").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("loop"), "Should preserve loop keyword");
-    assert!(formatted.contains("break"), "Should preserve break statement");
+    assert!(
+        formatted.contains("break"),
+        "Should preserve break statement"
+    );
 }
 
 // ==================== Pipeline ====================
@@ -64,14 +63,13 @@ fn test_fmt_pipeline_chain() {
 
     fs::write(&test_file, "let result = 5 |> double |> triple").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("|>"), "Should preserve pipeline operator");
+    assert!(
+        formatted.contains("|>"),
+        "Should preserve pipeline operator"
+    );
 }
 
 // ==================== Reference ====================
@@ -83,14 +81,13 @@ fn test_fmt_reference_immutable() {
 
     fs::write(&test_file, "let x = 42\nlet y = &x").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("&x"), "Should preserve immutable reference");
+    assert!(
+        formatted.contains("&x"),
+        "Should preserve immutable reference"
+    );
 }
 
 #[test]
@@ -101,14 +98,13 @@ fn test_fmt_reference_mutable() {
 
     fs::write(&test_file, "let x = 42\nlet y = &mut x").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("&mut"), "Should preserve mutable reference");
+    assert!(
+        formatted.contains("&mut"),
+        "Should preserve mutable reference"
+    );
 }
 
 // ==================== Increment/Decrement ====================
@@ -120,11 +116,7 @@ fn test_fmt_pre_increment() {
 
     fs::write(&test_file, "let x = 5\n++x").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("++"), "Should preserve pre-increment");
@@ -137,11 +129,7 @@ fn test_fmt_post_increment() {
 
     fs::write(&test_file, "let x = 5\nx++").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("++"), "Should preserve post-increment");
@@ -154,11 +142,7 @@ fn test_fmt_pre_decrement() {
 
     fs::write(&test_file, "let x = 5\n--x").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("--"), "Should preserve pre-decrement");
@@ -171,11 +155,7 @@ fn test_fmt_post_decrement() {
 
     fs::write(&test_file, "let x = 5\nx--").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("--"), "Should preserve post-decrement");
@@ -190,14 +170,13 @@ fn test_fmt_actor_send() {
 
     fs::write(&test_file, "counter <- Increment").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("<-"), "Should preserve actor send operator");
+    assert!(
+        formatted.contains("<-"),
+        "Should preserve actor send operator"
+    );
 }
 
 #[test]
@@ -207,14 +186,13 @@ fn test_fmt_actor_query() {
 
     fs::write(&test_file, "let value = counter <? GetCount").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("<?"), "Should preserve actor query operator");
+    assert!(
+        formatted.contains("<?"),
+        "Should preserve actor query operator"
+    );
 }
 
 #[test]
@@ -225,11 +203,7 @@ fn test_fmt_ask() {
 
     fs::write(&test_file, "let result = ask counter GetCount").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains("ask"), "Should preserve ask keyword");
@@ -242,16 +216,16 @@ fn test_fmt_list_comprehension() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("list_comp.ruchy");
 
-    fs::write(&test_file, "let squares = [x * x for x in numbers]").expect("Failed to write test file");
+    fs::write(&test_file, "let squares = [x * x for x in numbers]")
+        .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("for"), "Should preserve comprehension syntax");
+    assert!(
+        formatted.contains("for"),
+        "Should preserve comprehension syntax"
+    );
     assert!(formatted.contains("in"), "Should preserve in keyword");
 }
 
@@ -261,16 +235,16 @@ fn test_fmt_dict_comprehension() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("dict_comp.ruchy");
 
-    fs::write(&test_file, "let mapping = {k: v * 2 for k, v in pairs}").expect("Failed to write test file");
+    fs::write(&test_file, "let mapping = {k: v * 2 for k, v in pairs}")
+        .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("for"), "Should preserve comprehension syntax");
+    assert!(
+        formatted.contains("for"),
+        "Should preserve comprehension syntax"
+    );
 }
 
 #[test]
@@ -280,14 +254,13 @@ fn test_fmt_set_comprehension() {
 
     fs::write(&test_file, "let unique = {x for x in items}").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("for"), "Should preserve comprehension syntax");
+    assert!(
+        formatted.contains("for"),
+        "Should preserve comprehension syntax"
+    );
 }
 
 // ==================== Import/Export Variants ====================
@@ -300,14 +273,13 @@ fn test_fmt_import_all() {
 
     fs::write(&test_file, "import std::collections::*").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("import"), "Should preserve import keyword");
+    assert!(
+        formatted.contains("import"),
+        "Should preserve import keyword"
+    );
     assert!(formatted.contains('*'), "Should preserve wildcard import");
 }
 
@@ -317,17 +289,20 @@ fn test_fmt_import_default() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("import_default.ruchy");
 
-    fs::write(&test_file, "import default from std::collections").expect("Failed to write test file");
+    fs::write(&test_file, "import default from std::collections")
+        .expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("import"), "Should preserve import keyword");
-    assert!(formatted.contains("default"), "Should preserve default keyword");
+    assert!(
+        formatted.contains("import"),
+        "Should preserve import keyword"
+    );
+    assert!(
+        formatted.contains("default"),
+        "Should preserve default keyword"
+    );
 }
 
 #[test]
@@ -337,14 +312,13 @@ fn test_fmt_export_list() {
 
     fs::write(&test_file, "export { add, subtract, multiply }").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("export"), "Should preserve export keyword");
+    assert!(
+        formatted.contains("export"),
+        "Should preserve export keyword"
+    );
 }
 
 #[test]
@@ -354,15 +328,17 @@ fn test_fmt_export_default() {
 
     fs::write(&test_file, "export default calculator").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
-    assert!(formatted.contains("export"), "Should preserve export keyword");
-    assert!(formatted.contains("default"), "Should preserve default keyword");
+    assert!(
+        formatted.contains("export"),
+        "Should preserve export keyword"
+    );
+    assert!(
+        formatted.contains("default"),
+        "Should preserve default keyword"
+    );
 }
 
 // ==================== Command ====================
@@ -375,11 +351,7 @@ fn test_fmt_command() {
 
     fs::write(&test_file, r"let output = `ls -la`").expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     let formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
     assert!(formatted.contains('`'), "Should preserve command backticks");

@@ -36,11 +36,7 @@ fn main() {
 }
 ";
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
@@ -54,11 +50,7 @@ fn get_value(opt: Option<i32>) -> Result<i32, String> {
 }
 "#;
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
@@ -73,11 +65,7 @@ fn main() {
 }
 "#;
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
@@ -92,11 +80,7 @@ fn main() {
 }
 ";
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
@@ -112,11 +96,7 @@ fn main() {
 }
 "#;
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }
 
 #[test]
@@ -130,9 +110,5 @@ fn main() {
 }
 ";
     let file = create_temp_file(code);
-    ruchy_cmd()
-        .arg("check")
-        .arg(file.path())
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(file.path()).assert().success();
 }

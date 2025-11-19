@@ -25,15 +25,17 @@ impl Transpiler {
         // DEFECT-011 FIX: For contains() method, wrap field access args with &
         use crate::frontend::ast::ExprKind;
         let arg_tokens: Result<Vec<_>> = if method == "contains" {
-            args.iter().map(|a| {
-                let tokens = self.transpile_expr(a)?;
-                // Check if argument is a field access - if so, wrap with &
-                if matches!(&a.kind, ExprKind::FieldAccess { .. }) {
-                    Ok(quote! { &#tokens })
-                } else {
-                    Ok(tokens)
-                }
-            }).collect()
+            args.iter()
+                .map(|a| {
+                    let tokens = self.transpile_expr(a)?;
+                    // Check if argument is a field access - if so, wrap with &
+                    if matches!(&a.kind, ExprKind::FieldAccess { .. }) {
+                        Ok(quote! { &#tokens })
+                    } else {
+                        Ok(tokens)
+                    }
+                })
+                .collect()
         } else {
             args.iter().map(|a| self.transpile_expr(a)).collect()
         };
@@ -453,7 +455,10 @@ mod tests {
         let tokens: TokenStream = quote! { vec };
         let result = t.transpile_iterator_method(&tokens, "fold", &[quote! { 0 }]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("fold requires exactly 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("fold requires exactly 2 arguments"));
     }
 
     // Test 2: slice with wrong number of args (error path)
@@ -463,7 +468,10 @@ mod tests {
         let tokens: TokenStream = quote! { vec };
         let result = t.transpile_collection_accessor(&tokens, "slice", &[quote! { 0 }]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("slice requires exactly 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("slice requires exactly 2 arguments"));
     }
 
     // Test 3: replace with wrong number of args (error path)
@@ -473,7 +481,10 @@ mod tests {
         let tokens: TokenStream = quote! { "hello" };
         let result = t.transpile_string_method(&tokens, "replace", &[quote! { "h" }]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("replace requires exactly 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("replace requires exactly 2 arguments"));
     }
 
     // Test 4: hashset union with wrong number of args (error path)
@@ -483,7 +494,10 @@ mod tests {
         let tokens: TokenStream = quote! { set };
         let result = t.transpile_hashset_method(&tokens, "union", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("union requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("union requires exactly 1 argument"));
     }
 
     // Test 5: iterator reduce method

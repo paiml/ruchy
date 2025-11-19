@@ -704,10 +704,17 @@ fn generate_binary_profile_report(
     // Extract function names from AST
     let functions = extract_function_names(ast);
     for func_name in functions {
-        report.push_str(&format!("  {}()    {:.2}ms  (approx)  [1 calls]\n", func_name, avg_ms * 0.99));
+        report.push_str(&format!(
+            "  {}()    {:.2}ms  (approx)  [1 calls]\n",
+            func_name,
+            avg_ms * 0.99
+        ));
     }
 
-    report.push_str(&format!("  main()    {:.2}ms  (approx)  [1 calls]\n\n", avg_ms * 0.01));
+    report.push_str(&format!(
+        "  main()    {:.2}ms  (approx)  [1 calls]\n\n",
+        avg_ms * 0.01
+    ));
 
     report.push_str("Memory:\n");
     report.push_str("  Allocations: 0 bytes\n");
@@ -1596,7 +1603,9 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
             } => {
                 let val_depth = nesting_helper(value, current_depth);
                 let body_depth = nesting_helper(body, current_depth);
-                let else_depth = else_block.as_ref().map_or(0, |e| nesting_helper(e, current_depth));
+                let else_depth = else_block
+                    .as_ref()
+                    .map_or(0, |e| nesting_helper(e, current_depth));
                 val_depth.max(body_depth).max(else_depth)
             }
             ExprKind::Binary { op: _, left, right } => {

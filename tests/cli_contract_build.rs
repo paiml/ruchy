@@ -20,8 +20,5 @@ fn test_build_help() {
 #[test]
 fn test_build_no_cargo_toml() {
     // Build should fail without Cargo.toml
-    ruchy_cmd()
-        .arg("build")
-        .assert()
-        .code(predicate::ne(2)); // Not a CLI error
+    ruchy_cmd().arg("build").assert().code(predicate::ne(2)); // Not a CLI error
 }

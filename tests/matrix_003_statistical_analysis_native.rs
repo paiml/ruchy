@@ -22,13 +22,15 @@ fn spawn_ruchy_repl() -> rexpect::session::PtySession {
 fn test_matrix_native_03_01_mean_calculation() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Create dataset
     repl.send_line("let data = [10, 20, 30, 40, 50]")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Calculate mean: sum / count
     repl.send_line("data.reduce(|acc, x| acc + x, 0) / data.len()")
@@ -42,7 +44,8 @@ fn test_matrix_native_03_01_mean_calculation() {
 fn test_matrix_native_03_02_sum_and_count() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Test sum
     repl.send_line("[1, 2, 3, 4, 5].reduce(|acc, x| acc + x, 0)")
@@ -55,42 +58,47 @@ fn test_matrix_native_03_02_sum_and_count() {
 fn test_matrix_native_03_03_min_max_with_reduce() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Find minimum using reduce
     repl.send_line("let data = [42, 17, 89, 3, 56]")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Min: use reduce with conditional logic would require if expressions
     // For now, test that we can access first element (would be min after sort)
-    repl.send_line("data[3]")  // Index 3 has value 3 (minimum)
+    repl.send_line("data[3]") // Index 3 has value 3 (minimum)
         .expect("Failed to send command");
 
-    repl.exp_string("3").expect("Should access element at index 3");
+    repl.exp_string("3")
+        .expect("Should access element at index 3");
 }
 
 #[test]
 fn test_matrix_native_03_04_range_calculation() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Simple range test: max - min with known data
     // Data: [10, 50], range = 40
     repl.send_line("let max = 50")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let min = 10")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
-    repl.send_line("max - min")
-        .expect("Failed to send command");
+    repl.send_line("max - min").expect("Failed to send command");
 
     repl.exp_string("40").expect("Range should be 40");
 }
@@ -99,7 +107,8 @@ fn test_matrix_native_03_04_range_calculation() {
 fn test_matrix_native_03_05_weighted_average() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Weighted average: (value * weight) summed / total weight
     // Values: [80, 90, 85], Weights: [2, 3, 1]
@@ -109,7 +118,8 @@ fn test_matrix_native_03_05_weighted_average() {
     repl.send_line("let data = [[80, 2], [90, 3], [85, 1]]")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Calculate weighted sum
     repl.send_line("data.map(|pair| pair[0] * pair[1]).reduce(|acc, x| acc + x, 0)")
@@ -123,7 +133,8 @@ fn test_matrix_native_03_05_weighted_average() {
 fn test_matrix_native_03_06_sum_of_squares() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Sum of squares: used in variance calculation
     // [1, 2, 3, 4, 5] → [1, 4, 9, 16, 25] → 55
@@ -137,18 +148,19 @@ fn test_matrix_native_03_06_sum_of_squares() {
 fn test_matrix_native_03_07_percentile_via_indexing() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Percentile calculation (simplified): access element at position
     // For sorted data [10, 20, 30, 40, 50], median (50th percentile) is index 2
     repl.send_line("let sorted = [10, 20, 30, 40, 50]")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Median: middle element (index 2 for 5 elements)
-    repl.send_line("sorted[2]")
-        .expect("Failed to send command");
+    repl.send_line("sorted[2]").expect("Failed to send command");
 
     repl.exp_string("30").expect("Median should be 30");
 }
@@ -157,7 +169,8 @@ fn test_matrix_native_03_07_percentile_via_indexing() {
 fn test_matrix_native_03_08_z_score_components() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Z-score = (x - mean) / std_dev
     // Test the components: deviation from mean
@@ -167,12 +180,14 @@ fn test_matrix_native_03_08_z_score_components() {
     repl.send_line("let value = 30")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let mean = 20")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Deviation from mean
     repl.send_line("value - mean")
@@ -185,7 +200,8 @@ fn test_matrix_native_03_08_z_score_components() {
 fn test_matrix_native_03_09_moving_average_manual() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Simple moving average (window size 3)
     // Data: [10, 20, 30, 40, 50]
@@ -194,7 +210,8 @@ fn test_matrix_native_03_09_moving_average_manual() {
     repl.send_line("let window = [10, 20, 30]")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("window.reduce(|acc, x| acc + x, 0) / window.len()")
         .expect("Failed to send command");
@@ -206,7 +223,8 @@ fn test_matrix_native_03_09_moving_average_manual() {
 fn test_matrix_native_03_10_coefficient_of_variation_components() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Coefficient of Variation = (std_dev / mean) * 100
     // Test component calculation: ratio * 100
@@ -215,12 +233,14 @@ fn test_matrix_native_03_10_coefficient_of_variation_components() {
     repl.send_line("let std_dev = 15")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let mean = 100")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // CV percentage (integer division for simplicity)
     repl.send_line("(std_dev * 100) / mean")
@@ -233,7 +253,8 @@ fn test_matrix_native_03_10_coefficient_of_variation_components() {
 fn test_matrix_native_03_11_data_normalization() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Min-max normalization: (x - min) / (max - min)
     // Normalize 50 in range [0, 100] → 0.5
@@ -242,30 +263,35 @@ fn test_matrix_native_03_11_data_normalization() {
     repl.send_line("let value = 50")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let min = 0")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let max = 100")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Normalized (scaled by 10 for integer representation)
     repl.send_line("((value - min) * 10) / (max - min)")
         .expect("Failed to send command");
 
-    repl.exp_string("5").expect("Normalized value should be 5 (0.5 * 10)");
+    repl.exp_string("5")
+        .expect("Normalized value should be 5 (0.5 * 10)");
 }
 
 #[test]
 fn test_matrix_native_03_12_outlier_detection_threshold() {
     let mut repl = spawn_ruchy_repl();
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Simple outlier detection: value > mean + 2*threshold
     // Data: [10, 12, 11, 9, 100] - 100 is outlier
@@ -275,17 +301,20 @@ fn test_matrix_native_03_12_outlier_detection_threshold() {
     repl.send_line("let value = 100")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let mean = 28")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     repl.send_line("let threshold = 20")
         .expect("Failed to send command");
 
-    repl.exp_string("ruchy>").expect("Failed to find REPL prompt");
+    repl.exp_string("ruchy>")
+        .expect("Failed to find REPL prompt");
 
     // Upper bound for outlier detection
     repl.send_line("mean + (2 * threshold)")

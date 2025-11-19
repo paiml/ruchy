@@ -259,9 +259,9 @@ impl ConservativeGC {
                         .sum::<usize>()
             }
             Value::Range { .. } => 24,
-            Value::EnumVariant { variant_name, data, .. } => {
-                24 + variant_name.len() + data.as_ref().map_or(0, |d| d.len() * 8)
-            }
+            Value::EnumVariant {
+                variant_name, data, ..
+            } => 24 + variant_name.len() + data.as_ref().map_or(0, |d| d.len() * 8),
             Value::BuiltinFunction(name) => 24 + name.len(),
             Value::Struct { name, fields } => {
                 48 + name.len()

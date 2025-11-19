@@ -344,8 +344,7 @@ mod property_tests {
         // Property: match with wildcard always succeeds
         for i in 0..100 {
             let code = format!("match {i} {{ 1 => 100, _ => 999 }}");
-            let temp_file =
-                std::env::temp_dir().join(format!("langcomp_003_prop_match_{i}.ruchy"));
+            let temp_file = std::env::temp_dir().join(format!("langcomp_003_prop_match_{i}.ruchy"));
             std::fs::write(&temp_file, &code).unwrap();
 
             ruchy_cmd().arg("run").arg(&temp_file).assert().success();

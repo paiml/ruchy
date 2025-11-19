@@ -49,11 +49,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -70,11 +66,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_stringify() Tests ====================
@@ -94,11 +86,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -115,11 +103,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_pretty() Tests ====================
@@ -139,11 +123,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_read() Tests ====================
@@ -155,20 +135,19 @@ fn test_json_read() {
     fs::write(&json_file, r#"{"city": "Paris", "country": "France"}"#).unwrap();
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let data = json_read("{}");
     println(data);
 }}
-"#, json_file.display());
+"#,
+        json_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_write() Tests ====================
@@ -179,22 +158,21 @@ fn test_json_write() {
     let json_file = temp.path().join("output.json");
 
     let source = temp.path().join("test.ruchy");
-    let code = format!(r#"
+    let code = format!(
+        r#"
 fun main() {{
     let json_str = "{{\\\"status\\\": \\\"ok\\\", \\\"code\\\": 200}}";
     let obj = json_parse(json_str);
     let result = json_write("{}", obj);
     println(result);
 }}
-"#, json_file.display());
+"#,
+        json_file.display()
+    );
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 
     // Verify file was created
     assert!(json_file.exists());
@@ -216,11 +194,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 #[test]
@@ -237,11 +211,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_type() Tests ====================
@@ -261,11 +231,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_merge() Tests ====================
@@ -289,11 +255,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_get() Tests ====================
@@ -313,11 +275,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== json_set() Tests ====================
@@ -337,11 +295,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== Summary Test ====================

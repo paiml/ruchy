@@ -200,5 +200,7 @@ fn test_defect_011_green_phase_summary() {
     println!("Fix location: src/backend/transpiler/statements.rs:1542-1554");
     println!("Fix approach: Wrap FieldAccess/Identifier args with & for contains()");
     println!();
-    println!("Real-world impact: Reaper project 13 → 10 errors (3 E0277 eliminated, 23% reduction)");
+    println!(
+        "Real-world impact: Reaper project 13 → 10 errors (3 E0277 eliminated, 23% reduction)"
+    );
 }

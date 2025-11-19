@@ -236,20 +236,14 @@ fun parse_args(args: Vec<String>) -> HashMap<String, String> {
     fn test_minimal_open_ended_range() {
         let code = "fun test() { let r = 2..; }";
         let result = Parser::new(code).parse();
-        assert!(
-            result.is_ok(),
-            "Minimal open-ended range 2.. should parse"
-        );
+        assert!(result.is_ok(), "Minimal open-ended range 2.. should parse");
     }
 
     #[test]
     fn test_minimal_open_start_range() {
         let code = "fun test() { let r = ..5; }";
         let result = Parser::new(code).parse();
-        assert!(
-            result.is_ok(),
-            "Minimal open-start range ..5 should parse"
-        );
+        assert!(result.is_ok(), "Minimal open-start range ..5 should parse");
     }
 
     #[test]
@@ -293,9 +287,6 @@ fun test() {
 }
 "#;
         let result = Parser::new(code).parse();
-        assert!(
-            result.is_ok(),
-            "Range with statement after should parse"
-        );
+        assert!(result.is_ok(), "Range with statement after should parse");
     }
 }

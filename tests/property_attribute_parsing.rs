@@ -15,15 +15,13 @@ use ruchy::frontend::parser::Parser;
 
 /// Generate valid decorator names
 fn arb_decorator_name() -> impl Strategy<Value = String> {
-    prop::string::string_regex("[a-z][a-z0-9_]{0,15}")
-        .expect("valid decorator name regex")
+    prop::string::string_regex("[a-z][a-z0-9_]{0,15}").expect("valid decorator name regex")
 }
 
 /// Generate decorator arguments
 fn arb_decorator_args() -> impl Strategy<Value = Vec<String>> {
     prop::collection::vec(
-        prop::string::string_regex("[a-zA-Z0-9_]{1,10}")
-            .expect("valid arg regex"),
+        prop::string::string_regex("[a-zA-Z0-9_]{1,10}").expect("valid arg regex"),
         0..5,
     )
 }

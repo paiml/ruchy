@@ -54,7 +54,10 @@ fn test_process_execute_command_with_failure() {
     // Try to list a non-existent directory (should fail)
     let (stdout, stderr, exit_code) =
         process::execute("ls", &["/nonexistent_directory_xyz_ruchy_test"]).unwrap();
-    assert_ne!(exit_code, 0, "exit code should be non-zero for failed command");
+    assert_ne!(
+        exit_code, 0,
+        "exit code should be non-zero for failed command"
+    );
     assert!(
         stderr.contains("No such file or directory") || !stdout.is_empty(),
         "stderr should contain error message or stdout should have output"

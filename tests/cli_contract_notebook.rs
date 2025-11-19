@@ -44,11 +44,7 @@ fn cli_notebook_validate_file_exits_zero() {
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\nprintln(x)\n");
 
     // Non-interactive validation mode
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("notebook").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -65,11 +61,7 @@ fn cli_notebook_validate_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("notebook").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -82,9 +74,11 @@ fn cli_notebook_validate_outputs_success_message() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("valid")
-            .or(predicate::str::contains("Valid"))
-            .or(predicate::str::contains("success")));
+        .stdout(
+            predicate::str::contains("valid")
+                .or(predicate::str::contains("Valid"))
+                .or(predicate::str::contains("success")),
+        );
 }
 
 // ============================================================================
@@ -242,8 +236,10 @@ fn cli_notebook_empty_file_fails() {
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Unexpected end of input")
-            .or(predicate::str::contains("Parse error")));
+        .stderr(
+            predicate::str::contains("Unexpected end of input")
+                .or(predicate::str::contains("Parse error")),
+        );
 }
 
 #[test]
@@ -266,11 +262,7 @@ println(result)
 ",
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 #[test]
@@ -291,11 +283,7 @@ println(z)
 ",
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 // ============================================================================
@@ -309,9 +297,11 @@ fn cli_notebook_help_flag() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("notebook")
-            .or(predicate::str::contains("Notebook"))
-            .or(predicate::str::contains("interactive")));
+        .stdout(
+            predicate::str::contains("notebook")
+                .or(predicate::str::contains("Notebook"))
+                .or(predicate::str::contains("interactive")),
+        );
 }
 
 // ============================================================================
@@ -339,11 +329,7 @@ println(result2)
 ",
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 #[test]
@@ -365,11 +351,7 @@ println(sum)
 ",
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 #[test]
@@ -392,11 +374,7 @@ println(y)
 "#,
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 #[test]
@@ -419,11 +397,7 @@ println(sum)
 ",
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }
 
 #[test]
@@ -443,9 +417,5 @@ println(upper)
 "#,
     );
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&file).assert().success();
 }

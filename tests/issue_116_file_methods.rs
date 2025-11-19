@@ -111,10 +111,7 @@ fn test_issue_116_read_after_close_error() {
     "#;
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("-e")
-        .arg(code)
-        .assert()
-        .failure();  // Should fail or handle gracefully
+    cmd.arg("-e").arg(code).assert().failure(); // Should fail or handle gracefully
 }
 
 // ============================================================================

@@ -22,7 +22,7 @@ fn test_perf_002a_fold_simple_arithmetic() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()
@@ -39,7 +39,7 @@ fn test_perf_002a_fold_operator_precedence() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()
@@ -56,7 +56,7 @@ fn test_perf_002a_fold_nested_expressions() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()
@@ -79,7 +79,7 @@ fn test_perf_002a_fold_comparison_true() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()
@@ -96,7 +96,7 @@ fn test_perf_002a_fold_comparison_false() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()
@@ -120,7 +120,7 @@ fn test_perf_002a_eliminate_dead_if_branch() {
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
     cmd.arg("transpile")
-        .arg("-")  // Read from stdin
+        .arg("-") // Read from stdin
         .write_stdin(code.to_string())
         .assert()
         .success()

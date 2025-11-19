@@ -48,11 +48,7 @@ fun test_failing_assertion() {
 
     // RED: Currently this passes when it should FAIL
     // After fix: Should report failure and exit with non-zero
-    let output = ruchy_cmd()
-        .arg("test")
-        .arg(&test_file)
-        .assert()
-        .failure(); // Should fail because assertion fails
+    let output = ruchy_cmd().arg("test").arg(&test_file).assert().failure(); // Should fail because assertion fails
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
 
@@ -80,11 +76,7 @@ fun test_passing_assertion() {
     fs::write(&test_file, code).expect("Failed to write test file");
 
     // Baseline: Passing tests should succeed
-    ruchy_cmd()
-        .arg("test")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("test").arg(&test_file).assert().success();
 }
 
 /// Test 3: Multiple test functions - some pass, some fail
@@ -108,11 +100,7 @@ fun test_failing() {
     fs::write(&test_file, code).expect("Failed to write test file");
 
     // RED: Should fail because one test fails
-    let output = ruchy_cmd()
-        .arg("test")
-        .arg(&test_file)
-        .assert()
-        .failure();
+    let output = ruchy_cmd().arg("test").arg(&test_file).assert().failure();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
 
@@ -140,11 +128,7 @@ fun test_simple() {
     fs::write(&test_file, code).expect("Failed to write test file");
 
     // Baseline: Tests without assertions should pass
-    ruchy_cmd()
-        .arg("test")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("test").arg(&test_file).assert().success();
 }
 
 /// Test 5: Verify test functions are actually executed
@@ -166,11 +150,7 @@ fun test_writes_file() {{
 
     fs::write(&test_file, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("test")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("test").arg(&test_file).assert().success();
 
     // RED: File won't exist because test function never executes
     // After fix: File should exist proving function was called

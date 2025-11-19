@@ -126,8 +126,7 @@ impl FormatterConfig {
     /// assert_eq!(config.indent_width, 2);
     /// ```
     pub fn from_toml(toml_str: &str) -> Result<Self, String> {
-        toml::from_str(toml_str)
-            .map_err(|e| format!("Failed to parse config TOML: {e}"))
+        toml::from_str(toml_str).map_err(|e| format!("Failed to parse config TOML: {e}"))
     }
 
     /// Save configuration to a TOML file
@@ -166,8 +165,7 @@ impl FormatterConfig {
     /// assert!(toml.contains("indent_width"));
     /// ```
     pub fn to_toml(&self) -> Result<String, String> {
-        toml::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize config: {e}"))
+        toml::to_string_pretty(self).map_err(|e| format!("Failed to serialize config: {e}"))
     }
 
     /// Check if a file path should be ignored based on patterns
@@ -293,10 +291,7 @@ mod tests {
     #[test]
     fn test_should_ignore() {
         let mut config = FormatterConfig::default();
-        config.ignore_patterns = vec![
-            "**/target/**".to_string(),
-            "**/test/**".to_string(),
-        ];
+        config.ignore_patterns = vec!["**/target/**".to_string(), "**/test/**".to_string()];
 
         assert!(config.should_ignore("src/target/debug/file.ruchy"));
         assert!(config.should_ignore("src/test/integration.ruchy"));

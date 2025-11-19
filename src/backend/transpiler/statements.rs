@@ -3,7 +3,9 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
 use super::*;
-use crate::frontend::ast::{BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp};
+use crate::frontend::ast::{
+    BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp,
+};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -159,7 +161,10 @@ impl Transpiler {
     #[inline]
     fn require_exact_args(method: &str, args: &[TokenStream], expected: usize) -> Result<()> {
         if args.len() != expected {
-            bail!("{method} requires exactly {expected} argument{}", if expected == 1 { "" } else { "s" });
+            bail!(
+                "{method} requires exactly {expected} argument{}",
+                if expected == 1 { "" } else { "s" }
+            );
         }
         Ok(())
     }
@@ -268,7 +273,7 @@ impl Transpiler {
                 body: inner_body,
                 is_mutable: inner_mutable,
                 type_annotation: _,
-                else_block: _,  // Nested let-else handled by recursive transpilation
+                else_block: _, // Nested let-else handled by recursive transpilation
             } = &body.kind
             {
                 // Body is another Let - flatten nested let expressions into sequential statements
@@ -400,9 +405,8 @@ impl Transpiler {
         };
 
         // Check if this is a mutable variable
-        let is_mutable_var = is_mutable
-            || self.mutable_vars.contains(name)
-            || Self::is_variable_mutated(name, body);
+        let is_mutable_var =
+            is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
 
         // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
         // DEFECT-010 FIX: Also auto-convert string literals to String for mutable variables (no annotation)
@@ -419,16 +423,13 @@ impl Transpiler {
             (
                 crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
                 None,
-            ) if is_mutable_var =>
-            {
+            ) if is_mutable_var => {
                 // Mutable variable with string literal (no type annotation) - use String::from()
                 (quote! { String::from(#s) }, false)
             }
             // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
-            (
-                crate::frontend::ast::ExprKind::List(_),
-                Some(type_ann),
-            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::List(_)) =>
+            (crate::frontend::ast::ExprKind::List(_), Some(type_ann))
+                if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::List(_)) =>
             {
                 // Array literal with Vec type annotation - add .to_vec()
                 // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List, not Array)
@@ -437,11 +438,7 @@ impl Transpiler {
                 (quote! { #list_tokens.to_vec() }, false)
             }
             // TRANSPILER-007: Empty list without type annotation needs Vec<_> hint
-            (
-                crate::frontend::ast::ExprKind::List(elements),
-                None,
-            ) if elements.is_empty() =>
-            {
+            (crate::frontend::ast::ExprKind::List(elements), None) if elements.is_empty() => {
                 // Empty vec![] without type annotation - flag for type hint
                 (self.transpile_expr(value)?, true)
             }
@@ -452,7 +449,7 @@ impl Transpiler {
                 self.string_vars.borrow_mut().insert(name.to_string());
                 (self.transpile_expr(value)?, false)
             }
-            _ => (self.transpile_expr(value)?, false)
+            _ => (self.transpile_expr(value)?, false),
         };
 
         // Generate type annotation if present, or inject Vec<T> for empty lists
@@ -469,7 +466,9 @@ impl Transpiler {
                         let inner_tokens = self.transpile_type(inner_type)?;
                         quote! { : Vec<#inner_tokens> }
                     }
-                    crate::frontend::ast::TypeKind::Generic { base, params } if base == "Vec" && params.len() == 1 => {
+                    crate::frontend::ast::TypeKind::Generic { base, params }
+                        if base == "Vec" && params.len() == 1 =>
+                    {
                         let inner_tokens = self.transpile_type(&params[0])?;
                         quote! { : Vec<#inner_tokens> }
                     }
@@ -633,7 +632,8 @@ impl Transpiler {
             })
         } else {
             // For multi-variable patterns, bind all variables
-            let var_idents: Vec<_> = bound_vars.iter()
+            let var_idents: Vec<_> = bound_vars
+                .iter()
                 .map(|v| syn::Ident::new(v, proc_macro2::Span::call_site()))
                 .collect();
 
@@ -659,29 +659,29 @@ impl Transpiler {
 
         match pattern {
             Pattern::Identifier(name) => vec![name.clone()],
-            Pattern::Tuple(patterns) | Pattern::List(patterns) => {
-                patterns.iter()
-                    .flat_map(Self::extract_pattern_bindings)
-                    .collect()
-            }
-            Pattern::TupleVariant { patterns, .. } => {
-                patterns.iter()
-                    .flat_map(Self::extract_pattern_bindings)
-                    .collect()
-            }
-            Pattern::Struct { fields, .. } => {
-                fields.iter()
-                    .flat_map(|field| {
-                        field.pattern.as_ref()
-                            .map_or_else(|| vec![field.name.clone()], Self::extract_pattern_bindings)
-                    })
-                    .collect()
-            }
+            Pattern::Tuple(patterns) | Pattern::List(patterns) => patterns
+                .iter()
+                .flat_map(Self::extract_pattern_bindings)
+                .collect(),
+            Pattern::TupleVariant { patterns, .. } => patterns
+                .iter()
+                .flat_map(Self::extract_pattern_bindings)
+                .collect(),
+            Pattern::Struct { fields, .. } => fields
+                .iter()
+                .flat_map(|field| {
+                    field
+                        .pattern
+                        .as_ref()
+                        .map_or_else(|| vec![field.name.clone()], Self::extract_pattern_bindings)
+                })
+                .collect(),
             Pattern::RestNamed(name) => vec![name.clone()],
             Pattern::Or(patterns) => {
                 // For Or patterns, all branches must bind the same variables
                 // Just extract from first pattern
-                patterns.first()
+                patterns
+                    .first()
                     .map(Self::extract_pattern_bindings)
                     .unwrap_or_default()
             }
@@ -691,9 +691,10 @@ impl Transpiler {
                 bindings
             }
             Pattern::WithDefault { pattern, .. } => Self::extract_pattern_bindings(pattern),
-            Pattern::Mut(pattern) | Pattern::Ok(pattern) | Pattern::Err(pattern) | Pattern::Some(pattern) => {
-                Self::extract_pattern_bindings(pattern)
-            }
+            Pattern::Mut(pattern)
+            | Pattern::Ok(pattern)
+            | Pattern::Err(pattern)
+            | Pattern::Some(pattern) => Self::extract_pattern_bindings(pattern),
             Pattern::None => vec![],
             Pattern::Wildcard
             | Pattern::Literal(_)
@@ -778,7 +779,10 @@ impl Transpiler {
             crate::frontend::ast::ExprKind::Call { .. } if self.is_void_function_call(expr) => true,
             // ISSUE-103 FIX: Check macro invocations (println!, etc.)
             crate::frontend::ast::ExprKind::MacroInvocation { name, .. }
-                if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") => true,
+                if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") =>
+            {
+                true
+            }
             // Assignments are void
             crate::frontend::ast::ExprKind::Assign { .. }
             | crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
@@ -847,19 +851,28 @@ impl Transpiler {
                 }
             }
             // Let expression returning immutable string literal
-            ExprKind::Let { name, value, body: let_body, is_mutable, .. } => {
-                if !is_mutable
-                    && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                        if let ExprKind::Identifier(ident) = &let_body.kind {
-                            if ident == name {
-                                return true;
-                            }
+            ExprKind::Let {
+                name,
+                value,
+                body: let_body,
+                is_mutable,
+                ..
+            } => {
+                if !is_mutable && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
+                    if let ExprKind::Identifier(ident) = &let_body.kind {
+                        if ident == name {
+                            return true;
                         }
                     }
+                }
                 false
             }
             // If expression - check if both branches return string literals
-            ExprKind::If { then_branch, else_branch, .. } => {
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 let then_is_literal = Self::returns_string_literal(then_branch);
                 let else_is_literal = else_branch
                     .as_ref()
@@ -922,9 +935,7 @@ impl Transpiler {
     /// Complexity: 3 (simple recursive pattern matching)
     fn get_final_expression(expr: &Expr) -> Option<&Expr> {
         match &expr.kind {
-            ExprKind::Block(exprs) => {
-                exprs.last().and_then(Self::get_final_expression)
-            }
+            ExprKind::Block(exprs) => exprs.last().and_then(Self::get_final_expression),
             ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
                 Self::get_final_expression(body)
             }
@@ -946,7 +957,9 @@ impl Transpiler {
                     self.trace_param_assignments(e, var_to_param, params);
                 }
             }
-            ExprKind::Let { name, value, body, .. } => {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
                 // Check if value is a parameter (direct assignment)
                 if let ExprKind::Identifier(value_name) = &value.kind {
                     if let Some(param) = params.iter().find(|p| &p.name() == value_name) {
@@ -954,7 +967,8 @@ impl Transpiler {
                     }
                 }
                 // TRANSPILER-TYPE-INFER-EXPR: Check if value is an expression involving parameters
-                else if let Some(inferred_type) = Self::infer_expr_type_from_params(value, params) {
+                else if let Some(inferred_type) = Self::infer_expr_type_from_params(value, params)
+                {
                     var_to_param.insert(name.clone(), inferred_type);
                 }
                 self.trace_param_assignments(body, var_to_param, params);
@@ -967,15 +981,10 @@ impl Transpiler {
     /// Recursively analyzes expressions to find parameter types
     /// For Binary expressions, returns the type of the parameter operand
     /// Complexity: 6 (recursive with 3 match arms)
-    fn infer_expr_type_from_params<'a>(
-        expr: &Expr,
-        params: &'a [Param],
-    ) -> Option<&'a Type> {
+    fn infer_expr_type_from_params<'a>(expr: &Expr, params: &'a [Param]) -> Option<&'a Type> {
         match &expr.kind {
             // If expression is an identifier, check if it's a parameter
-            ExprKind::Identifier(name) => {
-                params.iter().find(|p| &p.name() == name).map(|p| &p.ty)
-            }
+            ExprKind::Identifier(name) => params.iter().find(|p| &p.name() == name).map(|p| &p.ty),
             // For binary operations, recursively check operands
             // If either operand is a parameter, assume result has that type
             // (Works for numeric operations: f64 * f64 = f64, i32 + i32 = i32, etc.)
@@ -993,8 +1002,14 @@ impl Transpiler {
             // Comparison operators return bool
             ExprKind::Binary { op, .. } => matches!(
                 op,
-                BinaryOp::Less | BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual
-                | BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::And | BinaryOp::Or
+                BinaryOp::Less
+                    | BinaryOp::Greater
+                    | BinaryOp::LessEqual
+                    | BinaryOp::GreaterEqual
+                    | BinaryOp::Equal
+                    | BinaryOp::NotEqual
+                    | BinaryOp::And
+                    | BinaryOp::Or
             ),
 
             // Return statement with boolean value
@@ -1015,13 +1030,21 @@ impl Transpiler {
             }
 
             // If expression - check both branches
-            ExprKind::If { then_branch, else_branch, .. } => {
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 Self::returns_boolean(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| Self::returns_boolean(e))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| Self::returns_boolean(e))
             }
 
             // Unary not operator on boolean
-            ExprKind::Unary { op: UnaryOp::Not, .. } => true,
+            ExprKind::Unary {
+                op: UnaryOp::Not, ..
+            } => true,
 
             _ => false,
         }
@@ -1074,12 +1097,14 @@ impl Transpiler {
             ExprKind::Return { value: Some(val) } => self.returns_object_literal(val),
 
             // Block - check last expression
-            ExprKind::Block(exprs) => {
-                exprs.last().is_some_and(|e| self.returns_object_literal(e))
-            }
+            ExprKind::Block(exprs) => exprs.last().is_some_and(|e| self.returns_object_literal(e)),
 
             // If expression - both branches return object literal
-            ExprKind::If { then_branch, else_branch, .. } => {
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 let then_is_object = self.returns_object_literal(then_branch);
                 let else_is_object = else_branch
                     .as_ref()
@@ -1102,7 +1127,11 @@ impl Transpiler {
     fn returns_string(&self, body: &Expr) -> bool {
         match &body.kind {
             // String concatenation with + operator returns owned String
-            ExprKind::Binary { op: BinaryOp::Add, left, right } => {
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left,
+                right,
+            } => {
                 // If either side is a string, result is String
                 self.expr_is_string(left) || self.expr_is_string(right)
             }
@@ -1117,11 +1146,18 @@ impl Transpiler {
                     if let ExprKind::Identifier(name) = &last.kind {
                         // Search for mutable Let binding with string value
                         for expr in exprs {
-                            if let ExprKind::Let { name: let_name, value, is_mutable, .. } = &expr.kind {
+                            if let ExprKind::Let {
+                                name: let_name,
+                                value,
+                                is_mutable,
+                                ..
+                            } = &expr.kind
+                            {
                                 if let_name == name && *is_mutable {
                                     // Check if initial value is string
-                                    if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                                        return true;  // Mutable string variable returned
+                                    if matches!(&value.kind, ExprKind::Literal(Literal::String(_)))
+                                    {
+                                        return true; // Mutable string variable returned
                                     }
                                 }
                             }
@@ -1135,14 +1171,20 @@ impl Transpiler {
             }
 
             // Let expression - check if the variable is used in string operations
-            ExprKind::Let { name, value, body: let_body, is_mutable, .. } => {
+            ExprKind::Let {
+                name,
+                value,
+                body: let_body,
+                is_mutable,
+                ..
+            } => {
                 let value_is_string = matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
 
                 // If mutable string variable that's returned, it's likely being mutated (String)
                 // If immutable string variable, it's just a binding (&'static str handled elsewhere)
                 if let ExprKind::Identifier(ident) = &let_body.kind {
                     if ident == name && value_is_string && *is_mutable {
-                        return true;  // mut string variables return String
+                        return true; // mut string variables return String
                     }
                 }
 
@@ -1155,7 +1197,11 @@ impl Transpiler {
             ExprKind::Identifier(_) => false,
 
             // If expression - check both branches
-            ExprKind::If { then_branch, else_branch, .. } => {
+            ExprKind::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 self.returns_string(then_branch)
                     || else_branch.as_ref().is_some_and(|e| self.returns_string(e))
             }
@@ -1166,10 +1212,14 @@ impl Transpiler {
 
     /// Check if expression evaluates to a string
     fn expr_is_string(&self, expr: &Expr) -> bool {
-        matches!(&expr.kind,
+        matches!(
+            &expr.kind,
             ExprKind::Literal(Literal::String(_))
-            | ExprKind::Binary { op: BinaryOp::Add, .. }
-            | ExprKind::StringInterpolation { .. }
+                | ExprKind::Binary {
+                    op: BinaryOp::Add,
+                    ..
+                }
+                | ExprKind::StringInterpolation { .. }
         )
     }
 
@@ -1177,7 +1227,12 @@ impl Transpiler {
     fn identifier_is_string(&self, name: &str, block_exprs: &[Expr]) -> bool {
         // Search for let binding that creates string
         for e in block_exprs {
-            if let ExprKind::Let { name: let_name, value, .. } = &e.kind {
+            if let ExprKind::Let {
+                name: let_name,
+                value,
+                ..
+            } = &e.kind
+            {
                 if let_name == name {
                     // Check if initial value is string literal
                     if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
@@ -1202,7 +1257,12 @@ impl Transpiler {
         if let ExprKind::Identifier(name) = &expr.kind {
             // Search backwards for let binding that creates array
             for e in block_exprs.iter().rev() {
-                if let ExprKind::Let { name: let_name, value, .. } = &e.kind {
+                if let ExprKind::Let {
+                    name: let_name,
+                    value,
+                    ..
+                } = &e.kind
+                {
                     if let_name == name && matches!(&value.kind, ExprKind::List(_)) {
                         return true;
                     }
@@ -1348,11 +1408,9 @@ impl Transpiler {
                     let string_ident = format_ident!("String");
                     Ok(quote! { -> #vec_ident<#string_ident> })
                 }
-                "bool" => {
-                    Ok(quote! { -> bool })
-                }
+                "bool" => Ok(quote! { -> bool }),
                 "()" => Ok(quote! {}),
-                _ => Ok(quote! { -> i32 }) // Fallback for unknown types
+                _ => Ok(quote! { -> i32 }), // Fallback for unknown types
             }
         // ISSUE-113 FIX: Check for boolean return type BEFORE numeric fallback
         } else if Self::returns_boolean(body) {
@@ -1403,13 +1461,20 @@ impl Transpiler {
                 Self::expr_references_any(left, names) || Self::expr_references_any(right, names)
             }
             ExprKind::Block(exprs) => exprs.iter().any(|e| Self::expr_references_any(e, names)),
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 Self::expr_references_any(condition, names)
                     || Self::expr_references_any(then_branch, names)
-                    || else_branch.as_ref().is_some_and(|e| Self::expr_references_any(e, names))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| Self::expr_references_any(e, names))
             }
             ExprKind::Call { func, args } => {
-                Self::expr_references_any(func, names) || args.iter().any(|a| Self::expr_references_any(a, names))
+                Self::expr_references_any(func, names)
+                    || args.iter().any(|a| Self::expr_references_any(a, names))
             }
             ExprKind::Set(elements) => elements.iter().any(|e| Self::expr_references_any(e, names)),
             _ => false,
@@ -1618,7 +1683,7 @@ impl Transpiler {
     /// The quote! macro generates Punct { '#', spacing: Alone } which adds unwanted space
     /// We need Punct { '#', spacing: Joint } for correct #[...] syntax
     fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {
-        use proc_macro2::{Punct, Spacing, Group, Delimiter, TokenTree};
+        use proc_macro2::{Delimiter, Group, Punct, Spacing, TokenTree};
 
         let attr_name = format_ident!("{}", attr.name);
 
@@ -1631,10 +1696,9 @@ impl Transpiler {
             let attr_tokens = quote! { #attr_name };
             let group = Group::new(Delimiter::Bracket, attr_tokens);
 
-            return vec![
-                TokenTree::Punct(pound),
-                TokenTree::Group(group),
-            ].into_iter().collect();
+            return vec![TokenTree::Punct(pound), TokenTree::Group(group)]
+                .into_iter()
+                .collect();
         }
 
         // For other attributes without args, use same manual construction
@@ -1643,10 +1707,9 @@ impl Transpiler {
             let attr_tokens = quote! { #attr_name };
             let group = Group::new(Delimiter::Bracket, attr_tokens);
 
-            vec![
-                TokenTree::Punct(pound),
-                TokenTree::Group(group),
-            ].into_iter().collect()
+            vec![TokenTree::Punct(pound), TokenTree::Group(group)]
+                .into_iter()
+                .collect()
         } else {
             // Attributes with args: #[attr_name(args)]
             let pound = Punct::new('#', Spacing::Joint);
@@ -1658,10 +1721,9 @@ impl Transpiler {
             let attr_tokens = quote! { #attr_name(#(#args),*) };
             let group = Group::new(Delimiter::Bracket, attr_tokens);
 
-            vec![
-                TokenTree::Punct(pound),
-                TokenTree::Group(group),
-            ].into_iter().collect()
+            vec![TokenTree::Punct(pound), TokenTree::Group(group)]
+                .into_iter()
+                .collect()
         }
     }
 
@@ -1733,12 +1795,13 @@ impl Transpiler {
     fn body_needs_string_conversion(&self, body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
-            ExprKind::Identifier(_) => true,  // Could be &str variable
-            ExprKind::IndexAccess { .. } => true,  // DEFECT-013: Vec/array indexing may return &str
+            ExprKind::Identifier(_) => true, // Could be &str variable
+            ExprKind::IndexAccess { .. } => true, // DEFECT-013: Vec/array indexing may return &str
             // DEFECT-016-C: Match expressions may have string literal arms
             ExprKind::Match { arms, .. } => {
                 // Check if any arm has a string literal body
-                arms.iter().any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
+                arms.iter()
+                    .any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
             }
             ExprKind::Block(exprs) if !exprs.is_empty() => {
                 self.body_needs_string_conversion(exprs.last().unwrap())
@@ -1834,7 +1897,14 @@ impl Transpiler {
             ExprKind::Block(exprs) if exprs.len() == 1 => {
                 // Single expression block - check if it's a Let
                 match &exprs[0].kind {
-                    ExprKind::Let { name, type_annotation, value, body: let_body, is_mutable, .. } => {
+                    ExprKind::Let {
+                        name,
+                        type_annotation,
+                        value,
+                        body: let_body,
+                        is_mutable,
+                        ..
+                    } => {
                         // Transpile let statement parts
                         let name_ident = format_ident!("{}", name);
 
@@ -1846,7 +1916,9 @@ impl Transpiler {
                         // DEFECT-015 FIX: Auto-convert string literals to String for mutable variables
                         let value_tokens = match (&value.kind, type_annotation) {
                             (
-                                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                                crate::frontend::ast::ExprKind::Literal(
+                                    crate::frontend::ast::Literal::String(s),
+                                ),
                                 Some(type_ann),
                             ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::Named(name) if name == "String") =>
                             {
@@ -1856,20 +1928,22 @@ impl Transpiler {
                                 quote! { #s.to_string() }
                             }
                             (
-                                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)),
+                                crate::frontend::ast::ExprKind::Literal(
+                                    crate::frontend::ast::Literal::String(s),
+                                ),
                                 None,
-                            ) if is_mutable_var =>
-                            {
+                            ) if is_mutable_var => {
                                 // Mutable variable with string literal (no type annotation) - use String::from()
                                 // DEFECT-016 FIX: Track this as a string variable
                                 self.string_vars.borrow_mut().insert(name.clone());
                                 quote! { String::from(#s) }
                             }
                             // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
-                            (
-                                crate::frontend::ast::ExprKind::List(_),
-                                Some(type_ann),
-                            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::List(_)) =>
+                            (crate::frontend::ast::ExprKind::List(_), Some(type_ann))
+                                if matches!(
+                                    &type_ann.kind,
+                                    crate::frontend::ast::TypeKind::List(_)
+                                ) =>
                             {
                                 // Array literal with Vec type annotation - add .to_vec()
                                 // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List)
@@ -1921,9 +1995,7 @@ impl Transpiler {
                 }
             }
             // DEFECT-016-C FIX: Match expressions returning String need .to_string() on string literal arms
-            ExprKind::Match { expr, arms } => {
-                self.transpile_match_with_string_arms(expr, arms)
-            }
+            ExprKind::Match { expr, arms } => self.transpile_match_with_string_arms(expr, arms),
             _ => {
                 // Single expression or simple body - wrap entire body
                 let body_tokens = self.transpile_expr(body)?;
@@ -2086,7 +2158,8 @@ impl Transpiler {
         };
 
         // TRANSPILER-007: Set current function return type for empty vec type inference
-        self.current_function_return_type.replace(effective_return_type.cloned());
+        self.current_function_return_type
+            .replace(effective_return_type.cloned());
 
         // DEFECT-012 FIX: Generate body tokens with special handling for String return type
         let body_tokens = if let Some(ret_type) = effective_return_type {
@@ -2143,7 +2216,9 @@ impl Transpiler {
                 .iter()
                 .map(|p| {
                     let name = p.name();
-                    let ty_str = self.transpile_type(&p.ty).map_or_else(|_| "_".to_string(), |t| t.to_string());
+                    let ty_str = self
+                        .transpile_type(&p.ty)
+                        .map_or_else(|_| "_".to_string(), |t| t.to_string());
                     if ty_str == "_" {
                         // No type annotation (inferred)
                         name
@@ -2213,7 +2288,11 @@ impl Transpiler {
 
         // STDLIB-003: Check for std::time::now_millis() path-based calls
         if let ExprKind::FieldAccess { object, field } = &func.kind {
-            if let ExprKind::FieldAccess { object: std_obj, field: module_name } = &object.kind {
+            if let ExprKind::FieldAccess {
+                object: std_obj,
+                field: module_name,
+            } = &object.kind
+            {
                 if let ExprKind::Identifier(std_name) = &std_obj.kind {
                     if std_name == "std" && module_name == "time" && field == "now_millis" {
                         // std::time::now_millis() - generate SystemTime code
@@ -2378,7 +2457,9 @@ impl Transpiler {
             };
 
             // Try DataFrame builder pattern transpilation (inline implementation)
-            if let Some(builder_tokens) = self.try_transpile_dataframe_builder_inline(&method_call_expr)? {
+            if let Some(builder_tokens) =
+                self.try_transpile_dataframe_builder_inline(&method_call_expr)?
+            {
                 return Ok(builder_tokens);
             }
         }
@@ -2407,14 +2488,20 @@ impl Transpiler {
     fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
         // Check if this is a builder pattern ending in .build()
         let (columns, _base) = match &expr.kind {
-            ExprKind::MethodCall { receiver, method, .. } if method == "build" => {
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } if method == "build" => {
                 if let Some(result) = self.extract_dataframe_columns(receiver) {
                     result
                 } else {
                     return Ok(None);
                 }
             }
-            ExprKind::MethodCall { receiver, method, args } if method == "column" && args.len() == 2 => {
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } if method == "column" && args.len() == 2 => {
                 // Builder without .build() - still valid
                 let mut cols = vec![(args[0].clone(), args[1].clone())];
                 if let Some((mut prev_cols, base)) = self.extract_dataframe_columns(receiver) {
@@ -2451,22 +2538,36 @@ impl Transpiler {
     /// Extract `DataFrame` column chain recursively
     fn extract_dataframe_columns(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
         match &expr.kind {
-            ExprKind::MethodCall { receiver, method, args } if method == "column" && args.len() == 2 => {
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } if method == "column" && args.len() == 2 => {
                 if let Some((mut cols, base)) = self.extract_dataframe_columns(receiver) {
                     cols.push((args[0].clone(), args[1].clone()));
                     Some((cols, base))
                 } else {
                     // Check if receiver is DataFrame::new()
-                    if let ExprKind::Call { func, args: call_args } = &receiver.kind {
+                    if let ExprKind::Call {
+                        func,
+                        args: call_args,
+                    } = &receiver.kind
+                    {
                         // Handle both Identifier("DataFrame::new") and QualifiedName
                         let is_dataframe_new = match &func.kind {
                             ExprKind::Identifier(name) if name == "DataFrame::new" => true,
                             ExprKind::QualifiedName { module, name }
-                                if module == "DataFrame" && name == "new" => true,
+                                if module == "DataFrame" && name == "new" =>
+                            {
+                                true
+                            }
                             _ => false,
                         };
                         if is_dataframe_new && call_args.is_empty() {
-                            return Some((vec![(args[0].clone(), args[1].clone())], receiver.as_ref().clone()));
+                            return Some((
+                                vec![(args[0].clone(), args[1].clone())],
+                                receiver.as_ref().clone(),
+                            ));
                         }
                     }
                     None
@@ -2477,7 +2578,10 @@ impl Transpiler {
                 let is_dataframe_new = match &func.kind {
                     ExprKind::Identifier(name) if name == "DataFrame::new" => true,
                     ExprKind::QualifiedName { module, name }
-                        if module == "DataFrame" && name == "new" => true,
+                        if module == "DataFrame" && name == "new" =>
+                    {
+                        true
+                    }
                     _ => false,
                 };
                 if is_dataframe_new {
@@ -2501,7 +2605,8 @@ impl Transpiler {
                 // Module function call - use :: syntax
                 let module_ident = format_ident!("{}", name);
                 let method_ident = format_ident!("{}", method);
-                let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                let arg_tokens: Result<Vec<_>> =
+                    args.iter().map(|a| self.transpile_expr(a)).collect();
                 let arg_tokens = arg_tokens?;
                 return Ok(quote! { #module_ident::#method_ident(#(#arg_tokens),*) });
             }
@@ -2695,7 +2800,9 @@ impl Transpiler {
             "split" => {
                 // DEFECT-002 FIX: Convert iterator to Vec<String>
                 // .split() returns std::str::Split iterator, but Ruchy expects Vec<String>
-                Ok(quote! { #obj_tokens.split(#(#arg_tokens),*).map(|s| s.to_string()).collect::<Vec<String>>() })
+                Ok(
+                    quote! { #obj_tokens.split(#(#arg_tokens),*).map(|s| s.to_string()).collect::<Vec<String>>() },
+                )
             }
             "replace" => Ok(quote! { #obj_tokens.replace(#(#arg_tokens),*) }),
             "length" => {
@@ -5489,9 +5596,10 @@ impl Transpiler {
                         // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
                         // to prevent "use of moved value" errors on subsequent iterations
                         if self.in_loop_context.get()
-                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
-                                base_tokens = quote! { #base_tokens.clone() };
-                            }
+                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                        {
+                            base_tokens = quote! { #base_tokens.clone() };
+                        }
 
                         // Apply String/&str coercion if needed
                         if let Some(expected_type) = signature.param_types.get(i) {
@@ -5503,17 +5611,20 @@ impl Transpiler {
                     .collect()
             } else {
                 // No signature info - transpile as-is
-                args.iter().map(|arg| {
-                    let mut base_tokens = self.transpile_expr(arg)?;
+                args.iter()
+                    .map(|arg| {
+                        let mut base_tokens = self.transpile_expr(arg)?;
 
-                    // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
-                    if self.in_loop_context.get()
-                        && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_)) {
+                        // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                        if self.in_loop_context.get()
+                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                        {
                             base_tokens = quote! { #base_tokens.clone() };
                         }
 
-                    Ok(base_tokens)
-                }).collect()
+                        Ok(base_tokens)
+                    })
+                    .collect()
             };
         let arg_tokens = arg_tokens?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
@@ -5885,13 +5996,19 @@ mod tests {
         let result = parser.parse();
 
         // Should now parse successfully
-        assert!(result.is_ok(), "impl blocks should be supported now (PARSER-009)");
+        assert!(
+            result.is_ok(),
+            "impl blocks should be supported now (PARSER-009)"
+        );
 
         // Verify it transpiles correctly
         let ast = result.unwrap();
         let mut transpiler = Transpiler::new();
         let transpile_result = transpiler.transpile_to_program(&ast);
-        assert!(transpile_result.is_ok(), "impl block should transpile successfully");
+        assert!(
+            transpile_result.is_ok(),
+            "impl block should transpile successfully"
+        );
     }
 
     #[test]
@@ -6583,7 +6700,10 @@ mod tests {
     fn test_is_variable_mutated_assignment() {
         use crate::frontend::ast::{Expr, ExprKind, Span};
         let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
-        let value = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
         let assign_expr = Expr::new(
             ExprKind::Assign {
                 target: Box::new(target),
@@ -6614,7 +6734,10 @@ mod tests {
     fn test_is_variable_mutated_block() {
         use crate::frontend::ast::{Expr, ExprKind, Span};
         let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
-        let value = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
         let assign_expr = Expr::new(
             ExprKind::Assign {
                 target: Box::new(target),
@@ -6725,7 +6848,10 @@ mod tests {
         use crate::frontend::ast::{Expr, ExprKind, Span};
         let transpiler = create_transpiler();
         let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
-        let value = Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default());
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
         let assign_expr = Expr::new(
             ExprKind::Assign {
                 target: Box::new(target),
@@ -6741,7 +6867,10 @@ mod tests {
     fn test_returns_closure_false() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let transpiler = create_transpiler();
-        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
         assert!(!transpiler.returns_closure(&int_expr));
     }
 
@@ -6772,8 +6901,14 @@ mod tests {
     #[test]
     fn test_returns_boolean_comparison() {
         use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
-        let left = Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default());
-        let right = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
         let comparison_expr = Expr::new(
             ExprKind::Binary {
                 left: Box::new(left),
@@ -6807,8 +6942,14 @@ mod tests {
         let transpiler = create_transpiler();
         let array_expr = Expr::new(
             ExprKind::List(vec![
-                Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default()),
-                Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default()),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::default(),
+                ),
             ]),
             Span::default(),
         );
@@ -6844,8 +6985,14 @@ mod tests {
     fn test_value_creates_vec_list() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let transpiler = create_transpiler();
-        let elem1 = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
-        let elem2 = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default());
+        let elem1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let elem2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
         let list_expr = Expr::new(ExprKind::List(vec![elem1, elem2]), Span::default());
         assert!(transpiler.value_creates_vec(&list_expr));
     }
@@ -7996,15 +8143,16 @@ mod property_tests_statements {
     #[test]
     fn test_needs_lifetime_parameter_no_refs() {
         let transpiler = Transpiler::new();
-        let params = vec![
-            Param {
-                pattern: Pattern::Identifier("x".to_string()),
-                ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::default() },
-                default_value: None,
+        let params = vec![Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
                 span: Span::default(),
-                is_mutable: false,
-            }
-        ];
+            },
+            default_value: None,
+            span: Span::default(),
+            is_mutable: false,
+        }];
         assert!(!transpiler.needs_lifetime_parameter(&params, None));
     }
 
@@ -8016,13 +8164,28 @@ mod property_tests_statements {
             kind: TypeKind::Reference {
                 is_mut: false,
                 lifetime: None,
-                inner: Box::new(Type { kind: TypeKind::Named("str".to_string()), span: Span::default() }),
+                inner: Box::new(Type {
+                    kind: TypeKind::Named("str".to_string()),
+                    span: Span::default(),
+                }),
             },
             span: Span::default(),
         };
         let params = vec![
-            Param { pattern: Pattern::Identifier("a".to_string()), ty: ref_type.clone(), default_value: None, span: Span::default(), is_mutable: false },
-            Param { pattern: Pattern::Identifier("b".to_string()), ty: ref_type.clone(), default_value: None, span: Span::default(), is_mutable: false },
+            Param {
+                pattern: Pattern::Identifier("a".to_string()),
+                ty: ref_type.clone(),
+                default_value: None,
+                span: Span::default(),
+                is_mutable: false,
+            },
+            Param {
+                pattern: Pattern::Identifier("b".to_string()),
+                ty: ref_type.clone(),
+                default_value: None,
+                span: Span::default(),
+                is_mutable: false,
+            },
         ];
         let return_type = Some(&ref_type);
         assert!(transpiler.needs_lifetime_parameter(&params, return_type));
@@ -8036,7 +8199,10 @@ mod property_tests_statements {
             kind: TypeKind::Reference {
                 is_mut: false,
                 lifetime: None,
-                inner: Box::new(Type { kind: TypeKind::Named("str".to_string()), span: Span::default() }),
+                inner: Box::new(Type {
+                    kind: TypeKind::Named("str".to_string()),
+                    span: Span::default(),
+                }),
             },
             span: Span::default(),
         };
@@ -8047,7 +8213,10 @@ mod property_tests_statements {
     #[test]
     fn test_is_reference_type_false() {
         let transpiler = Transpiler::new();
-        let named_ty = Type { kind: TypeKind::Named("String".to_string()), span: Span::default() };
+        let named_ty = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Span::default(),
+        };
         assert!(!transpiler.is_reference_type(&named_ty));
     }
 
@@ -8055,7 +8224,10 @@ mod property_tests_statements {
     #[test]
     fn test_is_string_type_true() {
         let transpiler = Transpiler::new();
-        let string_ty = Type { kind: TypeKind::Named("String".to_string()), span: Span::default() };
+        let string_ty = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Span::default(),
+        };
         assert!(transpiler.is_string_type(&string_ty));
     }
 
@@ -8063,7 +8235,10 @@ mod property_tests_statements {
     #[test]
     fn test_is_string_type_false() {
         let transpiler = Transpiler::new();
-        let int_ty = Type { kind: TypeKind::Named("i32".to_string()), span: Span::default() };
+        let int_ty = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
         assert!(!transpiler.is_string_type(&int_ty));
     }
 
@@ -8090,7 +8265,10 @@ mod property_tests_statements {
     #[test]
     fn test_body_needs_string_conversion_integer() {
         let transpiler = Transpiler::new();
-        let body = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+        let body = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
         assert!(!transpiler.body_needs_string_conversion(&body));
     }
 
@@ -8101,7 +8279,9 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
         let obj = quote! { vec };
         let f = quote! { |x| x * 2 };
-        let result = transpiler.transpile_iterator_methods(&obj, "map", &[f]).unwrap();
+        let result = transpiler
+            .transpile_iterator_methods(&obj, "map", &[f])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("iter"));
         assert!(code.contains("map"));
@@ -8115,7 +8295,9 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
         let obj = quote! { vec };
         let f = quote! { |x| x > 10 };
-        let result = transpiler.transpile_iterator_methods(&obj, "filter", &[f]).unwrap();
+        let result = transpiler
+            .transpile_iterator_methods(&obj, "filter", &[f])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("into_iter"));
         assert!(code.contains("filter"));
@@ -8129,7 +8311,9 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
         let obj = quote! { vec };
         let f = quote! { |acc, x| acc + x };
-        let result = transpiler.transpile_iterator_methods(&obj, "reduce", &[f]).unwrap();
+        let result = transpiler
+            .transpile_iterator_methods(&obj, "reduce", &[f])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("into_iter"));
         assert!(code.contains("reduce"));
@@ -8139,12 +8323,14 @@ mod property_tests_statements {
     // Test 127: transpile_map_set_methods - items
     #[test]
     fn test_transpile_map_set_methods_items() {
-        use quote::quote;
         use proc_macro2::Span as ProcSpan;
+        use quote::quote;
         let transpiler = Transpiler::new();
         let obj = quote! { map };
         let method_ident = proc_macro2::Ident::new("items", ProcSpan::call_site());
-        let result = transpiler.transpile_map_set_methods(&obj, &method_ident, "items", &[]).unwrap();
+        let result = transpiler
+            .transpile_map_set_methods(&obj, &method_ident, "items", &[])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("iter"));
         assert!(code.contains("clone"));
@@ -8153,13 +8339,15 @@ mod property_tests_statements {
     // Test 128: transpile_map_set_methods - update
     #[test]
     fn test_transpile_map_set_methods_update() {
-        use quote::quote;
         use proc_macro2::Span as ProcSpan;
+        use quote::quote;
         let transpiler = Transpiler::new();
         let obj = quote! { map };
         let method_ident = proc_macro2::Ident::new("update", ProcSpan::call_site());
         let arg = quote! { other_map };
-        let result = transpiler.transpile_map_set_methods(&obj, &method_ident, "update", &[arg]).unwrap();
+        let result = transpiler
+            .transpile_map_set_methods(&obj, &method_ident, "update", &[arg])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("extend"));
     }
@@ -8171,7 +8359,9 @@ mod property_tests_statements {
         let transpiler = Transpiler::new();
         let obj = quote! { set1 };
         let arg = quote! { set2 };
-        let result = transpiler.transpile_set_operations(&obj, "union", &[arg]).unwrap();
+        let result = transpiler
+            .transpile_set_operations(&obj, "union", &[arg])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("union"));
         assert!(code.contains("cloned"));
@@ -8285,15 +8475,13 @@ mod property_tests_statements {
     fn test_returns_vec_list() {
         let transpiler = Transpiler::new();
         let body = Expr {
-            kind: ExprKind::List(vec![
-                Expr {
-                    kind: ExprKind::Literal(Literal::Integer(1, None)),
-                    span: Span::default(),
-                    attributes: vec![],
-                    leading_comments: vec![],
-                    trailing_comment: None,
-                }
-            ]),
+            kind: ExprKind::List(vec![Expr {
+                kind: ExprKind::Literal(Literal::Integer(1, None)),
+                span: Span::default(),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }]),
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -8307,9 +8495,7 @@ mod property_tests_statements {
     fn test_returns_object_literal_true() {
         let transpiler = Transpiler::new();
         let body = Expr {
-            kind: ExprKind::ObjectLiteral {
-                fields: vec![],
-            },
+            kind: ExprKind::ObjectLiteral { fields: vec![] },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -8351,9 +8537,7 @@ mod property_tests_statements {
     fn test_expr_is_string_interpolation() {
         let transpiler = Transpiler::new();
         let expr = Expr {
-            kind: ExprKind::StringInterpolation {
-                parts: vec![],
-            },
+            kind: ExprKind::StringInterpolation { parts: vec![] },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],

@@ -55,11 +55,10 @@ fun helper_function() -> i32 {
 
     // EXTREME TDD: This assertion will FAIL in RED phase
     // After two-pass implementation (GREEN phase), it will PASS
-    result
-        .success()
-        .stdout(predicates::str::contains("Summary: 0 Errors").or(
-            predicates::str::contains("No issues found")
-        ));
+    result.success().stdout(
+        predicates::str::contains("Summary: 0 Errors")
+            .or(predicates::str::contains("No issues found")),
+    );
 }
 
 /// Test mutual recursion (functions calling each other)
@@ -186,9 +185,7 @@ fun helper_function() -> i32 {
         .arg(temp_file)
         .assert()
         .success()
-        .stdout(predicates::str::contains("Syntax is valid").or(
-            predicates::str::contains("✓")
-        ));
+        .stdout(predicates::str::contains("Syntax is valid").or(predicates::str::contains("✓")));
 
     Command::cargo_bin("ruchy")
         .unwrap()
@@ -208,7 +205,6 @@ fun helper_function() -> i32 {
         .assert()
         .success()
         .stdout(
-            predicates::str::contains("0 Errors")
-                .or(predicates::str::contains("No issues found"))
+            predicates::str::contains("0 Errors").or(predicates::str::contains("No issues found")),
         );
 }

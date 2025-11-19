@@ -168,9 +168,14 @@ impl BenchmarkResults {
     /// results.print_summary();
     /// ```
     pub fn print_summary(&self) {
-        println!("Requests per second:    {:.2} [#/sec] (mean)", self.requests_per_second());
-        println!("Time per request:       {:.3} [ms] (mean)",
-                 self.mean_time().as_secs_f64() * 1000.0);
+        println!(
+            "Requests per second:    {:.2} [#/sec] (mean)",
+            self.requests_per_second()
+        );
+        println!(
+            "Time per request:       {:.3} [ms] (mean)",
+            self.mean_time().as_secs_f64() * 1000.0
+        );
 
         if self.failed_requests > 0 {
             println!("Failed requests:        {}", self.failed_requests);

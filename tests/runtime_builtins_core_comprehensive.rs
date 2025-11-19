@@ -51,11 +51,7 @@ fn test_io_print_no_newline() {
 
 #[test]
 fn test_io_dbg_debug_output() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg(r"dbg(42)")
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(r"dbg(42)").assert().success();
 }
 
 // ============================================================================
@@ -163,11 +159,7 @@ fn test_assert_eq_fail() {
 
 #[test]
 fn test_assert_pass() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("assert(true)")
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg("assert(true)").assert().success();
 }
 
 #[test]
@@ -373,11 +365,7 @@ fn test_collection_pop() {
         let val = pop(arr);
         println(type_of(val))
     ";
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -465,11 +453,7 @@ fn test_env_remove_var() {
         env_set_var("TEST_VAR_2", "test");
         env_remove_var("TEST_VAR_2")
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -621,11 +605,7 @@ fn test_fs_metadata() {
         fs_write("/tmp/test_ruchy_metadata.txt", "test");
         println(type_of(fs_metadata("/tmp/test_ruchy_metadata.txt")))
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -771,11 +751,7 @@ fn test_path_canonicalize() {
         fs_write("/tmp/test_ruchy_canonical.txt", "test");
         println(type_of(path_canonicalize("/tmp/test_ruchy_canonical.txt")))
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -866,11 +842,7 @@ fn test_json_write_read() {
         let loaded = json_read("/tmp/test_ruchy_json.json");
         println(type_of(loaded))
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -910,11 +882,7 @@ fn test_json_merge() {
         let merged = json_merge(obj1, obj2);
         println(type_of(merged))
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -938,11 +906,7 @@ fn test_json_set() {
         json_set(obj, "new", "data");
         println(type_of(obj))
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 // ============================================================================
@@ -1005,13 +969,12 @@ fn property_len_after_push() {
                 let after = len(arr);
                 assert_eq(after, before + 1)
             ",
-            (0..size).map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
+            (0..size)
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         );
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&code)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&code).assert().success();
     }
 }
 
@@ -1025,11 +988,7 @@ fn property_reverse_twice_identity() {
         let arr = reverse(arr);
         assert_eq(arr[0], original_first)
     ";
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -1037,11 +996,7 @@ fn property_abs_idempotent() {
     // Property: abs(abs(x)) == abs(x)
     for val in [-100, -10, -1, 0, 1, 10, 100] {
         let code = format!("assert_eq(abs(abs({val})), abs({val}))");
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&code)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&code).assert().success();
     }
 }
 
@@ -1050,11 +1005,7 @@ fn property_min_max_commutative() {
     // Property: min(a, b) + max(a, b) == a + b
     for (a, b) in [(1, 5), (10, 3), (7, 7), (-5, 10)] {
         let code = format!("assert_eq(min({a}, {b}) + max({a}, {b}), {a} + {b})");
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&code)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&code).assert().success();
     }
 }
 
@@ -1063,11 +1014,7 @@ fn property_to_string_parse_int_roundtrip() {
     // Property: parse_int(to_string(n)) == n (for integers)
     for val in [0, 1, 42, 100, 999] {
         let code = format!(r"assert_eq(parse_int(to_string({val})), {val})");
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&code)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&code).assert().success();
     }
 }
 
@@ -1076,11 +1023,13 @@ fn property_path_join_parent() {
     // Property: path_parent(path_join(a, b)) contains a
     ruchy_cmd()
         .arg("-e")
-        .arg(r#"
+        .arg(
+            r#"
             let joined = path_join("/tmp", "test.txt");
             let parent = path_parent(joined);
             assert_eq(parent, "/tmp")
-        "#)
+        "#,
+        )
         .assert()
         .success();
 }
@@ -1151,11 +1100,7 @@ fn integration_path_manipulation() {
         assert(path_is_absolute(joined));
         assert_eq(path_is_relative(file), true)
     "#;
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -1185,11 +1130,7 @@ fn integration_collection_operations() {
         let arr = reverse(arr);
         assert_eq(arr[0], 9)
     ";
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]

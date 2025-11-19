@@ -44,7 +44,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Execution should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Execution should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -71,7 +73,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Execution should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Execution should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -98,7 +102,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Execution should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Execution should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -136,7 +142,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Execution should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Execution should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -163,7 +171,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Execution should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Execution should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -196,7 +206,9 @@ main()
     let mut parser1 = Parser::new(split_code);
     let ast1 = parser1.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast1).expect("Split version should work");
+    let result = interpreter
+        .eval_expr(&ast1)
+        .expect("Split version should work");
 
     assert_eq!(
         strip_quotes(&result.to_string()),
@@ -221,7 +233,9 @@ main()
     let mut parser2 = Parser::new(chained_code);
     let ast2 = parser2.parse().expect("Parse should succeed");
     let mut interpreter2 = Interpreter::new();
-    let result2 = interpreter2.eval_expr(&ast2).expect("Chained version should eventually work");
+    let result2 = interpreter2
+        .eval_expr(&ast2)
+        .expect("Chained version should eventually work");
 
     assert_eq!(
         strip_quotes(&result2.to_string()),
@@ -258,7 +272,9 @@ main()
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Parse should succeed");
     let mut interpreter = Interpreter::new();
-    let result = interpreter.eval_expr(&ast).expect("Debug test should succeed");
+    let result = interpreter
+        .eval_expr(&ast)
+        .expect("Debug test should succeed");
 
     assert_eq!(
         strip_quotes(&result.to_string()),

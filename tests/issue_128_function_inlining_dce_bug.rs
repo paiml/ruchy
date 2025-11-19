@@ -52,7 +52,10 @@ println("Result: " + result)
 
     // The transpiled code should NOT have undefined variables in if conditions
     // This was the actual bug - inlining broke parameter substitution
-    assert!(!transpiled.contains("if a > b"), "BUG: Parameters not substituted in if condition (Issue #128)");
+    assert!(
+        !transpiled.contains("if a > b"),
+        "BUG: Parameters not substituted in if condition (Issue #128)"
+    );
 }
 
 #[test]
@@ -306,14 +309,17 @@ println(fib(10))
 
     // If function WAS inlined, check for undefined variables
     // Bug symptoms: "if n <= 1" (n undefined in main), "return n" (n undefined), "fib(n-1)" (fib undefined)
-    assert!(!(transpiled.contains("if n <=") || transpiled.contains("return n") || transpiled.contains("fib(n")), 
-            "BUG DETECTED: Function was inlined but has undefined variables!\n\
+    assert!(
+        !(transpiled.contains("if n <=")
+            || transpiled.contains("return n")
+            || transpiled.contains("fib(n")),
+        "BUG DETECTED: Function was inlined but has undefined variables!\n\
              Either:\n\
              1. check_recursion() failed to detect recursion in Return expressions\n\
              2. substitute_identifiers() failed to substitute parameters in Return expressions\n\
              \n\
              Transpiled code:\n{transpiled}\n"
-        );
+    );
 
     // If inlined, verify it compiles with rustc
     if !has_function_def {

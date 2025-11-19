@@ -40,11 +40,7 @@ fn cli_parse_valid_program_exits_zero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("parse")
-        .arg(&file)
-        .assert()
-        .success(); // Exit code 0
+    ruchy_cmd().arg("parse").arg(&file).assert().success(); // Exit code 0
 }
 
 #[test]
@@ -52,11 +48,7 @@ fn cli_parse_syntax_error_exits_nonzero() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "invalid.ruchy", "let x = \n");
 
-    ruchy_cmd()
-        .arg("parse")
-        .arg(&file)
-        .assert()
-        .failure(); // Exit code != 0
+    ruchy_cmd().arg("parse").arg(&file).assert().failure(); // Exit code != 0
 }
 
 #[test]
@@ -98,8 +90,7 @@ fn cli_parse_shows_literal_value() {
         .assert()
         .success()
         .stdout(predicate::str::contains("42"))
-        .stdout(predicate::str::contains("Literal")
-            .or(predicate::str::contains("Integer")));
+        .stdout(predicate::str::contains("Literal").or(predicate::str::contains("Integer")));
 }
 
 #[test]
@@ -119,11 +110,7 @@ fn cli_parse_shows_variable_name() {
 #[test]
 fn cli_parse_shows_function_definition() {
     let temp = TempDir::new().unwrap();
-    let file = create_temp_file(
-        &temp,
-        "function.ruchy",
-        "fun add(a, b) {\n  a + b\n}\n",
-    );
+    let file = create_temp_file(&temp, "function.ruchy", "fun add(a, b) {\n  a + b\n}\n");
 
     ruchy_cmd()
         .arg("parse")
@@ -131,8 +118,7 @@ fn cli_parse_shows_function_definition() {
         .assert()
         .success()
         .stdout(predicate::str::contains("add"))
-        .stdout(predicate::str::contains("Fun")
-            .or(predicate::str::contains("Function")));
+        .stdout(predicate::str::contains("Fun").or(predicate::str::contains("Function")));
 }
 
 #[test]
@@ -145,9 +131,11 @@ fn cli_parse_shows_binary_operation() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Binary")
-            .or(predicate::str::contains("Add"))
-            .or(predicate::str::contains("+")));
+        .stdout(
+            predicate::str::contains("Binary")
+                .or(predicate::str::contains("Add"))
+                .or(predicate::str::contains("+")),
+        );
 }
 
 // ============================================================================
@@ -177,9 +165,11 @@ fn cli_parse_syntax_error_mentions_parse() {
         .arg(&file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Parse")
-            .or(predicate::str::contains("parse"))
-            .or(predicate::str::contains("error")));
+        .stderr(
+            predicate::str::contains("Parse")
+                .or(predicate::str::contains("parse"))
+                .or(predicate::str::contains("error")),
+        );
 }
 
 #[test]
@@ -214,8 +204,7 @@ fn cli_parse_if_expression() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("If")
-            .or(predicate::str::contains("Conditional")));
+        .stdout(predicate::str::contains("If").or(predicate::str::contains("Conditional")));
 }
 
 #[test]
@@ -232,8 +221,7 @@ fn cli_parse_for_loop() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("For")
-            .or(predicate::str::contains("range")));
+        .stdout(predicate::str::contains("For").or(predicate::str::contains("range")));
 }
 
 #[test]
@@ -323,8 +311,7 @@ fn cli_parse_string_literal() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Hello, World!"))
-        .stdout(predicate::str::contains("String")
-            .or(predicate::str::contains("Literal")));
+        .stdout(predicate::str::contains("String").or(predicate::str::contains("Literal")));
 }
 
 #[test]
@@ -341,6 +328,5 @@ fn cli_parse_multiline_program() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Block")
-            .or(predicate::str::contains("Expr")));
+        .stdout(predicate::str::contains("Block").or(predicate::str::contains("Expr")));
 }

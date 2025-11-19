@@ -104,7 +104,8 @@ fn parse_and_find_tests(
     }
 
     let mut parser = Parser::new(test_content);
-    let ast = parser.parse()
+    let ast = parser
+        .parse()
         .with_context(|| format!("Failed to parse test file: {}", test_file.display()))?;
 
     let test_functions = extract_test_functions(&ast)?;

@@ -43,11 +43,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should run successfully
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 2: Split with iteration
@@ -68,11 +64,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 3: Split with indexing
@@ -92,11 +84,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 4: Split in compiled binary
@@ -142,11 +130,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 6: Split with different delimiters
@@ -169,11 +153,7 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 7: Baseline - builtin functions work
@@ -193,11 +173,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Other string methods should work NOW
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 // ==================== GREEN PHASE SUMMARY ====================

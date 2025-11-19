@@ -108,7 +108,10 @@ println!("{}", msg)
         .assert()
         .success();
 
-    assert!(output.exists(), "Binary with multiple macros should compile");
+    assert!(
+        output.exists(),
+        "Binary with multiple macros should compile"
+    );
 }
 
 // ============================================================================

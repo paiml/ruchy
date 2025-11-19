@@ -52,9 +52,7 @@ fun main() {
     assert!(output_binary.exists());
 
     // Verify binary is executable and runs correctly
-    let run_output = std::process::Command::new(&output_binary)
-        .output()
-        .unwrap();
+    let run_output = std::process::Command::new(&output_binary).output().unwrap();
     assert!(run_output.status.success());
     let stdout = String::from_utf8_lossy(&run_output.stdout);
     assert!(stdout.contains("fibonacci(10) = 55"));
@@ -98,9 +96,7 @@ fun main() {
 
     assert!(output_binary.exists());
 
-    let run_output = std::process::Command::new(&output_binary)
-        .output()
-        .unwrap();
+    let run_output = std::process::Command::new(&output_binary).output().unwrap();
     assert!(run_output.status.success());
     let stdout = String::from_utf8_lossy(&run_output.stdout);
     assert!(stdout.contains("3 * 4 = 12"));
@@ -149,9 +145,7 @@ fun main() {
 
     assert!(output_binary.exists());
 
-    let run_output = std::process::Command::new(&output_binary)
-        .output()
-        .unwrap();
+    let run_output = std::process::Command::new(&output_binary).output().unwrap();
     assert!(run_output.status.success());
     let stdout = String::from_utf8_lossy(&run_output.stdout);
     assert!(stdout.contains("Sum: 4950"));
@@ -197,9 +191,7 @@ fun main() {
 
     assert!(output_binary.exists());
 
-    let run_output = std::process::Command::new(&output_binary)
-        .output()
-        .unwrap();
+    let run_output = std::process::Command::new(&output_binary).output().unwrap();
     assert!(run_output.status.success());
     let stdout = String::from_utf8_lossy(&run_output.stdout);
     assert!(stdout.contains("square(42) = 1764"));

@@ -24,11 +24,7 @@ fn test_format_preserves_fun_keyword() {
     fs::write(&file, "fun greet(name) { println(\"Hello, {}\", name) }").unwrap();
 
     // Format the file
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     // Read back and verify `fun` is preserved (not converted to `fn`)
     let content = fs::read_to_string(&file).unwrap();
@@ -58,11 +54,7 @@ fun greet(name) { println("Hello, {}", name) }
     )
     .unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     let content = fs::read_to_string(&file).unwrap();
 
@@ -96,11 +88,7 @@ fun outer() {
     )
     .unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     let content = fs::read_to_string(&file).unwrap();
 
@@ -124,17 +112,9 @@ fn test_format_typed_functions_preserve_fun() {
     let temp = TempDir::new().unwrap();
     let file = temp.path().join("test.ruchy");
 
-    fs::write(
-        &file,
-        "fun add(a: Int, b: Int) -> Int { a + b }",
-    )
-    .unwrap();
+    fs::write(&file, "fun add(a: Int, b: Int) -> Int { a + b }").unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     let content = fs::read_to_string(&file).unwrap();
 
@@ -163,11 +143,7 @@ let result = double(21)
     )
     .unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     let content = fs::read_to_string(&file).unwrap();
 
@@ -208,11 +184,7 @@ impl Compiler {
     )
     .unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&file).assert().success();
 
     let content = fs::read_to_string(&file).unwrap();
 

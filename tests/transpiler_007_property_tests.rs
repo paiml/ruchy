@@ -9,9 +9,7 @@ use ruchy::{compile, Parser, Transpiler};
 /// Helper: Transpile Ruchy code to Rust
 fn transpile_code(code: &str) -> Result<String, String> {
     let mut parser = Parser::new(code);
-    let ast = parser
-        .parse()
-        .map_err(|e| format!("Parse error: {e:?}"))?;
+    let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
 
     let mut transpiler = Transpiler::new();
     let tokens = transpiler
@@ -90,7 +88,8 @@ fun test_func() -> [{ty}] {{
         // Count occurrences of Vec<T> (with or without spaces)
         let expected_vec = format!("Vec<{ty}>");
         let expected_spaced = format!("Vec < {ty} >");
-        let count = result.matches(&expected_vec).count() + result.matches(&expected_spaced).count();
+        let count =
+            result.matches(&expected_vec).count() + result.matches(&expected_spaced).count();
 
         // Should have at least 3 occurrences (one for each empty vec)
         assert!(
@@ -210,10 +209,7 @@ fun test() -> [i32] {
     let result1 = transpile_code(code).expect("First transpilation");
     let result2 = transpile_code(code).expect("Second transpilation");
 
-    assert_eq!(
-        result1, result2,
-        "Transpilation should be deterministic"
-    );
+    assert_eq!(result1, result2, "Transpilation should be deterministic");
 }
 
 // ============================================================================
@@ -400,8 +396,24 @@ fun {func_name}() -> [{ty}] {{
 fn property_deep_nesting() {
     // Test up to 3 levels of nesting
     let test_cases = vec![
-        ("[[i32]]", vec!["Vec<Vec<i32>>", "Vec < Vec < i32 > >", "Vec<Vec < i32 >>", "Vec < Vec<i32> >"]),
-        ("[[[i32]]]", vec!["Vec<Vec<Vec<i32>>>", "Vec < Vec < Vec < i32 > > >", "Vec<Vec<Vec < i32 >>>", "Vec<Vec < Vec<i32> >>"]),
+        (
+            "[[i32]]",
+            vec![
+                "Vec<Vec<i32>>",
+                "Vec < Vec < i32 > >",
+                "Vec<Vec < i32 >>",
+                "Vec < Vec<i32> >",
+            ],
+        ),
+        (
+            "[[[i32]]]",
+            vec![
+                "Vec<Vec<Vec<i32>>>",
+                "Vec < Vec < Vec < i32 > > >",
+                "Vec<Vec<Vec < i32 >>>",
+                "Vec<Vec < Vec<i32> >>",
+            ],
+        ),
     ];
 
     for (ruchy_type, expected_variants) in test_cases {
@@ -417,7 +429,9 @@ fun test() -> {ruchy_type} {{
         let result = transpile_code(&code).expect("Should transpile");
 
         // Check for any expected type variant
-        let has_type = expected_variants.iter().any(|variant| result.contains(variant));
+        let has_type = expected_variants
+            .iter()
+            .any(|variant| result.contains(variant));
 
         assert!(
             has_type,

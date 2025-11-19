@@ -115,8 +115,14 @@ fn test_tool_transpile_generates_rust_from_complete_grammar() {
 
     // Verify Rust file contains expected code
     let rust_code = fs::read_to_string(&rust_file).unwrap();
-    assert!(rust_code.contains("fn foo()"), "Rust code should contain foo function");
-    assert!(rust_code.contains("fn main()"), "Rust code should contain main function");
+    assert!(
+        rust_code.contains("fn foo()"),
+        "Rust code should contain foo function"
+    );
+    assert!(
+        rust_code.contains("fn main()"),
+        "Rust code should contain main function"
+    );
 }
 
 #[test]
@@ -288,9 +294,24 @@ fn test_property_roundtrip_coverage() {
 
     // Verify it contains expected tests
     let content = fs::read_to_string(property_file).unwrap();
-    assert!(content.contains("prop_literal_roundtrip"), "Should have literal roundtrip test");
-    assert!(content.contains("prop_binary_roundtrip"), "Should have binary roundtrip test");
-    assert!(content.contains("prop_simple_expr_roundtrip"), "Should have simple expr roundtrip test");
-    assert!(content.contains("prop_formatting_deterministic"), "Should have deterministic test");
-    assert!(content.contains("prop_double_roundtrip_stabilizes"), "Should have stabilization test");
+    assert!(
+        content.contains("prop_literal_roundtrip"),
+        "Should have literal roundtrip test"
+    );
+    assert!(
+        content.contains("prop_binary_roundtrip"),
+        "Should have binary roundtrip test"
+    );
+    assert!(
+        content.contains("prop_simple_expr_roundtrip"),
+        "Should have simple expr roundtrip test"
+    );
+    assert!(
+        content.contains("prop_formatting_deterministic"),
+        "Should have deterministic test"
+    );
+    assert!(
+        content.contains("prop_double_roundtrip_stabilizes"),
+        "Should have stabilization test"
+    );
 }

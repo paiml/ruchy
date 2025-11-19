@@ -104,18 +104,18 @@ fn test_opt_global_001_05_benchmark_baseline() {
     let start = Instant::now();
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("transpile")
-        .arg("-")
-        .write_stdin(code.to_string());
+    cmd.arg("transpile").arg("-").write_stdin(code.to_string());
 
     cmd.assert().success();
 
     let duration = start.elapsed();
 
     // Store baseline for comparison (should be < 100ms)
-    assert!(duration.as_millis() < 100,
+    assert!(
+        duration.as_millis() < 100,
         "Baseline transpilation should complete quickly, took {}ms",
-        duration.as_millis());
+        duration.as_millis()
+    );
 }
 
 /// Test 6: Statistical validation - collect N=30 runs
@@ -143,12 +143,14 @@ fn test_opt_global_001_06_statistical_validation_baseline() {
 
     // Calculate mean and standard deviation
     let mean: f64 = timings.iter().map(|&t| t as f64).sum::<f64>() / 30.0;
-    let variance: f64 = timings.iter()
+    let variance: f64 = timings
+        .iter()
         .map(|&t| {
             let diff = t as f64 - mean;
             diff * diff
         })
-        .sum::<f64>() / 29.0; // N-1 for sample variance
+        .sum::<f64>()
+        / 29.0; // N-1 for sample variance
     let std_dev = variance.sqrt();
 
     println!("Baseline: Mean={mean}μs, StdDev={std_dev}μs");
@@ -159,8 +161,10 @@ fn test_opt_global_001_06_statistical_validation_baseline() {
 
     // Baseline should be stable (CV < 10%)
     let cv = (std_dev / mean) * 100.0;
-    assert!(cv < 10.0,
-        "Baseline coefficient of variation too high: {cv:.2}% (expected < 10%)");
+    assert!(
+        cv < 10.0,
+        "Baseline coefficient of variation too high: {cv:.2}% (expected < 10%)"
+    );
 }
 
 /// Test 7: PGO speedup validation (requires baseline)
@@ -198,6 +202,8 @@ fn test_opt_global_001_07_pgo_speedup_validation() {
     println!("PGO: Mean={pgo_mean}μs, Speedup={speedup:.2}%");
 
     // PGO should provide ≥15% speedup (spec target: 15-30%)
-    assert!(speedup >= 15.0,
-        "PGO speedup {speedup:.2}% below target (expected ≥15%)");
+    assert!(
+        speedup >= 15.0,
+        "PGO speedup {speedup:.2}% below target (expected ≥15%)"
+    );
 }

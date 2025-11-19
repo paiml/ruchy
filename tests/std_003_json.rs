@@ -81,11 +81,11 @@ fn test_std_003_parse_invalid_json() {
     // STD-003: Test parsing invalid JSON returns error
 
     let invalid_cases = vec![
-        "",                    // Empty
-        "{",                   // Incomplete object
-        "[1, 2,",              // Incomplete array
-        r#"{"key": }"#,        // Missing value
-        "undefined",           // Invalid literal
+        "",                  // Empty
+        "{",                 // Incomplete object
+        "[1, 2,",            // Incomplete array
+        r#"{"key": }"#,      // Missing value
+        "undefined",         // Invalid literal
         r"{'key': 'value'}", // Single quotes
     ];
 

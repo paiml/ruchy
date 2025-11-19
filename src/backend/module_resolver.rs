@@ -307,7 +307,15 @@ impl ModuleResolver {
     /// Make all functions in an expression tree public (ISSUE-103)
     fn make_functions_public(expr: Expr) -> Expr {
         match expr.kind {
-            ExprKind::Function { name, type_params, params, body, is_async, return_type, .. } => {
+            ExprKind::Function {
+                name,
+                type_params,
+                params,
+                body,
+                is_async,
+                return_type,
+                ..
+            } => {
                 Expr::new(
                     ExprKind::Function {
                         name,
@@ -316,7 +324,7 @@ impl ModuleResolver {
                         body,
                         is_async,
                         return_type,
-                        is_pub: true,  // Force all module functions to be public
+                        is_pub: true, // Force all module functions to be public
                     },
                     expr.span,
                 )
@@ -677,7 +685,9 @@ mod tests {
                 assert_eq!(name, "math");
                 // Verify the module body contains the function
                 match &body.kind {
-                    ExprKind::Function { name: func_name, .. } => {
+                    ExprKind::Function {
+                        name: func_name, ..
+                    } => {
                         assert_eq!(func_name, "add");
                     }
                     _ => panic!("Expected function in module body, got {:?}", body.kind),

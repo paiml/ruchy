@@ -9,7 +9,7 @@ use predicates::prelude::*;
 #[test]
 fn test_issue_119_println_side_effects_evaluated_once() {
     // RED: This test MUST fail - println() evaluates arguments TWICE
-    
+
     let script = r"
 let mut counter = 0
 
@@ -39,22 +39,22 @@ println(counter)      // Expect: 3, Actual: 6 ❌
 
     // Expected output if side-effects evaluated ONCE
     let expected_lines = ["1", "2", "3", "3"];
-    
+
     // Actual buggy output (side-effects evaluated TWICE)
     let actual_lines: Vec<&str> = stdout.trim().lines().collect();
 
-    assert!(actual_lines != ["2", "4", "6", "6"], 
-            "BUG DETECTED: Side-effects evaluated TWICE!\n\
+    assert!(
+        actual_lines != ["2", "4", "6", "6"],
+        "BUG DETECTED: Side-effects evaluated TWICE!\n\
              Expected: {expected_lines:?} (each increment() called once)\n\
              Actual: {actual_lines:?} (each increment() called twice)\n\
              \n\
              Full output:\n{stdout}\n"
-        );
+    );
 
     // Test passes when output is correct
     assert_eq!(
-        actual_lines,
-        expected_lines,
+        actual_lines, expected_lines,
         "increment() should be called exactly once per println()"
     );
 }
@@ -62,7 +62,7 @@ println(counter)      // Expect: 3, Actual: 6 ❌
 #[test]
 fn test_issue_119_variable_assignment_no_double_eval() {
     // Baseline: Variable assignment should NOT double-evaluate
-    
+
     let script = r"
 let mut counter = 0
 

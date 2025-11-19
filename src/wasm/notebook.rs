@@ -5617,8 +5617,11 @@ mod tests {
         // Verify features have valid support flags (at least one should be true)
         for feature in &features {
             // Each feature should have at least native OR wasm support
-            assert!(feature.native_support || feature.wasm_support,
-                "Feature '{}' must have at least one support flag", feature.feature);
+            assert!(
+                feature.native_support || feature.wasm_support,
+                "Feature '{}' must have at least one support flag",
+                feature.feature
+            );
         }
     }
 

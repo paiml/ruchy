@@ -316,5 +316,8 @@ fn test_issue_105_dataflow_debug_all_flags() {
         .assert()
         .success();
 
-    assert!(output.exists(), "Comprehensive debug output should be created");
+    assert!(
+        output.exists(),
+        "Comprehensive debug output should be created"
+    );
 }

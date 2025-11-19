@@ -114,7 +114,9 @@ fn test_eval_verbose_long() {
         .arg("--verbose")
         .assert()
         .success()
-        .stderr(predicate::str::contains("Parsing expression: println(21 + 21)"))
+        .stderr(predicate::str::contains(
+            "Parsing expression: println(21 + 21)",
+        ))
         .stderr(predicate::str::contains("Evaluation successful"));
 }
 
@@ -319,11 +321,7 @@ fn test_eval_whitespace_only() {
 
 #[test]
 fn test_eval_syntax_error() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("let x = ")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg("let x = ").assert().failure();
 }
 
 #[test]
@@ -391,8 +389,11 @@ fn test_property_vm_mode_equivalence() {
         .clone();
 
     // Both should produce identical output
-    assert_eq!(ast_output, bytecode_output,
+    assert_eq!(
+        ast_output,
+        bytecode_output,
         "VM modes produced different output: ast={:?}, bytecode={:?}",
         String::from_utf8_lossy(&ast_output),
-        String::from_utf8_lossy(&bytecode_output));
+        String::from_utf8_lossy(&bytecode_output)
+    );
 }

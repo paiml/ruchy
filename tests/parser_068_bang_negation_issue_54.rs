@@ -272,11 +272,7 @@ fn test_parser_068_actor_send_adjacent() {
         }
     ";
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 /// Test basic negation with multiple variables

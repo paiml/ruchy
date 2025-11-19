@@ -219,12 +219,8 @@ let zipped = zip(a, b)
 println("zipped: {:?}", zipped)
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
-        // Just verify it runs - exact format depends on tuple representation
+    ruchy_cmd().arg("-e").arg(code).assert().success();
+    // Just verify it runs - exact format depends on tuple representation
 }
 
 #[test]
@@ -236,12 +232,8 @@ let zipped = zip(a, b)
 println("zipped: {:?}", zipped)
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
-        // Should zip up to min length (3 pairs)
+    ruchy_cmd().arg("-e").arg(code).assert().success();
+    // Should zip up to min length (3 pairs)
 }
 
 // ============================================================================
@@ -256,12 +248,8 @@ let indexed = enumerate(arr)
 println("indexed: {:?}", indexed)
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
-        // Just verify it runs - exact format depends on tuple representation
+    ruchy_cmd().arg("-e").arg(code).assert().success();
+    // Just verify it runs - exact format depends on tuple representation
 }
 
 // ============================================================================
@@ -280,7 +268,9 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -303,7 +293,9 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -325,7 +317,9 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()

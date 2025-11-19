@@ -43,8 +43,15 @@ fn test_defect_struct_001_simple_field_mutation() {
     ";
 
     let result = execute_ruchy(code);
-    assert!(result.is_ok(), "Struct field mutation should work: {result:?}");
-    assert_eq!(result.unwrap(), Value::Integer(5), "Field should be mutated to 5");
+    assert!(
+        result.is_ok(),
+        "Struct field mutation should work: {result:?}"
+    );
+    assert_eq!(
+        result.unwrap(),
+        Value::Integer(5),
+        "Field should be mutated to 5"
+    );
 }
 
 #[test]
@@ -59,7 +66,11 @@ fn test_defect_struct_001_field_increment() {
 
     let result = execute_ruchy(code);
     assert!(result.is_ok(), "Field increment should work: {result:?}");
-    assert_eq!(result.unwrap(), Value::Integer(1), "Field should be incremented to 1");
+    assert_eq!(
+        result.unwrap(),
+        Value::Integer(1),
+        "Field should be incremented to 1"
+    );
 }
 
 #[test]
@@ -75,7 +86,11 @@ fn test_defect_struct_001_multiple_mutations() {
 
     let result = execute_ruchy(code);
     assert!(result.is_ok(), "Multiple mutations should work: {result:?}");
-    assert_eq!(result.unwrap(), Value::Integer(6), "Final value should be 6");
+    assert_eq!(
+        result.unwrap(),
+        Value::Integer(6),
+        "Final value should be 6"
+    );
 }
 
 #[test]
@@ -89,7 +104,11 @@ fn test_defect_struct_001_field_access_still_works() {
 
     let result = execute_ruchy(code);
     assert!(result.is_ok(), "Field access should still work: {result:?}");
-    assert_eq!(result.unwrap(), Value::Integer(42), "Field access should return 42");
+    assert_eq!(
+        result.unwrap(),
+        Value::Integer(42),
+        "Field access should return 42"
+    );
 }
 
 #[test]
@@ -104,7 +123,10 @@ fn test_defect_struct_001_multiple_fields() {
     ";
 
     let result = execute_ruchy(code);
-    assert!(result.is_ok(), "Multiple field mutations should work: {result:?}");
+    assert!(
+        result.is_ok(),
+        "Multiple field mutations should work: {result:?}"
+    );
     assert_eq!(result.unwrap(), Value::Integer(40), "x + y should be 40");
 }
 

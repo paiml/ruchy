@@ -9,9 +9,13 @@ use ruchy::runtime::{Interpreter, Value};
 
 /// Helper to parse and execute Ruchy code
 fn run_ruchy(code: &str) -> Result<Value, String> {
-    let ast = Parser::new(code).parse().map_err(|e| format!("Parse error: {e:?}"))?;
+    let ast = Parser::new(code)
+        .parse()
+        .map_err(|e| format!("Parse error: {e:?}"))?;
     let mut interpreter = Interpreter::new();
-    interpreter.eval_expr(&ast).map_err(|e| format!("Runtime error: {e}"))
+    interpreter
+        .eval_expr(&ast)
+        .map_err(|e| format!("Runtime error: {e}"))
 }
 
 #[test]
@@ -63,7 +67,11 @@ fn test_runtime_062_03_vec_macro_multiple_elements() {
 
     match result.unwrap() {
         Value::Array(arr) => {
-            assert_eq!(arr.len(), 3, "vec![1, 2, 3] should create array with 3 elements");
+            assert_eq!(
+                arr.len(),
+                3,
+                "vec![1, 2, 3] should create array with 3 elements"
+            );
             assert_eq!(arr[0], Value::Integer(1));
             assert_eq!(arr[1], Value::Integer(2));
             assert_eq!(arr[2], Value::Integer(3));
@@ -164,9 +172,9 @@ fn test_runtime_062_07_vec_macro_with_expressions() {
     match result.unwrap() {
         Value::Array(arr) => {
             assert_eq!(arr.len(), 3);
-            assert_eq!(arr[0], Value::Integer(2));   // 1 + 1
-            assert_eq!(arr[1], Value::Integer(6));   // 2 * 3
-            assert_eq!(arr[2], Value::Integer(5));   // 10 - 5
+            assert_eq!(arr[0], Value::Integer(2)); // 1 + 1
+            assert_eq!(arr[1], Value::Integer(6)); // 2 * 3
+            assert_eq!(arr[2], Value::Integer(5)); // 10 - 5
         }
         other => panic!("Expected Array, got: {other:?}"),
     }
@@ -186,7 +194,7 @@ fn test_runtime_062_08_vec_macro_github_issue_reproduction() {
 
     // Verify it's an array (not "Expression type not yet implemented" error)
     match result.unwrap() {
-        Value::Array(_) => {}, // Success
+        Value::Array(_) => {} // Success
         other => panic!("Expected Array for GitHub Issue #62 case, got: {other:?}"),
     }
 }

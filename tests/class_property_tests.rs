@@ -8,7 +8,6 @@
 ///
 /// Run with: cargo test --test `class_property_tests` -- --ignored --nocapture
 /// This will execute 10 properties × 10,000 cases = 100,000 test cases
-
 mod properties;
 
 #[cfg(test)]

@@ -111,7 +111,10 @@ fn try_eval_math_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
 /// Basic math functions (sqrt, pow, abs, min, max)
 /// Basic math functions - Part 1
 /// Complexity: 4 (within Toyota Way limits)
-fn try_eval_basic_math_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_basic_math_part1(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_sqrt__" => Ok(Some(eval_sqrt(args)?)),
         "__builtin_pow__" => Ok(Some(eval_pow(args)?)),
@@ -122,7 +125,10 @@ fn try_eval_basic_math_part1(name: &str, args: &[Value]) -> Result<Option<Value>
 
 /// Basic math functions - Part 2
 /// Complexity: 3 (within Toyota Way limits)
-fn try_eval_basic_math_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_basic_math_part2(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_min__" => Ok(Some(eval_min(args)?)),
         "__builtin_max__" => Ok(Some(eval_max(args)?)),
@@ -141,7 +147,10 @@ fn try_eval_basic_math(name: &str, args: &[Value]) -> Result<Option<Value>, Inte
 
 /// Advanced math functions - Part 1 (rounding)
 /// Complexity: 4 (within Toyota Way limits)
-fn try_eval_advanced_math_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_advanced_math_part1(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_floor__" => Ok(Some(eval_floor(args)?)),
         "__builtin_ceil__" => Ok(Some(eval_ceil(args)?)),
@@ -152,7 +161,10 @@ fn try_eval_advanced_math_part1(name: &str, args: &[Value]) -> Result<Option<Val
 
 /// Advanced math functions - Part 2 (trigonometry)
 /// Complexity: 4 (within Toyota Way limits)
-fn try_eval_advanced_math_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_advanced_math_part2(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_sin__" => Ok(Some(eval_sin(args)?)),
         "__builtin_cos__" => Ok(Some(eval_cos(args)?)),
@@ -163,7 +175,10 @@ fn try_eval_advanced_math_part2(name: &str, args: &[Value]) -> Result<Option<Val
 
 /// Advanced math functions - Part 3 (logarithms and random) - STDLIB-002
 /// Complexity: 4 (within Toyota Way limits)
-fn try_eval_advanced_math_part3(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_advanced_math_part3(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_log__" => Ok(Some(eval_log(args)?)),
         "__builtin_log10__" => Ok(Some(eval_log10(args)?)),
@@ -574,7 +589,7 @@ fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_log(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("log", args, 1)?;
     match &args[0] {
-        Value::Integer(n) => Ok(Value::Float((*n as f64).ln())),  // Wraps Rust f64::ln
+        Value::Integer(n) => Ok(Value::Float((*n as f64).ln())), // Wraps Rust f64::ln
         Value::Float(f) => Ok(Value::Float(f.ln())),
         _ => Err(InterpreterError::RuntimeError(
             "log() expects a number".to_string(),
@@ -589,7 +604,7 @@ fn eval_log(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_log10(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("log10", args, 1)?;
     match &args[0] {
-        Value::Integer(n) => Ok(Value::Float((*n as f64).log10())),  // Wraps Rust f64::log10
+        Value::Integer(n) => Ok(Value::Float((*n as f64).log10())), // Wraps Rust f64::log10
         Value::Float(f) => Ok(Value::Float(f.log10())),
         _ => Err(InterpreterError::RuntimeError(
             "log10() expects a number".to_string(),
@@ -606,7 +621,7 @@ fn eval_random(args: &[Value]) -> Result<Value, InterpreterError> {
     // Wraps Rust rand::random (zero-cost abstraction)
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    Ok(Value::Float(rng.gen::<f64>()))  // Returns [0.0, 1.0)
+    Ok(Value::Float(rng.gen::<f64>())) // Returns [0.0, 1.0)
 }
 
 /// Length of collections and strings
@@ -1335,9 +1350,7 @@ fn eval_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("env_args", args, 0)?;
 
     // Get command-line arguments
-    let cmd_args: Vec<Value> = std::env::args()
-        .map(Value::from_string)
-        .collect();
+    let cmd_args: Vec<Value> = std::env::args().map(Value::from_string).collect();
 
     Ok(Value::from_array(cmd_args))
 }
@@ -1432,9 +1445,9 @@ fn eval_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match std::env::current_dir() {
         Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
-        Err(e) => Err(InterpreterError::RuntimeError(
-            format!("Failed to get current directory: {e}"),
-        )),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "Failed to get current directory: {e}"
+        ))),
     }
 }
 
@@ -1447,9 +1460,9 @@ fn eval_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::env::set_current_dir(path.as_ref()) {
             Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(
-                format!("Failed to set current directory: {e}"),
-            )),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to set current directory: {e}"
+            ))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "env_set_current_dir() expects a string argument".to_string(),
@@ -1504,13 +1517,11 @@ fn eval_read_file_unwrapped(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("read_file", args, 1)?;
 
     match &args[0] {
-        Value::String(path) => {
-            std::fs::read_to_string(path.as_ref())
-                .map(Value::from_string)
-                .map_err(|e| InterpreterError::RuntimeError(
-                    format!("Failed to read file '{path}': {e}")
-                ))
-        },
+        Value::String(path) => std::fs::read_to_string(path.as_ref())
+            .map(Value::from_string)
+            .map_err(|e| {
+                InterpreterError::RuntimeError(format!("Failed to read file '{path}': {e}"))
+            }),
         _ => Err(InterpreterError::RuntimeError(
             "read_file() expects a string argument".to_string(),
         )),
@@ -1538,7 +1549,7 @@ fn eval_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
                     data: Some(vec![Value::from_string(e.to_string())]),
                 }),
             }
-        },
+        }
         _ => Err(InterpreterError::RuntimeError(
             "fs_write() expects two string arguments".to_string(),
         )),
@@ -1570,11 +1581,15 @@ fn eval_append_file(args: &[Value]) -> Result<Value, InterpreterError> {
             {
                 Ok(mut file) => match file.write_all(content.as_bytes()) {
                     Ok(()) => Ok(Value::Nil),
-                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to append to file: {e}"))),
+                    Err(e) => Err(InterpreterError::RuntimeError(format!(
+                        "Failed to append to file: {e}"
+                    ))),
                 },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to open file for append: {e}"))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to open file for append: {e}"
+                ))),
             }
-        },
+        }
         _ => Err(InterpreterError::RuntimeError(
             "append_file() expects two string arguments".to_string(),
         )),
@@ -1686,8 +1701,8 @@ fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[0] {
         Value::String(path) => {
-            use walkdir::WalkDir;
             use std::collections::HashMap;
+            use walkdir::WalkDir;
 
             let entries: Vec<Value> = WalkDir::new(path.as_ref())
                 .into_iter()
@@ -1696,40 +1711,41 @@ fn eval_walk(args: &[Value]) -> Result<Value, InterpreterError> {
                     let mut fields = HashMap::new();
 
                     // path: Full path as string
-                    fields.insert("path".to_string(), Value::String(
-                        entry.path().display().to_string().into()
-                    ));
+                    fields.insert(
+                        "path".to_string(),
+                        Value::String(entry.path().display().to_string().into()),
+                    );
 
                     // name: File name only
-                    fields.insert("name".to_string(), Value::String(
-                        entry.file_name().to_string_lossy().to_string().into()
-                    ));
+                    fields.insert(
+                        "name".to_string(),
+                        Value::String(entry.file_name().to_string_lossy().to_string().into()),
+                    );
 
                     // is_file: Boolean
-                    fields.insert("is_file".to_string(), Value::from_bool(
-                        entry.file_type().is_file()
-                    ));
+                    fields.insert(
+                        "is_file".to_string(),
+                        Value::from_bool(entry.file_type().is_file()),
+                    );
 
                     // is_dir: Boolean
-                    fields.insert("is_dir".to_string(), Value::from_bool(
-                        entry.file_type().is_dir()
-                    ));
+                    fields.insert(
+                        "is_dir".to_string(),
+                        Value::from_bool(entry.file_type().is_dir()),
+                    );
 
                     // is_symlink: Boolean
-                    fields.insert("is_symlink".to_string(), Value::from_bool(
-                        entry.file_type().is_symlink()
-                    ));
+                    fields.insert(
+                        "is_symlink".to_string(),
+                        Value::from_bool(entry.file_type().is_symlink()),
+                    );
 
                     // size: File size in bytes (0 for directories)
-                    let size = entry.metadata()
-                        .map(|m| m.len() as i64)
-                        .unwrap_or(0);
+                    let size = entry.metadata().map(|m| m.len() as i64).unwrap_or(0);
                     fields.insert("size".to_string(), Value::Integer(size));
 
                     // depth: Nesting depth (0 = root)
-                    fields.insert("depth".to_string(), Value::Integer(
-                        entry.depth() as i64
-                    ));
+                    fields.insert("depth".to_string(), Value::Integer(entry.depth() as i64));
 
                     Value::Object(Arc::new(fields))
                 })
@@ -1757,16 +1773,14 @@ fn eval_glob(args: &[Value]) -> Result<Value, InterpreterError> {
                 Ok(paths) => {
                     let results: Vec<Value> = paths
                         .filter_map(std::result::Result::ok)
-                        .map(|path| Value::String(
-                            path.display().to_string().into()
-                        ))
+                        .map(|path| Value::String(path.display().to_string().into()))
                         .collect();
 
                     Ok(Value::Array(results.into()))
                 }
-                Err(e) => Err(InterpreterError::RuntimeError(
-                    format!("glob() pattern error: {e}")
-                )),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "glob() pattern error: {e}"
+                ))),
             }
         }
         _ => Err(InterpreterError::RuntimeError(
@@ -1811,9 +1825,9 @@ fn eval_search(args: &[Value]) -> Result<Value, InterpreterError> {
             let re = RegexBuilder::new(pattern.as_ref())
                 .case_insensitive(case_insensitive)
                 .build()
-                .map_err(|e| InterpreterError::RuntimeError(
-                    format!("search() regex error: {e}")
-                ))?;
+                .map_err(|e| {
+                    InterpreterError::RuntimeError(format!("search() regex error: {e}"))
+                })?;
 
             let mut results = Vec::new();
 
@@ -1830,17 +1844,20 @@ fn eval_search(args: &[Value]) -> Result<Value, InterpreterError> {
                         if re.is_match(line) {
                             let mut fields = HashMap::new();
 
-                            fields.insert("path".to_string(), Value::String(
-                                entry.path().display().to_string().into()
-                            ));
+                            fields.insert(
+                                "path".to_string(),
+                                Value::String(entry.path().display().to_string().into()),
+                            );
 
-                            fields.insert("line_num".to_string(), Value::Integer(
-                                (line_num + 1) as i64  // 1-indexed
-                            ));
+                            fields.insert(
+                                "line_num".to_string(),
+                                Value::Integer(
+                                    (line_num + 1) as i64, // 1-indexed
+                                ),
+                            );
 
-                            fields.insert("line".to_string(), Value::String(
-                                line.to_string().into()
-                            ));
+                            fields
+                                .insert("line".to_string(), Value::String(line.to_string().into()));
 
                             results.push(Value::Object(Arc::new(fields)));
                         }
@@ -1966,7 +1983,7 @@ fn eval_walk_parallel(args: &[Value]) -> Result<Value, InterpreterError> {
             let entries: Vec<_> = WalkDir::new(path.as_ref())
                 .into_iter()
                 .filter_map(std::result::Result::ok)
-                .par_bridge()  // Parallel directory walking
+                .par_bridge() // Parallel directory walking
                 .map(|entry: walkdir::DirEntry| {
                     // Extract all data we need (all thread-safe types)
                     let path_str = entry.path().display().to_string();
@@ -1975,7 +1992,10 @@ fn eval_walk_parallel(args: &[Value]) -> Result<Value, InterpreterError> {
                     let is_file = file_type.is_file();
                     let is_dir = file_type.is_dir();
                     let is_symlink = file_type.is_symlink();
-                    let size = entry.metadata().ok().map_or(0, |m: std::fs::Metadata| m.len());
+                    let size = entry
+                        .metadata()
+                        .ok()
+                        .map_or(0, |m: std::fs::Metadata| m.len());
                     let depth = entry.depth();
 
                     (path_str, name_str, is_file, is_dir, is_symlink, size, depth)
@@ -1985,17 +2005,19 @@ fn eval_walk_parallel(args: &[Value]) -> Result<Value, InterpreterError> {
             // Step 2: Serial Value conversion (fast - no I/O)
             let results: Vec<Value> = entries
                 .into_iter()
-                .map(|(path_str, name_str, is_file, is_dir, is_symlink, size, depth)| {
-                    let mut fields = HashMap::new();
-                    fields.insert("path".to_string(), Value::String(path_str.into()));
-                    fields.insert("name".to_string(), Value::String(name_str.into()));
-                    fields.insert("is_file".to_string(), Value::Bool(is_file));
-                    fields.insert("is_dir".to_string(), Value::Bool(is_dir));
-                    fields.insert("is_symlink".to_string(), Value::Bool(is_symlink));
-                    fields.insert("size".to_string(), Value::Integer(size as i64));
-                    fields.insert("depth".to_string(), Value::Integer(depth as i64));
-                    Value::Object(Arc::new(fields))
-                })
+                .map(
+                    |(path_str, name_str, is_file, is_dir, is_symlink, size, depth)| {
+                        let mut fields = HashMap::new();
+                        fields.insert("path".to_string(), Value::String(path_str.into()));
+                        fields.insert("name".to_string(), Value::String(name_str.into()));
+                        fields.insert("is_file".to_string(), Value::Bool(is_file));
+                        fields.insert("is_dir".to_string(), Value::Bool(is_dir));
+                        fields.insert("is_symlink".to_string(), Value::Bool(is_symlink));
+                        fields.insert("size".to_string(), Value::Integer(size as i64));
+                        fields.insert("depth".to_string(), Value::Integer(depth as i64));
+                        Value::Object(Arc::new(fields))
+                    },
+                )
                 .collect();
 
             Ok(Value::Array(results.into()))
@@ -2050,9 +2072,11 @@ fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(from), Value::String(to)) => {
             match std::fs::copy(from.as_ref(), to.as_ref()) {
                 Ok(_) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {e}"))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to copy file: {e}"
+                ))),
             }
-        },
+        }
         _ => Err(InterpreterError::RuntimeError(
             "fs_copy() expects two string arguments".to_string(),
         )),
@@ -2069,9 +2093,11 @@ fn eval_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(from), Value::String(to)) => {
             match std::fs::rename(from.as_ref(), to.as_ref()) {
                 Ok(()) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {e}"))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to rename file: {e}"
+                ))),
             }
-        },
+        }
         _ => Err(InterpreterError::RuntimeError(
             "fs_rename() expects two string arguments".to_string(),
         )),
@@ -2092,8 +2118,10 @@ fn eval_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
                 map.insert("is_dir".to_string(), Value::Bool(meta.is_dir()));
                 map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
                 Ok(Value::Object(Arc::new(map)))
-            },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {e}"))),
+            }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to get metadata: {e}"
+            ))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_metadata() expects a string argument".to_string(),
@@ -2115,8 +2143,10 @@ fn eval_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
                     .map(|e| Value::from_string(e.path().display().to_string()))
                     .collect();
                 Ok(Value::Array(paths.into()))
-            },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
+            }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to read directory: {e}"
+            ))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_read_dir() expects a string argument".to_string(),
@@ -2133,7 +2163,9 @@ fn eval_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.display().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to canonicalize path: {e}"
+            ))),
         },
         _ => Err(InterpreterError::RuntimeError(
             "fs_canonicalize() expects a string argument".to_string(),
@@ -2222,10 +2254,7 @@ fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, Inter
 
 /// Dispatcher for file system functions
 /// Complexity: 5 (within Toyota Way limits)
-fn try_eval_fs_function(
-    name: &str,
-    args: &[Value],
-) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_fs_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     if let Some(result) = try_eval_fs_part1(name, args)? {
         return Ok(Some(result));
     }
@@ -2235,7 +2264,7 @@ fn try_eval_fs_function(
     if let Some(result) = try_eval_fs_part3(name, args)? {
         return Ok(Some(result));
     }
-    try_eval_stdlib003(name, args)  // STDLIB-003: User-friendly aliases
+    try_eval_stdlib003(name, args) // STDLIB-003: User-friendly aliases
 }
 
 // ==================== PATH FUNCTIONS ====================
@@ -2252,19 +2281,27 @@ fn eval_path_join(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(base), Value::String(component)) => {
             let path = std::path::Path::new(base.as_ref()).join(component.as_ref());
             Ok(Value::from_string(path.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_join() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_join() expects two string arguments".to_string(),
+        )),
     }
 }
 
 /// Helper: Build path from array of string components
 /// Complexity: 3 (extracted to reduce nesting)
-fn build_path_from_value_components(components: &[Value]) -> Result<std::path::PathBuf, InterpreterError> {
+fn build_path_from_value_components(
+    components: &[Value],
+) -> Result<std::path::PathBuf, InterpreterError> {
     let mut path = std::path::PathBuf::new();
     for component in components {
         match component {
             Value::String(s) => path.push(s.as_ref()),
-            _ => return Err(InterpreterError::RuntimeError("path_join_many() expects array of strings".to_string())),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "path_join_many() expects array of strings".to_string(),
+                ))
+            }
         }
     }
     Ok(path)
@@ -2278,8 +2315,10 @@ fn eval_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Array(components) => {
             let path = build_path_from_value_components(components)?;
             Ok(Value::from_string(path.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_join_many() expects an array argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_join_many() expects an array argument".to_string(),
+        )),
     }
 }
 
@@ -2294,8 +2333,10 @@ fn eval_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(parent) => Ok(Value::from_string(parent.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_parent() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_parent() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2310,8 +2351,10 @@ fn eval_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(name) => Ok(Value::from_string(name.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_file_name() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_file_name() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2326,8 +2369,10 @@ fn eval_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(stem) => Ok(Value::from_string(stem.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_file_stem() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_file_stem() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2342,8 +2387,10 @@ fn eval_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(ext) => Ok(Value::from_string(ext.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_extension() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_extension() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2352,8 +2399,12 @@ fn eval_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_is_absolute", args, 1)?;
     match &args[0] {
-        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_absolute())),
-        _ => Err(InterpreterError::RuntimeError("path_is_absolute() expects a string argument".to_string())),
+        Value::String(path) => Ok(Value::Bool(
+            std::path::Path::new(path.as_ref()).is_absolute(),
+        )),
+        _ => Err(InterpreterError::RuntimeError(
+            "path_is_absolute() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2362,8 +2413,12 @@ fn eval_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_path_is_relative(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("path_is_relative", args, 1)?;
     match &args[0] {
-        Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_relative())),
-        _ => Err(InterpreterError::RuntimeError("path_is_relative() expects a string argument".to_string())),
+        Value::String(path) => Ok(Value::Bool(
+            std::path::Path::new(path.as_ref()).is_relative(),
+        )),
+        _ => Err(InterpreterError::RuntimeError(
+            "path_is_relative() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2374,9 +2429,13 @@ fn eval_path_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to canonicalize path: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("path_canonicalize() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "path_canonicalize() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2388,8 +2447,10 @@ fn eval_path_with_extension(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(path), Value::String(ext)) => {
             let p = std::path::Path::new(path.as_ref()).with_extension(ext.as_ref());
             Ok(Value::from_string(p.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_with_extension() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_with_extension() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -2401,8 +2462,10 @@ fn eval_path_with_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
         (Value::String(path), Value::String(name)) => {
             let p = std::path::Path::new(path.as_ref()).with_file_name(name.as_ref());
             Ok(Value::from_string(p.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_with_file_name() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_with_file_name() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -2413,12 +2476,15 @@ fn eval_path_components(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => {
             let p = std::path::Path::new(path.as_ref());
-            let components: Vec<Value> = p.components()
+            let components: Vec<Value> = p
+                .components()
                 .map(|c| Value::from_string(c.as_os_str().to_string_lossy().to_string()))
                 .collect();
             Ok(Value::Array(components.into()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_components() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_components() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2432,14 +2498,18 @@ fn eval_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
             let mut normalized = std::path::PathBuf::new();
             for component in p.components() {
                 match component {
-                    std::path::Component::CurDir => {},
-                    std::path::Component::ParentDir => { normalized.pop(); },
+                    std::path::Component::CurDir => {}
+                    std::path::Component::ParentDir => {
+                        normalized.pop();
+                    }
                     _ => normalized.push(component),
                 }
             }
             Ok(Value::from_string(normalized.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_normalize() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_normalize() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2490,10 +2560,7 @@ fn try_eval_path_part3b(name: &str, args: &[Value]) -> Result<Option<Value>, Int
 
 /// Dispatcher for path functions
 /// Complexity: 4 (loop pattern reduces cognitive load)
-fn try_eval_path_function(
-    name: &str,
-    args: &[Value],
-) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_path_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
         try_eval_path_part1,
         try_eval_path_part2,
@@ -2523,7 +2590,9 @@ fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_parse", args, 1)?;
     match &args[0] {
         Value::String(s) => parse_json_string_to_value(s),
-        _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "json_parse() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2532,7 +2601,9 @@ fn eval_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 fn parse_json_string_to_value(s: &str) -> Result<Value, InterpreterError> {
     match serde_json::from_str::<serde_json::Value>(s) {
         Ok(json) => Ok(json_to_ruchy_value(json)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "JSON parse error: {e}"
+        ))),
     }
 }
 
@@ -2591,22 +2662,24 @@ fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
         Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
         Value::Array(arr) => convert_ruchy_array_to_json(arr),
         Value::Object(map) => convert_ruchy_object_to_json(map),
-        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {value:?} to JSON"))),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Cannot convert {value:?} to JSON"
+        ))),
     }
 }
 
 /// Convert Ruchy array to JSON array
 /// Complexity: 2 (map + collect with error handling)
 fn convert_ruchy_array_to_json(arr: &[Value]) -> Result<serde_json::Value, InterpreterError> {
-    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
-        .map(value_to_json)
-        .collect();
+    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter().map(value_to_json).collect();
     Ok(serde_json::Value::Array(json_arr?))
 }
 
 /// Convert Ruchy object to JSON object
 /// Complexity: 3 (iteration + recursive conversion)
-fn convert_ruchy_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
+fn convert_ruchy_object_to_json(
+    map: &std::collections::HashMap<String, Value>,
+) -> Result<serde_json::Value, InterpreterError> {
     let mut json_obj = serde_json::Map::new();
     for (k, v) in map {
         json_obj.insert(k.clone(), value_to_json(v)?);
@@ -2621,7 +2694,9 @@ fn eval_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
     let json = value_to_json(&args[0])?;
     match serde_json::to_string(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {e}"))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "JSON stringify error: {e}"
+        ))),
     }
 }
 
@@ -2632,7 +2707,9 @@ fn eval_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
     let json = value_to_json(&args[0])?;
     match serde_json::to_string_pretty(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {e}"))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "JSON pretty error: {e}"
+        ))),
     }
 }
 
@@ -2645,8 +2722,10 @@ fn eval_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
             let content = std::fs::read_to_string(path.as_ref())
                 .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {e}")))?;
             eval_json_parse(&[Value::from_string(content)])
-        },
-        _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_read() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2657,13 +2736,17 @@ fn eval_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::String(path) => {
             let json = value_to_json(&args[1])?;
-            let content = serde_json::to_string_pretty(&json)
-                .map_err(|e| InterpreterError::RuntimeError(format!("JSON stringify error: {e}")))?;
-            std::fs::write(path.as_ref(), content)
-                .map_err(|e| InterpreterError::RuntimeError(format!("Failed to write file: {e}")))?;
+            let content = serde_json::to_string_pretty(&json).map_err(|e| {
+                InterpreterError::RuntimeError(format!("JSON stringify error: {e}"))
+            })?;
+            std::fs::write(path.as_ref(), content).map_err(|e| {
+                InterpreterError::RuntimeError(format!("Failed to write file: {e}"))
+            })?;
             Ok(Value::Bool(true))
-        },
-        _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_write() expects first argument to be string".to_string(),
+        )),
     }
 }
 
@@ -2675,8 +2758,10 @@ fn eval_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(s) => {
             let is_valid = serde_json::from_str::<serde_json::Value>(s).is_ok();
             Ok(Value::Bool(is_valid))
-        },
-        _ => Err(InterpreterError::RuntimeError("json_validate() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_validate() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2685,23 +2770,25 @@ fn eval_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("json_type", args, 1)?;
     match &args[0] {
-        Value::String(s) => {
-            match serde_json::from_str::<serde_json::Value>(s) {
-                Ok(json) => {
-                    let type_str = match json {
-                        serde_json::Value::Null => "null",
-                        serde_json::Value::Bool(_) => "boolean",
-                        serde_json::Value::Number(_) => "number",
-                        serde_json::Value::String(_) => "string",
-                        serde_json::Value::Array(_) => "array",
-                        serde_json::Value::Object(_) => "object",
-                    };
-                    Ok(Value::from_string(type_str.to_string()))
-                },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
+        Value::String(s) => match serde_json::from_str::<serde_json::Value>(s) {
+            Ok(json) => {
+                let type_str = match json {
+                    serde_json::Value::Null => "null",
+                    serde_json::Value::Bool(_) => "boolean",
+                    serde_json::Value::Number(_) => "number",
+                    serde_json::Value::String(_) => "string",
+                    serde_json::Value::Array(_) => "array",
+                    serde_json::Value::Object(_) => "object",
+                };
+                Ok(Value::from_string(type_str.to_string()))
             }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "JSON parse error: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "json_type() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -2725,7 +2812,7 @@ fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::
         (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
             merge_json_objects(&mut a_map, b_map);
             serde_json::Value::Object(a_map)
-        },
+        }
         (_, b_val) => b_val,
     }
 }
@@ -2755,7 +2842,9 @@ fn eval_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
 
     match &args[1] {
         Value::String(path) => get_json_value_at_path(&json, path),
-        _ => Err(InterpreterError::RuntimeError("json_get() expects second argument to be string".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "json_get() expects second argument to be string".to_string(),
+        )),
     }
 }
 
@@ -2771,14 +2860,17 @@ fn get_json_value_at_path(json: &serde_json::Value, path: &str) -> Result<Value,
 
 /// Recursively get JSON value at path
 /// Complexity: 3 (base case + recursive traversal)
-fn get_json_path_recursive<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a serde_json::Value> {
+fn get_json_path_recursive<'a>(
+    json: &'a serde_json::Value,
+    path: &[&str],
+) -> Option<&'a serde_json::Value> {
     if path.is_empty() {
         return Some(json);
     }
     match json {
-        serde_json::Value::Object(map) => {
-            map.get(path[0]).and_then(|v| get_json_path_recursive(v, &path[1..]))
-        },
+        serde_json::Value::Object(map) => map
+            .get(path[0])
+            .and_then(|v| get_json_path_recursive(v, &path[1..])),
         _ => None,
     }
 }
@@ -2796,8 +2888,10 @@ fn eval_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(path) => {
             set_json_path_from_string(&mut json, path, new_value)?;
             eval_json_parse(&[Value::from_string(json.to_string())])
-        },
-        _ => Err(InterpreterError::RuntimeError("json_set() expects second argument to be string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_set() expects second argument to be string".to_string(),
+        )),
     }
 }
 
@@ -2853,7 +2947,9 @@ fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], value: serd
 fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_parse__" | "JSON_parse" | "parse_json" => Ok(Some(eval_json_parse(args)?)),
-        "__builtin_json_stringify__" | "JSON_stringify" | "stringify_json" => Ok(Some(eval_json_stringify(args)?)),
+        "__builtin_json_stringify__" | "JSON_stringify" | "stringify_json" => {
+            Ok(Some(eval_json_stringify(args)?))
+        }
         "__builtin_json_pretty__" => Ok(Some(eval_json_pretty(args)?)),
         _ => Ok(None),
     }
@@ -2910,14 +3006,9 @@ fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<Value>, Inte
 
 /// Dispatcher for JSON functions
 /// Complexity: 4
-fn try_eval_json_function(
-    name: &str,
-    args: &[Value],
-) -> Result<Option<Value>, InterpreterError> {
-    let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
-        try_eval_json_part1,
-        try_eval_json_part2,
-    ];
+fn try_eval_json_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+    let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] =
+        &[try_eval_json_part1, try_eval_json_part2];
 
     for dispatcher in dispatchers {
         if let Some(result) = dispatcher(name, args)? {
@@ -2953,15 +3044,24 @@ fn eval_file_open(args: &[Value]) -> Result<Value, InterpreterError> {
                 InterpreterError::RuntimeError(format!("Failed to open file '{path}': {e}"))
             })?;
 
-            let lines: Vec<String> = content.lines().map(std::string::ToString::to_string).collect();
+            let lines: Vec<String> = content
+                .lines()
+                .map(std::string::ToString::to_string)
+                .collect();
 
             // Create File object with state
             let mut file_obj = std::collections::HashMap::new();
             file_obj.insert("__type".to_string(), Value::from_string("File".to_string()));
             file_obj.insert("path".to_string(), Value::from_string(path.to_string()));
-            file_obj.insert("lines".to_string(), Value::Array(Arc::from(
-                lines.into_iter().map(Value::from_string).collect::<Vec<_>>()
-            )));
+            file_obj.insert(
+                "lines".to_string(),
+                Value::Array(Arc::from(
+                    lines
+                        .into_iter()
+                        .map(Value::from_string)
+                        .collect::<Vec<_>>(),
+                )),
+            );
             file_obj.insert("position".to_string(), Value::Integer(0));
             file_obj.insert("closed".to_string(), Value::Bool(false));
 
@@ -2980,16 +3080,20 @@ fn eval_open(args: &[Value]) -> Result<Value, InterpreterError> {
 
     let path = match &args[0] {
         Value::String(s) => s.as_ref(),
-        _ => return Err(InterpreterError::RuntimeError(
-            "open() expects first argument to be a string (path)".to_string(),
-        )),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "open() expects first argument to be a string (path)".to_string(),
+            ))
+        }
     };
 
     let mode = match &args[1] {
         Value::String(s) => s.as_ref(),
-        _ => return Err(InterpreterError::RuntimeError(
-            "open() expects second argument to be a string (mode)".to_string(),
-        )),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "open() expects second argument to be a string (mode)".to_string(),
+            ))
+        }
     };
 
     // Validate mode (currently only "r" read mode supported)
@@ -3032,13 +3136,15 @@ fn try_eval_http_function(_name: &str, _args: &[Value]) -> Result<Option<Value>,
 fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_get", args, 1)?;
     match &args[0] {
-        Value::String(url) => {
-            match crate::stdlib::http::get(url) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {e}"))),
-            }
+        Value::String(url) => match crate::stdlib::http::get(url) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP GET failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_get() expects a string URL".to_string(),
+        )),
     }
 }
 
@@ -3048,13 +3154,15 @@ fn eval_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_post", args, 2)?;
     match (&args[0], &args[1]) {
-        (Value::String(url), Value::String(body)) => {
-            match crate::stdlib::http::post(url, body) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {e}"))),
-            }
+        (Value::String(url), Value::String(body)) => match crate::stdlib::http::post(url, body) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP POST failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_post() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -3064,13 +3172,15 @@ fn eval_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_put", args, 2)?;
     match (&args[0], &args[1]) {
-        (Value::String(url), Value::String(body)) => {
-            match crate::stdlib::http::put(url, body) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {e}"))),
-            }
+        (Value::String(url), Value::String(body)) => match crate::stdlib::http::put(url, body) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP PUT failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_put() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -3080,13 +3190,15 @@ fn eval_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("http_delete", args, 1)?;
     match &args[0] {
-        Value::String(url) => {
-            match crate::stdlib::http::delete(url) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {e}"))),
-            }
+        Value::String(url) => match crate::stdlib::http::delete(url) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP DELETE failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_delete() expects a string URL".to_string(),
+        )),
     }
 }
 
@@ -3120,8 +3232,10 @@ fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(html) => {
             let doc = crate::stdlib::html::HtmlDocument::parse(html);
             Ok(Value::HtmlDocument(doc))
-        },
-        _ => Err(InterpreterError::RuntimeError("Html.parse() expects a string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Html.parse() expects a string".to_string(),
+        )),
     }
 }
 
@@ -3133,7 +3247,10 @@ fn eval_html_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Process function dispatcher (RUNTIME-090, Issue #85)
 /// Complexity: 2 (within Toyota Way limits)
 #[cfg(not(target_arch = "wasm32"))]
-fn try_eval_process_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_process_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_command_new__" => Ok(Some(eval_command_new(args)?)),
         _ => Ok(None),
@@ -3142,7 +3259,10 @@ fn try_eval_process_function(name: &str, args: &[Value]) -> Result<Option<Value>
 
 /// Stub for WASM - process execution not available
 #[cfg(target_arch = "wasm32")]
-fn try_eval_process_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+fn try_eval_process_function(
+    _name: &str,
+    _args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     Ok(None)
 }
 
@@ -3156,12 +3276,20 @@ fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::String(program) => {
             // Create Command object as HashMap with __type marker
             let mut cmd_obj = HashMap::new();
-            cmd_obj.insert("__type".to_string(), Value::from_string("Command".to_string()));
-            cmd_obj.insert("program".to_string(), Value::from_string(program.to_string()));
+            cmd_obj.insert(
+                "__type".to_string(),
+                Value::from_string("Command".to_string()),
+            );
+            cmd_obj.insert(
+                "program".to_string(),
+                Value::from_string(program.to_string()),
+            );
             cmd_obj.insert("args".to_string(), Value::Array(Arc::new([])));
             Ok(Value::Object(Arc::new(cmd_obj)))
-        },
-        _ => Err(InterpreterError::RuntimeError("Command::new() expects a string program name".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Command::new() expects a string program name".to_string(),
+        )),
     }
 }
 
@@ -3286,16 +3414,15 @@ fn eval_int(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Float(f) => Ok(Value::Integer(*f as i64)), // Type cast (zero-cost)
         Value::String(s) => {
             // Wrap Rust stdlib parse (zero-cost)
-            s.parse::<i64>()
-                .map(Value::Integer)
-                .map_err(|_| InterpreterError::RuntimeError(
-                    format!("int() cannot parse string: '{s}'")
-                ))
+            s.parse::<i64>().map(Value::Integer).map_err(|_| {
+                InterpreterError::RuntimeError(format!("int() cannot parse string: '{s}'"))
+            })
         }
         Value::Bool(b) => Ok(Value::Integer(i64::from(*b))),
-        _ => Err(InterpreterError::RuntimeError(
-            format!("int() does not support type: {}", args[0])
-        )),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "int() does not support type: {}",
+            args[0]
+        ))),
     }
 }
 
@@ -3310,16 +3437,15 @@ fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Integer(n) => Ok(Value::Float(*n as f64)), // Type cast (zero-cost)
         Value::String(s) => {
             // Wrap Rust stdlib parse (zero-cost)
-            s.parse::<f64>()
-                .map(Value::Float)
-                .map_err(|_| InterpreterError::RuntimeError(
-                    format!("float() cannot parse string: '{s}'")
-                ))
+            s.parse::<f64>().map(Value::Float).map_err(|_| {
+                InterpreterError::RuntimeError(format!("float() cannot parse string: '{s}'"))
+            })
         }
         Value::Bool(b) => Ok(Value::Float(if *b { 1.0 } else { 0.0 })),
-        _ => Err(InterpreterError::RuntimeError(
-            format!("float() does not support type: {}", args[0])
-        )),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "float() does not support type: {}",
+            args[0]
+        ))),
     }
 }
 
@@ -3331,14 +3457,13 @@ fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_parse_int(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("parse_int", args, 1)?;
     match &args[0] {
-        Value::String(s) => s.parse::<i64>()
-            .map(Value::Integer)
-            .map_err(|_| InterpreterError::RuntimeError(
-                format!("parse_int() cannot parse string: '{s}'")
-            )),
-        _ => Err(InterpreterError::RuntimeError(
-            format!("parse_int() expects a string, got {}", args[0].type_name())
-        )),
+        Value::String(s) => s.parse::<i64>().map(Value::Integer).map_err(|_| {
+            InterpreterError::RuntimeError(format!("parse_int() cannot parse string: '{s}'"))
+        }),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "parse_int() expects a string, got {}",
+            args[0].type_name()
+        ))),
     }
 }
 
@@ -3350,14 +3475,13 @@ fn eval_parse_int(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_parse_float(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("parse_float", args, 1)?;
     match &args[0] {
-        Value::String(s) => s.parse::<f64>()
-            .map(Value::Float)
-            .map_err(|_| InterpreterError::RuntimeError(
-                format!("parse_float() cannot parse string: '{s}'")
-            )),
-        _ => Err(InterpreterError::RuntimeError(
-            format!("parse_float() expects a string, got {}", args[0].type_name())
-        )),
+        Value::String(s) => s.parse::<f64>().map(Value::Float).map_err(|_| {
+            InterpreterError::RuntimeError(format!("parse_float() cannot parse string: '{s}'"))
+        }),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "parse_float() expects a string, got {}",
+            args[0].type_name()
+        ))),
     }
 }
 
@@ -3369,8 +3493,8 @@ fn eval_bool(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("bool", args, 1)?;
     let result = match &args[0] {
         Value::Bool(b) => *b,
-        Value::Integer(n) => *n != 0, // Zero-cost comparison
-        Value::Float(f) => *f != 0.0, // Zero-cost comparison
+        Value::Integer(n) => *n != 0,      // Zero-cost comparison
+        Value::Float(f) => *f != 0.0,      // Zero-cost comparison
         Value::String(s) => !s.is_empty(), // Wrap Rust stdlib method (zero-cost)
         Value::Nil => false,
         Value::Array(arr) => !arr.is_empty(),
@@ -3718,11 +3842,17 @@ mod tests {
 
     #[test]
     fn test_eval_assert_with_message() {
-        let args = vec![Value::Bool(false), Value::from_string("Custom error".to_string())];
+        let args = vec![
+            Value::Bool(false),
+            Value::from_string("Custom error".to_string()),
+        ];
         let result = eval_assert(&args);
         assert!(result.is_err(), "assert(false, msg) should fail");
         if let Err(InterpreterError::AssertionFailed(msg)) = result {
-            assert!(msg.contains("Custom error"), "Should include custom message");
+            assert!(
+                msg.contains("Custom error"),
+                "Should include custom message"
+            );
         } else {
             panic!("Expected AssertionFailed error");
         }
@@ -3787,7 +3917,10 @@ mod tests {
             Value::from_string("World".to_string()),
         ];
         let result = eval_println(&args);
-        assert!(result.is_ok(), "println with multiple args should not panic");
+        assert!(
+            result.is_ok(),
+            "println with multiple args should not panic"
+        );
     }
 
     #[test]
@@ -3864,8 +3997,10 @@ mod tests {
 
             if let (Value::Float(s), Value::Float(c)) = (sin_val, cos_val) {
                 let identity = s * s + c * c;
-                assert!((identity - 1.0).abs() < 1e-10,
-                        "sin²({angle}) + cos²({angle}) should = 1, got {identity}");
+                assert!(
+                    (identity - 1.0).abs() < 1e-10,
+                    "sin²({angle}) + cos²({angle}) should = 1, got {identity}"
+                );
             }
         }
     }
@@ -3901,10 +4036,14 @@ fn test_println_string_no_quotes() {
     let fmt = Value::from_string("Name: {}".to_string());
     let arg = Value::from_string("Ruchy".to_string());
     let output = format_println_output(&[fmt, arg]);
-    
+
     // Should NOT contain quotes around Ruchy
-    assert!(!output.contains("\"Ruchy\""), 
-        "println should not print quotes around strings, got: {output}");
-    assert!(output.contains("Name: Ruchy"),
-        "Expected 'Name: Ruchy' without quotes, got: {output}");
+    assert!(
+        !output.contains("\"Ruchy\""),
+        "println should not print quotes around strings, got: {output}"
+    );
+    assert!(
+        output.contains("Name: Ruchy"),
+        "Expected 'Name: Ruchy' without quotes, got: {output}"
+    );
 }

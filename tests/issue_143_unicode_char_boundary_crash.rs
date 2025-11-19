@@ -23,7 +23,10 @@ fun test() {
 "#;
 
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Parser should handle Unicode symbols in strings");
+    assert!(
+        result.is_ok(),
+        "Parser should handle Unicode symbols in strings"
+    );
 }
 
 #[test]
@@ -101,5 +104,8 @@ fun test_addition() {
 "#;
 
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Parser should handle Unicode at any position");
+    assert!(
+        result.is_ok(),
+        "Parser should handle Unicode at any position"
+    );
 }

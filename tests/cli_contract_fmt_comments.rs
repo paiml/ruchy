@@ -147,9 +147,18 @@ let x = 42";
 
     let formatted = String::from_utf8(output.stdout).unwrap();
 
-    assert!(formatted.contains("// Comment 1"), "Comment 1 was stripped!");
-    assert!(formatted.contains("// Comment 2"), "Comment 2 was stripped!");
-    assert!(formatted.contains("// Comment 3"), "Comment 3 was stripped!");
+    assert!(
+        formatted.contains("// Comment 1"),
+        "Comment 1 was stripped!"
+    );
+    assert!(
+        formatted.contains("// Comment 2"),
+        "Comment 2 was stripped!"
+    );
+    assert!(
+        formatted.contains("// Comment 3"),
+        "Comment 3 was stripped!"
+    );
 }
 
 #[test]

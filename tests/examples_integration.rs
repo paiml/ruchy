@@ -16,13 +16,12 @@ fn ruchy_cmd() -> Command {
 
 /// Helper to test a .ruchy file runs without errors
 fn test_example_file(file_path: &str) {
-    assert!(Path::new(file_path).exists(), "Example file not found: {file_path}");
+    assert!(
+        Path::new(file_path).exists(),
+        "Example file not found: {file_path}"
+    );
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(file_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(file_path).assert().success();
 }
 
 // ============================================================================
@@ -216,10 +215,7 @@ fn test_all_core_examples_comprehensive() {
 
     for example in &core_examples {
         if Path::new(example).exists() {
-            let result = ruchy_cmd()
-                .arg("run")
-                .arg(example)
-                .ok();
+            let result = ruchy_cmd().arg("run").arg(example).ok();
 
             if result.is_ok() {
                 passed += 1;
@@ -230,7 +226,10 @@ fn test_all_core_examples_comprehensive() {
     }
 
     println!("Core examples: {}/{} passed", passed, core_examples.len());
-    assert!(passed >= 3, "At least 3 core examples should pass, got {passed}");
+    assert!(
+        passed >= 3,
+        "At least 3 core examples should pass, got {passed}"
+    );
 }
 
 // ============================================================================
@@ -251,12 +250,14 @@ fn test_property_all_examples_are_valid_utf8() {
         let path = entry.path();
 
         if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
-            let content = fs::read_to_string(&path)
-                .unwrap_or_else(|_| panic!("Failed to read {path:?}"));
+            let content =
+                fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read {path:?}"));
 
             // Property: All example files are valid UTF-8
-            assert!(content.is_ascii() || content.chars().all(|c| c != '\u{FFFD}'),
-                    "Example {path:?} contains invalid UTF-8");
+            assert!(
+                content.is_ascii() || content.chars().all(|c| c != '\u{FFFD}'),
+                "Example {path:?} contains invalid UTF-8"
+            );
         }
     }
 }
@@ -275,8 +276,8 @@ fn test_property_all_examples_have_main_or_top_level_code() {
         let path = entry.path();
 
         if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
-            let content = fs::read_to_string(&path)
-                .unwrap_or_else(|_| panic!("Failed to read {path:?}"));
+            let content =
+                fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read {path:?}"));
 
             // Property: All examples have either main() or top-level code
             let has_main = content.contains("fun main()") || content.contains("fn main()");
@@ -285,8 +286,10 @@ fn test_property_all_examples_have_main_or_top_level_code() {
                 !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with('#')
             });
 
-            assert!(has_main || has_code,
-                    "Example {path:?} has no main() and no top-level code");
+            assert!(
+                has_main || has_code,
+                "Example {path:?} has no main() and no top-level code"
+            );
         }
     }
 }

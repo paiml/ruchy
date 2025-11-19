@@ -70,20 +70,27 @@ where
 
     match receiver {
         Value::String(s) => eval_string::eval_string_method(s, base_method, arg_values),
-        Value::Array(arr) => {
-            eval_array::eval_array_method(arr, base_method, arg_values, &mut eval_function_call_value)
-        }
+        Value::Array(arr) => eval_array::eval_array_method(
+            arr,
+            base_method,
+            arg_values,
+            &mut eval_function_call_value,
+        ),
         Value::Float(f) => eval_float_method(*f, base_method, args_empty),
         Value::Integer(n) => eval_integer_method(*n, base_method, arg_values),
         Value::DataFrame { columns } => eval_dataframe_method(columns, base_method, arg_values),
         #[cfg(not(target_arch = "wasm32"))]
-        Value::HtmlDocument(doc) => {
-            crate::runtime::eval_html_methods::eval_html_document_method(doc, base_method, arg_values)
-        }
+        Value::HtmlDocument(doc) => crate::runtime::eval_html_methods::eval_html_document_method(
+            doc,
+            base_method,
+            arg_values,
+        ),
         #[cfg(not(target_arch = "wasm32"))]
-        Value::HtmlElement(element) => {
-            crate::runtime::eval_html_methods::eval_html_element_method(element, base_method, arg_values)
-        }
+        Value::HtmlElement(element) => crate::runtime::eval_html_methods::eval_html_element_method(
+            element,
+            base_method,
+            arg_values,
+        ),
         Value::Object(obj) => eval_object_method(obj, base_method, arg_values),
         _ => eval_generic_method(receiver, base_method, args_empty),
     }
@@ -251,7 +258,7 @@ fn eval_object_method(
     }
 
     Err(InterpreterError::RuntimeError(
-        "Object is missing __type marker".to_string()
+        "Object is missing __type marker".to_string(),
     ))
 }
 
@@ -266,9 +273,11 @@ fn build_command_from_obj(
 ) -> Result<std::process::Command, InterpreterError> {
     let program = match obj.get("program") {
         Some(Value::String(p)) => &**p,
-        _ => return Err(InterpreterError::RuntimeError(
-            "Command object missing 'program' field".to_string(),
-        )),
+        _ => {
+            return Err(InterpreterError::RuntimeError(
+                "Command object missing 'program' field".to_string(),
+            ))
+        }
     };
 
     let args = match obj.get("args") {
@@ -306,7 +315,8 @@ fn eval_command_method(
             if let Value::String(arg_str) = &arg_values[0] {
                 let mut new_obj = obj.clone();
                 if let Some(Value::Array(args)) = new_obj.get("args").cloned() {
-                    let mut new_args = args.to_vec(); new_args.push(Value::from_string(arg_str.to_string()));
+                    let mut new_args = args.to_vec();
+                    new_args.push(Value::from_string(arg_str.to_string()));
                     new_obj.insert("args".to_string(), Value::Array(Arc::from(new_args)));
                 }
                 Ok(Value::Object(Arc::new(new_obj)))
@@ -324,9 +334,15 @@ fn eval_command_method(
                 Ok(status) => {
                     // Create ExitStatus object with success() method
                     let mut status_obj = std::collections::HashMap::new();
-                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+                    status_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("ExitStatus".to_string()),
+                    );
                     status_obj.insert("success".to_string(), Value::from_bool(status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(i64::from(status.code().unwrap_or(-1))));
+                    status_obj.insert(
+                        "code".to_string(),
+                        Value::Integer(i64::from(status.code().unwrap_or(-1))),
+                    );
 
                     // Return Result::Ok(status_obj)
                     Ok(Value::EnumVariant {
@@ -353,21 +369,35 @@ fn eval_command_method(
                 Ok(output) => {
                     // Create Output object with stdout, stderr, status fields
                     let mut output_obj = std::collections::HashMap::new();
-                    output_obj.insert("__type".to_string(), Value::from_string("Output".to_string()));
+                    output_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("Output".to_string()),
+                    );
 
                     // Store stdout as byte array
-                    let stdout_bytes: Vec<Value> = output.stdout.iter().map(|b| Value::Byte(*b)).collect();
+                    let stdout_bytes: Vec<Value> =
+                        output.stdout.iter().map(|b| Value::Byte(*b)).collect();
                     output_obj.insert("stdout".to_string(), Value::Array(Arc::from(stdout_bytes)));
 
                     // Store stderr as byte array
-                    let stderr_bytes: Vec<Value> = output.stderr.iter().map(|b| Value::Byte(*b)).collect();
+                    let stderr_bytes: Vec<Value> =
+                        output.stderr.iter().map(|b| Value::Byte(*b)).collect();
                     output_obj.insert("stderr".to_string(), Value::Array(Arc::from(stderr_bytes)));
 
                     // Store exit status (success/code)
                     let mut status_obj = std::collections::HashMap::new();
-                    status_obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
-                    status_obj.insert("success".to_string(), Value::from_bool(output.status.success()));
-                    status_obj.insert("code".to_string(), Value::Integer(i64::from(output.status.code().unwrap_or(-1))));
+                    status_obj.insert(
+                        "__type".to_string(),
+                        Value::from_string("ExitStatus".to_string()),
+                    );
+                    status_obj.insert(
+                        "success".to_string(),
+                        Value::from_bool(output.status.success()),
+                    );
+                    status_obj.insert(
+                        "code".to_string(),
+                        Value::Integer(i64::from(output.status.code().unwrap_or(-1))),
+                    );
                     output_obj.insert("status".to_string(), Value::Object(Arc::new(status_obj)));
 
                     // Return Result::Ok(output_obj)
@@ -690,32 +720,62 @@ mod tests {
 
     #[test]
     fn test_float_sqrt() {
-        assert_eq!(eval_float_method(9.0, "sqrt", true).unwrap(), Value::Float(3.0));
-        assert_eq!(eval_float_method(0.0, "sqrt", true).unwrap(), Value::Float(0.0));
+        assert_eq!(
+            eval_float_method(9.0, "sqrt", true).unwrap(),
+            Value::Float(3.0)
+        );
+        assert_eq!(
+            eval_float_method(0.0, "sqrt", true).unwrap(),
+            Value::Float(0.0)
+        );
     }
 
     #[test]
     fn test_float_abs() {
-        assert_eq!(eval_float_method(-5.5, "abs", true).unwrap(), Value::Float(5.5));
-        assert_eq!(eval_float_method(5.5, "abs", true).unwrap(), Value::Float(5.5));
+        assert_eq!(
+            eval_float_method(-5.5, "abs", true).unwrap(),
+            Value::Float(5.5)
+        );
+        assert_eq!(
+            eval_float_method(5.5, "abs", true).unwrap(),
+            Value::Float(5.5)
+        );
     }
 
     #[test]
     fn test_float_round() {
-        assert_eq!(eval_float_method(3.7, "round", true).unwrap(), Value::Float(4.0));
-        assert_eq!(eval_float_method(3.2, "round", true).unwrap(), Value::Float(3.0));
+        assert_eq!(
+            eval_float_method(3.7, "round", true).unwrap(),
+            Value::Float(4.0)
+        );
+        assert_eq!(
+            eval_float_method(3.2, "round", true).unwrap(),
+            Value::Float(3.0)
+        );
     }
 
     #[test]
     fn test_float_floor() {
-        assert_eq!(eval_float_method(3.7, "floor", true).unwrap(), Value::Float(3.0));
-        assert_eq!(eval_float_method(-3.7, "floor", true).unwrap(), Value::Float(-4.0));
+        assert_eq!(
+            eval_float_method(3.7, "floor", true).unwrap(),
+            Value::Float(3.0)
+        );
+        assert_eq!(
+            eval_float_method(-3.7, "floor", true).unwrap(),
+            Value::Float(-4.0)
+        );
     }
 
     #[test]
     fn test_float_ceil() {
-        assert_eq!(eval_float_method(3.2, "ceil", true).unwrap(), Value::Float(4.0));
-        assert_eq!(eval_float_method(-3.2, "ceil", true).unwrap(), Value::Float(-3.0));
+        assert_eq!(
+            eval_float_method(3.2, "ceil", true).unwrap(),
+            Value::Float(4.0)
+        );
+        assert_eq!(
+            eval_float_method(-3.2, "ceil", true).unwrap(),
+            Value::Float(-3.0)
+        );
     }
 
     #[test]
@@ -728,9 +788,18 @@ mod tests {
 
     #[test]
     fn test_float_log() {
-        assert_eq!(eval_float_method(2.718281828459045, "ln", true).unwrap(), Value::Float(1.0));
-        assert_eq!(eval_float_method(10.0, "log10", true).unwrap(), Value::Float(1.0));
-        assert_eq!(eval_float_method(0.0, "exp", true).unwrap(), Value::Float(1.0));
+        assert_eq!(
+            eval_float_method(2.718281828459045, "ln", true).unwrap(),
+            Value::Float(1.0)
+        );
+        assert_eq!(
+            eval_float_method(10.0, "log10", true).unwrap(),
+            Value::Float(1.0)
+        );
+        assert_eq!(
+            eval_float_method(0.0, "exp", true).unwrap(),
+            Value::Float(1.0)
+        );
     }
 
     #[test]
@@ -753,14 +822,20 @@ mod tests {
     fn test_float_with_args_error() {
         let result = eval_float_method(5.0, "sqrt", false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
     fn test_float_unknown_method() {
         let result = eval_float_method(5.0, "unknown", true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown float method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown float method"));
     }
 
     // =========================================================================
@@ -769,21 +844,42 @@ mod tests {
 
     #[test]
     fn test_integer_abs() {
-        assert_eq!(eval_integer_method(-42, "abs", &[]).unwrap(), Value::Integer(42));
-        assert_eq!(eval_integer_method(42, "abs", &[]).unwrap(), Value::Integer(42));
-        assert_eq!(eval_integer_method(0, "abs", &[]).unwrap(), Value::Integer(0));
+        assert_eq!(
+            eval_integer_method(-42, "abs", &[]).unwrap(),
+            Value::Integer(42)
+        );
+        assert_eq!(
+            eval_integer_method(42, "abs", &[]).unwrap(),
+            Value::Integer(42)
+        );
+        assert_eq!(
+            eval_integer_method(0, "abs", &[]).unwrap(),
+            Value::Integer(0)
+        );
     }
 
     #[test]
     fn test_integer_sqrt() {
-        assert_eq!(eval_integer_method(16, "sqrt", &[]).unwrap(), Value::Float(4.0));
-        assert_eq!(eval_integer_method(0, "sqrt", &[]).unwrap(), Value::Float(0.0));
+        assert_eq!(
+            eval_integer_method(16, "sqrt", &[]).unwrap(),
+            Value::Float(4.0)
+        );
+        assert_eq!(
+            eval_integer_method(0, "sqrt", &[]).unwrap(),
+            Value::Float(0.0)
+        );
     }
 
     #[test]
     fn test_integer_to_float() {
-        assert_eq!(eval_integer_method(42, "to_float", &[]).unwrap(), Value::Float(42.0));
-        assert_eq!(eval_integer_method(-5, "to_float", &[]).unwrap(), Value::Float(-5.0));
+        assert_eq!(
+            eval_integer_method(42, "to_float", &[]).unwrap(),
+            Value::Float(42.0)
+        );
+        assert_eq!(
+            eval_integer_method(-5, "to_float", &[]).unwrap(),
+            Value::Float(-5.0)
+        );
     }
 
     #[test]
@@ -794,9 +890,18 @@ mod tests {
 
     #[test]
     fn test_integer_signum() {
-        assert_eq!(eval_integer_method(42, "signum", &[]).unwrap(), Value::Integer(1));
-        assert_eq!(eval_integer_method(-42, "signum", &[]).unwrap(), Value::Integer(-1));
-        assert_eq!(eval_integer_method(0, "signum", &[]).unwrap(), Value::Integer(0));
+        assert_eq!(
+            eval_integer_method(42, "signum", &[]).unwrap(),
+            Value::Integer(1)
+        );
+        assert_eq!(
+            eval_integer_method(-42, "signum", &[]).unwrap(),
+            Value::Integer(-1)
+        );
+        assert_eq!(
+            eval_integer_method(0, "signum", &[]).unwrap(),
+            Value::Integer(0)
+        );
     }
 
     #[test]
@@ -826,21 +931,30 @@ mod tests {
     fn test_integer_pow_wrong_arg_count() {
         let result = eval_integer_method(2, "pow", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
     }
 
     #[test]
     fn test_integer_abs_with_args_error() {
         let result = eval_integer_method(42, "abs", &[Value::Integer(1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
     fn test_integer_unknown_method() {
         let result = eval_integer_method(42, "unknown", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown integer method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown integer method"));
     }
 
     // =========================================================================
@@ -853,7 +967,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_count(&columns, &[]).unwrap(), Value::Integer(3));
+        assert_eq!(
+            eval_dataframe_count(&columns, &[]).unwrap(),
+            Value::Integer(3)
+        );
     }
 
     #[test]
@@ -862,7 +979,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_sum(&columns, &[]).unwrap(), Value::Float(6.0));
+        assert_eq!(
+            eval_dataframe_sum(&columns, &[]).unwrap(),
+            Value::Float(6.0)
+        );
     }
 
     #[test]
@@ -871,7 +991,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Float(2.5), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_sum(&columns, &[]).unwrap(), Value::Float(6.5));
+        assert_eq!(
+            eval_dataframe_sum(&columns, &[]).unwrap(),
+            Value::Float(6.5)
+        );
     }
 
     #[test]
@@ -880,7 +1003,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_mean(&columns, &[]).unwrap(), Value::Float(2.0));
+        assert_eq!(
+            eval_dataframe_mean(&columns, &[]).unwrap(),
+            Value::Float(2.0)
+        );
     }
 
     #[test]
@@ -889,7 +1015,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(1), Value::Integer(5), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_max(&columns, &[]).unwrap(), Value::Float(5.0));
+        assert_eq!(
+            eval_dataframe_max(&columns, &[]).unwrap(),
+            Value::Float(5.0)
+        );
     }
 
     #[test]
@@ -898,7 +1027,10 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(5), Value::Integer(1), Value::Integer(3)],
         }];
-        assert_eq!(eval_dataframe_min(&columns, &[]).unwrap(), Value::Float(1.0));
+        assert_eq!(
+            eval_dataframe_min(&columns, &[]).unwrap(),
+            Value::Float(1.0)
+        );
     }
 
     #[test]
@@ -953,8 +1085,10 @@ mod tests {
     #[test]
     fn test_generic_to_string_bool() {
         let value = Value::Bool(true);
-        assert_eq!(eval_generic_method(&value, "to_string", true).unwrap(),
-                   Value::from_string("true".to_string()));
+        assert_eq!(
+            eval_generic_method(&value, "to_string", true).unwrap(),
+            Value::from_string("true".to_string())
+        );
     }
 
     #[test]
@@ -991,12 +1125,12 @@ mod tests {
         // This should work because turbofish is stripped
         let result = dispatch_method_call(
             &value,
-            "to_string::<String>",  // With turbofish
+            "to_string::<String>", // With turbofish
             &[],
             true,
             &mut eval_fn,
             eval_df,
-            eval_ctx
+            eval_ctx,
         );
         assert!(result.is_ok());
     }

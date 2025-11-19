@@ -204,7 +204,10 @@ fn test_build_then_run_workflow() {
         .output()
         .expect("Failed to run cargo run");
 
-    assert!(output.status.success(), "cargo run should succeed after build");
+    assert!(
+        output.status.success(),
+        "cargo run should succeed after build"
+    );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(

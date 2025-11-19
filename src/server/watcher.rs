@@ -20,7 +20,10 @@ pub struct FileWatcher {
 impl FileWatcher {
     /// Create new file watcher
     pub fn new(paths: Vec<PathBuf>, debounce_ms: u64) -> notify::Result<Self> {
-        let (tx, rx): (Sender<notify::Result<Event>>, Receiver<notify::Result<Event>>) = channel();
+        let (tx, rx): (
+            Sender<notify::Result<Event>>,
+            Receiver<notify::Result<Event>>,
+        ) = channel();
 
         let mut watcher = notify::recommended_watcher(move |res| {
             let _ = tx.send(res);

@@ -48,10 +48,7 @@ fn test_wasm_repl_evaluates_arithmetic() {
             "3",
             "Should display evaluated result, not AST"
         );
-        assert!(
-            json["error"].is_null(),
-            "Should have no error"
-        );
+        assert!(json["error"].is_null(), "Should have no error");
     }
 }
 
@@ -106,7 +103,9 @@ fn test_wasm_repl_syntax_error() {
         use ruchy::wasm::repl::WasmRepl;
 
         let mut repl = WasmRepl::new().expect("Failed to create REPL");
-        let output = repl.eval("let x = ").expect("Eval should return error JSON");
+        let output = repl
+            .eval("let x = ")
+            .expect("Eval should return error JSON");
 
         let json: JsonValue = parse_repl_output(&output).expect("Invalid JSON");
 

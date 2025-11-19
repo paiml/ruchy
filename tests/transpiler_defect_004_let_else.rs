@@ -64,11 +64,7 @@ fun main() -> i64 {
     fs::write(&source, code).expect("Failed to write test file");
 
     // GREEN: Now transpilation should SUCCEED
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 2: Let-else with `Option::None` fallback
@@ -103,11 +99,7 @@ fun main() -> i64 {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 3: Let-else with `Result::Ok` pattern
@@ -141,11 +133,7 @@ fun main() -> String {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 4: Let-else with enum destructuring
@@ -187,11 +175,7 @@ fun main() -> i64 {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 5: Let-else with tuple destructuring
@@ -223,11 +207,7 @@ fun main() -> (i64, i64) {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 6: Let-else with nested pattern matching
@@ -259,11 +239,7 @@ fun main() -> i64 {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Test 7: Let-else with multiple statements in else block
@@ -303,11 +279,7 @@ fun main() -> i64 {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 // ==================== BASELINE TESTS (Currently Pass) ====================
@@ -329,11 +301,7 @@ fun main() -> i64 {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Regular let should work NOW
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 /// Baseline: Match expression should work (alternative to let-else)
@@ -355,11 +323,7 @@ fun main() -> i64 {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Match expression should work NOW
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&source).assert().success();
 }
 
 // ==================== RED PHASE SUMMARY ====================

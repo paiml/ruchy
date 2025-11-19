@@ -12,8 +12,8 @@
 // Property tests: 10K+ random inputs per property
 
 use proptest::prelude::*;
-use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::parser::Parser;
 
 // ============================================================================
 // Property Test 1: Box<T> Type Parameter Preservation

@@ -290,13 +290,13 @@ fn test_time_parse_duration_zero_not_allowed() {
 fn test_time_format_parse_roundtrip() {
     // Test that formatting and parsing are inverse operations
     let test_values = [
-        1_000,        // 1s
-        60_000,       // 1m
-        90_000,       // 1m 30s
-        3_600_000,    // 1h
-        5_400_000,    // 1h 30m
-        86_400_000,   // 1d
-        90_000_000,   // 1d 1h
+        1_000,      // 1s
+        60_000,     // 1m
+        90_000,     // 1m 30s
+        3_600_000,  // 1h
+        5_400_000,  // 1h 30m
+        86_400_000, // 1d
+        90_000_000, // 1d 1h
     ];
 
     for millis in test_values {
@@ -327,5 +327,8 @@ fn test_time_workflow_measure_operation() {
 
     // Format duration
     let formatted = time::format_duration(elapsed).unwrap();
-    assert!(!formatted.is_empty(), "Formatted duration should not be empty");
+    assert!(
+        !formatted.is_empty(),
+        "Formatted duration should not be empty"
+    );
 }

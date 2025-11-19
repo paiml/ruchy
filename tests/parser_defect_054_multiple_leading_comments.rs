@@ -20,8 +20,8 @@
 //
 // ROOT CAUSE: Parser's consume_leading_comments() likely only called for first statement
 
+use ruchy::frontend::ast::{CommentKind, ExprKind};
 use ruchy::Parser as RuchyParser;
-use ruchy::frontend::ast::{ExprKind, CommentKind};
 
 #[test]
 fn test_parse_multiple_leading_comments_in_block() {
@@ -34,7 +34,11 @@ let b = 2";
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse multiple leading comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse multiple leading comments: {:?}",
+        result.err()
+    );
 
     // Verify AST contains BOTH comments
     if let Ok(ast) = result {
@@ -42,22 +46,39 @@ let b = 2";
             assert_eq!(stmts.len(), 2, "Should have 2 statements");
 
             // First statement should have "comment 1"
-            assert_eq!(stmts[0].leading_comments.len(), 1, "First statement should have 1 leading comment");
+            assert_eq!(
+                stmts[0].leading_comments.len(),
+                1,
+                "First statement should have 1 leading comment"
+            );
             if let CommentKind::Line(text) = &stmts[0].leading_comments[0].kind {
-                assert!(text.contains("comment 1"), "First comment should contain 'comment 1'");
+                assert!(
+                    text.contains("comment 1"),
+                    "First comment should contain 'comment 1'"
+                );
             } else {
                 panic!("Expected Line comment");
             }
 
             // Second statement should have "comment 2" (THIS IS THE BUG)
-            assert_eq!(stmts[1].leading_comments.len(), 1, "Second statement should have 1 leading comment");
+            assert_eq!(
+                stmts[1].leading_comments.len(),
+                1,
+                "Second statement should have 1 leading comment"
+            );
             if let CommentKind::Line(text) = &stmts[1].leading_comments[0].kind {
-                assert!(text.contains("comment 2"), "Second comment should contain 'comment 2'");
+                assert!(
+                    text.contains("comment 2"),
+                    "Second comment should contain 'comment 2'"
+                );
             } else {
                 panic!("Expected Line comment");
             }
         } else {
-            panic!("Expected Block expression at top level, got: {:?}", ast.kind);
+            panic!(
+                "Expected Block expression at top level, got: {:?}",
+                ast.kind
+            );
         }
     }
 }
@@ -76,16 +97,32 @@ let c = 3";
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse three leading comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse three leading comments: {:?}",
+        result.err()
+    );
 
     // Verify AST contains ALL THREE comments
     if let Ok(ast) = result {
         if let ExprKind::Block(stmts) = &ast.kind {
             assert_eq!(stmts.len(), 3, "Should have 3 statements");
 
-            assert_eq!(stmts[0].leading_comments.len(), 1, "First statement should have 1 leading comment");
-            assert_eq!(stmts[1].leading_comments.len(), 1, "Second statement should have 1 leading comment");
-            assert_eq!(stmts[2].leading_comments.len(), 1, "Third statement should have 1 leading comment");
+            assert_eq!(
+                stmts[0].leading_comments.len(),
+                1,
+                "First statement should have 1 leading comment"
+            );
+            assert_eq!(
+                stmts[1].leading_comments.len(),
+                1,
+                "Second statement should have 1 leading comment"
+            );
+            assert_eq!(
+                stmts[2].leading_comments.len(),
+                1,
+                "Third statement should have 1 leading comment"
+            );
         } else {
             panic!("Expected Block expression at top level");
         }
@@ -108,24 +145,42 @@ let d = 4";
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse multiple ignore directives: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse multiple ignore directives: {:?}",
+        result.err()
+    );
 
     if let Ok(ast) = result {
         if let ExprKind::Block(stmts) = &ast.kind {
             assert_eq!(stmts.len(), 4, "Should have 4 statements");
 
             // First ignore directive (on let a)
-            assert_eq!(stmts[0].leading_comments.len(), 1, "First let should have ignore directive");
+            assert_eq!(
+                stmts[0].leading_comments.len(),
+                1,
+                "First let should have ignore directive"
+            );
             if let CommentKind::Line(text) = &stmts[0].leading_comments[0].kind {
-                assert!(text.contains("ruchy-fmt-ignore"), "First comment should be ignore directive");
+                assert!(
+                    text.contains("ruchy-fmt-ignore"),
+                    "First comment should be ignore directive"
+                );
             } else {
                 panic!("Expected Line comment");
             }
 
             // Second ignore directive (on let c) - THIS IS THE BUG
-            assert_eq!(stmts[2].leading_comments.len(), 1, "Third let should have ignore directive");
+            assert_eq!(
+                stmts[2].leading_comments.len(),
+                1,
+                "Third let should have ignore directive"
+            );
             if let CommentKind::Line(text) = &stmts[2].leading_comments[0].kind {
-                assert!(text.contains("ruchy-fmt-ignore"), "Third statement should have ignore directive");
+                assert!(
+                    text.contains("ruchy-fmt-ignore"),
+                    "Third statement should have ignore directive"
+                );
             } else {
                 panic!("Expected Line comment");
             }

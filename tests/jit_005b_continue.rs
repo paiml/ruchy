@@ -43,8 +43,16 @@ fn test_jit_005b_while_continue_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while with continue: {:?}", result.err());
-    assert_eq!(result.unwrap(), 5, "Should count 5 even numbers (2,4,6,8,10)");
+    assert!(
+        result.is_ok(),
+        "Should compile while with continue: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        5,
+        "Should count 5 even numbers (2,4,6,8,10)"
+    );
 }
 
 #[test]
@@ -66,7 +74,11 @@ fn test_jit_005b_while_continue_accumulator() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while continue sum: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile while continue sum: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 18, "Sum of 3,6,9 should be 18");
 }
 
@@ -92,10 +104,18 @@ fn test_jit_005b_while_continue_multiple_conditions() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile multiple continues: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile multiple continues: {:?}",
+        result.err()
+    );
     // Numbers 1-20 that are NOT divisible by 2 or 3:
     // 1,5,7,11,13,17,19 = 7 numbers
-    assert_eq!(result.unwrap(), 7, "Should count 7 numbers not divisible by 2 or 3");
+    assert_eq!(
+        result.unwrap(),
+        7,
+        "Should count 7 numbers not divisible by 2 or 3"
+    );
 }
 
 // ============================================================================
@@ -119,7 +139,11 @@ fn test_jit_005b_for_continue_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for with continue: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for with continue: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 25, "Sum of 1,3,5,7,9 should be 25");
 }
 
@@ -140,7 +164,11 @@ fn test_jit_005b_for_continue_range_inclusive() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for inclusive with continue: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for inclusive with continue: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "Should count 5 numbers (6,7,8,9,10)");
 }
 
@@ -162,7 +190,11 @@ fn test_jit_005b_for_continue_with_computation() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for continue with computation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for continue with computation: {:?}",
+        result.err()
+    );
     // val: 0-5=-5(skip), 1-5=-4(skip), ..., 5-5=0, 6-5=1, 7-5=2, 8-5=3, 9-5=4
     // sum = 0+1+2+3+4 = 10
     assert_eq!(result.unwrap(), 10, "Sum should be 10");
@@ -198,11 +230,19 @@ fn test_jit_005b_continue_vs_break() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile continue vs break: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile continue vs break: {:?}",
+        result.err()
+    );
     // continue: 9 iterations (skips i=5)
     // break: 5 iterations (stops at i=5)
     // difference: 9-5 = 4
-    assert_eq!(result.unwrap(), 4, "Continue=9 iterations, break=5 iterations, diff=4");
+    assert_eq!(
+        result.unwrap(),
+        4,
+        "Continue=9 iterations, break=5 iterations, diff=4"
+    );
 }
 
 // ============================================================================
@@ -228,7 +268,11 @@ fn test_jit_005b_nested_loops_continue_inner() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested continue: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested continue: {:?}",
+        result.err()
+    );
     // Outer: 3 iterations, Inner: 5 iterations (skip j=2)
     // 3 * 4 = 12
     assert_eq!(result.unwrap(), 12, "3 outer * 4 inner (skip j=2) = 12");
@@ -257,7 +301,11 @@ fn test_jit_005b_nested_loops_continue_outer() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile outer loop continue: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile outer loop continue: {:?}",
+        result.err()
+    );
     // i=1: inner loop runs 4 times
     // i=2: continue skips inner loop
     // i=3: inner loop runs 4 times
@@ -291,9 +339,17 @@ fn test_jit_005b_filter_and_transform() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile filter-transform: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile filter-transform: {:?}",
+        result.err()
+    );
     // Numbers 0-9, skip 0 and 5, double rest: (1+2+3+4+6+7+8+9)*2 = 40*2 = 80
-    assert_eq!(result.unwrap(), 80, "Filter and double: (1+2+3+4+6+7+8+9)*2 = 80");
+    assert_eq!(
+        result.unwrap(),
+        80,
+        "Filter and double: (1+2+3+4+6+7+8+9)*2 = 80"
+    );
 }
 
 #[test]
@@ -322,7 +378,11 @@ fn test_jit_005b_prime_sieve_pattern() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile prime sieve: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile prime sieve: {:?}",
+        result.err()
+    );
     // Primes 2-19: 2,3,5,7,11,13,17,19 = 8 primes
     assert_eq!(result.unwrap(), 8, "8 primes in range 2-19");
 }

@@ -91,10 +91,10 @@ fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> R
             .expect(&Token::Equal)
             .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {e}"))?;
         // Parse the expression to match against
-        let expr =
-            Box::new(parse_expr_recursive(state).map_err(|e| {
-                anyhow::anyhow!("Expected expression after '=' in while-let: {e}")
-            })?);
+        let expr = Box::new(
+            parse_expr_recursive(state)
+                .map_err(|e| anyhow::anyhow!("Expected expression after '=' in while-let: {e}"))?,
+        );
         // Parse body (expect block)
         let body = Box::new(
             parse_expr_recursive(state)
@@ -243,7 +243,7 @@ fn parse_labeled_loop(state: &mut ParserState, label: Option<String>) -> Result<
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -257,14 +257,20 @@ mod tests {
     fn test_for_loop_tuple_destructuring() {
         let code = "for key, value in map { print(key) }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "For loop with tuple destructuring should parse");
+        assert!(
+            result.is_ok(),
+            "For loop with tuple destructuring should parse"
+        );
     }
 
     #[test]
     fn test_for_loop_tuple_with_parens() {
         let code = "for (x, y) in pairs { print(x) }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "For loop with tuple pattern (parens) should parse");
+        assert!(
+            result.is_ok(),
+            "For loop with tuple pattern (parens) should parse"
+        );
     }
 
     #[test]
