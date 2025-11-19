@@ -508,11 +508,11 @@ mod tests {
     #[test]
     fn test_transpile_handler_float() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Span::default());
+        let expr = Expr::new(ExprKind::Literal(Literal::Float(std::f64::consts::PI)), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("3.14"));
+        assert!(tokens.contains("3.14") || tokens.contains(&std::f64::consts::PI.to_string()));
     }
 
     // Test 23: transpile_handler with null literal
