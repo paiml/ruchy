@@ -267,7 +267,7 @@ fn test_sqlite_2021_substitution_nested() {
 // ============================================================================
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100000))]
+    #![proptest_config(ProptestConfig::with_cases(100_000))]
 
     /// Property: All well-typed arithmetic expressions evaluate successfully
     ///
@@ -286,7 +286,7 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100000))]
+    #![proptest_config(ProptestConfig::with_cases(100_000))]
 
     /// Property: Boolean operations parse correctly
     ///
@@ -309,7 +309,7 @@ proptest! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(100000))]
+    #![proptest_config(ProptestConfig::with_cases(100_000))]
 
     /// Property: Let bindings preserve types
     ///
