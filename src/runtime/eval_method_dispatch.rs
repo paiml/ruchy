@@ -789,7 +789,7 @@ mod tests {
     #[test]
     fn test_float_log() {
         assert_eq!(
-            eval_float_method(2.718281828459045, "ln", true).unwrap(),
+            eval_float_method(2.718_281_828_459_045, "ln", true).unwrap(),
             Value::Float(1.0)
         );
         assert_eq!(
