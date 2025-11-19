@@ -54,7 +54,7 @@ println(counter)
 /// Property: Nested builtin calls maintain single-evaluation
 #[test]
 fn prop_nested_builtins_single_evaluation() {
-    proptest!(|(n in 1i32..50)| {
+    proptest!(|(_n in 1i32..50)| {
                     let script = r"
 let mut calls = 0
 fun side_effect() {
@@ -96,7 +96,7 @@ fn prop_sequential_builtin_calls_accumulate() {
     proptest!(|(count in 1usize..20)| {
                     // Generate N sequential println calls
                     let mut calls = String::new();
-                    for i in 0..count {
+                    for _i in 0..count {
                         calls.push_str(&"println(increment())\n".to_string());
                     }
 
@@ -195,7 +195,7 @@ println(counter_b)
 /// Property: Deterministic output across repeated runs
 #[test]
 fn prop_builtin_calls_deterministic() {
-    proptest!(|(n in 1i32..50)| {
+    proptest!(|(_n in 1i32..50)| {
                     let script = r"
 let mut counter = 0
 fun increment() {
