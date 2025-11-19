@@ -18,7 +18,7 @@ use std::fs;
 use tempfile::TempDir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 /// RED: Test basic ASCII string conversion to bytes

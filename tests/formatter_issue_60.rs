@@ -11,7 +11,7 @@ use std::fs;
 use tempfile::TempDir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // Test 1: Function declaration should preserve `fun` keyword

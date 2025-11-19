@@ -50,7 +50,7 @@ fn extract_code_blocks(markdown: &str, language: &str) -> Vec<(usize, String)> {
 }
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 /// Test that README.md exists

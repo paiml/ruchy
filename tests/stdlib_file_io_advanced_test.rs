@@ -13,7 +13,7 @@ use std::io::Write;
 use tempfile::{NamedTempFile, TempDir};
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
