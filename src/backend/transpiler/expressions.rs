@@ -592,7 +592,7 @@ mod tests {
     // Test 3: transpile_literal with Float
     #[test]
     fn test_transpile_literal_float() {
-        let lit = Literal::Float(3.14);
+        let lit = Literal::Float(std::f64::consts::PI);
         let result = Transpiler::transpile_literal(&lit);
         assert!(!result.is_empty());
     }
