@@ -28,8 +28,7 @@ fun main() {{
     .unwrap();
 
     // RED TEST: This should FAIL (currently returns exit code 0)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file.path())
         .assert()
@@ -55,8 +54,7 @@ fun main() {{
     .unwrap();
 
     // RED TEST: This should FAIL (currently returns exit code 0)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file.path())
         .assert()
@@ -79,8 +77,7 @@ fun main() {{
     .unwrap();
 
     // This should PASS (success case)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file.path())
         .assert()
@@ -103,8 +100,7 @@ fun main() {{
     .unwrap();
 
     // RED TEST: This should FAIL (currently returns exit code 0)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file.path())
         .assert()
