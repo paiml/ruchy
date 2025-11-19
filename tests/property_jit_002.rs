@@ -57,11 +57,6 @@ fn arb_arithmetic_op() -> impl Strategy<Value = String> {
     ]
 }
 
-/// Generate arbitrary simple expressions (integers and booleans)
-fn arb_simple_expr() -> impl Strategy<Value = String> {
-    prop_oneof![arb_int_literal(), arb_bool_literal(),]
-}
-
 /// Generate arbitrary arithmetic expressions
 fn arb_arithmetic_expr() -> impl Strategy<Value = String> {
     let leaf = arb_int_literal();

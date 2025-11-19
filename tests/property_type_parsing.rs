@@ -95,12 +95,6 @@ fn arb_qualified_type() -> impl Strategy<Value = String> {
     prop::collection::vec("[a-z][a-z0-9]{0,5}", 1..4).prop_map(|parts| parts.join("::"))
 }
 
-/// Generate arbitrary generic type parameters (e.g., <T, U>)
-fn arb_generic_params() -> impl Strategy<Value = String> {
-    prop::collection::vec("[A-Z][a-zA-Z0-9]{0,5}", 1..4)
-        .prop_map(|params| format!("<{}>", params.join(", ")))
-}
-
 // ============================================================================
 // PROPERTY 1: Type parsing never panics on valid inputs
 // ============================================================================
