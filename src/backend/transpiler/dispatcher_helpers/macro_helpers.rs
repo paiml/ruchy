@@ -812,11 +812,11 @@ mod tests {
         );
 
         // Test different macro names
-        let result1 = transpiler.transpile_passthrough_macro("custom_macro", &[arg.clone()]);
+        let result1 = transpiler.transpile_passthrough_macro("custom_macro", std::slice::from_ref(&arg));
         assert!(result1.is_ok());
         assert!(result1.unwrap().to_string().contains("custom_macro"));
 
-        let result2 = transpiler.transpile_passthrough_macro("another", &[arg]);
+        let result2 = transpiler.transpile_passthrough_macro("another", std::slice::from_ref(&arg));
         assert!(result2.is_ok());
         assert!(result2.unwrap().to_string().contains("another"));
     }
