@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_arb_binary_op_covers_all_ops() {
-        let _ops = vec![
+        let _ops = [
             BinaryOp::Add,
             BinaryOp::Subtract,
             BinaryOp::Multiply,
@@ -869,7 +869,7 @@ mod tests {
     #[test]
     fn test_binary_ops_enumeration() {
         // Test that we can enumerate all binary operators
-        let all_ops = vec![
+        let all_ops = [
             BinaryOp::Add,
             BinaryOp::Subtract,
             BinaryOp::Multiply,
