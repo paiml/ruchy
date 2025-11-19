@@ -903,10 +903,10 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span { start: 0, end: 0 },
         );
-        let resolved = resolver.resolve_imports(literal_expr)?;
+        let result_expr = resolver.resolve_imports(literal_expr)?;
 
         // Literals should pass through unchanged
-        match resolved.kind {
+        match result_expr.kind {
             ExprKind::Literal(Literal::Integer(val, _)) => assert_eq!(val, 42),
             _ => panic!("Expected literal to pass through"),
         }
@@ -934,9 +934,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(bin_op)?;
+        let result_expr = resolver.resolve_imports(bin_op)?;
         // Should resolve both operands
-        assert!(matches!(resolved.kind, ExprKind::Binary { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::Binary { .. }));
         Ok(())
     }
 
@@ -956,9 +956,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(unary_op)?;
+        let result_expr = resolver.resolve_imports(unary_op)?;
         // Should resolve the operand
-        assert!(matches!(resolved.kind, ExprKind::Unary { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::Unary { .. }));
         Ok(())
     }
 
@@ -980,9 +980,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(call_expr)?;
+        let result_expr = resolver.resolve_imports(call_expr)?;
         // Should resolve func and args
-        assert!(matches!(resolved.kind, ExprKind::Call { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::Call { .. }));
         Ok(())
     }
 
@@ -1005,9 +1005,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(while_expr)?;
+        let result_expr = resolver.resolve_imports(while_expr)?;
         // Should resolve condition and body
-        assert!(matches!(resolved.kind, ExprKind::While { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::While { .. }));
         Ok(())
     }
 
@@ -1032,9 +1032,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(for_expr)?;
+        let result_expr = resolver.resolve_imports(for_expr)?;
         // Should resolve iterable and body
-        assert!(matches!(resolved.kind, ExprKind::For { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::For { .. }));
         Ok(())
     }
 
@@ -1053,9 +1053,9 @@ mod tests {
             Span { start: 0, end: 0 },
         );
 
-        let resolved = resolver.resolve_imports(match_expr)?;
+        let result_expr = resolver.resolve_imports(match_expr)?;
         // Should resolve the matched expression
-        assert!(matches!(resolved.kind, ExprKind::Match { .. }));
+        assert!(matches!(result_expr.kind, ExprKind::Match { .. }));
         Ok(())
     }
 
