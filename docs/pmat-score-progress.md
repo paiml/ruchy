@@ -23,12 +23,16 @@
 - **Initial**: 56.5/114 (49.6%, D)
 - **After clippy/fmt**: 58.5/114 (51.3%, D) — +2.0
 - **After deny.toml**: 60.5/114 (53.1%, C) — +4.0 total
-- **Session 2025-11-19**: Clippy fixes in progress
-  - cargo clippy --fix: vec![] → array literals (4 files)
-  - cargo fmt: formatting consistency (5 test files)
-  - Long literals: added separators (3 files)
-  - Unsafe casts: usize→i64 try_into() (7 instances, 2 files)
-  - **Remaining**: 363 clippy warnings (157 deprecated assert_cmd, 14 PI, 7 #[ignore], etc.)
+- **Session 2025-11-19**: Code quality improvements → **62.5/114 (C)**
+  - ✅ cargo clippy --fix: vec![] → array literals (4 files)
+  - ✅ cargo fmt: formatting consistency (9 files total)
+  - ✅ Long literals: added separators (3 files)
+  - ✅ Unsafe casts: usize→i64 try_into() (7 instances, 2 files)
+  - ✅ #[ignore] reasons: converted to proper attribute format (19 files)
+  - ✅ PI approximation: started fixes (1/14 files)
+  - **Progress**: +2.0 points (60.5 → 62.5)
+  - **Commits**: 7 commits documenting all improvements
+  - **Remaining**: 360 clippy warnings (down from 363)
 
 **Tools Installed**:
 - ✅ Miri (nightly)
