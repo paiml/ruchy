@@ -544,8 +544,7 @@ impl MagicCommand for CdMagic {
         } else {
             args.trim().to_string()
         };
-        std::env::set_current_dir(&path)
-            .map_err(|e| anyhow!("Failed to change directory: {e}"))?;
+        std::env::set_current_dir(&path).map_err(|e| anyhow!("Failed to change directory: {e}"))?;
         let pwd = std::env::current_dir().map_err(|e| anyhow!("Failed to get pwd: {e}"))?;
         Ok(MagicResult::Text(format!("Changed to: {}", pwd.display())))
     }

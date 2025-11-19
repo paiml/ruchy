@@ -255,7 +255,7 @@ where
     let mut last_val = Value::Nil;
 
     for stmt in statements {
-        last_val = eval_expr(stmt)?;  // Propagate all errors including Return
+        last_val = eval_expr(stmt)?; // Propagate all errors including Return
     }
 
     Ok(last_val)
@@ -723,8 +723,14 @@ mod tests {
         };
 
         let elements = vec![
-            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1)),
-            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(2, None)), Span::new(2, 3)),
+            Expr::new(
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)),
+                Span::new(0, 1),
+            ),
+            Expr::new(
+                crate::frontend::ast::ExprKind::Literal(Literal::Integer(2, None)),
+                Span::new(2, 3),
+            ),
         ];
 
         let result = eval_tuple_expr(&elements, eval_expr).unwrap();
@@ -739,9 +745,8 @@ mod tests {
 
     #[test]
     fn test_eval_tuple_expr_empty() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
         let result = eval_tuple_expr(&[], eval_expr).unwrap();
         if let Value::Tuple(tuple) = result {
             assert_eq!(tuple.len(), 0);
@@ -764,11 +769,22 @@ mod tests {
             }
         };
 
-        let start = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
-        let end = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(10, None)), Span::new(2, 3));
+        let start = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
+        let end = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(10, None)),
+            Span::new(2, 3),
+        );
 
         let result = eval_range_expr(&start, &end, true, eval_expr).unwrap();
-        if let Value::Range { start: s, end: e, inclusive } = result {
+        if let Value::Range {
+            start: s,
+            end: e,
+            inclusive,
+        } = result
+        {
             assert_eq!(*s, Value::Integer(1));
             assert_eq!(*e, Value::Integer(10));
             assert!(inclusive);
@@ -789,8 +805,14 @@ mod tests {
             }
         };
 
-        let start = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)), Span::new(0, 1));
-        let end = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(5, None)), Span::new(2, 3));
+        let start = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)),
+            Span::new(0, 1),
+        );
+        let end = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(5, None)),
+            Span::new(2, 3),
+        );
 
         let result = eval_range_expr(&start, &end, false, eval_expr).unwrap();
         if let Value::Range { inclusive, .. } = result {
@@ -804,20 +826,24 @@ mod tests {
 
     #[test]
     fn test_eval_loop_condition_true() {
-        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)), Span::new(0, 4));
-        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Bool(true))
-        };
+        let condition = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)),
+            Span::new(0, 4),
+        );
+        let mut eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(true)) };
         let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
         assert!(result);
     }
 
     #[test]
     fn test_eval_loop_condition_false() {
-        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
-        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Bool(false))
-        };
+        let condition = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)),
+            Span::new(0, 5),
+        );
+        let mut eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(false)) };
         let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
         assert!(!result);
     }
@@ -962,8 +988,14 @@ mod tests {
             }
         };
 
-        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
-        let then_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(6, 8));
+        let condition = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)),
+            Span::new(0, 5),
+        );
+        let then_branch = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(6, 8),
+        );
 
         let result = eval_if_expr(&condition, &then_branch, None, eval_expr).unwrap();
         assert_eq!(result, Value::Nil); // No else branch, returns Nil
@@ -976,14 +1008,23 @@ mod tests {
             call_count += 1;
             match call_count {
                 1 => Ok(Value::Bool(false)), // condition is false
-                2 => Ok(Value::Integer(99)),  // else branch
+                2 => Ok(Value::Integer(99)), // else branch
                 _ => panic!("Unexpected call"),
             }
         };
 
-        let condition = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)), Span::new(0, 5));
-        let then_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(6, 8));
-        let else_branch = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(99, None)), Span::new(14, 16));
+        let condition = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)),
+            Span::new(0, 5),
+        );
+        let then_branch = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(6, 8),
+        );
+        let else_branch = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(99, None)),
+            Span::new(14, 16),
+        );
 
         let result = eval_if_expr(&condition, &then_branch, Some(&else_branch), eval_expr).unwrap();
         assert_eq!(result, Value::Integer(99));
@@ -993,21 +1034,20 @@ mod tests {
 
     #[test]
     fn test_eval_block_expr_empty() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
         let result = eval_block_expr(&[], eval_expr).unwrap();
         assert_eq!(result, Value::Nil); // Empty block returns Nil
     }
 
     #[test]
     fn test_eval_block_expr_single_statement() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
-        let statements = vec![
-            Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2)),
-        ];
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
+        let statements = vec![Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        )];
         let result = eval_block_expr(&statements, eval_expr).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -1016,9 +1056,8 @@ mod tests {
 
     #[test]
     fn test_eval_list_expr_empty() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
         let result = eval_list_expr(&[], eval_expr).unwrap();
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 0);
@@ -1035,14 +1074,20 @@ mod tests {
         let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
             call_count += 1;
             match call_count {
-                1 => Ok(Value::Integer(42)),  // element
-                2 => Ok(Value::Integer(3)),    // size
+                1 => Ok(Value::Integer(42)), // element
+                2 => Ok(Value::Integer(3)),  // size
                 _ => panic!("Unexpected call"),
             }
         };
 
-        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
-        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(3, None)), Span::new(4, 5));
+        let element = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
+        let size = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(3, None)),
+            Span::new(4, 5),
+        );
 
         let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
         if let Value::Array(arr) = result {
@@ -1067,8 +1112,14 @@ mod tests {
             }
         };
 
-        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
-        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)), Span::new(4, 5));
+        let element = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
+        let size = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(0, None)),
+            Span::new(4, 5),
+        );
 
         let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
         if let Value::Array(arr) = result {
@@ -1090,8 +1141,14 @@ mod tests {
             }
         };
 
-        let element = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
-        let size = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)), Span::new(4, 8));
+        let element = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
+        let size = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)),
+            Span::new(4, 8),
+        );
 
         let result = eval_array_init_expr(&element, &size, eval_expr);
         assert!(result.is_err());
@@ -1101,11 +1158,13 @@ mod tests {
 
     #[test]
     fn test_eval_return_expr() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
 
-        let value = Expr::new(crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let value = Expr::new(
+            crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
         let result = eval_return_expr(Some(&value), eval_expr);
         assert!(result.is_err()); // Return creates an error with value
         if let Err(InterpreterError::Return(val)) = result {
@@ -1117,9 +1176,8 @@ mod tests {
 
     #[test]
     fn test_eval_return_expr_no_value() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
 
         let result = eval_return_expr(None, eval_expr);
         assert!(result.is_err());

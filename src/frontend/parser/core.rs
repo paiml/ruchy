@@ -527,13 +527,16 @@ mod tests {
         let mut parser = Parser::new("#[derive(Debug, Clone)]\nclass Foo {}");
         let result = parser.parse();
 
-        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+        assert!(
+            result.is_err(),
+            "Should reject Rust-style #[derive] attributes"
+        );
 
         if let Err(e) = result {
             let error_msg = format!("{e:?}");
             assert!(
-                error_msg.contains("Attributes are not supported") ||
-                error_msg.contains("does not use Rust-style attributes"),
+                error_msg.contains("Attributes are not supported")
+                    || error_msg.contains("does not use Rust-style attributes"),
                 "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }
@@ -545,13 +548,16 @@ mod tests {
         let mut parser = Parser::new("#[derive(Debug)]\nstruct Point { x: i32, y: i32 }");
         let result = parser.parse();
 
-        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+        assert!(
+            result.is_err(),
+            "Should reject Rust-style #[derive] attributes"
+        );
 
         if let Err(e) = result {
             let error_msg = format!("{e:?}");
             assert!(
-                error_msg.contains("Attributes are not supported") ||
-                error_msg.contains("does not use Rust-style attributes"),
+                error_msg.contains("Attributes are not supported")
+                    || error_msg.contains("does not use Rust-style attributes"),
                 "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }
@@ -563,13 +569,16 @@ mod tests {
         let mut parser = Parser::new("#[derive(Clone)]\nstruct Wrapper(i32)");
         let result = parser.parse();
 
-        assert!(result.is_err(), "Should reject Rust-style #[derive] attributes");
+        assert!(
+            result.is_err(),
+            "Should reject Rust-style #[derive] attributes"
+        );
 
         if let Err(e) = result {
             let error_msg = format!("{e:?}");
             assert!(
-                error_msg.contains("Attributes are not supported") ||
-                error_msg.contains("does not use Rust-style attributes"),
+                error_msg.contains("Attributes are not supported")
+                    || error_msg.contains("does not use Rust-style attributes"),
                 "Error should explain that #[derive] is not supported. Got: {error_msg}"
             );
         }

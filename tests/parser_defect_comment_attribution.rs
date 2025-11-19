@@ -11,8 +11,8 @@
 //
 // ROOT CAUSE: consume_trailing_comment() doesn't verify comment is on same line
 
-use ruchy::Parser as RuchyParser;
 use ruchy::frontend::ast::ExprKind;
+use ruchy::Parser as RuchyParser;
 
 #[cfg(test)]
 mod property_tests {

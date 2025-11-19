@@ -82,7 +82,10 @@ mod tls;
         rust_code.contains("mod http_client"),
         "Should have http_client mod"
     );
-    assert!(rust_code.contains("mod websocket"), "Should have websocket mod");
+    assert!(
+        rust_code.contains("mod websocket"),
+        "Should have websocket mod"
+    );
     assert!(rust_code.contains("mod tls"), "Should have tls mod");
 }
 
@@ -135,7 +138,10 @@ use std::io::Read;
 
     let rust_code = result.unwrap().to_string();
     assert!(rust_code.contains("mod http_client"), "Should have mod");
-    assert!(rust_code.contains("use std :: io :: Read"), "Should have use");
+    assert!(
+        rust_code.contains("use std :: io :: Read"),
+        "Should have use"
+    );
 }
 
 /// Test 6: pub(crate) module declaration

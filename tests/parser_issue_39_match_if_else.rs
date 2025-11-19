@@ -39,11 +39,7 @@ test()
 "#;
 
     // RED: This test will FAIL with parser error
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success(); // Expected: parser accepts the code
+    ruchy_cmd().arg("-e").arg(code).assert().success(); // Expected: parser accepts the code
 }
 
 /// RED TEST: Original Issue #39 case with Box and recursive call
@@ -83,11 +79,7 @@ main();
 "#;
 
     // RED: This test will FAIL with parser error
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 /// RED TEST: Match with nested if-else-if chain
@@ -118,9 +110,5 @@ classify(Color::RGB(255, 0, 0))
 "#;
 
     // RED: This test will FAIL with parser error
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }

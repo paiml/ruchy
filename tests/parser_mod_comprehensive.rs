@@ -17,11 +17,7 @@ fn ruchy_cmd() -> Command {
 
 #[test]
 fn test_parse_integer_literal() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("42")
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg("42").assert().success();
 }
 
 #[test]
@@ -35,11 +31,7 @@ fn test_parse_string_literal() {
 
 #[test]
 fn test_parse_boolean_literal() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("true")
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg("true").assert().success();
 }
 
 #[test]
@@ -408,29 +400,17 @@ fn edge_case_unicode_identifier() {
 #[test]
 #[ignore = "Parser bug: Unbalanced parentheses silently accepted (exit 0) instead of error - needs parser error recovery fix"]
 fn error_case_unbalanced_parens() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("(1 + 2")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg("(1 + 2").assert().failure();
 }
 
 #[test]
 fn error_case_invalid_operator() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("1 ++ 2")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg("1 ++ 2").assert().failure();
 }
 
 #[test]
 fn error_case_unexpected_token() {
-    ruchy_cmd()
-        .arg("-e")
-        .arg("let = 42")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("-e").arg("let = 42").assert().failure();
 }
 
 // ============================================================================
@@ -443,11 +423,7 @@ fn property_arithmetic_operators() {
     let operators = vec!["+", "-", "*", "/", "%"];
     for op in operators {
         let expr = format!("10 {op} 2");
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&expr)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&expr).assert().success();
     }
 }
 
@@ -457,11 +433,7 @@ fn property_comparison_operators() {
     let operators = vec!["==", "!=", "<", ">", "<=", ">="];
     for op in operators {
         let expr = format!("5 {op} 3");
-        ruchy_cmd()
-            .arg("-e")
-            .arg(&expr)
-            .assert()
-            .success();
+        ruchy_cmd().arg("-e").arg(&expr).assert().success();
     }
 }
 
@@ -487,10 +459,7 @@ fn property_nested_depth_1_to_10() {
 fn property_operator_chain_length_1_to_10() {
     // Property: Operator chains work to arbitrary length
     for length in 1..=10 {
-        let expr = (0..length)
-            .map(|_| "1")
-            .collect::<Vec<_>>()
-            .join(" + ");
+        let expr = (0..length).map(|_| "1").collect::<Vec<_>>().join(" + ");
         let expected = length.to_string();
         let code = format!("println({expr})");
         ruchy_cmd()

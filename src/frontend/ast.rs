@@ -493,7 +493,7 @@ pub enum ExprKind {
         value: Box<Expr>,
         body: Box<Expr>,
         is_mutable: bool,
-        else_block: Option<Box<Expr>>,  // For let-else: `let x = val else { diverging }`
+        else_block: Option<Box<Expr>>, // For let-else: `let x = val else { diverging }`
     },
     LetPattern {
         pattern: Pattern,
@@ -501,7 +501,7 @@ pub enum ExprKind {
         value: Box<Expr>,
         body: Box<Expr>,
         is_mutable: bool,
-        else_block: Option<Box<Expr>>,  // For let-else: `let Some(x) = val else { diverging }`
+        else_block: Option<Box<Expr>>, // For let-else: `let Some(x) = val else { diverging }`
     },
     Function {
         name: String,
@@ -524,8 +524,8 @@ pub enum ExprKind {
         name: String,
         type_params: Vec<String>,
         fields: Vec<StructField>,
-        methods: Vec<ClassMethod>,  // Methods defined inside struct body
-        derives: Vec<String>,       // #[derive(Debug, Clone, ...)]
+        methods: Vec<ClassMethod>, // Methods defined inside struct body
+        derives: Vec<String>,      // #[derive(Debug, Clone, ...)]
         is_pub: bool,
     },
     TupleStruct {
@@ -947,7 +947,7 @@ pub enum UnaryOp {
     Negate,
     BitwiseNot,
     Reference,
-    MutableReference,  // PARSER-085: Added for &mut support (GitHub Issue #71)
+    MutableReference, // PARSER-085: Added for &mut support (GitHub Issue #71)
     Deref,
 }
 /// A function or method parameter.
@@ -1023,9 +1023,9 @@ pub struct EnumVariant {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EnumVariantKind {
-    Unit,                        // Quit
-    Tuple(Vec<Type>),            // Write(String)
-    Struct(Vec<StructField>),    // Move { x: i32, y: i32 }
+    Unit,                     // Quit
+    Tuple(Vec<Type>),         // Write(String)
+    Struct(Vec<StructField>), // Move { x: i32, y: i32 }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ObjectField {
@@ -1521,7 +1521,7 @@ impl fmt::Display for UnaryOp {
             Self::Negate => write!(f, "-"),
             Self::BitwiseNot => write!(f, "~"),
             Self::Reference => write!(f, "&"),
-            Self::MutableReference => write!(f, "&mut "),  // PARSER-085: Issue #71
+            Self::MutableReference => write!(f, "&mut "), // PARSER-085: Issue #71
             Self::Deref => write!(f, "*"),
         }
     }
@@ -2743,8 +2743,8 @@ mod tests {
                 kind: literal,
                 span: Span::new(0, 1),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
             // Just test creation and access
             assert!(matches!(expr.kind, ExprKind::Literal(_)));
@@ -2799,8 +2799,8 @@ mod tests {
                 kind: binary_expr,
                 span: Span::new(0, 3),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
             assert!(matches!(expr.kind, ExprKind::Binary { .. }));
         }
@@ -2830,8 +2830,8 @@ mod tests {
                 kind: unary_expr,
                 span: Span::new(0, 3),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
             assert!(matches!(expr.kind, ExprKind::Unary { .. }));
         }
@@ -3004,30 +3004,30 @@ mod tests {
                         kind: ExprKind::Identifier("obj".to_string()),
                         span: Span::new(0, 3),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     }),
                     field: "method".to_string(),
                 },
                 span: Span::new(0, 10),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             args: vec![
                 Expr {
                     kind: ExprKind::Literal(Literal::Integer(42, None)),
                     span: Span::new(11, 13),
                     attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                    leading_comments: vec![],
+                    trailing_comment: None,
                 },
                 Expr {
                     kind: ExprKind::Literal(Literal::String("arg".to_string())),
                     span: Span::new(15, 20),
                     attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                    leading_comments: vec![],
+                    trailing_comment: None,
                 },
             ],
         };
@@ -3050,41 +3050,41 @@ mod tests {
                         kind: ExprKind::Identifier("x".to_string()),
                         span: Span::new(3, 4),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     }),
                     right: Box::new(Expr {
                         kind: ExprKind::Literal(Literal::Integer(0, None)),
                         span: Span::new(7, 8),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     }),
                 },
                 span: Span::new(3, 8),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             then_branch: Box::new(Expr {
                 kind: ExprKind::Block(vec![Expr {
                     kind: ExprKind::Literal(Literal::String("positive".to_string())),
                     span: Span::new(11, 21),
                     attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                    leading_comments: vec![],
+                    trailing_comment: None,
                 }]),
                 span: Span::new(9, 23),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             else_branch: Some(Box::new(Expr {
                 kind: ExprKind::Literal(Literal::String("negative".to_string())),
                 span: Span::new(29, 39),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             })),
         };
 
@@ -3165,15 +3165,15 @@ mod tests {
                 kind: ExprKind::Literal(Literal::Integer(1, None)),
                 span: Span::new(1, 2),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             },
             Expr {
                 kind: ExprKind::Literal(Literal::Integer(2, None)),
                 span: Span::new(4, 5),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ]);
 
@@ -3182,15 +3182,15 @@ mod tests {
                 kind: ExprKind::Literal(Literal::String("first".to_string())),
                 span: Span::new(1, 8),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             },
             Expr {
                 kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::new(10, 12),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             },
         ]);
 
@@ -3200,15 +3200,15 @@ mod tests {
                 kind: ExprKind::Identifier("x".to_string()),
                 span: Span::new(0, 1),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(42, None)),
                 span: Span::new(4, 6),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
         };
 
@@ -3249,21 +3249,21 @@ mod tests {
                         kind: ExprKind::Identifier("a".to_string()),
                         span: Span::new(0, 1),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     }),
                     right: Box::new(Expr {
                         kind: ExprKind::Identifier("b".to_string()),
                         span: Span::new(4, 5),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     }),
                 },
                 span: Span::new(0, 5),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             is_async: false,
             is_pub: false,
@@ -3277,8 +3277,8 @@ mod tests {
                 kind: expr_kind,
                 span: Span::new(0, 10),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
             // Verify construction succeeded
             assert!(expr.span.start <= expr.span.end);

@@ -152,8 +152,10 @@ fn test_parse_duration_days() {
 #[test]
 fn test_parse_duration_compound() {
     assert_eq!(time::parse_duration("1h 30m").unwrap(), 5_400_000);
-    assert_eq!(time::parse_duration("1d 2h 3m 4s").unwrap(),
-               86_400_000 + 7_200_000 + 180_000 + 4_000);
+    assert_eq!(
+        time::parse_duration("1d 2h 3m 4s").unwrap(),
+        86_400_000 + 7_200_000 + 180_000 + 4_000
+    );
     assert_eq!(time::parse_duration("500ms 1s").unwrap(), 1_500);
 }
 

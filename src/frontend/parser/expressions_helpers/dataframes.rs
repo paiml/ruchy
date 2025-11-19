@@ -47,16 +47,13 @@ pub(in crate::frontend::parser) fn parse_dataframe_token(
         // DataFrame identifier: df.method() or df variable reference
         // Consume the DataFrame token since we're handling it as identifier
         state.tokens.advance();
-        Ok(Expr::new(
-            ExprKind::Identifier("df".to_string()),
-            span,
-        ))
+        Ok(Expr::new(ExprKind::Identifier("df".to_string()), span))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]

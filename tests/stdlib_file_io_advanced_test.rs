@@ -156,11 +156,8 @@ println("Delete attempted")
 "#;
 
     // Should either succeed silently or return error - depends on implementation
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert();
-        // Don't assert success/failure - implementation may vary
+    ruchy_cmd().arg("-e").arg(code).assert();
+    // Don't assert success/failure - implementation may vary
 }
 
 // ============================================================================
@@ -189,7 +186,9 @@ fn main() {{
     );
 
     let mut temp_source = NamedTempFile::new().expect("Failed to create temp file");
-    temp_source.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_source
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_source.path();
 
     ruchy_cmd()
@@ -224,7 +223,9 @@ fn main() {{
     );
 
     let mut temp_source = NamedTempFile::new().expect("Failed to create temp file");
-    temp_source.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_source
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_source.path();
 
     ruchy_cmd()
@@ -261,7 +262,9 @@ fn main() {{
     );
 
     let mut temp_source = NamedTempFile::new().expect("Failed to create temp file");
-    temp_source.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_source
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_source.path();
 
     ruchy_cmd()

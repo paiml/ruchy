@@ -483,7 +483,9 @@ Enter expressions to evaluate them.
                     + Self::estimate_value_memory(start)
                     + Self::estimate_value_memory(end)
             }
-            Value::EnumVariant { variant_name, data, .. } => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } => {
                 variant_name.len()
                     + data
                         .as_ref()
@@ -491,7 +493,11 @@ Enter expressions to evaluate them.
             }
             Value::Closure { params, .. } => {
                 // RUNTIME-DEFAULT-PARAMS: Approximate params + environment overhead
-                params.iter().map(|(param_name, _default)| param_name.len()).sum::<usize>() + 128
+                params
+                    .iter()
+                    .map(|(param_name, _default)| param_name.len())
+                    .sum::<usize>()
+                    + 128
             }
             Value::BuiltinFunction(name) => name.len() + size_of::<usize>(),
             Value::Struct { name, fields } => {

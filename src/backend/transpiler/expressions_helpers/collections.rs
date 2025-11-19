@@ -282,7 +282,10 @@ mod tests {
     fn test_transpile_set_empty() {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_set(&[]).unwrap();
-        assert_eq!(result.to_string(), "std :: collections :: HashSet :: new ()");
+        assert_eq!(
+            result.to_string(),
+            "std :: collections :: HashSet :: new ()"
+        );
     }
 
     // Test 5: transpile_set - single element
@@ -292,7 +295,11 @@ mod tests {
         let elements = vec![int_expr(42)];
         let result = transpiler.transpile_set(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("HashSet") && result_str.contains("insert") && result_str.contains("42"));
+        assert!(
+            result_str.contains("HashSet")
+                && result_str.contains("insert")
+                && result_str.contains("42")
+        );
     }
 
     // Test 6: transpile_set - multiple elements
@@ -302,7 +309,9 @@ mod tests {
         let elements = vec![int_expr(1), int_expr(2), int_expr(3)];
         let result = transpiler.transpile_set(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("HashSet") && result_str.contains('1') && result_str.contains('2'));
+        assert!(
+            result_str.contains("HashSet") && result_str.contains('1') && result_str.contains('2')
+        );
     }
 
     // Test 7: transpile_tuple - empty tuple
@@ -329,7 +338,9 @@ mod tests {
         let elements = vec![int_expr(1), string_expr("hello")];
         let result = transpiler.transpile_tuple(&elements).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains('(') && result_str.contains('1') && result_str.contains("hello"));
+        assert!(
+            result_str.contains('(') && result_str.contains('1') && result_str.contains("hello")
+        );
     }
 
     // Test 10: transpile_range - exclusive range
@@ -371,7 +382,11 @@ mod tests {
         }];
         let result = transpiler.transpile_object_literal(&fields).unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("BTreeMap") && result_str.contains("insert") && result_str.contains("name"));
+        assert!(
+            result_str.contains("BTreeMap")
+                && result_str.contains("insert")
+                && result_str.contains("name")
+        );
     }
 
     // Test 14: transpile_object_literal - multiple fields
@@ -401,9 +416,15 @@ mod tests {
             ("name".to_string(), string_expr("Alice")),
             ("age".to_string(), int_expr(30)),
         ];
-        let result = transpiler.transpile_struct_literal("Person", &fields, None).unwrap();
+        let result = transpiler
+            .transpile_struct_literal("Person", &fields, None)
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("Person") && result_str.contains("name") && result_str.contains("age"));
+        assert!(
+            result_str.contains("Person")
+                && result_str.contains("name")
+                && result_str.contains("age")
+        );
     }
 
     // Test 16: transpile_struct_literal - with base (struct update syntax)
@@ -418,18 +439,30 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_struct_literal("Person", &fields, Some(&base)).unwrap();
+        let result = transpiler
+            .transpile_struct_literal("Person", &fields, Some(&base))
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("Person") && result_str.contains("..") && result_str.contains("old_person"));
+        assert!(
+            result_str.contains("Person")
+                && result_str.contains("..")
+                && result_str.contains("old_person")
+        );
     }
 
     // Test 17: transpile_struct_literal - empty struct
     #[test]
     fn test_transpile_struct_literal_empty() {
         let transpiler = test_transpiler();
-        let result = transpiler.transpile_struct_literal("EmptyStruct", &[], None).unwrap();
+        let result = transpiler
+            .transpile_struct_literal("EmptyStruct", &[], None)
+            .unwrap();
         let result_str = result.to_string();
-        assert!(result_str.contains("EmptyStruct") && result_str.contains('{') && result_str.contains('}'));
+        assert!(
+            result_str.contains("EmptyStruct")
+                && result_str.contains('{')
+                && result_str.contains('}')
+        );
     }
 
     // Test 18: collect_hashmap_field_tokens - key-value field
@@ -480,7 +513,9 @@ mod tests {
             trailing_comment: None,
         };
         let fields = vec![("numbers".to_string(), nested_list)];
-        let result = transpiler.transpile_struct_literal("Data", &fields, None).unwrap();
+        let result = transpiler
+            .transpile_struct_literal("Data", &fields, None)
+            .unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("Data") && result_str.contains("numbers"));
     }

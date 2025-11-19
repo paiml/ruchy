@@ -37,13 +37,13 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
 mod actors;
-mod effects;
 pub mod codegen_minimal;
 pub mod constant_folder; // PERF-002-A: Constant folding optimization
-pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod dataframe;
-// #[cfg(feature = "dataframe")]
-// mod dataframe_arrow; // Temporarily disabled until proper implementation
+mod effects;
+pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
+                         // #[cfg(feature = "dataframe")]
+                         // mod dataframe_arrow; // Temporarily disabled until proper implementation
 mod dataframe_builder;
 mod dataframe_helpers;
 mod dispatcher;
@@ -178,7 +178,9 @@ impl Clone for Transpiler {
             function_signatures: self.function_signatures.clone(),
             module_names: self.module_names.clone(),
             string_vars: std::cell::RefCell::new(self.string_vars.borrow().clone()),
-            current_function_return_type: std::cell::RefCell::new(self.current_function_return_type.borrow().clone()),
+            current_function_return_type: std::cell::RefCell::new(
+                self.current_function_return_type.borrow().clone(),
+            ),
             global_vars: std::sync::RwLock::new(self.global_vars.read().unwrap().clone()),
             const_vars: std::sync::RwLock::new(self.const_vars.read().unwrap().clone()),
         }
@@ -700,9 +702,13 @@ impl Transpiler {
             }
 
             // Method calls on DataFrame instances (builder pattern)
-            ExprKind::MethodCall { receiver, method, .. } => {
-                matches!(method.as_str(), "column" | "build" | "rows" | "columns" | "height" | "width")
-                    || Self::contains_dataframe(receiver)
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
+                matches!(
+                    method.as_str(),
+                    "column" | "build" | "rows" | "columns" | "height" | "width"
+                ) || Self::contains_dataframe(receiver)
             }
 
             // Type annotations with DataFrame
@@ -723,10 +729,16 @@ impl Transpiler {
 
             // Blocks and control flow
             ExprKind::Block(exprs) => exprs.iter().any(Self::contains_dataframe),
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 Self::contains_dataframe(condition)
                     || Self::contains_dataframe(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| Self::contains_dataframe(e))
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| Self::contains_dataframe(e))
             }
 
             _ => false,
@@ -740,9 +752,9 @@ impl Transpiler {
 
         match &expr.kind {
             // A Block with Function expressions => has standalone functions
-            ExprKind::Block(exprs) => {
-                exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. }))
-            }
+            ExprKind::Block(exprs) => exprs
+                .iter()
+                .any(|e| matches!(&e.kind, ExprKind::Function { .. })),
             // Single top-level Function
             ExprKind::Function { .. } => true,
             _ => false,
@@ -815,7 +827,8 @@ impl Transpiler {
             let after_propagation = constant_folder::propagate_constants(resolved_expr);
 
             // OPT-CODEGEN-004: Inline small, non-recursive functions
-            let (after_inlining, inlined_functions) = inline_expander::inline_small_functions(after_propagation);
+            let (after_inlining, inlined_functions) =
+                inline_expander::inline_small_functions(after_propagation);
 
             // PERF-002-C: Dead code elimination (removes unused inlined functions)
             // Pass inlined function names so DCE can preserve functions that weren't inlined
@@ -1030,10 +1043,16 @@ impl Transpiler {
         }
 
         // If we have functions, collect mutable Let names to promote to globals
-        let has_functions_check = exprs.iter().any(|e| matches!(&e.kind, ExprKind::Function { .. })) || has_main_function;
+        let has_functions_check = exprs
+            .iter()
+            .any(|e| matches!(&e.kind, ExprKind::Function { .. }))
+            || has_main_function;
         if has_functions_check {
             for expr in exprs {
-                if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+                if let ExprKind::Let {
+                    name, is_mutable, ..
+                } = &expr.kind
+                {
                     if *is_mutable && !const_var_names.contains(name) {
                         global_var_names.insert(name.clone());
                     }
@@ -1052,7 +1071,10 @@ impl Transpiler {
             }
 
             // TRANSPILER-SCOPE: Skip mutable Lets and const declarations that were promoted to globals
-            if let ExprKind::Let { name, is_mutable, .. } = &expr.kind {
+            if let ExprKind::Let {
+                name, is_mutable, ..
+            } = &expr.kind
+            {
                 if (*is_mutable && global_var_names.contains(name))
                     || const_var_names.contains(name)
                 {
@@ -1855,10 +1877,10 @@ impl Transpiler {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
             Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
-            DictComprehension, Effect, Err, FieldAccess, For, Function, Handle, Identifier, If, IfLet, IndexAccess,
-            Lambda, List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None,
-            ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement, PreIncrement,
-            QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
+            DictComprehension, Effect, Err, FieldAccess, For, Function, Handle, Identifier, If,
+            IfLet, IndexAccess, Lambda, List, ListComprehension, Literal, Loop, Macro, Match,
+            MethodCall, None, ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement,
+            PreIncrement, QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
             StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct,
             TypeCast, Unary, While, WhileLet,
         };
@@ -2384,8 +2406,8 @@ mod tests {
                 },
                 span: Span::default(),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             };
 
             transpiler.collect_signatures_from_expr(&func_expr);

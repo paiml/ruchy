@@ -65,7 +65,10 @@ fn test_env_remove_var() {
 
     // Remove variable
     env::remove_var(key).unwrap();
-    assert!(env::var(key).is_err(), "Variable should not exist after removal");
+    assert!(
+        env::var(key).is_err(),
+        "Variable should not exist after removal"
+    );
 }
 
 #[test]
@@ -80,10 +83,16 @@ fn test_env_vars_returns_hashmap() {
     let vars = env::vars().unwrap();
 
     // Should be a HashMap
-    assert!(!vars.is_empty(), "Environment should have at least some variables");
+    assert!(
+        !vars.is_empty(),
+        "Environment should have at least some variables"
+    );
 
     // PATH should be in the environment
-    assert!(vars.contains_key("PATH"), "PATH should be in environment variables");
+    assert!(
+        vars.contains_key("PATH"),
+        "PATH should be in environment variables"
+    );
 }
 
 #[test]
@@ -112,7 +121,10 @@ fn test_env_current_dir() {
     assert!(!dir.is_empty(), "Current directory should not be empty");
 
     // Directory should exist
-    assert!(std::path::Path::new(&dir).exists(), "Current directory should exist");
+    assert!(
+        std::path::Path::new(&dir).exists(),
+        "Current directory should exist"
+    );
 }
 
 #[test]
@@ -131,8 +143,11 @@ fn test_env_set_current_dir() {
 
     // Verify we changed
     let new_dir = env::current_dir().unwrap();
-    assert!(new_dir.contains(temp_path) || std::path::Path::new(&new_dir).canonicalize().unwrap()
-            == std::path::Path::new(temp_path).canonicalize().unwrap());
+    assert!(
+        new_dir.contains(temp_path)
+            || std::path::Path::new(&new_dir).canonicalize().unwrap()
+                == std::path::Path::new(temp_path).canonicalize().unwrap()
+    );
 
     // Restore original directory
     env::set_current_dir(&original).unwrap();
@@ -143,7 +158,10 @@ fn test_env_args() {
     let args = env::args().unwrap();
 
     // Should have at least the program name
-    assert!(!args.is_empty(), "Args should contain at least program name");
+    assert!(
+        !args.is_empty(),
+        "Args should contain at least program name"
+    );
 
     // First arg is typically the program path/name
     assert!(!args[0].is_empty(), "Program name should not be empty");
@@ -157,7 +175,10 @@ fn test_env_temp_dir() {
     assert!(!temp.is_empty(), "Temp directory path should not be empty");
 
     // Temp directory should exist
-    assert!(std::path::Path::new(&temp).exists(), "Temp directory should exist");
+    assert!(
+        std::path::Path::new(&temp).exists(),
+        "Temp directory should exist"
+    );
 }
 
 #[test]

@@ -193,7 +193,14 @@ impl Transpiler {
                 methods,
                 derives,
                 is_pub,
-            } => self.transpile_struct_with_methods(name, type_params, fields, methods, derives, *is_pub),
+            } => self.transpile_struct_with_methods(
+                name,
+                type_params,
+                fields,
+                methods,
+                derives,
+                *is_pub,
+            ),
             ExprKind::TupleStruct {
                 name,
                 type_params,
@@ -420,7 +427,12 @@ impl Transpiler {
                     // Transpile let-else pattern: let PAT = EXPR else { BLOCK }
                     self.transpile_let_pattern_else(pattern, value, body, else_expr)
                 } else {
-                    self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
+                    self.transpile_let_pattern_with_type(
+                        pattern,
+                        type_annotation.as_ref(),
+                        value,
+                        body,
+                    )
                 }
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
@@ -457,7 +469,9 @@ impl Transpiler {
             }
             ExprKind::ReExport { items, module } => Ok(Self::transpile_reexport(items, module)),
             ExprKind::Module { name, body } => self.transpile_module(name, body),
-            ExprKind::ModuleDeclaration { name } => Ok(self.transpile_external_mod_declaration(name, expr)),
+            ExprKind::ModuleDeclaration { name } => {
+                Ok(self.transpile_external_mod_declaration(name, expr))
+            }
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }
@@ -539,10 +553,7 @@ mod tests {
     #[test]
     fn test_transpile_basic_expr_identifier() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Identifier("my_var".to_string()),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Identifier("my_var".to_string()), Span::default());
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -615,10 +626,7 @@ mod tests {
     #[test]
     fn test_transpile_macro_assert() {
         let transpiler = Transpiler::new();
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_macro("assert", &[condition]);
         assert!(result.is_ok());
         let tokens = result.unwrap().to_string();
@@ -803,9 +811,15 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::Binary {
-                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
                 op: BinaryOp::Add,
-                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::default())),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -819,8 +833,14 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::If {
-                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
-                then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
                 else_branch: None,
             },
             Span::default(),
@@ -835,7 +855,10 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::Await {
-                expr: Box::new(Expr::new(ExprKind::Identifier("future".to_string()), Span::default())),
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("future".to_string()),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -850,9 +873,15 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::Binary {
-                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
                 op: BinaryOp::Multiply,
-                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3, None)), Span::default())),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -870,7 +899,10 @@ mod tests {
         let expr = Expr::new(
             ExprKind::Unary {
                 op: UnaryOp::Negate,
-                operand: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5, None)), Span::default())),
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -886,8 +918,14 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::Assign {
-                target: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default())),
-                value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default())),
+                target: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -904,9 +942,15 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::CompoundAssign {
-                target: Box::new(Expr::new(ExprKind::Identifier("count".to_string()), Span::default())),
+                target: Box::new(Expr::new(
+                    ExprKind::Identifier("count".to_string()),
+                    Span::default(),
+                )),
                 op: BinaryOp::Add,
-                value: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -922,7 +966,10 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::PreIncrement {
-                target: Box::new(Expr::new(ExprKind::Identifier("i".to_string()), Span::default())),
+                target: Box::new(Expr::new(
+                    ExprKind::Identifier("i".to_string()),
+                    Span::default(),
+                )),
             },
             Span::default(),
         );
@@ -936,9 +983,18 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::If {
-                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
-                then_branch: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
-                else_branch: Some(Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default()))),
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
+                else_branch: Some(Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                ))),
             },
             Span::default(),
         );
@@ -955,11 +1011,17 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::Match {
-                expr: Box::new(Expr::new(ExprKind::Identifier("x".to_string()), Span::default())),
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
                 arms: vec![MatchArm {
                     pattern: Pattern::Wildcard,
                     guard: None,
-                    body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default())),
+                    body: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(1, None)),
+                        Span::default(),
+                    )),
                     span: Span::default(),
                 }],
             },
@@ -979,7 +1041,10 @@ mod tests {
             ExprKind::For {
                 var: "i".to_string(),
                 pattern: None,
-                iter: Box::new(Expr::new(ExprKind::Identifier("items".to_string()), Span::default())),
+                iter: Box::new(Expr::new(
+                    ExprKind::Identifier("items".to_string()),
+                    Span::default(),
+                )),
                 body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 label: None,
             },
@@ -995,7 +1060,10 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = Expr::new(
             ExprKind::While {
-                condition: Box::new(Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default())),
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
                 body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 label: None,
             },
@@ -1032,7 +1100,10 @@ mod tests {
         let expr = Expr::new(
             ExprKind::IfLet {
                 pattern: Pattern::Wildcard,
-                expr: Box::new(Expr::new(ExprKind::Identifier("opt".to_string()), Span::default())),
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("opt".to_string()),
+                    Span::default(),
+                )),
                 then_branch: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 else_branch: None,
             },
@@ -1052,7 +1123,10 @@ mod tests {
         let expr = Expr::new(
             ExprKind::WhileLet {
                 pattern: Pattern::Wildcard,
-                expr: Box::new(Expr::new(ExprKind::Identifier("iter".to_string()), Span::default())),
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("iter".to_string()),
+                    Span::default(),
+                )),
                 body: Box::new(Expr::new(ExprKind::Block(vec![]), Span::default())),
                 label: None,
             },

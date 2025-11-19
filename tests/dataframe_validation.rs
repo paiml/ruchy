@@ -34,7 +34,10 @@ fn test_dataframe_row_indexing_returns_object() {
 
             // Verify values
             assert_eq!(obj.get("id"), Some(&Value::Integer(1)));
-            assert_eq!(obj.get("name"), Some(&Value::from_string("Alice".to_string())));
+            assert_eq!(
+                obj.get("name"),
+                Some(&Value::from_string("Alice".to_string()))
+            );
         }
         _ => panic!("Expected Object, got {result:?}"),
     }
@@ -125,7 +128,10 @@ fn test_dataframe_second_row_access() {
     match result {
         Value::Object(obj) => {
             assert_eq!(obj.get("id"), Some(&Value::Integer(2)));
-            assert_eq!(obj.get("name"), Some(&Value::from_string("Bob".to_string())));
+            assert_eq!(
+                obj.get("name"),
+                Some(&Value::from_string("Bob".to_string()))
+            );
         }
         _ => panic!("Expected Object, got {result:?}"),
     }

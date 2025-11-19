@@ -1,8 +1,8 @@
 use anyhow::{bail, Context, Result};
-mod commands;
-mod handlers_modules;
 pub mod add;
 pub mod build;
+mod commands;
+mod handlers_modules;
 pub mod new;
 use ruchy::frontend::ast::Expr;
 use ruchy::runtime::replay_converter::ConversionConfig;
@@ -582,12 +582,13 @@ pub fn handle_compile_command(
     }
 
     // OPTIMIZATION-001: Map high-level optimization presets to rustc flags
-    let (final_opt_level, final_strip, rustc_flags, optimization_info) = if let Some(level) = optimize {
-        apply_optimization_preset(level)?
-    } else {
-        // Use existing flags if no --optimize specified
-        (opt_level, strip, Vec::new(), None)
-    };
+    let (final_opt_level, final_strip, rustc_flags, optimization_info) =
+        if let Some(level) = optimize {
+            apply_optimization_preset(level)?
+        } else {
+            // Use existing flags if no --optimize specified
+            (opt_level, strip, Vec::new(), None)
+        };
 
     // PERF-002 Phase 3: Show profile information if requested
     if show_profile_info {
@@ -660,11 +661,7 @@ pub fn handle_compile_command(
             }
 
             let binary_size = fs::metadata(&binary_path)?.len();
-            println!(
-                "{} Binary size: {} bytes",
-                "ℹ".bright_blue(),
-                binary_size
-            );
+            println!("{} Binary size: {} bytes", "ℹ".bright_blue(), binary_size);
 
             // JSON output for CI/CD integration
             if let Some(json_path) = json_output {
@@ -690,7 +687,12 @@ pub fn handle_compile_command(
 }
 
 /// Optimization result: (`opt_level`, strip, `rustc_flags`, info)
-type OptimizationResult = (String, bool, Vec<String>, Option<(String, Option<String>, Option<String>)>);
+type OptimizationResult = (
+    String,
+    bool,
+    Vec<String>,
+    Option<(String, Option<String>, Option<String>)>,
+);
 
 /// Apply optimization preset and return (`opt_level`, strip, `rustc_flags`, info)
 fn apply_optimization_preset(level: &str) -> Result<OptimizationResult> {
@@ -781,8 +783,14 @@ fn generate_compilation_json(
     use std::fs;
 
     let mut json = String::from("{\n");
-    json.push_str(&format!("  \"source_file\": \"{}\",\n", source_file.display()));
-    json.push_str(&format!("  \"binary_path\": \"{}\",\n", binary_path.display()));
+    json.push_str(&format!(
+        "  \"source_file\": \"{}\",\n",
+        source_file.display()
+    ));
+    json.push_str(&format!(
+        "  \"binary_path\": \"{}\",\n",
+        binary_path.display()
+    ));
     json.push_str(&format!(
         "  \"optimization_level\": \"{}\",\n",
         optimization_level.unwrap_or("custom")
@@ -1126,13 +1134,18 @@ pub fn handle_bench_command(
     let mean = sum / timings.len() as f64;
 
     // Calculate standard deviation
-    let variance: f64 = timings.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / timings.len() as f64;
+    let variance: f64 =
+        timings.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / timings.len() as f64;
     let stddev = variance.sqrt();
 
     // Generate output based on format
     let report = match format {
-        "json" => generate_bench_json_output(file, iterations, warmup, &timings, min, max, mean, stddev),
-        "csv" => generate_bench_csv_output(file, iterations, warmup, &timings, min, max, mean, stddev),
+        "json" => {
+            generate_bench_json_output(file, iterations, warmup, &timings, min, max, mean, stddev)
+        }
+        "csv" => {
+            generate_bench_csv_output(file, iterations, warmup, &timings, min, max, mean, stddev)
+        }
         _ => generate_bench_text_output(file, iterations, warmup, &timings, min, max, mean, stddev),
     };
 
@@ -1274,7 +1287,10 @@ pub fn handle_doc_command(
 
     // Validate format
     if !matches!(format, "html" | "markdown" | "json") {
-        bail!("Invalid format '{}'. Supported formats: html, markdown, json", format);
+        bail!(
+            "Invalid format '{}'. Supported formats: html, markdown, json",
+            format
+        );
     }
 
     // Check if path exists
@@ -1291,7 +1307,9 @@ pub fn handle_doc_command(
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
 
     let mut parser = ruchy::frontend::parser::Parser::new(&source);
-    let ast = parser.parse().map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
+    let ast = parser
+        .parse()
+        .map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
 
     if verbose {
         println!("{} Extracting documentation...", "→".bright_blue());
@@ -1301,7 +1319,11 @@ pub fn handle_doc_command(
     let docs = extract_documentation(&ast, private);
 
     if verbose {
-        println!("{} Generating {} documentation...", "→".bright_blue(), format);
+        println!(
+            "{} Generating {} documentation...",
+            "→".bright_blue(),
+            format
+        );
     }
 
     // Create output directory
@@ -1317,9 +1339,7 @@ pub fn handle_doc_command(
     };
 
     // Determine output filename
-    let file_stem = path.file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("docs");
+    let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("docs");
     let extension = match format {
         "markdown" => "md",
         "json" => "json",
@@ -1349,18 +1369,23 @@ fn extract_documentation(ast: &ruchy::frontend::ast::Expr, include_private: bool
 }
 
 /// Recursively extract documentation from AST nodes
-fn extract_docs_recursive(expr: &ruchy::frontend::ast::Expr, docs: &mut Vec<DocItem>, include_private: bool) {
+fn extract_docs_recursive(
+    expr: &ruchy::frontend::ast::Expr,
+    docs: &mut Vec<DocItem>,
+    include_private: bool,
+) {
     use ruchy::frontend::ast::ExprKind;
 
     match &expr.kind {
         ExprKind::Function { name, params, .. } => {
             // Extract leading doc comments from Comment structs
-            let doc_comment = expr.leading_comments
+            let doc_comment = expr
+                .leading_comments
                 .iter()
                 .map(|c| match &c.kind {
-                    ruchy::frontend::ast::CommentKind::Line(text) |
-                    ruchy::frontend::ast::CommentKind::Block(text) |
-                    ruchy::frontend::ast::CommentKind::Doc(text) => text.clone(),
+                    ruchy::frontend::ast::CommentKind::Line(text)
+                    | ruchy::frontend::ast::CommentKind::Block(text)
+                    | ruchy::frontend::ast::CommentKind::Doc(text) => text.clone(),
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -1380,7 +1405,11 @@ fn extract_docs_recursive(expr: &ruchy::frontend::ast::Expr, docs: &mut Vec<DocI
                     kind: DocItemKind::Function,
                     name: name.clone(),
                     params: param_names,
-                    doc_comment: if doc_comment.is_empty() { None } else { Some(doc_comment) },
+                    doc_comment: if doc_comment.is_empty() {
+                        None
+                    } else {
+                        Some(doc_comment)
+                    },
                 });
             }
         }
@@ -1410,7 +1439,10 @@ enum DocItemKind {
 /// Generate Markdown documentation
 fn generate_markdown_docs(docs: &[DocItem], source_path: &Path) -> String {
     let mut output = String::new();
-    output.push_str(&format!("# Documentation for {}\n\n", source_path.display()));
+    output.push_str(&format!(
+        "# Documentation for {}\n\n",
+        source_path.display()
+    ));
 
     for doc in docs {
         match doc.kind {
@@ -1465,19 +1497,29 @@ fn generate_json_docs(docs: &[DocItem], source_path: &Path) -> Result<String> {
 fn generate_html_docs(docs: &[DocItem], source_path: &Path) -> String {
     let mut output = String::new();
     output.push_str("<!DOCTYPE html>\n<html>\n<head>\n");
-    output.push_str(&format!("<title>Documentation for {}</title>\n", source_path.display()));
+    output.push_str(&format!(
+        "<title>Documentation for {}</title>\n",
+        source_path.display()
+    ));
     output.push_str("<style>\n");
     output.push_str("body { font-family: Arial, sans-serif; margin: 40px; }\n");
     output.push_str("h1 { color: #333; }\n");
     output.push_str("h2 { color: #666; border-bottom: 1px solid #ddd; padding-bottom: 5px; }\n");
     output.push_str("code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; }\n");
     output.push_str("</style>\n</head>\n<body>\n");
-    output.push_str(&format!("<h1>Documentation for {}</h1>\n", source_path.display()));
+    output.push_str(&format!(
+        "<h1>Documentation for {}</h1>\n",
+        source_path.display()
+    ));
 
     for doc in docs {
         match doc.kind {
             DocItemKind::Function => {
-                output.push_str(&format!("<h2><code>{}({})</code></h2>\n", doc.name, doc.params.join(", ")));
+                output.push_str(&format!(
+                    "<h2><code>{}({})</code></h2>\n",
+                    doc.name,
+                    doc.params.join(", ")
+                ));
                 if let Some(comment) = &doc.doc_comment {
                     let clean_comment = comment
                         .lines()
@@ -1519,22 +1561,41 @@ pub fn handle_dataflow_debug_command(
 
     // Validate format
     if !matches!(format, "interactive" | "json" | "text") {
-        bail!("Invalid format '{}'. Supported formats: interactive, json, text", format);
+        bail!(
+            "Invalid format '{}'. Supported formats: interactive, json, text",
+            format
+        );
     }
 
     // Validate start_mode
-    if !matches!(start_mode, "overview" | "stages" | "data" | "metrics" | "history") {
-        bail!("Invalid start mode '{}'. Supported: overview, stages, data, metrics, history", start_mode);
+    if !matches!(
+        start_mode,
+        "overview" | "stages" | "data" | "metrics" | "history"
+    ) {
+        bail!(
+            "Invalid start mode '{}'. Supported: overview, stages, data, metrics, history",
+            start_mode
+        );
     }
 
     // Validate sample_rate
     if !(0.0..=1.0).contains(&sample_rate) {
-        bail!("Invalid sample rate '{}'. Must be between 0.0 and 1.0", sample_rate);
+        bail!(
+            "Invalid sample rate '{}'. Must be between 0.0 and 1.0",
+            sample_rate
+        );
     }
 
     if verbose {
         let msg = format!("→ Starting Dataflow Debugger ({})", start_mode);
-        println!("{}", if use_color { msg.bright_blue().to_string() } else { msg });
+        println!(
+            "{}",
+            if use_color {
+                msg.bright_blue().to_string()
+            } else {
+                msg
+            }
+        );
     }
 
     // Generate debug output based on format
@@ -1585,7 +1646,14 @@ pub fn handle_dataflow_debug_command(
         fs::write(output_path, &content)
             .with_context(|| format!("Failed to write output: {}", output_path.display()))?;
         let msg = format!("✓ Dataflow debug data saved: {}", output_path.display());
-        println!("{}", if use_color { msg.bright_green().to_string() } else { msg });
+        println!(
+            "{}",
+            if use_color {
+                msg.bright_green().to_string()
+            } else {
+                msg
+            }
+        );
     } else {
         print!("{}", content);
     }
@@ -1638,7 +1706,12 @@ fn generate_dataflow_debug_text(
     if !breakpoints.is_empty() {
         output.push_str(&format!("Breakpoints: {:?}\n", breakpoints));
     }
-    if auto_materialize || enable_profiling || track_memory || compute_diffs || !breakpoints.is_empty() {
+    if auto_materialize
+        || enable_profiling
+        || track_memory
+        || compute_diffs
+        || !breakpoints.is_empty()
+    {
         output.push('\n');
     }
 
@@ -1789,17 +1862,33 @@ pub fn handle_actor_observe_command(
 
     // Validate format
     if !matches!(format, "interactive" | "json" | "text") {
-        bail!("Invalid format '{}'. Supported formats: interactive, json, text", format);
+        bail!(
+            "Invalid format '{}'. Supported formats: interactive, json, text",
+            format
+        );
     }
 
     // Validate start_mode
-    if !matches!(start_mode, "overview" | "actors" | "messages" | "metrics" | "deadlocks") {
-        bail!("Invalid start mode '{}'. Supported: overview, actors, messages, metrics, deadlocks", start_mode);
+    if !matches!(
+        start_mode,
+        "overview" | "actors" | "messages" | "metrics" | "deadlocks"
+    ) {
+        bail!(
+            "Invalid start mode '{}'. Supported: overview, actors, messages, metrics, deadlocks",
+            start_mode
+        );
     }
 
     if verbose {
         let msg = format!("→ Starting Actor Observatory ({})", start_mode);
-        println!("{}", if use_color { msg.bright_blue().to_string() } else { msg });
+        println!(
+            "{}",
+            if use_color {
+                msg.bright_blue().to_string()
+            } else {
+                msg
+            }
+        );
     }
 
     // Generate observatory output based on format
@@ -1847,7 +1936,14 @@ pub fn handle_actor_observe_command(
         fs::write(output_path, &content)
             .with_context(|| format!("Failed to write output: {}", output_path.display()))?;
         let msg = format!("✓ Actor observatory data saved: {}", output_path.display());
-        println!("{}", if use_color { msg.bright_green().to_string() } else { msg });
+        println!(
+            "{}",
+            if use_color {
+                msg.bright_green().to_string()
+            } else {
+                msg
+            }
+        );
     } else {
         print!("{}", content);
     }
@@ -1989,11 +2085,16 @@ fn generate_actor_observe_interactive(
     output.push('\n');
     output.push('\n');
 
-    output.push_str(&format!("Mode: {} | Refresh: {}ms | Max Traces: {} | Max Actors: {}\n",
-        start_mode, refresh_interval, max_traces, max_actors));
+    output.push_str(&format!(
+        "Mode: {} | Refresh: {}ms | Max Traces: {} | Max Actors: {}\n",
+        start_mode, refresh_interval, max_traces, max_actors
+    ));
 
     if enable_deadlock_detection {
-        output.push_str(&format!("Deadlock Detection: ✓ ({}ms)\n", deadlock_interval));
+        output.push_str(&format!(
+            "Deadlock Detection: ✓ ({}ms)\n",
+            deadlock_interval
+        ));
     }
 
     if filter_actor.is_some() || filter_failed || filter_slow.is_some() {
@@ -2038,17 +2139,26 @@ pub fn handle_optimize_command(
 
     // Validate format
     if !matches!(format, "text" | "json" | "html") {
-        bail!("Invalid format '{}'. Supported formats: text, json, html", format);
+        bail!(
+            "Invalid format '{}'. Supported formats: text, json, html",
+            format
+        );
     }
 
     // Validate hardware profile
     if !matches!(hardware, "detect" | "intel" | "amd" | "arm") {
-        bail!("Invalid hardware profile '{}'. Supported: detect, intel, amd, arm", hardware);
+        bail!(
+            "Invalid hardware profile '{}'. Supported: detect, intel, amd, arm",
+            hardware
+        );
     }
 
     // Validate depth
     if !matches!(depth, "quick" | "standard" | "deep") {
-        bail!("Invalid depth '{}'. Supported: quick, standard, deep", depth);
+        bail!(
+            "Invalid depth '{}'. Supported: quick, standard, deep",
+            depth
+        );
     }
 
     // Check if file exists
@@ -2065,7 +2175,9 @@ pub fn handle_optimize_command(
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
 
     let mut parser = ruchy::frontend::parser::Parser::new(&source);
-    let ast = parser.parse().map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
+    let ast = parser
+        .parse()
+        .map_err(|e| anyhow::anyhow!("Parse error: {}", e))?;
 
     if verbose {
         println!("{} Running optimization analysis...", "→".bright_blue());
@@ -2073,9 +2185,42 @@ pub fn handle_optimize_command(
 
     // Generate analysis based on format
     let content = match format {
-        "text" => generate_optimize_text(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
-        "json" => generate_optimize_json(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
-        "html" => generate_optimize_html(&ast, file, hardware, depth, cache, branches, vectorization, abstractions, benchmark, threshold),
+        "text" => generate_optimize_text(
+            &ast,
+            file,
+            hardware,
+            depth,
+            cache,
+            branches,
+            vectorization,
+            abstractions,
+            benchmark,
+            threshold,
+        ),
+        "json" => generate_optimize_json(
+            &ast,
+            file,
+            hardware,
+            depth,
+            cache,
+            branches,
+            vectorization,
+            abstractions,
+            benchmark,
+            threshold,
+        ),
+        "html" => generate_optimize_html(
+            &ast,
+            file,
+            hardware,
+            depth,
+            cache,
+            branches,
+            vectorization,
+            abstractions,
+            benchmark,
+            threshold,
+        ),
         _ => unreachable!(),
     };
 
@@ -2183,7 +2328,9 @@ fn generate_optimize_json(
         parts.push("    \"branches\": { \"predictability\": \"high\", \"complexity\": \"low\" }");
     }
     if vectorization {
-        parts.push("    \"vectorization\": { \"opportunities\": \"present\", \"simd_compatible\": true }");
+        parts.push(
+            "    \"vectorization\": { \"opportunities\": \"present\", \"simd_compatible\": true }",
+        );
     }
     if abstractions {
         parts.push("    \"abstractions\": { \"cost\": \"zero\", \"overhead\": \"minimal\" }");
@@ -2228,10 +2375,22 @@ fn generate_optimize_html(
     output.push_str("  </style>\n");
     output.push_str("</head>\n<body>\n");
     output.push_str("<h1>Optimization Analysis</h1>\n");
-    output.push_str(&format!("<div class=\"info\"><strong>File:</strong> {}</div>\n", file.display()));
-    output.push_str(&format!("<div class=\"info\"><strong>Hardware:</strong> {}</div>\n", hardware));
-    output.push_str(&format!("<div class=\"info\"><strong>Depth:</strong> {}</div>\n", depth));
-    output.push_str(&format!("<div class=\"info\"><strong>Threshold:</strong> {:.2}%</div>\n", threshold * 100.0));
+    output.push_str(&format!(
+        "<div class=\"info\"><strong>File:</strong> {}</div>\n",
+        file.display()
+    ));
+    output.push_str(&format!(
+        "<div class=\"info\"><strong>Hardware:</strong> {}</div>\n",
+        hardware
+    ));
+    output.push_str(&format!(
+        "<div class=\"info\"><strong>Depth:</strong> {}</div>\n",
+        depth
+    ));
+    output.push_str(&format!(
+        "<div class=\"info\"><strong>Threshold:</strong> {:.2}%</div>\n",
+        threshold * 100.0
+    ));
 
     if cache {
         output.push_str("<h2>Cache Behavior</h2>\n");
@@ -2557,7 +2716,16 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             debounce,
             pid_file,
             watch_wasm,
-        } => handle_serve_command(&directory, port, &host, verbose, watch, debounce, pid_file.as_deref(), watch_wasm),
+        } => handle_serve_command(
+            &directory,
+            port,
+            &host,
+            verbose,
+            watch,
+            debounce,
+            pid_file.as_deref(),
+            watch_wasm,
+        ),
         crate::Commands::ReplayToTests {
             input,
             output,
@@ -2638,7 +2806,14 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             format,
             output,
             verbose,
-        } => handle_bench_command(&file, iterations, warmup, &format, output.as_deref(), verbose),
+        } => handle_bench_command(
+            &file,
+            iterations,
+            warmup,
+            &format,
+            output.as_deref(),
+            verbose,
+        ),
         crate::Commands::Doc {
             path,
             output,
@@ -3292,10 +3467,16 @@ pub fn handle_serve_command(
 
     // Verify directory exists
     if !directory.exists() {
-        return Err(anyhow::anyhow!("Directory not found: {}", directory.display()));
+        return Err(anyhow::anyhow!(
+            "Directory not found: {}",
+            directory.display()
+        ));
     }
     if !directory.is_dir() {
-        return Err(anyhow::anyhow!("Path is not a directory: {}", directory.display()));
+        return Err(anyhow::anyhow!(
+            "Path is not a directory: {}",
+            directory.display()
+        ));
     }
 
     // Initialize PID file if requested
@@ -3310,12 +3491,14 @@ pub fn handle_serve_command(
     {
         use colored::Colorize;
 
-        println!("\n  🚀 {} {}\n",
+        println!(
+            "\n  🚀 {} {}\n",
             "Ruchy Dev Server".bright_cyan().bold(),
             format!("v{}", env!("CARGO_PKG_VERSION")).dimmed()
         );
 
-        println!("  {}  http://{}:{}",
+        println!(
+            "  {}  http://{}:{}",
             "➜  Local:".green(),
             host,
             port.to_string().bold()
@@ -3323,33 +3506,30 @@ pub fn handle_serve_command(
 
         // Show network IP if available
         if let Ok(ip) = local_ip_address::local_ip() {
-            println!("  {}  http://{}:{}",
-                "➜  Network:".green(),
-                ip,
-                port
-            );
+            println!("  {}  http://{}:{}", "➜  Network:".green(), ip, port);
         }
 
-        println!("  📁 {}: {}",
+        println!(
+            "  📁 {}: {}",
             "Serving".dimmed(),
             directory.display().to_string().bold()
         );
 
         if watch {
-            println!("  👀 {}: {}/**/*",
+            println!(
+                "  👀 {}: {}/**/*",
                 "Watching".dimmed(),
                 directory.display().to_string().bold()
             );
             if watch_wasm {
-                println!("  🦀 {}: Hot reload enabled for .ruchy files",
+                println!(
+                    "  🦀 {}: Hot reload enabled for .ruchy files",
                     "WASM".dimmed()
                 );
             }
         }
 
-        println!("\n  {} Press Ctrl+C to stop\n",
-            "Ready".green().bold()
-        );
+        println!("\n  {} Press Ctrl+C to stop\n", "Ready".green().bold());
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -3365,27 +3545,25 @@ pub fn handle_serve_command(
 
     // Build the Axum app with static file serving + WASM headers
     let serve_dir = ServeDir::new(directory)
-        .precompressed_gzip()  // Serve .gz files if available (faster)
-        .precompressed_br();   // Serve .br files if available (faster)
+        .precompressed_gzip() // Serve .gz files if available (faster)
+        .precompressed_br(); // Serve .br files if available (faster)
 
     // Add WASM-specific headers for SharedArrayBuffer support (HTTP-003)
     // Required for: WebAssembly threading, SharedArrayBuffer, Atomics
     // Reference: https://web.dev/coop-coep/
-    let app = Router::new()
-        .fallback_service(serve_dir)
-        .layer(
-            ServiceBuilder::new()
-                // Cross-Origin-Opener-Policy: Isolate browsing context
-                .layer(SetResponseHeaderLayer::if_not_present(
-                    axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),
-                    HeaderValue::from_static("same-origin"),
-                ))
-                // Cross-Origin-Embedder-Policy: Require CORP for cross-origin resources
-                .layer(SetResponseHeaderLayer::if_not_present(
-                    axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
-                    HeaderValue::from_static("require-corp"),
-                ))
-        );
+    let app = Router::new().fallback_service(serve_dir).layer(
+        ServiceBuilder::new()
+            // Cross-Origin-Opener-Policy: Isolate browsing context
+            .layer(SetResponseHeaderLayer::if_not_present(
+                axum::http::header::HeaderName::from_static("cross-origin-opener-policy"),
+                HeaderValue::from_static("same-origin"),
+            ))
+            // Cross-Origin-Embedder-Policy: Require CORP for cross-origin resources
+            .layer(SetResponseHeaderLayer::if_not_present(
+                axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
+                HeaderValue::from_static("require-corp"),
+            )),
+    );
 
     // PERFORMANCE: Create optimized tokio runtime (multi-threaded, CPU-bound)
     let num_cpus = num_cpus::get();
@@ -3405,7 +3583,8 @@ pub fn handle_serve_command(
 
         let shutdown_tx_clone = shutdown_tx;
         std::thread::spawn(move || {
-            let mut signals = Signals::new([SIGINT, SIGTERM]).expect("Failed to register signal handlers");
+            let mut signals =
+                Signals::new([SIGINT, SIGTERM]).expect("Failed to register signal handlers");
             if let Some(_sig) = signals.forever().next() {
                 let _ = shutdown_tx_clone.send(());
             }
@@ -3416,10 +3595,8 @@ pub fn handle_serve_command(
     if watch {
         // Watch mode: Monitor file changes and restart server
         loop {
-            let mut watcher = ruchy::server::watcher::FileWatcher::new(
-                vec![directory.to_path_buf()],
-                debounce,
-            )?;
+            let mut watcher =
+                ruchy::server::watcher::FileWatcher::new(vec![directory.to_path_buf()], debounce)?;
 
             let addr = format!("{}:{}", host, port);
             let app_clone = app.clone();
@@ -3460,23 +3637,22 @@ pub fn handle_serve_command(
                         if watch_wasm {
                             for file in &changed_files {
                                 if file.extension().and_then(|s| s.to_str()) == Some("ruchy") {
-                                    println!("  🦀 {}: {}",
+                                    println!(
+                                        "  🦀 {}: {}",
                                         "Compiling".cyan().bold(),
                                         file.display()
                                     );
 
                                     match compile_ruchy_to_wasm(file, verbose) {
                                         Ok(wasm_path) => {
-                                            println!("  ✅ {}: {}",
+                                            println!(
+                                                "  ✅ {}: {}",
                                                 "Compiled".green(),
                                                 wasm_path.display()
                                             );
                                         }
                                         Err(e) => {
-                                            println!("  ❌ {}: {}",
-                                                "Failed".red(),
-                                                e
-                                            );
+                                            println!("  ❌ {}: {}", "Failed".red(), e);
                                         }
                                     }
                                 }
@@ -3485,19 +3661,14 @@ pub fn handle_serve_command(
 
                         if verbose {
                             for file in &changed_files {
-                                println!("  📝 {}: {}",
-                                    "Changed".yellow(),
-                                    file.display()
-                                );
+                                println!("  📝 {}: {}", "Changed".yellow(), file.display());
                             }
                         }
 
                         // Gracefully shutdown server
                         server_handle.abort();
 
-                        println!("\n  {} Restarting server...\n",
-                            "↻".cyan()
-                        );
+                        println!("\n  {} Restarting server...\n", "↻".cyan());
                     }
 
                     #[cfg(target_arch = "wasm32")]
@@ -4455,13 +4626,12 @@ path = "src/lib.rs"
 
         // Step 5: Run cargo mutants in temp project
         let mut cmd = std::process::Command::new("cargo");
-        cmd.current_dir(&temp_dir)
-            .args([
-                "mutants",
-                "--timeout",
-                &timeout.to_string(),
-                "--no-times",
-            ]);
+        cmd.current_dir(&temp_dir).args([
+            "mutants",
+            "--timeout",
+            &timeout.to_string(),
+            "--no-times",
+        ]);
 
         let output_result = cmd.output()?;
         log_command_output(&output_result, verbose);
@@ -4963,8 +5133,8 @@ pub fn handle_publish_command(
     }
 
     // Parse Ruchy.toml
-    let manifest_content = fs::read_to_string(&manifest_path)
-        .context("Failed to read Ruchy.toml")?;
+    let manifest_content =
+        fs::read_to_string(&manifest_path).context("Failed to read Ruchy.toml")?;
 
     let manifest: PackageManifest = toml::from_str(&manifest_content)
         .context("Failed to parse Ruchy.toml.\nEnsure all required fields are present: name, version, authors, description, license")?;
@@ -4987,11 +5157,10 @@ pub fn handle_publish_command(
     }
 
     // Validate semver version
-    Version::parse(&manifest.package.version)
-        .context(format!(
-            "Invalid version '{}' in Ruchy.toml.\nMust be valid semver (e.g., 1.0.0, 0.2.3)",
-            manifest.package.version
-        ))?;
+    Version::parse(&manifest.package.version).context(format!(
+        "Invalid version '{}' in Ruchy.toml.\nMust be valid semver (e.g., 1.0.0, 0.2.3)",
+        manifest.package.version
+    ))?;
 
     if verbose {
         eprintln!("✅ Manifest validation passed");
@@ -5006,16 +5175,25 @@ pub fn handle_publish_command(
     }
 
     if dry_run {
-        println!("🔍 Dry-run mode: Validating package '{}'", manifest.package.name);
+        println!(
+            "🔍 Dry-run mode: Validating package '{}'",
+            manifest.package.name
+        );
         println!("✅ Package validation successful");
-        println!("📦 Package: {} v{}", manifest.package.name, manifest.package.version);
+        println!(
+            "📦 Package: {} v{}",
+            manifest.package.name, manifest.package.version
+        );
         println!("👤 Authors: {}", manifest.package.authors.join(", "));
         println!("📝 License: {}", manifest.package.license);
         println!("\n✨ Would publish package (skipped in dry-run mode)");
         Ok(())
     } else {
         // Actually publish to crates.io via cargo publish
-        println!("📦 Publishing {} v{}...", manifest.package.name, manifest.package.version);
+        println!(
+            "📦 Publishing {} v{}...",
+            manifest.package.name, manifest.package.version
+        );
 
         use std::process::Command;
 
@@ -5032,12 +5210,15 @@ pub fn handle_publish_command(
         }
 
         // Execute cargo publish
-        let status = cargo_cmd.status()
+        let status = cargo_cmd
+            .status()
             .context("Failed to execute 'cargo publish'. Ensure cargo is installed.")?;
 
         if status.success() {
-            println!("✅ Successfully published {} v{} to crates.io",
-                manifest.package.name, manifest.package.version);
+            println!(
+                "✅ Successfully published {} v{} to crates.io",
+                manifest.package.name, manifest.package.version
+            );
             Ok(())
         } else {
             bail!("cargo publish failed with exit code: {}", status);
@@ -5084,18 +5265,24 @@ fn handle_pgo_compilation(
 
     // Create temporary directory for profile data
     let pgo_dir = TempDir::new()?;
-    let pgo_path = pgo_dir.path().to_str()
+    let pgo_path = pgo_dir
+        .path()
+        .to_str()
         .context("Failed to get PGO directory path")?;
 
     println!("\n{}", "Profile-Guided Optimization".bright_cyan().bold());
     println!("{}", "━".repeat(60).bright_black());
 
     // Step 1: Build with profile generation
-    println!("\n{} Building with profile generation...", "→".bright_blue());
-
-    let profiled_output = output.with_file_name(
-        format!("{}-profiled", output.file_name().unwrap().to_str().unwrap())
+    println!(
+        "\n{} Building with profile generation...",
+        "→".bright_blue()
     );
+
+    let profiled_output = output.with_file_name(format!(
+        "{}-profiled",
+        output.file_name().unwrap().to_str().unwrap()
+    ));
 
     // Add profile-generate flag
     rustc_flags.push("-C".to_string());
@@ -5121,11 +5308,21 @@ fn handle_pgo_compilation(
         fs::set_permissions(&profiled_output, perms)?;
     }
 
-    println!("{} Built: {}", "✓".bright_green(), profiled_output.display());
+    println!(
+        "{} Built: {}",
+        "✓".bright_green(),
+        profiled_output.display()
+    );
 
     // Step 2: Prompt user to run workload
-    println!("\n{}", "Run your typical workload now to collect profile data:".bright_yellow());
-    println!("  {}", format!("./{} <args>", profiled_output.display()).bright_white());
+    println!(
+        "\n{}",
+        "Run your typical workload now to collect profile data:".bright_yellow()
+    );
+    println!(
+        "  {}",
+        format!("./{} <args>", profiled_output.display()).bright_white()
+    );
     println!("\n{}", "Press Enter when done...".bright_yellow());
 
     // Wait for user input
@@ -5133,7 +5330,10 @@ fn handle_pgo_compilation(
     io::stdin().read_line(&mut input)?;
 
     // Step 3: Build with profile-use
-    println!("\n{} Building with profile-guided optimization...", "→".bright_blue());
+    println!(
+        "\n{} Building with profile-guided optimization...",
+        "→".bright_blue()
+    );
 
     // Replace profile-generate with profile-use
     rustc_flags.pop(); // Remove profile-generate option
@@ -5163,7 +5363,11 @@ fn handle_pgo_compilation(
         fs::set_permissions(output, perms)?;
     }
 
-    println!("{} Built: {} (optimized)", "✓".bright_green(), output.display());
+    println!(
+        "{} Built: {} (optimized)",
+        "✓".bright_green(),
+        output.display()
+    );
 
     // Show results
     let binary_size = fs::metadata(output)?.len();
@@ -5171,8 +5375,15 @@ fn handle_pgo_compilation(
     println!("{}", "━".repeat(60).bright_black());
     println!("  {}: {}", "Final binary".bright_blue(), output.display());
     println!("  {}: {} bytes", "Binary size".bright_blue(), binary_size);
-    println!("  {}: {} (can be reused)", "Profile data".bright_blue(), pgo_path);
-    println!("  {}: 25-50x expected for CPU-intensive workloads", "Speedup".bright_blue());
+    println!(
+        "  {}: {} (can be reused)",
+        "Profile data".bright_blue(),
+        pgo_path
+    );
+    println!(
+        "  {}: 25-50x expected for CPU-intensive workloads",
+        "Speedup".bright_blue()
+    );
     println!();
 
     // Clean up profiled binary
@@ -5230,8 +5441,28 @@ fn display_profile_info(opt_level: &str) {
     // Display profile information with visual formatting
     println!("\n{}", "Profile Information".bright_cyan().bold());
     println!("{}", "━".repeat(60).bright_black());
-    println!("  {}: {} ({})", "Profile".bright_blue(), profile_name, if profile_name == "release" { "default" } else { "custom" });
-    println!("  {}: opt-level = {} ({})", "Optimization".bright_blue(), opt_level, if opt_level == "3" { "speed" } else if opt_level == "z" || opt_level == "s" { "size" } else { "custom" });
+    println!(
+        "  {}: {} ({})",
+        "Profile".bright_blue(),
+        profile_name,
+        if profile_name == "release" {
+            "default"
+        } else {
+            "custom"
+        }
+    );
+    println!(
+        "  {}: opt-level = {} ({})",
+        "Optimization".bright_blue(),
+        opt_level,
+        if opt_level == "3" {
+            "speed"
+        } else if opt_level == "z" || opt_level == "s" {
+            "size"
+        } else {
+            "custom"
+        }
+    );
     println!("  {}: fat (maximum)", "LTO".bright_blue());
     println!("  {}: 1", "Codegen units".bright_blue());
     println!("  {}: {}", "Expected speedup".bright_blue(), speedup);
@@ -5243,18 +5474,21 @@ fn display_profile_info(opt_level: &str) {
     // Show alternative profiles
     if profile_name != "release-tiny" {
         println!("\n{}", "Alternative profiles:".bright_yellow());
-        println!("  {} {} (314 KB, 2x speed, embedded)",
+        println!(
+            "  {} {} (314 KB, 2x speed, embedded)",
             "→".bright_blue(),
-            "--profile release-tiny".bright_green());
+            "--profile release-tiny".bright_green()
+        );
     }
     if profile_name != "release-ultra" {
-        println!("  {} {} (25-50x speed, PGO, maximum performance)",
+        println!(
+            "  {} {} (25-50x speed, PGO, maximum performance)",
             "→".bright_blue(),
-            "--profile release-ultra".bright_green());
+            "--profile release-ultra".bright_green()
+        );
     }
     println!();
 }
-
 
 #[cfg(test)]
 mod tests;

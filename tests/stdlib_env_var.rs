@@ -40,11 +40,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should run successfully
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&source).assert().success();
 }
 
 /// Test 2: `env_var()` in compiled mode
@@ -112,11 +108,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should fail with error about missing variable
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("run").arg(&source).assert().failure();
 }
 
 /// Test 5: `env_var()` with wrong number of arguments
@@ -134,11 +126,7 @@ fun main() {
     fs::write(&source, code).expect("Failed to write test file");
 
     // Should fail during compilation or runtime
-    ruchy_cmd()
-        .arg("run")
-        .arg(&source)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("run").arg(&source).assert().failure();
 }
 
 // ==================== GREEN PHASE VERIFICATION ====================

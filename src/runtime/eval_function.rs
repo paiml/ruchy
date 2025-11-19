@@ -139,7 +139,10 @@ where
                 Pattern::Identifier(name) => name.clone(),
                 _ => "_".to_string(), // Complex patterns converted to placeholder
             };
-            let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+            let default = p
+                .default_value
+                .clone()
+                .map(|expr| Arc::new((*expr).clone()));
             (name, default)
         })
         .collect();
@@ -175,7 +178,10 @@ where
                 Pattern::Identifier(name) => name.clone(),
                 _ => "_".to_string(), // Complex patterns converted to placeholder
             };
-            let default = p.default_value.clone().map(|expr| Arc::new((*expr).clone()));
+            let default = p
+                .default_value
+                .clone()
+                .map(|expr| Arc::new((*expr).clone()));
             (name, default)
         })
         .collect();
@@ -236,7 +242,10 @@ where
     // Ensure depth is decremented on ALL exit paths
     let result = (|| {
         // RUNTIME-DEFAULT-PARAMS: Check argument count with default parameter support
-        let required_count = params.iter().filter(|(_, default)| default.is_none()).count();
+        let required_count = params
+            .iter()
+            .filter(|(_, default)| default.is_none())
+            .count();
         let total_count = params.len();
 
         if args.len() < required_count || args.len() > total_count {

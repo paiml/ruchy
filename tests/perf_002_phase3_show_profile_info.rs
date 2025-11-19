@@ -188,8 +188,10 @@ fn test_perf_002_phase3_09_shows_alternative_profiles() {
         .arg(temp.path().join("output"))
         .arg("--show-profile-info")
         .assert()
-        .stdout(predicate::str::contains("release-tiny")
-            .or(predicate::str::contains("Alternative profiles")));
+        .stdout(
+            predicate::str::contains("release-tiny")
+                .or(predicate::str::contains("Alternative profiles")),
+        );
 }
 
 /// Test 10: Profile info formatted with visual separators
@@ -223,8 +225,10 @@ fn test_perf_002_phase3_11_displays_profile_name() {
         .arg(temp.path().join("output"))
         .arg("--show-profile-info")
         .assert()
-        .stdout(predicate::str::contains("Profile:")
-            .and(predicate::str::contains("release").or(predicate::str::contains("default"))));
+        .stdout(
+            predicate::str::contains("Profile:")
+                .and(predicate::str::contains("release").or(predicate::str::contains("default"))),
+        );
 }
 
 /// Test 12: Without --show-profile-info, no profile info displayed

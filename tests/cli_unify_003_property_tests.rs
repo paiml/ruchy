@@ -21,9 +21,9 @@
 
 use assert_cmd::Command;
 use proptest::prelude::*;
+use std::io::Write;
 use std::time::Instant;
 use tempfile::NamedTempFile;
-use std::io::Write;
 
 // ============================================================================
 // HELPER FUNCTIONS

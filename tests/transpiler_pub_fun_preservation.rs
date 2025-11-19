@@ -59,10 +59,7 @@ fn test_pub_fun_not_inlined_simple() {
         Span::default(),
     );
 
-    let block = Expr::new(
-        ExprKind::Block(vec![pub_func]),
-        Span::default(),
-    );
+    let block = Expr::new(ExprKind::Block(vec![pub_func]), Span::default());
 
     let (result, inlined_set) = inline_small_functions(block);
 
@@ -74,9 +71,9 @@ fn test_pub_fun_not_inlined_simple() {
 
     // ASSERTION 2: Public function definition should still exist in result
     if let ExprKind::Block(exprs) = result.kind {
-        let has_add_func = exprs.iter().any(|e| {
-            matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "add")
-        });
+        let has_add_func = exprs.iter().any(
+            |e| matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "add"),
+        );
         assert!(
             has_add_func,
             "BUG #136: pub fun 'add' definition missing from output"
@@ -143,10 +140,7 @@ fn test_private_fun_still_inlined() {
         Span::default(),
     );
 
-    let block = Expr::new(
-        ExprKind::Block(vec![private_func, call]),
-        Span::default(),
-    );
+    let block = Expr::new(ExprKind::Block(vec![private_func, call]), Span::default());
 
     let (result, inlined_set) = inline_small_functions(block);
 
@@ -180,7 +174,9 @@ fn test_pub_fun_library_crate() {
                 span: Span::default(),
             }),
             body: Box::new(Expr::new(
-                ExprKind::Literal(ruchy::frontend::ast::Literal::String("127.0.0.1:9001".to_string())),
+                ExprKind::Literal(ruchy::frontend::ast::Literal::String(
+                    "127.0.0.1:9001".to_string(),
+                )),
                 Span::default(),
             )),
             is_async: false,
@@ -208,7 +204,9 @@ fn test_pub_fun_library_crate() {
                 span: Span::default(),
             }),
             body: Box::new(Expr::new(
-                ExprKind::Literal(ruchy::frontend::ast::Literal::String("test-response".to_string())),
+                ExprKind::Literal(ruchy::frontend::ast::Literal::String(
+                    "test-response".to_string(),
+                )),
                 Span::default(),
             )),
             is_async: false,
@@ -236,7 +234,11 @@ fn test_pub_fun_library_crate() {
 
     // ASSERTION 2: Both function definitions should exist in output
     if let ExprKind::Block(exprs) = result.kind {
-        assert_eq!(exprs.len(), 2, "Both pub fun definitions should be preserved");
+        assert_eq!(
+            exprs.len(),
+            2,
+            "Both pub fun definitions should be preserved"
+        );
 
         let has_get_endpoint = exprs.iter().any(|e| {
             matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "get_endpoint")

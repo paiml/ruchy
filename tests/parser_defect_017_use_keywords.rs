@@ -19,8 +19,8 @@ fn ruchy_cmd() -> Command {
 }
 
 fn test_code(code: &str) {
-    use std::time::{SystemTime, UNIX_EPOCH};
     use std::thread;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -33,10 +33,7 @@ fn test_code(code: &str) {
 
     fs::write(&temp_file, code).expect("Failed to write test file");
 
-    let result = ruchy_cmd()
-        .arg("check")
-        .arg(&temp_file)
-        .assert();
+    let result = ruchy_cmd().arg("check").arg(&temp_file).assert();
 
     // Clean up
     let _ = fs::remove_file(&temp_file);

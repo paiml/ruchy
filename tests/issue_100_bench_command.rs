@@ -123,7 +123,8 @@ fn test_issue_100_bench_csv_format() {
         .arg("csv")
         .assert()
         .success()
-        .stdout(predicate::str::contains(",").or(predicate::str::contains("time"))); // CSV should have commas
+        .stdout(predicate::str::contains(",").or(predicate::str::contains("time")));
+    // CSV should have commas
 }
 
 // ============================================================================
@@ -193,7 +194,10 @@ fn test_issue_100_bench_save_to_file() {
     // Output file should exist and contain results
     assert!(output_file.exists(), "Output file should be created");
     let content = fs::read_to_string(&output_file).expect("Failed to read output file");
-    assert!(!content.is_empty(), "Output file should contain benchmark results");
+    assert!(
+        !content.is_empty(),
+        "Output file should contain benchmark results"
+    );
 }
 
 // ============================================================================

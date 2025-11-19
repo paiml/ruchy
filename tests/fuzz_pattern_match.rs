@@ -93,10 +93,7 @@ fn fuzz_nested_enum_robustness() {
         Value::EnumVariant {
             enum_name: "Token".to_string(),
             variant_name: "Char".to_string(),
-            data: Some(vec![
-                Value::from_string("a".to_string()),
-                Value::Integer(1),
-            ]),
+            data: Some(vec![Value::from_string("a".to_string()), Value::Integer(1)]),
         },
         // No data
         Value::EnumVariant {

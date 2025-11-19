@@ -38,7 +38,8 @@ pub(in crate::frontend::parser) fn parse_identifier_token(
             state.tokens.advance();
             // Check for fat arrow lambda: x => x * 2
             // PARSER-071: Don't treat `=>` as lambda in match guard context
-            if !state.in_guard_context && matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            if !state.in_guard_context && matches!(state.tokens.peek(), Some((Token::FatArrow, _)))
+            {
                 let ident_expr = Expr::new(ExprKind::Identifier(name.clone()), span);
                 super::super::parse_lambda_from_expr(state, ident_expr, span)
             } else {
@@ -131,7 +132,9 @@ pub(in crate::frontend::parser) fn parse_path_segment(state: &mut ParserState) -
 /// HashMap::<String, i32>
 /// Option::<Vec::<i32>>  // Nested generics
 /// ```
-pub(in crate::frontend::parser) fn parse_turbofish_generics(state: &mut ParserState) -> Result<String> {
+pub(in crate::frontend::parser) fn parse_turbofish_generics(
+    state: &mut ParserState,
+) -> Result<String> {
     // Consume the < token
     state.tokens.advance();
 
@@ -268,7 +271,7 @@ pub(in crate::frontend::parser) fn token_to_keyword_string(token: &Token) -> Str
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -336,11 +339,40 @@ mod tests {
                 .prop_filter("Must not be a keyword", |s| {
                     !matches!(
                         s.as_str(),
-                        "fn" | "fun" | "let" | "var" | "if" | "else" | "for" | "while"
-                            | "loop" | "match" | "break" | "continue" | "return" | "async"
-                            | "await" | "try" | "catch" | "throw" | "in" | "as" | "is"
-                            | "self" | "super" | "mod" | "use" | "pub" | "const" | "static"
-                            | "mut" | "ref" | "type" | "struct" | "enum" | "trait" | "impl"
+                        "fn" | "fun"
+                            | "let"
+                            | "var"
+                            | "if"
+                            | "else"
+                            | "for"
+                            | "while"
+                            | "loop"
+                            | "match"
+                            | "break"
+                            | "continue"
+                            | "return"
+                            | "async"
+                            | "await"
+                            | "try"
+                            | "catch"
+                            | "throw"
+                            | "in"
+                            | "as"
+                            | "is"
+                            | "self"
+                            | "super"
+                            | "mod"
+                            | "use"
+                            | "pub"
+                            | "const"
+                            | "static"
+                            | "mut"
+                            | "ref"
+                            | "type"
+                            | "struct"
+                            | "enum"
+                            | "trait"
+                            | "impl"
                     )
                 })
         }

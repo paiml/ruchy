@@ -40,7 +40,11 @@ fn test_jit_005_while_simple_countdown() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while loop: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile while loop: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 0, "x should be 0 after countdown");
 }
 
@@ -60,7 +64,11 @@ fn test_jit_005_while_accumulator_sum() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while sum: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile while sum: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "Sum 1..10 should be 55");
 }
 
@@ -82,8 +90,16 @@ fn test_jit_005_while_with_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while with if: {:?}", result.err());
-    assert_eq!(result.unwrap(), 5, "Should count 5 even numbers (0,2,4,6,8)");
+    assert!(
+        result.is_ok(),
+        "Should compile while with if: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap(),
+        5,
+        "Should count 5 even numbers (0,2,4,6,8)"
+    );
 }
 
 // ============================================================================
@@ -107,7 +123,11 @@ fn test_jit_005_while_break_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while with break: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile while with break: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "Should break at x=5");
 }
 
@@ -128,7 +148,11 @@ fn test_jit_005_while_break_search() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile while break search: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile while break search: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 56, "First multiple of 7 > 50 is 56");
 }
 
@@ -150,7 +174,11 @@ fn test_jit_005_for_range_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for loop: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for loop: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "Sum 1..10 should be 55");
 }
 
@@ -168,7 +196,11 @@ fn test_jit_005_for_range_inclusive() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for inclusive: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for inclusive: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "Sum 1..=10 should be 55");
 }
 
@@ -188,7 +220,11 @@ fn test_jit_005_for_range_with_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for with if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for with if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "Count evens in 0..10 should be 5");
 }
 
@@ -213,7 +249,11 @@ fn test_jit_005_for_break_search() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile for with break: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile for with break: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 6, "First even > 5 is 6");
 }
 
@@ -237,7 +277,11 @@ fn test_jit_005_nested_loops_multiplication_table() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested loops: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested loops: {:?}",
+        result.err()
+    );
     // Sum of 5x5 multiplication table: each row sums to i*(1+2+3+4+5)=i*15
     // Total: 1*15 + 2*15 + 3*15 + 4*15 + 5*15 = 15*(1+2+3+4+5) = 15*15 = 225
     assert_eq!(result.unwrap(), 225, "5x5 multiplication table sum");
@@ -263,7 +307,11 @@ fn test_jit_005_nested_while_loops() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested while: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested while: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 25, "5x5 iterations = 25");
 }
 
@@ -290,7 +338,11 @@ fn test_jit_005_factorial_iterative() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile factorial: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile factorial: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 120, "5! = 120");
 }
 
@@ -320,7 +372,11 @@ fn test_jit_005_fibonacci_iterative() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile fibonacci: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile fibonacci: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "fib(10) = 55");
 }
 
@@ -341,7 +397,11 @@ fn test_jit_005_sum_range_function() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile sum_range: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile sum_range: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 55, "sum_range(1, 11) = 55");
 }
 

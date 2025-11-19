@@ -802,7 +802,10 @@ fn property_let_bindings_1_to_10() {
             .map(|i| format!("let x{i} = {i};"))
             .collect::<Vec<_>>()
             .join("\n");
-        let sum = (0..count).map(|i| format!("x{i}")).collect::<Vec<_>>().join(" + ");
+        let sum = (0..count)
+            .map(|i| format!("x{i}"))
+            .collect::<Vec<_>>()
+            .join(" + ");
         let code = format!("{bindings}\n{sum}");
 
         ruchy_cmd()

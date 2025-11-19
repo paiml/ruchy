@@ -26,12 +26,14 @@ mod property_tests {
         let operators = vec!["<", ">", "<=", ">=", "==", "!="];
 
         for op in &operators {
-            let input = format!(r"
+            let input = format!(
+                r"
 fun test(n) {{
     let items = []
     items.len() {op} n
 }}
-");
+"
+            );
 
             let output = Command::cargo_bin("ruchy")
                 .unwrap()
@@ -57,18 +59,17 @@ fun test(n) {{
     #[ignore]
     fn property_all_collection_types_get_usize_cast() {
         // Property: Vec, String, and any .len() call should get usize casting
-        let collection_types = vec![
-            ("[]", "vec![]"),
-            (r#""""#, r#"String::from("")"#),
-        ];
+        let collection_types = vec![("[]", "vec![]"), (r#""""#, r#"String::from("")"#)];
 
         for (ruchy_init, _rust_init) in collection_types {
-            let input = format!(r"
+            let input = format!(
+                r"
 fun test(max) {{
     let collection = {ruchy_init}
     collection.len() < max
 }}
-");
+"
+            );
 
             let output = Command::cargo_bin("ruchy")
                 .unwrap()
@@ -116,8 +117,10 @@ fun generate_primes(count) {
         .assert()
         .success()
         // Should cast count to usize for comparison with len()
-        .stdout(predicate::str::contains("primes.len() < count as usize")
-                .or(predicate::str::contains("primes.len() < (count as usize)")));
+        .stdout(
+            predicate::str::contains("primes.len() < count as usize")
+                .or(predicate::str::contains("primes.len() < (count as usize)")),
+        );
 }
 
 #[test]
@@ -163,18 +166,30 @@ fun test_comparisons(target) {
     let rust_code = String::from_utf8(output).unwrap();
 
     // All comparison operators should have usize casting
-    assert!(rust_code.contains("items.len() < target as usize")
-            || rust_code.contains("items.len() < (target as usize)"));
-    assert!(rust_code.contains("items.len() > target as usize")
-            || rust_code.contains("items.len() > (target as usize)"));
-    assert!(rust_code.contains("items.len() <= target as usize")
-            || rust_code.contains("items.len() <= (target as usize)"));
-    assert!(rust_code.contains("items.len() >= target as usize")
-            || rust_code.contains("items.len() >= (target as usize)"));
-    assert!(rust_code.contains("items.len() == target as usize")
-            || rust_code.contains("items.len() == (target as usize)"));
-    assert!(rust_code.contains("items.len() != target as usize")
-            || rust_code.contains("items.len() != (target as usize)"));
+    assert!(
+        rust_code.contains("items.len() < target as usize")
+            || rust_code.contains("items.len() < (target as usize)")
+    );
+    assert!(
+        rust_code.contains("items.len() > target as usize")
+            || rust_code.contains("items.len() > (target as usize)")
+    );
+    assert!(
+        rust_code.contains("items.len() <= target as usize")
+            || rust_code.contains("items.len() <= (target as usize)")
+    );
+    assert!(
+        rust_code.contains("items.len() >= target as usize")
+            || rust_code.contains("items.len() >= (target as usize)")
+    );
+    assert!(
+        rust_code.contains("items.len() == target as usize")
+            || rust_code.contains("items.len() == (target as usize)")
+    );
+    assert!(
+        rust_code.contains("items.len() != target as usize")
+            || rust_code.contains("items.len() != (target as usize)")
+    );
 }
 
 #[test]
@@ -198,8 +213,10 @@ fun test_reversed(limit) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("limit as usize > items.len()")
-                .or(predicate::str::contains("(limit as usize) > items.len()")));
+        .stdout(
+            predicate::str::contains("limit as usize > items.len()")
+                .or(predicate::str::contains("(limit as usize) > items.len()")),
+        );
 }
 
 #[test]
@@ -262,9 +279,11 @@ fun main() {
     let rust_code = String::from_utf8(transpile_output).unwrap();
 
     // Verify usize casting is present
-    assert!(rust_code.contains("primes.len() < count as usize")
+    assert!(
+        rust_code.contains("primes.len() < count as usize")
             || rust_code.contains("primes.len() < (count as usize)"),
-            "Missing usize cast in transpiled code");
+        "Missing usize cast in transpiled code"
+    );
 
     // Write to temp file and compile with rustc
     let temp_file = std::env::temp_dir().join("bench_008_usize_test.rs");
@@ -274,8 +293,10 @@ fun main() {
 
     // Compile with rustc
     let compile_result = std::process::Command::new("rustc")
-        .arg("--crate-type").arg("bin")
-        .arg("-o").arg(temp_file.with_extension(""))
+        .arg("--crate-type")
+        .arg("bin")
+        .arg("-o")
+        .arg(temp_file.with_extension(""))
         .arg(&temp_file)
         .output()
         .expect("Failed to run rustc");
@@ -315,8 +336,10 @@ fun test_len(n) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("items.len() < n as usize")
-                .or(predicate::str::contains("items.len() < (n as usize)")));
+        .stdout(
+            predicate::str::contains("items.len() < n as usize")
+                .or(predicate::str::contains("items.len() < (n as usize)")),
+        );
 }
 
 #[test]
@@ -350,9 +373,11 @@ fun fill_to_size(target_size) {
     let rust_code = String::from_utf8(output).unwrap();
 
     // Verify usize casting in while condition
-    assert!(rust_code.contains("collection.len() < target_size as usize")
+    assert!(
+        rust_code.contains("collection.len() < target_size as usize")
             || rust_code.contains("collection.len() < (target_size as usize)"),
-            "Missing usize cast in while condition");
+        "Missing usize cast in while condition"
+    );
 }
 
 #[test]
@@ -386,10 +411,14 @@ fun compare_sizes(target) {
     let rust_code = String::from_utf8(output).unwrap();
 
     // Both .len() calls should have usize casting
-    assert!(rust_code.contains("a.len() < target as usize")
-            || rust_code.contains("a.len() < (target as usize)"));
-    assert!(rust_code.contains("b.len() >= target as usize")
-            || rust_code.contains("b.len() >= (target as usize)"));
+    assert!(
+        rust_code.contains("a.len() < target as usize")
+            || rust_code.contains("a.len() < (target as usize)")
+    );
+    assert!(
+        rust_code.contains("b.len() >= target as usize")
+            || rust_code.contains("b.len() >= (target as usize)")
+    );
 }
 
 #[test]
@@ -409,6 +438,8 @@ fun check_string_length(max_len) {
         .write_stdin(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("text.len() < max_len as usize")
-                .or(predicate::str::contains("text.len() < (max_len as usize)")));
+        .stdout(
+            predicate::str::contains("text.len() < max_len as usize")
+                .or(predicate::str::contains("text.len() < (max_len as usize)")),
+        );
 }

@@ -94,7 +94,10 @@ impl Transpiler {
                 // TRANSPILER-DEFECT-005: Handle namespaced types (e.g., trace::Sampler, std::io::Error)
                 if name.contains("::") {
                     // Split into path segments and build path token
-                    let segments: Vec<_> = name.split("::").map(|seg| format_ident!("{}", seg)).collect();
+                    let segments: Vec<_> = name
+                        .split("::")
+                        .map(|seg| format_ident!("{}", seg))
+                        .collect();
                     quote! { #(#segments)::* }
                 } else {
                     // Simple identifier
@@ -241,7 +244,9 @@ impl Transpiler {
     /// Complexity: 2 (simple iteration + match)
     fn has_reference_fields(&self, fields: &[StructField]) -> bool {
         use crate::frontend::ast::TypeKind;
-        fields.iter().any(|field| matches!(field.ty.kind, TypeKind::Reference { .. }))
+        fields
+            .iter()
+            .any(|field| matches!(field.ty.kind, TypeKind::Reference { .. }))
     }
 
     /// Helper: Check if type params already contain a lifetime
@@ -252,7 +257,11 @@ impl Transpiler {
 
     /// Helper: Transpile type with explicit lifetime annotation for struct fields
     /// Complexity: 3 (type matching + recursive call)
-    fn transpile_struct_field_type_with_lifetime(&self, ty: &Type, lifetime: &str) -> Result<TokenStream> {
+    fn transpile_struct_field_type_with_lifetime(
+        &self,
+        ty: &Type,
+        lifetime: &str,
+    ) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
         match &ty.kind {
             TypeKind::Reference { is_mut, inner, .. } => {
@@ -290,7 +299,8 @@ impl Transpiler {
         let struct_name = format_ident!("{}", name);
 
         // BOOK-COMPAT-001: Auto-add lifetime parameter if struct has reference fields
-        let needs_lifetime = self.has_reference_fields(fields) && !self.has_lifetime_params(type_params);
+        let needs_lifetime =
+            self.has_reference_fields(fields) && !self.has_lifetime_params(type_params);
         let effective_type_params: Vec<String> = if needs_lifetime {
             let mut params = vec!["'a".to_string()];
             params.extend_from_slice(type_params);
@@ -1470,7 +1480,10 @@ mod tests {
 
     // Helper: Create Type from TypeKind
     fn make_type(kind: TypeKind) -> Type {
-        Type { kind, span: crate::frontend::ast::Span::new(0, 0) }
+        Type {
+            kind,
+            span: crate::frontend::ast::Span::new(0, 0),
+        }
     }
 
     // Helper: Create StructField
@@ -1490,10 +1503,7 @@ mod tests {
     #[test]
     fn test_has_reference_fields_none() {
         let transpiler = Transpiler::new();
-        let fields = vec![
-            make_field("x", "i32"),
-            make_field("y", "String"),
-        ];
+        let fields = vec![make_field("x", "i32"), make_field("y", "String")];
         assert!(!transpiler.has_reference_fields(&fields));
     }
 
@@ -1556,7 +1566,11 @@ mod tests {
     #[test]
     fn test_generate_derive_attributes_multiple() {
         let transpiler = Transpiler::new();
-        let derives = vec!["Debug".to_string(), "Clone".to_string(), "PartialEq".to_string()];
+        let derives = vec![
+            "Debug".to_string(),
+            "Clone".to_string(),
+            "PartialEq".to_string(),
+        ];
         let result = transpiler.generate_derive_attributes(&derives);
         let code = result.to_string();
         assert!(code.contains("Debug"));
@@ -1664,10 +1678,7 @@ mod tests {
     #[test]
     fn test_transpile_struct_basic() {
         let transpiler = Transpiler::new();
-        let fields = vec![
-            make_field("x", "i32"),
-            make_field("y", "String"),
-        ];
+        let fields = vec![make_field("x", "i32"), make_field("y", "String")];
         let result = transpiler.transpile_struct("Point", &[], &fields, &[], false);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
@@ -1717,7 +1728,9 @@ mod tests {
             lifetime: Some("'old".to_string()),
             inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
         });
-        let result = transpiler.transpile_struct_field_type_with_lifetime(&ref_type, "'a").unwrap();
+        let result = transpiler
+            .transpile_struct_field_type_with_lifetime(&ref_type, "'a")
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("'a")); // Should use new lifetime
         assert!(code.contains("str"));
@@ -1728,7 +1741,9 @@ mod tests {
     fn test_transpile_struct_field_type_with_lifetime_non_reference() {
         let transpiler = Transpiler::new();
         let non_ref_type = make_type(TypeKind::Named("String".to_string()));
-        let result = transpiler.transpile_struct_field_type_with_lifetime(&non_ref_type, "'a").unwrap();
+        let result = transpiler
+            .transpile_struct_field_type_with_lifetime(&non_ref_type, "'a")
+            .unwrap();
         let code = result.to_string();
         assert_eq!(code, "String");
         assert!(!code.contains("'a")); // Non-reference type shouldn't get lifetime
@@ -1760,7 +1775,9 @@ mod tests {
     fn test_transpile_reference_type_with_lifetime() {
         let transpiler = Transpiler::new();
         let inner = make_type(TypeKind::Named("String".to_string()));
-        let result = transpiler.transpile_reference_type(false, Some("'a"), &inner).unwrap();
+        let result = transpiler
+            .transpile_reference_type(false, Some("'a"), &inner)
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("'a"));
         assert!(code.contains("String"));
@@ -1776,7 +1793,9 @@ mod tests {
             base: "Vec".to_string(),
             params: vec![make_type(TypeKind::Named("i32".to_string()))],
         });
-        let result = transpiler.transpile_reference_type(true, Some("'b"), &inner).unwrap();
+        let result = transpiler
+            .transpile_reference_type(true, Some("'b"), &inner)
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("'b"));
         assert!(code.contains("mut"));
@@ -1792,7 +1811,9 @@ mod tests {
             make_type(TypeKind::Named("i32".to_string())),
             make_type(TypeKind::Named("bool".to_string())),
         ];
-        let result = transpiler.transpile_generic_type("HashMap", &params).unwrap();
+        let result = transpiler
+            .transpile_generic_type("HashMap", &params)
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("HashMap"));
         assert!(code.contains("String"));
@@ -1924,13 +1945,7 @@ mod tests {
     fn test_generate_impl_block_no_type_params() {
         let transpiler = Transpiler::new();
         let struct_name = format_ident!("MyStruct");
-        let result = transpiler.generate_impl_block(
-            &struct_name,
-            &[],
-            &[],
-            &[],
-            &[]
-        );
+        let result = transpiler.generate_impl_block(&struct_name, &[], &[], &[], &[]);
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains("MyStruct"));
@@ -1943,13 +1958,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let struct_name = format_ident!("MyStruct");
         let type_params = vec![quote! { T }, quote! { U }];
-        let result = transpiler.generate_impl_block(
-            &struct_name,
-            &type_params,
-            &[],
-            &[],
-            &[]
-        );
+        let result = transpiler.generate_impl_block(&struct_name, &type_params, &[], &[], &[]);
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains('<')); // Has type params
@@ -1963,7 +1972,9 @@ mod tests {
         let transpiler = Transpiler::new();
         let struct_name = format_ident!("NoDefaults");
         let fields = vec![make_field("x", "i32")]; // No default values
-        let result = transpiler.generate_default_impl(&fields, &struct_name, &[]).unwrap();
+        let result = transpiler
+            .generate_default_impl(&fields, &struct_name, &[])
+            .unwrap();
         let code = result.to_string();
         assert!(code.is_empty()); // Should return empty TokenStream
     }
@@ -1971,7 +1982,7 @@ mod tests {
     // Test 42: generate_default_impl - with defaults
     #[test]
     fn test_generate_default_impl_with_defaults() {
-        use crate::frontend::ast::{Visibility, Expr, ExprKind, Literal};
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Visibility};
         let transpiler = Transpiler::new();
         let struct_name = format_ident!("WithDefaults");
         let field_with_default = StructField {
@@ -1988,7 +1999,9 @@ mod tests {
             }),
             decorators: vec![],
         };
-        let result = transpiler.generate_default_impl(&[field_with_default], &struct_name, &[]).unwrap();
+        let result = transpiler
+            .generate_default_impl(&[field_with_default], &struct_name, &[])
+            .unwrap();
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains("Default"));
@@ -1996,5 +2009,4 @@ mod tests {
         assert!(code.contains("count"));
         assert!(code.contains("10"));
     }
-
 }

@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// PARSER-147: Support pub fun in struct bodies
 ///
 /// EXTREME TDD Test Suite for pub method parsing in struct definitions.
@@ -12,9 +13,7 @@
 /// - pub fun with return types
 /// - Multiple pub methods
 /// - pub fun with body blocks
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 #[test]
 fn test_parser_147_01_pub_fun_constructor() {
@@ -30,7 +29,10 @@ struct Calculator {
 
     // RED: This MUST fail initially
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Should parse pub fun constructor in struct body");
+    assert!(
+        result.is_ok(),
+        "Should parse pub fun constructor in struct body"
+    );
 }
 
 #[test]
@@ -140,22 +142,32 @@ struct Calculator {
 ";
 
     // Parse
-    let ast = Parser::new(code).parse()
+    let ast = Parser::new(code)
+        .parse()
         .expect("Should parse pub methods in struct");
 
     // Transpile
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .expect("Should transpile pub methods");
 
     // Format
-    let syntax_tree = syn::parse2(tokens)
-        .expect("Should parse as valid Rust");
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as valid Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Validate: Should generate "pub fn" not "pub pub fn"
-    assert!(rust_code.contains("pub fn new"), "Should generate pub fn new");
-    assert!(rust_code.contains("pub fn get"), "Should generate pub fn get");
-    assert!(!rust_code.contains("pub pub"), "Should NOT duplicate pub keyword");
+    assert!(
+        rust_code.contains("pub fn new"),
+        "Should generate pub fn new"
+    );
+    assert!(
+        rust_code.contains("pub fn get"),
+        "Should generate pub fn get"
+    );
+    assert!(
+        !rust_code.contains("pub pub"),
+        "Should NOT duplicate pub keyword"
+    );
 }
 
 #[test]
@@ -179,16 +191,15 @@ let x = p.get_x()
 ";
 
     // Parse
-    let ast = Parser::new(code).parse()
-        .expect("Should parse");
+    let ast = Parser::new(code).parse().expect("Should parse");
 
     // Transpile
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .expect("Should transpile");
 
     // Format
-    let syntax_tree = syn::parse2(tokens)
-        .expect("Should parse as Rust");
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Compile with rustc
@@ -201,8 +212,10 @@ let x = p.get_x()
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "Rustc compilation should succeed:\n{}\n\nGenerated code:\n{}",
         String::from_utf8_lossy(&output.stderr),
-        rust_code);
+        rust_code
+    );
 }

@@ -112,7 +112,7 @@ println("tan(π/4) = {}", result)
         .arg(code)
         .assert()
         .success()
-        .stdout(predicate::str::contains("tan(π/4) = 0.99"));  // Accepts 0.9999... or 1.0
+        .stdout(predicate::str::contains("tan(π/4) = 0.99")); // Accepts 0.9999... or 1.0
 }
 
 // ============================================================================
@@ -209,11 +209,7 @@ let r = random()
 println("random() = {}", r)
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 #[test]
@@ -225,11 +221,7 @@ let r3 = random()
 println("r1 = {}, r2 = {}, r3 = {}", r1, r2, r3)
 "#;
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg(code)
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 }
 
 // ============================================================================
@@ -253,7 +245,9 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -279,7 +273,9 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
     ruchy_cmd()
@@ -300,14 +296,12 @@ fn main() {
 "#;
 
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    temp_file.write_all(code.as_bytes()).expect("Failed to write temp file");
+    temp_file
+        .write_all(code.as_bytes())
+        .expect("Failed to write temp file");
     let temp_path = temp_file.path();
 
-    ruchy_cmd()
-        .arg("run")
-        .arg(temp_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(temp_path).assert().success();
 }
 
 // ============================================================================
@@ -339,11 +333,7 @@ println("sin²({{}}) + cos²({{}}) = {{}}, diff = {{}}", x, x, sum, diff)
 "#
             );
 
-            ruchy_cmd()
-                .arg("-e")
-                .arg(&code)
-                .assert()
-                .success();
+            ruchy_cmd().arg("-e").arg(&code).assert().success();
 
             if iteration % 1000 == 0 {
                 println!("Property test iteration: {iteration}/10000");
@@ -375,11 +365,7 @@ println("log({{}}) = {{}}, diff = {{}}", a * b, log_ab, diff)
 "#
             );
 
-            ruchy_cmd()
-                .arg("-e")
-                .arg(&code)
-                .assert()
-                .success();
+            ruchy_cmd().arg("-e").arg(&code).assert().success();
 
             if iteration % 1000 == 0 {
                 println!("Property test iteration: {iteration}/10000");
@@ -399,11 +385,7 @@ let r = random()
 println("random() = {}", r)
 "#;
 
-            ruchy_cmd()
-                .arg("-e")
-                .arg(code)
-                .assert()
-                .success();
+            ruchy_cmd().arg("-e").arg(code).assert().success();
 
             if iteration % 1000 == 0 {
                 println!("Property test iteration: {iteration}/10000");

@@ -36,7 +36,11 @@ fn test_fmt_no_operator_mangling() {
 
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("operators.ruchy");
-    fs::write(&test_file, "let a = 10 + 5\nlet b = a * 2\nlet c = b / 3\nlet d = c - 1").unwrap();
+    fs::write(
+        &test_file,
+        "let a = 10 + 5\nlet b = a * 2\nlet c = b / 3\nlet d = c - 1",
+    )
+    .unwrap();
 
     ruchy_cmd()
         .arg("fmt")
@@ -312,7 +316,7 @@ fn test_fmt_syntax_error() {
         .stderr(
             predicate::str::contains("Error")
                 .or(predicate::str::contains("Expected"))
-                .or(predicate::str::contains("Unexpected"))
+                .or(predicate::str::contains("Unexpected")),
         );
 }
 
@@ -338,7 +342,11 @@ fn test_fmt_complex_expression() {
 fn test_fmt_nested_blocks() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("nested.ruchy");
-    fs::write(&test_file, "if x > 0 { if y > 0 { println(\"both positive\") } }").unwrap();
+    fs::write(
+        &test_file,
+        "if x > 0 { if y > 0 { println(\"both positive\") } }",
+    )
+    .unwrap();
 
     ruchy_cmd()
         .arg("fmt")
@@ -360,11 +368,7 @@ fn test_fmt_modifies_file_in_place() {
     let original = "let x=42\nlet y=x*2";
     fs::write(&test_file, original).unwrap();
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     // File should be modified
     let modified = fs::read_to_string(&test_file).unwrap();
@@ -409,7 +413,11 @@ fn test_fmt_no_debug_fallback_array_indexing() {
     // Bug: `content[i]` became `IndexAccess { object: Expr { ... }, index: ... }`
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("indexing.ruchy");
-    fs::write(&test_file, "let arr = [1, 2, 3]\nlet x = arr[0]\nlet y = arr[1]").unwrap();
+    fs::write(
+        &test_file,
+        "let arr = [1, 2, 3]\nlet x = arr[0]\nlet y = arr[1]",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -421,14 +429,20 @@ fn test_fmt_no_debug_fallback_array_indexing() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper array indexing syntax
-    assert!(formatted.contains("[0]") || formatted.contains("arr["),
-            "Missing array indexing syntax");
+    assert!(
+        formatted.contains("[0]") || formatted.contains("arr["),
+        "Missing array indexing syntax"
+    );
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("IndexAccess"),
-            "Debug fallback detected for IndexAccess");
-    assert!(!formatted.contains("Expr { kind:"),
-            "AST Debug output detected");
+    assert!(
+        !formatted.contains("IndexAccess"),
+        "Debug fallback detected for IndexAccess"
+    );
+    assert!(
+        !formatted.contains("Expr { kind:"),
+        "AST Debug output detected"
+    );
 }
 
 #[test]
@@ -452,10 +466,14 @@ fn test_fmt_no_debug_fallback_assignment() {
     assert!(formatted.contains(" = "), "Missing assignment operator");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Assign {"),
-            "Debug fallback detected for Assign");
-    assert!(!formatted.contains("target: Expr"),
-            "AST Debug output detected");
+    assert!(
+        !formatted.contains("Assign {"),
+        "Debug fallback detected for Assign"
+    );
+    assert!(
+        !formatted.contains("target: Expr"),
+        "AST Debug output detected"
+    );
 }
 
 #[test]
@@ -465,7 +483,8 @@ fn test_fmt_no_debug_fallback_return() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("return.ruchy");
     // Simplified version of return usage from head.ruchy
-    fs::write(&test_file,
+    fs::write(
+        &test_file,
         "{\n\
          fun test(x: Any) {\n\
          if x > 10 {\n\
@@ -473,8 +492,9 @@ fn test_fmt_no_debug_fallback_return() {
          }\n\
          0\n\
          }\n\
-         }"
-    ).unwrap();
+         }",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -489,10 +509,14 @@ fn test_fmt_no_debug_fallback_return() {
     assert!(formatted.contains("return"), "Missing return keyword");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Return {"),
-            "Debug fallback detected for Return");
-    assert!(!formatted.contains("value: Some("),
-            "AST Debug output detected");
+    assert!(
+        !formatted.contains("Return {"),
+        "Debug fallback detected for Return"
+    );
+    assert!(
+        !formatted.contains("value: Some("),
+        "AST Debug output detected"
+    );
 }
 
 #[test]
@@ -515,8 +539,10 @@ fn test_fmt_no_debug_fallback_field_access() {
     assert!(formatted.contains('.'), "Missing field access operator");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("FieldAccess"),
-            "Debug fallback detected for FieldAccess");
+    assert!(
+        !formatted.contains("FieldAccess"),
+        "Debug fallback detected for FieldAccess"
+    );
 }
 
 #[test]
@@ -539,8 +565,10 @@ fn test_fmt_no_debug_fallback_while_loop() {
     assert!(formatted.contains("while"), "Missing while keyword");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("While {"),
-            "Debug fallback detected for While");
+    assert!(
+        !formatted.contains("While {"),
+        "Debug fallback detected for While"
+    );
 }
 
 #[test]
@@ -548,7 +576,11 @@ fn test_fmt_no_debug_fallback_break_continue() {
     // DEFECT-FMT-003: Break/Continue must format as keywords, not Debug output
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("loop_control.ruchy");
-    fs::write(&test_file, "while true {\nif x > 5 { break }\nif x == 3 { continue }\n}").unwrap();
+    fs::write(
+        &test_file,
+        "while true {\nif x > 5 { break }\nif x == 3 { continue }\n}",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -564,10 +596,14 @@ fn test_fmt_no_debug_fallback_break_continue() {
     assert!(formatted.contains("continue"), "Missing continue keyword");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Break {"),
-            "Debug fallback detected for Break");
-    assert!(!formatted.contains("Continue {"),
-            "Debug fallback detected for Continue");
+    assert!(
+        !formatted.contains("Break {"),
+        "Debug fallback detected for Break"
+    );
+    assert!(
+        !formatted.contains("Continue {"),
+        "Debug fallback detected for Continue"
+    );
 }
 
 #[test]
@@ -590,8 +626,10 @@ fn test_fmt_no_debug_fallback_range() {
     assert!(formatted.contains(".."), "Missing range operator");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Range {"),
-            "Debug fallback detected for Range");
+    assert!(
+        !formatted.contains("Range {"),
+        "Debug fallback detected for Range"
+    );
 }
 
 #[test]
@@ -611,14 +649,20 @@ fn test_fmt_no_debug_fallback_unary_ops() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper unary operators
-    assert!(formatted.contains('-') || formatted.contains('!'),
-            "Missing unary operators");
+    assert!(
+        formatted.contains('-') || formatted.contains('!'),
+        "Missing unary operators"
+    );
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Unary {"),
-            "Debug fallback detected for Unary");
-    assert!(!formatted.contains("Negate"),
-            "Debug fallback detected for Negate operator");
+    assert!(
+        !formatted.contains("Unary {"),
+        "Debug fallback detected for Unary"
+    );
+    assert!(
+        !formatted.contains("Negate"),
+        "Debug fallback detected for Negate operator"
+    );
 }
 
 #[test]
@@ -642,10 +686,14 @@ fn test_fmt_no_debug_fallback_list_literal() {
     assert!(formatted.contains(']'), "Missing list closing bracket");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("List {"),
-            "Debug fallback detected for List");
-    assert!(!formatted.contains("elements:"),
-            "AST Debug output detected");
+    assert!(
+        !formatted.contains("List {"),
+        "Debug fallback detected for List"
+    );
+    assert!(
+        !formatted.contains("elements:"),
+        "AST Debug output detected"
+    );
 }
 
 #[test]
@@ -665,12 +713,16 @@ fn test_fmt_no_debug_fallback_tuple_literal() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper tuple syntax
-    assert!(formatted.contains('(') && formatted.contains(')'),
-            "Missing tuple parentheses");
+    assert!(
+        formatted.contains('(') && formatted.contains(')'),
+        "Missing tuple parentheses"
+    );
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Tuple {"),
-            "Debug fallback detected for Tuple");
+    assert!(
+        !formatted.contains("Tuple {"),
+        "Debug fallback detected for Tuple"
+    );
 }
 
 #[test]
@@ -678,7 +730,11 @@ fn test_fmt_no_debug_fallback_match_expr() {
     // DEFECT-FMT-003: Match must format as `match x { ... }`, not Debug output
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("match.ruchy");
-    fs::write(&test_file, "match x {\n1 => \"one\"\n2 => \"two\"\n_ => \"other\"\n}").unwrap();
+    fs::write(
+        &test_file,
+        "match x {\n1 => \"one\"\n2 => \"two\"\n_ => \"other\"\n}",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -693,10 +749,11 @@ fn test_fmt_no_debug_fallback_match_expr() {
     assert!(formatted.contains("match"), "Missing match keyword");
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("Match {"),
-            "Debug fallback detected for Match");
-    assert!(!formatted.contains("arms:"),
-            "AST Debug output detected");
+    assert!(
+        !formatted.contains("Match {"),
+        "Debug fallback detected for Match"
+    );
+    assert!(!formatted.contains("arms:"), "AST Debug output detected");
 }
 
 #[test]
@@ -716,12 +773,16 @@ fn test_fmt_no_debug_fallback_compound_assign() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Must contain proper compound assignment operators
-    assert!(formatted.contains("+=") || formatted.contains("*=") || formatted.contains("-="),
-            "Missing compound assignment operators");
+    assert!(
+        formatted.contains("+=") || formatted.contains("*=") || formatted.contains("-="),
+        "Missing compound assignment operators"
+    );
 
     // Must NOT contain Debug output
-    assert!(!formatted.contains("CompoundAssign"),
-            "Debug fallback detected for CompoundAssign");
+    assert!(
+        !formatted.contains("CompoundAssign"),
+        "Debug fallback detected for CompoundAssign"
+    );
 }
 
 #[test]
@@ -732,7 +793,8 @@ fn test_fmt_real_world_head_example() {
     let test_file = temp_dir.path().join("head.ruchy");
 
     // Simplified version of head.ruchy that uses all critical constructs
-    fs::write(&test_file,
+    fs::write(
+        &test_file,
         "fun head_lines(file_path, n) {\n\
          let content = fs_read(file_path)\n\
          let result = \"\"\n\
@@ -750,8 +812,9 @@ fn test_fmt_real_world_head_example() {
          }\n\
          }\n\
          result\n\
-         }"
-    ).unwrap();
+         }",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -763,24 +826,34 @@ fn test_fmt_real_world_head_example() {
     let formatted = String::from_utf8(output.stdout).unwrap();
 
     // Critical assertions - NONE of these Debug patterns should appear
-    assert!(!formatted.contains("IndexAccess {"),
-            "CRITICAL: Array indexing corrupted with Debug output");
-    assert!(!formatted.contains("Assign {"),
-            "CRITICAL: Assignment corrupted with Debug output");
-    assert!(!formatted.contains("Return {"),
-            "CRITICAL: Return statement corrupted with Debug output");
-    assert!(!formatted.contains("Expr { kind:"),
-            "CRITICAL: AST Debug output detected");
-    assert!(!formatted.contains("span: Span"),
-            "CRITICAL: Span Debug output detected");
+    assert!(
+        !formatted.contains("IndexAccess {"),
+        "CRITICAL: Array indexing corrupted with Debug output"
+    );
+    assert!(
+        !formatted.contains("Assign {"),
+        "CRITICAL: Assignment corrupted with Debug output"
+    );
+    assert!(
+        !formatted.contains("Return {"),
+        "CRITICAL: Return statement corrupted with Debug output"
+    );
+    assert!(
+        !formatted.contains("Expr { kind:"),
+        "CRITICAL: AST Debug output detected"
+    );
+    assert!(
+        !formatted.contains("span: Span"),
+        "CRITICAL: Span Debug output detected"
+    );
 
     // Positive assertions - proper syntax should be present
-    assert!(formatted.contains("[i]") || formatted.contains("content["),
-            "Array indexing syntax missing");
-    assert!(formatted.contains("result = "),
-            "Assignment syntax missing");
-    assert!(formatted.contains("return"),
-            "Return keyword missing");
+    assert!(
+        formatted.contains("[i]") || formatted.contains("content["),
+        "Array indexing syntax missing"
+    );
+    assert!(formatted.contains("result = "), "Assignment syntax missing");
+    assert!(formatted.contains("return"), "Return keyword missing");
 
     // The formatted code should pass syntax validation
     let check_result = ruchy_cmd()
@@ -789,8 +862,10 @@ fn test_fmt_real_world_head_example() {
         .output()
         .expect("Failed to run check");
 
-    assert!(check_result.status.success(),
-            "Formatted code failed syntax validation");
+    assert!(
+        check_result.status.success(),
+        "Formatted code failed syntax validation"
+    );
 }
 
 // ============================================================================
@@ -802,7 +877,8 @@ fn test_fmt_all_binary_operators() {
     // Ensure ALL operators use Display trait, not Debug
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("all_ops.ruchy");
-    fs::write(&test_file,
+    fs::write(
+        &test_file,
         "let a = 1 + 2\n\
          let b = 3 - 4\n\
          let c = 5 * 6\n\
@@ -813,8 +889,9 @@ fn test_fmt_all_binary_operators() {
          let h = 15 < 16\n\
          let i = 17 > 18\n\
          let j = 19 <= 20\n\
-         let k = 21 >= 22"
-    ).unwrap();
+         let k = 21 >= 22",
+    )
+    .unwrap();
 
     let output = ruchy_cmd()
         .arg("fmt")
@@ -833,9 +910,18 @@ fn test_fmt_all_binary_operators() {
 
     // Must NOT contain Debug trait names
     assert!(!formatted.contains("Add"), "Operator mangling: Add found");
-    assert!(!formatted.contains("Subtract"), "Operator mangling: Subtract found");
-    assert!(!formatted.contains("Multiply"), "Operator mangling: Multiply found");
-    assert!(!formatted.contains("Divide"), "Operator mangling: Divide found");
+    assert!(
+        !formatted.contains("Subtract"),
+        "Operator mangling: Subtract found"
+    );
+    assert!(
+        !formatted.contains("Multiply"),
+        "Operator mangling: Multiply found"
+    );
+    assert!(
+        !formatted.contains("Divide"),
+        "Operator mangling: Divide found"
+    );
 }
 
 #[test]
@@ -856,11 +942,7 @@ fn test_fmt_preserves_semantics() {
         .expect("Failed to run original");
 
     // Format the file
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     // Run formatted
     let formatted_output = ruchy_cmd()
@@ -871,8 +953,7 @@ fn test_fmt_preserves_semantics() {
 
     // Both must produce identical output
     assert_eq!(
-        original_output.stdout,
-        formatted_output.stdout,
+        original_output.stdout, formatted_output.stdout,
         "Formatted code has different semantics!"
     );
 }

@@ -222,10 +222,7 @@ fn test_http002d_08_html_document_query_selector_no_match() {
         "query_selector should work: {:?}",
         result.err()
     );
-    assert!(
-        result.unwrap().is_nil(),
-        "Should return nil when no match"
-    );
+    assert!(result.unwrap().is_nil(), "Should return nil when no match");
 }
 
 // ===========================
@@ -367,7 +364,11 @@ fn test_http002d_12_html_empty_document() {
 
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast);
-    assert!(result.is_ok(), "Empty document should work: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Empty document should work: {:?}",
+        result.err()
+    );
     match result.unwrap() {
         ruchy::runtime::Value::Integer(n) => assert_eq!(n, 0),
         other => panic!("Expected integer, got: {}", other.type_name()),

@@ -25,7 +25,14 @@ pub fn eval_function(
     // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
     let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
         .iter()
-        .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
+        .map(|p| {
+            (
+                p.name(),
+                p.default_value
+                    .clone()
+                    .map(|expr| Arc::new((*expr).clone())),
+            )
+        })
         .collect();
 
     let closure = Value::Closure {
@@ -51,7 +58,14 @@ pub fn eval_lambda(
     // RUNTIME-DEFAULT-PARAMS: Extract both param names AND default values
     let params_with_defaults: Vec<(String, Option<Arc<Expr>>)> = params
         .iter()
-        .map(|p| (p.name(), p.default_value.clone().map(|expr| Arc::new((*expr).clone()))))
+        .map(|p| {
+            (
+                p.name(),
+                p.default_value
+                    .clone()
+                    .map(|expr| Arc::new((*expr).clone())),
+            )
+        })
         .collect();
 
     let closure = Value::Closure {

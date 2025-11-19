@@ -166,10 +166,7 @@ fn test_issue_117_parse_invalid_json() {
     ";
 
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("-e")
-        .arg(code)
-        .assert()
-        .failure();  // Should fail with parse error
+    cmd.arg("-e").arg(code).assert().failure(); // Should fail with parse error
 }
 
 // ============================================================================

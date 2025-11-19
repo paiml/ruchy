@@ -87,8 +87,7 @@ pub fn test() -> String {
     let rust_code = result.unwrap().to_string();
 
     // Verify rustc compilation succeeds
-    std::fs::write("/tmp/quality_001_02_output.rs", &rust_code)
-        .expect("Failed to write test file");
+    std::fs::write("/tmp/quality_001_02_output.rs", &rust_code).expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
         .args(["--crate-type", "lib", "/tmp/quality_001_02_output.rs"])
@@ -260,8 +259,7 @@ impl LambdaRuntime {
     );
 
     // Verify it compiles
-    std::fs::write("/tmp/quality_001_06_output.rs", &rust_code)
-        .expect("Failed to write test file");
+    std::fs::write("/tmp/quality_001_06_output.rs", &rust_code).expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
         .args(["--crate-type", "lib", "/tmp/quality_001_06_output.rs"])
@@ -270,9 +268,7 @@ impl LambdaRuntime {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: ruchy-lambda pattern fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: ruchy-lambda pattern fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 

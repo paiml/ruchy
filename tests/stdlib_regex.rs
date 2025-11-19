@@ -26,40 +26,75 @@ fn test_is_match_invalid_pattern() {
 
 #[test]
 fn test_find_first_basic() {
-    assert_eq!(regex::find_first(r"\d+", "abc 123 def").unwrap(), Some("123".to_string()));
-    assert_eq!(regex::find_first(r"[a-z]+", "123 abc 456").unwrap(), Some("abc".to_string()));
+    assert_eq!(
+        regex::find_first(r"\d+", "abc 123 def").unwrap(),
+        Some("123".to_string())
+    );
+    assert_eq!(
+        regex::find_first(r"[a-z]+", "123 abc 456").unwrap(),
+        Some("abc".to_string())
+    );
     assert_eq!(regex::find_first(r"\d+", "no numbers").unwrap(), None);
 }
 
 #[test]
 fn test_find_all_basic() {
-    assert_eq!(regex::find_all(r"\d+", "123 456 789").unwrap(), vec!["123", "456", "789"]);
-    assert_eq!(regex::find_all(r"[a-z]+", "hello world").unwrap(), vec!["hello", "world"]);
-    assert_eq!(regex::find_all(r"\d+", "no numbers").unwrap(), Vec::<String>::new());
+    assert_eq!(
+        regex::find_all(r"\d+", "123 456 789").unwrap(),
+        vec!["123", "456", "789"]
+    );
+    assert_eq!(
+        regex::find_all(r"[a-z]+", "hello world").unwrap(),
+        vec!["hello", "world"]
+    );
+    assert_eq!(
+        regex::find_all(r"\d+", "no numbers").unwrap(),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
 fn test_replace_first_basic() {
-    assert_eq!(regex::replace_first(r"\d+", "abc 123 def 456", "X").unwrap(), "abc X def 456");
-    assert_eq!(regex::replace_first(r"[a-z]+", "hello world", "X").unwrap(), "X world");
+    assert_eq!(
+        regex::replace_first(r"\d+", "abc 123 def 456", "X").unwrap(),
+        "abc X def 456"
+    );
+    assert_eq!(
+        regex::replace_first(r"[a-z]+", "hello world", "X").unwrap(),
+        "X world"
+    );
 }
 
 #[test]
 fn test_replace_all_basic() {
-    assert_eq!(regex::replace_all(r"\d+", "abc 123 def 456", "X").unwrap(), "abc X def X");
-    assert_eq!(regex::replace_all(r"[a-z]+", "hello world", "X").unwrap(), "X X");
+    assert_eq!(
+        regex::replace_all(r"\d+", "abc 123 def 456", "X").unwrap(),
+        "abc X def X"
+    );
+    assert_eq!(
+        regex::replace_all(r"[a-z]+", "hello world", "X").unwrap(),
+        "X X"
+    );
 }
 
 #[test]
 fn test_split_basic() {
-    assert_eq!(regex::split(r"\s+", "hello world rust").unwrap(), vec!["hello", "world", "rust"]);
+    assert_eq!(
+        regex::split(r"\s+", "hello world rust").unwrap(),
+        vec!["hello", "world", "rust"]
+    );
     assert_eq!(regex::split(r",", "a,b,c").unwrap(), vec!["a", "b", "c"]);
-    assert_eq!(regex::split(r"\d+", "abc123def456ghi").unwrap(), vec!["abc", "def", "ghi"]);
+    assert_eq!(
+        regex::split(r"\d+", "abc123def456ghi").unwrap(),
+        vec!["abc", "def", "ghi"]
+    );
 }
 
 #[test]
 fn test_capture_first_basic() {
-    let result = regex::capture_first(r"(\w+)@(\w+)", "user@example.com").unwrap().unwrap();
+    let result = regex::capture_first(r"(\w+)@(\w+)", "user@example.com")
+        .unwrap()
+        .unwrap();
     assert_eq!(result[1], "user");
     assert_eq!(result[2], "example");
 
@@ -162,7 +197,10 @@ fn test_empty_text() {
 #[test]
 fn test_unicode_patterns() {
     assert!(regex::is_match(r"世界", "Hello 世界").unwrap());
-    assert_eq!(regex::find_first(r"[一-龥]+", "中文 test 文字").unwrap(), Some("中文".to_string()));
+    assert_eq!(
+        regex::find_first(r"[一-龥]+", "中文 test 文字").unwrap(),
+        Some("中文".to_string())
+    );
 }
 
 #[test]
@@ -191,7 +229,10 @@ fn test_capture_groups_edge_cases() {
 #[test]
 fn test_split_edge_cases() {
     // Multiple consecutive delimiters
-    assert_eq!(regex::split(r"\s+", "a  b   c").unwrap(), vec!["a", "b", "c"]);
+    assert_eq!(
+        regex::split(r"\s+", "a  b   c").unwrap(),
+        vec!["a", "b", "c"]
+    );
 
     // Leading/trailing delimiters
     let result = regex::split(r",", ",a,b,").unwrap();
@@ -203,8 +244,14 @@ fn test_split_edge_cases() {
 fn test_replace_special_replacement() {
     // Note: "$" in replacement has special meaning (capture group reference)
     // Testing actual behavior
-    assert_eq!(regex::replace_all(r"\d+", "abc 123 def", "***").unwrap(), "abc *** def");
-    assert_eq!(regex::replace_all(r"[a-z]+", "hello world", "XXX").unwrap(), "XXX XXX");
+    assert_eq!(
+        regex::replace_all(r"\d+", "abc 123 def", "***").unwrap(),
+        "abc *** def"
+    );
+    assert_eq!(
+        regex::replace_all(r"[a-z]+", "hello world", "XXX").unwrap(),
+        "XXX XXX"
+    );
 }
 
 // ============================================================================

@@ -452,9 +452,12 @@ fn parse_method_or_field_access(
     let mut method_name = method;
     if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        // Check if next token is < for turbofish generics
+                                // Check if next token is < for turbofish generics
         if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-            let turbofish = super::expressions::expressions_helpers::identifiers::parse_turbofish_generics(state)?;
+            let turbofish =
+                super::expressions::expressions_helpers::identifiers::parse_turbofish_generics(
+                    state,
+                )?;
             method_name.push_str("::");
             method_name.push_str(&turbofish);
         } else {
@@ -811,7 +814,10 @@ fn should_continue_parsing_trait_bound(state: &mut ParserState) -> Result<bool> 
 
 /// Check if at end of trait bound (complexity: 2)
 fn is_trait_bound_end(state: &mut ParserState) -> bool {
-    matches!(state.tokens.peek(), Some((Token::Comma | Token::LeftBrace, _)))
+    matches!(
+        state.tokens.peek(),
+        Some((Token::Comma | Token::LeftBrace, _))
+    )
 }
 
 /// Check if current delimiter is comma (complexity: 1)

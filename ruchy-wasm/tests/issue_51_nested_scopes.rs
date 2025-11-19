@@ -5,8 +5,8 @@
 //!
 //! These same blocks work correctly in native Ruchy CLI.
 
-use wasm_bindgen_test::*;
 use ruchy_wasm::RuchyCompiler;
+use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 

@@ -50,10 +50,7 @@ fn test_issue_104_actor_observe_specific_actor() {
 #[test]
 fn test_issue_104_actor_observe_default() {
     // Running without --actor or --all should show all actors by default
-    ruchy_cmd()
-        .arg("actor:observe")
-        .assert()
-        .success();
+    ruchy_cmd().arg("actor:observe").assert().success();
 }
 
 // ============================================================================

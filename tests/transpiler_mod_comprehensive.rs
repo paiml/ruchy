@@ -528,7 +528,13 @@ fn integration_transpile_compile_execute() {
         .expect("Failed to write temp file");
 
     let compile_result = std::process::Command::new("rustc")
-        .args(["--crate-type", "bin", "/tmp/transpiler_integration_test.rs", "-o", "/tmp/transpiler_integration_test"])
+        .args([
+            "--crate-type",
+            "bin",
+            "/tmp/transpiler_integration_test.rs",
+            "-o",
+            "/tmp/transpiler_integration_test",
+        ])
         .output()
         .expect("Failed to run rustc");
 

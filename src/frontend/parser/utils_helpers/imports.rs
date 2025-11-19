@@ -182,7 +182,6 @@ fn try_consume_item_separator(state: &mut ParserState) -> Result<bool> {
     }
 }
 
-
 /// Parse simple import (path or path as alias) (complexity: 8)
 fn parse_simple_import(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
     if matches!(state.tokens.peek(), Some((Token::As, _))) {

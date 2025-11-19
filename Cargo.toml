@@ -331,7 +331,7 @@ markup5ever = "0.13"
 markup5ever_rcdom = "0.3"
 # Notebook support
 wasmparser = { version = "0.239.0", optional = true }
-wasmtime = { version = "38.0.2", optional = true }
+wasmtime = { version = "38.0.4", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
 semver = "1.0.27"
@@ -442,6 +442,12 @@ panic = "abort"           # No unwinding overhead
 overflow-checks = false   # No runtime overflow checks (faster)
 debug-assertions = false  # No debug assertions
 incremental = false       # Disable incremental for better optimization
+
+# Profiling profile for flamegraph/perf analysis
+[profile.profiling]
+inherits = "release"
+debug = true             # Enable debug symbols for profiling tools (flamegraph, perf)
+strip = false            # Keep debug symbols for profiling
 
 # WASM QA Framework profiles (following spec)
 [profile.coverage]

@@ -34,7 +34,8 @@ fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
     // Try to parse as valid Unicode code point
     u32::from_str_radix(&hex, 16)
         .ok()
-        .and_then(char::from_u32).map_or_else(|| format!("\\u{{{hex}}}"), |c| c.to_string())
+        .and_then(char::from_u32)
+        .map_or_else(|| format!("\\u{{{hex}}}"), |c| c.to_string())
 }
 
 /// Handle a backslash escape sequence
@@ -1051,8 +1052,10 @@ mod tests {
         }
 
         // Verify f-string is tokenized as single token
-        assert!(tokens.iter().any(|t| matches!(t, Token::FString(_))),
-                "FString token should exist");
+        assert!(
+            tokens.iter().any(|t| matches!(t, Token::FString(_))),
+            "FString token should exist"
+        );
     }
 
     #[test]

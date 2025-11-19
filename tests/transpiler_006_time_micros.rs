@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-006: `time_micros()` builtin function transpilation
 ///
 /// GitHub Issue: #139
@@ -6,9 +7,7 @@
 /// BUG: `time_micros()` passes through transpilation without being converted
 /// IMPACT: error[E0425]: cannot find function `time_micros` in this scope
 /// FIX: Transpile to `std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros()` as u64
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// Test 1: Basic `time_micros()` call
 #[test]
@@ -49,9 +48,7 @@ pub fn get_time() -> u64 {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: time_micros() fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: time_micros() fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -90,9 +87,7 @@ pub fn benchmark() -> u64 {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "Time difference calculation should compile:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("Time difference calculation should compile:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 
@@ -185,8 +180,6 @@ pub fn multi_benchmark() -> (u64, u64) {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "Multiple time_micros() calls should compile:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("Multiple time_micros() calls should compile:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }

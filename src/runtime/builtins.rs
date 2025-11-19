@@ -204,7 +204,11 @@ fn require_no_args(args: &[Value], fn_name: &str) -> Result<(), InterpreterError
 /// Helper: Validate exact argument count
 /// Complexity: 1 (within Toyota Way limits)
 #[inline]
-fn require_args_count(args: &[Value], expected: usize, fn_name: &str) -> Result<(), InterpreterError> {
+fn require_args_count(
+    args: &[Value],
+    expected: usize,
+    fn_name: &str,
+) -> Result<(), InterpreterError> {
     if args.len() != expected {
         return Err(InterpreterError::RuntimeError(format!(
             "{fn_name}() expects {expected} argument{}",
@@ -731,9 +735,7 @@ fn builtin_env_args(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 
     // Get command-line arguments
-    let cmd_args: Vec<Value> = std::env::args()
-        .map(|s| Value::String(s.into()))
-        .collect();
+    let cmd_args: Vec<Value> = std::env::args().map(|s| Value::String(s.into())).collect();
 
     Ok(Value::from_array(cmd_args))
 }
@@ -744,9 +746,9 @@ fn builtin_env_var(args: &[Value]) -> Result<Value, InterpreterError> {
     let key = extract_string_arg(args, "env_var")?;
     match std::env::var(key) {
         Ok(val) => Ok(Value::from_string(val)),
-        Err(_) => Err(InterpreterError::RuntimeError(
-            format!("Environment variable '{key}' not found"),
-        )),
+        Err(_) => Err(InterpreterError::RuntimeError(format!(
+            "Environment variable '{key}' not found"
+        ))),
     }
 }
 
@@ -782,9 +784,9 @@ fn builtin_env_current_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     require_no_args(args, "env_current_dir")?;
     match std::env::current_dir() {
         Ok(path) => Ok(Value::from_string(path.to_string_lossy().to_string())),
-        Err(e) => Err(InterpreterError::RuntimeError(
-            format!("Failed to get current directory: {e}"),
-        )),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "Failed to get current directory: {e}"
+        ))),
     }
 }
 
@@ -794,9 +796,9 @@ fn builtin_env_set_current_dir(args: &[Value]) -> Result<Value, InterpreterError
     let path = extract_string_arg(args, "env_set_current_dir")?;
     match std::env::set_current_dir(path) {
         Ok(()) => Ok(Value::Nil),
-        Err(e) => Err(InterpreterError::RuntimeError(
-            format!("Failed to set current directory: {e}"),
-        )),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "Failed to set current directory: {e}"
+        ))),
     }
 }
 
@@ -813,116 +815,169 @@ fn builtin_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 // Read file contents
 fn builtin_fs_read(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_read() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_read() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::read_to_string(path.as_ref()) {
             Ok(content) => Ok(Value::from_string(content)),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read file: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to read file: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_read() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_read() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Write to file
 fn builtin_fs_write(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("fs_write() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_write() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
-        (Value::String(path), Value::String(content)) => match std::fs::write(path.as_ref(), content.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to write file: {e}"))),
-        },
-        _ => Err(InterpreterError::RuntimeError("fs_write() expects two string arguments".to_string())),
+        (Value::String(path), Value::String(content)) => {
+            match std::fs::write(path.as_ref(), content.as_ref()) {
+                Ok(()) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to write file: {e}"
+                ))),
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_write() expects two string arguments".to_string(),
+        )),
     }
 }
 
 // Check if path exists
 fn builtin_fs_exists(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_exists() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_exists() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).exists())),
-        _ => Err(InterpreterError::RuntimeError("fs_exists() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_exists() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Create directory
 fn builtin_fs_create_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_create_dir() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_create_dir() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::create_dir(path.as_ref()) {
             Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to create directory: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to create directory: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_create_dir() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_create_dir() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Remove file
 fn builtin_fs_remove_file(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_remove_file() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_remove_file() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::remove_file(path.as_ref()) {
             Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove file: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to remove file: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_remove_file() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_remove_file() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Remove directory
 fn builtin_fs_remove_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_remove_dir() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_remove_dir() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::remove_dir(path.as_ref()) {
             Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to remove directory: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to remove directory: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_remove_dir() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_remove_dir() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Copy file
 fn builtin_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("fs_copy() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_copy() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
-        (Value::String(from), Value::String(to)) => match std::fs::copy(from.as_ref(), to.as_ref()) {
+        (Value::String(from), Value::String(to)) => match std::fs::copy(from.as_ref(), to.as_ref())
+        {
             Ok(_) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to copy file: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to copy file: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_copy() expects two string arguments".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_copy() expects two string arguments".to_string(),
+        )),
     }
 }
 
 // Rename/move file
 fn builtin_fs_rename(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("fs_rename() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_rename() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
-        (Value::String(from), Value::String(to)) => match std::fs::rename(from.as_ref(), to.as_ref()) {
-            Ok(()) => Ok(Value::Nil),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to rename file: {e}"))),
-        },
-        _ => Err(InterpreterError::RuntimeError("fs_rename() expects two string arguments".to_string())),
+        (Value::String(from), Value::String(to)) => {
+            match std::fs::rename(from.as_ref(), to.as_ref()) {
+                Ok(()) => Ok(Value::Nil),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "Failed to rename file: {e}"
+                ))),
+            }
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_rename() expects two string arguments".to_string(),
+        )),
     }
 }
 
 // Get file metadata (returns object with size, is_dir, is_file)
 fn builtin_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_metadata() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_metadata() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::metadata(path.as_ref()) {
@@ -932,57 +987,83 @@ fn builtin_fs_metadata(args: &[Value]) -> Result<Value, InterpreterError> {
                 map.insert("is_dir".to_string(), Value::Bool(meta.is_dir()));
                 map.insert("is_file".to_string(), Value::Bool(meta.is_file()));
                 Ok(Value::Object(Arc::new(map)))
-            },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to get metadata: {e}"))),
+            }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to get metadata: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_metadata() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_metadata() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Read directory contents
 fn builtin_fs_read_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_read_dir() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_read_dir() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::read_dir(path.as_ref()) {
             Ok(entries) => {
                 let names: Result<Vec<Value>, _> = entries
-                    .map(|e| e.map(|entry| Value::from_string(entry.file_name().to_string_lossy().to_string())))
+                    .map(|e| {
+                        e.map(|entry| {
+                            Value::from_string(entry.file_name().to_string_lossy().to_string())
+                        })
+                    })
                     .collect();
                 match names {
                     Ok(vec) => Ok(Value::from_array(vec)),
-                    Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
+                    Err(e) => Err(InterpreterError::RuntimeError(format!(
+                        "Failed to read directory: {e}"
+                    ))),
                 }
-            },
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to read directory: {e}"))),
+            }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to read directory: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_read_dir() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_read_dir() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Canonicalize path (get absolute path)
 fn builtin_fs_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_canonicalize() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_canonicalize() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to canonicalize path: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("fs_canonicalize() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_canonicalize() expects a string argument".to_string(),
+        )),
     }
 }
 
 // Check if path is a file
 fn builtin_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("fs_is_file() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "fs_is_file() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => Ok(Value::Bool(std::path::Path::new(path.as_ref()).is_file())),
-        _ => Err(InterpreterError::RuntimeError("fs_is_file() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "fs_is_file() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -991,38 +1072,52 @@ fn builtin_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError> {
 
 fn builtin_path_join(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("path_join() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_join() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
         (Value::String(base), Value::String(component)) => {
             let path = std::path::Path::new(base.as_ref()).join(component.as_ref());
             Ok(Value::from_string(path.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_join() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_join() expects two string arguments".to_string(),
+        )),
     }
 }
 
 fn builtin_path_join_many(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_join_many() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_join_many() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::Array(components) => {
             let path = build_path_from_components(components)?;
             Ok(Value::from_string(path.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_join_many() expects an array argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_join_many() expects an array argument".to_string(),
+        )),
     }
 }
 
 /// Helper: Build `PathBuf` from Value array components
 /// Complexity: 3 (reduced cognitive load)
-fn build_path_from_components(components: &[Value]) -> Result<std::path::PathBuf, InterpreterError> {
+fn build_path_from_components(
+    components: &[Value],
+) -> Result<std::path::PathBuf, InterpreterError> {
     let mut path = std::path::PathBuf::new();
     for component in components {
         match component {
             Value::String(s) => path.push(s.as_ref()),
-            _ => return Err(InterpreterError::RuntimeError("path_join_many() expects array of strings".to_string())),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "path_join_many() expects array of strings".to_string(),
+                ))
+            }
         }
     }
     Ok(path)
@@ -1030,7 +1125,9 @@ fn build_path_from_components(components: &[Value]) -> Result<std::path::PathBuf
 
 fn builtin_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_parent() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_parent() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1039,14 +1136,18 @@ fn builtin_path_parent(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(parent) => Ok(Value::from_string(parent.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_parent() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_parent() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_file_name() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_file_name() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1055,14 +1156,18 @@ fn builtin_path_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(name) => Ok(Value::from_string(name.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_file_name() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_file_name() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_file_stem() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_file_stem() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1071,14 +1176,18 @@ fn builtin_path_file_stem(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(stem) => Ok(Value::from_string(stem.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_file_stem() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_file_stem() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_extension() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_extension() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1087,95 +1196,126 @@ fn builtin_path_extension(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(ext) => Ok(Value::from_string(ext.to_string_lossy().to_string())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("path_extension() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_extension() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_is_absolute(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_is_absolute() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_is_absolute() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
             let p = std::path::Path::new(path.as_ref());
             Ok(Value::Bool(p.is_absolute()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_is_absolute() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_is_absolute() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_is_relative(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_is_relative() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_is_relative() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
             let p = std::path::Path::new(path.as_ref());
             Ok(Value::Bool(p.is_relative()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_is_relative() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_is_relative() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_canonicalize(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_canonicalize() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_canonicalize() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => match std::fs::canonicalize(path.as_ref()) {
             Ok(canonical) => Ok(Value::from_string(canonical.to_string_lossy().to_string())),
-            Err(e) => Err(InterpreterError::RuntimeError(format!("Failed to canonicalize path: {e}"))),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to canonicalize path: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("path_canonicalize() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "path_canonicalize() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_with_extension(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("path_with_extension() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_with_extension() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
         (Value::String(path), Value::String(ext)) => {
             let p = std::path::Path::new(path.as_ref()).with_extension(ext.as_ref());
             Ok(Value::from_string(p.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_with_extension() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_with_extension() expects two string arguments".to_string(),
+        )),
     }
 }
 
 fn builtin_path_with_file_name(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("path_with_file_name() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_with_file_name() expects 2 arguments".to_string(),
+        ));
     }
     match (&args[0], &args[1]) {
         (Value::String(path), Value::String(name)) => {
             let p = std::path::Path::new(path.as_ref()).with_file_name(name.as_ref());
             Ok(Value::from_string(p.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_with_file_name() expects two string arguments".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_with_file_name() expects two string arguments".to_string(),
+        )),
     }
 }
 
 fn builtin_path_components(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_components() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_components() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
             let p = std::path::Path::new(path.as_ref());
-            let components: Vec<Value> = p.components()
+            let components: Vec<Value> = p
+                .components()
                 .map(|c| Value::from_string(c.as_os_str().to_string_lossy().to_string()))
                 .collect();
             Ok(Value::Array(components.into()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_components() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_components() expects a string argument".to_string(),
+        )),
     }
 }
 
 fn builtin_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("path_normalize() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "path_normalize() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1184,14 +1324,18 @@ fn builtin_path_normalize(args: &[Value]) -> Result<Value, InterpreterError> {
             let mut normalized = std::path::PathBuf::new();
             for component in p.components() {
                 match component {
-                    std::path::Component::CurDir => {},
-                    std::path::Component::ParentDir => { normalized.pop(); },
+                    std::path::Component::CurDir => {}
+                    std::path::Component::ParentDir => {
+                        normalized.pop();
+                    }
                     _ => normalized.push(component),
                 }
             }
             Ok(Value::from_string(normalized.to_string_lossy().to_string()))
-        },
-        _ => Err(InterpreterError::RuntimeError("path_normalize() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "path_normalize() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -1213,19 +1357,19 @@ fn json_value_to_ruchy(json: serde_json::Value) -> Value {
             } else {
                 Value::Nil
             }
-        },
+        }
         serde_json::Value::String(s) => Value::from_string(s),
         serde_json::Value::Array(arr) => {
             let values: Vec<Value> = arr.into_iter().map(json_value_to_ruchy).collect();
             Value::Array(values.into())
-        },
+        }
         serde_json::Value::Object(obj) => {
             let mut map = std::collections::HashMap::new();
             for (k, v) in obj {
                 map.insert(k, json_value_to_ruchy(v));
             }
             Value::Object(std::sync::Arc::new(map))
-        },
+        }
     }
 }
 
@@ -1243,22 +1387,24 @@ fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterEr
         Value::Array(arr) => convert_array_to_json(arr),
         Value::Object(map) => convert_object_to_json(map),
         Value::ObjectMut(map) => convert_object_mut_to_json(map),
-        _ => Err(InterpreterError::RuntimeError(format!("Cannot convert {value:?} to JSON"))),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Cannot convert {value:?} to JSON"
+        ))),
     }
 }
 
 /// Convert Ruchy array to JSON array
 /// Complexity: 2 (simple map + collect)
 fn convert_array_to_json(arr: &[Value]) -> Result<serde_json::Value, InterpreterError> {
-    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter()
-        .map(ruchy_value_to_json)
-        .collect();
+    let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter().map(ruchy_value_to_json).collect();
     Ok(serde_json::Value::Array(json_arr?))
 }
 
 /// Convert immutable Ruchy object to JSON object
 /// Complexity: 3 (iteration + recursive conversion)
-fn convert_object_to_json(map: &std::collections::HashMap<String, Value>) -> Result<serde_json::Value, InterpreterError> {
+fn convert_object_to_json(
+    map: &std::collections::HashMap<String, Value>,
+) -> Result<serde_json::Value, InterpreterError> {
     let mut json_obj = serde_json::Map::new();
     for (k, v) in map {
         json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
@@ -1268,7 +1414,9 @@ fn convert_object_to_json(map: &std::collections::HashMap<String, Value>) -> Res
 
 /// Convert mutable Ruchy object to JSON object
 /// Complexity: 3 (lock + iteration + recursive conversion)
-fn convert_object_mut_to_json(map: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>) -> Result<serde_json::Value, InterpreterError> {
+fn convert_object_mut_to_json(
+    map: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
+) -> Result<serde_json::Value, InterpreterError> {
     let guard = map.lock().unwrap();
     let mut json_obj = serde_json::Map::new();
     for (k, v) in guard.iter() {
@@ -1281,16 +1429,20 @@ fn convert_object_mut_to_json(map: &std::sync::Arc<std::sync::Mutex<std::collect
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_parse() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_parse() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
-        Value::String(s) => {
-            match serde_json::from_str::<serde_json::Value>(s) {
-                Ok(json) => Ok(json_value_to_ruchy(json)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
-            }
+        Value::String(s) => match serde_json::from_str::<serde_json::Value>(s) {
+            Ok(json) => Ok(json_value_to_ruchy(json)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "JSON parse error: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("json_parse() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "json_parse() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -1298,12 +1450,16 @@ fn builtin_json_parse(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_stringify() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_stringify() expects 1 argument".to_string(),
+        ));
     }
     let json = ruchy_value_to_json(&args[0])?;
     match serde_json::to_string(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON stringify error: {e}"))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "JSON stringify error: {e}"
+        ))),
     }
 }
 
@@ -1311,12 +1467,16 @@ fn builtin_json_stringify(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_pretty() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_pretty() expects 1 argument".to_string(),
+        ));
     }
     let json = ruchy_value_to_json(&args[0])?;
     match serde_json::to_string_pretty(&json) {
         Ok(s) => Ok(Value::from_string(s)),
-        Err(e) => Err(InterpreterError::RuntimeError(format!("JSON pretty error: {e}"))),
+        Err(e) => Err(InterpreterError::RuntimeError(format!(
+            "JSON pretty error: {e}"
+        ))),
     }
 }
 
@@ -1324,7 +1484,9 @@ fn builtin_json_pretty(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_read() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_read() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
@@ -1332,10 +1494,14 @@ fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
                 .map_err(|e| InterpreterError::RuntimeError(format!("Failed to read file: {e}")))?;
             match serde_json::from_str::<serde_json::Value>(&content) {
                 Ok(json) => Ok(json_value_to_ruchy(json)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
+                Err(e) => Err(InterpreterError::RuntimeError(format!(
+                    "JSON parse error: {e}"
+                ))),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("json_read() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_read() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -1345,15 +1511,19 @@ fn builtin_json_read(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 3 (reduced by extracting serialization)
 fn builtin_json_write(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("json_write() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_write() expects 2 arguments".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(path) => {
             let content = serialize_value_to_json_string(&args[1])?;
             write_json_to_file(path, &content)?;
             Ok(Value::Bool(true))
-        },
-        _ => Err(InterpreterError::RuntimeError("json_write() expects first argument to be string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_write() expects first argument to be string".to_string(),
+        )),
     }
 }
 
@@ -1376,14 +1546,18 @@ fn write_json_to_file(path: &str, content: &str) -> Result<(), InterpreterError>
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_validate() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_validate() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
         Value::String(s) => {
             let is_valid = serde_json::from_str::<serde_json::Value>(s).is_ok();
             Ok(Value::Bool(is_valid))
-        },
-        _ => Err(InterpreterError::RuntimeError("json_validate() expects a string argument".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_validate() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -1391,26 +1565,30 @@ fn builtin_json_validate(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("json_type() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_type() expects 1 argument".to_string(),
+        ));
     }
     match &args[0] {
-        Value::String(s) => {
-            match serde_json::from_str::<serde_json::Value>(s) {
-                Ok(json) => {
-                    let type_str = match json {
-                        serde_json::Value::Null => "null",
-                        serde_json::Value::Bool(_) => "boolean",
-                        serde_json::Value::Number(_) => "number",
-                        serde_json::Value::String(_) => "string",
-                        serde_json::Value::Array(_) => "array",
-                        serde_json::Value::Object(_) => "object",
-                    };
-                    Ok(Value::from_string(type_str.to_string()))
-                },
-                Err(e) => Err(InterpreterError::RuntimeError(format!("JSON parse error: {e}"))),
+        Value::String(s) => match serde_json::from_str::<serde_json::Value>(s) {
+            Ok(json) => {
+                let type_str = match json {
+                    serde_json::Value::Null => "null",
+                    serde_json::Value::Bool(_) => "boolean",
+                    serde_json::Value::Number(_) => "number",
+                    serde_json::Value::String(_) => "string",
+                    serde_json::Value::Array(_) => "array",
+                    serde_json::Value::Object(_) => "object",
+                };
+                Ok(Value::from_string(type_str.to_string()))
             }
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "JSON parse error: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("json_type() expects a string argument".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "json_type() expects a string argument".to_string(),
+        )),
     }
 }
 
@@ -1418,7 +1596,9 @@ fn builtin_json_type(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Complexity: 2 (delegates to helper)
 fn builtin_json_merge(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("json_merge() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_merge() expects 2 arguments".to_string(),
+        ));
     }
 
     // Convert both args to JSON, merge, convert back
@@ -1442,7 +1622,7 @@ fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::
                 }
             }
             serde_json::Value::Object(a_map)
-        },
+        }
         (_, b_val) => b_val,
     }
 }
@@ -1451,7 +1631,9 @@ fn merge_json_values(a: serde_json::Value, b: serde_json::Value) -> serde_json::
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("json_get() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_get() expects 2 arguments".to_string(),
+        ));
     }
 
     let json = ruchy_value_to_json(&args[0])?;
@@ -1464,8 +1646,10 @@ fn builtin_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
                 Some(val) => Ok(json_value_to_ruchy(val.clone())),
                 None => Ok(Value::Nil),
             }
-        },
-        _ => Err(InterpreterError::RuntimeError("json_get() expects second argument to be string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_get() expects second argument to be string".to_string(),
+        )),
     }
 }
 
@@ -1479,7 +1663,7 @@ fn get_json_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a s
     match json {
         serde_json::Value::Object(map) => {
             map.get(path[0]).and_then(|v| get_json_path(v, &path[1..]))
-        },
+        }
         _ => None,
     }
 }
@@ -1488,7 +1672,9 @@ fn get_json_path<'a>(json: &'a serde_json::Value, path: &[&str]) -> Option<&'a s
 /// Complexity: 2 (thin wrapper)
 fn builtin_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 3 {
-        return Err(InterpreterError::RuntimeError("json_set() expects 3 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "json_set() expects 3 arguments".to_string(),
+        ));
     }
 
     let mut json = ruchy_value_to_json(&args[0])?;
@@ -1499,8 +1685,10 @@ fn builtin_json_set(args: &[Value]) -> Result<Value, InterpreterError> {
             let parts: Vec<&str> = path.split('.').collect();
             set_json_path(&mut json, &parts, new_value);
             Ok(json_value_to_ruchy(json))
-        },
-        _ => Err(InterpreterError::RuntimeError("json_set() expects second argument to be string".to_string())),
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "json_set() expects second argument to be string".to_string(),
+        )),
     }
 }
 
@@ -1552,17 +1740,21 @@ fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: s
 #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("http_get() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "http_get() expects 1 argument".to_string(),
+        ));
     }
 
     match &args[0] {
-        Value::String(url) => {
-            match crate::stdlib::http::get(url) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP GET failed: {e}"))),
-            }
+        Value::String(url) => match crate::stdlib::http::get(url) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP GET failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_get() expects a string URL".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_get() expects a string URL".to_string(),
+        )),
     }
 }
 
@@ -1573,17 +1765,21 @@ fn builtin_http_get(args: &[Value]) -> Result<Value, InterpreterError> {
 #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("http_post() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "http_post() expects 2 arguments".to_string(),
+        ));
     }
 
     match (&args[0], &args[1]) {
-        (Value::String(url), Value::String(body)) => {
-            match crate::stdlib::http::post(url, body) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP POST failed: {e}"))),
-            }
+        (Value::String(url), Value::String(body)) => match crate::stdlib::http::post(url, body) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP POST failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_post() expects two string arguments".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_post() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -1594,17 +1790,21 @@ fn builtin_http_post(args: &[Value]) -> Result<Value, InterpreterError> {
 #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 2 {
-        return Err(InterpreterError::RuntimeError("http_put() expects 2 arguments".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "http_put() expects 2 arguments".to_string(),
+        ));
     }
 
     match (&args[0], &args[1]) {
-        (Value::String(url), Value::String(body)) => {
-            match crate::stdlib::http::put(url, body) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP PUT failed: {e}"))),
-            }
+        (Value::String(url), Value::String(body)) => match crate::stdlib::http::put(url, body) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP PUT failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_put() expects two string arguments".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_put() expects two string arguments".to_string(),
+        )),
     }
 }
 
@@ -1615,17 +1815,21 @@ fn builtin_http_put(args: &[Value]) -> Result<Value, InterpreterError> {
 #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 fn builtin_http_delete(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() != 1 {
-        return Err(InterpreterError::RuntimeError("http_delete() expects 1 argument".to_string()));
+        return Err(InterpreterError::RuntimeError(
+            "http_delete() expects 1 argument".to_string(),
+        ));
     }
 
     match &args[0] {
-        Value::String(url) => {
-            match crate::stdlib::http::delete(url) {
-                Ok(response) => Ok(Value::from_string(response)),
-                Err(e) => Err(InterpreterError::RuntimeError(format!("HTTP DELETE failed: {e}"))),
-            }
+        Value::String(url) => match crate::stdlib::http::delete(url) {
+            Ok(response) => Ok(Value::from_string(response)),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "HTTP DELETE failed: {e}"
+            ))),
         },
-        _ => Err(InterpreterError::RuntimeError("http_delete() expects a string URL".to_string())),
+        _ => Err(InterpreterError::RuntimeError(
+            "http_delete() expects a string URL".to_string(),
+        )),
     }
 }
 
@@ -1771,7 +1975,10 @@ mod tests {
     fn test_builtin_len_wrong_type() {
         let result = builtin_len(&[Value::Integer(42)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("len() not supported for"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("len() not supported for"));
     }
 
     #[test]
@@ -1849,7 +2056,10 @@ mod tests {
     fn test_builtin_sqrt_wrong_type() {
         let result = builtin_sqrt(&[Value::from_string("not a number".to_string())]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("sqrt() expects a number"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("sqrt() expects a number"));
     }
 
     #[test]
@@ -1881,7 +2091,10 @@ mod tests {
     fn test_builtin_abs_wrong_type() {
         let result = builtin_abs(&[Value::from_string("not a number".to_string())]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("abs() expects a number"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("abs() expects a number"));
     }
 
     #[test]
@@ -2032,7 +2245,10 @@ mod tests {
         assert!(result.is_err(), "Should return error for missing variable");
 
         if let Err(InterpreterError::RuntimeError(msg)) = result {
-            assert!(msg.contains("not found"), "Error message should mention 'not found'");
+            assert!(
+                msg.contains("not found"),
+                "Error message should mention 'not found'"
+            );
         }
     }
 
@@ -2053,7 +2269,8 @@ mod tests {
         let result = builtin_env_set_var(&[
             Value::from_string("RUCHY_TEST_SET_VAR".to_string()),
             Value::from_string("new_value".to_string()),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
 
@@ -2072,7 +2289,8 @@ mod tests {
         let result = builtin_env_set_var(&[Value::from_string("TEST".to_string())]);
         assert!(result.is_err());
 
-        let result = builtin_env_set_var(&[Value::Integer(1), Value::from_string("value".to_string())]);
+        let result =
+            builtin_env_set_var(&[Value::Integer(1), Value::from_string("value".to_string())]);
         assert!(result.is_err());
     }
 
@@ -2081,7 +2299,9 @@ mod tests {
         // Set a variable first
         std::env::set_var("RUCHY_TEST_REMOVE_VAR", "to_be_removed");
 
-        let result = builtin_env_remove_var(&[Value::from_string("RUCHY_TEST_REMOVE_VAR".to_string())]).unwrap();
+        let result =
+            builtin_env_remove_var(&[Value::from_string("RUCHY_TEST_REMOVE_VAR".to_string())])
+                .unwrap();
         assert_eq!(result, Value::Nil);
 
         // Verify it was removed
@@ -2091,7 +2311,9 @@ mod tests {
     #[test]
     fn test_builtin_env_remove_var_nonexistent() {
         // Removing non-existent variable should succeed
-        let result = builtin_env_remove_var(&[Value::from_string("RUCHY_NEVER_EXISTED".to_string())]).unwrap();
+        let result =
+            builtin_env_remove_var(&[Value::from_string("RUCHY_NEVER_EXISTED".to_string())])
+                .unwrap();
         assert_eq!(result, Value::Nil);
     }
 
@@ -2103,7 +2325,8 @@ mod tests {
         let result = builtin_env_remove_var(&[Value::Integer(42)]);
         assert!(result.is_err());
 
-        let result = builtin_env_remove_var(&[Value::from_string("TEST".to_string()), Value::Integer(1)]);
+        let result =
+            builtin_env_remove_var(&[Value::from_string("TEST".to_string()), Value::Integer(1)]);
         assert!(result.is_err());
     }
 
@@ -2113,7 +2336,10 @@ mod tests {
 
         if let Value::Object(vars) = result {
             // Should have at least some environment variables
-            assert!(!vars.is_empty(), "Environment variables should not be empty");
+            assert!(
+                !vars.is_empty(),
+                "Environment variables should not be empty"
+            );
 
             // Verify it contains expected env vars (PATH exists on all systems)
             assert!(vars.contains_key("PATH") || !vars.is_empty());
@@ -2154,7 +2380,10 @@ mod tests {
 
         // Change to temp directory
         let temp_dir = std::env::temp_dir();
-        let result = builtin_env_set_current_dir(&[Value::from_string(temp_dir.to_string_lossy().to_string())]).unwrap();
+        let result = builtin_env_set_current_dir(&[Value::from_string(
+            temp_dir.to_string_lossy().to_string(),
+        )])
+        .unwrap();
         assert_eq!(result, Value::Nil);
 
         // Verify it changed
@@ -2166,7 +2395,9 @@ mod tests {
 
     #[test]
     fn test_builtin_env_set_current_dir_invalid() {
-        let result = builtin_env_set_current_dir(&[Value::from_string("/nonexistent/directory/xyz".to_string())]);
+        let result = builtin_env_set_current_dir(&[Value::from_string(
+            "/nonexistent/directory/xyz".to_string(),
+        )]);
         assert!(result.is_err());
     }
 
@@ -2178,7 +2409,10 @@ mod tests {
         let result = builtin_env_set_current_dir(&[Value::Integer(42)]);
         assert!(result.is_err());
 
-        let result = builtin_env_set_current_dir(&[Value::from_string("/tmp".to_string()), Value::Integer(1)]);
+        let result = builtin_env_set_current_dir(&[
+            Value::from_string("/tmp".to_string()),
+            Value::Integer(1),
+        ]);
         assert!(result.is_err());
     }
 
@@ -2219,7 +2453,9 @@ mod tests {
     fn test_builtin_fs_read() {
         let (temp_dir, file_path) = setup_test_file("Hello, World!");
 
-        let result = builtin_fs_read(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_read(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_string("Hello, World!".to_string()));
 
         drop(temp_dir);
@@ -2227,7 +2463,9 @@ mod tests {
 
     #[test]
     fn test_builtin_fs_read_missing_file() {
-        let result = builtin_fs_read(&[Value::from_string("/tmp/nonexistent_test_file_12345.txt".to_string())]);
+        let result = builtin_fs_read(&[Value::from_string(
+            "/tmp/nonexistent_test_file_12345.txt".to_string(),
+        )]);
         assert!(result.is_err(), "Should error for missing file");
     }
 
@@ -2239,7 +2477,8 @@ mod tests {
         let result = builtin_fs_write(&[
             Value::from_string(file_path.to_string_lossy().to_string()),
             Value::from_string("Test content".to_string()),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
         let content = std::fs::read_to_string(&file_path).expect("Failed to read file");
@@ -2252,7 +2491,9 @@ mod tests {
     fn test_builtin_fs_exists_true() {
         let (temp_dir, file_path) = setup_test_file("test");
 
-        let result = builtin_fs_exists(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_exists(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_bool(true));
 
         drop(temp_dir);
@@ -2260,7 +2501,10 @@ mod tests {
 
     #[test]
     fn test_builtin_fs_exists_false() {
-        let result = builtin_fs_exists(&[Value::from_string("/tmp/nonexistent_file_xyz123.txt".to_string())]).unwrap();
+        let result = builtin_fs_exists(&[Value::from_string(
+            "/tmp/nonexistent_file_xyz123.txt".to_string(),
+        )])
+        .unwrap();
         assert_eq!(result, Value::from_bool(false));
     }
 
@@ -2269,7 +2513,9 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let dir_path = temp_dir.path().join("new_directory");
 
-        let result = builtin_fs_create_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_create_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::Nil);
         assert!(dir_path.exists() && dir_path.is_dir());
 
@@ -2281,7 +2527,9 @@ mod tests {
         let (temp_dir, file_path) = setup_test_file("to be removed");
         assert!(file_path.exists());
 
-        let result = builtin_fs_remove_file(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_remove_file(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::Nil);
         assert!(!file_path.exists(), "File should be removed");
 
@@ -2295,7 +2543,9 @@ mod tests {
         std::fs::create_dir(&dir_path).expect("Failed to create directory");
         assert!(dir_path.exists());
 
-        let result = builtin_fs_remove_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_remove_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::Nil);
         assert!(!dir_path.exists(), "Directory should be removed");
 
@@ -2310,7 +2560,8 @@ mod tests {
         let result = builtin_fs_copy(&[
             Value::from_string(source_path.to_string_lossy().to_string()),
             Value::from_string(dest_path.to_string_lossy().to_string()),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
         assert!(dest_path.exists());
@@ -2328,7 +2579,8 @@ mod tests {
         let result = builtin_fs_rename(&[
             Value::from_string(old_path.to_string_lossy().to_string()),
             Value::from_string(new_path.to_string_lossy().to_string()),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
         assert!(!old_path.exists(), "Old file should not exist");
@@ -2341,13 +2593,15 @@ mod tests {
     fn test_builtin_fs_metadata() {
         let (temp_dir, file_path) = setup_test_file("metadata test");
 
-        let result = builtin_fs_metadata(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_metadata(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
 
         if let Value::Object(meta) = result {
             assert!(meta.contains_key("is_file"));
             assert!(meta.contains_key("is_dir"));
-            assert!(meta.contains_key("size"));  // Key is "size" not "len"
-            // Verify the values are correct types
+            assert!(meta.contains_key("size")); // Key is "size" not "len"
+                                                // Verify the values are correct types
             assert_eq!(meta.get("is_file").unwrap(), &Value::Bool(true));
             assert_eq!(meta.get("is_dir").unwrap(), &Value::Bool(false));
         } else {
@@ -2365,7 +2619,10 @@ mod tests {
         std::fs::write(&file1, "test1").expect("Failed to write file1");
         std::fs::write(&file2, "test2").expect("Failed to write file2");
 
-        let result = builtin_fs_read_dir(&[Value::from_string(temp_dir.path().to_string_lossy().to_string())]).unwrap();
+        let result = builtin_fs_read_dir(&[Value::from_string(
+            temp_dir.path().to_string_lossy().to_string(),
+        )])
+        .unwrap();
 
         if let Value::Array(entries) = result {
             assert!(entries.len() >= 2, "Should have at least 2 entries");
@@ -2380,7 +2637,9 @@ mod tests {
     fn test_builtin_fs_canonicalize() {
         let (temp_dir, file_path) = setup_test_file("canonicalize test");
 
-        let result = builtin_fs_canonicalize(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_canonicalize(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
 
         if let Value::String(canonical_path) = result {
             assert!(!canonical_path.is_empty());
@@ -2395,7 +2654,9 @@ mod tests {
     fn test_builtin_fs_is_file_true() {
         let (temp_dir, file_path) = setup_test_file("is file test");
 
-        let result = builtin_fs_is_file(&[Value::from_string(file_path.to_string_lossy().to_string())]).unwrap();
+        let result =
+            builtin_fs_is_file(&[Value::from_string(file_path.to_string_lossy().to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_bool(true));
 
         drop(temp_dir);
@@ -2405,7 +2666,10 @@ mod tests {
     fn test_builtin_fs_is_file_false_for_dir() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
-        let result = builtin_fs_is_file(&[Value::from_string(temp_dir.path().to_string_lossy().to_string())]).unwrap();
+        let result = builtin_fs_is_file(&[Value::from_string(
+            temp_dir.path().to_string_lossy().to_string(),
+        )])
+        .unwrap();
         assert_eq!(result, Value::from_bool(false));
 
         drop(temp_dir);
@@ -2447,7 +2711,9 @@ mod tests {
     fn test_builtin_pow_wrong_args() {
         assert!(builtin_pow(&[]).is_err());
         assert!(builtin_pow(&[Value::Integer(2)]).is_err());
-        assert!(builtin_pow(&[Value::from_string("invalid".to_string()), Value::Integer(2)]).is_err());
+        assert!(
+            builtin_pow(&[Value::from_string("invalid".to_string()), Value::Integer(2)]).is_err()
+        );
     }
 
     #[test]
@@ -2762,7 +3028,8 @@ mod tests {
 
     #[test]
     fn test_builtin_pop_array() {
-        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into());
+        let arr =
+            Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into());
         let result = builtin_pop(&[arr]).unwrap();
         // NOTE: pop() returns the POPPED VALUE, not the modified array
         assert_eq!(result, Value::Integer(3));
@@ -2785,7 +3052,11 @@ mod tests {
     // EXTREME TDD Sprint 2: Path functions
     #[test]
     fn test_builtin_path_join() {
-        let result = builtin_path_join(&[Value::from_string("/home".to_string()), Value::from_string("user".to_string())]).unwrap();
+        let result = builtin_path_join(&[
+            Value::from_string("/home".to_string()),
+            Value::from_string("user".to_string()),
+        ])
+        .unwrap();
         assert!(matches!(result, Value::String(_)));
         if let Value::String(s) = result {
             assert!(s.as_ref().contains("home") && s.as_ref().contains("user"));
@@ -2796,12 +3067,18 @@ mod tests {
     fn test_builtin_path_join_wrong_args() {
         assert!(builtin_path_join(&[]).is_err());
         assert!(builtin_path_join(&[Value::from_string("a".to_string())]).is_err());
-        assert!(builtin_path_join(&[Value::Integer(42), Value::from_string("b".to_string())]).is_err());
+        assert!(
+            builtin_path_join(&[Value::Integer(42), Value::from_string("b".to_string())]).is_err()
+        );
     }
 
     #[test]
     fn test_builtin_path_join_many() {
-        let components = vec![Value::from_string("home".to_string()), Value::from_string("user".to_string()), Value::from_string("docs".to_string())];
+        let components = vec![
+            Value::from_string("home".to_string()),
+            Value::from_string("user".to_string()),
+            Value::from_string("docs".to_string()),
+        ];
         let result = builtin_path_join_many(&[Value::Array(components.into())]).unwrap();
         assert!(matches!(result, Value::String(_)));
     }
@@ -2814,7 +3091,8 @@ mod tests {
 
     #[test]
     fn test_builtin_path_parent() {
-        let result = builtin_path_parent(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        let result =
+            builtin_path_parent(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
         assert!(matches!(result, Value::String(_)));
     }
 
@@ -2827,7 +3105,9 @@ mod tests {
 
     #[test]
     fn test_builtin_path_file_name() {
-        let result = builtin_path_file_name(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        let result =
+            builtin_path_file_name(&[Value::from_string("/home/user/file.txt".to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_string("file.txt".to_string()));
     }
 
@@ -2839,35 +3119,44 @@ mod tests {
 
     #[test]
     fn test_builtin_path_file_stem() {
-        let result = builtin_path_file_stem(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        let result =
+            builtin_path_file_stem(&[Value::from_string("/home/user/file.txt".to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_string("file".to_string()));
     }
 
     #[test]
     fn test_builtin_path_extension() {
-        let result = builtin_path_extension(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        let result =
+            builtin_path_extension(&[Value::from_string("/home/user/file.txt".to_string())])
+                .unwrap();
         assert_eq!(result, Value::from_string("txt".to_string()));
     }
 
     #[test]
     fn test_builtin_path_extension_no_ext() {
-        let result = builtin_path_extension(&[Value::from_string("/home/user/file".to_string())]).unwrap();
+        let result =
+            builtin_path_extension(&[Value::from_string("/home/user/file".to_string())]).unwrap();
         assert_eq!(result, Value::Nil);
     }
 
     #[test]
     fn test_builtin_path_is_absolute() {
-        let result = builtin_path_is_absolute(&[Value::from_string("/home/user".to_string())]).unwrap();
+        let result =
+            builtin_path_is_absolute(&[Value::from_string("/home/user".to_string())]).unwrap();
         assert_eq!(result, Value::Bool(true));
-        let result2 = builtin_path_is_absolute(&[Value::from_string("relative/path".to_string())]).unwrap();
+        let result2 =
+            builtin_path_is_absolute(&[Value::from_string("relative/path".to_string())]).unwrap();
         assert_eq!(result2, Value::Bool(false));
     }
 
     #[test]
     fn test_builtin_path_is_relative() {
-        let result = builtin_path_is_relative(&[Value::from_string("relative/path".to_string())]).unwrap();
+        let result =
+            builtin_path_is_relative(&[Value::from_string("relative/path".to_string())]).unwrap();
         assert_eq!(result, Value::Bool(true));
-        let result2 = builtin_path_is_relative(&[Value::from_string("/absolute".to_string())]).unwrap();
+        let result2 =
+            builtin_path_is_relative(&[Value::from_string("/absolute".to_string())]).unwrap();
         assert_eq!(result2, Value::Bool(false));
     }
 
@@ -2884,25 +3173,39 @@ mod tests {
 
     #[test]
     fn test_builtin_path_canonicalize_nonexistent() {
-        let result = builtin_path_canonicalize(&[Value::from_string("/nonexistent/path/file.txt".to_string())]);
+        let result = builtin_path_canonicalize(&[Value::from_string(
+            "/nonexistent/path/file.txt".to_string(),
+        )]);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_builtin_path_with_extension() {
-        let result = builtin_path_with_extension(&[Value::from_string("/home/user/file.txt".to_string()), Value::from_string("rs".to_string())]).unwrap();
+        let result = builtin_path_with_extension(&[
+            Value::from_string("/home/user/file.txt".to_string()),
+            Value::from_string("rs".to_string()),
+        ])
+        .unwrap();
         assert_eq!(result, Value::from_string("/home/user/file.rs".to_string()));
     }
 
     #[test]
     fn test_builtin_path_with_file_name() {
-        let result = builtin_path_with_file_name(&[Value::from_string("/home/user/file.txt".to_string()), Value::from_string("newfile.rs".to_string())]).unwrap();
-        assert_eq!(result, Value::from_string("/home/user/newfile.rs".to_string()));
+        let result = builtin_path_with_file_name(&[
+            Value::from_string("/home/user/file.txt".to_string()),
+            Value::from_string("newfile.rs".to_string()),
+        ])
+        .unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("/home/user/newfile.rs".to_string())
+        );
     }
 
     #[test]
     fn test_builtin_path_components() {
-        let result = builtin_path_components(&[Value::from_string("/home/user/docs".to_string())]).unwrap();
+        let result =
+            builtin_path_components(&[Value::from_string("/home/user/docs".to_string())]).unwrap();
         assert!(matches!(result, Value::Array(_)));
         if let Value::Array(arr) = result {
             assert!(arr.len() >= 3);
@@ -2911,7 +3214,9 @@ mod tests {
 
     #[test]
     fn test_builtin_path_normalize() {
-        let result = builtin_path_normalize(&[Value::from_string("/home/./user/../docs".to_string())]).unwrap();
+        let result =
+            builtin_path_normalize(&[Value::from_string("/home/./user/../docs".to_string())])
+                .unwrap();
         assert!(matches!(result, Value::String(_)));
         if let Value::String(s) = result {
             // Should resolve . and ..
@@ -2921,7 +3226,8 @@ mod tests {
 
     #[test]
     fn test_builtin_path_normalize_with_dots() {
-        let result = builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())]).unwrap();
+        let result =
+            builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())]).unwrap();
         assert_eq!(result, Value::from_string("/a/c/d".to_string()));
     }
 
@@ -2954,7 +3260,9 @@ mod tests {
     fn test_builtin_json_stringify() {
         let obj = Value::Object(Arc::new(
             [("key".to_string(), Value::from_string("value".to_string()))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
         let result = builtin_json_stringify(&[obj]).unwrap();
         assert!(matches!(result, Value::String(_)));
@@ -2970,7 +3278,9 @@ mod tests {
     fn test_builtin_json_pretty() {
         let obj = Value::Object(Arc::new(
             [("key".to_string(), Value::Integer(42))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
         let result = builtin_json_pretty(&[obj]).unwrap();
         if let Value::String(s) = result {
@@ -3002,7 +3312,9 @@ mod tests {
 
     #[test]
     fn test_builtin_json_read_file_not_found() {
-        assert!(builtin_json_read(&[Value::from_string("/nonexistent/file.json".to_string())]).is_err());
+        assert!(
+            builtin_json_read(&[Value::from_string("/nonexistent/file.json".to_string())]).is_err()
+        );
     }
 
     // json_write tests (2 tests)
@@ -3011,7 +3323,9 @@ mod tests {
         let temp_path = "/tmp/test_json_write.json";
         let obj = Value::Object(Arc::new(
             [("test".to_string(), Value::Bool(true))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
 
         let result = builtin_json_write(&[Value::from_string(temp_path.to_string()), obj]).unwrap();
@@ -3038,7 +3352,8 @@ mod tests {
     #[test]
     fn test_builtin_json_validate_invalid() {
         let invalid_json = "{invalid}";
-        let result = builtin_json_validate(&[Value::from_string(invalid_json.to_string())]).unwrap();
+        let result =
+            builtin_json_validate(&[Value::from_string(invalid_json.to_string())]).unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -3081,7 +3396,8 @@ mod tests {
 
     #[test]
     fn test_builtin_json_type_object() {
-        let result = builtin_json_type(&[Value::from_string(r#"{"key":"value"}"#.to_string())]).unwrap();
+        let result =
+            builtin_json_type(&[Value::from_string(r#"{"key":"value"}"#.to_string())]).unwrap();
         assert_eq!(result, Value::from_string("object".to_string()));
     }
 
@@ -3096,11 +3412,15 @@ mod tests {
     fn test_builtin_json_merge() {
         let obj1 = Value::Object(Arc::new(
             [("a".to_string(), Value::Integer(1))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
         let obj2 = Value::Object(Arc::new(
             [("b".to_string(), Value::Integer(2))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
 
         let result = builtin_json_merge(&[obj1, obj2]).unwrap();
@@ -3118,7 +3438,9 @@ mod tests {
     fn test_builtin_json_get() {
         let obj = Value::Object(Arc::new(
             [("key".to_string(), Value::Integer(42))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
         let result = builtin_json_get(&[obj, Value::from_string("key".to_string())]).unwrap();
         assert_eq!(result, Value::Integer(42));
@@ -3128,9 +3450,12 @@ mod tests {
     fn test_builtin_json_get_not_found() {
         let obj = Value::Object(Arc::new(
             [("key".to_string(), Value::Integer(42))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
-        let result = builtin_json_get(&[obj, Value::from_string("nonexistent".to_string())]).unwrap();
+        let result =
+            builtin_json_get(&[obj, Value::from_string("nonexistent".to_string())]).unwrap();
         assert_eq!(result, Value::Nil);
     }
 
@@ -3145,16 +3470,26 @@ mod tests {
     fn test_builtin_json_set() {
         let obj = Value::Object(Arc::new(
             [("key".to_string(), Value::Integer(42))]
-                .iter().cloned().collect()
+                .iter()
+                .cloned()
+                .collect(),
         ));
-        let result = builtin_json_set(&[obj, Value::from_string("key".to_string()), Value::Integer(100)]).unwrap();
+        let result = builtin_json_set(&[
+            obj,
+            Value::from_string("key".to_string()),
+            Value::Integer(100),
+        ])
+        .unwrap();
         assert!(matches!(result, Value::Object(_)));
     }
 
     #[test]
     fn test_builtin_json_set_wrong_args() {
         assert!(builtin_json_set(&[]).is_err());
-        assert!(builtin_json_set(&[Value::Integer(42), Value::Integer(42), Value::Integer(42)]).is_err());
+        assert!(
+            builtin_json_set(&[Value::Integer(42), Value::Integer(42), Value::Integer(42)])
+                .is_err()
+        );
     }
 }
 

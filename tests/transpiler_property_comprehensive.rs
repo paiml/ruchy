@@ -45,14 +45,7 @@ fn gen_var_name() -> impl Strategy<Value = String> {
 /// Strategy: Generate type annotations (focus on inference-prone types)
 fn gen_type_annotation() -> impl Strategy<Value = &'static str> {
     prop::sample::select(vec![
-        "i32",
-        "f64",
-        "bool",
-        "String",
-        "str",
-        "i64",
-        "u32",
-        "char",
+        "i32", "f64", "bool", "String", "str", "i64", "u32", "char",
     ])
 }
 
@@ -104,16 +97,14 @@ fun main() {{
 /// Strategy: Generate nested scope tests (Category 2: 25%)
 fn gen_nested_scope_program() -> impl Strategy<Value = String> {
     (gen_func_name(), gen_var_name(), 1usize..4).prop_map(|(fn_name, var_name, depth)| {
-        let mut code = format!(
-            "fun {fn_name}() -> i32 {{\n    let {var_name} = 10;\n"
-        );
+        let mut code = format!("fun {fn_name}() -> i32 {{\n    let {var_name} = 10;\n");
 
         // Generate nested blocks
         for i in 0..depth {
+            code.push_str(&format!("    let inner_{i} = {var_name} + {i};\n"));
             code.push_str(&format!(
-                "    let inner_{i} = {var_name} + {i};\n"
+                "    {{\n        let nested_{i} = inner_{i} * 2;\n"
             ));
-            code.push_str(&format!("    {{\n        let nested_{i} = inner_{i} * 2;\n"));
         }
 
         // Close nested blocks and return

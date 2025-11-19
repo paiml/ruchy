@@ -362,7 +362,10 @@ mod tests {
         let args = vec![];
         let result = transpiler.try_transpile_type_conversion_refactored("str", &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects exactly 1 argument"));
     }
 
     // Test 5: try_transpile_type_conversion_refactored - int() with 2 args (error path)
@@ -372,7 +375,10 @@ mod tests {
         let args = vec![int_expr(1), int_expr(2)];
         let result = transpiler.try_transpile_type_conversion_refactored("int", &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects exactly 1 argument"));
     }
 
     // Test 6: convert_to_string - integer

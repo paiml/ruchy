@@ -517,9 +517,15 @@ fn print_summary(report: &ValidationReport) {
         report.summary.property_test_percentage
     );
 
-    println!("\nOverall Score: {} ({:.1}%)\n", report.summary.overall_score, report.summary.implementation_percentage);
+    println!(
+        "\nOverall Score: {} ({:.1}%)\n",
+        report.summary.overall_score, report.summary.implementation_percentage
+    );
 
-    println!("⏱️  Execution Time: {:.1}s\n", report.execution_time_ms as f64 / 1000.0);
+    println!(
+        "⏱️  Execution Time: {:.1}s\n",
+        report.execution_time_ms as f64 / 1000.0
+    );
 
     if !report.summary.pass {
         println!("❌ Below threshold (85%)");
@@ -543,7 +549,13 @@ fn print_full_report(report: &ValidationReport) {
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
         for (i, missing) in report.missing.iter().enumerate() {
-            println!("{}. {} ({}) - {}", i + 1, missing.name, missing.category, missing.reason);
+            println!(
+                "{}. {} ({}) - {}",
+                i + 1,
+                missing.name,
+                missing.category,
+                missing.reason
+            );
             println!("   → Action: {}", missing.action);
             if let Some(file) = &missing.file {
                 println!("   → File: {file}");

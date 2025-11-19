@@ -61,9 +61,8 @@ fn arb_literal() -> impl Strategy<Value = String> {
 
 /// Generate simple binary expressions: literal op literal
 fn arb_binary_expr() -> impl Strategy<Value = String> {
-    (arb_literal(), arb_binary_op(), arb_literal()).prop_map(|(left, op, right)| {
-        format!("{left} {op} {right}")
-    })
+    (arb_literal(), arb_binary_op(), arb_literal())
+        .prop_map(|(left, op, right)| format!("{left} {op} {right}"))
 }
 
 /// Generate parenthesized expressions

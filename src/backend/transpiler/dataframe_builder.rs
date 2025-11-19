@@ -313,11 +313,7 @@ mod tests {
     #[test]
     fn test_is_dataframe_builder_column_method() {
         let transpiler = test_transpiler();
-        let expr = column_method_call(
-            dataframe_new_call(),
-            string_expr("a"),
-            list_expr(vec![1]),
-        );
+        let expr = column_method_call(dataframe_new_call(), string_expr("a"), list_expr(vec![1]));
         assert!(transpiler.is_dataframe_builder(&expr));
     }
 
@@ -377,11 +373,7 @@ mod tests {
     // Test 13: extract_column_chain - single column
     #[test]
     fn test_extract_column_chain_single() {
-        let expr = column_method_call(
-            dataframe_new_call(),
-            string_expr("x"),
-            list_expr(vec![1]),
-        );
+        let expr = column_method_call(dataframe_new_call(), string_expr("x"), list_expr(vec![1]));
         let result = Transpiler::extract_column_chain(&expr);
         assert!(result.is_some());
         let (columns, _base) = result.unwrap();

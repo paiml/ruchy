@@ -228,22 +228,40 @@ mod tests {
 
     #[test]
     fn test_find_first_basic() {
-        assert_eq!(find_first(r"\d+", "abc 123 def").unwrap(), Some("123".to_string()));
-        assert_eq!(find_first(r"[a-z]+", "123 hello 456").unwrap(), Some("hello".to_string()));
+        assert_eq!(
+            find_first(r"\d+", "abc 123 def").unwrap(),
+            Some("123".to_string())
+        );
+        assert_eq!(
+            find_first(r"[a-z]+", "123 hello 456").unwrap(),
+            Some("hello".to_string())
+        );
         assert_eq!(find_first(r"\d+", "abc def").unwrap(), None);
     }
 
     #[test]
     fn test_find_first_multiple() {
         // Should only find first match
-        assert_eq!(find_first(r"\d+", "123 456 789").unwrap(), Some("123".to_string()));
+        assert_eq!(
+            find_first(r"\d+", "123 456 789").unwrap(),
+            Some("123".to_string())
+        );
     }
 
     #[test]
     fn test_find_all_basic() {
-        assert_eq!(find_all(r"\d+", "abc 123 def 456").unwrap(), vec!["123", "456"]);
-        assert_eq!(find_all(r"[a-z]+", "hello world rust").unwrap(), vec!["hello", "world", "rust"]);
-        assert_eq!(find_all(r"\d+", "no numbers").unwrap(), Vec::<String>::new());
+        assert_eq!(
+            find_all(r"\d+", "abc 123 def 456").unwrap(),
+            vec!["123", "456"]
+        );
+        assert_eq!(
+            find_all(r"[a-z]+", "hello world rust").unwrap(),
+            vec!["hello", "world", "rust"]
+        );
+        assert_eq!(
+            find_all(r"\d+", "no numbers").unwrap(),
+            Vec::<String>::new()
+        );
     }
 
     #[test]
@@ -253,29 +271,50 @@ mod tests {
 
     #[test]
     fn test_replace_first_basic() {
-        assert_eq!(replace_first(r"\d+", "abc 123 def 456", "X").unwrap(), "abc X def 456");
-        assert_eq!(replace_first(r"[a-z]+", "hello world", "X").unwrap(), "X world");
+        assert_eq!(
+            replace_first(r"\d+", "abc 123 def 456", "X").unwrap(),
+            "abc X def 456"
+        );
+        assert_eq!(
+            replace_first(r"[a-z]+", "hello world", "X").unwrap(),
+            "X world"
+        );
     }
 
     #[test]
     fn test_replace_first_no_match() {
-        assert_eq!(replace_first(r"\d+", "no numbers", "X").unwrap(), "no numbers");
+        assert_eq!(
+            replace_first(r"\d+", "no numbers", "X").unwrap(),
+            "no numbers"
+        );
     }
 
     #[test]
     fn test_replace_all_basic() {
-        assert_eq!(replace_all(r"\d+", "abc 123 def 456", "X").unwrap(), "abc X def X");
-        assert_eq!(replace_all(r"[a-z]+", "hello world rust", "X").unwrap(), "X X X");
+        assert_eq!(
+            replace_all(r"\d+", "abc 123 def 456", "X").unwrap(),
+            "abc X def X"
+        );
+        assert_eq!(
+            replace_all(r"[a-z]+", "hello world rust", "X").unwrap(),
+            "X X X"
+        );
     }
 
     #[test]
     fn test_replace_all_no_match() {
-        assert_eq!(replace_all(r"\d+", "no numbers", "X").unwrap(), "no numbers");
+        assert_eq!(
+            replace_all(r"\d+", "no numbers", "X").unwrap(),
+            "no numbers"
+        );
     }
 
     #[test]
     fn test_split_basic() {
-        assert_eq!(split(r"\s+", "hello world rust").unwrap(), vec!["hello", "world", "rust"]);
+        assert_eq!(
+            split(r"\s+", "hello world rust").unwrap(),
+            vec!["hello", "world", "rust"]
+        );
         assert_eq!(split(r",", "a,b,c").unwrap(), vec!["a", "b", "c"]);
         assert_eq!(split(r"\d+", "a1b2c").unwrap(), vec!["a", "b", "c"]);
     }
@@ -294,7 +333,9 @@ mod tests {
 
     #[test]
     fn test_capture_first_basic() {
-        let result = capture_first(r"(\w+)@(\w+)", "user@example.com").unwrap().unwrap();
+        let result = capture_first(r"(\w+)@(\w+)", "user@example.com")
+            .unwrap()
+            .unwrap();
         assert_eq!(result[0], "user@example");
         assert_eq!(result[1], "user");
         assert_eq!(result[2], "example");
@@ -302,7 +343,10 @@ mod tests {
 
     #[test]
     fn test_capture_first_no_match() {
-        assert_eq!(capture_first(r"(\w+)@(\w+)", "no email here").unwrap(), None);
+        assert_eq!(
+            capture_first(r"(\w+)@(\w+)", "no email here").unwrap(),
+            None
+        );
     }
 
     #[test]
@@ -324,7 +368,9 @@ mod tests {
 
     #[test]
     fn test_capture_all_no_match() {
-        assert!(capture_all(r"(\w+):(\d+)", "no matches").unwrap().is_empty());
+        assert!(capture_all(r"(\w+):(\d+)", "no matches")
+            .unwrap()
+            .is_empty());
     }
 
     #[test]
@@ -352,7 +398,10 @@ mod tests {
     #[test]
     fn test_escape_special_chars() {
         // All regex special characters
-        assert_eq!(escape(r"\.^$*+?{}[]()|\").unwrap(), r"\\\.\^\$\*\+\?\{\}\[\]\(\)\|\\");
+        assert_eq!(
+            escape(r"\.^$*+?{}[]()|\").unwrap(),
+            r"\\\.\^\$\*\+\?\{\}\[\]\(\)\|\\"
+        );
     }
 
     // ============================================================================
@@ -396,10 +445,10 @@ mod tests {
         let pattern = r"(https?)://([^:/]+):(\d+)(/[^?]+)\?(.+)";
         let captures = capture_first(pattern, url).unwrap().unwrap();
 
-        assert_eq!(captures[1], "https");    // protocol
+        assert_eq!(captures[1], "https"); // protocol
         assert_eq!(captures[2], "example.com"); // domain
-        assert_eq!(captures[3], "8080");     // port
-        assert_eq!(captures[4], "/path");    // path
+        assert_eq!(captures[3], "8080"); // port
+        assert_eq!(captures[4], "/path"); // path
         assert_eq!(captures[5], "key=value"); // query
     }
 
@@ -436,7 +485,10 @@ mod tests {
     #[test]
     fn test_unicode_support() {
         assert!(is_match(r"你好", "你好世界").unwrap());
-        assert_eq!(find_first(r"[а-я]+", "Привет мир").unwrap(), Some("ривет".to_string()));
+        assert_eq!(
+            find_first(r"[а-я]+", "Привет мир").unwrap(),
+            Some("ривет".to_string())
+        );
         assert!(find_all(r"😀|😃|😄", "Hello 😀 World 😃").unwrap().len() == 2);
     }
 
@@ -458,7 +510,10 @@ mod tests {
         assert!(is_match(r"line3$", text).unwrap());
 
         // With multiline flag (?m), ^ and $ match line boundaries
-        assert_eq!(find_all(r"(?m)^line", text).unwrap(), vec!["line", "line", "line"]);
+        assert_eq!(
+            find_all(r"(?m)^line", text).unwrap(),
+            vec!["line", "line", "line"]
+        );
     }
 
     #[test]
@@ -467,7 +522,10 @@ mod tests {
 
         // Greedy (default)
         let greedy = find_first(r"<div>.*</div>", text).unwrap();
-        assert_eq!(greedy, Some("<div>content1</div><div>content2</div>".to_string()));
+        assert_eq!(
+            greedy,
+            Some("<div>content1</div><div>content2</div>".to_string())
+        );
 
         // Lazy (non-greedy)
         let lazy = find_first(r"<div>.*?</div>", text).unwrap();

@@ -77,7 +77,11 @@ fn test_jit_002_comparison_less_equal() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile <= comparison: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile <= comparison: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "5 <= 10 should be true");
 }
 
@@ -95,7 +99,11 @@ fn test_jit_002_comparison_equal() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile == comparison: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile == comparison: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "42 == 42 should be true");
 }
 
@@ -118,7 +126,11 @@ fn test_jit_002_if_with_variable() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile variable in if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile variable in if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 99, "n=5 not <= 1, should take else branch");
 }
 
@@ -137,7 +149,11 @@ fn test_jit_002_if_with_variable_true_branch() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile variable in if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile variable in if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "n=1 <= 1, should return n");
 }
 
@@ -158,7 +174,11 @@ fn test_jit_002_simple_function_call() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile function call: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile function call: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "add(2, 3) should return 5");
 }
 
@@ -179,7 +199,11 @@ fn test_jit_002_function_with_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile function with if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile function with if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 10, "max(10, 5) should return 10");
 }
 
@@ -301,7 +325,10 @@ fn test_jit_002_fibonacci_20() {
     println!("JIT fib(20) execution time: {elapsed:?}");
 
     // Relaxed assertion for first run - we'll measure properly in benchmarks
-    assert!(elapsed.as_millis() < 100, "JIT should be faster than 100ms (AST: 19ms)");
+    assert!(
+        elapsed.as_millis() < 100,
+        "JIT should be faster than 100ms (AST: 19ms)"
+    );
 }
 
 // ============================================================================
@@ -327,7 +354,11 @@ fn test_jit_002_nested_if() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile nested if: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile nested if: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 2, "x=5 > 3, should return 2");
 }
 
@@ -347,7 +378,11 @@ fn test_jit_002_multiple_functions() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile multiple functions: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile multiple functions: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 19, "double(5) + triple(3) = 10 + 9 = 19");
 }
 
@@ -376,7 +411,11 @@ fn test_jit_002_performance_benchmark_fibonacci() {
     {
         let mut compiler = JitCompiler::new().unwrap();
         let warmup_result = compiler.compile_and_execute(&ast);
-        assert_eq!(warmup_result.unwrap(), 6765, "Warmup: fib(20) should return 6765");
+        assert_eq!(
+            warmup_result.unwrap(),
+            6765,
+            "Warmup: fib(20) should return 6765"
+        );
     }
 
     // Benchmark: Run 100 iterations (compile + execute)

@@ -7,9 +7,9 @@
 //! **Toyota Way**: Jidoka - Stop the line if ANY property violation found.
 
 use proptest::prelude::*;
-use ruchy::runtime::{DataFrameColumn, Value};
-use ruchy::runtime::eval_dataframe_ops::eval_dataframe_filter;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+use ruchy::runtime::eval_dataframe_ops::eval_dataframe_filter;
+use ruchy::runtime::{DataFrameColumn, Value};
 
 /// Generate arbitrary `DataFrameColumn` for property testing
 #[allow(dead_code)]
@@ -17,7 +17,9 @@ fn arb_dataframe_column(name: String, size: usize) -> BoxedStrategy<DataFrameCol
     prop::collection::vec(
         prop_oneof![
             any::<i64>().prop_map(Value::Integer),
-            any::<f64>().prop_filter("not NaN", |f| !f.is_nan()).prop_map(Value::Float),
+            any::<f64>()
+                .prop_filter("not NaN", |f| !f.is_nan())
+                .prop_map(Value::Float),
             any::<bool>().prop_map(Value::Bool),
         ],
         size..=size,
@@ -35,7 +37,9 @@ fn arb_dataframe(num_cols: usize, num_rows: usize) -> BoxedStrategy<Vec<DataFram
         prop::collection::vec(
             prop_oneof![
                 any::<i64>().prop_map(Value::Integer),
-                any::<f64>().prop_filter("not NaN", |f| !f.is_nan()).prop_map(Value::Float),
+                any::<f64>()
+                    .prop_filter("not NaN", |f| !f.is_nan())
+                    .prop_map(Value::Float),
                 any::<bool>().prop_map(Value::Bool),
             ],
             num_rows..=num_rows,
@@ -401,12 +405,10 @@ mod unit_tests {
     /// DF-002: Baseline test - filter with simple true condition
     #[test]
     fn test_df002_filter_basic_true() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "age".to_string(),
-                values: vec![Value::Integer(25), Value::Integer(30), Value::Integer(35)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "age".to_string(),
+            values: vec![Value::Integer(25), Value::Integer(30), Value::Integer(35)],
+        }];
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
         let eval_fn = |_: &Expr, _: &[DataFrameColumn], _: usize| Ok(Value::Bool(true));
@@ -414,7 +416,10 @@ mod unit_tests {
         let result = eval_dataframe_filter(&columns, &condition, eval_fn);
         assert!(result.is_ok());
 
-        if let Ok(Value::DataFrame { columns: result_cols }) = result {
+        if let Ok(Value::DataFrame {
+            columns: result_cols,
+        }) = result
+        {
             assert_eq!(result_cols[0].values.len(), 3, "All rows should be kept");
         } else {
             panic!("Expected DataFrame result");
@@ -424,12 +429,10 @@ mod unit_tests {
     /// DF-002: Test filter with false condition
     #[test]
     fn test_df002_filter_basic_false() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "age".to_string(),
-                values: vec![Value::Integer(25), Value::Integer(30)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "age".to_string(),
+            values: vec![Value::Integer(25), Value::Integer(30)],
+        }];
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::new(0, 0));
         let eval_fn = |_: &Expr, _: &[DataFrameColumn], _: usize| Ok(Value::Bool(false));
@@ -437,7 +440,10 @@ mod unit_tests {
         let result = eval_dataframe_filter(&columns, &condition, eval_fn);
         assert!(result.is_ok());
 
-        if let Ok(Value::DataFrame { columns: result_cols }) = result {
+        if let Ok(Value::DataFrame {
+            columns: result_cols,
+        }) = result
+        {
             assert_eq!(result_cols[0].values.len(), 0, "No rows should be kept");
         } else {
             panic!("Expected DataFrame result");
@@ -447,12 +453,10 @@ mod unit_tests {
     /// DF-002: Test filter with row-specific predicate (age > 25)
     #[test]
     fn test_df002_filter_row_specific_predicate() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "age".to_string(),
-                values: vec![Value::Integer(20), Value::Integer(30), Value::Integer(40)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "age".to_string(),
+            values: vec![Value::Integer(20), Value::Integer(30), Value::Integer(40)],
+        }];
 
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::new(0, 0));
         let eval_fn = |_: &Expr, cols: &[DataFrameColumn], row_idx: usize| {
@@ -466,8 +470,15 @@ mod unit_tests {
         let result = eval_dataframe_filter(&columns, &condition, eval_fn);
         assert!(result.is_ok());
 
-        if let Ok(Value::DataFrame { columns: result_cols }) = result {
-            assert_eq!(result_cols[0].values.len(), 2, "Should keep 2 rows (age > 25)");
+        if let Ok(Value::DataFrame {
+            columns: result_cols,
+        }) = result
+        {
+            assert_eq!(
+                result_cols[0].values.len(),
+                2,
+                "Should keep 2 rows (age > 25)"
+            );
             assert_eq!(result_cols[0].values[0], Value::Integer(30));
             assert_eq!(result_cols[0].values[1], Value::Integer(40));
         } else {
@@ -506,11 +517,17 @@ mod unit_tests {
         let result = eval_dataframe_filter(&columns, &condition, eval_fn);
         assert!(result.is_ok());
 
-        if let Ok(Value::DataFrame { columns: result_cols }) = result {
+        if let Ok(Value::DataFrame {
+            columns: result_cols,
+        }) = result
+        {
             assert_eq!(result_cols.len(), 2, "Should have 2 columns");
             assert_eq!(result_cols[0].values.len(), 1, "Should keep 1 row (id=2)");
             assert_eq!(result_cols[0].values[0], Value::Integer(2));
-            assert_eq!(result_cols[1].values[0], Value::from_string("Bob".to_string()));
+            assert_eq!(
+                result_cols[1].values[0],
+                Value::from_string("Bob".to_string())
+            );
         } else {
             panic!("Expected DataFrame result");
         }

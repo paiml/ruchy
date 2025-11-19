@@ -26,7 +26,9 @@ fn test_df_001_transpiler_generates_polars_imports() {
     let ast = parser.parse().expect("Failed to parse");
 
     let mut transpiler = Transpiler::new();
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let rust_code = result.to_string();
 
     // ASSERTION: Must contain polars import
@@ -114,7 +116,9 @@ fn test_df_empirical_rustc_validation() {
     let ast = parser.parse().expect("Failed to parse");
 
     let mut transpiler = Transpiler::new();
-    let result = transpiler.transpile_to_program(&ast).expect("Failed to transpile");
+    let result = transpiler
+        .transpile_to_program(&ast)
+        .expect("Failed to transpile");
     let rust_code = result.to_string();
 
     // Write to temp file
@@ -144,11 +148,12 @@ fn test_df_empirical_rustc_validation() {
             .filter(|line| line.contains("error"))
             .collect();
 
-        assert!(real_errors.is_empty(), 
-                "Transpiled code has compilation errors:\n{}\n\nGenerated code:\n{}",
-                real_errors.join("\n"),
-                rust_code
-            );
+        assert!(
+            real_errors.is_empty(),
+            "Transpiled code has compilation errors:\n{}\n\nGenerated code:\n{}",
+            real_errors.join("\n"),
+            rust_code
+        );
     }
 }
 
@@ -178,10 +183,7 @@ mod property_tests {
                     transpiler.transpile(&ast)
                 }));
 
-                assert!(
-                    result.is_ok(),
-                    "Transpiler panicked on input: {input}"
-                );
+                assert!(result.is_ok(), "Transpiler panicked on input: {input}");
 
                 if let Ok(Ok(tokens)) = result {
                     let rust_code = tokens.to_string();

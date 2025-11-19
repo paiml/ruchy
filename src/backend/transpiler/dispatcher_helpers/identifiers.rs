@@ -86,7 +86,10 @@ impl Transpiler {
         quote! { < #(#type_tokens),* > }
     }
 
-    pub(in crate::backend::transpiler) fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
+    pub(in crate::backend::transpiler) fn transpile_qualified_name(
+        module: &str,
+        name: &str,
+    ) -> TokenStream {
         // Handle nested qualified names like "net::TcpListener"
         let module_parts: Vec<&str> = module.split("::").collect();
         let name_ident = format_ident!("{}", name);
@@ -328,7 +331,9 @@ mod tests {
         let result = transpiler.transpile_identifier("mod::type");
         let result_str = result.to_string();
         // Should handle reserved keywords in paths
-        assert!(result_str.contains("r#") || result_str.contains("mod") || result_str.contains("type"));
+        assert!(
+            result_str.contains("r#") || result_str.contains("mod") || result_str.contains("type")
+        );
     }
 
     // Test 18: transpile_turbofish - three types
@@ -654,7 +659,9 @@ mod tests {
         let transpiler = test_transpiler();
         let long_name = "this_is_a_very_long_identifier_name_with_many_words_and_underscores";
         let result = transpiler.transpile_identifier(long_name);
-        assert!(result.to_string().contains("this_is_a_very_long_identifier"));
+        assert!(result
+            .to_string()
+            .contains("this_is_a_very_long_identifier"));
     }
 
     // Test 48: transpile_turbofish - with extra whitespace and newlines

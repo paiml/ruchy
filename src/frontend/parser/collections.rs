@@ -106,7 +106,10 @@ fn skip_comments(state: &mut ParserState) {
 
 /// Parse all expressions within a block (complexity: 8)
 /// Made public for use by async block parsing (PARSER-056)
-pub(in crate::frontend::parser) fn parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Vec<Expr>> {
+pub(in crate::frontend::parser) fn parse_block_expressions(
+    state: &mut ParserState,
+    start_span: Span,
+) -> Result<Vec<Expr>> {
     let mut exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // PARSER-063: Skip comments before parsing each expression in the block
@@ -203,7 +206,7 @@ fn create_let_statement_expression(
             value: Box::new(let_info.value),
             body: Box::new(body),
             is_mutable: false,
-            else_block: None,  // Block-level let doesn't support let-else
+            else_block: None, // Block-level let doesn't support let-else
         },
         start_span,
     ))
@@ -1197,9 +1200,7 @@ fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<
         Ok(expr) => expr,
         Err(e) => {
             state.tokens.set_position(saved_position);
-            bail!(
-                "Not a comprehension - failed to parse first expression: {e}"
-            );
+            bail!("Not a comprehension - failed to parse first expression: {e}");
         }
     };
 

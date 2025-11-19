@@ -49,7 +49,8 @@ fn repl_interactive_arithmetic() {
     repl.exp_string("4").expect("Should output 4");
 
     // Test variable assignment
-    repl.send_line("let x = 10").expect("Failed to send command");
+    repl.send_line("let x = 10")
+        .expect("Failed to send command");
     repl.send_line("x * 2").expect("Failed to send command");
     repl.exp_string("20").expect("Should output 20");
 
@@ -70,7 +71,8 @@ fn repl_interactive_function_definition() {
         .expect("Failed to send function");
 
     // Call function
-    repl.send_line("double(21)").expect("Failed to call function");
+    repl.send_line("double(21)")
+        .expect("Failed to call function");
     repl.exp_string("42").expect("Should output 42");
 
     repl.send_line("exit").expect("Failed to exit");
@@ -88,7 +90,8 @@ fn repl_interactive_error_recovery() {
     repl.send_line("let x = ").expect("Failed to send command");
 
     // REPL should recover and show prompt again
-    repl.exp_string("ruchy>").expect("Should show prompt after error");
+    repl.exp_string("ruchy>")
+        .expect("Should show prompt after error");
 
     // Verify REPL still works
     repl.send_line("42").expect("Failed to send command");
@@ -118,8 +121,8 @@ fn cli_run_command_executes_file() {
 #[test]
 fn cli_eval_flag_executes_inline() {
     let binary = ruchy_binary();
-    let mut proc = spawn(&format!("{binary} -e \"2 + 2\""), Some(5000))
-        .expect("Failed to spawn process");
+    let mut proc =
+        spawn(&format!("{binary} -e \"2 + 2\""), Some(5000)).expect("Failed to spawn process");
 
     proc.exp_string("4").expect("Should output 4");
 }
@@ -188,7 +191,8 @@ fn repl_detects_interactive_tty() {
     let mut proc = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
 
     // Interactive REPL should show colored prompt with indicators
-    proc.exp_string("ruchy>").expect("Should show interactive prompt");
+    proc.exp_string("ruchy>")
+        .expect("Should show interactive prompt");
 
     proc.send_line("exit").expect("Failed to exit");
 }

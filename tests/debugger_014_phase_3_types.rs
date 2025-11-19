@@ -63,8 +63,12 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("TRACE: → greet(\"Alice\": string)"))
-        .stdout(predicate::str::contains("TRACE: ← greet = \"Hello, Alice\": string"));
+        .stdout(predicate::str::contains(
+            "TRACE: → greet(\"Alice\": string)",
+        ))
+        .stdout(predicate::str::contains(
+            "TRACE: ← greet = \"Hello, Alice\": string",
+        ));
 }
 
 /// Test #3: Trace multiple arguments with different types
@@ -91,8 +95,12 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("TRACE: → format_message(42: integer, \"items\": string)"))
-        .stdout(predicate::str::contains("TRACE: ← format_message = \"items (42)\": string"));
+        .stdout(predicate::str::contains(
+            "TRACE: → format_message(42: integer, \"items\": string)",
+        ))
+        .stdout(predicate::str::contains(
+            "TRACE: ← format_message = \"items (42)\": string",
+        ));
 }
 
 /// Test #4: Trace float argument with type annotation
@@ -176,7 +184,9 @@ fun main() {
         .timeout(std::time::Duration::from_secs(5))
         .assert()
         .success()
-        .stdout(predicate::str::contains("TRACE: → length([1, 2, 3]: array)"))
+        .stdout(predicate::str::contains(
+            "TRACE: → length([1, 2, 3]: array)",
+        ))
         .stdout(predicate::str::contains("TRACE: ← length = 3: integer"));
 }
 

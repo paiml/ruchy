@@ -59,7 +59,7 @@ use std::time::Instant;
 ///     100,
 /// ).unwrap();
 /// ```
-#[cfg(feature = "notebook")]  // WASM benchmarking requires wasmtime
+#[cfg(feature = "notebook")] // WASM benchmarking requires wasmtime
 pub fn benchmark_wasm(
     module_path: &Path,
     function_name: &str,
@@ -160,12 +160,7 @@ mod tests {
             return;
         }
 
-        let results = benchmark_wasm(
-            &module_path,
-            "add",
-            &[1, 2],
-            10,
-        ).unwrap();
+        let results = benchmark_wasm(&module_path, "add", &[1, 2], 10).unwrap();
 
         assert_eq!(results.total_requests, 10);
         assert!(results.successful_requests > 0);
@@ -175,12 +170,7 @@ mod tests {
     #[test]
     #[cfg(not(feature = "notebook"))]
     fn test_wasm_benchmark_disabled() {
-        let result = benchmark_wasm(
-            &PathBuf::from("test.wasm"),
-            "add",
-            &[1, 2],
-            10,
-        );
+        let result = benchmark_wasm(&PathBuf::from("test.wasm"), "add", &[1, 2], 10);
 
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("notebook"));

@@ -75,12 +75,7 @@ fn verify_cargo_project() -> Result<()> {
 /// # Complexity
 ///
 /// Complexity: 8 (within Toyota Way limits ≤10)
-fn run_cargo_add(
-    package: &str,
-    version: Option<&str>,
-    dev: bool,
-    verbose: bool,
-) -> Result<()> {
+fn run_cargo_add(package: &str, version: Option<&str>, dev: bool, verbose: bool) -> Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.arg("add");
 
@@ -175,12 +170,12 @@ edition = "2021"
         // Change back to original dir
         env::set_current_dir(_original_dir).expect("Failed to restore dir");
 
+        assert!(result.is_err(), "Should fail when Cargo.toml doesn't exist");
         assert!(
-            result.is_err(),
-            "Should fail when Cargo.toml doesn't exist"
-        );
-        assert!(
-            result.unwrap_err().to_string().contains("Cargo.toml not found"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Cargo.toml not found"),
             "Error message should mention Cargo.toml"
         );
     }

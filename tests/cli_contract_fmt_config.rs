@@ -55,21 +55,21 @@ fn test_fmt_loads_config_from_current_directory() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config file with custom settings
-    fs::write(&config_file, r"
+    fs::write(
+        &config_file,
+        r"
 indent_width = 2
 use_tabs = false
 max_line_length = 80
-").expect("Failed to write config file");
+",
+    )
+    .expect("Failed to write config file");
 
     // Write test file
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
 
     // Format file - should use config settings
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 }
 
 #[test]
@@ -81,20 +81,20 @@ fn test_fmt_searches_parent_directories_for_config() {
     let test_file = subdir.join("test.ruchy");
 
     // Create config file in parent directory
-    fs::write(&config_file, r"
+    fs::write(
+        &config_file,
+        r"
 indent_width = 2
 use_tabs = false
-").expect("Failed to write config file");
+",
+    )
+    .expect("Failed to write config file");
 
     // Write test file in subdirectory
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
 
     // Format file - should find config in parent
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 }
 
 #[test]
@@ -106,11 +106,7 @@ fn test_fmt_check_passes_for_properly_formatted_file() {
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
 
     // First format it
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     // Then check it - should pass
     ruchy_cmd()
@@ -154,20 +150,20 @@ fn test_fmt_with_tabs_config() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config file with tabs enabled
-    fs::write(&config_file, r"
+    fs::write(
+        &config_file,
+        r"
 indent_width = 4
 use_tabs = true
-").expect("Failed to write config file");
+",
+    )
+    .expect("Failed to write config file");
 
     // Write test file that needs indentation
     fs::write(&test_file, "{\nlet x = 1\n}").expect("Failed to write test file");
 
     // Format file
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().success();
 
     // Read formatted file
     let _formatted = fs::read_to_string(&test_file).expect("Failed to read formatted file");
@@ -191,11 +187,7 @@ fn test_fmt_with_invalid_config_file() {
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");
 
     // Format should fail with config error
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().failure();
 }
 
 #[test]
@@ -204,11 +196,7 @@ fn test_fmt_nonexistent_file() {
     let test_file = temp_dir.path().join("nonexistent.ruchy");
 
     // Attempt to format nonexistent file
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&test_file)
-        .assert()
-        .failure();
+    ruchy_cmd().arg("fmt").arg(&test_file).assert().failure();
 }
 
 #[test]
@@ -219,10 +207,14 @@ fn test_fmt_with_custom_indent_width() {
     let test_file = temp_dir.path().join("test.ruchy");
 
     // Create config with indent_width = 2
-    fs::write(&config_file, r"
+    fs::write(
+        &config_file,
+        r"
 indent_width = 2
 use_tabs = false
-").expect("Failed to write config file");
+",
+    )
+    .expect("Failed to write config file");
 
     // Write test file
     fs::write(&test_file, "let x = 1 + 2").expect("Failed to write test file");

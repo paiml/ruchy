@@ -548,15 +548,13 @@ mod tests {
     fn test_transpile_dataframe_method_select() {
         let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
-        let args = vec![
-            Expr {
-                kind: ExprKind::Literal(Literal::String("col1".to_string())),
-                span: Span::default(),
-                attributes: vec![],
-                leading_comments: vec![],
-                trailing_comment: None,
-            },
-        ];
+        let args = vec![Expr {
+            kind: ExprKind::Literal(Literal::String("col1".to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "select", &args);
         assert!(result.is_ok());
         assert!(result.unwrap().to_string().contains("lazy"));
@@ -620,15 +618,13 @@ mod tests {
     fn test_transpile_dataframe_method_groupby() {
         let transpiler = make_test_transpiler();
         let df_expr = make_literal_expr(0);
-        let args = vec![
-            Expr {
-                kind: ExprKind::Literal(Literal::String("group_col".to_string())),
-                span: Span::default(),
-                attributes: vec![],
-                leading_comments: vec![],
-                trailing_comment: None,
-            },
-        ];
+        let args = vec![Expr {
+            kind: ExprKind::Literal(Literal::String("group_col".to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "groupby", &args);
         assert!(result.is_ok());
         assert!(result.unwrap().to_string().contains("group_by"));
@@ -648,9 +644,7 @@ mod tests {
     #[test]
     fn test_is_dataframe_expr_literal() {
         let expr = Expr {
-            kind: ExprKind::DataFrame {
-                columns: vec![],
-            },
+            kind: ExprKind::DataFrame { columns: vec![] },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -730,7 +724,9 @@ mod tests {
             on: vec!["id".to_string()],
             how: JoinType::Outer,
         };
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("join"));
         assert!(output.contains("Outer"));
@@ -743,7 +739,9 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let agg_ops = vec![AggregateOp::Var("variance_col".to_string())];
         let op = DataFrameOp::Aggregate(agg_ops);
-        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let result = transpiler
+            .transpile_dataframe_operation(&df_expr, &op)
+            .unwrap();
         let output = result.to_string();
         assert!(output.contains("var"));
         assert!(output.contains("variance_col"));
@@ -808,15 +806,15 @@ mod property_tests_dataframe {
                         kind: ExprKind::Literal(Literal::Integer(1, None)),
                         span: Span::default(),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::Integer(2, None)),
                         span: Span::default(),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     },
                 ],
             },
@@ -827,15 +825,15 @@ mod property_tests_dataframe {
                         kind: ExprKind::Literal(Literal::String("Alice".to_string())),
                         span: Span::default(),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::String("Bob".to_string())),
                         span: Span::default(),
                         attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                        leading_comments: vec![],
+                        trailing_comment: None,
                     },
                 ],
             },

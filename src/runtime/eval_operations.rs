@@ -188,7 +188,6 @@ pub fn eval_unary_op(op: UnaryOp, operand: &Value) -> Result<Value, InterpreterE
             // The interpreter manages ownership, so *boxed just returns the value
             Ok(operand.clone())
         }
-
     }
 }
 
@@ -382,11 +381,13 @@ fn modulo_values(left: &Value, right: &Value) -> Result<Value, InterpreterError>
             })
         }
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a % b)),
-        (Value::Integer(a), Value::Float(b)) => {
+        (Value::Integer(a), Value::Float(b)) =>
+        {
             #[allow(clippy::cast_precision_loss)]
             Ok(Value::Float((*a as f64) % b))
         }
-        (Value::Float(a), Value::Integer(b)) => {
+        (Value::Float(a), Value::Integer(b)) =>
+        {
             #[allow(clippy::cast_precision_loss)]
             Ok(Value::Float(a % (*b as f64)))
         }

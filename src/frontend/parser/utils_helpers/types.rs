@@ -62,7 +62,10 @@ fn try_parse_type_parameter(state: &mut ParserState) -> Result<Option<String>> {
 }
 
 /// Parse remaining type parameters after the first one
-fn parse_remaining_type_parameters(state: &mut ParserState, type_params: &mut Vec<String>) -> Result<()> {
+fn parse_remaining_type_parameters(
+    state: &mut ParserState,
+    type_params: &mut Vec<String>,
+) -> Result<()> {
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance();
         if let Some(param) = try_parse_type_parameter(state)? {

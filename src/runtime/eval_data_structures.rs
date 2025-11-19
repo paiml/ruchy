@@ -581,11 +581,17 @@ mod tests {
         let fields = vec![
             ObjectField::KeyValue {
                 key: "name".to_string(),
-                value: Expr::new(ExprKind::Literal(Literal::String("Alice".to_string())), Span::new(0, 5)),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::String("Alice".to_string())),
+                    Span::new(0, 5),
+                ),
             },
             ObjectField::KeyValue {
                 key: "age".to_string(),
-                value: Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::new(6, 8)),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::Integer(30, None)),
+                    Span::new(6, 8),
+                ),
             },
         ];
 
@@ -601,7 +607,10 @@ mod tests {
         .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("name"), Some(&Value::from_string("Alice".to_string())));
+            assert_eq!(
+                obj.get("name"),
+                Some(&Value::from_string("Alice".to_string()))
+            );
             assert_eq!(obj.get("age"), Some(&Value::Integer(30)));
         } else {
             panic!("Expected object");
@@ -630,7 +639,10 @@ mod tests {
             },
             ObjectField::KeyValue {
                 key: "z".to_string(),
-                value: Expr::new(ExprKind::Literal(Literal::Integer(30, None)), Span::new(5, 7)),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::Integer(30, None)),
+                    Span::new(5, 7),
+                ),
             },
         ];
 
@@ -657,7 +669,10 @@ mod tests {
     #[test]
     fn test_eval_object_literal_spread_error() {
         let fields = vec![ObjectField::Spread {
-            expr: Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2)),
+            expr: Expr::new(
+                ExprKind::Literal(Literal::Integer(42, None)),
+                Span::new(0, 2),
+            ),
         }];
 
         let result = eval_object_literal(&fields, |_| Ok(Value::Integer(42)));
@@ -739,7 +754,11 @@ mod tests {
 
     #[test]
     fn test_field_access_tuple() {
-        let tuple = Value::Tuple(Arc::from([Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let tuple = Value::Tuple(Arc::from([
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let result = eval_field_access(&tuple, "0").unwrap();
         assert_eq!(result, Value::Integer(1));
 
@@ -790,7 +809,10 @@ mod tests {
     #[test]
     fn test_index_access_object_wrong_type() {
         let obj = Value::Object(Arc::new(HashMap::new()));
-        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
 
         let result = eval_index_access(&obj, &index_expr, |_| Ok(Value::Integer(42)));
         assert!(result.is_err());
@@ -799,7 +821,10 @@ mod tests {
     #[test]
     fn test_index_access_array_out_of_bounds() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::new(0, 2));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::new(0, 2),
+        );
 
         let result = eval_index_access(&arr, &index_expr, |_| Ok(Value::Integer(10)));
         assert!(result.is_err());
@@ -822,7 +847,10 @@ mod tests {
     #[test]
     fn test_index_access_string() {
         let s = Value::from_string("hello".to_string());
-        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
 
         let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(1))).unwrap();
         assert_eq!(result, Value::from_string("e".to_string()));
@@ -831,7 +859,10 @@ mod tests {
     #[test]
     fn test_index_access_string_out_of_bounds() {
         let s = Value::from_string("hi".to_string());
-        let index_expr = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::new(0, 2));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::new(0, 2),
+        );
 
         let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(10)));
         assert!(result.is_err());
@@ -850,7 +881,10 @@ mod tests {
     fn test_index_access_invalid_type() {
         let result = eval_index_access(
             &Value::Integer(42),
-            &Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::new(0, 1)),
+            &Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::new(0, 1),
+            ),
             |_| Ok(Value::Integer(0)),
         );
         assert!(result.is_err());
@@ -865,9 +899,13 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]));
-        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::new(0, 1));
+        let end_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::new(0, 1),
+        );
 
-        let result = eval_slice_access(&arr, None, Some(&end_expr), |_| Ok(Value::Integer(2))).unwrap();
+        let result =
+            eval_slice_access(&arr, None, Some(&end_expr), |_| Ok(Value::Integer(2))).unwrap();
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -885,9 +923,13 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]));
-        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let start_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
 
-        let result = eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Integer(1))).unwrap();
+        let result =
+            eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Integer(1))).unwrap();
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -913,8 +955,14 @@ mod tests {
     #[test]
     fn test_slice_access_empty_slice() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
-        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let start_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
+        let end_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
 
         let result = eval_slice_access(&arr, Some(&start_expr), Some(&end_expr), |_| {
             Ok(Value::Integer(1))
@@ -954,8 +1002,14 @@ mod tests {
     #[test]
     fn test_slice_access_string() {
         let s = Value::from_string("hello".to_string());
-        let start_expr = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
-        let end_expr = Expr::new(ExprKind::Literal(Literal::Integer(4, None)), Span::new(0, 1));
+        let start_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
+        let end_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::new(0, 1),
+        );
 
         let mut call_count = 0;
         let result = eval_slice_access(&s, Some(&start_expr), Some(&end_expr), |_| {
@@ -985,8 +1039,13 @@ mod tests {
 
     #[test]
     fn test_destructuring_array() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
-        let pattern = DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let pattern =
+            DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
         let mut assigned = HashMap::new();
         let result = eval_destructuring_assignment(&pattern, &arr, |name, val| {

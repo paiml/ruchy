@@ -32,7 +32,8 @@ fn test_issue_090_std_fs_write_and_read() {
 
     // Create Ruchy script using std::fs namespace
     let script_file = temp_dir.path().join("test.ruchy");
-    let script_code = format!(r#"
+    let script_code = format!(
+        r#"
 fun main() {{
     let test_file = "{}";
     let test_content = "Hello from std::fs!";
@@ -49,7 +50,9 @@ fun main() {{
         println!("✗ Content mismatch");
     }}
 }}
-"#, test_file.to_str().unwrap());
+"#,
+        test_file.to_str().unwrap()
+    );
     fs::write(&script_file, script_code).unwrap();
 
     // RED: Previously failed with "Object has no field named 'fs'"
@@ -84,7 +87,8 @@ fn test_issue_090_std_fs_directory_operations() {
     let test_dir = temp_dir.path().join("test_dir");
 
     let script_file = temp_dir.path().join("test.ruchy");
-    let script_code = format!(r#"
+    let script_code = format!(
+        r#"
 fun main() {{
     let test_dir = "{}";
 
@@ -104,7 +108,9 @@ fun main() {{
     std::fs::remove_dir(test_dir);
     println!("✓ Remove dir succeeded");
 }}
-"#, test_dir.to_str().unwrap());
+"#,
+        test_dir.to_str().unwrap()
+    );
     fs::write(&script_file, script_code).unwrap();
 
     let output = ruchy_cmd()
@@ -132,7 +138,8 @@ fn test_issue_090_std_fs_copy_and_rename() {
     fs::write(&source, "Test content").unwrap();
 
     let script_file = temp_dir.path().join("test.ruchy");
-    let script_code = format!(r#"
+    let script_code = format!(
+        r#"
 fun main() {{
     let source = "{}";
     let copied = "{}";
@@ -146,7 +153,11 @@ fun main() {{
     std::fs::rename(copied, renamed);
     println!("✓ Rename succeeded");
 }}
-"#, source.to_str().unwrap(), copied.to_str().unwrap(), renamed.to_str().unwrap());
+"#,
+        source.to_str().unwrap(),
+        copied.to_str().unwrap(),
+        renamed.to_str().unwrap()
+    );
     fs::write(&script_file, script_code).unwrap();
 
     let output = ruchy_cmd()
@@ -162,7 +173,10 @@ fun main() {{
 
     // Verify files
     assert!(renamed.exists(), "Renamed file should exist");
-    assert!(!copied.exists(), "Original copied file should not exist after rename");
+    assert!(
+        !copied.exists(),
+        "Original copied file should not exist after rename"
+    );
 }
 
 /// RED: Test `std::fs::metadata`
@@ -173,7 +187,8 @@ fn test_issue_090_std_fs_metadata() {
     fs::write(&test_file, "Test content").unwrap();
 
     let script_file = temp_dir.path().join("test.ruchy");
-    let script_code = format!(r#"
+    let script_code = format!(
+        r#"
 fun main() {{
     let test_file = "{}";
 
@@ -186,7 +201,9 @@ fun main() {{
         println!("✓ Is file");
     }}
 }}
-"#, test_file.to_str().unwrap());
+"#,
+        test_file.to_str().unwrap()
+    );
     fs::write(&script_file, script_code).unwrap();
 
     let output = ruchy_cmd()
@@ -211,7 +228,8 @@ fn test_issue_090_std_fs_read_dir() {
     fs::write(temp_dir.path().join("file2.txt"), "2").unwrap();
 
     let script_file = temp_dir.path().join("test.ruchy");
-    let script_code = format!(r#"
+    let script_code = format!(
+        r#"
 fun main() {{
     let dir_path = "{}";
 
@@ -223,7 +241,9 @@ fun main() {{
         println!("✓ Found files");
     }}
 }}
-"#, temp_dir.path().to_str().unwrap());
+"#,
+        temp_dir.path().to_str().unwrap()
+    );
     fs::write(&script_file, script_code).unwrap();
 
     let output = ruchy_cmd()

@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-079: Fix class constructor transpilation
 ///
 /// EXTREME TDD Test Suite for class constructor code generation.
@@ -13,9 +14,7 @@
 /// - Constructor returning custom type
 /// - Mixed constructors and regular methods
 /// - Constructor with computed values
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 #[test]
 fn test_transpiler_079_01_simple_constructor() {
@@ -32,25 +31,30 @@ let c = Counter::new()
 ";
 
     // Parse
-    let ast = Parser::new(code).parse()
+    let ast = Parser::new(code)
+        .parse()
         .expect("Should parse class with constructor");
 
     // Transpile
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .expect("Should transpile class constructor");
 
     // Format
-    let syntax_tree = syn::parse2(tokens)
-        .expect("Should parse as valid Rust");
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as valid Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Validate: Should NOT contain self.field in constructor
-    assert!(!rust_code.contains("self.count"),
-        "Constructor should NOT use self.field syntax");
+    assert!(
+        !rust_code.contains("self.count"),
+        "Constructor should NOT use self.field syntax"
+    );
 
     // Should contain proper struct initialization
-    assert!(rust_code.contains("Counter {") || rust_code.contains("Self {"),
-        "Constructor should use struct initialization syntax");
+    assert!(
+        rust_code.contains("Counter {") || rust_code.contains("Self {"),
+        "Constructor should use struct initialization syntax"
+    );
 
     // Compile
     std::fs::write("/tmp/test_transpiler_079_01.rs", &rust_code)
@@ -62,10 +66,12 @@ let c = Counter::new()
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "Rustc compilation should succeed:\n{}\n\nGenerated code:\n{}",
         String::from_utf8_lossy(&output.stderr),
-        rust_code);
+        rust_code
+    );
 }
 
 #[test]
@@ -83,30 +89,38 @@ class Point {
 let p = Point::new(3, 4)
 ";
 
-    let ast = Parser::new(code).parse()
-        .expect("Should parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast)
+    let ast = Parser::new(code).parse().expect("Should parse");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
         .expect("Should transpile");
-    let syntax_tree = syn::parse2(tokens)
-        .expect("Should parse as Rust");
+    let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Should use parameter names, not self.field
-    assert!(!rust_code.contains("self.x") || !rust_code.contains("fn new"),
-        "Constructor should NOT use self.field with parameters");
+    assert!(
+        !rust_code.contains("self.x") || !rust_code.contains("fn new"),
+        "Constructor should NOT use self.field with parameters"
+    );
 
     // Compile
-    std::fs::write("/tmp/test_transpiler_079_02.rs", &rust_code)
-        .expect("Failed to write");
+    std::fs::write("/tmp/test_transpiler_079_02.rs", &rust_code).expect("Failed to write");
     let output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_transpiler_079_02.rs", "-o", "/tmp/test_transpiler_079_02.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_transpiler_079_02.rs",
+            "-o",
+            "/tmp/test_transpiler_079_02.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "Should compile:\n{}\n\nCode:\n{}",
         String::from_utf8_lossy(&output.stderr),
-        rust_code);
+        rust_code
+    );
 }
 
 #[test]
@@ -134,7 +148,9 @@ let result = calc.get()
 ";
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
@@ -149,23 +165,32 @@ let result = calc.get()
             in_new_fn = false;
         }
         if in_new_fn {
-            assert!(!line.contains("self.value"),
-                "Constructor should not use self.value:\n{rust_code}");
+            assert!(
+                !line.contains("self.value"),
+                "Constructor should not use self.value:\n{rust_code}"
+            );
         }
     }
 
     // Compile
-    std::fs::write("/tmp/test_transpiler_079_03.rs", &rust_code)
-        .expect("Failed to write");
+    std::fs::write("/tmp/test_transpiler_079_03.rs", &rust_code).expect("Failed to write");
     let output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_transpiler_079_03.rs", "-o", "/tmp/test_transpiler_079_03.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_transpiler_079_03.rs",
+            "-o",
+            "/tmp/test_transpiler_079_03.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "Should compile:\n{}\n\nCode:\n{}",
         String::from_utf8_lossy(&output.stderr),
-        rust_code);
+        rust_code
+    );
 }
 
 #[test]
@@ -189,26 +214,37 @@ let cfg = Config::new(String::from("localhost"), 8080)
 "#;
 
     let ast = Parser::new(code).parse().expect("Should parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Should not use self in constructor
-    assert!(!rust_code.contains("self.host") || !rust_code.contains("fn new"),
-        "Constructor should not use self.field");
+    assert!(
+        !rust_code.contains("self.host") || !rust_code.contains("fn new"),
+        "Constructor should not use self.field"
+    );
 
     // Compile
-    std::fs::write("/tmp/test_transpiler_079_04.rs", &rust_code)
-        .expect("Failed to write");
+    std::fs::write("/tmp/test_transpiler_079_04.rs", &rust_code).expect("Failed to write");
     let output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_transpiler_079_04.rs", "-o", "/tmp/test_transpiler_079_04.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_transpiler_079_04.rs",
+            "-o",
+            "/tmp/test_transpiler_079_04.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "Should compile:\n{}\n\nCode:\n{}",
         String::from_utf8_lossy(&output.stderr),
-        rust_code);
+        rust_code
+    );
 }
 
 #[test]
@@ -234,20 +270,29 @@ p.get_x()
 
     // Parse and transpile
     let ast = Parser::new(code).parse().expect("Should parse");
-    let tokens = Transpiler::new().transpile_to_program(&ast).expect("Should transpile");
+    let tokens = Transpiler::new()
+        .transpile_to_program(&ast)
+        .expect("Should transpile");
     let syntax_tree = syn::parse2(tokens).expect("Should parse as Rust");
     let rust_code = prettyplease::unparse(&syntax_tree);
 
     // Compile to executable
-    std::fs::write("/tmp/test_transpiler_079_05.rs", &rust_code)
-        .expect("Failed to write");
+    std::fs::write("/tmp/test_transpiler_079_05.rs", &rust_code).expect("Failed to write");
     let compile_output = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/test_transpiler_079_05.rs", "-o", "/tmp/test_transpiler_079_05.rlib"])
+        .args([
+            "--crate-type",
+            "lib",
+            "/tmp/test_transpiler_079_05.rs",
+            "-o",
+            "/tmp/test_transpiler_079_05.rlib",
+        ])
         .output()
         .expect("Failed to run rustc");
 
-    assert!(compile_output.status.success(),
+    assert!(
+        compile_output.status.success(),
         "Compilation failed:\n{}\n\nCode:\n{}",
         String::from_utf8_lossy(&compile_output.stderr),
-        rust_code);
+        rust_code
+    );
 }

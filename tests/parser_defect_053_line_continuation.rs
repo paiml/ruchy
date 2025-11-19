@@ -15,8 +15,8 @@
 //
 // ROOT CAUSE: Parser treats "+ 3" as a new statement instead of continuation
 
-use ruchy::Parser as RuchyParser;
 use ruchy::frontend::ast::ExprKind;
+use ruchy::Parser as RuchyParser;
 
 #[cfg(test)]
 mod property_tests {
@@ -72,7 +72,10 @@ fn test_parse_line_continuation_without_comment() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse line continuation without comment");
+    assert!(
+        result.is_ok(),
+        "Should parse line continuation without comment"
+    );
 }
 
 #[test]
@@ -84,7 +87,11 @@ fn test_parse_line_continuation_with_trailing_comment() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse line continuation with trailing comment: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse line continuation with trailing comment: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -97,7 +104,11 @@ fn test_parse_line_continuation_with_intervening_comment() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse line continuation with intervening comment: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse line continuation with intervening comment: {:?}",
+        result.err()
+    );
 
     // Verify the AST is correct
     if let Ok(ast) = result {
@@ -125,7 +136,11 @@ fn test_parse_line_continuation_with_both_comments() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse line continuation with both comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse line continuation with both comments: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -138,7 +153,11 @@ fn test_parse_multiple_line_continuations() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse multiple line continuations: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse multiple line continuations: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -153,5 +172,9 @@ fn test_parse_line_continuation_with_multiple_comments() {
     let mut parser = RuchyParser::new(source);
     let result = parser.parse();
 
-    assert!(result.is_ok(), "Should parse line continuation with multiple comments: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should parse line continuation with multiple comments: {:?}",
+        result.err()
+    );
 }

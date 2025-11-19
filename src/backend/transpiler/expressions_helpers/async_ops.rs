@@ -13,7 +13,7 @@ impl Transpiler {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
             UnaryOp::Reference => quote! { &#operand_tokens },
-            UnaryOp::MutableReference => quote! { &mut #operand_tokens },  // PARSER-085: Issue #71
+            UnaryOp::MutableReference => quote! { &mut #operand_tokens }, // PARSER-085: Issue #71
             UnaryOp::Deref => quote! { *#operand_tokens },
         })
     }
@@ -156,7 +156,9 @@ mod tests {
     fn test_transpile_unary_bitwise_not() {
         let transpiler = test_transpiler();
         let operand = ident_expr("bits");
-        let result = transpiler.transpile_unary(UnaryOp::BitwiseNot, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::BitwiseNot, &operand)
+            .unwrap();
         assert_eq!(result.to_string(), "! bits");
     }
 
@@ -165,7 +167,9 @@ mod tests {
     fn test_transpile_unary_negate() {
         let transpiler = test_transpiler();
         let operand = ident_expr("num");
-        let result = transpiler.transpile_unary(UnaryOp::Negate, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::Negate, &operand)
+            .unwrap();
         assert_eq!(result.to_string(), "- num");
     }
 
@@ -174,7 +178,9 @@ mod tests {
     fn test_transpile_unary_reference() {
         let transpiler = test_transpiler();
         let operand = ident_expr("value");
-        let result = transpiler.transpile_unary(UnaryOp::Reference, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::Reference, &operand)
+            .unwrap();
         assert_eq!(result.to_string(), "& value");
     }
 
@@ -183,7 +189,9 @@ mod tests {
     fn test_transpile_unary_mutable_reference() {
         let transpiler = test_transpiler();
         let operand = ident_expr("data");
-        let result = transpiler.transpile_unary(UnaryOp::MutableReference, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::MutableReference, &operand)
+            .unwrap();
         assert_eq!(result.to_string(), "& mut data");
     }
 
@@ -192,7 +200,9 @@ mod tests {
     fn test_transpile_unary_deref() {
         let transpiler = test_transpiler();
         let operand = ident_expr("ptr");
-        let result = transpiler.transpile_unary(UnaryOp::Deref, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::Deref, &operand)
+            .unwrap();
         assert_eq!(result.to_string(), "* ptr");
     }
 

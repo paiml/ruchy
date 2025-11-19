@@ -73,7 +73,10 @@ fn test_dataframe_from_columns_single_column_various_lengths() {
 #[test]
 fn test_dataframe_read_csv_nonexistent() {
     let result = dataframe::read_csv("/nonexistent/path/file.csv");
-    assert!(result.is_err(), "Reading nonexistent file should return error");
+    assert!(
+        result.is_err(),
+        "Reading nonexistent file should return error"
+    );
 }
 
 #[test]
@@ -106,7 +109,10 @@ fn test_dataframe_write_csv_multiple_columns() {
     // Verify content
     let contents = fs::read_to_string(&csv_path).unwrap();
     assert!(contents.contains("age"), "CSV should contain 'age' column");
-    assert!(contents.contains("score"), "CSV should contain 'score' column");
+    assert!(
+        contents.contains("score"),
+        "CSV should contain 'score' column"
+    );
 }
 
 #[test]
@@ -154,7 +160,10 @@ fn test_dataframe_select_multiple_columns() {
 fn test_dataframe_select_nonexistent_column() {
     let df = dataframe::from_columns(vec![("age", vec![25, 30])]).unwrap();
     let result = dataframe::select(&df, &["nonexistent"]);
-    assert!(result.is_err(), "Selecting nonexistent column should return error");
+    assert!(
+        result.is_err(),
+        "Selecting nonexistent column should return error"
+    );
 }
 
 // ============================================================================
@@ -258,15 +267,25 @@ fn test_dataframe_columns_multiple() {
     let names = dataframe::columns(&df).unwrap();
     assert_eq!(names.len(), 3, "Should have 3 column names");
     assert!(names.contains(&"age".to_string()), "Should contain 'age'");
-    assert!(names.contains(&"score".to_string()), "Should contain 'score'");
-    assert!(names.contains(&"grade".to_string()), "Should contain 'grade'");
+    assert!(
+        names.contains(&"score".to_string()),
+        "Should contain 'score'"
+    );
+    assert!(
+        names.contains(&"grade".to_string()),
+        "Should contain 'grade'"
+    );
 }
 
 #[test]
 fn test_dataframe_columns_empty() {
     let df = dataframe::from_columns(vec![]).unwrap();
     let names = dataframe::columns(&df).unwrap();
-    assert_eq!(names.len(), 0, "Empty dataframe should have no column names");
+    assert_eq!(
+        names.len(),
+        0,
+        "Empty dataframe should have no column names"
+    );
 }
 
 // ============================================================================
@@ -340,11 +359,9 @@ fn test_dataframe_csv_workflow() {
     let csv_path_str = csv_path.to_str().unwrap();
 
     // Create dataframe
-    let mut df = dataframe::from_columns(vec![
-        ("age", vec![25, 30, 35]),
-        ("score", vec![95, 87, 92]),
-    ])
-    .unwrap();
+    let mut df =
+        dataframe::from_columns(vec![("age", vec![25, 30, 35]), ("score", vec![95, 87, 92])])
+            .unwrap();
 
     // Check initial state
     let (rows, cols) = dataframe::shape(&df).unwrap();
@@ -364,6 +381,12 @@ fn test_dataframe_csv_workflow() {
 
     // Verify column names
     let names = dataframe::columns(&df2).unwrap();
-    assert!(names.contains(&"age".to_string()), "Should have 'age' column after roundtrip");
-    assert!(names.contains(&"score".to_string()), "Should have 'score' column after roundtrip");
+    assert!(
+        names.contains(&"age".to_string()),
+        "Should have 'age' column after roundtrip"
+    );
+    assert!(
+        names.contains(&"score".to_string()),
+        "Should have 'score' column after roundtrip"
+    );
 }

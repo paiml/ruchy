@@ -27,7 +27,10 @@ fn test_numeric_field_single_digit_0() {
 
     let output = String::from_utf8_lossy(&result.get_output().stdout);
     // Should transpile to: A.0 (Rust tuple access)
-    assert!(output.contains("A.0"), "Should generate tuple access: {output}");
+    assert!(
+        output.contains("A.0"),
+        "Should generate tuple access: {output}"
+    );
 }
 
 #[test]
@@ -322,11 +325,16 @@ fn integration_compile_tuple_access() {
     assert!(rust_code.contains(".0"), "Should generate .0 tuple access");
 
     // Step 3: Write to temp file and compile
-    std::fs::write("/tmp/tuple_test.rs", rust_code.as_ref())
-        .expect("Failed to write temp file");
+    std::fs::write("/tmp/tuple_test.rs", rust_code.as_ref()).expect("Failed to write temp file");
 
     let compile_result = std::process::Command::new("rustc")
-        .args(["--crate-type", "bin", "/tmp/tuple_test.rs", "-o", "/tmp/tuple_test"])
+        .args([
+            "--crate-type",
+            "bin",
+            "/tmp/tuple_test.rs",
+            "-o",
+            "/tmp/tuple_test",
+        ])
         .output()
         .expect("Failed to run rustc");
 

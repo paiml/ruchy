@@ -88,10 +88,7 @@ println!("{}", counter);
 
     // CRITICAL: Must compile successfully
     let mut cmd = Command::cargo_bin("ruchy").unwrap();
-    cmd.arg("compile")
-        .arg(&ruchy_path)
-        .assert()
-        .success(); // ❌ This will FAIL until we fix the bug
+    cmd.arg("compile").arg(&ruchy_path).assert().success(); // ❌ This will FAIL until we fix the bug
 
     // Clean up
     let _ = fs::remove_file(&ruchy_path);

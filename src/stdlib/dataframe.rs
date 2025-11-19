@@ -442,8 +442,12 @@ mod tests {
 
     #[test]
     fn test_columns_multiple() {
-        let df = from_columns(vec![("age", vec![25]), ("score", vec![95]), ("grade", vec![1])])
-            .unwrap();
+        let df = from_columns(vec![
+            ("age", vec![25]),
+            ("score", vec![95]),
+            ("grade", vec![1]),
+        ])
+        .unwrap();
         let names = columns(&df).unwrap();
         assert_eq!(names.len(), 3);
         assert!(names.contains(&"age".to_string()));

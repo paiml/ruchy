@@ -19,7 +19,7 @@ fn ruchy_cmd() -> Command {
 fn test_std_result_in_function_param() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun process_result(r: std::result::Result) {
     println!("Processing result");
@@ -32,12 +32,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// Test that `std::option::Option` works in type position  
@@ -45,7 +41,7 @@ main()
 fn test_std_option_in_return_type() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 fun get_value() -> std::option::Option {
     None
@@ -59,12 +55,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// Test Vec<std::string::String> pattern
@@ -72,7 +64,7 @@ main()
 fn test_nested_namespace_in_generic() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 struct Container {
     items: Vec
@@ -85,12 +77,8 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }
 
 /// Test that transpiler doesn't panic on simple :: paths
@@ -98,7 +86,7 @@ main()
 fn test_simple_namespace_transpiles_without_panic() {
     let temp_dir = TempDir::new().unwrap();
     let script = temp_dir.path().join("test.ruchy");
-    
+
     let code = r#"
 // This should transpile without panicking
 // The resulting Rust may not compile (if MyModule doesn't exist)
@@ -114,13 +102,9 @@ fun main() {
 main()
 "#;
     fs::write(&script, code).unwrap();
-    
+
     // The key test: transpiler should not panic
     // It's OK if rustc fails later (MyModule doesn't exist)
     // but the transpiler itself must succeed
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&script).assert().success();
 }

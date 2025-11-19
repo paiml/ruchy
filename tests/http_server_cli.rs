@@ -1,9 +1,7 @@
 // tests/http_server_cli.rs - HTTP Server CLI Tests (EXTREME TDD)
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
 #![allow(missing_docs)]
-
 // [HTTP-001] RED Phase: Write failing tests FIRST
-
 #![allow(clippy::similar_names)] // coop/coep are standard HTTP header abbreviations
 #![allow(missing_docs)]
 #![allow(clippy::zombie_processes)] // Test processes are explicitly killed in tests
@@ -32,8 +30,11 @@ fn find_available_port() -> u16 {
 /// Helper: Create test directory with files
 fn create_test_dir() -> TempDir {
     let dir = TempDir::new().expect("Failed to create temp dir");
-    std::fs::write(dir.path().join("index.html"), "<!DOCTYPE html><html><body>Hello from Ruchy!</body></html>")
-        .expect("Failed to write index.html");
+    std::fs::write(
+        dir.path().join("index.html"),
+        "<!DOCTYPE html><html><body>Hello from Ruchy!</body></html>",
+    )
+    .expect("Failed to write index.html");
     std::fs::write(dir.path().join("style.css"), "body { margin: 0; }")
         .expect("Failed to write style.css");
     dir
@@ -66,9 +67,10 @@ fn test_red_ruchy_serve_requires_directory() {
         .arg(port.to_string())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Directory not found").or(
-            predicate::str::contains("No such file")
-        ));
+        .stderr(
+            predicate::str::contains("Directory not found")
+                .or(predicate::str::contains("No such file")),
+        );
 }
 
 #[test]
@@ -130,7 +132,10 @@ fn test_red_ruchy_serve_default_port_8080() {
 
     // Should default to port 8080
     let response = reqwest::blocking::get("http://127.0.0.1:8080/index.html");
-    assert!(response.is_ok(), "Server should listen on port 8080 by default");
+    assert!(
+        response.is_ok(),
+        "Server should listen on port 8080 by default"
+    );
 
     child.kill().expect("Failed to kill server");
 }
@@ -217,7 +222,11 @@ mod property_tests {
 #[test]
 fn test_http002_mime_html() {
     let test_dir = TempDir::new().unwrap();
-    std::fs::write(test_dir.path().join("index.html"), "<!DOCTYPE html><html></html>").unwrap();
+    std::fs::write(
+        test_dir.path().join("index.html"),
+        "<!DOCTYPE html><html></html>",
+    )
+    .unwrap();
 
     let port = find_available_port();
     let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
@@ -235,10 +244,7 @@ fn test_http002_mime_html() {
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html")).unwrap();
     assert_eq!(response.status(), 200);
-    assert_eq!(
-        response.headers().get("content-type").unwrap(),
-        "text/html"
-    );
+    assert_eq!(response.headers().get("content-type").unwrap(), "text/html");
 
     child.kill().unwrap();
 }
@@ -264,10 +270,7 @@ fn test_http002_mime_css() {
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/style.css")).unwrap();
     assert_eq!(response.status(), 200);
-    assert_eq!(
-        response.headers().get("content-type").unwrap(),
-        "text/css"
-    );
+    assert_eq!(response.headers().get("content-type").unwrap(), "text/css");
 
     child.kill().unwrap();
 }
@@ -293,7 +296,12 @@ fn test_http002_mime_javascript() {
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.js")).unwrap();
     assert_eq!(response.status(), 200);
-    let content_type = response.headers().get("content-type").unwrap().to_str().unwrap();
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert!(
         content_type.contains("application/javascript") || content_type.contains("text/javascript"),
         "Expected JavaScript MIME type, got: {content_type}"
@@ -307,7 +315,11 @@ fn test_http002_mime_wasm() {
     // CRITICAL: WASM files MUST have application/wasm MIME type
     let test_dir = TempDir::new().unwrap();
     // Minimal valid WASM module: magic number + version
-    std::fs::write(test_dir.path().join("module.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+    std::fs::write(
+        test_dir.path().join("module.wasm"),
+        b"\x00\x61\x73\x6d\x01\x00\x00\x00",
+    )
+    .unwrap();
 
     let port = find_available_port();
     let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
@@ -371,7 +383,11 @@ fn test_http002_mime_json() {
 fn test_http003_wasm_coop_header() {
     // CRITICAL: WASM files MUST have Cross-Origin-Opener-Policy for SharedArrayBuffer
     let test_dir = TempDir::new().unwrap();
-    std::fs::write(test_dir.path().join("app.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+    std::fs::write(
+        test_dir.path().join("app.wasm"),
+        b"\x00\x61\x73\x6d\x01\x00\x00\x00",
+    )
+    .unwrap();
 
     let port = find_available_port();
     let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
@@ -405,7 +421,11 @@ fn test_http003_wasm_coop_header() {
 fn test_http003_wasm_coep_header() {
     // CRITICAL: WASM files MUST have Cross-Origin-Embedder-Policy for SharedArrayBuffer
     let test_dir = TempDir::new().unwrap();
-    std::fs::write(test_dir.path().join("app.wasm"), b"\x00\x61\x73\x6d\x01\x00\x00\x00").unwrap();
+    std::fs::write(
+        test_dir.path().join("app.wasm"),
+        b"\x00\x61\x73\x6d\x01\x00\x00\x00",
+    )
+    .unwrap();
 
     let port = find_available_port();
     let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
@@ -439,7 +459,11 @@ fn test_http003_wasm_coep_header() {
 fn test_http003_html_coop_header() {
     // HTML files serving WASM also need COOP/COEP headers
     let test_dir = TempDir::new().unwrap();
-    std::fs::write(test_dir.path().join("index.html"), "<!DOCTYPE html><html></html>").unwrap();
+    std::fs::write(
+        test_dir.path().join("index.html"),
+        "<!DOCTYPE html><html></html>",
+    )
+    .unwrap();
 
     let port = find_available_port();
     let ruchy_bin = assert_cmd::cargo::cargo_bin("ruchy");
@@ -460,11 +484,17 @@ fn test_http003_html_coop_header() {
 
     // HTML pages that load WASM need these headers too
     let coop = response.headers().get("cross-origin-opener-policy");
-    assert!(coop.is_some(), "HTML files MUST have COOP header for WASM SharedArrayBuffer");
+    assert!(
+        coop.is_some(),
+        "HTML files MUST have COOP header for WASM SharedArrayBuffer"
+    );
     assert_eq!(coop.unwrap(), "same-origin");
 
     let coep = response.headers().get("cross-origin-embedder-policy");
-    assert!(coep.is_some(), "HTML files MUST have COEP header for WASM SharedArrayBuffer");
+    assert!(
+        coep.is_some(),
+        "HTML files MUST have COEP header for WASM SharedArrayBuffer"
+    );
     assert_eq!(coep.unwrap(), "require-corp");
 
     child.kill().unwrap();

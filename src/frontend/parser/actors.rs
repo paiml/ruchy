@@ -68,12 +68,8 @@ fn parse_single_state_field(
         Some((Token::Identifier(name), _)) if name == "state" => {
             parse_state_block(state, state_fields)
         }
-        Some((Token::Mut, _)) => {
-            parse_inline_state_field(state, state_fields)
-        }
-        Some((Token::Identifier(_), _)) => {
-            parse_inline_state_field(state, state_fields)
-        }
+        Some((Token::Mut, _)) => parse_inline_state_field(state, state_fields),
+        Some((Token::Identifier(_), _)) => parse_inline_state_field(state, state_fields),
         _ => {
             // PARSER-060 fix: Exit immediately on unexpected token to prevent infinite loop
             // This prevents the loop from continuing forever when encountering tokens like 'fun'

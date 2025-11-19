@@ -288,10 +288,7 @@ fn test_logging_complete_workflow() {
 
     // Get current level
     let level = logging::get_level().unwrap();
-    assert!(
-        !level.is_empty(),
-        "level should not be empty after init"
-    );
+    assert!(!level.is_empty(), "level should not be empty after init");
 
     // Check that debug is enabled
     let debug_enabled = logging::is_level_enabled("debug").unwrap();

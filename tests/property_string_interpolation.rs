@@ -158,11 +158,7 @@ mod unit_tests {
     /// Sanity check: Basic f-string parses
     #[test]
     fn test_basic_fstring_parses() {
-        let test_cases = vec![
-            "f\"Hello\"",
-            "f\"Hello {name}\"",
-            "f\"{x}\"",
-        ];
+        let test_cases = vec!["f\"Hello\"", "f\"Hello {name}\"", "f\"{x}\""];
 
         for code in test_cases {
             let result = Parser::new(code).parse();
@@ -188,10 +184,7 @@ mod unit_tests {
     /// Sanity check: Multiple interpolations parse
     #[test]
     fn test_multiple_interpolations_parse() {
-        let test_cases = vec![
-            "f\"{a} and {b}\"",
-            "f\"x={x}, y={y}\"",
-        ];
+        let test_cases = vec!["f\"{a} and {b}\"", "f\"x={x}, y={y}\""];
 
         for code in test_cases {
             let result = Parser::new(code).parse();
@@ -202,11 +195,7 @@ mod unit_tests {
     /// Sanity check: Expressions in braces parse
     #[test]
     fn test_expressions_in_braces_parse() {
-        let test_cases = vec![
-            "f\"{1 + 2}\"",
-            "f\"{x * 2}\"",
-            "f\"{obj.method()}\"",
-        ];
+        let test_cases = vec!["f\"{1 + 2}\"", "f\"{x * 2}\"", "f\"{obj.method()}\""];
 
         for code in test_cases {
             let result = Parser::new(code).parse();
@@ -217,10 +206,7 @@ mod unit_tests {
     /// Sanity check: Format specifiers parse
     #[test]
     fn test_format_specifiers_parse() {
-        let test_cases = vec![
-            "f\"{value:.2f}\"",
-            "f\"{num:05d}\"",
-        ];
+        let test_cases = vec!["f\"{value:.2f}\"", "f\"{num:05d}\""];
 
         for code in test_cases {
             let result = Parser::new(code).parse();

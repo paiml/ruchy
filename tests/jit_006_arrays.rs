@@ -43,7 +43,11 @@ fn test_jit_006_array_literal_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array literal: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array literal: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "arr[0] should be 1");
 }
 
@@ -59,7 +63,11 @@ fn test_jit_006_array_literal_middle_element() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array indexing: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array indexing: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 30, "arr[2] should be 30");
 }
 
@@ -75,7 +83,11 @@ fn test_jit_006_array_literal_last_element() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile last element access: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile last element access: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 15, "arr[2] should be 15");
 }
 
@@ -96,7 +108,11 @@ fn test_jit_006_array_index_variable() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile variable indexing: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile variable indexing: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 200, "arr[i] where i=1 should be 200");
 }
 
@@ -113,7 +129,11 @@ fn test_jit_006_array_index_expression() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile expression indexing: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile expression indexing: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 21, "arr[i+1] where i=1 should be 21");
 }
 
@@ -133,7 +153,11 @@ fn test_jit_006_array_length_method() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile arr.len(): {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile arr.len(): {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5, "arr.len() should be 5");
 }
 
@@ -153,7 +177,11 @@ fn test_jit_006_array_length_in_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile loop with arr.len(): {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile loop with arr.len(): {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 3, "Should iterate arr.len() times");
 }
 
@@ -177,7 +205,11 @@ fn test_jit_006_array_sum_with_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array sum: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array sum: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 15, "Sum of [1,2,3,4,5] should be 15");
 }
 
@@ -199,7 +231,11 @@ fn test_jit_006_array_sum_function() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile sum_array function: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile sum_array function: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 100, "Sum of [10,20,30,40] should be 100");
 }
 
@@ -225,7 +261,11 @@ fn test_jit_006_array_max() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array max: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array max: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 9, "Max of [3,7,2,9,1] should be 9");
 }
 
@@ -247,7 +287,11 @@ fn test_jit_006_array_min() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array min: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array min: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "Min of [8,3,9,1,5] should be 1");
 }
 
@@ -275,7 +319,11 @@ fn test_jit_006_array_linear_search() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile linear search: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile linear search: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 2, "Should find 30 at index 2");
 }
 
@@ -299,7 +347,11 @@ fn test_jit_006_array_contains() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile contains check: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile contains check: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 1, "Should find 15 in array (return 1)");
 }
 
@@ -320,7 +372,11 @@ fn test_jit_006_array_mutation_simple() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array mutation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array mutation: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 99, "arr[1] should be updated to 99");
 }
 
@@ -339,7 +395,11 @@ fn test_jit_006_array_mutation_in_loop() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile array mutation in loop: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile array mutation in loop: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 6, "arr[2] should be 3*2=6 after doubling");
 }
 
@@ -371,6 +431,10 @@ fn test_jit_006_performance_large_array_sum() {
     let mut compiler = JitCompiler::new().unwrap();
     let result = compiler.compile_and_execute(&ast);
 
-    assert!(result.is_ok(), "Should compile large array sum: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Should compile large array sum: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap(), 5050, "Sum 1..100 should be 5050");
 }

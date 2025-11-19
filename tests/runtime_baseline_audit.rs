@@ -225,5 +225,8 @@ fn test_runtime_001_baseline_summary() {
     // - 2 tests show async/await not implemented at parser level
 
     // This test always passes - it's documentation
-    assert!(true, "Baseline audit documented - 3 features parse correctly, 1 not implemented");
+    assert!(
+        true,
+        "Baseline audit documented - 3 features parse correctly, 1 not implemented"
+    );
 }

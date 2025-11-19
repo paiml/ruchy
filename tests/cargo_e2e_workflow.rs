@@ -28,9 +28,18 @@ fn test_e2e_create_project_add_dependency_build() {
         .stdout(predicate::str::contains("Created Ruchy project"));
 
     // Verify project structure
-    assert!(project_path.join("Cargo.toml").exists(), "Cargo.toml should exist");
-    assert!(project_path.join("build.rs").exists(), "build.rs should exist");
-    assert!(project_path.join("src/main.ruchy").exists(), "main.ruchy should exist");
+    assert!(
+        project_path.join("Cargo.toml").exists(),
+        "Cargo.toml should exist"
+    );
+    assert!(
+        project_path.join("build.rs").exists(),
+        "build.rs should exist"
+    );
+    assert!(
+        project_path.join("src/main.ruchy").exists(),
+        "main.ruchy should exist"
+    );
 
     // Step 2: Add a dependency (anyhow for error handling)
     ruchy_cmd()
@@ -42,9 +51,12 @@ fn test_e2e_create_project_add_dependency_build() {
         .stdout(predicate::str::contains("Added anyhow"));
 
     // Verify anyhow was added
-    let cargo_toml = fs::read_to_string(project_path.join("Cargo.toml"))
-        .expect("Failed to read Cargo.toml");
-    assert!(cargo_toml.contains("anyhow"), "Cargo.toml should contain anyhow");
+    let cargo_toml =
+        fs::read_to_string(project_path.join("Cargo.toml")).expect("Failed to read Cargo.toml");
+    assert!(
+        cargo_toml.contains("anyhow"),
+        "Cargo.toml should contain anyhow"
+    );
 
     // Step 3: Build the project
     ruchy_cmd()
@@ -70,7 +82,10 @@ fn test_e2e_create_project_add_dependency_build() {
 
     assert!(output.status.success(), "cargo run should succeed");
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Hello, Ruchy!"), "Should output expected message");
+    assert!(
+        stdout.contains("Hello, Ruchy!"),
+        "Should output expected message"
+    );
 }
 
 #[test]
@@ -89,7 +104,10 @@ fn test_e2e_library_project_with_dependencies() {
         .success();
 
     // Verify library structure
-    assert!(project_path.join("src/lib.ruchy").exists(), "lib.ruchy should exist");
+    assert!(
+        project_path.join("src/lib.ruchy").exists(),
+        "lib.ruchy should exist"
+    );
 
     // Step 2: Add development dependency
     ruchy_cmd()
@@ -145,14 +163,11 @@ fn test_e2e_multiple_dependencies_and_build() {
     }
 
     // Verify all dependencies in Cargo.toml
-    let cargo_toml = fs::read_to_string(project_path.join("Cargo.toml"))
-        .expect("Failed to read Cargo.toml");
+    let cargo_toml =
+        fs::read_to_string(project_path.join("Cargo.toml")).expect("Failed to read Cargo.toml");
 
     for dep in &dependencies {
-        assert!(
-            cargo_toml.contains(dep),
-            "{dep} should be in Cargo.toml"
-        );
+        assert!(cargo_toml.contains(dep), "{dep} should be in Cargo.toml");
     }
 
     // Build should succeed with all dependencies

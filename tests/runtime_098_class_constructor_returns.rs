@@ -1,3 +1,4 @@
+use ruchy::frontend::parser::Parser;
 /// RUNTIME-098: Class constructors return nil instead of instance
 ///
 /// EXTREME TDD Test Suite for runtime class constructor evaluation.
@@ -12,9 +13,7 @@
 /// - Constructor with method calls
 /// - Constructor with parameters
 /// - Multiple constructor calls
-
 use ruchy::runtime::interpreter::{Interpreter, Value};
-use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_runtime_098_01_constructor_returns_instance() {
@@ -41,10 +40,16 @@ c.get_count()
     let result = interpreter.eval_expr(&ast).expect("Should evaluate");
 
     // Should return 0, NOT nil
-    assert_ne!(result, Value::Nil,
-        "Constructor should return instance, not nil");
-    assert_eq!(result.to_string(), "0",
-        "get_count() should return 0, got: {result}");
+    assert_ne!(
+        result,
+        Value::Nil,
+        "Constructor should return instance, not nil"
+    );
+    assert_eq!(
+        result.to_string(),
+        "0",
+        "get_count() should return 0, got: {result}"
+    );
 }
 
 #[test]
@@ -68,8 +73,11 @@ p.x
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast).expect("Should evaluate");
 
-    assert_eq!(result.to_string(), "3",
-        "Field access should return correct value, got: {result}");
+    assert_eq!(
+        result.to_string(),
+        "3",
+        "Field access should return correct value, got: {result}"
+    );
 }
 
 #[test]
@@ -98,8 +106,7 @@ sum
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast).expect("Should evaluate");
 
-    assert_eq!(result.to_string(), "30",
-        "Sum should be 30, got: {result}");
+    assert_eq!(result.to_string(), "30", "Sum should be 30, got: {result}");
 }
 
 #[test]
@@ -127,8 +134,11 @@ calc.add(5)
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast).expect("Should evaluate");
 
-    assert_eq!(result.to_string(), "5",
-        "add() should return 5, got: {result}");
+    assert_eq!(
+        result.to_string(),
+        "5",
+        "add() should return 5, got: {result}"
+    );
 }
 
 #[test]
@@ -158,6 +168,9 @@ c.get_count()
     let mut interpreter = Interpreter::new();
     let result = interpreter.eval_expr(&ast).expect("Should evaluate");
 
-    assert_eq!(result.to_string(), "0",
-        "Impl block constructor should work, got: {result}");
+    assert_eq!(
+        result.to_string(),
+        "0",
+        "Impl block constructor should work, got: {result}"
+    );
 }

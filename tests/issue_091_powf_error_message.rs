@@ -120,7 +120,8 @@ fun main() {
 
     let mut cmd2 = Command::cargo_bin("ruchy").unwrap();
     cmd2.arg("-e").arg(script_unknown);
-    cmd2.assert()
-        .failure()
-        .stderr(predicate::str::contains("Unknown float method").or(predicate::str::contains("nonexistent")));
+    cmd2.assert().failure().stderr(
+        predicate::str::contains("Unknown float method")
+            .or(predicate::str::contains("nonexistent")),
+    );
 }

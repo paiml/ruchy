@@ -39,11 +39,7 @@ actor Counter {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -61,11 +57,7 @@ actor Counter {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -85,11 +77,7 @@ actor User {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -109,11 +97,7 @@ actor Database {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }
 
 #[test]
@@ -147,9 +131,5 @@ fun process_order() -> &str {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&source)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&source).assert().success();
 }

@@ -150,12 +150,12 @@ mod tests {
         // Change back to original dir
         env::set_current_dir(_original_dir).expect("Failed to restore dir");
 
+        assert!(result.is_err(), "Should fail when Cargo.toml doesn't exist");
         assert!(
-            result.is_err(),
-            "Should fail when Cargo.toml doesn't exist"
-        );
-        assert!(
-            result.unwrap_err().to_string().contains("Cargo.toml not found"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Cargo.toml not found"),
             "Error message should mention Cargo.toml"
         );
     }

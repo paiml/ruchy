@@ -6,8 +6,8 @@
 //! **Note**: `sort_by()` already implemented, adding comprehensive test coverage retroactively.
 
 use proptest::prelude::*;
-use ruchy::runtime::{DataFrameColumn, Value};
 use ruchy::runtime::eval_dataframe_ops::eval_dataframe_method;
+use ruchy::runtime::{DataFrameColumn, Value};
 
 /// Generate `DataFrame` with sortable numeric column
 fn arb_numeric_dataframe(num_rows: usize) -> BoxedStrategy<Vec<DataFrameColumn>> {

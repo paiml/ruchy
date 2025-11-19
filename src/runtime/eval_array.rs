@@ -179,9 +179,7 @@ fn eval_array_enumerate(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     let enumerated: Vec<Value> = arr
         .iter()
         .enumerate()
-        .map(|(i, val)| {
-            Value::Tuple(Arc::from(vec![Value::Integer(i as i64), val.clone()]))
-        })
+        .map(|(i, val)| Value::Tuple(Arc::from(vec![Value::Integer(i as i64), val.clone()])))
         .collect();
     Ok(Value::Array(Arc::from(enumerated)))
 }
@@ -190,7 +188,11 @@ fn eval_array_enumerate(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 
 /// Extract slice from array
 /// Complexity: 5 (within Toyota Way limits)
-fn eval_array_slice(arr: &Arc<[Value]>, start: &Value, end: &Value) -> Result<Value, InterpreterError> {
+fn eval_array_slice(
+    arr: &Arc<[Value]>,
+    start: &Value,
+    end: &Value,
+) -> Result<Value, InterpreterError> {
     match (start, end) {
         (Value::Integer(s), Value::Integer(e)) => {
             let start_idx = (*s).max(0) as usize;
@@ -681,7 +683,10 @@ mod tests {
 
         // append() with non-array argument should fail
         let result = eval_array_method(&arr, "append", &[Value::Integer(42)], dummy_eval);
-        assert!(result.is_err(), "append() should reject non-array arguments");
+        assert!(
+            result.is_err(),
+            "append() should reject non-array arguments"
+        );
     }
 
     #[test]
@@ -743,8 +748,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -752,11 +757,15 @@ mod tests {
         let eval_func = |_: &Value, _: &[Value]| Ok(Value::Bool(true));
 
         // Test "any" method via eval_array_any
-        let result = eval_array_any(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
+        let result = eval_array_any(&arr, std::slice::from_ref(&closure), &mut |f, a| {
+            eval_func(f, a)
+        });
         assert!(result.is_ok(), "any method should work (match arm test)");
 
         // Test "all" method via eval_array_all
-        let result = eval_array_all(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
+        let result = eval_array_all(&arr, std::slice::from_ref(&closure), &mut |f, a| {
+            eval_func(f, a)
+        });
         assert!(result.is_ok(), "all method should work (match arm test)");
     }
 
@@ -776,8 +785,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("acc".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -791,7 +800,9 @@ mod tests {
         );
 
         // Test with wrong number of args (1) - should fail
-        let result = eval_array_reduce(&arr, std::slice::from_ref(&closure), &mut |f, a| eval_func(f, a));
+        let result = eval_array_reduce(&arr, std::slice::from_ref(&closure), &mut |f, a| {
+            eval_func(f, a)
+        });
         assert!(
             result.is_err(),
             "reduce with 1 arg should fail (proves != operator, not ==)"
@@ -836,8 +847,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Null),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -872,8 +883,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -896,8 +907,8 @@ mod tests {
                 kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
                 span: crate::frontend::ast::Span::new(0, 0),
                 attributes: vec![],
-            leading_comments: vec![],
-            trailing_comment: None,
+                leading_comments: vec![],
+                trailing_comment: None,
             }),
             env: Default::default(),
         };
@@ -921,7 +932,9 @@ mod tests {
 
         // Should return Option::Some(20)
         match result {
-            Value::EnumVariant { variant_name, data, .. } if variant_name == "Some" => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } if variant_name == "Some" => {
                 assert_eq!(data.unwrap()[0], Value::Integer(20));
             }
             _ => panic!("Expected Some variant"),
@@ -935,7 +948,9 @@ mod tests {
 
         // Should return Option::None
         match result {
-            Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } if variant_name == "None" => {
                 assert!(data.is_none());
             }
             _ => panic!("Expected None variant"),
@@ -949,7 +964,9 @@ mod tests {
 
         // Should return Option::None for negative indices
         match result {
-            Value::EnumVariant { variant_name, data, .. } if variant_name == "None" => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } if variant_name == "None" => {
                 assert!(data.is_none());
             }
             _ => panic!("Expected None variant for negative index"),

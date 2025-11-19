@@ -34,9 +34,9 @@
 
 use crate::frontend::ast::{Expr, ExprKind, ImplMethod};
 use crate::frontend::lexer::Token;
-use crate::frontend::parser::{ParserState, Result};
-use crate::frontend::parser::utils::{parse_params, parse_type, parse_type_parameters};
 use crate::frontend::parser::collections::parse_block;
+use crate::frontend::parser::utils::{parse_params, parse_type, parse_type_parameters};
+use crate::frontend::parser::{ParserState, Result};
 
 /// Parse trait and type names: impl [Trait for] Type
 fn parse_impl_target(state: &mut ParserState) -> Result<(Option<String>, String)> {

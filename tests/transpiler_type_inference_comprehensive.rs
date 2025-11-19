@@ -22,7 +22,12 @@ fn test_param_as_i32_argument() {
             x + 1
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     // Should infer x: i32 (default numeric type in transpiler)
@@ -37,7 +42,12 @@ fn test_param_passed_to_builtin() {
             len(arr)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     // Should compile successfully (len works on multiple types)
@@ -52,7 +62,12 @@ fn test_param_in_nested_call() {
             println(str(x))
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn process"));
@@ -70,7 +85,12 @@ fn test_param_called_as_function() {
             f(x)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     // f should be inferred as function-like
@@ -85,7 +105,12 @@ fn test_param_as_callback() {
             mapper(arr[0])
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn map_fn"));
@@ -103,7 +128,12 @@ fn test_param_in_addition() {
             x + 1
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     // Should infer i32 (default numeric type)
@@ -118,7 +148,12 @@ fn test_param_in_multiplication() {
             x * 2
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn double"));
@@ -132,7 +167,12 @@ fn test_param_in_comparison() {
             x > 0
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn is_positive"));
@@ -146,7 +186,12 @@ fn test_param_in_complex_expression() {
             (x + 1) * 2 - 3
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn compute"));
@@ -165,7 +210,12 @@ fn test_infer_len_returns_usize() {
             len(arr)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     // Return type should be inferred from len()
@@ -180,7 +230,12 @@ fn test_infer_str_returns_string() {
             str(x)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn to_string") || output.contains("to_string"));
@@ -194,7 +249,12 @@ fn test_infer_int_returns_i64() {
             int(s)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn parse_int"));
@@ -213,7 +273,12 @@ fn test_numeric_and_function_usage() {
             println(doubled)
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn process"));
@@ -228,7 +293,12 @@ fn test_string_concatenation_inference() {
             a + b
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn concat"));
@@ -246,7 +316,12 @@ fn test_if_branch_inference() {
             }
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn conditional"));
@@ -262,7 +337,12 @@ fn test_let_binding_inference() {
             incremented
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn compute"));
@@ -280,7 +360,12 @@ fn edge_case_unused_parameter() {
             42
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn ignore"));
@@ -294,7 +379,12 @@ fn edge_case_multiple_numeric_operations() {
             x + x - x * x / x
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn math"));
@@ -308,7 +398,12 @@ fn edge_case_nested_function_calls() {
             len(str(int(x)))
         }
     ";
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let output = String::from_utf8_lossy(&result.get_output().stdout);
 
     assert!(output.contains("fn chain"));
@@ -325,9 +420,12 @@ fn property_all_numeric_operators() {
 
     for op in operators {
         let code = format!("fn op(x) {{ x {op} 1 }}");
-        ruchy_cmd().arg("transpile").arg("-")
+        ruchy_cmd()
+            .arg("transpile")
+            .arg("-")
             .write_stdin(code.as_str())
-            .assert().success();
+            .assert()
+            .success();
     }
 }
 
@@ -338,9 +436,12 @@ fn property_all_comparison_operators() {
 
     for op in operators {
         let code = format!("fn cmp(x) {{ x {op} 0 }}");
-        ruchy_cmd().arg("transpile").arg("-")
+        ruchy_cmd()
+            .arg("transpile")
+            .arg("-")
             .write_stdin(code.as_str())
-            .assert().success();
+            .assert()
+            .success();
     }
 }
 
@@ -354,9 +455,12 @@ fn property_nested_depth_1_to_5() {
         }
         code = format!("fn nested(x) {{ {code} + 1 }}");
 
-        ruchy_cmd().arg("transpile").arg("-")
+        ruchy_cmd()
+            .arg("transpile")
+            .arg("-")
             .write_stdin(code.as_str())
-            .assert().success();
+            .assert()
+            .success();
     }
 }
 
@@ -381,7 +485,12 @@ fn integration_numeric_inference_compiles() {
     "#;
 
     // Transpile
-    let result = ruchy_cmd().arg("transpile").arg("-").write_stdin(code).assert().success();
+    let result = ruchy_cmd()
+        .arg("transpile")
+        .arg("-")
+        .write_stdin(code)
+        .assert()
+        .success();
     let rust_code = String::from_utf8_lossy(&result.get_output().stdout);
 
     // Verify contains inferred types
@@ -390,10 +499,19 @@ fn integration_numeric_inference_compiles() {
     // Compile
     std::fs::write("/tmp/type_inference_test.rs", rust_code.as_ref()).unwrap();
     let compile = std::process::Command::new("rustc")
-        .args(["--crate-type", "bin", "/tmp/type_inference_test.rs", "-o", "/tmp/type_inference_test"])
+        .args([
+            "--crate-type",
+            "bin",
+            "/tmp/type_inference_test.rs",
+            "-o",
+            "/tmp/type_inference_test",
+        ])
         .output()
         .unwrap();
 
-    assert!(compile.status.success(),
-        "Compilation failed:\n{}", String::from_utf8_lossy(&compile.stderr));
+    assert!(
+        compile.status.success(),
+        "Compilation failed:\n{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
 }

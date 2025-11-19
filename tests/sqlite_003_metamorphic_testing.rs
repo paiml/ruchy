@@ -137,7 +137,10 @@ fn test_sqlite_3003_mr1_dead_code_elimination() {
     let with_dead_code = "if false { 42 } else { 0 }";
     let optimized = "0";
 
-    assert!(parse_program(with_dead_code).is_ok(), "Dead code should parse");
+    assert!(
+        parse_program(with_dead_code).is_ok(),
+        "Dead code should parse"
+    );
     assert!(parse_program(optimized).is_ok(), "Optimized should parse");
 }
 
@@ -177,7 +180,10 @@ fn test_sqlite_3012_mr2_dependent_statements_order_matters() {
 
     assert!(parse_program(prog1).is_ok(), "Valid ordering should parse");
     // prog2 should also parse (syntax is valid), but runtime would fail
-    assert!(parse_program(prog2).is_ok(), "Invalid ordering parses but would fail at runtime");
+    assert!(
+        parse_program(prog2).is_ok(),
+        "Invalid ordering parses but would fail at runtime"
+    );
 }
 
 // ============================================================================
@@ -229,8 +235,14 @@ fn test_sqlite_3030_mr4_lambda_parameter_renaming() {
     let original = "|x| x + 1";
     let renamed = "|y| y + 1";
 
-    assert!(parse_program(original).is_ok(), "Original lambda should parse");
-    assert!(parse_program(renamed).is_ok(), "Renamed lambda should parse");
+    assert!(
+        parse_program(original).is_ok(),
+        "Original lambda should parse"
+    );
+    assert!(
+        parse_program(renamed).is_ok(),
+        "Renamed lambda should parse"
+    );
 }
 
 #[test]
@@ -247,8 +259,14 @@ fn test_sqlite_3032_mr4_function_parameter_renaming() {
     let original = "fun double(x) { x * 2 }";
     let renamed = "fun double(y) { y * 2 }";
 
-    assert!(parse_program(original).is_ok(), "Original function should parse");
-    assert!(parse_program(renamed).is_ok(), "Renamed function should parse");
+    assert!(
+        parse_program(original).is_ok(),
+        "Original function should parse"
+    );
+    assert!(
+        parse_program(renamed).is_ok(),
+        "Renamed function should parse"
+    );
 }
 
 #[test]
@@ -256,7 +274,10 @@ fn test_sqlite_3033_mr4_shadowing_preserves_semantics() {
     // Inner x shadows outer x
     let prog = "let x = 1; let f = |x| x + 1; f(5)";
 
-    assert!(parse_program(prog).is_ok(), "Shadowing should parse correctly");
+    assert!(
+        parse_program(prog).is_ok(),
+        "Shadowing should parse correctly"
+    );
 }
 
 // ============================================================================
@@ -269,13 +290,7 @@ fn test_sqlite_3033_mr4_shadowing_preserves_semantics() {
 /// **Example**: `Parse(Print(Parse(P))) ≡ Parse(P)`
 #[test]
 fn test_sqlite_3050_mr6_parse_identity_literals() {
-    let programs = vec![
-        "42",
-        "3.14",
-        "true",
-        "false",
-        "\"hello\"",
-    ];
+    let programs = vec!["42", "3.14", "true", "false", "\"hello\""];
 
     for prog in programs {
         let first_parse = parse_program(prog);
@@ -284,23 +299,24 @@ fn test_sqlite_3050_mr6_parse_identity_literals() {
         // NOTE: Full roundtrip requires pretty-printer implementation
         // For now, we validate that parsing is deterministic
         let second_parse = parse_program(prog);
-        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {prog}");
+        assert_eq!(
+            first_parse, second_parse,
+            "Parse should be deterministic: {prog}"
+        );
     }
 }
 
 #[test]
 fn test_sqlite_3051_mr6_parse_identity_expressions() {
-    let programs = vec![
-        "1 + 2",
-        "x * y",
-        "a && b || c",
-        "f(x, y)",
-    ];
+    let programs = vec!["1 + 2", "x * y", "a && b || c", "f(x, y)"];
 
     for prog in programs {
         let first_parse = parse_program(prog);
         let second_parse = parse_program(prog);
-        assert_eq!(first_parse, second_parse, "Parse should be deterministic: {prog}");
+        assert_eq!(
+            first_parse, second_parse,
+            "Parse should be deterministic: {prog}"
+        );
     }
 }
 

@@ -1,3 +1,4 @@
+use ruchy::backend::transpiler::Transpiler;
 /// TRANSPILER-009: Standalone functions disappear
 ///
 /// Root Cause: When transpiling programs with `fun main()` + standalone functions,
@@ -13,9 +14,7 @@
 /// ```
 ///
 /// Current (BROKEN) output: Only `main()` appears, `square()` is missing
-
 use ruchy::frontend::parser::Parser;
-use ruchy::backend::transpiler::Transpiler;
 
 /// RED Test 1: Standalone function must appear in transpiled output
 #[test]
@@ -115,7 +114,7 @@ fun main() {
         .expect("Failed to execute rustc");
 
     // BUG: This will FAIL because square() is missing
-    assert!(output.status.success(), 
+    assert!(output.status.success(),
             "TRANSPILER-009: Code failed to compile (missing square function)!\n\nRust:\n{}\n\nErrors:\n{}",
             rust_code,
             String::from_utf8_lossy(&output.stderr)

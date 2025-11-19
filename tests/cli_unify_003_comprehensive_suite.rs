@@ -25,7 +25,7 @@ use predicates::prelude::*;
 use std::fs;
 use std::io::Write;
 use std::time::Instant;
-use tempfile::{TempDir, NamedTempFile};
+use tempfile::{NamedTempFile, TempDir};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -147,16 +147,9 @@ fn test_012_run_command_equals_direct() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1 + 1\nprintln(x)");
 
-    let direct_output = ruchy_cmd()
-        .arg(&script)
-        .output()
-        .unwrap();
+    let direct_output = ruchy_cmd().arg(&script).output().unwrap();
 
-    let run_output = ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .output()
-        .unwrap();
+    let run_output = ruchy_cmd().arg("run").arg(&script).output().unwrap();
 
     // Both should produce identical output
     assert_eq!(direct_output.stdout, run_output.stdout);
@@ -167,12 +160,16 @@ fn test_012_run_command_equals_direct() {
 fn test_013_file_with_functions() {
     // Execute file containing function definitions
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "functions.ruchy", r"
+    let script = create_temp_file(
+        &temp,
+        "functions.ruchy",
+        r"
 fun add(a, b) {
     a + b
 }
 println(add(2, 3))
-");
+",
+    );
 
     ruchy_cmd()
         .arg(&script)
@@ -185,14 +182,18 @@ println(add(2, 3))
 fn test_014_file_with_control_flow() {
     // Execute file with if/match/for
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "control.ruchy", r#"
+    let script = create_temp_file(
+        &temp,
+        "control.ruchy",
+        r#"
 let x = 10
 if x > 5 {
     println("greater")
 } else {
     println("less")
 }
-"#);
+"#,
+    );
 
     ruchy_cmd()
         .arg(&script)
@@ -205,10 +206,14 @@ if x > 5 {
 fn test_015_file_with_data_structures() {
     // Execute file with arrays/objects
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "data.ruchy", r"
+    let script = create_temp_file(
+        &temp,
+        "data.ruchy",
+        r"
 let arr = [1, 2, 3]
 println(arr[0])
-");
+",
+    );
 
     ruchy_cmd()
         .arg(&script)
@@ -224,8 +229,7 @@ fn test_016_file_nonexistent_error() {
         .arg("nonexistent_file_xyz.ruchy")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("not found")
-            .or(predicate::str::contains("No such file")));
+        .stderr(predicate::str::contains("not found").or(predicate::str::contains("No such file")));
 }
 
 #[test]
@@ -245,23 +249,26 @@ fn test_017_file_syntax_error() {
 fn test_018_file_runtime_error() {
     // File with runtime error should show error
     let temp = TempDir::new().unwrap();
-    let script = create_temp_file(&temp, "runtime_error.ruchy", r#"
+    let script = create_temp_file(
+        &temp,
+        "runtime_error.ruchy",
+        r#"
 let x = 1
 let y = "string"
 println(x + y)
-"#);
+"#,
+    );
 
     // Should either fail or handle gracefully
-    let output = ruchy_cmd()
-        .arg(&script)
-        .output()
-        .unwrap();
+    let output = ruchy_cmd().arg(&script).output().unwrap();
 
     // Accept either error or graceful handling
-    let has_error = !output.status.success() ||
-                    String::from_utf8_lossy(&output.stderr).contains("error");
-    assert!(has_error || output.status.success(),
-            "Should either error or handle gracefully");
+    let has_error =
+        !output.status.success() || String::from_utf8_lossy(&output.stderr).contains("error");
+    assert!(
+        has_error || output.status.success(),
+        "Should either error or handle gracefully"
+    );
 }
 
 #[test]
@@ -332,11 +339,7 @@ fn test_024_eval_fast() {
     // -e should be very fast (<100ms)
     let start = Instant::now();
 
-    ruchy_cmd()
-        .arg("-e")
-        .arg("1 + 1")
-        .assert()
-        .success();
+    ruchy_cmd().arg("-e").arg("1 + 1").assert().success();
 
     let duration = start.elapsed();
     assert!(duration.as_millis() < 1000, "Eval too slow: {duration:?}");
@@ -380,9 +383,7 @@ fn test_032_stdin_with_functions() {
 fn test_033_stdin_empty() {
     // Empty stdin should not error
     let mut cmd = ruchy_cmd();
-    cmd.write_stdin("")
-        .assert()
-        .success();
+    cmd.write_stdin("").assert().success();
 }
 
 #[test]
@@ -392,8 +393,7 @@ fn test_034_stdin_syntax_error() {
     cmd.write_stdin("let x = \n:quit\n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Error")
-            .or(predicate::str::contains("error")));
+        .stdout(predicate::str::contains("Error").or(predicate::str::contains("error")));
 }
 
 // ============================================================================
@@ -448,10 +448,7 @@ fn test_043_repl_variables_persist() {
 fn test_044_repl_quit_command() {
     // :quit should exit REPL cleanly
     let mut cmd = ruchy_cmd();
-    cmd.arg("repl")
-        .write_stdin(":quit\n")
-        .assert()
-        .success();
+    cmd.arg("repl").write_stdin(":quit\n").assert().success();
 }
 
 // ============================================================================
@@ -486,15 +483,14 @@ fn test_051_compile_explicit_only() {
 
     // `run` should NOT create a binary
     let start = Instant::now();
-    ruchy_cmd()
-        .arg("run")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("run").arg(&script).assert().success();
 
     let duration = start.elapsed();
     // If it compiled, it would take 10-60s. Interpretation is <2s.
-    assert!(duration.as_secs() < 3, "Run command compiled (should interpret)");
+    assert!(
+        duration.as_secs() < 3,
+        "Run command compiled (should interpret)"
+    );
 }
 
 #[test]
@@ -567,11 +563,7 @@ fn test_060_tool_check() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("check")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("check").arg(&script).assert().success();
 }
 
 #[test]
@@ -584,8 +576,7 @@ fn test_061_tool_transpile() {
         .arg(&script)
         .assert()
         .success()
-        .stdout(predicate::str::contains("fn main")
-            .and(predicate::str::contains("let x = 1")));
+        .stdout(predicate::str::contains("fn main").and(predicate::str::contains("let x = 1")));
 }
 
 #[test]
@@ -593,11 +584,7 @@ fn test_062_tool_lint() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("lint")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("lint").arg(&script).assert().success();
 }
 
 #[test]
@@ -605,11 +592,7 @@ fn test_063_tool_fmt() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x=1");
 
-    ruchy_cmd()
-        .arg("fmt")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("fmt").arg(&script).assert().success();
 }
 
 #[test]
@@ -617,11 +600,7 @@ fn test_064_tool_ast() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("ast")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("ast").arg(&script).assert().success();
 }
 
 #[test]
@@ -629,11 +608,7 @@ fn test_065_tool_coverage() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1\nprintln(x)");
 
-    ruchy_cmd()
-        .arg("coverage")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("coverage").arg(&script).assert().success();
 }
 
 #[test]
@@ -641,11 +616,7 @@ fn test_066_tool_runtime() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("runtime")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("runtime").arg(&script).assert().success();
 }
 
 #[test]
@@ -653,11 +624,7 @@ fn test_067_tool_wasm() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("wasm")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("wasm").arg(&script).assert().success();
 }
 
 #[test]
@@ -689,11 +656,7 @@ fn test_070_tool_mutations() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "fun add(a, b) { a + b }");
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("mutations").arg(&script).assert().success();
 }
 
 #[test]
@@ -717,11 +680,7 @@ fn test_072_tool_notebook() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("notebook")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("notebook").arg(&script).assert().success();
 }
 
 #[test]
@@ -729,11 +688,7 @@ fn test_073_tool_parse() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "let x = 1");
 
-    ruchy_cmd()
-        .arg("parse")
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg("parse").arg(&script).assert().success();
 }
 
 #[test]
@@ -741,7 +696,7 @@ fn test_074_tool_test() {
     // `ruchy test` runs test suite
     ruchy_cmd()
         .arg("test")
-        .arg("--help")  // Just verify command exists
+        .arg("--help") // Just verify command exists
         .assert()
         .success();
 }
@@ -752,18 +707,12 @@ fn test_074_tool_test() {
 
 #[test]
 fn test_080_invalid_command() {
-    ruchy_cmd()
-        .arg("invalid_command_xyz")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("invalid_command_xyz").assert().failure();
 }
 
 #[test]
 fn test_081_invalid_flag() {
-    ruchy_cmd()
-        .arg("--invalid-flag-xyz")
-        .assert()
-        .failure();
+    ruchy_cmd().arg("--invalid-flag-xyz").assert().failure();
 }
 
 #[test]
@@ -786,17 +735,16 @@ fn test_083_permission_denied() {
     {
         use std::os::unix::fs::PermissionsExt;
         let mut perms = fs::metadata(&script).unwrap().permissions();
-        perms.set_mode(0o000);  // Remove all permissions
+        perms.set_mode(0o000); // Remove all permissions
         fs::set_permissions(&script, perms).ok();
 
         // Should error gracefully
-        let result = ruchy_cmd()
-            .arg(&script)
-            .assert()
-            .failure();
+        let result = ruchy_cmd().arg(&script).assert().failure();
 
-        result.stderr(predicate::str::contains("Permission denied")
-            .or(predicate::str::contains("permission")));
+        result.stderr(
+            predicate::str::contains("Permission denied")
+                .or(predicate::str::contains("permission")),
+        );
     }
 }
 
@@ -852,10 +800,7 @@ fn test_087_relative_path() {
     create_temp_file(&temp, "relative.ruchy", "println(1)");
 
     let relative_path = temp.path().join("relative.ruchy");
-    ruchy_cmd()
-        .arg(&relative_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg(&relative_path).assert().success();
 }
 
 #[test]
@@ -865,10 +810,7 @@ fn test_088_absolute_path() {
     let script = create_temp_file(&temp, "absolute.ruchy", "println(1)");
 
     let absolute_path = script.canonicalize().unwrap();
-    ruchy_cmd()
-        .arg(&absolute_path)
-        .assert()
-        .success();
+    ruchy_cmd().arg(&absolute_path).assert().success();
 }
 
 #[test]
@@ -881,10 +823,7 @@ fn test_089_nested_directory() {
     let script = nested_dir.join("nested.ruchy");
     fs::write(&script, "println(1)").unwrap();
 
-    ruchy_cmd()
-        .arg(&script)
-        .assert()
-        .success();
+    ruchy_cmd().arg(&script).assert().success();
 }
 
 // ============================================================================

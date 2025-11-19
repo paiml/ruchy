@@ -43,10 +43,22 @@ fun test() {
     let formatted = formatter.format(&ast).expect("Format should succeed");
 
     // Verify all 3 let statements are preserved
-    assert!(formatted.contains("let x = 1"), "Formatter deleted 'let x = 1': {formatted}");
-    assert!(formatted.contains("let y = 2"), "Formatter deleted 'let y = 2': {formatted}");
-    assert!(formatted.contains("let z = 3"), "Formatter deleted 'let z = 3': {formatted}");
-    assert!(formatted.contains("println"), "Formatter deleted println call: {formatted}");
+    assert!(
+        formatted.contains("let x = 1"),
+        "Formatter deleted 'let x = 1': {formatted}"
+    );
+    assert!(
+        formatted.contains("let y = 2"),
+        "Formatter deleted 'let y = 2': {formatted}"
+    );
+    assert!(
+        formatted.contains("let z = 3"),
+        "Formatter deleted 'let z = 3': {formatted}"
+    );
+    assert!(
+        formatted.contains("println"),
+        "Formatter deleted println call: {formatted}"
+    );
 }
 
 #[test]
@@ -69,11 +81,26 @@ fun test() {
     let formatter = Formatter::new();
     let formatted = formatter.format(&ast).expect("Format should succeed");
 
-    assert!(formatted.contains("let x = 10"), "Formatter deleted let statement: {formatted}");
-    assert!(formatted.contains("if"), "Formatter deleted if keyword: {formatted}");
-    assert!(formatted.contains("greater"), "Formatter deleted then branch: {formatted}");
-    assert!(formatted.contains("else"), "Formatter deleted else keyword: {formatted}");
-    assert!(formatted.contains("lesser"), "Formatter deleted else branch: {formatted}");
+    assert!(
+        formatted.contains("let x = 10"),
+        "Formatter deleted let statement: {formatted}"
+    );
+    assert!(
+        formatted.contains("if"),
+        "Formatter deleted if keyword: {formatted}"
+    );
+    assert!(
+        formatted.contains("greater"),
+        "Formatter deleted then branch: {formatted}"
+    );
+    assert!(
+        formatted.contains("else"),
+        "Formatter deleted else keyword: {formatted}"
+    );
+    assert!(
+        formatted.contains("lesser"),
+        "Formatter deleted else branch: {formatted}"
+    );
 }
 
 #[test]
@@ -125,9 +152,18 @@ fun test() {
     let formatted = formatter.format(&ast).expect("Format should succeed");
 
     // Comments should be preserved
-    assert!(formatted.contains("Header comment"), "Deleted: header comment");
-    assert!(formatted.contains("Inline comment"), "Deleted: inline comment");
-    assert!(formatted.contains("Another comment"), "Deleted: another comment");
+    assert!(
+        formatted.contains("Header comment"),
+        "Deleted: header comment"
+    );
+    assert!(
+        formatted.contains("Inline comment"),
+        "Deleted: inline comment"
+    );
+    assert!(
+        formatted.contains("Another comment"),
+        "Deleted: another comment"
+    );
 }
 
 // =============================================================================
@@ -154,7 +190,9 @@ fun test() {
     // Format the formatted code again
     let mut parser2 = Parser::new(&formatted1);
     let ast2 = parser2.parse().expect("Formatted code should parse");
-    let formatted2 = formatter.format(&ast2).expect("Second format should succeed");
+    let formatted2 = formatter
+        .format(&ast2)
+        .expect("Second format should succeed");
 
     // Idempotence: second format should be identical to first
     assert_eq!(
@@ -334,19 +372,15 @@ fn count_ast_nodes(expr: &ruchy::frontend::ast::Expr) -> usize {
     use ruchy::frontend::ast::ExprKind;
 
     1 + match &expr.kind {
-        ExprKind::Let { value, body, .. } => {
-            count_ast_nodes(value) + count_ast_nodes(body)
-        }
-        ExprKind::Binary { left, right, .. } => {
-            count_ast_nodes(left) + count_ast_nodes(right)
-        }
-        ExprKind::Block(exprs) => {
-            exprs.iter().map(count_ast_nodes).sum()
-        }
-        ExprKind::Function { body, .. } => {
-            count_ast_nodes(body)
-        }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::Let { value, body, .. } => count_ast_nodes(value) + count_ast_nodes(body),
+        ExprKind::Binary { left, right, .. } => count_ast_nodes(left) + count_ast_nodes(right),
+        ExprKind::Block(exprs) => exprs.iter().map(count_ast_nodes).sum(),
+        ExprKind::Function { body, .. } => count_ast_nodes(body),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             count_ast_nodes(condition)
                 + count_ast_nodes(then_branch)
                 + else_branch.as_ref().map_or(0, |e| count_ast_nodes(e))
@@ -357,14 +391,16 @@ fn count_ast_nodes(expr: &ruchy::frontend::ast::Expr) -> usize {
         ExprKind::MethodCall { receiver, args, .. } => {
             count_ast_nodes(receiver) + args.iter().map(count_ast_nodes).sum::<usize>()
         }
-        ExprKind::IndexAccess { object, index } => {
-            count_ast_nodes(object) + count_ast_nodes(index)
-        }
-        ExprKind::While { condition, body, .. } => {
-            count_ast_nodes(condition) + count_ast_nodes(body)
-        }
+        ExprKind::IndexAccess { object, index } => count_ast_nodes(object) + count_ast_nodes(index),
+        ExprKind::While {
+            condition, body, ..
+        } => count_ast_nodes(condition) + count_ast_nodes(body),
         ExprKind::Match { expr, arms } => {
-            count_ast_nodes(expr) + arms.iter().map(|arm| count_ast_nodes(&arm.body)).sum::<usize>()
+            count_ast_nodes(expr)
+                + arms
+                    .iter()
+                    .map(|arm| count_ast_nodes(&arm.body))
+                    .sum::<usize>()
         }
         _ => 0, // Literals, identifiers, etc. have no children
     }

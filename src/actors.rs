@@ -807,7 +807,10 @@ mod tests {
         // Should fail with "Actor has stopped"
         let result = stopped_handle.ask(msg).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Actor has stopped"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Actor has stopped"));
     }
 
     // Test 32: ActorHandle::send when actor has stopped (ERROR PATH)
@@ -824,7 +827,10 @@ mod tests {
         // Should fail with "Actor has stopped"
         let result = stopped_handle.send(msg).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Actor has stopped"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Actor has stopped"));
     }
 
     // Test 33: ActorHandle::is_alive returns false when actor stopped
@@ -1019,10 +1025,8 @@ mod tests {
         };
 
         // Ask should timeout/fail when actor returns None
-        let result = tokio::time::timeout(
-            tokio::time::Duration::from_millis(100),
-            handle.ask(msg)
-        ).await;
+        let result =
+            tokio::time::timeout(tokio::time::Duration::from_millis(100), handle.ask(msg)).await;
 
         // Timeout or error expected
         assert!(result.is_err() || result.unwrap().is_err());

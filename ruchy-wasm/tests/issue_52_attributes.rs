@@ -5,8 +5,8 @@
 //!
 //! This test verifies that attribute syntax parses correctly in WASM target.
 
-use wasm_bindgen_test::*;
 use ruchy_wasm::RuchyCompiler;
+use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -69,5 +69,8 @@ struct Person {
 "#;
 
     let result = compiler.validate(code);
-    assert!(result, "Attributes with arguments should parse successfully");
+    assert!(
+        result,
+        "Attributes with arguments should parse successfully"
+    );
 }

@@ -275,12 +275,10 @@ fun main() {
 ",
     );
 
-    ruchy_cmd()
-        .arg(main_file)
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Failed to find module")
-            .or(predicate::str::contains("Module 'nonexistent' not found")));
+    ruchy_cmd().arg(main_file).assert().failure().stderr(
+        predicate::str::contains("Failed to find module")
+            .or(predicate::str::contains("Module 'nonexistent' not found")),
+    );
 }
 
 #[test]
@@ -313,8 +311,7 @@ fun main() {
         .arg(main_file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Syntax error")
-            .or(predicate::str::contains("Expected")));
+        .stderr(predicate::str::contains("Syntax error").or(predicate::str::contains("Expected")));
 }
 
 // ============================================================================
