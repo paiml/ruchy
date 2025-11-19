@@ -22,7 +22,7 @@ fn test_bug_003_simple_array_assignment() {
         println(arr[0]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -38,7 +38,7 @@ fn test_bug_003_array_assignment_transpile() {
         arr[0] = 99;
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-") // Read from stdin
         .write_stdin(code.to_string())
@@ -60,7 +60,7 @@ fn test_bug_003_nested_array_assignment() {
         println(matrix[0][1]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -85,7 +85,7 @@ fn test_bug_003_matrix_update_loop() {
         println(matrix[1][1]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -106,7 +106,7 @@ fn test_bug_003_index_assignment_with_expression() {
         println(arr[1]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -145,7 +145,7 @@ fn test_bug_003_bench_002_matrix_multiplication() {
         println(result[0][0]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -171,7 +171,7 @@ fn property_array_assignment_preserves_others() {
             println(arr[2]);
         ");
 
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         let output = cmd.arg("-e").arg(&code).output().unwrap();
         let stdout = String::from_utf8_lossy(&output.stdout);
 
