@@ -40,8 +40,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_return_if.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()
@@ -70,8 +69,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_return_else.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()
@@ -104,8 +102,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_early_return.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()
@@ -138,8 +135,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_nested_if.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()
@@ -168,8 +164,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_value_preserved.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()
@@ -206,8 +201,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_runtime_083_multiple_returns.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&temp_file)
         .assert()

@@ -38,8 +38,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_097_try_err.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -78,8 +77,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_097_try_ok.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -128,8 +126,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_097_try_chain.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -172,8 +169,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_097_try_nested.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()
@@ -212,8 +208,7 @@ fun main() {
     let temp_file = std::env::temp_dir().join("issue_097_try_expr.ruchy");
     std::fs::write(&temp_file, script).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(&temp_file)
         .assert()
         .success()

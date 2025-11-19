@@ -29,7 +29,7 @@ fn test_opt_codegen_004_inline_simple_function() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -55,7 +55,7 @@ fn test_opt_codegen_004_inline_multi_use() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -79,7 +79,7 @@ fn test_opt_codegen_004_inline_with_constants() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -117,7 +117,7 @@ fn test_opt_codegen_004_no_inline_large_function() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -143,7 +143,7 @@ fn test_opt_codegen_004_inline_small_threshold() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -174,7 +174,7 @@ fn test_opt_codegen_004_no_inline_recursive() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -209,7 +209,7 @@ fn test_opt_codegen_004_no_inline_mutually_recursive() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -242,7 +242,7 @@ fn test_opt_codegen_004_inline_chain() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -272,7 +272,7 @@ fn test_opt_codegen_004_inline_after_dce() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -299,7 +299,7 @@ fn test_opt_codegen_004_inline_with_propagation() {
         }
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())

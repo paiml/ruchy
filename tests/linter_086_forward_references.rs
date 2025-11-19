@@ -29,16 +29,14 @@ fun helper_function() -> i32 {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // ruchy check should PASS (code is valid)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
         .success();
 
     // ruchy run should PASS (code executes correctly)
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file)
         .assert()
@@ -47,8 +45,7 @@ fun helper_function() -> i32 {
 
     // RED: ruchy lint should FAIL with "undefined variable: helper_function"
     // GREEN: After fix, ruchy lint should PASS (no errors)
-    let result = Command::cargo_bin("ruchy")
-        .unwrap()
+    let result = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(temp_file)
         .assert();
@@ -93,8 +90,7 @@ fun main() {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -102,8 +98,7 @@ fun main() {
 
     // RED: ruchy lint should FAIL (reports is_odd undefined in is_even)
     // GREEN: After two-pass fix, should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(temp_file)
         .assert()
@@ -135,8 +130,7 @@ fun format_result(value: i32) -> String {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // ruchy check and run should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -144,8 +138,7 @@ fun format_result(value: i32) -> String {
 
     // RED: lint should FAIL (calculate and format_result undefined)
     // GREEN: After fix, should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(temp_file)
         .assert()
@@ -179,16 +172,14 @@ fun helper_function() -> i32 {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // Per Issue #69: check and run should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
         .success()
         .stdout(predicates::str::contains("Syntax is valid").or(predicates::str::contains("✓")));
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file)
         .assert()
@@ -198,8 +189,7 @@ fun helper_function() -> i32 {
 
     // RED: Per Issue #69, this FAILS with "undefined variable: helper_function"
     // GREEN: After two-pass fix, should report 0 Errors
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(temp_file)
         .assert()

@@ -21,8 +21,7 @@ println("Server listening on port 9000")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -43,8 +42,7 @@ println("HTTP server created")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -68,8 +66,7 @@ connect_to_server("127.0.0.1:9000")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -93,8 +90,7 @@ fetch("https://api.example.com/data")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -120,8 +116,7 @@ println("Count: " + data.count.to_s())
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -144,8 +139,7 @@ println("Address: " + addr)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -165,8 +159,7 @@ println("Network module imported successfully")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -188,8 +181,7 @@ println("HTTP module imported successfully")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()

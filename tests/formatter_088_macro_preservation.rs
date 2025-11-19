@@ -28,8 +28,7 @@ fn format_code(input: &str) -> String {
     let input_file = create_temp_file(&temp_dir, "test.ruchy", input);
 
     // Run formatter with --stdout to get output without modifying file
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("fmt")
         .arg("--stdout")
         .arg(&input_file)

@@ -35,8 +35,7 @@ fun test(n) {{
 "
             );
 
-            let output = Command::cargo_bin("ruchy")
-                .unwrap()
+            let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("transpile")
                 .arg("-")
                 .write_stdin(input.as_bytes())
@@ -71,8 +70,7 @@ fun test(max) {{
 "
             );
 
-            let output = Command::cargo_bin("ruchy")
-                .unwrap()
+            let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("transpile")
                 .arg("-")
                 .write_stdin(input.as_bytes())
@@ -109,8 +107,7 @@ fun generate_primes(count) {
 }
 ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -152,8 +149,7 @@ fun test_comparisons(target) {
 }
 "#;
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -206,8 +202,7 @@ fun test_reversed(limit) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -265,8 +260,7 @@ fun main() {
 ";
 
     // Transpile to Rust
-    let transpile_output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let transpile_output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -329,8 +323,7 @@ fun test_len(n) {
 }
 ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -359,8 +352,7 @@ fun fill_to_size(target_size) {
 }
 ";
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -397,8 +389,7 @@ fun compare_sizes(target) {
 }
 "#;
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)
@@ -431,8 +422,7 @@ fun check_string_length(max_len) {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg("-")
         .write_stdin(input)

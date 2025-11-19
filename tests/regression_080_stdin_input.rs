@@ -15,7 +15,7 @@ use std::io::Write;
 /// Test 1: `ruchy run -` should execute code from stdin
 #[test]
 fn test_regression_080_stdin_with_dash_argument() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg("-")
         .write_stdin("fun main() { println(\"Hello from stdin\"); }")
@@ -27,7 +27,7 @@ fn test_regression_080_stdin_with_dash_argument() {
 /// Test 2: `ruchy run -` should handle syntax errors in stdin
 #[test]
 fn test_regression_080_stdin_syntax_error() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg("-")
         .write_stdin("fun main() { invalid syntax }")
@@ -40,7 +40,7 @@ fn test_regression_080_stdin_syntax_error() {
 /// Note: Empty programs are syntax errors in Ruchy, which is reasonable
 #[test]
 fn test_regression_080_stdin_empty() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg("-")
         .write_stdin("")
@@ -52,8 +52,7 @@ fn test_regression_080_stdin_empty() {
 /// Test 4: `ruchy -e` should still work (not affected by stdin support)
 #[test]
 fn test_regression_080_eval_flag_still_works() {
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg("println(\"Hello from -e\")")
         .assert()
@@ -68,8 +67,7 @@ fn test_regression_080_file_argument_still_works() {
     let mut temp_file = NamedTempFile::new().unwrap();
     writeln!(temp_file, "fun main() {{ println(\"Hello from file\"); }}").unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(temp_file.path())
         .assert()

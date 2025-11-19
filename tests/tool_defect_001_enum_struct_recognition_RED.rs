@@ -30,8 +30,7 @@ let p = get_priority();
     std::fs::write("/tmp/test_enum_lint.ruchy", ruchy_code).unwrap();
 
     // Run ruchy lint
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg("/tmp/test_enum_lint.ruchy")
         .output()
@@ -76,8 +75,7 @@ let cfg = create_config();
 
     std::fs::write("/tmp/test_struct_lint.ruchy", ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg("/tmp/test_struct_lint.ruchy")
         .output()
@@ -123,8 +121,7 @@ println(priority_score(Priority::High));
 
     std::fs::write("/tmp/test_mutations_enum.ruchy", ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("mutations")
         .arg("/tmp/test_mutations_enum.ruchy")
         .output()
@@ -170,8 +167,7 @@ println(is_active(Status::Active));
 
     std::fs::write("/tmp/test_quality_enum.ruchy", ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("quality-gate")
         .arg("/tmp/test_quality_enum.ruchy")
         .arg("--min-score")

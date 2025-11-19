@@ -21,7 +21,7 @@ fn test_issue_117_parse_simple_object() {
         println(obj["name"]);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -38,7 +38,7 @@ fn test_issue_117_parse_array() {
         println(arr[4]);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -55,7 +55,7 @@ fn test_issue_117_parse_nested_object() {
         println(obj["user"]["name"]);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -72,7 +72,7 @@ fn test_issue_117_parse_numbers() {
         println(obj["float"]);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -89,7 +89,7 @@ fn test_issue_117_parse_bool_null() {
         println(obj["active"]);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -109,7 +109,7 @@ fn test_issue_117_stringify_object() {
         println(json_str);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -125,7 +125,7 @@ fn test_issue_117_stringify_array() {
         println(json_str);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -146,7 +146,7 @@ fn test_issue_117_roundtrip() {
         println(json2);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -165,7 +165,7 @@ fn test_issue_117_parse_invalid_json() {
         let obj = JSON.parse(json_str);
     ";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e").arg(code).assert().failure(); // Should fail with parse error
 }
 
@@ -180,7 +180,7 @@ fn test_issue_117_transpile_json_methods() {
         let str = JSON.stringify(obj);
     "#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg("-")
         .write_stdin(code.to_string())
@@ -207,7 +207,7 @@ fn property_json_roundtrip_preserves_data() {
             println(result);
         ");
 
-        let mut cmd = Command::cargo_bin("ruchy").unwrap();
+        let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
         let output = cmd.arg("-e").arg(&code).output().unwrap();
         let stdout = String::from_utf8_lossy(&output.stdout);
 

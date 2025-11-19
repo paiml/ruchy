@@ -17,8 +17,7 @@ fn lint_code(code: &str, test_name: &str) -> assert_cmd::assert::Assert {
     let temp_file = format!("/tmp/quality_015_{test_name}.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    let assert = Command::cargo_bin("ruchy")
-        .unwrap()
+    let assert = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&temp_file)
         .assert();
@@ -285,8 +284,7 @@ fun main() {{
         let temp_file = format!("/tmp/quality_015_prop_{fn_name}.ruchy");
         fs::write(&temp_file, &code).unwrap();
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("lint")
             .arg(&temp_file)
             .output()
@@ -329,8 +327,7 @@ fun main() {{
         let temp_file = format!("/tmp/quality_015_prop_unused_{var_name}.ruchy");
         fs::write(&temp_file, &code).unwrap();
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("lint")
             .arg(&temp_file)
             .output()
@@ -366,8 +363,7 @@ fun main() {{
         let temp_file = "/tmp/quality_015_prop_main.ruchy";
         fs::write(temp_file, &code).unwrap();
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("lint")
             .arg(temp_file)
             .output()

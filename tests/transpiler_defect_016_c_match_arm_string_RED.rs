@@ -70,8 +70,7 @@ println(priority_to_string(Priority::High));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -113,8 +112,7 @@ println(status_to_str(Status::Active));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -158,8 +156,7 @@ println(priority_to_int(Priority::High));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -191,8 +188,7 @@ println(describe(Level::High, Type::A));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -225,8 +221,7 @@ println(message);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()

@@ -74,8 +74,7 @@ println(result);
     fs::write(&test_file, ruchy_code).unwrap();
 
     // Run ruchy compile - should succeed after fix
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -119,8 +118,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -163,8 +161,7 @@ println(output);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -211,8 +208,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -250,8 +246,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -275,8 +270,7 @@ println(formatted);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -310,8 +304,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -350,8 +343,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -395,8 +387,7 @@ println(output);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()

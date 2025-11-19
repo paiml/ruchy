@@ -37,7 +37,7 @@ enum Expr {
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("check")
         .arg(&file_path)
         .assert()
@@ -60,7 +60,7 @@ let x = Expr::Num(42)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg(&file_path)
         .assert()
@@ -81,7 +81,7 @@ let x = Expr::Lit(42)
 println(x)
 ";
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -103,7 +103,7 @@ let add = Expr::Add(Box::new(left), Box::new(right))
 println(add)
 ";
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -127,7 +127,7 @@ let root = Tree::Node(Box::new(c), Box::new(d))
 println(root)
 ";
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -148,7 +148,7 @@ let v = Value::Int(Box::new(42))
 println(v)
 ";
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -175,7 +175,7 @@ let neg = Expr::Unary(UnOp::Neg, Box::new(num))
 println(neg)
 "#;
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -211,7 +211,7 @@ let add = Expr::Binary(BinOp::Add, Box::new(left), Box::new(right))
 println(add)
 "#;
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -237,7 +237,7 @@ enum Statement {
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("check")
         .arg(&file_path)
         .assert()
@@ -260,7 +260,7 @@ let x = Stmt::Val(42)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile")
         .arg(&file_path)
         .assert()
@@ -286,7 +286,7 @@ println(empty)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -315,7 +315,7 @@ println(block)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -346,7 +346,7 @@ println(outer)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -373,7 +373,7 @@ println(d)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -404,7 +404,7 @@ println(func)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -430,7 +430,7 @@ let single = Node::Single(Box::new(leaf))
 println(single)
 ";
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg(code)
         .assert()
@@ -459,7 +459,7 @@ println(call)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()
@@ -495,7 +495,7 @@ println(func_type)
     let file_path = temp_dir.path().join("test.ruchy");
     fs::write(&file_path, code).unwrap();
 
-    let mut cmd = AssertCommand::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("run")
         .arg(&file_path)
         .assert()

@@ -12,7 +12,7 @@ use predicates::prelude::*;
 /// Test vec! macro with `MacroInvocation` variant (Issue #74 regression)
 #[test]
 fn test_runtime_001_vec_macro_invocation() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg("let x = vec![1, 2, 3]; x")
         .timeout(std::time::Duration::from_secs(5))
@@ -23,7 +23,7 @@ fn test_runtime_001_vec_macro_invocation() {
 /// Test println! macro with `MacroInvocation` variant
 #[test]
 fn test_runtime_001_println_macro_invocation() {
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg("println!(\"Hello\")")
         .timeout(std::time::Duration::from_secs(5))
@@ -36,7 +36,7 @@ fn test_runtime_001_println_macro_invocation() {
 #[test]
 fn test_runtime_001_macro_backward_compat() {
     // This test verifies that the fix works with CURRENT parser output (MacroInvocation)
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("-e")
         .arg("let x = vec![1, 2]; x")
         .assert()

@@ -23,8 +23,7 @@ write_file("{}", "Hello, World!")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success();
@@ -56,8 +55,7 @@ println(content)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -84,8 +82,7 @@ println(content)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -112,8 +109,7 @@ println(content)
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
@@ -132,8 +128,7 @@ let content = read_file("nonexistent.txt")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .failure()
@@ -153,8 +148,7 @@ import std::fs::read_file
     fs::write(&file_path, code).unwrap();
 
     // Should not panic, even if compilation fails
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or failure, but not panic
@@ -173,8 +167,7 @@ let content = read_file("nonexistent.txt")
 
     fs::write(&file_path, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .failure();

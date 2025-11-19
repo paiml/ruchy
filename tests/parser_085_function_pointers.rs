@@ -32,8 +32,7 @@ fun main() {}
     fs::write(&temp_file, code).unwrap();
 
     // RED: Expected to FAIL until parser implements fn() type syntax
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -54,8 +53,7 @@ fun main() {}
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -76,8 +74,7 @@ fun main() {}
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -98,8 +95,7 @@ fun main() {}
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -130,8 +126,7 @@ fun main() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -164,8 +159,7 @@ fun main() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file.path())
         .assert()
@@ -187,8 +181,7 @@ fun main() {}
     fs::write(&temp_file, code).unwrap();
 
     // Test transpilation works
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(temp_file.path())
         .assert()
@@ -218,8 +211,7 @@ fun main() {
     fs::write(&temp_file, code).unwrap();
 
     // Test evaluation works and outputs "10"
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()

@@ -87,7 +87,7 @@ fun main() {
     fs::write(&ruchy_file, code).unwrap();
 
     // Try to transpile
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile").arg(&ruchy_file);
 
     let output = cmd.output().unwrap();
@@ -170,7 +170,7 @@ fun main() {
 
     fs::write(&ruchy_file, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile").arg(&ruchy_file);
 
     let output = cmd.output().unwrap();
@@ -237,6 +237,6 @@ fun main() {
 
     fs::write(&ruchy_file, code).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("transpile").arg(&ruchy_file).assert().success();
 }

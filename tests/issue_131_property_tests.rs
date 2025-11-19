@@ -34,8 +34,7 @@ fun main() {{
 }}
 "#);
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script)
             .assert()
@@ -70,8 +69,7 @@ fun main() {{
 }}
 ");
 
-                    let output = Command::cargo_bin("ruchy")
-                        .unwrap()
+                    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                         .arg("-e")
                         .arg(&script)
                         .assert()
@@ -107,8 +105,7 @@ fun main() {{
 }}
 "#);
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script)
             .assert()
@@ -152,8 +149,7 @@ fun main() {{
 }}
 "#);
 
-        let output1 = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output1 = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script_parse_json)
             .assert()
@@ -162,8 +158,7 @@ fun main() {{
             .stdout
             .clone();
 
-        let output2 = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output2 = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script_json_parse)
             .assert()
@@ -201,8 +196,7 @@ fun main() {{
 }}
 "#);
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script)
             .assert()
@@ -243,8 +237,7 @@ fun main() {{
 }}
 "#);
 
-        let output = Command::cargo_bin("ruchy")
-            .unwrap()
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(&script)
             .assert()
@@ -276,8 +269,7 @@ fun main() {
     println("empty_object")
 }
 "#;
-        Command::cargo_bin("ruchy")
-            .unwrap()
+        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(script1)
             .assert()
@@ -291,8 +283,7 @@ fun main() {
     println("empty_array")
 }
 "#;
-        Command::cargo_bin("ruchy")
-            .unwrap()
+        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
             .arg("-e")
             .arg(script2)
             .assert()

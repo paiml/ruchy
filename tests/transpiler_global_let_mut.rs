@@ -15,7 +15,7 @@ use predicates::prelude::*;
 fn test_transpiler_single_let_mut() {
     let code = "let mut x = 0;";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -45,7 +45,7 @@ fn test_transpiler_multiple_let_mut() {
     let code = r"let mut x = 0;
 let mut y = 1;";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -80,7 +80,7 @@ fn test_transpiler_let_mut_with_usage() {
 counter = counter + 1;
 println!("{}", counter);"#;
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -116,7 +116,7 @@ fn test_transpiler_mixed_let_statements() {
 let mut y = 2;
 let z = 3;";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -146,7 +146,7 @@ let z = 3;";
 fn test_transpiler_let_mut_with_type_annotation() {
     let code = "let mut x: int = 0;";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -171,7 +171,7 @@ x = x * 2;
 println!("{}", x);"#;
 
     // Transpile
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -224,7 +224,7 @@ println!("{}", x);"#;
 fn test_transpiler_bug_documented() {
     let code = "let mut x = 0;";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")
@@ -249,7 +249,7 @@ fn test_transpiler_let_then_expression() {
     let code = r"let mut x = 1;
 x + 2";
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
         .arg("transpile")
         .arg("-")

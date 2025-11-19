@@ -96,8 +96,7 @@ println(find_items(items, checks));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -143,8 +142,7 @@ println(process(vec![Data { value: 5 }]));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -180,8 +178,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()

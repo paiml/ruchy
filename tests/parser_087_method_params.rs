@@ -26,8 +26,7 @@ impl ConfigManager {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -55,8 +54,7 @@ impl ConfigManager {
 
     // RED: ruchy check should FAIL with "Function parameters must be simple identifiers"
     // GREEN: After fix, ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -81,8 +79,7 @@ impl ConfigManager {
     std::fs::write(temp_file, code).expect("Failed to write test file");
 
     // ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -109,8 +106,7 @@ impl ConfigManager {
 
     // RED: ruchy check should FAIL
     // GREEN: After fix, ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -136,8 +132,7 @@ impl ConfigManager {
 
     // RED: ruchy check should FAIL
     // GREEN: After fix, ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()
@@ -161,8 +156,7 @@ fun join_strings(left: &str, right: &str, separator: &str) -> String {
 
     // RED: ruchy check should FAIL
     // GREEN: After fix, ruchy check should PASS
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(temp_file)
         .assert()

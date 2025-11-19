@@ -41,7 +41,7 @@ license = "MIT"
     .unwrap();
 
     // Run ruchy publish --dry-run
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.current_dir(project_path)
         .arg("publish")
         .arg("--dry-run");
@@ -81,7 +81,7 @@ fn test_tool_feature_001_02_publish_requires_manifest_red() {
 
     // NO Ruchy.toml created
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.current_dir(project_path).arg("publish");
 
     let output = cmd.output().unwrap();
@@ -117,7 +117,7 @@ name = "incomplete-package"
 
     fs::write(project_path.join("Ruchy.toml"), manifest).unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.current_dir(project_path)
         .arg("publish")
         .arg("--dry-run");
@@ -166,7 +166,7 @@ repository = "https://github.com/example/awesome"
     fs::write(project_path.join("Ruchy.toml"), manifest).unwrap();
     fs::write(project_path.join("main.ruchy"), "println(\"Test\");").unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.current_dir(project_path)
         .arg("publish")
         .arg("--dry-run");
@@ -206,7 +206,7 @@ license = "MIT"
     fs::write(project_path.join("Ruchy.toml"), manifest).unwrap();
     fs::write(project_path.join("main.ruchy"), "println(\"Test\");").unwrap();
 
-    let mut cmd = Command::cargo_bin("ruchy").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.current_dir(project_path)
         .arg("publish")
         .arg("--dry-run");

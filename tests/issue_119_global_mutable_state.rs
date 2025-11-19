@@ -35,8 +35,7 @@ fn test_issue_119_01_simple_global_counter() {
         println(global_counter)  // Expected: 3
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -68,8 +67,7 @@ fn test_issue_119_02_multiple_functions_same_global() {
         println(counter)  // Expected: 1
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -97,8 +95,7 @@ fn test_issue_119_03_nested_function_calls() {
         println(total)  // Expected: 10
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -122,8 +119,7 @@ fn test_issue_119_04_global_array_mutation() {
         println(len(results))  // Expected: 3
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -150,8 +146,7 @@ fn test_issue_119_05_global_state_across_loop() {
         println(sum)  // Expected: 15 (1+2+3+4+5)
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -178,8 +173,7 @@ fn test_issue_119_06_recursive_function_global_state() {
         println(factorial_result)  // Expected: 120
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -214,8 +208,7 @@ println(matrix_result[0])  // Expected: 19 (1*5 + 2*7)
     ";
     fs::write(file.path(), code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg(file.path())
         .assert()
         .success()
@@ -243,8 +236,7 @@ fn test_issue_119_08_multiple_globals() {
         println(y)  // Expected: 2
     ";
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .assert()
@@ -277,8 +269,7 @@ mod property_tests {
                 "
             );
 
-            let output = Command::cargo_bin("ruchy")
-                .unwrap()
+            let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("-e")
                 .arg(&code)
                 .output()
@@ -312,8 +303,7 @@ mod property_tests {
                 "add()\n".repeat(num_calls)
             );
 
-            let output = Command::cargo_bin("ruchy")
-                .unwrap()
+            let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("-e")
                 .arg(&code)
                 .output()
@@ -353,8 +343,7 @@ mod property_tests {
                 "
             );
 
-            let output = Command::cargo_bin("ruchy")
-                .unwrap()
+            let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("-e")
                 .arg(&code)
                 .output()

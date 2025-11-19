@@ -59,8 +59,7 @@ println(result);
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -107,8 +106,7 @@ println(format_config(c));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -144,8 +142,7 @@ println(build_message("World"));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()
@@ -181,8 +178,7 @@ println(format_message());
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -212,8 +208,7 @@ println(format_data(data));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .assert()
@@ -249,8 +244,7 @@ println(format_priority(Priority::High));
 
     fs::write(&test_file, ruchy_code).unwrap();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
         .output()

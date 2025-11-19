@@ -54,8 +54,7 @@ fun main() {{
                 .write_all(code.as_bytes())
                 .expect("Failed to write temp file");
 
-            Command::cargo_bin("ruchy")
-                .expect("Failed to find ruchy binary")
+            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
                 .arg("run")
                 .arg(temp_file.path())
                 .assert()

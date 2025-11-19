@@ -48,8 +48,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_parser_084_while_hashmap.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&temp_file)
         .assert()
@@ -84,8 +83,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_parser_084_simplified.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&temp_file)
         .assert()
@@ -116,8 +114,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_parser_084_method_call.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&temp_file)
         .assert()
@@ -150,8 +147,7 @@ fun main() {
     let temp_file = PathBuf::from("/tmp/test_parser_084_for_loop.ruchy");
     fs::write(&temp_file, code).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&temp_file)
         .assert()

@@ -23,8 +23,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("--trace")
         .arg("-e")
         .arg(code)
@@ -52,8 +51,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("--trace")
         .arg("-e")
         .arg(code)
@@ -79,8 +77,7 @@ fun main() {
 }
 "#;
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("-e")
         .arg(code)
         .timeout(std::time::Duration::from_secs(5))
