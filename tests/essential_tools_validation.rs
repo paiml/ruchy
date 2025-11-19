@@ -42,8 +42,7 @@ fn create_test_file() -> (TempDir, std::path::PathBuf) {
 fn test_tool_check_validates_complete_grammar() {
     let (_temp_dir, ruchy_file) = create_test_file();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&ruchy_file)
         .assert()
@@ -55,8 +54,7 @@ fn test_tool_check_validates_complete_grammar() {
 fn test_tool_lint_analyzes_complete_grammar() {
     let (_temp_dir, ruchy_file) = create_test_file();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&ruchy_file)
         .assert()
@@ -68,8 +66,7 @@ fn test_tool_lint_analyzes_complete_grammar() {
 fn test_tool_ast_parses_complete_grammar() {
     let (_temp_dir, ruchy_file) = create_test_file();
 
-    let output = Command::cargo_bin("ruchy")
-        .unwrap()
+    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("ast")
         .arg(&ruchy_file)
         .assert()
@@ -85,8 +82,7 @@ fn test_tool_ast_parses_complete_grammar() {
 fn test_tool_run_executes_complete_grammar() {
     let (_temp_dir, ruchy_file) = create_test_file();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&ruchy_file)
         .assert()
@@ -101,8 +97,7 @@ fn test_tool_transpile_generates_rust_from_complete_grammar() {
     let rust_file = temp_dir.path().join("output.rs");
     fs::write(&ruchy_file, GRAMMAR_SAMPLE).unwrap();
 
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(&ruchy_file)
         .arg("-o")
@@ -133,8 +128,7 @@ fn test_tool_compile_creates_binary_from_complete_grammar() {
     fs::write(&ruchy_file, GRAMMAR_SAMPLE).unwrap();
 
     // First transpile
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(&ruchy_file)
         .arg("-o")
@@ -189,32 +183,28 @@ fn test_all_essential_tools_integrated() {
     fs::write(&ruchy_file, GRAMMAR_SAMPLE).unwrap();
 
     // Tool 1: check
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&ruchy_file)
         .assert()
         .success();
 
     // Tool 2: lint
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&ruchy_file)
         .assert()
         .success();
 
     // Tool 3: ast
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("ast")
         .arg(&ruchy_file)
         .assert()
         .success();
 
     // Tool 4: run
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&ruchy_file)
         .assert()
@@ -222,8 +212,7 @@ fn test_all_essential_tools_integrated() {
 
     // Tool 5: transpile
     let rust_file = temp_dir.path().join("output.rs");
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("transpile")
         .arg(&ruchy_file)
         .arg("-o")
@@ -258,24 +247,21 @@ fun main() {
     fs::write(&ruchy_file, handler_code).unwrap();
 
     // Verify check works
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("check")
         .arg(&ruchy_file)
         .assert()
         .success();
 
     // Verify lint works
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("lint")
         .arg(&ruchy_file)
         .assert()
         .success();
 
     // Verify run works
-    Command::cargo_bin("ruchy")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("run")
         .arg(&ruchy_file)
         .assert()
