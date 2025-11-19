@@ -23,17 +23,30 @@
 - **Initial**: 56.5/114 (49.6%, D)
 - **After clippy/fmt**: 58.5/114 (51.3%, D) — +2.0
 - **After deny.toml**: 60.5/114 (53.1%, C) — +4.0 total
-- **Session 2025-11-19**: Code quality improvements → **62.5/114 (C)**
+- **Session 2025-11-19 (Part 1)**: Code quality improvements → **62.5/114 (C)**
   - ✅ cargo clippy --fix: vec![] → array literals (4 files)
   - ✅ cargo fmt: formatting consistency (9 files total)
-  - ✅ Long literals: added separators (3 files)
+  - ✅ Long literals: added separators (3 files initially)
   - ✅ Unsafe casts: usize→i64 try_into() (7 instances, 2 files)
   - ✅ #[ignore] reasons: converted to proper attribute format (19 files)
-  - ✅ PI approximation: started fixes (1/14 files)
+  - ✅ PI approximation: started fixes (5/14 files)
   - ✅ assert!(true): removed 3 useless assertions
   - **Progress**: +2.0 points (60.5 → 62.5)
-  - **Commits**: 9 commits documenting all improvements
-  - **Warnings**: 180 (down from ~360, after deduplication)
+  - **Commits**: 11 commits
+  - **Warnings**: 180 (down from ~360)
+
+- **Session 2025-11-19 (Part 2 - Continuation)**: Completing PI fixes
+  - ✅ PI approximation: completed all remaining (8 instances in builtins.rs)
+    - test_builtin_type_of_float
+    - test_builtin_abs_negative_float (input + assertion)
+    - test_builtin_to_string_float (value + string conversion)
+    - test_builtin_parse_float_valid (parse + assertion)
+    - test_builtin_dbg_different_types
+  - ✅ Long literals: fixed 3 more instances (100000 → 100_000 in property tests)
+  - **Total PI fixes**: 14/14 complete across entire project
+  - **Progress**: All PI approximation warnings eliminated
+  - **Commits**: 2 commits (batch 3 + long literals)
+  - **Warnings**: ~105 (down from 180)
 
 **Tools Installed**:
 - ✅ Miri (nightly)
