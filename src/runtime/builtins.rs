@@ -721,7 +721,7 @@ fn builtin_sort(args: &[Value]) -> Result<Value, InterpreterError> {
 /// use ruchy::runtime::Value;
 ///
 /// let registry = BuiltinRegistry::new();
-/// let result = registry.call("env_args", &[]).unwrap();
+/// let result = registry.call("env_args", &[]).expect("Should succeed");
 /// // Returns array of command-line arguments
 /// ```
 ///
@@ -1417,7 +1417,9 @@ fn convert_object_to_json(
 fn convert_object_mut_to_json(
     map: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
 ) -> Result<serde_json::Value, InterpreterError> {
-    let guard = map.lock().unwrap();
+    let guard = map
+        .lock()
+        .expect("Mutex poisoned: builtin registry lock is corrupted");
     let mut json_obj = serde_json::Map::new();
     for (k, v) in guard.iter() {
         json_obj.insert(k.clone(), ruchy_value_to_json(v)?);
@@ -1903,14 +1905,15 @@ mod tests {
 
     #[test]
     fn test_builtin_println() {
-        let result = builtin_println(&[Value::from_string("test".to_string())]).unwrap();
+        let result = builtin_println(&[Value::from_string("test".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::nil());
     }
 
     // EXTREME TDD Sprint 4 TIER 2: println() edge cases
     #[test]
     fn test_builtin_println_empty() {
-        let result = builtin_println(&[]).unwrap();
+        let result = builtin_println(&[]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::nil());
     }
 
@@ -1921,7 +1924,7 @@ mod tests {
             Value::from_string("World".to_string()),
             Value::Integer(42),
         ];
-        let result = builtin_println(&args).unwrap();
+        let result = builtin_println(&args).expect("builtin function should succeed in test");
         assert_eq!(result, Value::nil());
     }
 
@@ -1935,17 +1938,18 @@ mod tests {
             Value::Bool(true),
             Value::Object(Arc::new(map)),
         ];
-        let result = builtin_println(&args).unwrap();
+        let result = builtin_println(&args).expect("builtin function should succeed in test");
         assert_eq!(result, Value::nil());
     }
 
     #[test]
     fn test_builtin_len() {
-        let result = builtin_len(&[Value::from_string("hello".to_string())]).unwrap();
+        let result = builtin_len(&[Value::from_string("hello".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(5));
 
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = builtin_len(&[arr]).unwrap();
+        let result = builtin_len(&[arr]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -1956,7 +1960,8 @@ mod tests {
         map.insert("a".to_string(), Value::Integer(1));
         map.insert("b".to_string(), Value::Integer(2));
         map.insert("c".to_string(), Value::Integer(3));
-        let result = builtin_len(&[Value::Object(Arc::new(map))]).unwrap();
+        let result = builtin_len(&[Value::Object(Arc::new(map))])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(3));
     }
 
@@ -1967,7 +1972,7 @@ mod tests {
             end: Box::new(Value::Integer(10)),
             inclusive: false,
         };
-        let result = builtin_len(&[range]).unwrap();
+        let result = builtin_len(&[range]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(9)); // |10 - 1| = 9
     }
 
@@ -1983,39 +1988,44 @@ mod tests {
 
     #[test]
     fn test_builtin_type_of() {
-        let result = builtin_type_of(&[Value::Integer(42)]).unwrap();
+        let result = builtin_type_of(&[Value::Integer(42)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("integer".to_string()));
     }
 
     // EXTREME TDD Sprint 4: type_of() edge cases
     #[test]
     fn test_builtin_type_of_nil() {
-        let result = builtin_type_of(&[Value::Nil]).unwrap();
+        let result =
+            builtin_type_of(&[Value::Nil]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("nil".to_string()));
     }
 
     #[test]
     fn test_builtin_type_of_bool() {
-        let result = builtin_type_of(&[Value::Bool(true)]).unwrap();
+        let result =
+            builtin_type_of(&[Value::Bool(true)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("boolean".to_string()));
     }
 
     #[test]
     fn test_builtin_type_of_float() {
-        let result = builtin_type_of(&[Value::Float(std::f64::consts::PI)]).unwrap();
+        let result = builtin_type_of(&[Value::Float(std::f64::consts::PI)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("float".to_string()));
     }
 
     #[test]
     fn test_builtin_type_of_string() {
-        let result = builtin_type_of(&[Value::from_string("hello".to_string())]).unwrap();
+        let result = builtin_type_of(&[Value::from_string("hello".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("string".to_string()));
     }
 
     #[test]
     fn test_builtin_type_of_array() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = builtin_type_of(&[arr]).unwrap();
+        let result = builtin_type_of(&[arr]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("array".to_string()));
     }
 
@@ -2023,32 +2033,37 @@ mod tests {
     fn test_builtin_type_of_object() {
         let mut map = HashMap::new();
         map.insert("key".to_string(), Value::from_string("value".to_string()));
-        let result = builtin_type_of(&[Value::Object(Arc::new(map))]).unwrap();
+        let result = builtin_type_of(&[Value::Object(Arc::new(map))])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("object".to_string()));
     }
 
     #[test]
     fn test_builtin_sqrt() {
-        let result = builtin_sqrt(&[Value::Integer(9)]).unwrap();
+        let result =
+            builtin_sqrt(&[Value::Integer(9)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(3.0));
     }
 
     // EXTREME TDD Sprint 4 TIER 2: sqrt() edge cases
     #[test]
     fn test_builtin_sqrt_negative() {
-        let result = builtin_sqrt(&[Value::Integer(-1)]).unwrap();
+        let result =
+            builtin_sqrt(&[Value::Integer(-1)]).expect("builtin function should succeed in test");
         assert!(matches!(result, Value::Float(x) if x.is_nan()));
     }
 
     #[test]
     fn test_builtin_sqrt_zero() {
-        let result = builtin_sqrt(&[Value::Integer(0)]).unwrap();
+        let result =
+            builtin_sqrt(&[Value::Integer(0)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(0.0));
     }
 
     #[test]
     fn test_builtin_sqrt_float() {
-        let result = builtin_sqrt(&[Value::Float(16.0)]).unwrap();
+        let result =
+            builtin_sqrt(&[Value::Float(16.0)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(4.0));
     }
 
@@ -2064,26 +2079,30 @@ mod tests {
 
     #[test]
     fn test_builtin_abs() {
-        let result = builtin_abs(&[Value::Integer(-42)]).unwrap();
+        let result =
+            builtin_abs(&[Value::Integer(-42)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
     // EXTREME TDD Sprint 4 TIER 2: abs() edge cases
     #[test]
     fn test_builtin_abs_negative_float() {
-        let result = builtin_abs(&[Value::Float(-std::f64::consts::PI)]).unwrap();
+        let result = builtin_abs(&[Value::Float(-std::f64::consts::PI)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(std::f64::consts::PI));
     }
 
     #[test]
     fn test_builtin_abs_zero() {
-        let result = builtin_abs(&[Value::Integer(0)]).unwrap();
+        let result =
+            builtin_abs(&[Value::Integer(0)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(0));
     }
 
     #[test]
     fn test_builtin_abs_positive() {
-        let result = builtin_abs(&[Value::Integer(42)]).unwrap();
+        let result =
+            builtin_abs(&[Value::Integer(42)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -2113,7 +2132,8 @@ mod tests {
     #[test]
     fn test_builtin_reverse_array() {
         let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
-        let result = builtin_reverse(&[Value::Array(Arc::from(arr))]).unwrap();
+        let result = builtin_reverse(&[Value::Array(Arc::from(arr))])
+            .expect("builtin function should succeed in test");
 
         if let Value::Array(reversed) = result {
             assert_eq!(reversed.len(), 3);
@@ -2128,7 +2148,8 @@ mod tests {
     #[test]
     fn test_builtin_reverse_empty() {
         let arr = vec![];
-        let result = builtin_reverse(&[Value::Array(Arc::from(arr))]).unwrap();
+        let result = builtin_reverse(&[Value::Array(Arc::from(arr))])
+            .expect("builtin function should succeed in test");
 
         if let Value::Array(reversed) = result {
             assert_eq!(reversed.len(), 0);
@@ -2149,7 +2170,8 @@ mod tests {
     #[test]
     fn test_builtin_sort_integers() {
         let arr = vec![Value::Integer(3), Value::Integer(1), Value::Integer(2)];
-        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))])
+            .expect("builtin function should succeed in test");
 
         if let Value::Array(sorted) = result {
             assert_eq!(sorted[0], Value::Integer(1));
@@ -2163,7 +2185,8 @@ mod tests {
     #[test]
     fn test_builtin_sort_floats() {
         let arr = vec![Value::Float(3.5), Value::Float(1.2), Value::Float(2.8)];
-        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))])
+            .expect("builtin function should succeed in test");
 
         if let Value::Array(sorted) = result {
             assert_eq!(sorted[0], Value::Float(1.2));
@@ -2181,7 +2204,8 @@ mod tests {
             Value::from_string("alice".to_string()),
             Value::from_string("bob".to_string()),
         ];
-        let result = builtin_sort(&[Value::Array(Arc::from(arr))]).unwrap();
+        let result = builtin_sort(&[Value::Array(Arc::from(arr))])
+            .expect("builtin function should succeed in test");
 
         if let Value::Array(sorted) = result {
             assert_eq!(sorted[0], Value::from_string("alice".to_string()));
@@ -2208,7 +2232,7 @@ mod tests {
 
     #[test]
     fn test_builtin_env_args() {
-        let result = builtin_env_args(&[]).unwrap();
+        let result = builtin_env_args(&[]).expect("builtin function should succeed in test");
 
         if let Value::Array(args) = result {
             // Should return array of strings (at minimum the program name)
@@ -2229,7 +2253,8 @@ mod tests {
         // Set a test environment variable
         std::env::set_var("RUCHY_TEST_VAR", "test_value");
 
-        let result = builtin_env_var(&[Value::from_string("RUCHY_TEST_VAR".to_string())]).unwrap();
+        let result = builtin_env_var(&[Value::from_string("RUCHY_TEST_VAR".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("test_value".to_string()));
 
         // Clean up
@@ -2270,12 +2295,15 @@ mod tests {
             Value::from_string("RUCHY_TEST_SET_VAR".to_string()),
             Value::from_string("new_value".to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Nil);
 
         // Verify it was set
-        assert_eq!(std::env::var("RUCHY_TEST_SET_VAR").unwrap(), "new_value");
+        assert_eq!(
+            std::env::var("RUCHY_TEST_SET_VAR").expect("env var should be set in test"),
+            "new_value"
+        );
 
         // Clean up
         std::env::remove_var("RUCHY_TEST_SET_VAR");
@@ -2301,7 +2329,7 @@ mod tests {
 
         let result =
             builtin_env_remove_var(&[Value::from_string("RUCHY_TEST_REMOVE_VAR".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
 
         // Verify it was removed
@@ -2313,7 +2341,7 @@ mod tests {
         // Removing non-existent variable should succeed
         let result =
             builtin_env_remove_var(&[Value::from_string("RUCHY_NEVER_EXISTED".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
     }
 
@@ -2332,7 +2360,7 @@ mod tests {
 
     #[test]
     fn test_builtin_env_vars() {
-        let result = builtin_env_vars(&[]).unwrap();
+        let result = builtin_env_vars(&[]).expect("builtin function should succeed in test");
 
         if let Value::Object(vars) = result {
             // Should have at least some environment variables
@@ -2356,7 +2384,7 @@ mod tests {
 
     #[test]
     fn test_builtin_env_current_dir() {
-        let result = builtin_env_current_dir(&[]).unwrap();
+        let result = builtin_env_current_dir(&[]).expect("builtin function should succeed in test");
 
         if let Value::String(dir) = result {
             // Should be a valid path
@@ -2376,21 +2404,25 @@ mod tests {
     #[test]
     fn test_builtin_env_set_current_dir() {
         // Save current directory
-        let original_dir = std::env::current_dir().unwrap();
+        let original_dir =
+            std::env::current_dir().expect("builtin function should succeed in test");
 
         // Change to temp directory
         let temp_dir = std::env::temp_dir();
         let result = builtin_env_set_current_dir(&[Value::from_string(
             temp_dir.to_string_lossy().to_string(),
         )])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
 
         // Verify it changed
-        assert_eq!(std::env::current_dir().unwrap(), temp_dir);
+        assert_eq!(
+            std::env::current_dir().expect("should get current dir in test"),
+            temp_dir
+        );
 
         // Restore original directory
-        std::env::set_current_dir(&original_dir).unwrap();
+        std::env::set_current_dir(&original_dir).expect("builtin function should succeed in test");
     }
 
     #[test]
@@ -2418,7 +2450,7 @@ mod tests {
 
     #[test]
     fn test_builtin_env_temp_dir() {
-        let result = builtin_env_temp_dir(&[]).unwrap();
+        let result = builtin_env_temp_dir(&[]).expect("builtin function should succeed in test");
 
         if let Value::String(temp_dir) = result {
             // Should be a valid path that exists
@@ -2455,7 +2487,7 @@ mod tests {
 
         let result =
             builtin_fs_read(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("Hello, World!".to_string()));
 
         drop(temp_dir);
@@ -2478,7 +2510,7 @@ mod tests {
             Value::from_string(file_path.to_string_lossy().to_string()),
             Value::from_string("Test content".to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Nil);
         let content = std::fs::read_to_string(&file_path).expect("Failed to read file");
@@ -2493,7 +2525,7 @@ mod tests {
 
         let result =
             builtin_fs_exists(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_bool(true));
 
         drop(temp_dir);
@@ -2504,7 +2536,7 @@ mod tests {
         let result = builtin_fs_exists(&[Value::from_string(
             "/tmp/nonexistent_file_xyz123.txt".to_string(),
         )])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::from_bool(false));
     }
 
@@ -2515,7 +2547,7 @@ mod tests {
 
         let result =
             builtin_fs_create_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
         assert!(dir_path.exists() && dir_path.is_dir());
 
@@ -2529,7 +2561,7 @@ mod tests {
 
         let result =
             builtin_fs_remove_file(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
         assert!(!file_path.exists(), "File should be removed");
 
@@ -2545,7 +2577,7 @@ mod tests {
 
         let result =
             builtin_fs_remove_dir(&[Value::from_string(dir_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
         assert!(!dir_path.exists(), "Directory should be removed");
 
@@ -2561,7 +2593,7 @@ mod tests {
             Value::from_string(source_path.to_string_lossy().to_string()),
             Value::from_string(dest_path.to_string_lossy().to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Nil);
         assert!(dest_path.exists());
@@ -2580,7 +2612,7 @@ mod tests {
             Value::from_string(old_path.to_string_lossy().to_string()),
             Value::from_string(new_path.to_string_lossy().to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Nil);
         assert!(!old_path.exists(), "Old file should not exist");
@@ -2595,15 +2627,23 @@ mod tests {
 
         let result =
             builtin_fs_metadata(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
 
         if let Value::Object(meta) = result {
             assert!(meta.contains_key("is_file"));
             assert!(meta.contains_key("is_dir"));
             assert!(meta.contains_key("size")); // Key is "size" not "len"
                                                 // Verify the values are correct types
-            assert_eq!(meta.get("is_file").unwrap(), &Value::Bool(true));
-            assert_eq!(meta.get("is_dir").unwrap(), &Value::Bool(false));
+            assert_eq!(
+                meta.get("is_file")
+                    .expect("is_file key should exist in metadata"),
+                &Value::Bool(true)
+            );
+            assert_eq!(
+                meta.get("is_dir")
+                    .expect("is_dir key should exist in metadata"),
+                &Value::Bool(false)
+            );
         } else {
             panic!("Expected Object for metadata");
         }
@@ -2622,7 +2662,7 @@ mod tests {
         let result = builtin_fs_read_dir(&[Value::from_string(
             temp_dir.path().to_string_lossy().to_string(),
         )])
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::Array(entries) = result {
             assert!(entries.len() >= 2, "Should have at least 2 entries");
@@ -2639,7 +2679,7 @@ mod tests {
 
         let result =
             builtin_fs_canonicalize(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
 
         if let Value::String(canonical_path) = result {
             assert!(!canonical_path.is_empty());
@@ -2656,7 +2696,7 @@ mod tests {
 
         let result =
             builtin_fs_is_file(&[Value::from_string(file_path.to_string_lossy().to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_bool(true));
 
         drop(temp_dir);
@@ -2669,7 +2709,7 @@ mod tests {
         let result = builtin_fs_is_file(&[Value::from_string(
             temp_dir.path().to_string_lossy().to_string(),
         )])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::from_bool(false));
 
         drop(temp_dir);
@@ -2697,13 +2737,15 @@ mod tests {
     // EXTREME TDD: Math functions (pow, min, max, floor, ceil, round)
     #[test]
     fn test_builtin_pow_integers() {
-        let result = builtin_pow(&[Value::Integer(2), Value::Integer(3)]).unwrap();
+        let result = builtin_pow(&[Value::Integer(2), Value::Integer(3)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(8)); // Returns Integer when both args are Integer and exp >= 0
     }
 
     #[test]
     fn test_builtin_pow_floats() {
-        let result = builtin_pow(&[Value::Float(2.0), Value::Float(3.0)]).unwrap();
+        let result = builtin_pow(&[Value::Float(2.0), Value::Float(3.0)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(8.0));
     }
 
@@ -2718,13 +2760,15 @@ mod tests {
 
     #[test]
     fn test_builtin_min_integers() {
-        let result = builtin_min(&[Value::Integer(5), Value::Integer(3)]).unwrap();
+        let result = builtin_min(&[Value::Integer(5), Value::Integer(3)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(3));
     }
 
     #[test]
     fn test_builtin_min_floats() {
-        let result = builtin_min(&[Value::Float(5.5), Value::Float(3.3)]).unwrap();
+        let result = builtin_min(&[Value::Float(5.5), Value::Float(3.3)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(3.3));
     }
 
@@ -2737,13 +2781,15 @@ mod tests {
 
     #[test]
     fn test_builtin_max_integers() {
-        let result = builtin_max(&[Value::Integer(5), Value::Integer(3)]).unwrap();
+        let result = builtin_max(&[Value::Integer(5), Value::Integer(3)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_builtin_max_floats() {
-        let result = builtin_max(&[Value::Float(5.5), Value::Float(3.3)]).unwrap();
+        let result = builtin_max(&[Value::Float(5.5), Value::Float(3.3)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(5.5));
     }
 
@@ -2756,13 +2802,15 @@ mod tests {
 
     #[test]
     fn test_builtin_floor_positive() {
-        let result = builtin_floor(&[Value::Float(3.7)]).unwrap();
+        let result =
+            builtin_floor(&[Value::Float(3.7)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(3)); // Returns Integer, not Float
     }
 
     #[test]
     fn test_builtin_floor_negative() {
-        let result = builtin_floor(&[Value::Float(-3.7)]).unwrap();
+        let result =
+            builtin_floor(&[Value::Float(-3.7)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(-4)); // Returns Integer, not Float
     }
 
@@ -2774,13 +2822,15 @@ mod tests {
 
     #[test]
     fn test_builtin_ceil_positive() {
-        let result = builtin_ceil(&[Value::Float(3.2)]).unwrap();
+        let result =
+            builtin_ceil(&[Value::Float(3.2)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(4)); // Returns Integer, not Float
     }
 
     #[test]
     fn test_builtin_ceil_negative() {
-        let result = builtin_ceil(&[Value::Float(-3.2)]).unwrap();
+        let result =
+            builtin_ceil(&[Value::Float(-3.2)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(-3)); // Returns Integer, not Float
     }
 
@@ -2791,13 +2841,15 @@ mod tests {
 
     #[test]
     fn test_builtin_round_positive() {
-        let result = builtin_round(&[Value::Float(3.5)]).unwrap();
+        let result =
+            builtin_round(&[Value::Float(3.5)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(4)); // Returns Integer, not Float
     }
 
     #[test]
     fn test_builtin_round_negative() {
-        let result = builtin_round(&[Value::Float(-3.5)]).unwrap();
+        let result =
+            builtin_round(&[Value::Float(-3.5)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(-4)); // Returns Integer, not Float
     }
 
@@ -2809,40 +2861,46 @@ mod tests {
     // EXTREME TDD: String functions (to_string, parse_int, parse_float)
     #[test]
     fn test_builtin_to_string_integer() {
-        let result = builtin_to_string(&[Value::Integer(42)]).unwrap();
+        let result = builtin_to_string(&[Value::Integer(42)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("42".to_string()));
     }
 
     #[test]
     fn test_builtin_to_string_float() {
-        let result = builtin_to_string(&[Value::Float(std::f64::consts::PI)]).unwrap();
+        let result = builtin_to_string(&[Value::Float(std::f64::consts::PI)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string(std::f64::consts::PI.to_string()));
     }
 
     #[test]
     fn test_builtin_to_string_bool() {
-        let result = builtin_to_string(&[Value::from_bool(true)]).unwrap();
+        let result = builtin_to_string(&[Value::from_bool(true)])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("true".to_string()));
     }
 
     // EXTREME TDD Sprint 4: to_string() edge cases
     #[test]
     fn test_builtin_to_string_nil() {
-        let result = builtin_to_string(&[Value::Nil]).unwrap();
+        let result =
+            builtin_to_string(&[Value::Nil]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("nil".to_string()));
     }
 
     #[test]
     fn test_builtin_to_string_string_with_quotes() {
         // to_string() uses Display formatting, which adds quotes for strings
-        let result = builtin_to_string(&[Value::from_string("hello".to_string())]).unwrap();
+        let result = builtin_to_string(&[Value::from_string("hello".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("\"hello\"".to_string()));
     }
 
     #[test]
     fn test_builtin_to_string_array() {
         let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
-        let result = builtin_to_string(&[Value::from_array(arr)]).unwrap();
+        let result = builtin_to_string(&[Value::from_array(arr)])
+            .expect("builtin function should succeed in test");
         // Should format array with Display trait
         assert!(matches!(result, Value::String(_)));
     }
@@ -2851,14 +2909,16 @@ mod tests {
     fn test_builtin_to_string_object() {
         let mut map = HashMap::new();
         map.insert("key".to_string(), Value::from_string("value".to_string()));
-        let result = builtin_to_string(&[Value::Object(Arc::new(map))]).unwrap();
+        let result = builtin_to_string(&[Value::Object(Arc::new(map))])
+            .expect("builtin function should succeed in test");
         // Should format object with Display trait
         assert!(matches!(result, Value::String(_)));
     }
 
     #[test]
     fn test_builtin_parse_int_valid() {
-        let result = builtin_parse_int(&[Value::from_string("42".to_string())]).unwrap();
+        let result = builtin_parse_int(&[Value::from_string("42".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -2876,8 +2936,8 @@ mod tests {
 
     #[test]
     fn test_builtin_parse_float_valid() {
-        let result =
-            builtin_parse_float(&[Value::from_string(std::f64::consts::PI.to_string())]).unwrap();
+        let result = builtin_parse_float(&[Value::from_string(std::f64::consts::PI.to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Float(std::f64::consts::PI));
     }
 
@@ -2929,13 +2989,15 @@ mod tests {
 
     #[test]
     fn test_builtin_is_nil_true() {
-        let result = builtin_is_nil(&[Value::Nil]).unwrap();
+        let result =
+            builtin_is_nil(&[Value::Nil]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_bool(true));
     }
 
     #[test]
     fn test_builtin_is_nil_false() {
-        let result = builtin_is_nil(&[Value::Integer(42)]).unwrap();
+        let result =
+            builtin_is_nil(&[Value::Integer(42)]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_bool(false));
     }
 
@@ -2949,7 +3011,7 @@ mod tests {
     fn test_builtin_print() {
         let result = builtin_print(&[Value::from_string("Hello".to_string())]);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(result.expect("result should be Ok in test"), Value::Nil);
     }
 
     // EXTREME TDD Sprint 4 TIER 2: print() edge cases
@@ -2957,7 +3019,7 @@ mod tests {
     fn test_builtin_print_empty() {
         let result = builtin_print(&[]);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(result.expect("result should be Ok in test"), Value::Nil);
     }
 
     #[test]
@@ -2969,7 +3031,7 @@ mod tests {
         ];
         let result = builtin_print(&args);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(result.expect("result should be Ok in test"), Value::Nil);
     }
 
     #[test]
@@ -2977,7 +3039,10 @@ mod tests {
         let result = builtin_dbg(&[Value::Integer(42)]);
         assert!(result.is_ok());
         // dbg returns the value it debugs, not Nil
-        assert_eq!(result.unwrap(), Value::Integer(42));
+        assert_eq!(
+            result.expect("result should be Ok in test"),
+            Value::Integer(42)
+        );
     }
 
     // EXTREME TDD Sprint 4 TIER 2: dbg() edge cases
@@ -2987,7 +3052,7 @@ mod tests {
         let result = builtin_dbg(&args);
         assert!(result.is_ok());
         // dbg with multiple args returns an array
-        match result.unwrap() {
+        match result.expect("result should be Ok in test") {
             Value::Array(arr) => assert_eq!(arr.len(), 3),
             _ => panic!("Expected array return from dbg with multiple args"),
         }
@@ -3005,13 +3070,17 @@ mod tests {
         let result = builtin_dbg(&args);
         assert!(result.is_ok());
         // Returns array for multiple args
-        assert!(matches!(result.unwrap(), Value::Array(_)));
+        assert!(matches!(
+            result.expect("result should be Ok in test"),
+            Value::Array(_)
+        ));
     }
 
     #[test]
     fn test_builtin_push_array() {
         let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
-        let result = builtin_push(&[arr, Value::Integer(3)]).unwrap();
+        let result = builtin_push(&[arr, Value::Integer(3)])
+            .expect("builtin function should succeed in test");
         match result {
             Value::Array(items) => {
                 assert_eq!(items.len(), 3);
@@ -3031,7 +3100,7 @@ mod tests {
     fn test_builtin_pop_array() {
         let arr =
             Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].into());
-        let result = builtin_pop(&[arr]).unwrap();
+        let result = builtin_pop(&[arr]).expect("builtin function should succeed in test");
         // NOTE: pop() returns the POPPED VALUE, not the modified array
         assert_eq!(result, Value::Integer(3));
     }
@@ -3040,7 +3109,7 @@ mod tests {
     fn test_builtin_pop_empty_array() {
         let arr = Value::Array(vec![].into());
         // NOTE: pop() on empty array returns Nil, not an error
-        let result = builtin_pop(&[arr]).unwrap();
+        let result = builtin_pop(&[arr]).expect("builtin function should succeed in test");
         assert_eq!(result, Value::Nil);
     }
 
@@ -3057,7 +3126,7 @@ mod tests {
             Value::from_string("/home".to_string()),
             Value::from_string("user".to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(matches!(result, Value::String(_)));
         if let Value::String(s) = result {
             assert!(s.as_ref().contains("home") && s.as_ref().contains("user"));
@@ -3080,7 +3149,8 @@ mod tests {
             Value::from_string("user".to_string()),
             Value::from_string("docs".to_string()),
         ];
-        let result = builtin_path_join_many(&[Value::Array(components.into())]).unwrap();
+        let result = builtin_path_join_many(&[Value::Array(components.into())])
+            .expect("builtin function should succeed in test");
         assert!(matches!(result, Value::String(_)));
     }
 
@@ -3092,14 +3162,15 @@ mod tests {
 
     #[test]
     fn test_builtin_path_parent() {
-        let result =
-            builtin_path_parent(&[Value::from_string("/home/user/file.txt".to_string())]).unwrap();
+        let result = builtin_path_parent(&[Value::from_string("/home/user/file.txt".to_string())])
+            .expect("builtin function should succeed in test");
         assert!(matches!(result, Value::String(_)));
     }
 
     #[test]
     fn test_builtin_path_parent_root() {
-        let result = builtin_path_parent(&[Value::from_string("/".to_string())]).unwrap();
+        let result = builtin_path_parent(&[Value::from_string("/".to_string())])
+            .expect("builtin function should succeed in test");
         // Root has no parent
         assert_eq!(result, Value::Nil);
     }
@@ -3108,13 +3179,14 @@ mod tests {
     fn test_builtin_path_file_name() {
         let result =
             builtin_path_file_name(&[Value::from_string("/home/user/file.txt".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("file.txt".to_string()));
     }
 
     #[test]
     fn test_builtin_path_file_name_no_file() {
-        let result = builtin_path_file_name(&[Value::from_string("/".to_string())]).unwrap();
+        let result = builtin_path_file_name(&[Value::from_string("/".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Nil);
     }
 
@@ -3122,7 +3194,7 @@ mod tests {
     fn test_builtin_path_file_stem() {
         let result =
             builtin_path_file_stem(&[Value::from_string("/home/user/file.txt".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("file".to_string()));
     }
 
@@ -3130,34 +3202,34 @@ mod tests {
     fn test_builtin_path_extension() {
         let result =
             builtin_path_extension(&[Value::from_string("/home/user/file.txt".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("txt".to_string()));
     }
 
     #[test]
     fn test_builtin_path_extension_no_ext() {
-        let result =
-            builtin_path_extension(&[Value::from_string("/home/user/file".to_string())]).unwrap();
+        let result = builtin_path_extension(&[Value::from_string("/home/user/file".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Nil);
     }
 
     #[test]
     fn test_builtin_path_is_absolute() {
-        let result =
-            builtin_path_is_absolute(&[Value::from_string("/home/user".to_string())]).unwrap();
+        let result = builtin_path_is_absolute(&[Value::from_string("/home/user".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Bool(true));
-        let result2 =
-            builtin_path_is_absolute(&[Value::from_string("relative/path".to_string())]).unwrap();
+        let result2 = builtin_path_is_absolute(&[Value::from_string("relative/path".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result2, Value::Bool(false));
     }
 
     #[test]
     fn test_builtin_path_is_relative() {
-        let result =
-            builtin_path_is_relative(&[Value::from_string("relative/path".to_string())]).unwrap();
+        let result = builtin_path_is_relative(&[Value::from_string("relative/path".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Bool(true));
-        let result2 =
-            builtin_path_is_relative(&[Value::from_string("/absolute".to_string())]).unwrap();
+        let result2 = builtin_path_is_relative(&[Value::from_string("/absolute".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result2, Value::Bool(false));
     }
 
@@ -3166,7 +3238,7 @@ mod tests {
         // Create a temp file for testing canonicalize
         use std::fs;
         let temp_file = "/tmp/ruchy_test_canonicalize.txt";
-        fs::write(temp_file, "test").unwrap();
+        fs::write(temp_file, "test").expect("builtin function should succeed in test");
         let result = builtin_path_canonicalize(&[Value::from_string(temp_file.to_string())]);
         fs::remove_file(temp_file).ok();
         assert!(result.is_ok());
@@ -3186,7 +3258,7 @@ mod tests {
             Value::from_string("/home/user/file.txt".to_string()),
             Value::from_string("rs".to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("/home/user/file.rs".to_string()));
     }
 
@@ -3196,7 +3268,7 @@ mod tests {
             Value::from_string("/home/user/file.txt".to_string()),
             Value::from_string("newfile.rs".to_string()),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::from_string("/home/user/newfile.rs".to_string())
@@ -3205,8 +3277,8 @@ mod tests {
 
     #[test]
     fn test_builtin_path_components() {
-        let result =
-            builtin_path_components(&[Value::from_string("/home/user/docs".to_string())]).unwrap();
+        let result = builtin_path_components(&[Value::from_string("/home/user/docs".to_string())])
+            .expect("builtin function should succeed in test");
         assert!(matches!(result, Value::Array(_)));
         if let Value::Array(arr) = result {
             assert!(arr.len() >= 3);
@@ -3217,7 +3289,7 @@ mod tests {
     fn test_builtin_path_normalize() {
         let result =
             builtin_path_normalize(&[Value::from_string("/home/./user/../docs".to_string())])
-                .unwrap();
+                .expect("operation should succeed in test");
         assert!(matches!(result, Value::String(_)));
         if let Value::String(s) = result {
             // Should resolve . and ..
@@ -3227,8 +3299,8 @@ mod tests {
 
     #[test]
     fn test_builtin_path_normalize_with_dots() {
-        let result =
-            builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())]).unwrap();
+        let result = builtin_path_normalize(&[Value::from_string("/a/b/../c/./d".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("/a/c/d".to_string()));
     }
 
@@ -3240,7 +3312,8 @@ mod tests {
     #[test]
     fn test_builtin_json_parse() {
         let json_str = r#"{"name": "test", "value": 42}"#;
-        let result = builtin_json_parse(&[Value::from_string(json_str.to_string())]).unwrap();
+        let result = builtin_json_parse(&[Value::from_string(json_str.to_string())])
+            .expect("builtin function should succeed in test");
         assert!(matches!(result, Value::Object(_)));
     }
 
@@ -3265,7 +3338,8 @@ mod tests {
                 .cloned()
                 .collect(),
         ));
-        let result = builtin_json_stringify(&[obj]).unwrap();
+        let result =
+            builtin_json_stringify(&[obj]).expect("builtin function should succeed in test");
         assert!(matches!(result, Value::String(_)));
     }
 
@@ -3283,7 +3357,7 @@ mod tests {
                 .cloned()
                 .collect(),
         ));
-        let result = builtin_json_pretty(&[obj]).unwrap();
+        let result = builtin_json_pretty(&[obj]).expect("builtin function should succeed in test");
         if let Value::String(s) = result {
             assert!(s.contains('\n')); // Pretty-printed should have newlines
         } else {
@@ -3301,14 +3375,16 @@ mod tests {
     fn test_builtin_json_read() {
         use std::io::Write;
         let temp_path = "/tmp/test_json_read.json";
-        let mut file = std::fs::File::create(temp_path).unwrap();
-        write!(file, r#"{{"test": true}}"#).unwrap();
+        let mut file =
+            std::fs::File::create(temp_path).expect("builtin function should succeed in test");
+        write!(file, r#"{{"test": true}}"#).expect("builtin function should succeed in test");
         drop(file);
 
-        let result = builtin_json_read(&[Value::from_string(temp_path.to_string())]).unwrap();
+        let result = builtin_json_read(&[Value::from_string(temp_path.to_string())])
+            .expect("builtin function should succeed in test");
         assert!(matches!(result, Value::Object(_)));
 
-        std::fs::remove_file(temp_path).unwrap();
+        std::fs::remove_file(temp_path).expect("builtin function should succeed in test");
     }
 
     #[test]
@@ -3329,11 +3405,12 @@ mod tests {
                 .collect(),
         ));
 
-        let result = builtin_json_write(&[Value::from_string(temp_path.to_string()), obj]).unwrap();
+        let result = builtin_json_write(&[Value::from_string(temp_path.to_string()), obj])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Bool(true));
         assert!(std::path::Path::new(temp_path).exists());
 
-        std::fs::remove_file(temp_path).unwrap();
+        std::fs::remove_file(temp_path).expect("builtin function should succeed in test");
     }
 
     #[test]
@@ -3346,15 +3423,16 @@ mod tests {
     #[test]
     fn test_builtin_json_validate_valid() {
         let valid_json = r#"{"key": "value"}"#;
-        let result = builtin_json_validate(&[Value::from_string(valid_json.to_string())]).unwrap();
+        let result = builtin_json_validate(&[Value::from_string(valid_json.to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn test_builtin_json_validate_invalid() {
         let invalid_json = "{invalid}";
-        let result =
-            builtin_json_validate(&[Value::from_string(invalid_json.to_string())]).unwrap();
+        let result = builtin_json_validate(&[Value::from_string(invalid_json.to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -3367,38 +3445,43 @@ mod tests {
     // json_type tests (7 types: null, boolean, number, string, array, object, + error)
     #[test]
     fn test_builtin_json_type_null() {
-        let result = builtin_json_type(&[Value::from_string("null".to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string("null".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("null".to_string()));
     }
 
     #[test]
     fn test_builtin_json_type_boolean() {
-        let result = builtin_json_type(&[Value::from_string("true".to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string("true".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("boolean".to_string()));
     }
 
     #[test]
     fn test_builtin_json_type_number() {
-        let result = builtin_json_type(&[Value::from_string("42".to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string("42".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("number".to_string()));
     }
 
     #[test]
     fn test_builtin_json_type_string() {
-        let result = builtin_json_type(&[Value::from_string(r#""test""#.to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string(r#""test""#.to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("string".to_string()));
     }
 
     #[test]
     fn test_builtin_json_type_array() {
-        let result = builtin_json_type(&[Value::from_string("[1,2,3]".to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string("[1,2,3]".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("array".to_string()));
     }
 
     #[test]
     fn test_builtin_json_type_object() {
-        let result =
-            builtin_json_type(&[Value::from_string(r#"{"key":"value"}"#.to_string())]).unwrap();
+        let result = builtin_json_type(&[Value::from_string(r#"{"key":"value"}"#.to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::from_string("object".to_string()));
     }
 
@@ -3424,7 +3507,8 @@ mod tests {
                 .collect(),
         ));
 
-        let result = builtin_json_merge(&[obj1, obj2]).unwrap();
+        let result =
+            builtin_json_merge(&[obj1, obj2]).expect("builtin function should succeed in test");
         assert!(matches!(result, Value::Object(_)));
     }
 
@@ -3443,7 +3527,8 @@ mod tests {
                 .cloned()
                 .collect(),
         ));
-        let result = builtin_json_get(&[obj, Value::from_string("key".to_string())]).unwrap();
+        let result = builtin_json_get(&[obj, Value::from_string("key".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -3455,8 +3540,8 @@ mod tests {
                 .cloned()
                 .collect(),
         ));
-        let result =
-            builtin_json_get(&[obj, Value::from_string("nonexistent".to_string())]).unwrap();
+        let result = builtin_json_get(&[obj, Value::from_string("nonexistent".to_string())])
+            .expect("builtin function should succeed in test");
         assert_eq!(result, Value::Nil);
     }
 
@@ -3480,7 +3565,7 @@ mod tests {
             Value::from_string("key".to_string()),
             Value::Integer(100),
         ])
-        .unwrap();
+        .expect("operation should succeed in test");
         assert!(matches!(result, Value::Object(_)));
     }
 
@@ -3503,15 +3588,19 @@ mod property_tests {
         #[test]
         fn test_abs_idempotent(n: i64) {
             let val = Value::Integer(n);
-            let result1 = builtin_abs(&[val]).unwrap();
-            let result2 = builtin_abs(std::slice::from_ref(&result1)).unwrap();
+            let result1 = builtin_abs(&[val])
+        .expect("builtin function should succeed in test");
+            let result2 = builtin_abs(std::slice::from_ref(&result1))
+        .expect("builtin function should succeed in test");
             prop_assert_eq!(result1, result2);
         }
 
         #[test]
         fn test_min_max_consistency(a: i64, b: i64) {
-            let min_result = builtin_min(&[Value::Integer(a), Value::Integer(b)]).unwrap();
-            let max_result = builtin_max(&[Value::Integer(a), Value::Integer(b)]).unwrap();
+            let min_result = builtin_min(&[Value::Integer(a), Value::Integer(b)])
+        .expect("builtin function should succeed in test");
+            let max_result = builtin_max(&[Value::Integer(a), Value::Integer(b)])
+        .expect("builtin function should succeed in test");
 
             // min and max should return one of the inputs
             prop_assert!(min_result == Value::Integer(a) || min_result == Value::Integer(b));
@@ -3527,8 +3616,10 @@ mod property_tests {
         #[test]
         fn test_to_string_parse_roundtrip(n: i64) {
             let val = Value::Integer(n);
-            let str_val = builtin_to_string(&[val]).unwrap();
-            let parsed = builtin_parse_int(&[str_val]).unwrap();
+            let str_val = builtin_to_string(&[val])
+        .expect("builtin function should succeed in test");
+            let parsed = builtin_parse_int(&[str_val])
+        .expect("builtin function should succeed in test");
             prop_assert_eq!(parsed, Value::Integer(n));
         }
     }
