@@ -87,12 +87,12 @@ impl<'a> CallFrame<'a> {
 /// // Compile: 42
 /// let mut compiler = Compiler::new("test".to_string());
 /// let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
-/// compiler.compile_expr(&expr).unwrap();
+/// compiler.compile_expr(&expr).expect("Compilation should succeed");
 /// let chunk = compiler.finalize();
 ///
 /// // Execute
 /// let mut vm = VM::new();
-/// let result = vm.execute(&chunk).unwrap();
+/// let result = vm.execute(&chunk).expect("Execution should succeed");
 /// assert_eq!(result, Value::Integer(42));
 /// ```
 #[derive(Debug)]
@@ -233,7 +233,9 @@ impl VM {
                         ref class_name,
                         ..
                     } => {
-                        let fields_read = fields.read().unwrap();
+                        let fields_read = fields
+                            .read()
+                            .expect("RwLock poisoned: class fields lock is corrupted");
                         fields_read.get(field_name).cloned().ok_or_else(|| {
                             format!("Field '{field_name}' not found in class {class_name}")
                         })
@@ -999,12 +1001,16 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1029,12 +1035,16 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1059,12 +1069,16 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1089,12 +1103,16 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1120,12 +1138,16 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1151,12 +1173,16 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(100));
     }
@@ -1180,12 +1206,16 @@ mod tests {
             ),
         ];
         let block = Expr::new(ExprKind::Block(exprs), Span::default());
-        compiler.compile_expr(&block).unwrap();
+        compiler
+            .compile_expr(&block)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         // Execute
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(3));
     }
@@ -1202,7 +1232,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let frame = CallFrame::new(&chunk);
@@ -1222,7 +1254,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let frame = CallFrame::new(&chunk);
@@ -1230,7 +1264,9 @@ mod tests {
 
         assert!(instruction.is_some(), "Should fetch instruction at PC 0");
         assert_eq!(
-            instruction.unwrap().opcode(),
+            instruction
+                .expect("instruction should be Some (verified by assert)")
+                .opcode(),
             OpCode::Const as u8,
             "First instruction should be Const (load constant)"
         );
@@ -1244,7 +1280,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut frame = CallFrame::new(&chunk);
@@ -1266,7 +1304,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut frame = CallFrame::new(&chunk);
@@ -1287,7 +1327,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut frame = CallFrame::new(&chunk);
@@ -1305,7 +1347,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut frame = CallFrame::new(&chunk);
@@ -1323,7 +1367,9 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut frame = CallFrame::new(&chunk);
@@ -1369,7 +1415,9 @@ mod tests {
         let chunk = compiler.finalize(); // Empty bytecode
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         // Empty bytecode returns register 0 (Nil by default)
         assert_eq!(result, Value::Nil, "Empty bytecode should return Nil");
@@ -1398,10 +1446,14 @@ mod tests {
             },
             Span::default(),
         );
-        compiler1.compile_expr(&expr1).unwrap();
+        compiler1
+            .compile_expr(&expr1)
+            .expect("compile_expr should succeed in test");
         let chunk1 = compiler1.finalize();
 
-        let result1 = vm.execute(&chunk1).unwrap();
+        let result1 = vm
+            .execute(&chunk1)
+            .expect("vm.execute should succeed in test");
         assert_eq!(result1, Value::Integer(30));
 
         // Execute second chunk: 5 * 6
@@ -1422,10 +1474,14 @@ mod tests {
             },
             Span::default(),
         );
-        compiler2.compile_expr(&expr2).unwrap();
+        compiler2
+            .compile_expr(&expr2)
+            .expect("compile_expr should succeed in test");
         let chunk2 = compiler2.finalize();
 
-        let result2 = vm.execute(&chunk2).unwrap();
+        let result2 = vm
+            .execute(&chunk2)
+            .expect("vm.execute should succeed in test");
         assert_eq!(result2, Value::Integer(30));
     }
 
@@ -1440,10 +1496,14 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        compiler1.compile_expr(&expr1).unwrap();
+        compiler1
+            .compile_expr(&expr1)
+            .expect("compile_expr should succeed in test");
         let chunk1 = compiler1.finalize();
 
-        let result1 = vm.execute(&chunk1).unwrap();
+        let result1 = vm
+            .execute(&chunk1)
+            .expect("vm.execute should succeed in test");
         assert_eq!(result1, Value::Integer(42));
 
         // Execute second chunk: loads 100 into register 0
@@ -1452,10 +1512,14 @@ mod tests {
             ExprKind::Literal(Literal::Integer(100, None)),
             Span::default(),
         );
-        compiler2.compile_expr(&expr2).unwrap();
+        compiler2
+            .compile_expr(&expr2)
+            .expect("compile_expr should succeed in test");
         let chunk2 = compiler2.finalize();
 
-        let result2 = vm.execute(&chunk2).unwrap();
+        let result2 = vm
+            .execute(&chunk2)
+            .expect("vm.execute should succeed in test");
         assert_eq!(
             result2,
             Value::Integer(100),
@@ -1487,11 +1551,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1516,11 +1584,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1545,11 +1617,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1579,11 +1655,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -1602,11 +1682,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Float(-std::f64::consts::PI));
     }
@@ -1625,11 +1709,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(false));
     }
@@ -1648,11 +1736,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1681,11 +1773,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1710,11 +1806,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(false));
     }
@@ -1739,11 +1839,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1768,11 +1872,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1797,11 +1905,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1826,11 +1938,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1853,11 +1969,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1876,11 +1996,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(false));
     }
@@ -1899,11 +2023,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1922,11 +2050,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(false));
     }
@@ -1954,11 +2086,15 @@ mod tests {
             ),
         ];
         let expr = Expr::new(ExprKind::List(elements), Span::default());
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         match result {
             Value::Array(arr) => {
@@ -1976,11 +2112,15 @@ mod tests {
         // Compile: []
         let mut compiler = Compiler::new("test".to_string());
         let expr = Expr::new(ExprKind::List(vec![]), Span::default());
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         match result {
             Value::Array(arr) => assert_eq!(arr.len(), 0),
@@ -2004,11 +2144,15 @@ mod tests {
             ),
         ];
         let expr = Expr::new(ExprKind::Tuple(elements), Span::default());
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         match result {
             Value::Tuple(tuple) => {
@@ -2043,11 +2187,15 @@ mod tests {
             },
         ];
         let expr = Expr::new(ExprKind::ObjectLiteral { fields }, Span::default());
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         match result {
             Value::Object(obj) => {
@@ -2090,11 +2238,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(20));
     }
@@ -2131,11 +2283,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(30));
     }
@@ -2159,11 +2315,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::from_string("e".to_string()));
     }
@@ -2188,11 +2348,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -2221,11 +2385,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(100));
     }
@@ -2281,11 +2449,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(3));
     }
@@ -2317,11 +2489,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(20)); // Should take else branch
     }
@@ -2344,11 +2520,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -2371,11 +2551,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Nil);
     }
@@ -2405,11 +2589,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(100)); // Truthy takes then branch
     }
@@ -2442,7 +2630,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2471,7 +2661,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2506,7 +2698,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2541,7 +2735,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2576,7 +2772,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2607,7 +2805,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2633,7 +2833,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2659,7 +2861,9 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
@@ -2711,11 +2915,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(85)); // (10+20)*3-5 = 30*3-5 = 90-5 = 85
     }
@@ -2761,11 +2969,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true)); // (true&&false)||(true&&true) = false||true = true
     }
@@ -2800,11 +3012,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         match result {
             Value::Float(f) => assert!((f - 8.5).abs() < 0.001), // 3.5*2.0+1.5 = 7.0+1.5 = 8.5
@@ -2853,11 +3069,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Bool(true)); // 5>3 && 3>1 = true && true = true
     }
@@ -2884,11 +3104,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(20)); // nil is falsy, takes else
     }
@@ -2915,11 +3139,15 @@ mod tests {
             },
             Span::default(),
         );
-        compiler.compile_expr(&expr).unwrap();
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
         let chunk = compiler.finalize();
 
         let mut vm = VM::new();
-        let result = vm.execute(&chunk).unwrap();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
 
         assert_eq!(result, Value::Integer(42)); // -(-42) = 42
     }
