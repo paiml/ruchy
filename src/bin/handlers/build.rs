@@ -134,7 +134,13 @@ mod tests {
             .output()
             .expect("Failed to run cargo new");
 
-        (temp_dir, project_path.to_str().unwrap().to_string())
+        (
+            temp_dir,
+            project_path
+                .to_str()
+                .expect("Project path should be valid UTF-8")
+                .to_string(),
+        )
     }
 
     #[test]
