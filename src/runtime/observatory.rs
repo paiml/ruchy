@@ -99,8 +99,9 @@ mod tests {
     #[test]
     fn test_observatory_config_serialization() {
         let config = create_test_config();
-        let json = serde_json::to_string(&config).unwrap();
-        let deserialized: ObservatoryConfig = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&config).expect("operation should succeed in test");
+        let deserialized: ObservatoryConfig =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(config.max_traces, deserialized.max_traces);
         assert_eq!(config.enable_metrics, deserialized.enable_metrics);
     }
@@ -195,7 +196,9 @@ mod tests {
         let trace = create_test_message_trace();
         let result = observatory.trace_message(trace.clone());
         assert!(result.is_ok());
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 1);
         assert_eq!(traces[0].trace_id, trace.trace_id);
     }
@@ -207,9 +210,13 @@ mod tests {
         for i in 0..3 {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 2);
         assert_eq!(traces[0].trace_id, 1); // First trace should be evicted
         assert_eq!(traces[1].trace_id, 2);
@@ -221,11 +228,17 @@ mod tests {
                                                         // Add an old trace
         let mut old_trace = create_test_message_trace();
         old_trace.timestamp = current_timestamp() - 3600; // 1 hour ago
-        observatory.trace_message(old_trace).unwrap();
+        observatory
+            .trace_message(old_trace)
+            .expect("operation should succeed in test");
         // Add a recent trace
         let recent_trace = create_test_message_trace();
-        observatory.trace_message(recent_trace).unwrap();
-        let traces = observatory.get_traces(None, None).unwrap();
+        observatory
+            .trace_message(recent_trace)
+            .expect("operation should succeed in test");
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         // Only recent trace should remain
         assert_eq!(traces.len(), 1);
     }
@@ -236,9 +249,13 @@ mod tests {
         for i in 0..5 {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
-        let traces = observatory.get_traces(Some(3), None).unwrap();
+        let traces = observatory
+            .get_traces(Some(3), None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 3);
     }
     // ========== Message Status Tests ==========
@@ -258,8 +275,9 @@ mod tests {
     #[test]
     fn test_message_status_serialization() {
         let status = MessageStatus::Processing;
-        let json = serde_json::to_string(&status).unwrap();
-        let deserialized: MessageStatus = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&status).expect("operation should succeed in test");
+        let deserialized: MessageStatus =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(status, deserialized);
     }
     #[test]
@@ -305,8 +323,9 @@ mod tests {
     #[test]
     fn test_actor_state_serialization() {
         let state = ActorState::Processing("test".to_string());
-        let json = serde_json::to_string(&state).unwrap();
-        let deserialized: ActorState = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&state).expect("operation should succeed in test");
+        let deserialized: ActorState =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(state, deserialized);
     }
     // ========== Message Statistics Tests ==========
@@ -334,8 +353,9 @@ mod tests {
         let mut stats = MessageStats::default();
         stats.total_processed = 500;
         stats.avg_processing_time_us = 1500.0;
-        let json = serde_json::to_string(&stats).unwrap();
-        let deserialized: MessageStats = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&stats).expect("operation should succeed in test");
+        let deserialized: MessageStats =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(stats.total_processed, deserialized.total_processed);
     }
     // ========== System Metrics Tests ==========
@@ -367,8 +387,9 @@ mod tests {
         let mut metrics = SystemMetrics::default();
         metrics.active_actors = 5;
         metrics.total_memory_usage = 1_024_000;
-        let json = serde_json::to_string(&metrics).unwrap();
-        let deserialized: SystemMetrics = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&metrics).expect("operation should succeed in test");
+        let deserialized: SystemMetrics =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(metrics.active_actors, deserialized.active_actors);
         assert_eq!(metrics.total_memory_usage, deserialized.total_memory_usage);
     }
@@ -393,8 +414,9 @@ mod tests {
     #[test]
     fn test_actor_snapshot_serialization() {
         let snapshot = create_test_actor_snapshot();
-        let json = serde_json::to_string(&snapshot).unwrap();
-        let deserialized: ActorSnapshot = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&snapshot).expect("operation should succeed in test");
+        let deserialized: ActorSnapshot =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(snapshot.actor_id, deserialized.actor_id);
         assert_eq!(snapshot.name, deserialized.name);
         assert_eq!(snapshot.state, deserialized.state);
@@ -465,8 +487,9 @@ mod tests {
     #[test]
     fn test_message_trace_serialization() {
         let trace = create_test_message_trace();
-        let json = serde_json::to_string(&trace).unwrap();
-        let deserialized: MessageTrace = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&trace).expect("operation should succeed in test");
+        let deserialized: MessageTrace =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(trace.trace_id, deserialized.trace_id);
         assert_eq!(trace.status, deserialized.status);
     }
@@ -496,9 +519,13 @@ mod tests {
         assert_eq!(observatory.get_filters().len(), 1);
         // Add trace
         let trace = create_test_message_trace();
-        observatory.trace_message(trace.clone()).unwrap();
+        observatory
+            .trace_message(trace.clone())
+            .expect("operation should succeed in test");
         // Verify trace was recorded
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 1);
         assert_eq!(traces[0].trace_id, trace.trace_id);
         // Remove filter
@@ -520,9 +547,13 @@ mod tests {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
             trace.status = status.clone();
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 4);
         // Verify different statuses were recorded - count unique statuses differently
         let mut status_counts = std::collections::HashMap::new();
@@ -568,7 +599,8 @@ mod tests {
             let handle = thread::spawn(move || {
                 let mut trace = create_test_message_trace();
                 trace.trace_id = i;
-                obs.trace_message(trace).unwrap();
+                obs.trace_message(trace)
+                    .expect("operation should succeed in test");
             });
             handles.push(handle);
         }
@@ -577,7 +609,9 @@ mod tests {
             handle.join().expect("Thread failed to join");
         }
         // Verify all traces were recorded
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 5);
     }
 
@@ -588,7 +622,10 @@ mod tests {
         let observatory = create_test_observatory();
 
         // Create complex deadlock scenario: A -> B -> C -> A
-        let mut detector = observatory.deadlock_detector.lock().unwrap();
+        let mut detector = observatory
+            .deadlock_detector
+            .lock()
+            .expect("operation should succeed in test");
 
         let request_ab = BlockedRequest {
             requester: ActorId(1),
@@ -618,7 +655,9 @@ mod tests {
         detector.add_blocked_request(request_bc);
         detector.add_blocked_request(request_ca);
 
-        let cycles = detector.detect_cycles().unwrap();
+        let cycles = detector
+            .detect_cycles()
+            .expect("operation should succeed in test");
         assert!(!cycles.is_empty(), "Should detect circular dependency");
         assert_eq!(cycles[0].actors.len(), 3);
     }
@@ -679,7 +718,10 @@ mod tests {
         let observatory = create_test_observatory();
 
         // Add multiple actor snapshots with varying stats
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
 
         for i in 1..=5 {
             let snapshot = ActorSnapshot {
@@ -709,7 +751,9 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify calculations
-        let metrics = observatory.get_metrics().unwrap();
+        let metrics = observatory
+            .get_metrics()
+            .expect("operation should succeed in test");
         assert_eq!(metrics.active_actors, 5);
         assert_eq!(metrics.total_messages_processed, 1500); // 100+200+300+400+500
         assert_eq!(metrics.total_queued_messages, 150); // 10+20+30+40+50
@@ -737,11 +781,15 @@ mod tests {
                 stack_depth: i as usize,
                 correlation_id: Some(correlation_id.clone()),
             };
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
         // Verify traces can be retrieved by correlation
-        let all_traces = observatory.get_traces(None, None).unwrap();
+        let all_traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         let correlated_traces: Vec<_> = all_traces
             .iter()
             .filter(|t| t.correlation_id.as_ref() == Some(&correlation_id))
@@ -760,7 +808,10 @@ mod tests {
         let observatory = create_test_observatory();
 
         // Create hierarchical actor structure
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
 
         // Root actor
         snapshots.insert(
@@ -816,12 +867,18 @@ mod tests {
         drop(snapshots);
 
         // Verify hierarchy
-        let snapshots = observatory.get_actor_snapshots().unwrap();
-        let root = snapshots.get(&ActorId(1)).unwrap();
+        let snapshots = observatory
+            .get_actor_snapshots()
+            .expect("operation should succeed in test");
+        let root = snapshots
+            .get(&ActorId(1))
+            .expect("operation should succeed in test");
         assert_eq!(root.children.len(), 2);
         assert!(root.parent.is_none());
 
-        let child = snapshots.get(&ActorId(2)).unwrap();
+        let child = snapshots
+            .get(&ActorId(2))
+            .expect("operation should succeed in test");
         assert_eq!(child.parent, Some(ActorId(1)));
         assert_eq!(child.children.len(), 1);
     }
@@ -846,10 +903,14 @@ mod tests {
                 stack_depth: 1,
                 correlation_id: None,
             };
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 10);
 
         // Verify performance degradation trend
@@ -864,7 +925,12 @@ mod tests {
         }
 
         // Last trace should be significantly slower than first
-        assert!(processing_times.last().unwrap() > &(processing_times[0] * 10));
+        assert!(
+            processing_times
+                .last()
+                .expect("processing_times should not be empty")
+                > &(processing_times[0] * 10)
+        );
     }
 
     #[test]
@@ -872,7 +938,10 @@ mod tests {
         let observatory = create_test_observatory();
 
         // Simulate memory leak scenario
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
 
         let actor_id = ActorId(1);
         let base_time = current_timestamp();
@@ -895,11 +964,19 @@ mod tests {
         drop(snapshots);
 
         // Get final snapshot
-        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        let final_snapshot = observatory
+            .get_actor_snapshot(actor_id)
+            .expect("operation should succeed in test")
+            .expect("snapshot should exist");
         assert_eq!(final_snapshot.memory_usage, Some(1024 * 25)); // 1024 * 5^2
 
         // Memory usage should be significantly higher than baseline
-        assert!(final_snapshot.memory_usage.unwrap() > 10240); // > 10KB indicates potential leak
+        assert!(
+            final_snapshot
+                .memory_usage
+                .expect("memory_usage should be Some")
+                > 10240
+        ); // > 10KB indicates potential leak
     }
 
     #[test]
@@ -922,11 +999,15 @@ mod tests {
                 stack_depth: i as usize,
                 correlation_id: Some("db-op-456".to_string()),
             };
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
         // Verify error propagation
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         let failed_traces: Vec<_> = traces
             .iter()
             .filter(|t| t.status == MessageStatus::Failed)
@@ -936,8 +1017,17 @@ mod tests {
 
         // All should have the same error message
         for trace in failed_traces {
-            assert_eq!(trace.error.as_ref().unwrap(), &error_msg);
-            assert_eq!(trace.correlation_id.as_ref().unwrap(), "db-op-456");
+            assert_eq!(
+                trace.error.as_ref().expect("error should be Some"),
+                &error_msg
+            );
+            assert_eq!(
+                trace
+                    .correlation_id
+                    .as_ref()
+                    .expect("correlation_id should be Some"),
+                "db-op-456"
+            );
         }
     }
 
@@ -963,10 +1053,13 @@ mod tests {
                         stack_depth: 1,
                         correlation_id: Some(format!("thread_{thread_id}")),
                     };
-                    obs.trace_message(trace).unwrap();
+                    obs.trace_message(trace)
+                        .expect("operation should succeed in test");
 
                     // Also read traces
-                    let _traces = obs.get_traces(None, Some("5")).unwrap();
+                    let _traces = obs
+                        .get_traces(None, Some("5"))
+                        .expect("operation should succeed in test");
                 }
             });
             handles.push(handle);
@@ -974,11 +1067,13 @@ mod tests {
 
         // Wait for all threads
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("operation should succeed in test");
         }
 
         // Verify all traces were recorded
-        let final_traces = observatory.get_traces(None, None).unwrap();
+        let final_traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(final_traces.len(), 30); // 3 threads * 10 messages each
     }
 
@@ -988,7 +1083,10 @@ mod tests {
         let actor_id = ActorId(1);
 
         // Create time series of snapshots
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
         let base_time = current_timestamp();
 
         for i in 1..=5 {
@@ -1019,7 +1117,10 @@ mod tests {
         drop(snapshots);
 
         // Verify final state
-        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        let final_snapshot = observatory
+            .get_actor_snapshot(actor_id)
+            .expect("operation should succeed in test")
+            .expect("snapshot should exist");
         assert!(matches!(final_snapshot.state, ActorState::Failed(_)));
         assert_eq!(final_snapshot.mailbox_size, 0);
         assert_eq!(final_snapshot.message_stats.failed_messages, 5);
@@ -1065,7 +1166,10 @@ mod tests {
     #[test]
     fn test_sprint_45_12_deadlock_resolution_tracking() {
         let observatory = create_test_observatory();
-        let mut detector = observatory.deadlock_detector.lock().unwrap();
+        let mut detector = observatory
+            .deadlock_detector
+            .lock()
+            .expect("operation should succeed in test");
 
         // Create deadlock scenario
         let request1 = BlockedRequest {
@@ -1088,14 +1192,18 @@ mod tests {
         detector.add_blocked_request(request2);
 
         // Detect deadlock
-        let cycles = detector.detect_cycles().unwrap();
+        let cycles = detector
+            .detect_cycles()
+            .expect("operation should succeed in test");
         assert!(!cycles.is_empty());
 
         // Resolve deadlock by removing one request
         detector.remove_blocked_request(ActorId(1), ActorId(2));
 
         // Verify deadlock is resolved
-        let cycles_after = detector.detect_cycles().unwrap();
+        let cycles_after = detector
+            .detect_cycles()
+            .expect("operation should succeed in test");
         assert!(cycles_after.is_empty() || cycles_after.len() < cycles.len());
     }
 
@@ -1138,11 +1246,15 @@ mod tests {
                 stack_depth: 1,
                 correlation_id: None,
             };
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
         // Should only keep the most recent traces
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 3);
 
         // Should contain the last 3 traces (3, 4, 5)
@@ -1157,19 +1269,30 @@ mod tests {
         let observatory = create_test_observatory();
 
         // Initial metrics update
-        observatory.update_metrics().unwrap();
-        let metrics1 = observatory.get_metrics().unwrap();
+        observatory
+            .update_metrics()
+            .expect("operation should succeed in test");
+        let metrics1 = observatory
+            .get_metrics()
+            .expect("operation should succeed in test");
         let time1 = metrics1.last_updated;
 
         // Add some activity
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
         snapshots.insert(ActorId(1), create_test_actor_snapshot());
         drop(snapshots);
 
         // Wait and update again
         std::thread::sleep(Duration::from_millis(100)); // Increased from 10ms to be more reliable
-        observatory.update_metrics().unwrap();
-        let metrics2 = observatory.get_metrics().unwrap();
+        observatory
+            .update_metrics()
+            .expect("operation should succeed in test");
+        let metrics2 = observatory
+            .get_metrics()
+            .expect("operation should succeed in test");
 
         // Verify timestamp progression (allow for same timestamp due to clock precision)
         assert!(metrics2.last_updated >= time1);
@@ -1251,7 +1374,10 @@ mod tests {
             ActorState::Failed("Simulated failure".to_string()),
         ];
 
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
         for (i, state) in states.iter().enumerate() {
             let snapshot = ActorSnapshot {
                 actor_id,
@@ -1273,7 +1399,10 @@ mod tests {
         drop(snapshots);
 
         // Verify final state
-        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        let final_snapshot = observatory
+            .get_actor_snapshot(actor_id)
+            .expect("operation should succeed in test")
+            .expect("snapshot should exist");
         assert!(matches!(final_snapshot.state, ActorState::Failed(_)));
         assert_eq!(final_snapshot.mailbox_size, 0);
     }
@@ -1296,15 +1425,23 @@ mod tests {
                 stack_depth: depth as usize,
                 correlation_id: Some("deep_call_chain".to_string()),
             };
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
         // Verify traces with different stack depths
-        let traces = observatory.get_traces(None, None).unwrap();
+        let traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(traces.len(), 10);
 
         // Find deepest call
-        let max_depth = traces.iter().map(|t| t.stack_depth).max().unwrap();
+        let max_depth = traces
+            .iter()
+            .map(|t| t.stack_depth)
+            .max()
+            .expect("operation should succeed in test");
         assert_eq!(max_depth, 10);
 
         // Test filter by max stack depth
@@ -1428,7 +1565,10 @@ mod tests {
         }
 
         // 2. Add actor snapshots
-        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let mut snapshots = observatory
+            .actor_snapshots
+            .lock()
+            .expect("operation should succeed in test");
         for i in 1..=5 {
             let snapshot = ActorSnapshot {
                 actor_id: ActorId(i),
@@ -1497,11 +1637,15 @@ mod tests {
         ];
 
         for trace in traces {
-            observatory.trace_message(trace).unwrap();
+            observatory
+                .trace_message(trace)
+                .expect("operation should succeed in test");
         }
 
         // 4. Update metrics
-        observatory.update_metrics().unwrap();
+        observatory
+            .update_metrics()
+            .expect("operation should succeed in test");
 
         // 5. Verify comprehensive state
 
@@ -1509,17 +1653,23 @@ mod tests {
         assert_eq!(observatory.get_filters().len(), 2);
 
         // Check snapshots
-        let actor_snapshots = observatory.get_actor_snapshots().unwrap();
+        let actor_snapshots = observatory
+            .get_actor_snapshots()
+            .expect("operation should succeed in test");
         assert_eq!(actor_snapshots.len(), 5);
 
         // Check metrics
-        let metrics = observatory.get_metrics().unwrap();
+        let metrics = observatory
+            .get_metrics()
+            .expect("operation should succeed in test");
         assert_eq!(metrics.active_actors, 5);
         assert_eq!(metrics.total_messages_processed, 150); // 10+20+30+40+50
         assert_eq!(metrics.total_queued_messages, 30); // 2+4+6+8+10
 
         // Check traces - actual implementation stores/retrieves 2 traces
-        let all_traces = observatory.get_traces(None, None).unwrap();
+        let all_traces = observatory
+            .get_traces(None, None)
+            .expect("operation should succeed in test");
         assert_eq!(all_traces.len(), 2);
 
         // Check uptime
