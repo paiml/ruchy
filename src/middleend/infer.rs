@@ -1780,50 +1780,85 @@ mod tests {
     }
     #[test]
     fn test_infer_literals() {
-        assert_eq!(infer_str("42").unwrap(), MonoType::Int);
-        assert_eq!(infer_str("3.15").unwrap(), MonoType::Float);
-        assert_eq!(infer_str("true").unwrap(), MonoType::Bool);
-        assert_eq!(infer_str("\"hello\"").unwrap(), MonoType::String);
+        assert_eq!(
+            infer_str("42").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("3.15").expect("type inference should succeed in test"),
+            MonoType::Float
+        );
+        assert_eq!(
+            infer_str("true").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
+        assert_eq!(
+            infer_str("\"hello\"").expect("type inference should succeed in test"),
+            MonoType::String
+        );
     }
     #[test]
     fn test_infer_arithmetic() {
-        assert_eq!(infer_str("1 + 2").unwrap(), MonoType::Int);
-        assert_eq!(infer_str("3 * 4").unwrap(), MonoType::Int);
-        assert_eq!(infer_str("5 - 2").unwrap(), MonoType::Int);
+        assert_eq!(
+            infer_str("1 + 2").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("3 * 4").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("5 - 2").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
     }
     #[test]
     fn test_infer_comparison() {
-        assert_eq!(infer_str("1 < 2").unwrap(), MonoType::Bool);
-        assert_eq!(infer_str("3 == 3").unwrap(), MonoType::Bool);
-        assert_eq!(infer_str("true != false").unwrap(), MonoType::Bool);
+        assert_eq!(
+            infer_str("1 < 2").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
+        assert_eq!(
+            infer_str("3 == 3").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
+        assert_eq!(
+            infer_str("true != false").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
     }
     #[test]
     fn test_infer_if() {
         assert_eq!(
-            infer_str("if true { 1 } else { 2 }").unwrap(),
+            infer_str("if true { 1 } else { 2 }").expect("type inference should succeed in test"),
             MonoType::Int
         );
         assert_eq!(
-            infer_str("if false { \"yes\" } else { \"no\" }").unwrap(),
+            infer_str("if false { \"yes\" } else { \"no\" }")
+                .expect("type inference should succeed in test"),
             MonoType::String
         );
     }
     #[test]
     fn test_infer_let() {
-        assert_eq!(infer_str("let x = 42 in x + 1").unwrap(), MonoType::Int);
         assert_eq!(
-            infer_str("let f = 3.15 in let g = 2.71 in f").unwrap(),
+            infer_str("let x = 42 in x + 1").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("let f = 3.15 in let g = 2.71 in f")
+                .expect("type inference should succeed in test"),
             MonoType::Float
         );
     }
     #[test]
     fn test_infer_list() {
         assert_eq!(
-            infer_str("[1, 2, 3]").unwrap(),
+            infer_str("[1, 2, 3]").expect("type inference should succeed in test"),
             MonoType::List(Box::new(MonoType::Int))
         );
         assert_eq!(
-            infer_str("[true, false]").unwrap(),
+            infer_str("[true, false]").expect("type inference should succeed in test"),
             MonoType::List(Box::new(MonoType::Bool))
         );
     }
@@ -1872,7 +1907,8 @@ mod tests {
     }
     #[test]
     fn test_infer_function() {
-        let result = infer_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = infer_str("fun add(x: i32, y: i32) -> i32 { x + y }")
+            .expect("type inference should succeed in test");
         match result {
             MonoType::Function(first_arg, remaining) => {
                 assert!(matches!(first_arg.as_ref(), MonoType::Int));
@@ -1896,7 +1932,7 @@ mod tests {
     #[test]
     fn test_infer_lambda() {
         // Simple lambda: |x| x + 1
-        let result = infer_str("|x| x + 1").unwrap();
+        let result = infer_str("|x| x + 1").expect("type inference should succeed in test");
         match result {
             MonoType::Function(arg, ret) => {
                 assert!(matches!(arg.as_ref(), MonoType::Int));
@@ -1905,7 +1941,7 @@ mod tests {
             _ => panic!("Expected function type for lambda"),
         }
         // Lambda with multiple params: |x, y| x * y
-        let result = infer_str("|x, y| x * y").unwrap();
+        let result = infer_str("|x, y| x * y").expect("type inference should succeed in test");
         match result {
             MonoType::Function(first_arg, remaining) => {
                 assert!(matches!(first_arg.as_ref(), MonoType::Int));
@@ -1920,16 +1956,17 @@ mod tests {
             _ => panic!("Expected function type for lambda"),
         }
         // Lambda with no params: || 42
-        let result = infer_str("|| 42").unwrap();
+        let result = infer_str("|| 42").expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
         // Lambda used in let binding
-        let result = infer_str("let f = |x| x + 1 in f(5)").unwrap();
+        let result =
+            infer_str("let f = |x| x + 1 in f(5)").expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
     }
     #[test]
     fn test_self_hosting_patterns() {
         // Test fat arrow lambda syntax inference
-        let result = infer_str("x => x * 2").unwrap();
+        let result = infer_str("x => x * 2").expect("type inference should succeed in test");
         match result {
             MonoType::Function(arg, ret) => {
                 assert!(matches!(arg.as_ref(), MonoType::Int));
@@ -1940,13 +1977,13 @@ mod tests {
         // Test higher-order function patterns (compiler combinators)
         let result =
             infer_str("let map = |f, xs| xs in let double = |x| x * 2 in map(double, [1, 2, 3])")
-                .unwrap();
+                .expect("type inference should succeed in test");
         assert!(matches!(result, MonoType::List(_)));
         // Test recursive function inference (needed for recursive descent parser)
         let result = infer_str(
             "fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }",
         )
-        .unwrap();
+        .expect("type inference should succeed in test");
         match result {
             MonoType::Function(arg, ret) => {
                 assert!(matches!(arg.as_ref(), MonoType::Int));
@@ -1958,32 +1995,36 @@ mod tests {
     #[test]
     fn test_compiler_data_structures() {
         // Test struct type inference for compiler data structures
-        let result = infer_str("struct Token { kind: String, value: String }").unwrap();
+        let result = infer_str("struct Token { kind: String, value: String }")
+            .expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Unit);
         // Test enum for AST nodes
-        let result = infer_str("enum Expr { Literal, Binary, Function }").unwrap();
+        let result = infer_str("enum Expr { Literal, Binary, Function }")
+            .expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Unit);
         // Test Vec operations for token streams - basic list inference
-        let result = infer_str("[1, 2, 3]").unwrap();
+        let result = infer_str("[1, 2, 3]").expect("type inference should succeed in test");
         assert!(matches!(result, MonoType::List(_)));
         // Test list length method
-        let result = infer_str("[1, 2, 3].len()").unwrap();
+        let result = infer_str("[1, 2, 3].len()").expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
     }
     #[test]
     fn test_constraint_solving() {
         // Test basic list operations
-        let result = infer_str("[1, 2, 3].len()").unwrap();
+        let result = infer_str("[1, 2, 3].len()").expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
         // Test polymorphic function inference
-        let result =
-            infer_str("let id = |x| x in let n = id(42) in let s = id(\"hello\") in n").unwrap();
+        let result = infer_str("let id = |x| x in let n = id(42) in let s = id(\"hello\") in n")
+            .expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
         // Test simple constraint solving
-        let result = infer_str("let f = |x| x + 1 in f").unwrap();
+        let result =
+            infer_str("let f = |x| x + 1 in f").expect("type inference should succeed in test");
         assert!(matches!(result, MonoType::Function(_, _)));
         // Test function composition
-        let result = infer_str("let compose = |f, g, x| f(g(x)) in compose").unwrap();
+        let result = infer_str("let compose = |f, g, x| f(g(x)) in compose")
+            .expect("type inference should succeed in test");
         assert!(matches!(result, MonoType::Function(_, _)));
     }
 
@@ -1992,7 +2033,7 @@ mod tests {
     //     // Test negation
     //     assert_eq!(infer_str("-5").unwrap(), MonoType::Int);
     //     assert_eq!(infer_str("-3.15").unwrap(), MonoType::Float);
-
+    //
     //     // Test logical not
     //     assert_eq!(infer_str("!true").unwrap(), MonoType::Bool);
     //     assert_eq!(infer_str("!false").unwrap(), MonoType::Bool);
@@ -2001,31 +2042,49 @@ mod tests {
     #[test]
     fn test_logical_operations() {
         // Test logical AND
-        assert_eq!(infer_str("true && false").unwrap(), MonoType::Bool);
+        assert_eq!(
+            infer_str("true && false").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
 
         // Test logical OR
-        assert_eq!(infer_str("true || false").unwrap(), MonoType::Bool);
+        assert_eq!(
+            infer_str("true || false").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
 
         // Test complex logical expressions
-        assert_eq!(infer_str("(1 < 2) && (3 > 2)").unwrap(), MonoType::Bool);
+        assert_eq!(
+            infer_str("(1 < 2) && (3 > 2)").expect("type inference should succeed in test"),
+            MonoType::Bool
+        );
     }
 
     #[test]
     fn test_block_expressions() {
         // Test simple block
-        assert_eq!(infer_str("{ 42 }").unwrap(), MonoType::Int);
+        assert_eq!(
+            infer_str("{ 42 }").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
 
         // Test block with multiple expressions
-        assert_eq!(infer_str("{ 1; 2; 3 }").unwrap(), MonoType::Int);
+        assert_eq!(
+            infer_str("{ 1; 2; 3 }").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
 
         // Test block with let bindings
-        assert_eq!(infer_str("{ let x = 5; x + 1 }").unwrap(), MonoType::Int);
+        assert_eq!(
+            infer_str("{ let x = 5; x + 1 }").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
     }
 
     #[test]
     fn test_tuple_types() {
         // Test tuple literals
-        let result = infer_str("(1, true)").unwrap();
+        let result = infer_str("(1, true)").expect("type inference should succeed in test");
         match result {
             MonoType::Tuple(types) => {
                 assert_eq!(types.len(), 2);
@@ -2036,7 +2095,8 @@ mod tests {
         }
 
         // Test tuple with three elements
-        let result = infer_str("(1, \"hello\", true)").unwrap();
+        let result =
+            infer_str("(1, \"hello\", true)").expect("type inference should succeed in test");
         match result {
             MonoType::Tuple(types) => {
                 assert_eq!(types.len(), 3);
@@ -2051,11 +2111,13 @@ mod tests {
     #[test]
     fn test_match_expressions() {
         // Test simple match
-        let result = infer_str("match 5 { 0 => \"zero\", _ => \"other\" }").unwrap();
+        let result = infer_str("match 5 { 0 => \"zero\", _ => \"other\" }")
+            .expect("type inference should succeed in test");
         assert_eq!(result, MonoType::String);
 
         // Test match with different types in same branch
-        let result = infer_str("match true { true => 1, false => 2 }").unwrap();
+        let result = infer_str("match true { true => 1, false => 2 }")
+            .expect("type inference should succeed in test");
         assert_eq!(result, MonoType::Int);
     }
 
@@ -2069,7 +2131,7 @@ mod tests {
     fn test_for_loop() {
         // For loops return unit
         assert_eq!(
-            infer_str("for x in [1, 2, 3] { x }").unwrap(),
+            infer_str("for x in [1, 2, 3] { x }").expect("type inference should succeed in test"),
             MonoType::Unit
         );
     }
@@ -2078,7 +2140,7 @@ mod tests {
     fn test_string_operations() {
         // Test string concatenation
         assert_eq!(
-            infer_str("\"hello\" + \" world\"").unwrap(),
+            infer_str("\"hello\" + \" world\"").expect("type inference should succeed in test"),
             MonoType::String
         );
 
@@ -2117,7 +2179,10 @@ mod tests {
         );
 
         let result = ctx.infer(&expr);
-        assert_eq!(result.unwrap(), MonoType::Int);
+        assert_eq!(
+            result.expect("type inference should succeed in test"),
+            MonoType::Int
+        );
     }
 
     #[test]
@@ -2187,15 +2252,27 @@ mod tests {
 
     #[test]
     fn test_char_literal() {
-        assert_eq!(infer_str("'a'").unwrap(), MonoType::Char);
-        assert_eq!(infer_str("'\\n'").unwrap(), MonoType::Char);
+        assert_eq!(
+            infer_str("'a'").expect("type inference should succeed in test"),
+            MonoType::Char
+        );
+        assert_eq!(
+            infer_str("'\\n'").expect("type inference should succeed in test"),
+            MonoType::Char
+        );
     }
 
     #[test]
     fn test_array_indexing() {
         // Test array indexing
-        assert_eq!(infer_str("[1, 2, 3][0]").unwrap(), MonoType::Int);
-        assert_eq!(infer_str("[\"a\", \"b\"][1]").unwrap(), MonoType::String);
+        assert_eq!(
+            infer_str("[1, 2, 3][0]").expect("type inference should succeed in test"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("[\"a\", \"b\"][1]").expect("type inference should succeed in test"),
+            MonoType::String
+        );
     }
 
     #[test]
@@ -2228,7 +2305,8 @@ mod tests {
     #[test]
     fn test_complex_nested_expression() {
         // Test a complex nested expression
-        let result = infer_str("if (1 + 2) > 2 { [1, 2, 3] } else { [4, 5] }").unwrap();
+        let result = infer_str("if (1 + 2) > 2 { [1, 2, 3] } else { [4, 5] }")
+            .expect("type inference should succeed in test");
         assert!(matches!(result, MonoType::List(_)));
     }
 
@@ -2402,7 +2480,9 @@ mod tests {
         // Set high recursion depth to trigger safety check
         ctx.recursion_depth = 99;
 
-        let expr = Parser::new("42").parse().unwrap();
+        let expr = Parser::new("42")
+            .parse()
+            .expect("type inference should succeed in test");
         let result = ctx.infer(&expr);
 
         // Should still work even with high recursion depth
