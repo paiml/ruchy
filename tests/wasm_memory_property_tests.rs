@@ -66,133 +66,133 @@ mod property_tests {
     use super::*;
 
     proptest! {
-                        /// Property: Any tuple with valid i32 values compiles to valid WASM
-                        #[test]
-                        #[ignore = "Run explicitly: cargo test property_tests -- --ignored"]
-                        fn prop_tuple_creation_always_valid(
-                            a in -1000i32..1000,
-                            b in -1000i32..1000,
-                            c in -1000i32..1000
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Any tuple with valid i32 values compiles to valid WASM
+                            #[test]
+                            #[ignore = "Run explicitly: cargo test property_tests -- --ignored"]
+                            fn prop_tuple_creation_always_valid(
+                                a in -1000i32..1000,
+                                b in -1000i32..1000,
+                                c in -1000i32..1000
+                            ) {
+                                let code = format!(
+                                    r"
 fn main() {{
     let t = ({a}, {b}, {c})
     println(t.0)
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "tuple_creation"),
-                                "Tuple ({}, {}, {}) should compile to valid WASM",
-                                a, b, c
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "tuple_creation"),
+                                    "Tuple ({}, {}, {}) should compile to valid WASM",
+                                    a, b, c
+                                );
+                            }
 
-                        /// Property: Array with any valid i32 elements compiles to valid WASM
-                        #[test]
-                        #[ignore]
-                        fn prop_array_creation_always_valid(
-                            elements in prop::collection::vec(-1000i32..1000, 1..10)
-                        ) {
-                            let elements_str = elements.iter()
-                                .map(std::string::ToString::to_string)
-                                .collect::<Vec<_>>()
-                                .join(", ");
+                            /// Property: Array with any valid i32 elements compiles to valid WASM
+                            #[test]
+                            #[ignore]
+                            fn prop_array_creation_always_valid(
+                                elements in prop::collection::vec(-1000i32..1000, 1..10)
+                            ) {
+                                let elements_str = elements.iter()
+                                    .map(std::string::ToString::to_string)
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
 
-                            let code = format!(
-                                r"
+                                let code = format!(
+                                    r"
 fn main() {{
     let arr = [{elements_str}]
     println(arr[0])
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "array_creation"),
-                                "Array [{}] should compile to valid WASM",
-                                elements_str
-                            );
-                        }
-
-                        /// Property: Tuple field access at any valid index compiles correctly
-                        #[test]
-                        #[ignore]
-                        fn prop_tuple_field_access_valid(
-                            values in prop::collection::vec(-100i32..100, 1..10),
-                            index in 0usize..9
-                        ) {
-                            if index >= values.len() {
-                                return Ok(());
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "array_creation"),
+                                    "Array [{}] should compile to valid WASM",
+                                    elements_str
+                                );
                             }
 
-                            let values_str = values.iter()
-                                .map(std::string::ToString::to_string)
-                                .collect::<Vec<_>>()
-                                .join(", ");
+                            /// Property: Tuple field access at any valid index compiles correctly
+                            #[test]
+                            #[ignore]
+                            fn prop_tuple_field_access_valid(
+                                values in prop::collection::vec(-100i32..100, 1..10),
+                                index in 0usize..9
+                            ) {
+                                if index >= values.len() {
+                                    return Ok(());
+                                }
 
-                            let code = format!(
-                                r"
+                                let values_str = values.iter()
+                                    .map(std::string::ToString::to_string)
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
+
+                                let code = format!(
+                                    r"
 fn main() {{
     let t = ({values_str})
     println(t.{index})
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "tuple_field"),
-                                "Tuple field access t.{} should compile",
-                                index
-                            );
-                        }
-
-                        /// Property: Array mutations at any valid index compile correctly
-                        #[test]
-                        #[ignore]
-                        fn prop_array_mutation_valid(
-                            size in 1usize..10,
-                            index in 0usize..9,
-                            new_value in -1000i32..1000
-                        ) {
-                            if index >= size {
-                                return Ok(());
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "tuple_field"),
+                                    "Tuple field access t.{} should compile",
+                                    index
+                                );
                             }
 
-                            let initial = vec![0; size];
-                            let elements_str = initial.iter()
-                                .map(std::string::ToString::to_string)
-                                .collect::<Vec<_>>()
-                                .join(", ");
+                            /// Property: Array mutations at any valid index compile correctly
+                            #[test]
+                            #[ignore]
+                            fn prop_array_mutation_valid(
+                                size in 1usize..10,
+                                index in 0usize..9,
+                                new_value in -1000i32..1000
+                            ) {
+                                if index >= size {
+                                    return Ok(());
+                                }
 
-                            let code = format!(
-                                r"
+                                let initial = vec![0; size];
+                                let elements_str = initial.iter()
+                                    .map(std::string::ToString::to_string)
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
+
+                                let code = format!(
+                                    r"
 fn main() {{
     let mut arr = [{elements_str}]
     arr[{index}] = {new_value}
     println(arr[{index}])
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "array_mutation"),
-                                "Array mutation arr[{}] = {} should compile",
-                                index, new_value
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "array_mutation"),
+                                    "Array mutation arr[{}] = {} should compile",
+                                    index, new_value
+                                );
+                            }
 
-                        /// Property: Struct with any field values compiles to valid WASM
-                        #[test]
-                        #[ignore]
-                        fn prop_struct_creation_valid(
-                            x in -1000i32..1000,
-                            y in -1000i32..1000
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Struct with any field values compiles to valid WASM
+                            #[test]
+                            #[ignore]
+                            fn prop_struct_creation_valid(
+                                x in -1000i32..1000,
+                                y in -1000i32..1000
+                            ) {
+                                let code = format!(
+                                    r"
 struct Point {{
     x: i32,
     y: i32
@@ -203,25 +203,25 @@ fn main() {{
     println(p.x)
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "struct_creation"),
-                                "Struct Point {{ x: {}, y: {} }} should compile",
-                                x, y
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "struct_creation"),
+                                    "Struct Point {{ x: {}, y: {} }} should compile",
+                                    x, y
+                                );
+                            }
 
-                        /// Property: Struct field mutations compile correctly
-                        #[test]
-                        #[ignore]
-                        fn prop_struct_mutation_valid(
-                            initial_x in -100i32..100,
-                            initial_y in -100i32..100,
-                            new_x in -1000i32..1000
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Struct field mutations compile correctly
+                            #[test]
+                            #[ignore]
+                            fn prop_struct_mutation_valid(
+                                initial_x in -100i32..100,
+                                initial_y in -100i32..100,
+                                new_x in -1000i32..1000
+                            ) {
+                                let code = format!(
+                                    r"
 struct Point {{
     x: i32,
     y: i32
@@ -233,74 +233,74 @@ fn main() {{
     println(p.x)
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "struct_mutation"),
-                                "Struct mutation p.x = {} should compile",
-                                new_x
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "struct_mutation"),
+                                    "Struct mutation p.x = {} should compile",
+                                    new_x
+                                );
+                            }
 
-                        /// Property: Nested tuples with any depth compile correctly
-                        #[test]
-                        #[ignore]
-                        fn prop_nested_tuple_valid(
-                            a in -100i32..100,
-                            b in -100i32..100,
-                            c in -100i32..100,
-                            d in -100i32..100
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Nested tuples with any depth compile correctly
+                            #[test]
+                            #[ignore]
+                            fn prop_nested_tuple_valid(
+                                a in -100i32..100,
+                                b in -100i32..100,
+                                c in -100i32..100,
+                                d in -100i32..100
+                            ) {
+                                let code = format!(
+                                    r"
 fn main() {{
     let nested = (({a}, {b}), ({c}, {d}))
     println(nested.0)
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "nested_tuple"),
-                                "Nested tuple (({}, {}), ({}, {})) should compile",
-                                a, b, c, d
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "nested_tuple"),
+                                    "Nested tuple (({}, {}), ({}, {})) should compile",
+                                    a, b, c, d
+                                );
+                            }
 
-                        /// Property: Destructuring with any valid tuple compiles
-                        #[test]
-                        #[ignore]
-                        fn prop_destructuring_valid(
-                            a in -1000i32..1000,
-                            b in -1000i32..1000
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Destructuring with any valid tuple compiles
+                            #[test]
+                            #[ignore]
+                            fn prop_destructuring_valid(
+                                a in -1000i32..1000,
+                                b in -1000i32..1000
+                            ) {
+                                let code = format!(
+                                    r"
 fn main() {{
     let (x, y) = ({a}, {b})
     println(x)
     println(y)
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "destructuring"),
-                                "Destructuring let (x, y) = ({}, {}) should compile",
-                                a, b
-                            );
-                        }
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "destructuring"),
+                                    "Destructuring let (x, y) = ({}, {}) should compile",
+                                    a, b
+                                );
+                            }
 
-                        /// Property: Mixed data structures compile correctly
-                        #[test]
-                        #[ignore]
-                        fn prop_mixed_structures_valid(
-                            arr_val in -100i32..100,
-                            tup_val in -100i32..100,
-                            struct_x in -100i32..100
-                        ) {
-                            let code = format!(
-                                r"
+                            /// Property: Mixed data structures compile correctly
+                            #[test]
+                            #[ignore]
+                            fn prop_mixed_structures_valid(
+                                arr_val in -100i32..100,
+                                tup_val in -100i32..100,
+                                struct_x in -100i32..100
+                            ) {
+                                let code = format!(
+                                    r"
 struct Point {{
     x: i32,
     y: i32
@@ -313,14 +313,14 @@ fn main() {{
     println(arr[0])
 }}
 "
-                            );
+                                );
 
-                            prop_assert!(
-                                compiles_to_valid_wasm(&code, "mixed_structures"),
-                                "Mixed structures should compile"
-                            );
+                                prop_assert!(
+                                    compiles_to_valid_wasm(&code, "mixed_structures"),
+                                    "Mixed structures should compile"
+                                );
+                            }
                         }
-                    }
 }
 
 /// Invariant Tests - Mathematical properties that must ALWAYS hold
