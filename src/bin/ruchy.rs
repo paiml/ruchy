@@ -1119,8 +1119,9 @@ mod tests {
 
     #[test]
     fn test_try_handle_direct_evaluation_with_file() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "println(\"Hello World\")").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "println(\"Hello World\")")
+            .expect("Failed to write test content to temporary file");
 
         let cli = Cli {
             eval: None,
@@ -1165,8 +1166,9 @@ mod tests {
 
     #[test]
     fn test_run_file_valid_syntax() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = run_file(temp_file.path());
         assert!(result.is_ok());
@@ -1181,8 +1183,9 @@ mod tests {
 
     #[test]
     fn test_check_syntax_valid() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = check_syntax(temp_file.path());
         assert!(result.is_ok());
@@ -1204,8 +1207,9 @@ mod tests {
 
     #[test]
     fn test_handle_test_dispatch_with_path() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "// Test file").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "// Test file")
+            .expect("Failed to write test content to temporary file");
 
         let result = handle_test_dispatch(
             Some(temp_file.path().to_path_buf()),
@@ -1247,8 +1251,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_parse() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Parse {
             file: temp_file.path().to_path_buf(),
@@ -1259,8 +1264,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_transpile() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Transpile {
             file: temp_file.path().to_path_buf(),
@@ -1273,8 +1279,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_compile() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Compile {
             file: temp_file.path().to_path_buf(),
@@ -1295,8 +1302,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_check() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Check {
             files: vec![temp_file.path().to_path_buf()],
@@ -1320,10 +1328,13 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_coverage() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().expect("Failed to create temporary test directory");
         // Create a test file with some content
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "let x = 42;").unwrap();
+        fs::write(&test_file, "let x = 42;").expect(&format!(
+            "Failed to write test file: {}",
+            test_file.display()
+        ));
 
         let command = Commands::Coverage {
             path: test_file, // Use the file path, not directory
@@ -1340,8 +1351,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_ast() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Ast {
             file: temp_file.path().to_path_buf(),
@@ -1359,10 +1371,11 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_ast_with_options() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
-        let output_file = NamedTempFile::new().unwrap();
+        let output_file = NamedTempFile::new().expect("Failed to create temporary output file");
         let command = Commands::Ast {
             file: temp_file.path().to_path_buf(),
             json: true,
@@ -1382,15 +1395,15 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_doc() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
         // TEST-FIX-002: Use valid Ruchy code instead of comment-only (empty program)
         fs::write(
             &temp_file,
             "/// Documentation test\nfun add(a, b) { a + b }",
         )
-        .unwrap();
+        .expect("Failed to write test content to temporary file");
 
-        let output_dir = tempfile::tempdir().unwrap();
+        let output_dir = tempfile::tempdir().expect("Failed to create temporary output directory");
         let command = Commands::Doc {
             path: temp_file.path().to_path_buf(),
             output: output_dir.path().to_path_buf(),
@@ -1406,8 +1419,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_bench() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Bench {
             file: temp_file.path().to_path_buf(),
@@ -1423,8 +1437,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_lint() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Lint {
             file: Some(temp_file.path().to_path_buf()),
@@ -1469,8 +1484,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_score() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Score {
             path: temp_file.path().to_path_buf(),
@@ -1492,8 +1508,9 @@ mod tests {
 
     #[test]
     fn test_handle_advanced_command_wasm() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let command = Commands::Wasm {
             file: temp_file.path().to_path_buf(),
@@ -1531,8 +1548,9 @@ mod tests {
 
     #[test]
     fn test_handle_command_dispatch_parse() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = handle_command_dispatch(
             Some(Commands::Parse {
@@ -1546,8 +1564,9 @@ mod tests {
 
     #[test]
     fn test_handle_command_dispatch_transpile() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = handle_command_dispatch(
             Some(Commands::Transpile {
@@ -1563,8 +1582,9 @@ mod tests {
 
     #[test]
     fn test_handle_command_dispatch_run() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = handle_command_dispatch(
             Some(Commands::Run {
