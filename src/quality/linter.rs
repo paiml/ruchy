@@ -1096,7 +1096,8 @@ mod tests {
         };
         let json = serde_json::to_string(&issue);
         assert!(json.is_ok());
-        let deserialized: Result<LintIssue, _> = serde_json::from_str(&json.unwrap());
+        let deserialized: Result<LintIssue, _> =
+            serde_json::from_str(&json.expect("json serialization should succeed in test"));
         assert!(deserialized.is_ok());
     }
     // ========== Basic Linting Tests ==========
@@ -1104,14 +1105,18 @@ mod tests {
     fn test_lint_empty_expression() {
         let linter = create_test_linter();
         let expr = create_test_expr_literal_int(42);
-        let issues = linter.lint(&expr, "42").unwrap();
+        let issues = linter
+            .lint(&expr, "42")
+            .expect("lint should succeed in test");
         assert_eq!(issues.len(), 0);
     }
     #[test]
     fn test_lint_undefined_variable() {
         let linter = create_test_linter_with_rules("undefined");
         let expr = create_test_expr_identifier("undefined_var");
-        let issues = linter.lint(&expr, "undefined_var").unwrap();
+        let issues = linter
+            .lint(&expr, "undefined_var")
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].rule, "undefined");
         assert_eq!(issues[0].name, "undefined_var");
@@ -1123,9 +1128,27 @@ mod tests {
         let println_expr = create_test_expr_identifier("println");
         let print_expr = create_test_expr_identifier("print");
         let eprintln_expr = create_test_expr_identifier("eprintln");
-        assert_eq!(linter.lint(&println_expr, "println").unwrap().len(), 0);
-        assert_eq!(linter.lint(&print_expr, "print").unwrap().len(), 0);
-        assert_eq!(linter.lint(&eprintln_expr, "eprintln").unwrap().len(), 0);
+        assert_eq!(
+            linter
+                .lint(&println_expr, "println")
+                .expect("operation should succeed in test")
+                .len(),
+            0
+        );
+        assert_eq!(
+            linter
+                .lint(&print_expr, "print")
+                .expect("operation should succeed in test")
+                .len(),
+            0
+        );
+        assert_eq!(
+            linter
+                .lint(&eprintln_expr, "eprintln")
+                .expect("operation should succeed in test")
+                .len(),
+            0
+        );
     }
     #[test]
     fn test_lint_unused_variable() {
@@ -1135,7 +1158,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_literal_int(0),
         );
-        let issues = linter.lint(&expr, "let x = 42; 0").unwrap();
+        let issues = linter
+            .lint(&expr, "let x = 42; 0")
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule == "unused_variable" && i.name == "x"));
@@ -1148,7 +1173,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_identifier("x"),
         );
-        let issues = linter.lint(&expr, "let x = 42; x").unwrap();
+        let issues = linter
+            .lint(&expr, "let x = 42; x")
+            .expect("operation should succeed in test");
         assert!(!issues
             .iter()
             .any(|i| i.rule == "unused_variable" && i.name == "x"));
@@ -1171,7 +1198,9 @@ mod tests {
                 create_test_expr_identifier("x"),
             ),
         );
-        let issues = linter.lint(&outer_let, "let x = 1; let x = 2; x").unwrap();
+        let issues = linter
+            .lint(&outer_let, "let x = 1; let x = 2; x")
+            .expect("operation should succeed in test");
         eprintln!("Debug - Issues found: {issues:?}");
         assert!(issues
             .iter()
@@ -1186,7 +1215,9 @@ mod tests {
             vec![create_test_param("x")],
             create_test_expr_literal_int(42),
         );
-        let issues = linter.lint(&expr, "fn test_func(x) { 42 }").unwrap();
+        let issues = linter
+            .lint(&expr, "fn test_func(x) { 42 }")
+            .expect("operation should succeed in test");
         // Parameters are not flagged as unused in function scope analysis
         assert!(!issues.iter().any(|i| i.rule == "unused_parameter"));
     }
@@ -1201,7 +1232,7 @@ mod tests {
         let expr = create_test_expr_function("test_func", vec![], body);
         let issues = linter
             .lint(&expr, "fn test_func() { let local_var = 1; 42 }")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule == "unused_variable" && i.name == "local_var"));
@@ -1216,7 +1247,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_literal_int(0),
         );
-        let issues = linter.lint(&expr, "for i in items { 0 }").unwrap();
+        let issues = linter
+            .lint(&expr, "for i in items { 0 }")
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "i"));
@@ -1230,7 +1263,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_identifier("i"),
         );
-        let issues = linter.lint(&expr, "for i in items { i }").unwrap();
+        let issues = linter
+            .lint(&expr, "for i in items { i }")
+            .expect("operation should succeed in test");
         assert!(!issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "i"));
@@ -1244,7 +1279,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_literal_int(0),
         );
-        let issues = linter.lint(&expr, "for _ in items { 0 }").unwrap();
+        let issues = linter
+            .lint(&expr, "for _ in items { 0 }")
+            .expect("operation should succeed in test");
         assert!(!issues.iter().any(|i| i.name == "_"));
     }
     // ========== Match Expression Tests ==========
@@ -1256,7 +1293,9 @@ mod tests {
             create_test_expr_literal_int(42),
         );
         let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
-        let issues = linter.lint(&expr, "match value { x => 42 }").unwrap();
+        let issues = linter
+            .lint(&expr, "match value { x => 42 }")
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "x"));
@@ -1269,7 +1308,9 @@ mod tests {
             create_test_expr_identifier("x"),
         );
         let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
-        let issues = linter.lint(&expr, "match value { x => x }").unwrap();
+        let issues = linter
+            .lint(&expr, "match value { x => x }")
+            .expect("operation should succeed in test");
         assert!(!issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "x"));
@@ -1282,7 +1323,9 @@ mod tests {
             create_test_expr_literal_int(42),
         );
         let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
-        let issues = linter.lint(&expr, "match value { _ => 42 }").unwrap();
+        let issues = linter
+            .lint(&expr, "match value { _ => 42 }")
+            .expect("operation should succeed in test");
         assert!(!issues.iter().any(|i| i.name == "_"));
     }
     // ========== Lambda Expression Tests ==========
@@ -1293,7 +1336,9 @@ mod tests {
             vec![create_test_param("x")],
             create_test_expr_literal_int(42),
         );
-        let issues = linter.lint(&expr, "|x| 42").unwrap();
+        let issues = linter
+            .lint(&expr, "|x| 42")
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "x"));
@@ -1305,7 +1350,9 @@ mod tests {
             vec![create_test_param("x")],
             create_test_expr_identifier("x"),
         );
-        let issues = linter.lint(&expr, "|x| x").unwrap();
+        let issues = linter
+            .lint(&expr, "|x| x")
+            .expect("operation should succeed in test");
         assert!(!issues
             .iter()
             .any(|i| i.rule.contains("unused") && i.name == "x"));
@@ -1370,7 +1417,9 @@ mod tests {
             ),
             None,
         );
-        let issues = linter.lint(&complex_expr, "if 1 { if 2 { 3 } }").unwrap();
+        let issues = linter
+            .lint(&complex_expr, "if 1 { if 2 { 3 } }")
+            .expect("operation should succeed in test");
         assert!(issues.iter().any(|i| i.rule == "complexity"));
     }
     #[test]
@@ -1379,7 +1428,9 @@ mod tests {
         linter.set_strict_mode(true);
         linter.max_complexity = 0;
         let expr = create_test_expr_literal_int(42);
-        let issues = linter.lint(&expr, "42").unwrap();
+        let issues = linter
+            .lint(&expr, "42")
+            .expect("lint should succeed in test");
         // Simple expression should not trigger complexity
         assert!(!issues.iter().any(|i| i.rule == "complexity"));
     }
@@ -1468,7 +1519,7 @@ mod tests {
         );
         let issues = linter
             .lint(&expr, "undefined_left + undefined_right")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_left"));
         assert!(issues.iter().any(|i| i.name == "undefined_right"));
@@ -1480,7 +1531,9 @@ mod tests {
             create_test_expr_identifier("undefined_func"),
             vec![create_test_expr_identifier("undefined_arg")],
         );
-        let issues = linter.lint(&expr, "undefined_func(undefined_arg)").unwrap();
+        let issues = linter
+            .lint(&expr, "undefined_func(undefined_arg)")
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_func"));
         assert!(issues.iter().any(|i| i.name == "undefined_arg"));
@@ -1495,7 +1548,7 @@ mod tests {
         );
         let issues = linter
             .lint(&expr, "undefined_obj.method(undefined_arg)")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_obj"));
         assert!(issues.iter().any(|i| i.name == "undefined_arg"));
@@ -1518,7 +1571,7 @@ mod tests {
         );
         let issues = linter
             .lint(&expr, "f\"Hello {undefined_name} {undefined_age:d}\"")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_name"));
         assert!(issues.iter().any(|i| i.name == "undefined_age"));
@@ -1527,7 +1580,9 @@ mod tests {
     fn test_analyze_return_expression() {
         let linter = create_test_linter_with_rules("undefined");
         let expr = create_test_expr_return(Some(create_test_expr_identifier("undefined_var")));
-        let issues = linter.lint(&expr, "return undefined_var").unwrap();
+        let issues = linter
+            .lint(&expr, "return undefined_var")
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 1);
         assert!(issues.iter().any(|i| i.name == "undefined_var"));
     }
@@ -1542,9 +1597,13 @@ mod tests {
             ExprKind::Tuple(vec![create_test_expr_identifier("undefined_elem")]),
             create_test_span(),
         );
-        let list_issues = linter.lint(&list_expr, "[undefined_item]").unwrap();
+        let list_issues = linter
+            .lint(&list_expr, "[undefined_item]")
+            .expect("operation should succeed in test");
         assert!(list_issues.iter().any(|i| i.name == "undefined_item"));
-        let tuple_issues = linter.lint(&tuple_expr, "(undefined_elem,)").unwrap();
+        let tuple_issues = linter
+            .lint(&tuple_expr, "(undefined_elem,)")
+            .expect("operation should succeed in test");
         assert!(tuple_issues.iter().any(|i| i.name == "undefined_elem"));
     }
     #[test]
@@ -1564,11 +1623,13 @@ mod tests {
             },
             create_test_span(),
         );
-        let field_issues = linter.lint(&field_expr, "undefined_obj.property").unwrap();
+        let field_issues = linter
+            .lint(&field_expr, "undefined_obj.property")
+            .expect("operation should succeed in test");
         assert!(field_issues.iter().any(|i| i.name == "undefined_obj"));
         let index_issues = linter
             .lint(&index_expr, "undefined_arr[undefined_idx]")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(index_issues.len(), 2);
         assert!(index_issues.iter().any(|i| i.name == "undefined_arr"));
         assert!(index_issues.iter().any(|i| i.name == "undefined_idx"));
@@ -1585,7 +1646,7 @@ mod tests {
         );
         let issues = linter
             .lint(&expr, "undefined_target = undefined_value")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 2);
         assert!(issues.iter().any(|i| i.name == "undefined_target"));
         assert!(issues.iter().any(|i| i.name == "undefined_value"));
@@ -1599,7 +1660,9 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_literal_int(0),
         )]);
-        let issues = linter.lint(&block, "{ let unused_var = 42; 0 }").unwrap();
+        let issues = linter
+            .lint(&block, "{ let unused_var = 42; 0 }")
+            .expect("operation should succeed in test");
         assert!(issues
             .iter()
             .any(|i| i.rule == "unused_variable" && i.name == "unused_var"));
@@ -1617,7 +1680,7 @@ mod tests {
                 &expr,
                 "if undefined_cond { undefined_then } else { undefined_else }",
             )
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 3);
         assert!(issues.iter().any(|i| i.name == "undefined_cond"));
         assert!(issues.iter().any(|i| i.name == "undefined_then"));
@@ -1637,14 +1700,18 @@ mod tests {
             issue_type: "style".to_string(),
             name: "spacing".to_string(),
         }];
-        let fixed = linter.auto_fix("let  x  =  42", &issues).unwrap();
+        let fixed = linter
+            .auto_fix("let  x  =  42", &issues)
+            .expect("operation should succeed in test");
         assert_eq!(fixed, "let x = 42");
     }
     #[test]
     fn test_auto_fix_no_issues() {
         let linter = create_test_linter();
         let issues = vec![];
-        let fixed = linter.auto_fix("let x = 42", &issues).unwrap();
+        let fixed = linter
+            .auto_fix("let x = 42", &issues)
+            .expect("operation should succeed in test");
         assert_eq!(fixed, "let x = 42");
     }
     // ========== Integration Tests ==========
@@ -1667,7 +1734,9 @@ mod tests {
             create_test_expr_literal_int(1),
             shadow_let,
         );
-        let issues = linter.lint(&outer_let, "complex code").unwrap();
+        let issues = linter
+            .lint(&outer_let, "complex code")
+            .expect("operation should succeed in test");
         assert!(issues.iter().any(|i| i.rule == "shadowing"));
         assert!(issues.iter().any(|i| i.rule == "undefined"));
         assert!(issues.iter().any(|i| i.rule == "unused_variable"));
@@ -1687,9 +1756,11 @@ mod tests {
     fn test_empty_issues_json_compatibility() {
         let linter = create_test_linter();
         let expr = create_test_expr_literal_int(42);
-        let issues = linter.lint(&expr, "42").unwrap();
+        let issues = linter
+            .lint(&expr, "42")
+            .expect("lint should succeed in test");
         assert_eq!(issues.len(), 0);
-        let json = serde_json::to_string(&issues).unwrap();
+        let json = serde_json::to_string(&issues).expect("operation should succeed in test");
         assert_eq!(json, "[]");
     }
 
@@ -1755,7 +1826,7 @@ mod tests {
             name: "x".to_string(),
         };
 
-        let json = serde_json::to_string(&issue).unwrap();
+        let json = serde_json::to_string(&issue).expect("operation should succeed in test");
         assert!(json.contains("\"line\":10"));
         assert!(json.contains("\"column\":5"));
         assert!(json.contains("\"severity\":\"warning\""));
@@ -1763,7 +1834,8 @@ mod tests {
         assert!(json.contains("\"type\":\"unused\""));
 
         // Test deserialization
-        let deserialized: LintIssue = serde_json::from_str(&json).unwrap();
+        let deserialized: LintIssue =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(deserialized.line, 10);
         assert_eq!(deserialized.column, 5);
         assert_eq!(deserialized.severity, "warning");
@@ -1951,7 +2023,7 @@ mod sprint_44_tests {
         let complex_expr = create_complex_nested_expr();
         let result = linter.lint(&complex_expr, "nested code");
         assert!(result.is_ok());
-        let _issues = result.unwrap();
+        let _issues = result.expect("result should be Ok in test");
         // Should handle deeply nested scopes without panicking
         // Issues length is always >= 0 for usize
     }
@@ -2071,7 +2143,9 @@ mod sprint_44_tests {
             Span { start: 0, end: 1 },
         );
 
-        let issues = linter.lint(&level1, "triple shadow").unwrap();
+        let issues = linter
+            .lint(&level1, "triple shadow")
+            .expect("operation should succeed in test");
         // Should detect multiple shadowing instances
         let shadowing_count = issues.iter().filter(|i| i.rule == "shadowing").count();
         assert!(shadowing_count >= 1);
@@ -2117,7 +2191,9 @@ mod sprint_44_tests {
             Span { start: 0, end: 1 },
         );
 
-        let issues = linter.lint(&match_expr, "match with guard").unwrap();
+        let issues = linter
+            .lint(&match_expr, "match with guard")
+            .expect("operation should succeed in test");
         // Variable should be properly tracked through guard and body
         assert!(!issues
             .iter()
@@ -2166,7 +2242,9 @@ mod sprint_44_tests {
             Span { start: 0, end: 1 },
         );
 
-        let issues = linter.lint(&lambda, "|(x, y)| x + y").unwrap();
+        let issues = linter
+            .lint(&lambda, "|(x, y)| x + y")
+            .expect("operation should succeed in test");
         // Both x and y should be marked as used
         assert!(!issues
             .iter()
@@ -2216,7 +2294,7 @@ mod sprint_44_tests {
 
         let issues = linter
             .lint(&complex_interpolation, "complex f-string")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert!(issues.iter().any(|i| i.name == "undefined_a"));
         assert!(issues.iter().any(|i| i.name == "undefined_b"));
         assert!(issues.iter().any(|i| i.name == "undefined_func"));
@@ -2262,7 +2340,7 @@ mod sprint_44_tests {
 
         let issues = linter
             .lint(&for_loop, "for {x, y: y_coord} in points { x }")
-            .unwrap();
+            .expect("operation should succeed in test");
         // x should be used, y_coord should be unused
         assert!(!issues
             .iter()
@@ -2312,7 +2390,7 @@ mod sprint_44_tests {
                 &result_match,
                 "match result { Ok(success) => success, Err(error) => 0 }",
             )
-            .unwrap();
+            .expect("operation should succeed in test");
         // success is used, error is unused
         assert!(!issues
             .iter()
@@ -2344,7 +2422,9 @@ mod sprint_44_tests {
                 name: "spacing".to_string(),
             };
 
-            let fixed = linter.auto_fix(input, &[style_issue]).unwrap();
+            let fixed = linter
+                .auto_fix(input, &[style_issue])
+                .expect("operation should succeed in test");
             if input.contains("  ") {
                 assert!(!fixed.contains("  "), "Double spaces should be fixed");
             }
@@ -2390,7 +2470,7 @@ mod sprint_44_tests {
         };
 
         // Test serialization handles all fields and special characters
-        let json = serde_json::to_string(&issue).unwrap();
+        let json = serde_json::to_string(&issue).expect("operation should succeed in test");
         assert!(json.contains("42"));
         assert!(json.contains("13"));
         assert!(json.contains("critical"));
@@ -2399,7 +2479,8 @@ mod sprint_44_tests {
         assert!(json.contains("unicode_var_名前"));
 
         // Test round-trip
-        let deserialized: LintIssue = serde_json::from_str(&json).unwrap();
+        let deserialized: LintIssue =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(deserialized.line, 42);
         assert_eq!(deserialized.name, "unicode_var_名前");
     }
@@ -2499,7 +2580,9 @@ mod sprint_44_tests {
                 ExprKind::Identifier(builtin.to_string()),
                 Span { start: 0, end: 1 },
             );
-            let issues = linter.lint(&expr, builtin).unwrap();
+            let issues = linter
+                .lint(&expr, builtin)
+                .expect("operation should succeed in test");
             assert_eq!(
                 issues.len(),
                 0,
@@ -2512,7 +2595,9 @@ mod sprint_44_tests {
             ExprKind::Identifier("definitely_undefined".to_string()),
             Span { start: 0, end: 1 },
         );
-        let issues = linter.lint(&non_builtin, "definitely_undefined").unwrap();
+        let issues = linter
+            .lint(&non_builtin, "definitely_undefined")
+            .expect("operation should succeed in test");
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].rule, "undefined");
     }
@@ -2668,7 +2753,7 @@ mod sprint_44_tests {
         let result = linter.lint(&block, "let x = 42\nx");
         assert!(result.is_ok(), "Linting should succeed");
 
-        let issues = result.unwrap();
+        let issues = result.expect("result should be Ok in test");
 
         // CRITICAL: Variable 'x' should NOT be reported as unused (it's used in next statement)
         let unused_x = issues
@@ -2755,7 +2840,7 @@ mod sprint_44_tests {
         let result = linter.lint(&block, "let x = 1\nlet y = 2\nx + y");
         assert!(result.is_ok());
 
-        let issues = result.unwrap();
+        let issues = result.expect("result should be Ok in test");
 
         // Both variables should be used, no undefined/unused errors
         assert!(
