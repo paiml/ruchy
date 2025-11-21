@@ -4599,7 +4599,10 @@ fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::pr
         // Step 2: Create temporary Cargo project
         let temp_dir = std::env::temp_dir().join(format!(
             "ruchy_mutations_{}",
-            path.file_stem().unwrap().to_str().unwrap()
+            path.file_stem()
+                .expect("Path should have a file stem")
+                .to_str()
+                .expect("File stem should be valid UTF-8")
         ));
         fs::create_dir_all(&temp_dir)?;
 
@@ -4646,7 +4649,7 @@ path = "src/lib.rs"
         cmd.args([
             "mutants",
             "--file",
-            path.to_str().unwrap(),
+            path.to_str().expect("Path should be valid UTF-8"),
             "--timeout",
             &timeout.to_string(),
             "--no-times",
@@ -5281,7 +5284,11 @@ fn handle_pgo_compilation(
 
     let profiled_output = output.with_file_name(format!(
         "{}-profiled",
-        output.file_name().unwrap().to_str().unwrap()
+        output
+            .file_name()
+            .expect("Output path should have a file name")
+            .to_str()
+            .expect("File name should be valid UTF-8")
     ));
 
     // Add profile-generate flag

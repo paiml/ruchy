@@ -154,7 +154,13 @@ edition = "2021"
         fs::write(project_path.join("Cargo.toml"), cargo_toml_content)
             .expect("Failed to write Cargo.toml");
 
-        (temp_dir, project_path.to_str().unwrap().to_string())
+        (
+            temp_dir,
+            project_path
+                .to_str()
+                .expect("Project path should be valid UTF-8")
+                .to_string(),
+        )
     }
 
     #[test]
