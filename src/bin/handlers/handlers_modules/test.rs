@@ -176,11 +176,13 @@ mod tests {
     // ========== Test Command Handler Tests ==========
     #[test]
     fn test_handle_test_command_default_path() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         // Change to the temp directory for the test
-        let original_dir = std::env::current_dir().unwrap();
-        std::env::set_current_dir(temp_dir.path()).unwrap();
+        let original_dir = std::env::current_dir().expect("Failed to get current directory");
+        std::env::set_current_dir(temp_dir.path())
+            .expect("Failed to set current directory to temp path");
 
         let result = handle_test_command(
             None,   // Use default path (current directory)
@@ -195,7 +197,7 @@ mod tests {
         );
 
         // Restore original directory
-        std::env::set_current_dir(original_dir).unwrap();
+        std::env::set_current_dir(original_dir).expect("Failed to restore original directory");
 
         // Test should complete without panicking
         assert!(result.is_ok() || result.is_err());
@@ -203,7 +205,8 @@ mod tests {
 
     #[test]
     fn test_handle_test_command_with_path() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
@@ -223,7 +226,8 @@ mod tests {
 
     #[test]
     fn test_handle_test_command_with_filter() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
@@ -243,7 +247,8 @@ mod tests {
 
     #[test]
     fn test_handle_test_command_with_coverage() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
@@ -263,7 +268,8 @@ mod tests {
 
     #[test]
     fn test_handle_test_command_json_output() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = handle_test_command(
             Some(temp_dir.path().to_path_buf()),
@@ -284,7 +290,7 @@ mod tests {
     // ========== Run Tests Function Tests ==========
     #[test]
     fn test_run_tests_empty_directory() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         // Create empty directory with no .ruchy files
 
         let result = run_tests(
@@ -304,7 +310,8 @@ mod tests {
 
     #[test]
     fn test_run_tests_with_files() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = run_tests(
             temp_dir.path(),
@@ -323,7 +330,8 @@ mod tests {
 
     #[test]
     fn test_run_tests_with_filter() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = run_tests(
             temp_dir.path(),
@@ -342,7 +350,8 @@ mod tests {
 
     #[test]
     fn test_run_tests_json_format() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = run_tests(
             temp_dir.path(),
@@ -361,7 +370,8 @@ mod tests {
 
     #[test]
     fn test_run_tests_with_coverage() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let result = run_tests(
             temp_dir.path(),
@@ -382,7 +392,8 @@ mod tests {
     #[test]
 
     fn test_handle_watch_mode_setup() {
-        let _temp_dir = create_test_directory_with_files().unwrap();
+        let _temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         // We can't easily test the full watch mode (infinite loop),
         // but we can test that it doesn't panic on initial setup
@@ -403,7 +414,7 @@ mod tests {
     // ========== File Modification Tests ==========
     #[test]
     fn test_get_latest_modification_empty_directory() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         // Empty directory with no .ruchy files
 
         let modification_time = get_latest_modification(temp_dir.path());
@@ -413,7 +424,8 @@ mod tests {
 
     #[test]
     fn test_get_latest_modification_with_ruchy_files() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         let modification_time = get_latest_modification(temp_dir.path());
         // Should return a valid time
@@ -422,15 +434,21 @@ mod tests {
 
     #[test]
     fn test_get_latest_modification_with_mixed_files() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
 
         // Create a .ruchy file
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::write(&ruchy_file, "println(\"test\")").unwrap();
+        fs::write(&ruchy_file, "println(\"test\")").expect(&format!(
+            "Failed to write test file: {}",
+            ruchy_file.display()
+        ));
 
         // Create a non-ruchy file (should be ignored)
         let other_file = temp_dir.path().join("other.txt");
-        fs::write(&other_file, "not ruchy").unwrap();
+        fs::write(&other_file, "not ruchy").expect(&format!(
+            "Failed to write test file: {}",
+            other_file.display()
+        ));
 
         let modification_time = get_latest_modification(temp_dir.path());
         // Should return a valid time
@@ -498,7 +516,8 @@ mod tests {
     // ========== Integration Tests ==========
     #[test]
     fn test_integration_complete_workflow() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         // Test the complete workflow without watch mode
         let result = handle_test_command(
@@ -519,7 +538,8 @@ mod tests {
 
     #[test]
     fn test_integration_with_all_options() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         // Test with maximum options enabled
         let result = handle_test_command(
@@ -561,7 +581,8 @@ mod tests {
 
     #[test]
     fn test_parameter_validation() {
-        let temp_dir = create_test_directory_with_files().unwrap();
+        let temp_dir =
+            create_test_directory_with_files().expect("Failed to create test directory with files");
 
         // Test with various parameter combinations
         let test_cases = vec![
