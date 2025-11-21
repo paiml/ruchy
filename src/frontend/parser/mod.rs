@@ -1246,14 +1246,16 @@ mod tests {
     #[test]
     fn test_parser_basic_literals() {
         let mut state = ParserState::new("42");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Literal(Literal::Integer(42, None))
         ));
 
         let mut state = ParserState::new("3.15");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Literal(Literal::Float(f)) = expr.kind {
             assert!((f - 3.15).abs() < 0.001);
         } else {
@@ -1261,18 +1263,21 @@ mod tests {
         }
 
         let mut state = ParserState::new("true");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(true))));
 
         let mut state = ParserState::new("false");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(false))));
     }
 
     #[test]
     fn test_parser_string_literals() {
         let mut state = ParserState::new(r#""hello world""#);
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Literal(Literal::String(s)) = expr.kind {
             assert_eq!(s, "hello world");
         } else {
@@ -1280,7 +1285,8 @@ mod tests {
         }
 
         let mut state = ParserState::new(r#""""#);
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Literal(Literal::String(s)) = expr.kind {
             assert_eq!(s, "");
         } else {
@@ -1291,7 +1297,8 @@ mod tests {
     #[test]
     fn test_parser_identifiers() {
         let mut state = ParserState::new("variable");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Identifier(name) = expr.kind {
             assert_eq!(name, "variable");
         } else {
@@ -1299,7 +1306,8 @@ mod tests {
         }
 
         let mut state = ParserState::new("_underscore");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Identifier(name) = expr.kind {
             assert_eq!(name, "_underscore");
         } else {
@@ -1310,7 +1318,8 @@ mod tests {
     #[test]
     fn test_parser_binary_operations() {
         let mut state = ParserState::new("1 + 2");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1320,7 +1329,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("10 - 5");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1330,7 +1340,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("3 * 4");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1340,7 +1351,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("8 / 2");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1353,7 +1365,8 @@ mod tests {
     #[test]
     fn test_parser_comparison_operations() {
         let mut state = ParserState::new("5 > 3");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1363,7 +1376,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("3 < 5");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1373,7 +1387,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("5 == 5");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1383,7 +1398,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("5 != 3");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1396,7 +1412,8 @@ mod tests {
     #[test]
     fn test_parser_logical_operations() {
         let mut state = ParserState::new("true && false");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1406,7 +1423,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("true || false");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1419,7 +1437,8 @@ mod tests {
     #[test]
     fn test_parser_unary_operations() {
         let mut state = ParserState::new("-42");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Unary {
@@ -1429,7 +1448,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("!true");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Unary {
@@ -1442,7 +1462,8 @@ mod tests {
     #[test]
     fn test_parser_parenthesized_expression() {
         let mut state = ParserState::new("(42)");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Parentheses don't create a special node, just affect precedence
         assert!(matches!(
             expr.kind,
@@ -1450,7 +1471,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("(1 + 2) * 3");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1463,7 +1485,8 @@ mod tests {
     #[test]
     fn test_parser_list_literal() {
         let mut state = ParserState::new("[1, 2, 3]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::List(items) = expr.kind {
             assert_eq!(items.len(), 3);
         } else {
@@ -1471,7 +1494,8 @@ mod tests {
         }
 
         let mut state = ParserState::new("[]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::List(items) = expr.kind {
             assert_eq!(items.len(), 0);
         } else {
@@ -1482,7 +1506,8 @@ mod tests {
     #[test]
     fn test_parser_tuple_literal() {
         let mut state = ParserState::new("(1, 2)");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Tuple(items) = expr.kind {
             assert_eq!(items.len(), 2);
         } else {
@@ -1490,7 +1515,8 @@ mod tests {
         }
 
         let mut state = ParserState::new("(1,)");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Tuple(items) = expr.kind {
             assert_eq!(items.len(), 1);
         } else {
@@ -1501,7 +1527,8 @@ mod tests {
     #[test]
     fn test_parser_range_expressions() {
         let mut state = ParserState::new("1..10");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Range { inclusive, .. } = expr.kind {
             assert!(!inclusive);
         } else {
@@ -1509,7 +1536,8 @@ mod tests {
         }
 
         let mut state = ParserState::new("1..=10");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Range { inclusive, .. } = expr.kind {
             assert!(inclusive);
         } else {
@@ -1535,7 +1563,8 @@ mod tests {
     fn test_parser_precedence_levels() {
         // Test that multiplication has higher precedence than addition
         let mut state = ParserState::new("1 + 2 * 3");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Should parse as 1 + (2 * 3), not (1 + 2) * 3
         assert!(matches!(
             expr.kind,
@@ -1551,7 +1580,8 @@ mod tests {
     fn test_parser_assignment_operators() {
         // Assignment is parsed as a binary operation in this AST
         let mut state = ParserState::new("x = 5");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Assignment might be parsed differently, just check it's an expression
         // The AST does have an Assign variant
         assert!(
@@ -1561,7 +1591,8 @@ mod tests {
         );
 
         let mut state = ParserState::new("x += 5");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::CompoundAssign { .. }));
     }
 
@@ -1569,7 +1600,8 @@ mod tests {
 
     fn test_parser_pipeline_operator() {
         let mut state = ParserState::new("data >> transform");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1582,29 +1614,34 @@ mod tests {
     #[test]
     fn test_parser_try_operator() {
         let mut state = ParserState::new("result?");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Try { .. }));
     }
 
     #[test]
     fn test_parser_index_access() {
         let mut state = ParserState::new("array[0]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::IndexAccess { .. }));
     }
 
     #[test]
     fn test_parser_slice_expressions() {
         let mut state = ParserState::new("array[1:5]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Slice { .. }));
 
         let mut state = ParserState::new("array[:5]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Slice { .. }));
 
         let mut state = ParserState::new("array[1:]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Slice { .. }));
     }
 
@@ -1624,7 +1661,8 @@ mod tests {
     fn test_parser_complex_expression() {
         // Test a complex nested expression
         let mut state = ParserState::new("(a + b) * (c - d) / 2");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Should parse successfully as a division operation at the top level
         assert!(matches!(
             expr.kind,
@@ -1638,7 +1676,8 @@ mod tests {
     #[test]
     fn test_parser_character_literal() {
         let mut state = ParserState::new("'a'");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Literal(Literal::Char(c)) = expr.kind {
             assert_eq!(c, 'a');
         } else {
@@ -1649,7 +1688,8 @@ mod tests {
     #[test]
     fn test_parser_method_call_chain() {
         let mut state = ParserState::new("obj.method1().method2()");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Should parse as nested method calls
         assert!(matches!(expr.kind, ExprKind::MethodCall { .. }));
     }
@@ -1658,7 +1698,8 @@ mod tests {
 
     fn test_parser_safe_navigation() {
         let mut state = ParserState::new("obj?.method()");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         // Safe navigation parses as OptionalMethodCall for obj?.method() syntax
         assert!(
             matches!(expr.kind, ExprKind::OptionalFieldAccess { .. })
@@ -1671,7 +1712,8 @@ mod tests {
     #[ignore = "Macro syntax not fully implemented"]
     fn test_parser_macro_call() {
         let mut state = ParserState::new("println!(\"hello\")");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::Call { func, args } = expr.kind {
             if let ExprKind::Identifier(name) = func.kind {
                 assert_eq!(name, "println");
@@ -1687,7 +1729,8 @@ mod tests {
     #[test]
     fn test_parser_bitwise_operations() {
         let mut state = ParserState::new("a & b");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1697,7 +1740,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("a | b");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1707,7 +1751,8 @@ mod tests {
         ));
 
         let mut state = ParserState::new("a ^ b");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1720,7 +1765,8 @@ mod tests {
     #[test]
     fn test_parser_shift_operations() {
         let mut state = ParserState::new("a << 2");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1736,7 +1782,8 @@ mod tests {
     #[test]
     fn test_parser_modulo_operation() {
         let mut state = ParserState::new("10 % 3");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1749,14 +1796,16 @@ mod tests {
     #[test]
     fn test_parser_type_cast() {
         let mut state = ParserState::new("x as i32");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(expr.kind, ExprKind::TypeCast { .. }));
     }
 
     #[test]
     fn test_parser_power_operation() {
         let mut state = ParserState::new("2 ** 8");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -1789,7 +1838,8 @@ mod tests {
     #[test]
     fn test_parser_nested_lists() {
         let mut state = ParserState::new("[[1, 2], [3, 4]]");
-        let expr = parse_expr_recursive(&mut state).unwrap();
+        let expr =
+            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
         if let ExprKind::List(outer) = expr.kind {
             assert_eq!(outer.len(), 2);
             // Each element should itself be a list
@@ -1908,7 +1958,7 @@ mod mutation_tests {
         let result = try_range_operators(&mut state, left.clone(), &Token::DotDot, 10);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_none(),
+            result.expect("result should be Some in test").is_none(),
             "Should return None when prec < min_prec (not ==)"
         );
 
@@ -1917,7 +1967,7 @@ mod mutation_tests {
         let result = try_range_operators(&mut state, left, &Token::DotDot, 5);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_some(),
+            result.expect("result should be Some in test").is_some(),
             "Should return Some when prec >= min_prec"
         );
     }
@@ -1967,7 +2017,7 @@ mod mutation_tests {
         let result = try_assignment_operators(&mut state, left.clone(), &Token::Equal, 1);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_some(),
+            result.expect("result should be Some in test").is_some(),
             "Should return Some when prec == min_prec (using <, not <=)"
         );
 
@@ -1976,7 +2026,7 @@ mod mutation_tests {
         let result = try_assignment_operators(&mut state, left, &Token::Equal, 10);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_none(),
+            result.expect("result should be Some in test").is_none(),
             "Should return None when prec < min_prec"
         );
     }
@@ -1998,7 +2048,7 @@ mod mutation_tests {
         let result = try_assignment_operators(&mut state, left.clone(), &Token::Equal, 10);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_none(),
+            result.expect("result should be Some in test").is_none(),
             "Should return None when prec < min_prec (not ==)"
         );
 
@@ -2007,7 +2057,7 @@ mod mutation_tests {
         let result = try_assignment_operators(&mut state, left, &Token::Equal, 0);
         assert!(result.is_ok());
         assert!(
-            result.unwrap().is_some(),
+            result.expect("result should be Some in test").is_some(),
             "Should return Some when prec > min_prec"
         );
     }
