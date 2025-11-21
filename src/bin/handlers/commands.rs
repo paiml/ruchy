@@ -623,7 +623,7 @@ fn handle_binary_profiling(
     let unique_id = std::process::id();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .expect("System time should be after UNIX_EPOCH")
         .as_nanos();
     let rust_file = temp_dir.join(format!("profile_{}_{}.rs", unique_id, timestamp));
     let binary_path = temp_dir.join(format!("profile_{}_{}", unique_id, timestamp));
@@ -1765,7 +1765,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_json_output(&expr);
         assert!(result.is_ok());
-        let json = result.unwrap();
+        let json = result.expect("generate_json_output should succeed");
         assert!(json.contains("Integer"));
         assert!(json.contains("42"));
     }
@@ -1817,7 +1817,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, true, false, false, false, false);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("Integer"));
     }
 
@@ -1826,7 +1826,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, false, true, false, false, false);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("digraph AST"));
     }
 
@@ -1835,7 +1835,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, false, false, true, false, false);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("AST Metrics"));
     }
 
@@ -1844,7 +1844,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, false, false, false, true, false);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("Symbol Analysis"));
     }
 
@@ -1853,7 +1853,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, false, false, false, false, true);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("Dependencies"));
     }
 
@@ -1862,7 +1862,7 @@ mod tests {
         let expr = create_test_expr();
         let result = generate_ast_output(&expr, false, false, false, false, false);
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("generate_ast_output should succeed");
         assert!(output.contains("kind"));
     }
 
@@ -1874,11 +1874,14 @@ mod tests {
 
     #[test]
     fn test_write_ast_output_to_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let output_path = temp_dir.path().join("output.txt");
         let result = write_ast_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap();
+        let content = std::fs::read_to_string(&output_path).expect(&format!(
+            "Failed to read output file: {}",
+            output_path.display()
+        ));
         assert_eq!(content, "test content");
     }
 
@@ -1921,7 +1924,8 @@ mod tests {
 
     #[test]
     fn test_handle_diff_mode() {
-        let temp_file = create_temp_file_with_content("original").unwrap();
+        let temp_file = create_temp_file_with_content("original")
+            .expect("Failed to create temporary test file");
         handle_diff_mode(temp_file.path(), "original", "formatted");
     }
 
@@ -1964,7 +1968,8 @@ mod tests {
     // ========== Provability Tests ==========
     #[test]
     fn test_generate_provability_header() {
-        let temp_file = create_temp_file_with_content("test").unwrap();
+        let temp_file =
+            create_temp_file_with_content("test").expect("Failed to create temporary test file");
         let expr = create_test_expr();
         let analysis = ProvabilityAnalysis {
             verify: true,
@@ -2027,18 +2032,22 @@ mod tests {
 
     #[test]
     fn test_write_provability_output_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let output_path = temp_dir.path().join("provability.txt");
         let result = write_provability_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap();
+        let content = std::fs::read_to_string(&output_path).expect(&format!(
+            "Failed to read output file: {}",
+            output_path.display()
+        ));
         assert_eq!(content, "test content");
     }
 
     // ========== Runtime Tests ==========
     #[test]
     fn test_generate_runtime_header() {
-        let temp_file = create_temp_file_with_content("test").unwrap();
+        let temp_file =
+            create_temp_file_with_content("test").expect("Failed to create temporary test file");
         let result = generate_runtime_header(temp_file.path());
         assert!(result.contains("=== Performance Analysis ==="));
         assert!(result.contains("File:"));
@@ -2079,8 +2088,10 @@ mod tests {
 
     #[test]
     fn test_add_comparison_section() {
-        let temp_file1 = create_temp_file_with_content("current").unwrap();
-        let temp_file2 = create_temp_file_with_content("baseline").unwrap();
+        let temp_file1 =
+            create_temp_file_with_content("current").expect("Failed to create temporary test file");
+        let temp_file2 = create_temp_file_with_content("baseline")
+            .expect("Failed to create temporary test file");
         let mut output = String::new();
         add_comparison_section(&mut output, temp_file1.path(), temp_file2.path());
         assert!(output.contains("=== Performance Comparison ==="));
@@ -2096,11 +2107,14 @@ mod tests {
 
     #[test]
     fn test_write_runtime_output_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let output_path = temp_dir.path().join("runtime.txt");
         let result = write_runtime_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap();
+        let content = std::fs::read_to_string(&output_path).expect(&format!(
+            "Failed to read output file: {}",
+            output_path.display()
+        ));
         assert_eq!(content, "test content");
     }
 
@@ -2131,10 +2145,10 @@ mod tests {
 
     #[test]
     fn test_format_empty_directory_output_text() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let result = format_empty_directory_output(temp_dir.path(), "shallow", "text");
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("format_empty_directory_output should succeed");
         assert!(output.contains("=== Quality Score ==="));
         assert!(output.contains("Files: 0"));
         assert!(output.contains("shallow"));
@@ -2142,10 +2156,10 @@ mod tests {
 
     #[test]
     fn test_format_empty_directory_output_json() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let result = format_empty_directory_output(temp_dir.path(), "deep", "json");
         assert!(result.is_ok());
-        let output = result.unwrap();
+        let output = result.expect("format_empty_directory_output should succeed");
         assert!(output.contains("\"directory\""));
         assert!(output.contains("\"files\""));
         assert!(output.contains("\"depth\": \"deep\""));
@@ -2159,11 +2173,14 @@ mod tests {
 
     #[test]
     fn test_write_output_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let output_path = temp_dir.path().join("output.txt");
         let result = write_output("test content", Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap();
+        let content = std::fs::read_to_string(&output_path).expect(&format!(
+            "Failed to read output file: {}",
+            output_path.display()
+        ));
         assert_eq!(content, "test content");
     }
 
@@ -2433,7 +2450,7 @@ mod tests {
         let results = vec!["Test result".to_string()];
         let formatted = format_gate_results(true, &results, true);
         assert!(formatted.is_ok());
-        let json = formatted.unwrap();
+        let json = formatted.expect("format_gate_results should succeed");
         assert!(json.contains("\"passed\""));
         assert!(json.contains("true"));
     }
@@ -2443,7 +2460,7 @@ mod tests {
         let results = vec!["Test result".to_string()];
         let formatted = format_gate_results(false, &results, false);
         assert!(formatted.is_ok());
-        let text = formatted.unwrap();
+        let text = formatted.expect("format_gate_results should succeed");
         // format_gate_results just joins results with newlines
         assert!(text.contains("Test result"));
     }
