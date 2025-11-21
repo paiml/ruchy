@@ -172,7 +172,7 @@ mod tests {
                prove example() == true\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test proof file");
 
         let result = handle_prove_command(
             Some(temp_file.path()), // Provide file
@@ -199,7 +199,7 @@ mod tests {
                prove x + 1 > 1\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test script file");
 
         let result = handle_prove_command(
             None,                     // No file
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_handle_prove_command_with_export() {
-        let export_dir = create_test_export_dir().unwrap();
+        let export_dir = create_test_export_dir().expect("Failed to create test export directory");
         let export_file = export_dir.path().join("proof_export.json");
 
         let result = handle_prove_command(
@@ -242,9 +242,11 @@ mod tests {
 
     #[test]
     fn test_handle_prove_command_all_options() {
-        let proof_file = create_test_proof_file("fn test() -> bool { true }").unwrap();
-        let script_file = create_test_script_file("prove test() == true").unwrap();
-        let export_dir = create_test_export_dir().unwrap();
+        let proof_file = create_test_proof_file("fn test() -> bool { true }")
+            .expect("Failed to create test proof file");
+        let script_file = create_test_script_file("prove test() == true")
+            .expect("Failed to create test script file");
+        let export_dir = create_test_export_dir().expect("Failed to create test export directory");
         let export_file = export_dir.path().join("full_export.json");
 
         let result = handle_prove_command(
@@ -300,7 +302,7 @@ mod tests {
                prove valid_function() == true\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test proof file");
 
         let result = handle_file_proving(
             temp_file.path(),
@@ -324,7 +326,7 @@ mod tests {
                prove maybe_wrong() == true\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test proof file");
 
         let result = handle_file_proving(
             temp_file.path(),
@@ -339,7 +341,8 @@ mod tests {
 
     #[test]
     fn test_handle_file_proving_different_formats() {
-        let temp_file = create_test_proof_file("fn test() -> bool { true }").unwrap();
+        let temp_file = create_test_proof_file("fn test() -> bool { true }")
+            .expect("Failed to create test proof file");
         let formats = vec!["text", "json", "xml", "html"];
 
         for format in formats {
@@ -394,7 +397,7 @@ mod tests {
                prove identity(x) == x\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test proof file");
 
         let result = handle_prove_command(
             Some(temp_file.path()), // File-based proving
@@ -424,7 +427,7 @@ mod tests {
                prove mult(a, add(b, c)) == add(mult(a, b), mult(a, c))\n\
              }",
         )
-        .unwrap();
+        .expect("Failed to create test proof file");
 
         let script_file = create_test_script_file(
             "// Proof tactics\n\
@@ -432,9 +435,9 @@ mod tests {
              tactic use_arithmetic\n\
              tactic qed",
         )
-        .unwrap();
+        .expect("Failed to create test script file");
 
-        let export_dir = create_test_export_dir().unwrap();
+        let export_dir = create_test_export_dir().expect("Failed to create test export directory");
         let export_file = export_dir.path().join("distributive_proof.json");
 
         let result = handle_prove_command(
@@ -510,7 +513,8 @@ mod tests {
     // ========== Parameter Validation Tests ==========
     #[test]
     fn test_prove_command_parameter_combinations() {
-        let temp_file = create_test_proof_file("fn test() { }").unwrap();
+        let temp_file =
+            create_test_proof_file("fn test() { }").expect("Failed to create test proof file");
 
         // Test various parameter combinations
         let test_cases = vec![
