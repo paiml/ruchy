@@ -476,8 +476,9 @@ mod tests {
 
     #[test]
     fn test_load_proof_file_valid() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = load_proof_file(temp_file.path(), false);
         assert!(result.is_ok());
@@ -492,8 +493,9 @@ mod tests {
 
     #[test]
     fn test_load_proof_file_verbose() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
         let result = load_proof_file(temp_file.path(), true);
         assert!(result.is_ok());
@@ -501,8 +503,9 @@ mod tests {
 
     #[test]
     fn test_load_proof_file_invalid_syntax() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "invalid syntax }}}}").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "invalid syntax }}}}")
+            .expect("Failed to write test content to temporary file");
 
         let result = load_proof_file(temp_file.path(), false);
         assert!(result.is_err());
@@ -511,8 +514,9 @@ mod tests {
     #[test]
     fn test_load_proof_script_valid() {
         let mut prover = InteractiveProver::new(SmtBackend::Z3);
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "goal x > 0 -> x + 1 > 1").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "goal x > 0 -> x + 1 > 1")
+            .expect("Failed to write test content to temporary file");
 
         let result = load_proof_script(&mut prover, temp_file.path(), false);
         assert!(result.is_ok());
@@ -530,8 +534,9 @@ mod tests {
     #[test]
     fn test_load_proof_script_verbose() {
         let mut prover = InteractiveProver::new(SmtBackend::Z3);
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "goal x > 0").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "goal x > 0")
+            .expect("Failed to write test content to temporary file");
 
         let result = load_proof_script(&mut prover, temp_file.path(), true);
         assert!(result.is_ok());
@@ -550,7 +555,7 @@ mod tests {
 
         let result = handle_prover_command("quit", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(result.unwrap()); // Should return true to exit
+        assert!(result.expect("handle_prover_command should return a value")); // Should return true to exit
     }
 
     #[test]
@@ -560,7 +565,7 @@ mod tests {
 
         let result = handle_prover_command("exit", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(result.unwrap()); // Should return true to exit
+        assert!(result.expect("handle_prover_command should return a value")); // Should return true to exit
     }
 
     #[test]
@@ -570,7 +575,7 @@ mod tests {
 
         let result = handle_prover_command("help", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(!result.unwrap()); // Should return false to continue
+        assert!(!result.expect("handle_prover_command should return a value")); // Should return false to continue
     }
 
     #[test]
@@ -580,7 +585,7 @@ mod tests {
 
         let result = handle_prover_command("goals", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(!result.unwrap()); // Should return false to continue
+        assert!(!result.expect("handle_prover_command should return a value")); // Should return false to continue
     }
 
     #[test]
@@ -590,7 +595,7 @@ mod tests {
 
         let result = handle_prover_command("tactics", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(!result.unwrap()); // Should return false to continue
+        assert!(!result.expect("handle_prover_command should return a value")); // Should return false to continue
     }
 
     #[test]
@@ -601,7 +606,7 @@ mod tests {
 
         let result = handle_prover_command("apply intro", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(!result.unwrap()); // Should return false to continue
+        assert!(!result.expect("handle_prover_command should return a value")); // Should return false to continue
     }
 
     #[test]
@@ -611,7 +616,7 @@ mod tests {
 
         let result = handle_prover_command("goal x > 0", &mut prover, &mut session, false);
         assert!(result.is_ok());
-        assert!(!result.unwrap()); // Should return false to continue
+        assert!(!result.expect("handle_prover_command should return a value")); // Should return false to continue
     }
 
     #[test]
@@ -667,7 +672,7 @@ mod tests {
     #[test]
     fn test_export_proof_text_format() {
         let session = ProverSession::new();
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
 
         let result = export_proof(&session, temp_file.path(), "text", false);
         assert!(result.is_ok());
@@ -676,7 +681,7 @@ mod tests {
     #[test]
     fn test_export_proof_json_format() {
         let session = ProverSession::new();
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
 
         let result = export_proof(&session, temp_file.path(), "json", false);
         assert!(result.is_ok());
@@ -685,7 +690,7 @@ mod tests {
     #[test]
     fn test_export_proof_coq_format() {
         let session = ProverSession::new();
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
 
         let result = export_proof(&session, temp_file.path(), "coq", false);
         assert!(result.is_ok());
@@ -694,7 +699,7 @@ mod tests {
     #[test]
     fn test_export_proof_lean_format() {
         let session = ProverSession::new();
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
 
         let result = export_proof(&session, temp_file.path(), "lean", false);
         assert!(result.is_ok());
@@ -703,7 +708,7 @@ mod tests {
     #[test]
     fn test_export_proof_verbose() {
         let session = ProverSession::new();
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
 
         let result = export_proof(&session, temp_file.path(), "text", true);
         assert!(result.is_ok());
@@ -711,61 +716,65 @@ mod tests {
 
     #[test]
     fn test_verify_proofs_from_ast() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
-        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let ast = load_proof_file(temp_file.path(), false).expect("Failed to load proof file");
         let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", false, false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_verify_proofs_from_ast_json_format() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
-        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let ast = load_proof_file(temp_file.path(), false).expect("Failed to load proof file");
         let result = verify_proofs_from_ast(&ast, temp_file.path(), "json", false, false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_verify_proofs_from_ast_with_counterexample() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
-        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let ast = load_proof_file(temp_file.path(), false).expect("Failed to load proof file");
         let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", true, false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_verify_proofs_from_ast_verbose() {
-        let temp_file = NamedTempFile::new().unwrap();
-        fs::write(&temp_file, "let x = 42").unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
+        fs::write(&temp_file, "let x = 42")
+            .expect("Failed to write test content to temporary file");
 
-        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let ast = load_proof_file(temp_file.path(), false).expect("Failed to load proof file");
         let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", false, true);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_no_assertions_text_format() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
         let result = handle_no_assertions(temp_file.path(), "text", false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_no_assertions_json_format() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
         let result = handle_no_assertions(temp_file.path(), "json", false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_no_assertions_verbose() {
-        let temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
         let result = handle_no_assertions(temp_file.path(), "text", true);
         assert!(result.is_ok());
     }
