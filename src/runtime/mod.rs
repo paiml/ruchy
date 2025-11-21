@@ -32,8 +32,8 @@
 //!
 //! // Start an interactive REPL session
 //! let config = ReplConfig::default();
-//! let mut repl = Repl::new_with_config(config).unwrap();
-//! repl.run().unwrap();
+//! let mut repl = Repl::new_with_config(config).expect("Repl creation should succeed");
+//! repl.run().expect("REPL execution should succeed");
 //! ```
 //!
 //! ```
@@ -43,7 +43,7 @@
 //! let mut system = ActorSystem::new();
 //!
 //! // Spawn an echo actor
-//! let echo_ref = system.spawn_echo_actor("echo".to_string()).unwrap();
+//! let echo_ref = system.spawn_echo_actor("echo".to_string()).expect("Spawning actor should succeed");
 //!
 //! // Send a message
 //! let msg = Message::new(MessageValue::String("Hello".to_string()));
@@ -187,67 +187,132 @@ mod tests {
 
     #[test]
     fn test_repl_creation_and_basic_eval() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("1 + 1").unwrap(), "2");
-        assert_eq!(repl.eval("2 * 3").unwrap(), "6");
-        assert_eq!(repl.eval("10 - 5").unwrap(), "5");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("1 + 1")
+                .expect("operation should succeed in test"),
+            "2"
+        );
+        assert_eq!(
+            repl.eval("2 * 3")
+                .expect("operation should succeed in test"),
+            "6"
+        );
+        assert_eq!(
+            repl.eval("10 - 5")
+                .expect("operation should succeed in test"),
+            "5"
+        );
     }
 
     #[test]
     fn test_repl_variable_binding() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("let x = 42").unwrap(), "42");
-        assert_eq!(repl.eval("x").unwrap(), "42");
-        assert_eq!(repl.eval("let y = x + 8").unwrap(), "50");
-        assert_eq!(repl.eval("y").unwrap(), "50");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("let x = 42")
+                .expect("operation should succeed in test"),
+            "42"
+        );
+        assert_eq!(
+            repl.eval("x").expect("operation should succeed in test"),
+            "42"
+        );
+        assert_eq!(
+            repl.eval("let y = x + 8")
+                .expect("operation should succeed in test"),
+            "50"
+        );
+        assert_eq!(
+            repl.eval("y").expect("operation should succeed in test"),
+            "50"
+        );
     }
 
     #[test]
     fn test_repl_function_definition() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("fn add(a, b) { a + b }").unwrap();
-        assert_eq!(repl.eval("add(3, 4)").unwrap(), "7");
-        assert_eq!(repl.eval("add(10, 20)").unwrap(), "30");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("fn add(a, b) { a + b }")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("add(3, 4)")
+                .expect("operation should succeed in test"),
+            "7"
+        );
+        assert_eq!(
+            repl.eval("add(10, 20)")
+                .expect("operation should succeed in test"),
+            "30"
+        );
     }
 
     #[test]
     fn test_repl_if_expression() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("if true { 1 } else { 2 }").unwrap(), "1");
-        assert_eq!(repl.eval("if false { 1 } else { 2 }").unwrap(), "2");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
         assert_eq!(
-            repl.eval("if 5 > 3 { \"yes\" } else { \"no\" }").unwrap(),
+            repl.eval("if true { 1 } else { 2 }")
+                .expect("operation should succeed in test"),
+            "1"
+        );
+        assert_eq!(
+            repl.eval("if false { 1 } else { 2 }")
+                .expect("operation should succeed in test"),
+            "2"
+        );
+        assert_eq!(
+            repl.eval("if 5 > 3 { \"yes\" } else { \"no\" }")
+                .expect("operation should succeed in test"),
             "\"yes\""
         );
     }
 
     #[test]
     fn test_repl_list_operations() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
-        assert_eq!(repl.eval("[]").unwrap(), "[]");
-        assert_eq!(repl.eval("[1] + [2, 3]").unwrap(), "[1, 2, 3]");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("[1, 2, 3]")
+                .expect("operation should succeed in test"),
+            "[1, 2, 3]"
+        );
+        assert_eq!(
+            repl.eval("[]").expect("operation should succeed in test"),
+            "[]"
+        );
+        assert_eq!(
+            repl.eval("[1] + [2, 3]")
+                .expect("operation should succeed in test"),
+            "[1, 2, 3]"
+        );
     }
 
     #[test]
     fn test_repl_for_loop() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("let mut sum = 0").unwrap();
-        repl.eval("for i in 1..=5 { sum = sum + i }").unwrap();
-        assert_eq!(repl.eval("sum").unwrap(), "15");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("let mut sum = 0")
+            .expect("operation should succeed in test");
+        repl.eval("for i in 1..=5 { sum = sum + i }")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("sum").expect("operation should succeed in test"),
+            "15"
+        );
     }
 
     #[test]
     fn test_repl_while_loop() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("let mut n = 0").unwrap();
-        repl.eval("while n < 5 { n = n + 1 }").unwrap();
-        assert_eq!(repl.eval("n").unwrap(), "5");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("let mut n = 0")
+            .expect("operation should succeed in test");
+        repl.eval("while n < 5 { n = n + 1 }")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("n").expect("operation should succeed in test"),
+            "5"
+        );
     }
 
     #[test]
     fn test_repl_match_expression() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
         let code = r#"
             match 2 {
                 1 => "one",
@@ -255,67 +320,125 @@ mod tests {
                 _ => "other"
             }
         "#;
-        assert_eq!(repl.eval(code).unwrap(), "\"two\"");
+        assert_eq!(
+            repl.eval(code).expect("operation should succeed in test"),
+            "\"two\""
+        );
     }
 
     #[test]
     fn test_repl_lambda() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("let double = |x| x * 2").unwrap();
-        assert_eq!(repl.eval("double(21)").unwrap(), "42");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("let double = |x| x * 2")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("double(21)")
+                .expect("operation should succeed in test"),
+            "42"
+        );
     }
 
     #[test]
     fn test_repl_string_operations() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
         assert_eq!(
-            repl.eval("\"hello\" + \" world\"").unwrap(),
+            repl.eval("\"hello\" + \" world\"")
+                .expect("operation should succeed in test"),
             "\"hello world\""
         );
-        assert_eq!(repl.eval("\"test\"").unwrap(), "\"test\"");
+        assert_eq!(
+            repl.eval("\"test\"")
+                .expect("operation should succeed in test"),
+            "\"test\""
+        );
     }
 
     #[test]
     fn test_repl_boolean_operations() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("true && true").unwrap(), "true");
-        assert_eq!(repl.eval("true || false").unwrap(), "true");
-        assert_eq!(repl.eval("!true").unwrap(), "false");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("true && true")
+                .expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            repl.eval("true || false")
+                .expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            repl.eval("!true")
+                .expect("operation should succeed in test"),
+            "false"
+        );
     }
 
     #[test]
     fn test_repl_comparison_operators() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("5 > 3").unwrap(), "true");
-        assert_eq!(repl.eval("3 < 5").unwrap(), "true");
-        assert_eq!(repl.eval("5 == 5").unwrap(), "true");
-        assert_eq!(repl.eval("5 != 3").unwrap(), "true");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("5 > 3")
+                .expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            repl.eval("3 < 5")
+                .expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            repl.eval("5 == 5")
+                .expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            repl.eval("5 != 3")
+                .expect("operation should succeed in test"),
+            "true"
+        );
     }
 
     #[test]
     fn test_repl_float_arithmetic() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        assert_eq!(repl.eval("3.5 + 1.5").unwrap(), "5.0");
-        assert_eq!(repl.eval("10.0 - 2.5").unwrap(), "7.5");
-        assert_eq!(repl.eval("2.5 * 2.0").unwrap(), "5.0");
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        assert_eq!(
+            repl.eval("3.5 + 1.5")
+                .expect("operation should succeed in test"),
+            "5.0"
+        );
+        assert_eq!(
+            repl.eval("10.0 - 2.5")
+                .expect("operation should succeed in test"),
+            "7.5"
+        );
+        assert_eq!(
+            repl.eval("2.5 * 2.0")
+                .expect("operation should succeed in test"),
+            "5.0"
+        );
     }
 
     #[test]
     fn test_repl_error_handling() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
         assert!(repl.eval("undefined_var").is_err());
         assert!(repl.eval("1 / 0").is_err());
         // Should recover after error
-        assert_eq!(repl.eval("2 + 2").unwrap(), "4");
+        assert_eq!(
+            repl.eval("2 + 2")
+                .expect("operation should succeed in test"),
+            "4"
+        );
     }
 
     #[test]
     fn test_repl_memory_tracking() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
         let initial = repl.memory_used();
         assert_eq!(initial, 0);
 
-        repl.eval("let x = [1, 2, 3, 4, 5]").unwrap();
+        repl.eval("let x = [1, 2, 3, 4, 5]")
+            .expect("operation should succeed in test");
         assert!(repl.memory_used() >= initial);
 
         let pressure = repl.memory_pressure();
@@ -326,22 +449,33 @@ mod tests {
     fn test_repl_checkpoint_restore() {
         use crate::runtime::replay::DeterministicRepl;
 
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("let x = 10").unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("let x = 10")
+            .expect("operation should succeed in test");
 
         let checkpoint = DeterministicRepl::checkpoint(&repl);
-        repl.eval("let x = 20").unwrap();
-        assert_eq!(repl.eval("x").unwrap(), "20");
+        repl.eval("let x = 20")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("x").expect("operation should succeed in test"),
+            "20"
+        );
 
-        DeterministicRepl::restore(&mut repl, &checkpoint).unwrap();
-        assert_eq!(repl.eval("x").unwrap(), "10");
+        DeterministicRepl::restore(&mut repl, &checkpoint)
+            .expect("operation should succeed in test");
+        assert_eq!(
+            repl.eval("x").expect("operation should succeed in test"),
+            "10"
+        );
     }
 
     #[test]
     fn test_repl_bindings_management() {
-        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.eval("let a = 1").unwrap();
-        repl.eval("let b = 2").unwrap();
+        let mut repl = Repl::new(std::env::temp_dir()).expect("Repl::new should succeed in test");
+        repl.eval("let a = 1")
+            .expect("operation should succeed in test");
+        repl.eval("let b = 2")
+            .expect("operation should succeed in test");
 
         let bindings = repl.get_bindings();
         assert!(bindings.contains_key("a"));
