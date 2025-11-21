@@ -223,16 +223,20 @@ pmat prompt implement --spec docs/specifications/feature.md
 - [x] `cargo audit` integrated and run
 - [x] Unwrap() analysis completed
 - [x] CHANGELOG.md verified
+- [x] **Pre-commit hooks installed**: `pmat hooks install --tdg-enforcement` ✅
+  - `.git/hooks/pre-commit` (7.0KB) - TDG quality checks
+  - `.git/hooks/post-commit` (1.8KB) - Baseline auto-update
+  - Configuration: `.pmat/tdg-rules.toml`
+- [x] **TDG baseline exists**: `.pmat/tdg-baseline.json` (528KB) ✅
 
 ### Recommended Next Steps 🔄
-- [ ] Install pre-commit hooks: `pmat hooks install --tdg-enforcement`
-- [ ] Set up TDG baseline: `pmat tdg baseline create`
+- [ ] Test pre-commit hooks with dummy commit
 - [ ] Install cargo-llvm-cov: `cargo install cargo-llvm-cov`
 - [ ] Install cargo-mutants: `cargo install cargo-mutants`
-- [ ] Create QUALITY-002 ticket for unwrap() replacement
 - [ ] Run mutation testing on core modules
-- [ ] Establish coverage baseline
+- [ ] Establish coverage baseline with cargo-llvm-cov
 - [ ] Add PMAT quality gates to CI/CD pipeline
+- [ ] Begin QUALITY-002: Systematic unwrap() replacement
 
 ### Optional Enhancements 🎯
 - [ ] Install Miri: `rustup +nightly component add miri`
@@ -289,14 +293,63 @@ PMAT enforces Toyota Way principles:
 
 ---
 
+## Compliance Status
+
+### Pre-Commit Hooks ✅ (Installed 2025-11-21)
+
+**Enforcement Enabled**:
+- ✅ TDG quality checks (`.git/hooks/pre-commit`)
+- ✅ Baseline auto-update (`.git/hooks/post-commit`)
+- ✅ Configuration active (`.pmat/tdg-rules.toml`)
+
+**What Gets Checked**:
+1. **Quality Regressions**: Blocks commits that decrease TDG scores
+2. **Minimum Grade**: Enforces minimum grade (configured in `.pmat/tdg-rules.toml`)
+3. **SATD Detection**: Warns about TODO/FIXME/HACK comments
+4. **Zero Branching**: Enforces main-branch-only workflow
+
+**Hook Verification**:
+```bash
+# Verify hooks are installed
+ls -lh .git/hooks/pre-commit .git/hooks/post-commit
+
+# Test hooks (create test file with intentional issue)
+echo "// TODO: test" > /tmp/test.rs
+git add /tmp/test.rs
+git commit -m "test"  # Should warn or block
+git reset HEAD /tmp/test.rs && rm /tmp/test.rs
+```
+
+### TDG Baseline ✅
+
+- **Location**: `.pmat/tdg-baseline.json` (528KB)
+- **Last Updated**: 2025-11-18
+- **Status**: Active and current
+- **Refresh Schedule**: Weekly (recommended)
+
+**Baseline Commands**:
+```bash
+# View baseline summary
+pmat tdg baseline view --baseline .pmat/tdg-baseline.json
+
+# Check for regressions
+pmat tdg check-regression --baseline .pmat/tdg-baseline.json --path .
+
+# Refresh baseline
+pmat tdg baseline create --output .pmat/tdg-baseline.json --path .
+```
+
+---
+
 ## Version History
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2025-11-21 | 1.1 | Added compliance section, pre-commit hooks installed | Claude Code |
 | 2025-11-21 | 1.0 | Initial integration and assessment | Claude Code |
 
 ---
 
-**Status**: ✅ Integration Complete - Ready for continuous quality monitoring
+**Status**: ✅ Integration Complete + Compliance Hooks Active
 
 **Next Review**: 2025-11-28 (Weekly cadence recommended)
