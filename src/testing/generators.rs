@@ -241,9 +241,16 @@ mod tests {
         let mut runner = proptest::test_runner::TestRunner::default();
 
         for _ in 0..10 {
-            let value = strategy.new_tree(&mut runner).unwrap().current();
+            let value = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             // Identifiers should start with lowercase letter
-            assert!(value.chars().next().unwrap().is_ascii_lowercase());
+            assert!(value
+                .chars()
+                .next()
+                .expect("operation should succeed in test")
+                .is_ascii_lowercase());
             // All chars should be alphanumeric or underscore
             assert!(value.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
         }
@@ -303,7 +310,10 @@ mod tests {
         let strategy = arb_expr_with_depth(0);
         let mut runner = proptest::test_runner::TestRunner::default();
         for _ in 0..5 {
-            let expr = strategy.new_tree(&mut runner).unwrap().current();
+            let expr = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             assert_eq!(expr.span, Span::new(0, 0));
         }
 
@@ -311,7 +321,10 @@ mod tests {
         let strategy = arb_expr_with_depth(MAX_DEPTH);
         let mut runner = proptest::test_runner::TestRunner::default();
         for _ in 0..5 {
-            let expr = strategy.new_tree(&mut runner).unwrap().current();
+            let expr = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             // At max depth, should only generate literals or identifiers
             match &expr.kind {
                 ExprKind::Literal(_) | ExprKind::Identifier(_) => {}
@@ -326,7 +339,10 @@ mod tests {
         let mut runner = proptest::test_runner::TestRunner::default();
 
         for _ in 0..5 {
-            let expr = strategy.new_tree(&mut runner).unwrap().current();
+            let expr = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             // All expressions should have a span
             assert_eq!(expr.span, Span::new(0, 0));
         }
@@ -343,7 +359,10 @@ mod tests {
 
         // Generate many patterns to see variety
         for _ in 0..50 {
-            let pattern = strategy.new_tree(&mut runner).unwrap().current();
+            let pattern = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             match pattern {
                 Pattern::Literal(_) => has_literal = true,
                 Pattern::Identifier(_) => has_identifier = true,
@@ -362,7 +381,10 @@ mod tests {
         let mut runner = proptest::test_runner::TestRunner::default();
 
         for _ in 0..10 {
-            let expr = strategy.new_tree(&mut runner).unwrap().current();
+            let expr = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test")
+                .current();
             // Well-typed expressions should be simple
             match &expr.kind {
                 ExprKind::Literal(_) => {}
@@ -470,7 +492,9 @@ mod tests {
 
         // Generate a few literals and check they're valid
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let literal = value_tree.current();
             // Just verify it doesn't panic
             match literal {
@@ -495,11 +519,17 @@ mod tests {
         let strategy = arb_identifier();
 
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let identifier = value_tree.current();
             // Check it starts with a letter
             assert!(!identifier.is_empty());
-            assert!(identifier.chars().next().unwrap().is_alphabetic());
+            assert!(identifier
+                .chars()
+                .next()
+                .expect("operation should succeed in test")
+                .is_alphabetic());
         }
     }
 
@@ -512,7 +542,9 @@ mod tests {
         let strategy = arb_binary_op();
 
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let _op = value_tree.current();
             // Just verify it generates without panic
         }
@@ -527,7 +559,9 @@ mod tests {
         let strategy = arb_unary_op();
 
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let _op = value_tree.current();
             // Just verify it generates without panic
         }
@@ -542,7 +576,9 @@ mod tests {
         let strategy = arb_pattern();
 
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let pattern = value_tree.current();
             // Verify pattern is valid (all pattern variants are accepted)
             match pattern {
@@ -579,7 +615,9 @@ mod tests {
 
         // Generate several expressions
         for _ in 0..10 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let expr = value_tree.current();
             // Just verify it generates valid AST
             assert_eq!(expr.span, Span::new(0, 0));
@@ -595,7 +633,9 @@ mod tests {
         let strategy = arb_expr();
 
         for _ in 0..20 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let _expr = value_tree.current();
             // If this doesn't panic, generation works
         }
@@ -648,7 +688,9 @@ mod tests {
         // Generate multiple literals to check variety
         let mut found_variants = std::collections::HashSet::new();
         for _ in 0..100 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let literal = value_tree.current();
             match literal {
                 Literal::Integer(_, _) => {
@@ -690,11 +732,17 @@ mod tests {
         let strategy = arb_identifier();
 
         for _ in 0..50 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let identifier = value_tree.current();
 
             // Should start with lowercase letter
-            assert!(identifier.chars().next().unwrap().is_ascii_lowercase());
+            assert!(identifier
+                .chars()
+                .next()
+                .expect("operation should succeed in test")
+                .is_ascii_lowercase());
             // Should be reasonable length
             assert!(identifier.len() <= 11);
             // Should only contain valid identifier characters
@@ -714,7 +762,9 @@ mod tests {
 
         let mut found_ops = std::collections::HashSet::new();
         for _ in 0..200 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let op = value_tree.current();
             found_ops.insert(format!("{op:?}"));
         }
@@ -736,7 +786,9 @@ mod tests {
 
         let mut found_ops = std::collections::HashSet::new();
         for _ in 0..100 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let op = value_tree.current();
             found_ops.insert(format!("{op:?}"));
         }
@@ -757,7 +809,9 @@ mod tests {
 
         // Test with max depth
         let deep_strategy = arb_expr_with_depth(MAX_DEPTH);
-        let value_tree = deep_strategy.new_tree(&mut runner).unwrap();
+        let value_tree = deep_strategy
+            .new_tree(&mut runner)
+            .expect("operation should succeed in test");
         let expr = value_tree.current();
 
         // Should generate without stack overflow
@@ -765,7 +819,9 @@ mod tests {
 
         // Test with zero depth (should only generate literals/identifiers)
         let shallow_strategy = arb_expr_with_depth(MAX_DEPTH + 1);
-        let value_tree = shallow_strategy.new_tree(&mut runner).unwrap();
+        let value_tree = shallow_strategy
+            .new_tree(&mut runner)
+            .expect("operation should succeed in test");
         let expr = value_tree.current();
 
         match expr.kind {
@@ -788,7 +844,9 @@ mod tests {
 
         // Generate several well-typed expressions
         for _ in 0..20 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let expr = value_tree.current();
 
             // Basic structure validation
@@ -816,7 +874,9 @@ mod tests {
 
         let mut found_patterns = std::collections::HashSet::new();
         for _ in 0..100 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let pattern = value_tree.current();
 
             match &pattern {
@@ -961,7 +1021,9 @@ mod tests {
 
         // Check that string literals are reasonably bounded
         for _ in 0..50 {
-            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let value_tree = strategy
+                .new_tree(&mut runner)
+                .expect("operation should succeed in test");
             let literal = value_tree.current();
 
             if let Literal::String(s) = literal {
