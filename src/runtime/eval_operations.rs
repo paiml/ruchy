@@ -582,17 +582,19 @@ mod tests {
     #[test]
     fn test_add_values() {
         assert_eq!(
-            add_values(&Value::Integer(2), &Value::Integer(3)).unwrap(),
+            add_values(&Value::Integer(2), &Value::Integer(3))
+                .expect("operation should succeed in test"),
             Value::Integer(5)
         );
         assert_eq!(
-            add_values(&Value::Float(2.5), &Value::Float(3.5)).unwrap(),
+            add_values(&Value::Float(2.5), &Value::Float(3.5))
+                .expect("operation should succeed in test"),
             Value::Float(6.0)
         );
 
         let s1 = Value::from_string("hello".to_string());
         let s2 = Value::from_string(" world".to_string());
-        let result = add_values(&s1, &s2).unwrap();
+        let result = add_values(&s1, &s2).expect("operation should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "hello world"),
             _ => panic!("Expected string result"),
@@ -605,11 +607,15 @@ mod tests {
         assert!(!equal_values(&Value::Integer(5), &Value::Integer(6)));
         assert!(equal_values(&Value::Integer(5), &Value::Float(5.0))); // Mixed type comparison works
 
-        assert!(less_than_values(&Value::Integer(3), &Value::Integer(5)).unwrap());
-        assert!(!less_than_values(&Value::Integer(5), &Value::Integer(3)).unwrap());
+        assert!(less_than_values(&Value::Integer(3), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+        assert!(!less_than_values(&Value::Integer(5), &Value::Integer(3))
+            .expect("operation should succeed in test"));
 
-        assert!(greater_than_values(&Value::Integer(5), &Value::Integer(3)).unwrap());
-        assert!(!greater_than_values(&Value::Integer(3), &Value::Integer(5)).unwrap());
+        assert!(greater_than_values(&Value::Integer(5), &Value::Integer(3))
+            .expect("operation should succeed in test"));
+        assert!(!greater_than_values(&Value::Integer(3), &Value::Integer(5))
+            .expect("operation should succeed in test"));
     }
 
     /// QUALITY-017: Comprehensive tests for `equal_values()` before refactoring
@@ -688,36 +694,43 @@ mod tests {
         let false_val = Value::Bool(false);
 
         // AND
-        let result = eval_logical_op(AstBinaryOp::And, &true_val, &false_val).unwrap();
+        let result = eval_logical_op(AstBinaryOp::And, &true_val, &false_val)
+            .expect("operation should succeed in test");
         assert_eq!(result, false_val);
 
         // OR
-        let result = eval_logical_op(AstBinaryOp::Or, &false_val, &true_val).unwrap();
+        let result = eval_logical_op(AstBinaryOp::Or, &false_val, &true_val)
+            .expect("operation should succeed in test");
         assert_eq!(result, true_val);
     }
 
     #[test]
     fn test_unary_ops() {
         assert_eq!(
-            eval_unary_op(UnaryOp::Negate, &Value::Integer(5)).unwrap(),
+            eval_unary_op(UnaryOp::Negate, &Value::Integer(5))
+                .expect("operation should succeed in test"),
             Value::Integer(-5)
         );
         assert_eq!(
-            eval_unary_op(UnaryOp::Negate, &Value::Float(3.15)).unwrap(),
+            eval_unary_op(UnaryOp::Negate, &Value::Float(3.15))
+                .expect("operation should succeed in test"),
             Value::Float(-3.15)
         );
 
         assert_eq!(
-            eval_unary_op(UnaryOp::Not, &Value::Bool(true)).unwrap(),
+            eval_unary_op(UnaryOp::Not, &Value::Bool(true))
+                .expect("operation should succeed in test"),
             Value::Bool(false)
         );
         assert_eq!(
-            eval_unary_op(UnaryOp::Not, &Value::Bool(false)).unwrap(),
+            eval_unary_op(UnaryOp::Not, &Value::Bool(false))
+                .expect("operation should succeed in test"),
             Value::Bool(true)
         );
 
         assert_eq!(
-            eval_unary_op(UnaryOp::BitwiseNot, &Value::Integer(5)).unwrap(),
+            eval_unary_op(UnaryOp::BitwiseNot, &Value::Integer(5))
+                .expect("operation should succeed in test"),
             Value::Integer(!5)
         );
     }
@@ -728,7 +741,8 @@ mod tests {
         assert!(div_values(&Value::Integer(10), &Value::Integer(0)).is_err());
 
         // Float division by zero follows IEEE 754 - returns infinity
-        let result = div_values(&Value::Float(10.0), &Value::Float(0.0)).unwrap();
+        let result = div_values(&Value::Float(10.0), &Value::Float(0.0))
+            .expect("operation should succeed in test");
         match result {
             Value::Float(f) => assert!(f.is_infinite()),
             _ => panic!("Expected Float result"),
