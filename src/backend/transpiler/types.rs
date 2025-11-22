@@ -24,7 +24,7 @@ impl Transpiler {
     /// let mut parser = Parser::new("let x: i32 = 42");
     /// let ast = parser.parse().expect("Failed to parse");
     ///
-    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let result = transpiler.transpile(&ast).expect("operation should succeed in test");
     /// let code = result.to_string();
     /// assert!(code.contains("i32"));
     /// assert!(code.contains("42"));
@@ -36,9 +36,9 @@ impl Transpiler {
     /// // Generic types
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let v = [1, 2, 3]");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("operation should succeed in test");
     ///
-    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let result = transpiler.transpile(&ast).expect("operation should succeed in test");
     /// // Basic transpilation test - just check it compiles
     /// assert!(!result.to_string().is_empty());
     /// ```
@@ -49,9 +49,9 @@ impl Transpiler {
     /// // Optional types
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let opt = Some(42)");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("operation should succeed in test");
     ///
-    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let result = transpiler.transpile(&ast).expect("operation should succeed in test");
     /// let code = result.to_string();
     /// assert!(code.contains("Some"));
     /// ```
@@ -1223,7 +1223,9 @@ mod tests {
             kind: crate::frontend::ast::TypeKind::Named("int".to_string()),
             span: crate::frontend::ast::Span::new(0, 3),
         };
-        let result = transpiler.transpile_type(&int_type).unwrap();
+        let result = transpiler
+            .transpile_type(&int_type)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "i64");
 
         // Test float type
@@ -1231,7 +1233,9 @@ mod tests {
             kind: crate::frontend::ast::TypeKind::Named("float".to_string()),
             span: crate::frontend::ast::Span::new(0, 5),
         };
-        let result = transpiler.transpile_type(&float_type).unwrap();
+        let result = transpiler
+            .transpile_type(&float_type)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "f64");
 
         // Test bool type
@@ -1239,7 +1243,9 @@ mod tests {
             kind: crate::frontend::ast::TypeKind::Named("bool".to_string()),
             span: crate::frontend::ast::Span::new(0, 4),
         };
-        let result = transpiler.transpile_type(&bool_type).unwrap();
+        let result = transpiler
+            .transpile_type(&bool_type)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "bool");
 
         // Test String type
@@ -1247,7 +1253,9 @@ mod tests {
             kind: crate::frontend::ast::TypeKind::Named("String".to_string()),
             span: crate::frontend::ast::Span::new(0, 6),
         };
-        let result = transpiler.transpile_type(&string_type).unwrap();
+        let result = transpiler
+            .transpile_type(&string_type)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "String");
 
         // Test custom type
@@ -1255,7 +1263,9 @@ mod tests {
             kind: crate::frontend::ast::TypeKind::Named("MyType".to_string()),
             span: crate::frontend::ast::Span::new(0, 6),
         };
-        let result = transpiler.transpile_type(&custom_type).unwrap();
+        let result = transpiler
+            .transpile_type(&custom_type)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "MyType");
     }
 
@@ -1273,7 +1283,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&optional_type).unwrap();
+        let result = transpiler
+            .transpile_type(&optional_type)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("Option"));
         assert!(result.to_string().contains("i64"));
     }
@@ -1292,7 +1304,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&list_type).unwrap();
+        let result = transpiler
+            .transpile_type(&list_type)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("Vec"));
         assert!(result.to_string().contains("i64"));
     }
@@ -1317,7 +1331,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&tuple_type).unwrap();
+        let result = transpiler
+            .transpile_type(&tuple_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("i64"));
         assert!(code.contains("bool"));
@@ -1341,7 +1357,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&array_type).unwrap();
+        let result = transpiler
+            .transpile_type(&array_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains('['));
         assert!(code.contains("i64"));
@@ -1367,7 +1385,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&ref_type).unwrap();
+        let result = transpiler
+            .transpile_type(&ref_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains('&'));
         assert!(code.contains("String"));
@@ -1383,7 +1403,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&mut_ref_type).unwrap();
+        let result = transpiler
+            .transpile_type(&mut_ref_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains('&'));
         assert!(code.contains("mut"));
@@ -1400,7 +1422,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&df_type).unwrap();
+        let result = transpiler
+            .transpile_type(&df_type)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("DataFrame"));
 
         // Series type
@@ -1414,7 +1438,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&series_type).unwrap();
+        let result = transpiler
+            .transpile_type(&series_type)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("Series"));
     }
 
@@ -1435,7 +1461,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 10),
         };
 
-        let result = transpiler.transpile_type(&generic_type).unwrap();
+        let result = transpiler
+            .transpile_type(&generic_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("Vec"));
         assert!(code.contains("i64"));
@@ -1471,7 +1499,9 @@ mod tests {
             span: crate::frontend::ast::Span::new(0, 20),
         };
 
-        let result = transpiler.transpile_type(&func_type).unwrap();
+        let result = transpiler
+            .transpile_type(&func_type)
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("fn"));
         assert!(code.contains("i64"));
@@ -1611,7 +1641,9 @@ mod tests {
     #[test]
     fn test_transpile_params_empty() {
         let transpiler = Transpiler::new();
-        let result = transpiler.transpile_params(&[]).unwrap();
+        let result = transpiler
+            .transpile_params(&[])
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 0);
     }
 
@@ -1626,7 +1658,9 @@ mod tests {
             is_mutable: false,
             default_value: None,
         }];
-        let result = transpiler.transpile_params(&params).unwrap();
+        let result = transpiler
+            .transpile_params(&params)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
         assert!(code.contains('x'));
@@ -1653,7 +1687,9 @@ mod tests {
                 default_value: None,
             },
         ];
-        let result = transpiler.transpile_params(&params).unwrap();
+        let result = transpiler
+            .transpile_params(&params)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 2);
     }
 
@@ -1668,7 +1704,9 @@ mod tests {
             is_mutable: true,
             default_value: None,
         }];
-        let result = transpiler.transpile_params(&params).unwrap();
+        let result = transpiler
+            .transpile_params(&params)
+            .expect("operation should succeed in test");
         let code = result[0].to_string();
         assert!(code.contains("mut"));
         assert!(code.contains('x'));
@@ -1681,7 +1719,7 @@ mod tests {
         let fields = vec![make_field("x", "i32"), make_field("y", "String")];
         let result = transpiler.transpile_struct("Point", &[], &fields, &[], false);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result.expect("result should be Ok in test").to_string();
         assert!(code.contains("struct"));
         assert!(code.contains("Point"));
         assert!(code.contains('x'));
@@ -1696,7 +1734,7 @@ mod tests {
         let derives = vec!["Debug".to_string(), "Clone".to_string()];
         let result = transpiler.transpile_struct("Data", &[], &fields, &derives, false);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result.expect("result should be Ok in test").to_string();
         assert!(code.contains("derive"));
         assert!(code.contains("Debug"));
         assert!(code.contains("Clone"));
@@ -1712,7 +1750,7 @@ mod tests {
         ];
         let result = transpiler.transpile_tuple_struct("Wrapper", &[], &field_types, &[], false);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result.expect("result should be Ok in test").to_string();
         assert!(code.contains("struct"));
         assert!(code.contains("Wrapper"));
         assert!(code.contains("i32"));
@@ -1730,7 +1768,7 @@ mod tests {
         });
         let result = transpiler
             .transpile_struct_field_type_with_lifetime(&ref_type, "'a")
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("'a")); // Should use new lifetime
         assert!(code.contains("str"));
@@ -1743,7 +1781,7 @@ mod tests {
         let non_ref_type = make_type(TypeKind::Named("String".to_string()));
         let result = transpiler
             .transpile_struct_field_type_with_lifetime(&non_ref_type, "'a")
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert_eq!(code, "String");
         assert!(!code.contains("'a")); // Non-reference type shouldn't get lifetime
@@ -1753,7 +1791,9 @@ mod tests {
     #[test]
     fn test_transpile_named_type_namespaced() {
         let transpiler = Transpiler::new();
-        let result = transpiler.transpile_named_type("std::io::Error").unwrap();
+        let result = transpiler
+            .transpile_named_type("std::io::Error")
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("std"));
         assert!(code.contains("io"));
@@ -1764,7 +1804,9 @@ mod tests {
     #[test]
     fn test_transpile_named_type_nested_namespace() {
         let transpiler = Transpiler::new();
-        let result = transpiler.transpile_named_type("trace::Sampler").unwrap();
+        let result = transpiler
+            .transpile_named_type("trace::Sampler")
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("trace"));
         assert!(code.contains("Sampler"));
@@ -1777,7 +1819,7 @@ mod tests {
         let inner = make_type(TypeKind::Named("String".to_string()));
         let result = transpiler
             .transpile_reference_type(false, Some("'a"), &inner)
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("'a"));
         assert!(code.contains("String"));
@@ -1795,7 +1837,7 @@ mod tests {
         });
         let result = transpiler
             .transpile_reference_type(true, Some("'b"), &inner)
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("'b"));
         assert!(code.contains("mut"));
@@ -1813,7 +1855,7 @@ mod tests {
         ];
         let result = transpiler
             .transpile_generic_type("HashMap", &params)
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("HashMap"));
         assert!(code.contains("String"));
@@ -1844,7 +1886,9 @@ mod tests {
     fn test_transpile_constructors_named() {
         let transpiler = Transpiler::new();
         let ctors = vec![make_constructor(Some("from_string"), None)];
-        let result = transpiler.transpile_constructors(&ctors).unwrap();
+        let result = transpiler
+            .transpile_constructors(&ctors)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
         assert!(code.contains("from_string"));
@@ -1865,7 +1909,9 @@ mod tests {
             ],
         });
         let ctors = vec![make_constructor(None, Some(ret_type))];
-        let result = transpiler.transpile_constructors(&ctors).unwrap();
+        let result = transpiler
+            .transpile_constructors(&ctors)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
         assert!(code.contains("Result"));
@@ -1901,7 +1947,9 @@ mod tests {
     fn test_transpile_class_methods_single() {
         let transpiler = Transpiler::new();
         let methods = vec![make_class_method("compute", true)];
-        let result = transpiler.transpile_class_methods(&methods).unwrap();
+        let result = transpiler
+            .transpile_class_methods(&methods)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
         assert!(code.contains("compute"));
@@ -1931,7 +1979,9 @@ mod tests {
     fn test_transpile_class_constants_single() {
         let transpiler = Transpiler::new();
         let constants = vec![make_class_constant("MAX_SIZE", true)];
-        let result = transpiler.transpile_class_constants(&constants).unwrap();
+        let result = transpiler
+            .transpile_class_constants(&constants)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let code = result[0].to_string();
         assert!(code.contains("MAX_SIZE"));
@@ -1974,7 +2024,7 @@ mod tests {
         let fields = vec![make_field("x", "i32")]; // No default values
         let result = transpiler
             .generate_default_impl(&fields, &struct_name, &[])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.is_empty()); // Should return empty TokenStream
     }
@@ -2001,7 +2051,7 @@ mod tests {
         };
         let result = transpiler
             .generate_default_impl(&[field_with_default], &struct_name, &[])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("impl"));
         assert!(code.contains("Default"));
