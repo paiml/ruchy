@@ -385,7 +385,9 @@ mod tests {
     #[test]
     fn test_empty_dataframe() {
         let transpiler = make_test_transpiler();
-        let result = transpiler.transpile_dataframe(&[]).unwrap();
+        let result = transpiler
+            .transpile_dataframe(&[])
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("empty"));
@@ -403,7 +405,9 @@ mod tests {
                 values: vec![make_literal_expr(3), make_literal_expr(4)],
             },
         ];
-        let result = transpiler.transpile_dataframe(&columns).unwrap();
+        let result = transpiler
+            .transpile_dataframe(&columns)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("Series"));
@@ -417,7 +421,7 @@ mod tests {
         let op = DataFrameOp::Select(vec!["col1".to_string(), "col2".to_string()]);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("select"));
         assert!(output.contains("col1"));
@@ -431,7 +435,7 @@ mod tests {
         let op = DataFrameOp::Filter(Box::new(condition));
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("filter"));
     }
@@ -442,7 +446,7 @@ mod tests {
         let op = DataFrameOp::GroupBy(vec!["group_col".to_string()]);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("groupby"));
         assert!(output.contains("group_col"));
@@ -454,7 +458,7 @@ mod tests {
         let op = DataFrameOp::Sort(vec!["sort_col".to_string()]);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("sort"));
         assert!(output.contains("sort_col"));
@@ -477,7 +481,7 @@ mod tests {
             };
             let result = transpiler
                 .transpile_dataframe_operation(&df_expr, &op)
-                .unwrap();
+                .expect("operation should succeed in test");
             let output = result.to_string();
             assert!(output.contains("join"));
             assert!(output.contains(expected));
@@ -498,7 +502,7 @@ mod tests {
         let op = DataFrameOp::Aggregate(agg_ops);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         // Check that it produces some output
         assert!(!output.is_empty());
@@ -511,21 +515,21 @@ mod tests {
         let op = DataFrameOp::Limit(10);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("limit"));
         // Test Head
         let op = DataFrameOp::Head(5);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("head"));
         // Test Tail
         let op = DataFrameOp::Tail(5);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("tail"));
     }
@@ -536,7 +540,9 @@ mod tests {
             name: "empty_col".to_string(),
             values: vec![],
         }];
-        let result = transpiler.transpile_dataframe(&columns).unwrap();
+        let result = transpiler
+            .transpile_dataframe(&columns)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("Series"));
         assert!(output.contains("empty_col"));
@@ -557,7 +563,10 @@ mod tests {
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "select", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("lazy"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("lazy"));
     }
 
     // Test 2: transpile_dataframe_method with rows (inspection)
@@ -567,7 +576,10 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let result = transpiler.transpile_dataframe_method(&df_expr, "rows", &[]);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("height"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("height"));
     }
 
     // Test 3: transpile_dataframe_method with columns (inspection)
@@ -577,7 +589,10 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let result = transpiler.transpile_dataframe_method(&df_expr, "columns", &[]);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("width"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("width"));
     }
 
     // Test 4: transpile_dataframe_method with mean (statistical)
@@ -587,7 +602,10 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let result = transpiler.transpile_dataframe_method(&df_expr, "mean", &[]);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("mean"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("mean"));
     }
 
     // Test 5: transpile_dataframe_method with head (no args, default 5)
@@ -597,7 +615,9 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let result = transpiler.transpile_dataframe_method(&df_expr, "head", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("head"));
         assert!(output.contains('5'));
     }
@@ -610,7 +630,10 @@ mod tests {
         let args = vec![make_literal_expr(10)];
         let result = transpiler.transpile_dataframe_method(&df_expr, "tail", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("tail"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("tail"));
     }
 
     // Test 7: transpile_dataframe_method with groupby
@@ -627,7 +650,10 @@ mod tests {
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "groupby", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("group_by"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("group_by"));
     }
 
     // Test 8: transpile_dataframe_method with default method
@@ -637,7 +663,10 @@ mod tests {
         let df_expr = make_literal_expr(0);
         let result = transpiler.transpile_dataframe_method(&df_expr, "unknown_method", &[]);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("unknown_method"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("unknown_method"));
     }
 
     // Test 9: is_dataframe_expr with DataFrame literal
@@ -726,7 +755,7 @@ mod tests {
         };
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("join"));
         assert!(output.contains("Outer"));
@@ -741,7 +770,7 @@ mod tests {
         let op = DataFrameOp::Aggregate(agg_ops);
         let result = transpiler
             .transpile_dataframe_operation(&df_expr, &op)
-            .unwrap();
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("var"));
         assert!(output.contains("variance_col"));
