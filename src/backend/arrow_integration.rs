@@ -392,14 +392,14 @@ mod tests {
             "strings" => &["a", "b", "c", "d", "e"],
             "booleans" => &[true, false, true, false, true],
         }
-        .unwrap();
+        .expect("operation should succeed in test");
         // Convert to Arrow
-        let record_batch = dataframe_to_arrow(&df).unwrap();
+        let record_batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         // Verify schema
         assert_eq!(record_batch.num_columns(), 4);
         assert_eq!(record_batch.num_rows(), 5);
         // Convert back to Polars
-        let df2 = arrow_to_dataframe(&record_batch).unwrap();
+        let df2 = arrow_to_dataframe(&record_batch).expect("operation should succeed in test");
         // Verify data integrity
         assert_eq!(df.shape(), df2.shape());
         assert_eq!(df.get_column_names(), df2.get_column_names());
@@ -409,18 +409,20 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
         // Test slicing
-        let sliced = arrow_df.slice(2, 5).unwrap();
+        let sliced = arrow_df
+            .slice(2, 5)
+            .expect("operation should succeed in test");
         assert_eq!(sliced.num_rows(), 5);
         // Verify values
         let array = sliced
             .column(0)
             .as_any()
             .downcast_ref::<arrow::array::Int32Array>()
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(array.value(0), 3);
         assert_eq!(array.value(4), 7);
     }
@@ -433,10 +435,10 @@ mod tests {
         let df = df! {
             "values" => values,
         }
-        .unwrap();
+        .expect("operation should succeed in test");
         // Convert to Arrow (should be fast due to zero-copy)
         let start = std::time::Instant::now();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let duration = start.elapsed();
         // Verify it's fast (less than 100ms for 1M rows)
         assert!(
@@ -454,9 +456,9 @@ mod tests {
         let df = df! {
             "values" => values,
         }
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let batch = dataframe_to_arrow(&df).unwrap();
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Multiple slice operations should all be fast (zero-copy)
@@ -469,7 +471,9 @@ mod tests {
 
         for (offset, length) in slice_tests {
             let start = std::time::Instant::now();
-            let sliced = arrow_df.slice(offset, length).unwrap();
+            let sliced = arrow_df
+                .slice(offset, length)
+                .expect("operation should succeed in test");
             let duration = start.elapsed();
 
             // Zero-copy slice should be very fast regardless of data size
@@ -492,9 +496,9 @@ mod tests {
         let df = df! {
             "values" => values,
         }
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let batch = dataframe_to_arrow(&df).unwrap();
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Create a boolean mask (every 10th element)
@@ -502,7 +506,9 @@ mod tests {
         let mask = BooleanArray::from(mask_values);
 
         let start = std::time::Instant::now();
-        let filtered = arrow_df.filter(&mask).unwrap();
+        let filtered = arrow_df
+            .filter(&mask)
+            .expect("operation should succeed in test");
         let duration = start.elapsed();
 
         // Filter should be reasonably fast using Arrow's optimized kernels
@@ -518,27 +524,33 @@ mod tests {
     fn test_polars_dtype_to_arrow() {
         // Test various data type conversions
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::Int32).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::Int32)
+                .expect("operation should succeed in test"),
             ArrowDataType::Int32
         );
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::Int64).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::Int64)
+                .expect("operation should succeed in test"),
             ArrowDataType::Int64
         );
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::Float32).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::Float32)
+                .expect("operation should succeed in test"),
             ArrowDataType::Float32
         );
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::Float64).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::Float64)
+                .expect("operation should succeed in test"),
             ArrowDataType::Float64
         );
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::Boolean).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::Boolean)
+                .expect("operation should succeed in test"),
             ArrowDataType::Boolean
         );
         assert_eq!(
-            polars_dtype_to_arrow(&PolarsDataType::String).unwrap(),
+            polars_dtype_to_arrow(&PolarsDataType::String)
+                .expect("operation should succeed in test"),
             ArrowDataType::Utf8
         );
     }
@@ -553,8 +565,8 @@ mod tests {
             false,
         )]));
         let array = Int32Array::from(vec![1, 2, 3]);
-        let batch =
-            RecordBatch::try_new(schema.clone(), vec![Arc::new(array) as ArrayRef]).unwrap();
+        let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(array) as ArrayRef])
+            .expect("operation should succeed in test");
 
         let arrow_df = ArrowDataFrame::new(schema.clone(), vec![batch]);
         assert_eq!(arrow_df.schema, schema);
@@ -622,8 +634,8 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Create mask with wrong length
@@ -639,13 +651,13 @@ mod tests {
         // Test handling of nullable columns
         let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
         let s = Series::new(PlSmallStr::from("nullable"), values);
-        let df = DataFrame::new(vec![s.into()]).unwrap();
+        let df = DataFrame::new(vec![s.into()]).expect("operation should succeed in test");
 
-        let batch = dataframe_to_arrow(&df).unwrap();
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         assert_eq!(batch.num_rows(), 5);
 
         // Convert back and verify nulls preserved
-        let df2 = arrow_to_dataframe(&batch).unwrap();
+        let df2 = arrow_to_dataframe(&batch).expect("operation should succeed in test");
         assert_eq!(df.shape(), df2.shape());
     }
 
@@ -664,11 +676,11 @@ mod tests {
             "floats" => float_values,
             "booleans" => bool_values,
         }
-        .unwrap();
+        .expect("operation should succeed in test");
 
         // Test 1: Polars to Arrow conversion (<100ms)
         let start = std::time::Instant::now();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let conversion_time = start.elapsed();
         assert!(
             conversion_time.as_millis() < 100,
@@ -678,7 +690,7 @@ mod tests {
 
         // Test 2: Arrow to Polars roundtrip (<100ms)
         let start = std::time::Instant::now();
-        let df2 = arrow_to_dataframe(&batch).unwrap();
+        let df2 = arrow_to_dataframe(&batch).expect("operation should succeed in test");
         let roundtrip_time = start.elapsed();
         assert!(
             roundtrip_time.as_millis() < 100,
@@ -689,7 +701,9 @@ mod tests {
         // Test 3: Large slice operations (<100ms)
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
         let start = std::time::Instant::now();
-        let _large_slice = arrow_df.slice(0, 500_000).unwrap(); // 50% of data
+        let _large_slice = arrow_df
+            .slice(0, 500_000)
+            .expect("operation should succeed in test"); // 50% of data
         let slice_time = start.elapsed();
         assert!(
             slice_time.as_millis() < 100,
@@ -731,7 +745,8 @@ mod tests {
     fn test_polars_dtype_to_arrow_date() {
         use polars::datatypes::DataType as PolarsDataType;
 
-        let result = polars_dtype_to_arrow(&PolarsDataType::Date).unwrap();
+        let result =
+            polars_dtype_to_arrow(&PolarsDataType::Date).expect("operation should succeed in test");
         assert_eq!(result, ArrowDataType::Date32);
     }
 
@@ -744,7 +759,7 @@ mod tests {
             polars::datatypes::TimeUnit::Microseconds,
             None,
         ))
-        .unwrap();
+        .expect("operation should succeed in test");
 
         match result {
             ArrowDataType::Timestamp(unit, tz) => {
@@ -782,13 +797,13 @@ mod tests {
         let values: Vec<i32> = vec![1, 2, 3, 4, 5];
         let series = Series::new(PlSmallStr::from("int32_col"), values);
 
-        let result = polars_series_to_arrow(&series).unwrap();
+        let result = polars_series_to_arrow(&series).expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
 
         let array = result
             .as_any()
             .downcast_ref::<arrow::array::Int32Array>()
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(array.value(0), 1);
         assert_eq!(array.value(4), 5);
     }
@@ -802,13 +817,13 @@ mod tests {
         let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
         let series = Series::new(PlSmallStr::from("nullable_int32"), values);
 
-        let result = polars_series_to_arrow(&series).unwrap();
+        let result = polars_series_to_arrow(&series).expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
 
         let array = result
             .as_any()
             .downcast_ref::<arrow::array::Int32Array>()
-            .unwrap();
+            .expect("operation should succeed in test");
         assert!(!array.is_null(0));
         assert!(array.is_null(1));
         assert_eq!(array.value(0), 1);
@@ -842,7 +857,8 @@ mod tests {
         let array = Int32Array::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("test_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("test_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
         assert_eq!(result.name(), "test_col");
     }
@@ -856,7 +872,8 @@ mod tests {
         let array = Float64Array::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("float_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("float_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
     }
 
@@ -867,7 +884,8 @@ mod tests {
         let array = BooleanArray::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("bool_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("bool_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
     }
 
@@ -880,7 +898,8 @@ mod tests {
         let array = StringArray::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = convert_arrow_string(array_ref, PlSmallStr::from("empty")).unwrap();
+        let result = convert_arrow_string(array_ref, PlSmallStr::from("empty"))
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 0);
     }
 
@@ -893,7 +912,8 @@ mod tests {
         let array = StringArray::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = convert_arrow_string(array_ref, PlSmallStr::from("nullable_str")).unwrap();
+        let result = convert_arrow_string(array_ref, PlSmallStr::from("nullable_str"))
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 4);
     }
 
@@ -910,13 +930,13 @@ mod tests {
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let batch2 = RecordBatch::try_new(
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![4, 5])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let arrow_df = ArrowDataFrame::new(schema, vec![batch1, batch2]);
         assert_eq!(arrow_df.num_rows(), 5); // 3 + 2 rows
@@ -935,10 +955,10 @@ mod tests {
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let df = ArrowDataFrame::new(schema.clone(), vec![batch]);
-        let result = ArrowDataFrame::concat(&[df]).unwrap();
+        let result = ArrowDataFrame::concat(&[df]).expect("operation should succeed in test");
 
         assert_eq!(result.num_rows(), 3);
         assert_eq!(result.schema, schema);
@@ -957,18 +977,18 @@ mod tests {
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let batch2 = RecordBatch::try_new(
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![4, 5, 6])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let df1 = ArrowDataFrame::new(schema.clone(), vec![batch1]);
         let df2 = ArrowDataFrame::new(schema, vec![batch2]);
 
-        let result = ArrowDataFrame::concat(&[df1, df2]).unwrap();
+        let result = ArrowDataFrame::concat(&[df1, df2]).expect("operation should succeed in test");
         assert_eq!(result.num_rows(), 6); // 3 + 3 rows
         assert_eq!(result.batches.len(), 2); // 2 batches preserved
     }
@@ -979,9 +999,9 @@ mod tests {
         let df = df! {
             "empty_col" => Vec::<i32>::new(),
         }
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let result = dataframe_to_arrow(&df).unwrap();
+        let result = dataframe_to_arrow(&df).expect("operation should succeed in test");
         assert_eq!(result.num_rows(), 0);
         assert_eq!(result.num_columns(), 1);
     }
@@ -999,9 +1019,9 @@ mod tests {
             schema,
             vec![Arc::new(Int32Array::from(Vec::<i32>::new())) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let result = arrow_to_dataframe(&batch).unwrap();
+        let result = arrow_to_dataframe(&batch).expect("operation should succeed in test");
         assert_eq!(result.shape(), (0, 1)); // 0 rows, 1 column
     }
 
@@ -1018,25 +1038,27 @@ mod tests {
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![1, 2, 3])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let batch2 = RecordBatch::try_new(
             schema.clone(),
             vec![Arc::new(Int32Array::from(vec![4, 5, 6])) as ArrayRef],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         let arrow_df = ArrowDataFrame::new(schema, vec![batch1, batch2]);
 
         // Slice from row 1 to row 4 (spans both batches)
-        let sliced = arrow_df.slice(1, 4).unwrap();
+        let sliced = arrow_df
+            .slice(1, 4)
+            .expect("operation should succeed in test");
         assert_eq!(sliced.num_rows(), 4); // rows 2, 3, 4, 5
 
         let array = sliced
             .column(0)
             .as_any()
             .downcast_ref::<Int32Array>()
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(array.value(0), 2); // First value in slice
         assert_eq!(array.value(3), 5); // Last value in slice
     }
@@ -1046,7 +1068,8 @@ mod tests {
     fn test_polars_dtype_to_arrow_float32() {
         use polars::datatypes::DataType as PolarsDataType;
 
-        let result = polars_dtype_to_arrow(&PolarsDataType::Float32).unwrap();
+        let result = polars_dtype_to_arrow(&PolarsDataType::Float32)
+            .expect("operation should succeed in test");
         assert_eq!(result, ArrowDataType::Float32);
     }
 
@@ -1059,10 +1082,13 @@ mod tests {
         let values: Vec<Option<f64>> = vec![Some(1.5), None, Some(3.5), None, Some(5.5)];
         let series = Series::new(PlSmallStr::from("nullable_float64"), values);
 
-        let result = polars_series_to_arrow(&series).unwrap();
+        let result = polars_series_to_arrow(&series).expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
 
-        let array = result.as_any().downcast_ref::<Float64Array>().unwrap();
+        let array = result
+            .as_any()
+            .downcast_ref::<Float64Array>()
+            .expect("operation should succeed in test");
         assert!(!array.is_null(0));
         assert!(array.is_null(1));
         assert_eq!(array.value(0), 1.5);
@@ -1078,10 +1104,13 @@ mod tests {
         let values: Vec<Option<bool>> = vec![Some(true), None, Some(false), None, Some(true)];
         let series = Series::new(PlSmallStr::from("nullable_bool"), values);
 
-        let result = polars_series_to_arrow(&series).unwrap();
+        let result = polars_series_to_arrow(&series).expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
 
-        let array = result.as_any().downcast_ref::<BooleanArray>().unwrap();
+        let array = result
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .expect("operation should succeed in test");
         assert!(!array.is_null(0));
         assert!(array.is_null(1));
         assert!(array.value(0));
@@ -1097,10 +1126,13 @@ mod tests {
         let values: Vec<Option<&str>> = vec![Some("hello"), None, Some("world"), None];
         let series = Series::new(PlSmallStr::from("nullable_str"), values);
 
-        let result = polars_series_to_arrow(&series).unwrap();
+        let result = polars_series_to_arrow(&series).expect("operation should succeed in test");
         assert_eq!(result.len(), 4);
 
-        let array = result.as_any().downcast_ref::<StringArray>().unwrap();
+        let array = result
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .expect("operation should succeed in test");
         assert!(!array.is_null(0));
         assert!(array.is_null(1));
         assert_eq!(array.value(0), "hello");
@@ -1116,7 +1148,8 @@ mod tests {
         let array = Int64Array::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("test_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("test_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
         assert_eq!(result.name(), "test_col");
     }
@@ -1128,7 +1161,8 @@ mod tests {
         let array = Float64Array::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("float_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("float_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
     }
 
@@ -1139,7 +1173,8 @@ mod tests {
         let array = BooleanArray::from(values);
         let array_ref: &dyn Array = &array;
 
-        let result = arrow_array_to_polars_series("bool_col", array_ref).unwrap();
+        let result = arrow_array_to_polars_series("bool_col", array_ref)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 5);
     }
 
@@ -1149,14 +1184,16 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Create mask with all False
         let mask = BooleanArray::from(vec![false, false, false, false, false]);
 
-        let result = arrow_df.filter(&mask).unwrap();
+        let result = arrow_df
+            .filter(&mask)
+            .expect("operation should succeed in test");
         // Result should be empty (0 rows)
         assert_eq!(result.num_rows(), 0);
     }
@@ -1167,14 +1204,16 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Create mask with all True
         let mask = BooleanArray::from(vec![true, true, true, true, true]);
 
-        let result = arrow_df.filter(&mask).unwrap();
+        let result = arrow_df
+            .filter(&mask)
+            .expect("operation should succeed in test");
         // Result should have all 5 rows
         assert_eq!(result.num_rows(), 5);
     }
@@ -1185,19 +1224,21 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Slice starting at the last element
-        let sliced = arrow_df.slice(4, 10).unwrap();
+        let sliced = arrow_df
+            .slice(4, 10)
+            .expect("operation should succeed in test");
         assert_eq!(sliced.num_rows(), 1); // Only 1 row remaining
 
         let array = sliced
             .column(0)
             .as_any()
             .downcast_ref::<arrow::array::Int32Array>()
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(array.value(0), 5);
     }
 
@@ -1207,8 +1248,8 @@ mod tests {
         let df = df! {
             "values" => &[1, 2, 3, 4, 5],
         }
-        .unwrap();
-        let batch = dataframe_to_arrow(&df).unwrap();
+        .expect("operation should succeed in test");
+        let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
         // Slice starting beyond the end (should return empty or handle gracefully)
@@ -1231,9 +1272,9 @@ mod tests {
             "bool" => &[true, false, true],
             "str" => &["a", "b", "c"],
         }
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let result = dataframe_to_arrow(&df).unwrap();
+        let result = dataframe_to_arrow(&df).expect("operation should succeed in test");
         assert_eq!(result.num_rows(), 3);
         assert_eq!(result.num_columns(), 5);
     }
@@ -1277,9 +1318,9 @@ mod property_tests_arrow_integration {
             let values: Vec<i32> = (0..total_rows as i32).collect();
             let df = df! {
                 "values" => values,
-            }.unwrap();
+            }.expect("operation should succeed in test");
 
-            let batch = dataframe_to_arrow(&df).unwrap();
+            let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
             let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
 
             if offset < total_rows {
@@ -1310,7 +1351,7 @@ mod property_tests_arrow_integration {
                 let batch = RecordBatch::try_new(
                     schema.clone(),
                     vec![Arc::new(array) as ArrayRef]
-                ).unwrap();
+                ).expect("operation should succeed in test");
 
                 dfs.push(ArrowDataFrame::new(schema.clone(), vec![batch]));
                 total_rows += size;
