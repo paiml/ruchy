@@ -72,9 +72,13 @@ pub fn eval_field_access(object: &Value, field: &str) -> Result<Value, Interpret
         }),
         Value::ObjectMut(cell) => {
             // Safe borrow: We clone the result, so borrow is released immediately
-            cell.lock().unwrap().get(field).cloned().ok_or_else(|| {
-                InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
-            })
+            cell.lock()
+                .expect("ObjectMut mutex should not be poisoned")
+                .get(field)
+                .cloned()
+                .ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!("Field '{field}' not found in object"))
+                })
         }
         Value::Struct { name, fields } => fields.get(field).cloned().ok_or_else(|| {
             InterpreterError::RuntimeError(format!("Field '{field}' not found in struct {name}"))
@@ -483,10 +487,11 @@ mod tests {
 
         let obj = Value::Object(Arc::new(fields));
 
-        let name_result = eval_field_access(&obj, "name").unwrap();
+        let name_result =
+            eval_field_access(&obj, "name").expect("operation should succeed in test");
         assert_eq!(name_result, Value::from_string("Alice".to_string()));
 
-        let age_result = eval_field_access(&obj, "age").unwrap();
+        let age_result = eval_field_access(&obj, "age").expect("operation should succeed in test");
         assert_eq!(age_result, Value::Integer(30));
 
         let missing_result = eval_field_access(&obj, "missing");
@@ -510,7 +515,7 @@ mod tests {
             eval_count += 1;
             Ok(Value::Integer(1))
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(20));
         assert_eq!(eval_count, 1);
@@ -544,7 +549,7 @@ mod tests {
                 _ => panic!("Unexpected call"),
             }
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 3);
@@ -564,7 +569,8 @@ mod tests {
             Value::Bool(true),
         ];
 
-        let result = eval_tuple_field_access(&tuple_elements, "1").unwrap();
+        let result = eval_tuple_field_access(&tuple_elements, "1")
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello".to_string()));
 
         let out_of_bounds = eval_tuple_field_access(&tuple_elements, "5");
@@ -604,7 +610,7 @@ mod tests {
                 _ => panic!("Unexpected call"),
             }
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::Object(obj) = result {
             assert_eq!(
@@ -619,7 +625,8 @@ mod tests {
 
     #[test]
     fn test_eval_object_literal_empty() {
-        let result = eval_object_literal(&[], |_| Ok(Value::Nil)).unwrap();
+        let result =
+            eval_object_literal(&[], |_| Ok(Value::Nil)).expect("operation should succeed in test");
         if let Value::Object(obj) = result {
             assert_eq!(obj.len(), 0);
         } else {
@@ -655,7 +662,7 @@ mod tests {
                 _ => panic!("Unexpected call"),
             }
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::Object(obj) = result {
             assert_eq!(obj.get("x"), Some(&Value::Integer(10)));
@@ -687,7 +694,10 @@ mod tests {
         // Function signature expects &[StructField] but just returns Nil for now
         let result = eval_struct_def("Point", &[]);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Nil
+        );
     }
 
     // ===== FIELD ACCESS EXTENDED TESTS =====
@@ -698,7 +708,7 @@ mod tests {
         fields.insert("value".to_string(), Value::Integer(42));
 
         let obj = Value::ObjectMut(Arc::new(std::sync::Mutex::new(fields)));
-        let result = eval_field_access(&obj, "value").unwrap();
+        let result = eval_field_access(&obj, "value").expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42));
 
         let missing = eval_field_access(&obj, "missing");
@@ -715,7 +725,7 @@ mod tests {
             fields: Arc::new(fields),
         };
 
-        let result = eval_field_access(&s, "name").unwrap();
+        let result = eval_field_access(&s, "name").expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("Alice".to_string()));
 
         let missing = eval_field_access(&s, "age");
@@ -739,7 +749,7 @@ mod tests {
         ];
 
         let df = Value::DataFrame { columns };
-        let result = eval_field_access(&df, "id").unwrap();
+        let result = eval_field_access(&df, "id").expect("operation should succeed in test");
 
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 2);
@@ -759,7 +769,7 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]));
-        let result = eval_field_access(&tuple, "0").unwrap();
+        let result = eval_field_access(&tuple, "0").expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(1));
 
         let out_of_bounds = eval_field_access(&tuple, "5");
@@ -788,7 +798,7 @@ mod tests {
         let result = eval_index_access(&obj, &index_expr, |_| {
             Ok(Value::from_string("key1".to_string()))
         })
-        .unwrap();
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(100));
     }
 
@@ -852,7 +862,8 @@ mod tests {
             Span::new(0, 1),
         );
 
-        let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(1))).unwrap();
+        let result = eval_index_access(&s, &index_expr, |_| Ok(Value::Integer(1)))
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("e".to_string()));
     }
 
@@ -904,8 +915,8 @@ mod tests {
             Span::new(0, 1),
         );
 
-        let result =
-            eval_slice_access(&arr, None, Some(&end_expr), |_| Ok(Value::Integer(2))).unwrap();
+        let result = eval_slice_access(&arr, None, Some(&end_expr), |_| Ok(Value::Integer(2)))
+            .expect("operation should succeed in test");
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -928,8 +939,8 @@ mod tests {
             Span::new(0, 1),
         );
 
-        let result =
-            eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Integer(1))).unwrap();
+        let result = eval_slice_access(&arr, Some(&start_expr), None, |_| Ok(Value::Integer(1)))
+            .expect("operation should succeed in test");
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -943,7 +954,8 @@ mod tests {
     #[test]
     fn test_slice_access_no_start_no_end() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = eval_slice_access(&arr, None, None, |_| Ok(Value::Nil)).unwrap();
+        let result = eval_slice_access(&arr, None, None, |_| Ok(Value::Nil))
+            .expect("operation should succeed in test");
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -967,7 +979,7 @@ mod tests {
         let result = eval_slice_access(&arr, Some(&start_expr), Some(&end_expr), |_| {
             Ok(Value::Integer(1))
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 0);
@@ -1020,7 +1032,7 @@ mod tests {
                 _ => panic!("Unexpected call"),
             }
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         if let Value::String(sliced) = result {
             assert_eq!(&*sliced, "ell");
