@@ -471,8 +471,9 @@ mod tests {
             assert!(metadata.tags.contains(&"development".to_string()));
 
             // Test serialization/deserialization
-            let json = serde_json::to_string(&metadata).unwrap();
-            let deserialized: SessionMetadata = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&metadata).expect("operation should succeed in test");
+            let deserialized: SessionMetadata =
+                serde_json::from_str(&json).expect("operation should succeed in test");
             assert_eq!(metadata.session_id, deserialized.session_id);
             assert_eq!(metadata.student_id, deserialized.student_id);
         }
@@ -486,8 +487,10 @@ mod tests {
             assert_eq!(environment.resource_limits.heap_mb, 1024);
 
             // Test serialization
-            let json = serde_json::to_string(&environment).unwrap();
-            let deserialized: Environment = serde_json::from_str(&json).unwrap();
+            let json =
+                serde_json::to_string(&environment).expect("operation should succeed in test");
+            let deserialized: Environment =
+                serde_json::from_str(&json).expect("operation should succeed in test");
             assert_eq!(environment.seed, deserialized.seed);
         }
 
@@ -526,8 +529,9 @@ mod tests {
             assert_eq!(usage.cpu_ns, 5_000_000);
 
             // Test serialization
-            let json = serde_json::to_string(&usage).unwrap();
-            let deserialized: ResourceUsage = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&usage).expect("operation should succeed in test");
+            let deserialized: ResourceUsage =
+                serde_json::from_str(&json).expect("operation should succeed in test");
             assert_eq!(usage.heap_bytes, deserialized.heap_bytes);
             assert_eq!(usage.stack_depth, deserialized.stack_depth);
             assert_eq!(usage.cpu_ns, deserialized.cpu_ns);
@@ -556,8 +560,10 @@ mod tests {
             assert_eq!(checkpoint.resource_usage.heap_bytes, 1024);
 
             // Test serialization
-            let json = serde_json::to_string(&checkpoint).unwrap();
-            let deserialized: StateCheckpoint = serde_json::from_str(&json).unwrap();
+            let json =
+                serde_json::to_string(&checkpoint).expect("operation should succeed in test");
+            let deserialized: StateCheckpoint =
+                serde_json::from_str(&json).expect("operation should succeed in test");
             assert_eq!(checkpoint.state_hash, deserialized.state_hash);
             assert_eq!(checkpoint.bindings.len(), deserialized.bindings.len());
         }
@@ -591,8 +597,9 @@ mod tests {
             }
 
             // Test serialization
-            let json = serde_json::to_string(&success).unwrap();
-            let deserialized: EvalResult = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&success).expect("operation should succeed in test");
+            let deserialized: EvalResult =
+                serde_json::from_str(&json).expect("operation should succeed in test");
             match deserialized {
                 EvalResult::Success { value } => assert_eq!(value, "42"),
                 _ => panic!("Deserialization failed"),
@@ -680,10 +687,16 @@ mod tests {
             assert!(session.checkpoints.contains_key(&output_id1));
             assert!(session.checkpoints.contains_key(&output_id2));
 
-            let retrieved_checkpoint1 = session.checkpoints.get(&output_id1).unwrap();
+            let retrieved_checkpoint1 = session
+                .checkpoints
+                .get(&output_id1)
+                .expect("operation should succeed in test");
             assert_eq!(retrieved_checkpoint1.state_hash, "abc123def456");
 
-            let retrieved_checkpoint2 = session.checkpoints.get(&output_id2).unwrap();
+            let retrieved_checkpoint2 = session
+                .checkpoints
+                .get(&output_id2)
+                .expect("operation should succeed in test");
             assert_eq!(retrieved_checkpoint2.state_hash, "def456abc789");
         }
 
@@ -831,8 +844,9 @@ mod tests {
             let session = recorder.into_session();
 
             // Test full session serialization
-            let json = serde_json::to_string(&session).unwrap();
-            let deserialized: ReplSession = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&session).expect("operation should succeed in test");
+            let deserialized: ReplSession =
+                serde_json::from_str(&json).expect("operation should succeed in test");
 
             assert_eq!(
                 session.metadata.session_id,
