@@ -83,7 +83,7 @@ impl Transpiler {
         // Prevents panic in format_ident! when field is pure number like "0"
         if field.chars().all(|c| c.is_ascii_digit()) {
             // Tuple field access - use numeric index (works for any object type)
-            let index: usize = field.parse().unwrap();
+            let index: usize = field.parse().expect("field string should parse to usize after is_ascii_digit check");
             let index = syn::Index::from(index);
             return Ok(quote! { #obj_tokens.#index });
         }
@@ -104,7 +104,7 @@ impl Transpiler {
                 // before defaulting to module path syntax (std::time::Duration)
                 if field.chars().all(|c| c.is_ascii_digit()) {
                     // Nested tuple access like (nested.0).1
-                    let index: usize = field.parse().unwrap();
+                    let index: usize = field.parse().expect("field string should parse to usize after is_ascii_digit check");
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else if field.is_empty()
@@ -170,7 +170,7 @@ impl Transpiler {
                 // Check if field is numeric (tuple field access)
                 if field.chars().all(|c| c.is_ascii_digit()) {
                     // Tuple field access - use numeric index
-                    let index: usize = field.parse().unwrap();
+                    let index: usize = field.parse().expect("field string should parse to usize after is_ascii_digit check");
                     let index = syn::Index::from(index);
                     Ok(quote! { #obj_tokens.#index })
                 } else {
@@ -427,7 +427,7 @@ mod tests {
     fn test_transpile_field_access_tuple() {
         let transpiler = test_transpiler();
         let obj = ident_expr("tuple");
-        let result = transpiler.transpile_field_access(&obj, "0").unwrap();
+        let result = transpiler.transpile_field_access(&obj, "0").expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("tuple") && result_str.contains(". 0"));
     }
@@ -437,7 +437,7 @@ mod tests {
     fn test_transpile_field_access_std_module() {
         let transpiler = test_transpiler();
         let std = ident_expr("std");
-        let result = transpiler.transpile_field_access(&std, "time").unwrap();
+        let result = transpiler.transpile_field_access(&std, "time").expect("operation should succeed in test");
         assert_eq!(result.to_string(), "std :: time");
     }
 
@@ -448,7 +448,7 @@ mod tests {
         let string_type = ident_expr("String");
         let result = transpiler
             .transpile_field_access(&string_type, "from")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "String :: from");
     }
 
@@ -457,7 +457,7 @@ mod tests {
     fn test_transpile_field_access_known_method() {
         let transpiler = test_transpiler();
         let obj = ident_expr("result");
-        let result = transpiler.transpile_field_access(&obj, "is_ok").unwrap();
+        let result = transpiler.transpile_field_access(&obj, "is_ok").expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("result")
@@ -471,7 +471,7 @@ mod tests {
     fn test_transpile_field_access_variable_chain() {
         let transpiler = test_transpiler();
         let event = ident_expr("event");
-        let result = transpiler.transpile_field_access(&event, "field").unwrap();
+        let result = transpiler.transpile_field_access(&event, "field").expect("operation should succeed in test");
         assert_eq!(result.to_string(), "event . field");
     }
 
@@ -482,7 +482,7 @@ mod tests {
         let http_client = ident_expr("http_client");
         let result = transpiler
             .transpile_field_access(&http_client, "get")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "http_client :: get");
     }
 
@@ -505,7 +505,7 @@ mod tests {
         let transpiler = test_transpiler();
         let map = ident_expr("map");
         let key = string_expr("key");
-        let result = transpiler.transpile_index_access(&map, &key).unwrap();
+        let result = transpiler.transpile_index_access(&map, &key).expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("map . get") && result_str.contains("cloned"));
     }
@@ -516,7 +516,7 @@ mod tests {
         let transpiler = test_transpiler();
         let array = ident_expr("arr");
         let index = int_expr(0);
-        let result = transpiler.transpile_index_access(&array, &index).unwrap();
+        let result = transpiler.transpile_index_access(&array, &index).expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("arr") && result_str.contains('[') && result_str.contains("clone")
@@ -528,7 +528,7 @@ mod tests {
     fn test_transpile_slice_full() {
         let transpiler = test_transpiler();
         let array = ident_expr("arr");
-        let result = transpiler.transpile_slice(&array, None, None).unwrap();
+        let result = transpiler.transpile_slice(&array, None, None).expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("& arr") && result_str.contains('[') && result_str.contains("..")
@@ -543,7 +543,7 @@ mod tests {
         let end = int_expr(5);
         let result = transpiler
             .transpile_slice(&array, None, Some(&end))
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("arr") && result_str.contains("..") && result_str.contains('5')
@@ -558,7 +558,7 @@ mod tests {
         let start = int_expr(2);
         let result = transpiler
             .transpile_slice(&array, Some(&start), None)
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("arr") && result_str.contains('2') && result_str.contains("..")
@@ -574,7 +574,7 @@ mod tests {
         let end = int_expr(4);
         let result = transpiler
             .transpile_slice(&array, Some(&start), Some(&end))
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("arr")
