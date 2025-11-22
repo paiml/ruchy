@@ -115,7 +115,9 @@ impl ConcurrentActor {
 
         // Update lifecycle state
         {
-            let mut ls = lifecycle_state.write().unwrap();
+            let mut ls = lifecycle_state
+                .write()
+                .expect("RwLock poisoned: actor write lock is corrupted");
             *ls = ActorState::Running;
         }
 
@@ -140,7 +142,9 @@ impl ConcurrentActor {
         loop {
             // Check lifecycle state
             {
-                let ls = lifecycle_state.read().unwrap();
+                let ls = lifecycle_state
+                    .read()
+                    .expect("RwLock poisoned: actor read lock is corrupted");
                 match *ls {
                     ActorState::Stopping | ActorState::Stopped => break,
                     ActorState::Failed(_) => {
@@ -168,7 +172,9 @@ impl ConcurrentActor {
         }
 
         // Mark as stopped
-        let mut ls = lifecycle_state.write().unwrap();
+        let mut ls = lifecycle_state
+            .write()
+            .expect("RwLock poisoned: actor write lock is corrupted");
         *ls = ActorState::Stopped;
     }
 
@@ -187,7 +193,9 @@ impl ConcurrentActor {
                 if receive_handlers.contains_key(&message.message_type) {
                     // Special handling for Increment (for compatibility)
                     if message.message_type == "Increment" {
-                        let mut state_guard = state.write().unwrap();
+                        let mut state_guard = state
+                            .write()
+                            .expect("RwLock poisoned: actor write lock is corrupted");
                         if let Some(ActorFieldValue::Integer(count)) = state_guard.get("count") {
                             let new_count = count + 1;
                             state_guard
@@ -212,15 +220,21 @@ impl ConcurrentActor {
     ) {
         match message {
             SystemMessage::Stop => {
-                let mut ls = lifecycle_state.write().unwrap();
+                let mut ls = lifecycle_state
+                    .write()
+                    .expect("RwLock poisoned: actor write lock is corrupted");
                 *ls = ActorState::Stopping;
             }
             SystemMessage::Restart => {
-                let mut ls = lifecycle_state.write().unwrap();
+                let mut ls = lifecycle_state
+                    .write()
+                    .expect("RwLock poisoned: actor write lock is corrupted");
                 *ls = ActorState::Restarting;
             }
             SystemMessage::Start => {
-                let mut ls = lifecycle_state.write().unwrap();
+                let mut ls = lifecycle_state
+                    .write()
+                    .expect("RwLock poisoned: actor write lock is corrupted");
                 *ls = ActorState::Running;
             }
             SystemMessage::Supervise(child_id, error) => {
@@ -268,12 +282,21 @@ impl ConcurrentActor {
                 max_restarts,
                 within,
             } => {
-                let count = *self.restart_count.lock().unwrap();
-                let last = *self.last_restart.lock().unwrap();
+                let count = *self
+                    .restart_count
+                    .lock()
+                    .expect("Mutex poisoned: actor lock is corrupted");
+                let last = *self
+                    .last_restart
+                    .lock()
+                    .expect("Mutex poisoned: actor lock is corrupted");
 
                 if last.elapsed() > within {
                     // Reset counter if outside time window
-                    *self.restart_count.lock().unwrap() = 0;
+                    *self
+                        .restart_count
+                        .lock()
+                        .expect("Mutex poisoned: actor lock is corrupted") = 0;
                     true
                 } else {
                     count < max_restarts
@@ -293,15 +316,24 @@ impl ConcurrentActor {
 
         // Update restart tracking
         {
-            let mut count = self.restart_count.lock().unwrap();
+            let mut count = self
+                .restart_count
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
             *count += 1;
-            let mut last = self.last_restart.lock().unwrap();
+            let mut last = self
+                .last_restart
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
             *last = std::time::Instant::now();
         }
 
         // Clear state (or restore to initial)
         {
-            let mut state_guard = self.state.write().unwrap();
+            let mut state_guard = self
+                .state
+                .write()
+                .expect("RwLock poisoned: actor write lock is corrupted");
             // In full implementation, restore initial state
             state_guard.clear();
             state_guard.insert("count".to_string(), ActorFieldValue::Integer(0));
@@ -350,13 +382,19 @@ impl ConcurrentActorSystem {
 
         // Store in system
         {
-            let mut actors = self.actors.write().unwrap();
+            let mut actors = self
+                .actors
+                .write()
+                .expect("RwLock poisoned: actor write lock is corrupted");
             actors.insert(id.clone(), Arc::new(Mutex::new(actor)));
         }
 
         // Update supervision tree
         if let Some(sup_id) = supervisor {
-            let mut tree = self.supervision_tree.write().unwrap();
+            let mut tree = self
+                .supervision_tree
+                .write()
+                .expect("RwLock poisoned: actor write lock is corrupted");
             tree.entry(sup_id).or_default().push(id.clone());
         }
 
@@ -370,9 +408,14 @@ impl ConcurrentActorSystem {
         message: ActorMessage,
         from: Option<String>,
     ) -> Result<(), InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self
+            .actors
+            .read()
+            .expect("RwLock poisoned: actor read lock is corrupted");
         if let Some(actor) = actors.get(actor_id) {
-            let actor = actor.lock().unwrap();
+            let actor = actor
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
             actor.send(message, from)
         } else {
             Err(InterpreterError::RuntimeError(format!(
@@ -388,11 +431,16 @@ impl ConcurrentActorSystem {
         _error: String,
         supervisor_id: &str,
     ) -> Result<(), InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self
+            .actors
+            .read()
+            .expect("RwLock poisoned: actor read lock is corrupted");
 
         // Get supervisor
         if let Some(supervisor) = actors.get(supervisor_id) {
-            let sup = supervisor.lock().unwrap();
+            let sup = supervisor
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
 
             // Check supervision strategy
             let should_restart = sup.should_restart();
@@ -400,7 +448,9 @@ impl ConcurrentActorSystem {
             if should_restart {
                 // Get failed actor
                 if let Some(failed) = actors.get(failed_id) {
-                    let mut failed_actor = failed.lock().unwrap();
+                    let mut failed_actor = failed
+                        .lock()
+                        .expect("Mutex poisoned: actor lock is corrupted");
 
                     // Apply supervision strategy
                     match &sup.supervision_strategy {
@@ -410,11 +460,16 @@ impl ConcurrentActorSystem {
                         }
                         SupervisionStrategy::AllForOne { .. } => {
                             // Restart all children
-                            let tree = self.supervision_tree.read().unwrap();
+                            let tree = self
+                                .supervision_tree
+                                .read()
+                                .expect("RwLock poisoned: actor read lock is corrupted");
                             if let Some(children) = tree.get(supervisor_id) {
                                 for child_id in children {
                                     if let Some(child) = actors.get(child_id) {
-                                        let mut child_actor = child.lock().unwrap();
+                                        let mut child_actor = child
+                                            .lock()
+                                            .expect("Mutex poisoned: actor lock is corrupted");
                                         child_actor.restart(HashMap::new())?;
                                     }
                                 }
@@ -430,7 +485,9 @@ impl ConcurrentActorSystem {
             } else {
                 // Stop the failed actor
                 if let Some(failed) = actors.get(failed_id) {
-                    let mut failed_actor = failed.lock().unwrap();
+                    let mut failed_actor = failed
+                        .lock()
+                        .expect("Mutex poisoned: actor lock is corrupted");
                     failed_actor.stop()?;
                 }
             }
@@ -441,11 +498,16 @@ impl ConcurrentActorSystem {
 
     /// Shutdown the entire actor system
     pub fn shutdown(&self) -> Result<(), InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self
+            .actors
+            .read()
+            .expect("RwLock poisoned: actor read lock is corrupted");
 
         // Stop all actors
         for (_id, actor) in actors.iter() {
-            let mut actor = actor.lock().unwrap();
+            let mut actor = actor
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
             actor.stop()?;
         }
 
@@ -475,7 +537,10 @@ mod tests {
 
         // Verify running state
         {
-            let ls = actor.lifecycle_state.read().unwrap();
+            let ls = actor
+                .lifecycle_state
+                .read()
+                .expect("RwLock poisoned: actor read lock is corrupted");
             assert_eq!(*ls, ActorState::Running);
         } // ls is dropped here
 
@@ -495,7 +560,7 @@ mod tests {
 
         let actor_id = system
             .spawn_actor("Counter".to_string(), state, handlers, None)
-            .unwrap();
+            .expect("spawn_actor should succeed in test");
 
         // Send increment message
         let msg = ActorMessage {
@@ -509,10 +574,18 @@ mod tests {
         thread::sleep(Duration::from_millis(200));
 
         // Verify state changed
-        let actors = system.actors.read().unwrap();
-        let actor = actors.get(&actor_id).unwrap();
-        let actor = actor.lock().unwrap();
-        let state = actor.state.read().unwrap();
+        let actors = system
+            .actors
+            .read()
+            .expect("RwLock poisoned: actor read lock is corrupted");
+        let actor = actors.get(&actor_id).expect("actor should exist in test");
+        let actor = actor
+            .lock()
+            .expect("Mutex poisoned: actor lock is corrupted");
+        let state = actor
+            .state
+            .read()
+            .expect("RwLock poisoned: actor read lock is corrupted");
 
         assert_eq!(state.get("count"), Some(&ActorFieldValue::Integer(1)));
     }
