@@ -340,54 +340,78 @@ mod tests {
 
     #[test]
     fn test_basic_expressions() {
-        assert_eq!(gen_str("42").unwrap(), "42");
-        assert_eq!(gen_str("true").unwrap(), "true");
-        assert_eq!(gen_str("\"hello\"").unwrap(), "\"hello\"");
+        assert_eq!(
+            gen_str("42").expect("operation should succeed in test"),
+            "42"
+        );
+        assert_eq!(
+            gen_str("true").expect("operation should succeed in test"),
+            "true"
+        );
+        assert_eq!(
+            gen_str("\"hello\"").expect("operation should succeed in test"),
+            "\"hello\""
+        );
     }
 
     #[test]
     #[allow(clippy::approx_constant)]
     fn test_all_literals() {
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Integer(42, None)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Integer(42, None))
+                .expect("operation should succeed in test"),
             "42"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Float(3.15159)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Float(3.15159))
+                .expect("operation should succeed in test"),
             "3.15159"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::String("test".into()))
+                .expect("operation should succeed in test"),
             "\"test\""
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Bool(true)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Bool(true))
+                .expect("operation should succeed in test"),
             "true"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Bool(false)).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Bool(false))
+                .expect("operation should succeed in test"),
             "false"
         );
         assert_eq!(
-            MinimalCodeGen::gen_literal(&Literal::Char('a')).unwrap(),
+            MinimalCodeGen::gen_literal(&Literal::Char('a'))
+                .expect("operation should succeed in test"),
             "'a'"
         );
-        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Unit).unwrap(), "()");
+        assert_eq!(
+            MinimalCodeGen::gen_literal(&Literal::Unit).expect("operation should succeed in test"),
+            "()"
+        );
     }
 
     #[test]
     fn test_string_escaping() {
         let lit = Literal::String("Hello \"World\"".into());
         assert_eq!(
-            MinimalCodeGen::gen_literal(&lit).unwrap(),
+            MinimalCodeGen::gen_literal(&lit).expect("operation should succeed in test"),
             "\"Hello \\\"World\\\"\""
         );
     }
 
     #[test]
     fn test_binary_ops() {
-        assert_eq!(gen_str("1 + 2").unwrap(), "(1 + 2)");
-        assert_eq!(gen_str("x * y").unwrap(), "(x * y)");
+        assert_eq!(
+            gen_str("1 + 2").expect("operation should succeed in test"),
+            "(1 + 2)"
+        );
+        assert_eq!(
+            gen_str("x * y").expect("operation should succeed in test"),
+            "(x * y)"
+        );
     }
 
     #[test]
@@ -423,76 +447,128 @@ mod tests {
 
     #[test]
     fn test_unary_expressions() {
-        assert_eq!(gen_str("!true").unwrap(), "(! true)");
-        assert_eq!(gen_str("-42").unwrap(), "(- 42)");
+        assert_eq!(
+            gen_str("!true").expect("operation should succeed in test"),
+            "(! true)"
+        );
+        assert_eq!(
+            gen_str("-42").expect("operation should succeed in test"),
+            "(- 42)"
+        );
     }
 
     #[test]
     fn test_if_expression() {
-        assert_eq!(gen_str("if true { 1 }").unwrap(), "if true { { 1 } }");
         assert_eq!(
-            gen_str("if x > 0 { 1 } else { 2 }").unwrap(),
+            gen_str("if true { 1 }").expect("operation should succeed in test"),
+            "if true { { 1 } }"
+        );
+        assert_eq!(
+            gen_str("if x > 0 { 1 } else { 2 }").expect("operation should succeed in test"),
             "if (x > 0) { { 1 } } else { { 2 } }"
         );
     }
 
     #[test]
     fn test_block_expression() {
-        assert_eq!(gen_str("{ x }").unwrap(), "{ x }");
-        assert_eq!(gen_str("{ x; y }").unwrap(), "{ x; y }");
-        assert_eq!(gen_str("{ x; y; z }").unwrap(), "{ x; y; z }");
+        assert_eq!(
+            gen_str("{ x }").expect("operation should succeed in test"),
+            "{ x }"
+        );
+        assert_eq!(
+            gen_str("{ x; y }").expect("operation should succeed in test"),
+            "{ x; y }"
+        );
+        assert_eq!(
+            gen_str("{ x; y; z }").expect("operation should succeed in test"),
+            "{ x; y; z }"
+        );
     }
 
     #[test]
     fn test_empty_block() {
         let block = Expr::new(ExprKind::Block(vec![]), Span::new(0, 1));
-        assert_eq!(MinimalCodeGen::gen_expr(&block).unwrap(), "{  }");
+        assert_eq!(
+            MinimalCodeGen::gen_expr(&block).expect("operation should succeed in test"),
+            "{  }"
+        );
     }
 
     #[test]
     fn test_function_def() {
-        let result = gen_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = gen_str("fun add(x: i32, y: i32) -> i32 { x + y }")
+            .expect("operation should succeed in test");
         assert!(result.contains("fn add(x: i32, y: i32)"));
     }
 
     #[test]
     fn test_lambda() {
-        assert_eq!(gen_str("|x| x + 1").unwrap(), "|x| (x + 1)");
+        assert_eq!(
+            gen_str("|x| x + 1").expect("operation should succeed in test"),
+            "|x| (x + 1)"
+        );
     }
 
     #[test]
     fn test_lambda_multiple_params() {
-        assert_eq!(gen_str("|x, y| x + y").unwrap(), "|x, y| (x + y)");
+        assert_eq!(
+            gen_str("|x, y| x + y").expect("operation should succeed in test"),
+            "|x, y| (x + y)"
+        );
     }
 
     #[test]
     fn test_function_call() {
-        assert_eq!(gen_str("foo()").unwrap(), "foo()");
-        assert_eq!(gen_str("add(1, 2)").unwrap(), "add(1, 2)");
-        assert_eq!(gen_str("sum(a, b, c)").unwrap(), "sum(a, b, c)");
+        assert_eq!(
+            gen_str("foo()").expect("operation should succeed in test"),
+            "foo()"
+        );
+        assert_eq!(
+            gen_str("add(1, 2)").expect("operation should succeed in test"),
+            "add(1, 2)"
+        );
+        assert_eq!(
+            gen_str("sum(a, b, c)").expect("operation should succeed in test"),
+            "sum(a, b, c)"
+        );
     }
 
     #[test]
     fn test_method_call() {
-        assert_eq!(gen_str("obj.method()").unwrap(), "obj.method()");
-        assert_eq!(gen_str("str.len()").unwrap(), "str.len()");
-        assert_eq!(gen_str("list.push(42)").unwrap(), "list.push(42)");
+        assert_eq!(
+            gen_str("obj.method()").expect("operation should succeed in test"),
+            "obj.method()"
+        );
+        assert_eq!(
+            gen_str("str.len()").expect("operation should succeed in test"),
+            "str.len()"
+        );
+        assert_eq!(
+            gen_str("list.push(42)").expect("operation should succeed in test"),
+            "list.push(42)"
+        );
     }
 
     #[test]
     fn test_list() {
-        assert_eq!(gen_str("[1, 2, 3]").unwrap(), "vec![1, 2, 3]");
+        assert_eq!(
+            gen_str("[1, 2, 3]").expect("operation should succeed in test"),
+            "vec![1, 2, 3]"
+        );
     }
 
     #[test]
     fn test_empty_list() {
-        assert_eq!(gen_str("[]").unwrap(), "vec![]");
+        assert_eq!(
+            gen_str("[]").expect("operation should succeed in test"),
+            "vec![]"
+        );
     }
 
     #[test]
     fn test_nested_list() {
         assert_eq!(
-            gen_str("[[1, 2], [3, 4]]").unwrap(),
+            gen_str("[[1, 2], [3, 4]]").expect("operation should succeed in test"),
             "vec![vec![1, 2], vec![3, 4]]"
         );
     }
@@ -500,9 +576,15 @@ mod tests {
     #[test]
     fn test_macro_call() {
         // Parser treats println as function call, not macro
-        assert_eq!(gen_str("println(\"hello\")").unwrap(), "println(\"hello\")");
+        assert_eq!(
+            gen_str("println(\"hello\")").expect("operation should succeed in test"),
+            "println(\"hello\")"
+        );
         // vec! is parsed as list, not macro
-        assert_eq!(gen_str("[1, 2]").unwrap(), "vec![1, 2]");
+        assert_eq!(
+            gen_str("[1, 2]").expect("operation should succeed in test"),
+            "vec![1, 2]"
+        );
     }
 
     #[test]
@@ -514,13 +596,17 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        assert_eq!(MinimalCodeGen::gen_expr(&expr).unwrap(), "std::println");
+        assert_eq!(
+            MinimalCodeGen::gen_expr(&expr).expect("operation should succeed in test"),
+            "std::println"
+        );
     }
 
     #[test]
     fn test_pattern_wildcard() {
         assert_eq!(
-            MinimalCodeGen::gen_pattern(&Pattern::Wildcard).unwrap(),
+            MinimalCodeGen::gen_pattern(&Pattern::Wildcard)
+                .expect("operation should succeed in test"),
             "_"
         );
     }
@@ -528,13 +614,19 @@ mod tests {
     #[test]
     fn test_pattern_literal() {
         let pat = Pattern::Literal(Literal::Integer(42, None));
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "42");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "42"
+        );
     }
 
     #[test]
     fn test_pattern_identifier() {
         let pat = Pattern::Identifier("x".to_string());
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "x");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "x"
+        );
     }
 
     #[test]
@@ -545,46 +637,62 @@ mod tests {
             Pattern::Wildcard,
         ];
         let pat = Pattern::List(patterns);
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "[1, x, _]");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "[1, x, _]"
+        );
     }
 
     #[test]
     fn test_pattern_result_ok() {
         let inner = Box::new(Pattern::Identifier("x".to_string()));
         let pat = Pattern::Ok(inner);
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Ok(x)");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "Ok(x)"
+        );
     }
 
     #[test]
     fn test_pattern_result_err() {
         let inner = Box::new(Pattern::Identifier("e".to_string()));
         let pat = Pattern::Err(inner);
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Err(e)");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "Err(e)"
+        );
     }
 
     #[test]
     fn test_pattern_option_some() {
         let inner = Box::new(Pattern::Literal(Literal::Integer(42, None)));
         let pat = Pattern::Some(inner);
-        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Some(42)");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&pat).expect("operation should succeed in test"),
+            "Some(42)"
+        );
     }
 
     #[test]
     fn test_pattern_option_none() {
-        assert_eq!(MinimalCodeGen::gen_pattern(&Pattern::None).unwrap(), "None");
+        assert_eq!(
+            MinimalCodeGen::gen_pattern(&Pattern::None).expect("operation should succeed in test"),
+            "None"
+        );
     }
 
     #[test]
     fn test_gen_program() {
         let expr = make_literal(Literal::Integer(42, None));
-        let result = MinimalCodeGen::gen_program(&expr).unwrap();
+        let result = MinimalCodeGen::gen_program(&expr).expect("operation should succeed in test");
         assert!(result.starts_with("use std::collections::HashMap;"));
         assert!(result.contains("42"));
     }
 
     #[test]
     fn test_complex_expression() {
-        let result = gen_str("if x > 0 { x * 2 } else { -x }").unwrap();
+        let result =
+            gen_str("if x > 0 { x * 2 } else { -x }").expect("operation should succeed in test");
         assert!(result.contains("if"));
         assert!(result.contains("else"));
     }
@@ -592,7 +700,7 @@ mod tests {
     #[test]
     fn test_nested_if() {
         let input = "if a { if b { 1 } else { 2 } } else { 3 }";
-        let result = gen_str(input).unwrap();
+        let result = gen_str(input).expect("operation should succeed in test");
         assert!(result.contains("if a"));
         assert!(result.contains("if b"));
     }
@@ -600,7 +708,7 @@ mod tests {
     #[test]
     fn test_chained_method_calls() {
         assert_eq!(
-            gen_str("obj.method1().method2()").unwrap(),
+            gen_str("obj.method1().method2()").expect("operation should succeed in test"),
             "obj.method1().method2()"
         );
     }
@@ -608,7 +716,8 @@ mod tests {
     #[test]
     fn test_struct_literal_empty() {
         let fields = vec![];
-        let result = MinimalCodeGen::gen_struct_literal("Point", &fields).unwrap();
+        let result = MinimalCodeGen::gen_struct_literal("Point", &fields)
+            .expect("operation should succeed in test");
         assert_eq!(result, "Point {  }");
     }
 
@@ -618,7 +727,8 @@ mod tests {
             ("x".to_string(), make_literal(Literal::Integer(10, None))),
             ("y".to_string(), make_literal(Literal::Integer(20, None))),
         ];
-        let result = MinimalCodeGen::gen_struct_literal("Point", &fields).unwrap();
+        let result = MinimalCodeGen::gen_struct_literal("Point", &fields)
+            .expect("operation should succeed in test");
         assert_eq!(result, "Point { x: 10, y: 20 }");
     }
 
@@ -630,7 +740,8 @@ mod tests {
             StringPart::Expr(Box::new(make_ident("name"))),
             StringPart::Text("!".to_string()),
         ];
-        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        let result = MinimalCodeGen::gen_string_interpolation(&parts)
+            .expect("operation should succeed in test");
         assert_eq!(result, r#"format!("Hello, {}!", name)"#);
     }
 
@@ -644,21 +755,23 @@ mod tests {
                 format_spec: ":.2".to_string(),
             },
         ];
-        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        let result = MinimalCodeGen::gen_string_interpolation(&parts)
+            .expect("operation should succeed in test");
         assert_eq!(result, r#"format!("Value: {:.2}", x)"#);
     }
 
     #[test]
     fn test_string_interpolation_empty() {
         let parts = vec![];
-        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        let result = MinimalCodeGen::gen_string_interpolation(&parts)
+            .expect("operation should succeed in test");
         assert_eq!(result, r#"format!("")"#);
     }
 
     #[test]
     fn test_let_expression() {
         assert_eq!(
-            gen_str("let x = 5 in x + 1").unwrap(),
+            gen_str("let x = 5 in x + 1").expect("operation should succeed in test"),
             "{ let x = 5; (x + 1) }"
         );
     }
@@ -689,14 +802,20 @@ mod tests {
 
     #[test]
     fn test_binary_precedence() {
-        assert_eq!(gen_str("a + b * c").unwrap(), "(a + (b * c))");
-        assert_eq!(gen_str("(a + b) * c").unwrap(), "((a + b) * c)");
+        assert_eq!(
+            gen_str("a + b * c").expect("operation should succeed in test"),
+            "(a + (b * c))"
+        );
+        assert_eq!(
+            gen_str("(a + b) * c").expect("operation should succeed in test"),
+            "((a + b) * c)"
+        );
     }
 
     #[test]
     fn test_deeply_nested_expression() {
         let input = "((a + b) * (c - d)) / (e + f)";
-        let result = gen_str(input).unwrap();
+        let result = gen_str(input).expect("operation should succeed in test");
         assert!(result.contains('+'));
         assert!(result.contains('-'));
         assert!(result.contains('*'));
@@ -706,21 +825,24 @@ mod tests {
     // Test 1: gen_literal with Null
     #[test]
     fn test_gen_literal_null() {
-        let result = MinimalCodeGen::gen_literal(&Literal::Null).unwrap();
+        let result =
+            MinimalCodeGen::gen_literal(&Literal::Null).expect("operation should succeed in test");
         assert_eq!(result, "None");
     }
 
     // Test 2: gen_literal with Byte
     #[test]
     fn test_gen_literal_byte() {
-        let result = MinimalCodeGen::gen_literal(&Literal::Byte(65)).unwrap();
+        let result = MinimalCodeGen::gen_literal(&Literal::Byte(65))
+            .expect("operation should succeed in test");
         assert_eq!(result, "b'A'");
     }
 
     // Test 3: gen_literal with Byte (newline)
     #[test]
     fn test_gen_literal_byte_newline() {
-        let result = MinimalCodeGen::gen_literal(&Literal::Byte(10)).unwrap();
+        let result = MinimalCodeGen::gen_literal(&Literal::Byte(10))
+            .expect("operation should succeed in test");
         assert_eq!(result, "b'\n'");
     }
 
@@ -790,7 +912,7 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        let result = MinimalCodeGen::gen_expr(&expr).unwrap();
+        let result = MinimalCodeGen::gen_expr(&expr).expect("operation should succeed in test");
         assert!(result.contains("if x"));
         assert!(result.contains("{ 1 }"));
         assert!(result.contains("else"));
@@ -805,7 +927,7 @@ mod tests {
             kind: TypeKind::Named("i32".to_string()),
             span: Span::new(0, 1),
         };
-        let result = MinimalCodeGen::gen_type(&ty).unwrap();
+        let result = MinimalCodeGen::gen_type(&ty).expect("operation should succeed in test");
         assert_eq!(result, "String"); // Simplified for MVP
     }
 
@@ -813,7 +935,8 @@ mod tests {
     #[test]
     fn test_gen_function_expr_no_params() {
         let body = make_literal(Literal::Integer(42, None));
-        let result = MinimalCodeGen::gen_function_expr("foo", &[], &body).unwrap();
+        let result = MinimalCodeGen::gen_function_expr("foo", &[], &body)
+            .expect("operation should succeed in test");
         assert_eq!(result, "fn foo() { 42 }");
     }
 
@@ -821,7 +944,8 @@ mod tests {
     #[test]
     fn test_gen_lambda_expr_no_params() {
         let body = make_literal(Literal::Integer(42, None));
-        let result = MinimalCodeGen::gen_lambda_expr(&[], &body).unwrap();
+        let result =
+            MinimalCodeGen::gen_lambda_expr(&[], &body).expect("operation should succeed in test");
         assert_eq!(result, "|| 42");
     }
 
@@ -829,7 +953,8 @@ mod tests {
     #[test]
     fn test_gen_method_call_no_args() {
         let receiver = make_ident("obj");
-        let result = MinimalCodeGen::gen_method_call(&receiver, "method", &[]).unwrap();
+        let result = MinimalCodeGen::gen_method_call(&receiver, "method", &[])
+            .expect("operation should succeed in test");
         assert_eq!(result, "obj.method()");
     }
 
@@ -837,7 +962,8 @@ mod tests {
     #[test]
     fn test_gen_block_expr_single() {
         let exprs = vec![make_literal(Literal::Integer(42, None))];
-        let result = MinimalCodeGen::gen_block_expr(&exprs).unwrap();
+        let result =
+            MinimalCodeGen::gen_block_expr(&exprs).expect("operation should succeed in test");
         assert_eq!(result, "{ 42 }");
     }
 }
