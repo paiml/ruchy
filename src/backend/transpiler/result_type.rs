@@ -308,7 +308,9 @@ mod tests {
 
         let result = transpiler.transpile_result_match(&expr, &arms);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("match result"));
         assert!(code.contains("Ok") && code.contains("value"));
         assert!(code.contains("Err") && code.contains("error"));
@@ -325,7 +327,9 @@ mod tests {
 
         let result = transpiler.transpile_result_match(&expr, &arms);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("Ok") && code.contains("value"));
         assert!(code.contains('_'));
     }
@@ -337,7 +341,9 @@ mod tests {
 
         let result = transpiler.transpile_result_chain(&operations);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert_eq!(code, "Ok (())");
     }
 
@@ -348,7 +354,9 @@ mod tests {
 
         let result = transpiler.transpile_result_chain(&operations);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert_eq!(code, "operation");
     }
 
@@ -359,7 +367,9 @@ mod tests {
 
         let result = transpiler.transpile_result_chain(&operations);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("and_then"));
         assert!(code.contains("op1"));
         assert!(code.contains("op2"));
@@ -374,7 +384,9 @@ mod tests {
 
         let result = transpiler.transpile_result_unwrap_or(&result_expr, &default);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("my_result . unwrap_or"));
         assert!(code.contains('0'));
     }
@@ -387,7 +399,9 @@ mod tests {
 
         let result = transpiler.transpile_result_map(&result_expr, &mapper);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("my_result . map"));
         assert!(code.contains("transform"));
     }
@@ -450,7 +464,9 @@ mod tests {
 
         let result = transpiler.transpile_result_match(&expr, &arms);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("match maybe_value"));
         assert!(code.contains("Ok") && code.contains("value"));
     }
@@ -467,7 +483,9 @@ mod tests {
 
         let result = transpiler.transpile_result_chain(&operations);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
 
         // Should chain all operations with and_then
         assert!(code.contains("fetch_data"));
