@@ -554,36 +554,45 @@ mod tests {
 
     #[test]
     fn test_repl_creation() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let repl = Repl::new(temp_dir.path().to_path_buf());
         assert!(repl.is_ok());
     }
 
     #[test]
     fn test_basic_evaluation() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
-        let should_exit = repl.process_line("2 + 2").unwrap();
+        let should_exit = repl
+            .process_line("2 + 2")
+            .expect("process_line should succeed in test");
         assert!(!should_exit);
     }
 
     #[test]
     fn test_command_processing() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
-        let should_exit = repl.process_line(":help").unwrap();
+        let should_exit = repl
+            .process_line(":help")
+            .expect("process_line should succeed in test");
         assert!(!should_exit);
 
-        let should_exit = repl.process_line(":quit").unwrap();
+        let should_exit = repl
+            .process_line(":quit")
+            .expect("process_line should succeed in test");
         assert!(should_exit);
     }
 
     #[test]
     fn test_prompt_generation() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         assert_eq!(repl.get_prompt(), "ruchy> ");
 
@@ -593,8 +602,9 @@ mod tests {
 
     #[test]
     fn test_performance_monitoring() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Should complete quickly
         let start = Instant::now();
@@ -607,18 +617,26 @@ mod tests {
 
     #[test]
     fn test_empty_line_handling() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
-        assert!(!repl.process_line("").unwrap());
-        assert!(!repl.process_line("   ").unwrap());
-        assert!(!repl.process_line("\t\n").unwrap());
+        assert!(!repl
+            .process_line("")
+            .expect("process_line should succeed in test"));
+        assert!(!repl
+            .process_line("   ")
+            .expect("process_line should succeed in test"));
+        assert!(!repl
+            .process_line("\t\n")
+            .expect("process_line should succeed in test"));
     }
 
     #[test]
     fn test_tab_completion() {
-        let temp_dir = TempDir::new().unwrap();
-        let repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         let completions = repl.get_completions(":he");
         assert!(completions.contains(&":help".to_string()));
@@ -657,8 +675,8 @@ mod tests {
         proptest! {
             #[test]
             fn test_repl_never_panics_on_any_input(input: String) {
-                let temp_dir = TempDir::new().unwrap();
-                let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+                let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+                let mut repl = Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
                 // Should never panic on any input
                 let _ = repl.process_line(&input);
@@ -668,8 +686,8 @@ mod tests {
             fn test_performance_consistency(
                 inputs in prop::collection::vec(".*", 1..100)
             ) {
-                let temp_dir = TempDir::new().unwrap();
-                let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+                let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+                let mut repl = Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
                 // Performance should be consistent
                 let mut max_time = 0u128;
@@ -689,8 +707,8 @@ mod tests {
                 cmd in ":[a-z]{1,20}",
                 args in prop::collection::vec("[a-zA-Z0-9]+", 0..5)
             ) {
-                let temp_dir = TempDir::new().unwrap();
-                let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+                let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+                let mut repl = Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
                 let full_cmd = if args.is_empty() {
                     cmd
@@ -709,7 +727,7 @@ mod tests {
     #[test]
     fn test_coverage_boost_basic() {
         // Quick coverage boost for 70% milestone
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let repl = Repl::new(temp_dir.path().to_path_buf());
         assert!(repl.is_ok());
 
@@ -728,8 +746,9 @@ mod tests {
     // EXTREME COVERAGE TESTS FOR 100% REPL HOT FILE COVERAGE
     #[test]
     fn test_all_repl_commands_comprehensive() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test all built-in commands systematically
         let commands = vec![
@@ -761,8 +780,9 @@ mod tests {
 
     #[test]
     fn test_all_expression_types_in_repl() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test all expression types that REPL should handle
         let expressions = vec![
@@ -829,8 +849,9 @@ mod tests {
 
     #[test]
     fn test_repl_state_management() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test variable persistence across lines
         let _ = repl.process_line("let x = 42");
@@ -851,8 +872,9 @@ mod tests {
 
     #[test]
     fn test_repl_error_handling_comprehensive() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test various error conditions
         // Create long strings first to avoid temporary value issues
@@ -904,8 +926,9 @@ mod tests {
 
     #[test]
     fn test_repl_file_operations() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test session saving and loading
         let _ = repl.process_line("let test_var = 123");
@@ -942,8 +965,9 @@ mod tests {
 
     #[test]
     fn test_repl_advanced_features() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test complex data structures
         let complex_expressions = vec![
@@ -979,8 +1003,9 @@ mod tests {
 
     #[test]
     fn test_repl_performance_edge_cases() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Test performance edge cases
         let performance_tests = vec![
@@ -1023,8 +1048,9 @@ mod tests {
     #[ignore = "Future feature: eval_bounded memory and timeout enforcement"]
     fn test_eval_with_limits_enforcement() {
         use std::time::Duration;
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Should enforce memory limit
         let result = repl.eval_bounded(
