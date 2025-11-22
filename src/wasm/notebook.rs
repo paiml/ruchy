@@ -1802,7 +1802,7 @@ impl NotebookRuntime {
         let mut allocations = Vec::new();
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time is before UNIX epoch: clock skew detected")
             .as_millis() as u64;
         for cell in &self.notebook.cells {
             if matches!(cell.cell_type, CellType::Code) {
@@ -2594,7 +2594,11 @@ impl NotebookRuntime {
                 });
             }
         }
-        results.sort_by(|a, b| b.relevance_score.partial_cmp(&a.relevance_score).unwrap());
+        results.sort_by(|a, b| {
+            b.relevance_score
+                .partial_cmp(&a.relevance_score)
+                .expect("relevance_score contains NaN: invalid search result")
+        });
         Ok(results)
     }
     /// Search code cells
@@ -2656,7 +2660,11 @@ impl NotebookRuntime {
             }
         }
         // Deduplicate
-        results.sort_by(|a, b| b.relevance_score.partial_cmp(&a.relevance_score).unwrap());
+        results.sort_by(|a, b| {
+            b.relevance_score
+                .partial_cmp(&a.relevance_score)
+                .expect("relevance_score contains NaN: invalid search result")
+        });
         results.dedup_by(|a, b| a.cell_id == b.cell_id);
         Ok(results)
     }
@@ -3591,7 +3599,7 @@ impl NotebookRuntime {
 }
 impl Default for NotebookRuntime {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("NotebookRuntime::new should succeed: initialization failed")
     }
 }
 // ============================================================================
@@ -3603,7 +3611,10 @@ fn generate_cell_id() -> String {
 fn current_timestamp() -> String {
     #[cfg(target_arch = "wasm32")]
     {
-        js_sys::Date::new_0().to_iso_string().as_string().unwrap()
+        js_sys::Date::new_0()
+            .to_iso_string()
+            .as_string()
+            .expect("Date.toISOString() should return valid string")
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -3619,7 +3630,7 @@ fn get_timestamp() -> f64 {
     {
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("System time is before UNIX epoch: clock skew detected")
             .as_millis() as f64
     }
 }
@@ -4054,7 +4065,7 @@ mod tests {
         let runtime = NotebookRuntime::new();
         assert!(runtime.is_ok());
 
-        let runtime = runtime.unwrap();
+        let runtime = runtime.expect("runtime should be Some in test");
         assert_eq!(runtime.notebook.version, "2.0.0");
         assert_eq!(runtime.notebook.metadata.kernel, "wasm");
         assert_eq!(runtime.notebook.metadata.language, "ruchy");
@@ -4065,7 +4076,8 @@ mod tests {
     // Test 2: Add Various Cell Types
     #[test]
     fn test_add_cell_types() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Add code cell
         let code_id = runtime.add_cell("code", "let x = 42");
@@ -4089,7 +4101,8 @@ mod tests {
     // Test 3: Cell Metadata Operations
     #[test]
     fn test_cell_metadata() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let _id = runtime.add_cell("code", "print('test')");
 
         let cell = &runtime.notebook.cells[0];
@@ -4101,7 +4114,7 @@ mod tests {
     // Test 4: Notebook Metadata
     #[test]
     fn test_notebook_metadata() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let metadata = &runtime.notebook.metadata;
 
         assert!(!metadata.created.is_empty());
@@ -4112,7 +4125,8 @@ mod tests {
     // Test 5: Session Operations
     #[test]
     fn test_session_operations() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Initial state
         assert_eq!(runtime.total_sessions, 1);
@@ -4129,7 +4143,8 @@ mod tests {
     // Test 6: Export to JSON
     #[test]
     fn test_export_json() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "x = 1");
         runtime.add_cell("markdown", "## Header");
 
@@ -4143,13 +4158,15 @@ mod tests {
     // Test 7: Import from JSON
     #[test]
     fn test_import_json() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "original");
 
         let json = runtime.to_json();
 
         // Create new runtime and import
-        let mut new_runtime = NotebookRuntime::new().unwrap();
+        let mut new_runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let result = new_runtime.from_json(&json);
 
         assert!(result.is_ok());
@@ -4160,7 +4177,8 @@ mod tests {
     // Test 8: Get Cells Operation
     #[test]
     fn test_get_cells() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "a = 1");
         runtime.add_cell("code", "b = 2");
 
@@ -4172,13 +4190,16 @@ mod tests {
     // Test 9: Version Control - Branches
     #[test]
     fn test_version_control_branches() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert_eq!(runtime.current_branch, "main");
         assert!(runtime.branches.contains_key("main"));
         assert_eq!(runtime.branches.len(), 1);
 
-        let main_branch = runtime.branches.get("main").unwrap();
+        let main_branch = runtime
+            .branches
+            .get("main")
+            .expect("operation should succeed in test");
         assert_eq!(main_branch.name, "main");
         assert!(main_branch.notebook_state.is_none());
     }
@@ -4186,7 +4207,7 @@ mod tests {
     // Test 10: Performance Metrics Initialization
     #[test]
     fn test_performance_metrics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert_eq!(runtime.performance_metrics.total_execution_time, 0.0);
         assert_eq!(runtime.performance_metrics.peak_memory_usage, 0);
@@ -4198,7 +4219,7 @@ mod tests {
     // Test 11: Cache Operations
     #[test]
     fn test_cache_initialization() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert!(runtime.cache.is_empty());
         assert_eq!(runtime.cache_hits, 0);
@@ -4210,7 +4231,8 @@ mod tests {
     // Test 12: Execution Mode Setting
     #[test]
     fn test_set_execution_mode() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test setting different modes
         runtime.set_execution_mode("reactive");
@@ -4224,14 +4246,15 @@ mod tests {
     // Test 13: Export Functions
     #[test]
     fn test_export_markdown() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("markdown", "# Title");
         runtime.add_cell("code", "x = 42");
 
         let result = runtime.export_as_markdown();
         assert!(result.is_ok());
 
-        let markdown = result.unwrap();
+        let markdown = result.expect("operation should succeed in test");
         assert!(markdown.contains("# Title"));
         assert!(markdown.contains("```ruchy"));
         assert!(markdown.contains("x = 42"));
@@ -4240,13 +4263,14 @@ mod tests {
     // Test 14: Export HTML
     #[test]
     fn test_export_html() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "print('hello')");
 
         let result = runtime.export_as_html();
         assert!(result.is_ok());
 
-        let html = result.unwrap();
+        let html = result.expect("operation should succeed in test");
         assert!(html.contains("<!DOCTYPE html>"));
         assert!(html.contains("<title>"));
         assert!(html.contains("print(&#x27;hello&#x27;)"));
@@ -4255,7 +4279,7 @@ mod tests {
     // Test 15: Worker Configuration
     #[test]
     fn test_worker_configuration() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert_eq!(runtime.max_workers, 1);
         assert_eq!(runtime.initial_workers, 1);
@@ -4268,7 +4292,7 @@ mod tests {
     // Test 16: Memory Management Settings
     #[test]
     fn test_memory_management() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert!(runtime.memory_limit.is_none());
         assert!(!runtime.memory_optimization_enabled);
@@ -4279,7 +4303,7 @@ mod tests {
     // Test 17: Analytics Tracking
     #[test]
     fn test_analytics_initialization() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert!(runtime.cell_execution_counts.is_empty());
         assert!(runtime.cell_execution_times.is_empty());
@@ -4290,7 +4314,7 @@ mod tests {
     // Test 18: Optimization Settings
     #[test]
     fn test_optimization_settings() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert!(!runtime.incremental_mode);
         assert!(!runtime.profiling_enabled);
@@ -4303,7 +4327,7 @@ mod tests {
     // Test 19: Plugin and Template System
     #[test]
     fn test_plugin_template_system() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         assert!(runtime.enabled_plugins.is_empty());
         assert!(runtime.templates.is_empty());
@@ -4320,7 +4344,7 @@ mod tests {
         let basic = features
             .iter()
             .find(|f| f.feature == "Basic Evaluation")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert!(basic.native_support);
         assert!(basic.wasm_support);
 
@@ -4334,7 +4358,8 @@ mod tests {
     // Test 21: Cell Execution with Error Handling
     #[test]
     fn test_execute_cell_error_handling() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell_id = runtime.add_cell("code", "invalid syntax here");
 
         // Execution should handle errors gracefully
@@ -4346,21 +4371,25 @@ mod tests {
     // Test 22: Session Export and Import
     #[test]
     fn test_session_export_import() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "x = 42");
 
         let export_result = runtime.export_session();
         assert!(export_result.is_ok());
 
-        let mut new_runtime = NotebookRuntime::new().unwrap();
-        let import_result = new_runtime.import_session(&export_result.unwrap());
+        let mut new_runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
+        let import_result =
+            new_runtime.import_session(&export_result.expect("operation should succeed in test"));
         assert!(import_result.is_ok());
     }
 
     // Test 23: Checkpoint Operations
     #[test]
     fn test_checkpoint_operations() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "y = 100");
 
         // Create checkpoint
@@ -4379,14 +4408,15 @@ mod tests {
     // Test 24: Jupyter Export Functionality
     #[test]
     fn test_jupyter_export() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "print('jupyter test')");
         runtime.add_cell("markdown", "## Jupyter Export Test");
 
         let jupyter_result = runtime.export_as_jupyter();
         assert!(jupyter_result.is_ok());
 
-        let jupyter_json = jupyter_result.unwrap();
+        let jupyter_json = jupyter_result.expect("operation should succeed in test");
         assert!(jupyter_json.contains("\"cells\""));
         assert!(jupyter_json.contains("\"metadata\""));
         assert!(jupyter_json.contains("jupyter test"));
@@ -4395,12 +4425,12 @@ mod tests {
     // Test 25: Usage Analytics
     #[test]
     fn test_usage_analytics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let analytics_result = runtime.get_usage_analytics();
         assert!(analytics_result.is_ok());
 
-        let analytics = analytics_result.unwrap();
+        let analytics = analytics_result.expect("operation should succeed in test");
         // These are usize/u64, so always >= 0
         let _ = analytics.total_executions;
         let _ = analytics.total_sessions;
@@ -4410,7 +4440,7 @@ mod tests {
     // Test 26: Performance Profiling
     #[test]
     fn test_performance_profiling() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let profile = runtime.get_performance_profile();
         // Just verify it returns a non-empty string (content may vary)
@@ -4420,7 +4450,8 @@ mod tests {
     // Test 27: Resource Management
     #[test]
     fn test_resource_management() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test memory limit setting
         runtime.set_memory_limit(100_000_000);
@@ -4438,7 +4469,7 @@ mod tests {
     // Test 28: Execution Statistics
     #[test]
     fn test_execution_statistics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let stats = runtime.get_execution_statistics();
         assert!(stats.contains("lazy_evaluated"));
@@ -4452,7 +4483,8 @@ mod tests {
     // Test 29: Incremental Mode Operations
     #[test]
     fn test_incremental_mode() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Enable incremental mode
         runtime.enable_incremental_mode(true);
@@ -4475,7 +4507,8 @@ mod tests {
     // Test 30: Streaming and Chunking
     #[test]
     fn test_streaming_operations() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Enable streaming mode
         runtime.enable_streaming_mode(true);
@@ -4493,7 +4526,8 @@ mod tests {
     // Test 31: Version Control - Commits and Tags
     #[test]
     fn test_version_control_advanced() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "initial_code = 1");
 
         // Test commit creation
@@ -4501,20 +4535,23 @@ mod tests {
         assert!(commit_result.is_ok());
 
         // Test tag creation (first need a commit)
-        let commit = commit_result.unwrap();
+        let commit = commit_result.expect("operation should succeed in test");
         let tag_result = runtime.create_tag("v1.0.0", &commit.hash, "First version");
         assert!(tag_result.is_ok());
 
         // Test listing tags
         let list_result = runtime.list_tags();
         assert!(list_result.is_ok());
-        assert!(!list_result.unwrap().is_empty());
+        assert!(!list_result
+            .expect("operation should succeed in test")
+            .is_empty());
     }
 
     // Test 32: Branch Operations
     #[test]
     fn test_branch_operations() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test branch creation
         let branch_result = runtime.create_branch("feature-branch");
@@ -4523,7 +4560,7 @@ mod tests {
         // Test current branch
         let current = runtime.current_branch();
         assert!(current.is_ok());
-        assert_eq!(current.unwrap(), "main");
+        assert_eq!(current.expect("operation should succeed in test"), "main");
 
         // Test branch switching
         let switch_result = runtime.switch_branch("feature-branch");
@@ -4533,7 +4570,8 @@ mod tests {
     // Test 33: Search Functionality
     #[test]
     fn test_search_functionality() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "def search_test(): return 42");
         runtime.add_cell("markdown", "Search in markdown content");
 
@@ -4557,21 +4595,21 @@ mod tests {
     // Test 34: Template System
     #[test]
     fn test_template_system() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Get available templates
         let templates_result = runtime.get_available_templates();
         assert!(templates_result.is_ok());
 
         // Templates list might be empty but function should work
-        let templates = templates_result.unwrap();
+        let templates = templates_result.expect("operation should succeed in test");
         assert!(templates.is_empty() || !templates.is_empty());
     }
 
     // Test 35: Plugin System
     #[test]
     fn test_plugin_system() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Get available plugins
         let plugins_result = runtime.get_available_plugins();
@@ -4580,13 +4618,15 @@ mod tests {
         // Get enabled plugins
         let enabled_result = runtime.get_enabled_plugins();
         assert!(enabled_result.is_ok());
-        assert!(enabled_result.unwrap().is_empty());
+        assert!(enabled_result
+            .expect("operation should succeed in test")
+            .is_empty());
     }
 
     // Test 36: Health Checks and Integrity
     #[test]
     fn test_health_and_integrity() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test notebook health check
         let health_result = runtime.check_notebook_health();
@@ -4600,7 +4640,8 @@ mod tests {
     // Test 37: Collaborative Features
     #[test]
     fn test_collaborative_features() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "collaborative_test = True");
 
         // Test export for collaboration
@@ -4619,7 +4660,8 @@ mod tests {
     // Test 38: Performance Optimization Features
     #[test]
     fn test_optimization_features() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test query optimization
         runtime.enable_query_optimization(true);
@@ -4641,7 +4683,8 @@ mod tests {
     // Test 39: Distributed Computing
     #[test]
     fn test_distributed_computing() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Enable distributed mode
         runtime.enable_distributed_mode(true);
@@ -4659,7 +4702,8 @@ mod tests {
     // Test 40: Predictive Features
     #[test]
     fn test_predictive_features() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Enable predictive prefetch
         runtime.enable_predictive_prefetch(true);
@@ -4681,7 +4725,7 @@ mod tests {
     // Test 41: Code Recommendations
     #[test]
     fn test_code_recommendations() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test optimization suggestions
         let suggestions = runtime.get_optimization_suggestions();
@@ -4699,7 +4743,7 @@ mod tests {
     // Test 42: Advanced Analytics
     #[test]
     fn test_advanced_analytics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test execution metrics
         let exec_metrics = runtime.get_execution_metrics();
@@ -4719,7 +4763,8 @@ mod tests {
     // Test 43: execute_cell_with_session
     #[test]
     fn test_execute_cell_with_session() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell_id = runtime.add_cell("code", "let x = 42");
 
         // First execute the cell to define x
@@ -4733,14 +4778,15 @@ mod tests {
         let result = runtime.execute_cell_with_session(&cell_id, "x + 1");
         assert!(result.is_ok(), "Execute with session failed: {result:?}");
 
-        let response = result.unwrap();
+        let response = result.expect("operation should succeed in test");
         assert!(!response.value.is_empty() || response.error.is_some());
     }
 
     // Test 44: execute_reactive
     #[test]
     fn test_execute_reactive() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell_id = runtime.add_cell("code", "let y = 100");
 
         // Test reactive execution
@@ -4751,7 +4797,7 @@ mod tests {
     // Test 45: explain_reactive
     #[test]
     fn test_explain_reactive() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test reactive explanation
         let explanation = runtime.explain_reactive("test-cell");
@@ -4763,7 +4809,7 @@ mod tests {
     // Test 46: get_globals
     #[test]
     fn test_get_globals() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test getting global variables
         let globals = runtime.get_globals();
@@ -4774,7 +4820,8 @@ mod tests {
     // Test 47: get_dependency_graph
     #[test]
     fn test_get_dependency_graph() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "let a = 1");
         runtime.add_cell("code", "let b = a + 1");
 
@@ -4787,7 +4834,8 @@ mod tests {
     // Test 48: get_cell_provenance
     #[test]
     fn test_get_cell_provenance() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell_id = runtime.add_cell("code", "let z = 5");
 
         // Test cell provenance
@@ -4798,7 +4846,7 @@ mod tests {
     // Test 49: get_memory_usage
     #[test]
     fn test_get_memory_usage() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test memory usage reporting
         let memory = runtime.get_memory_usage();
@@ -4809,46 +4857,48 @@ mod tests {
     // Test 50: get_debug_information
     #[test]
     fn test_get_debug_information() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test debug information generation
         let debug_info = runtime.get_debug_information();
         assert!(debug_info.is_ok());
 
-        let info = debug_info.unwrap();
+        let info = debug_info.expect("operation should succeed in test");
         assert!(!info.is_empty());
     }
 
     // Test 51: get_execution_trace
     #[test]
     fn test_get_execution_trace() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test execution trace retrieval
         let trace_result = runtime.get_execution_trace();
         assert!(trace_result.is_ok());
 
-        let trace = trace_result.unwrap();
+        let trace = trace_result.expect("operation should succeed in test");
         assert!(trace.is_empty() || !trace.is_empty()); // May be empty initially
     }
 
     // Test 52: handle_api_request - GET
     #[test]
     fn test_handle_api_request_get() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test GET request handling
         let response = runtime.handle_api_request("GET", "/health", None);
         assert!(response.is_ok());
 
-        let api_response = response.unwrap();
+        let api_response = response.expect("operation should succeed in test");
         assert_eq!(api_response.status, 200);
     }
 
     // Test 53: handle_api_request - POST
     #[test]
     fn test_handle_api_request_post() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test POST request handling
         let body = serde_json::json!({
@@ -4864,46 +4914,49 @@ mod tests {
     // Test 54: handle_api_request - Invalid Method
     #[test]
     fn test_handle_api_request_invalid_method() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test invalid method handling - returns 404 for unknown endpoints
         let response = runtime.handle_api_request("INVALID", "/test", None);
         assert!(response.is_ok());
 
-        let api_response = response.unwrap();
+        let api_response = response.expect("operation should succeed in test");
         assert_eq!(api_response.status, 404); // Not Found for unknown endpoint
     }
 
     // Test 55: create_update_tracker
     #[test]
     fn test_create_update_tracker() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test update tracker creation
         let tracker_result = runtime.create_update_tracker();
         assert!(tracker_result.is_ok());
 
-        let tracker = tracker_result.unwrap();
+        let tracker = tracker_result.expect("operation should succeed in test");
         assert!(!tracker.notebook_id.is_empty());
     }
 
     // Test 56: get_pending_updates
     #[test]
     fn test_get_pending_updates() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test getting pending updates
         let updates_result = runtime.get_pending_updates();
         assert!(updates_result.is_ok());
 
-        let updates = updates_result.unwrap();
+        let updates = updates_result.expect("operation should succeed in test");
         assert!(updates.is_empty() || !updates.is_empty()); // May have no pending updates
     }
 
     // Test 57: import_collaborative_state
     #[test]
     fn test_import_collaborative_state() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Create a valid collaborative state JSON
         let state_json = serde_json::json!({
@@ -4934,7 +4987,8 @@ mod tests {
     // Test 58: handle_websocket_message
     #[test]
     fn test_handle_websocket_message() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Create a valid WebSocket message
         let message = WebSocketMessage {
@@ -4967,20 +5021,21 @@ mod tests {
     // Test 59: get_websocket_updates
     #[test]
     fn test_get_websocket_updates() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test getting WebSocket updates
         let updates_result = runtime.get_websocket_updates();
         assert!(updates_result.is_ok());
 
-        let updates = updates_result.unwrap();
+        let updates = updates_result.expect("operation should succeed in test");
         assert!(updates.contains('[') || updates == "[]"); // Should be JSON array
     }
 
     // Test 60: Complex integration test - Full notebook lifecycle
     #[test]
     fn test_notebook_lifecycle_integration() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Add cells
         let cell1 = runtime.add_cell("code", "let data = 42");
@@ -5013,7 +5068,8 @@ mod tests {
     // Test 61: Error handling in execute_cell_with_session
     #[test]
     fn test_execute_cell_with_session_error_handling() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test with non-existent cell - this should create the cell automatically
         let result = runtime.execute_cell_with_session("non-existent-cell", "42");
@@ -5022,14 +5078,15 @@ mod tests {
             "Should handle non-existent cell: {result:?}"
         ); // Should handle gracefully
 
-        let response = result.unwrap();
+        let response = result.expect("operation should succeed in test");
         assert!(response.error.is_some() || !response.value.is_empty());
     }
 
     // Test 62: Memory optimization features
     #[test]
     fn test_memory_optimization_integration() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Enable memory optimization
         runtime.enable_memory_optimization(true);
@@ -5047,7 +5104,8 @@ mod tests {
     // Test 63: API request routing
     #[test]
     fn test_api_request_routing() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Test various API endpoints
         let endpoints = vec![
@@ -5062,7 +5120,7 @@ mod tests {
             let response = runtime.handle_api_request(method, path, body);
             assert!(response.is_ok());
 
-            let api_response = response.unwrap();
+            let api_response = response.expect("operation should succeed in test");
             assert!(
                 api_response.status == 200
                     || api_response.status == 404
@@ -5074,17 +5132,17 @@ mod tests {
     // Test 64: Collaborative state synchronization
     #[test]
     fn test_collaborative_state_sync() {
-        let mut runtime1 = NotebookRuntime::new().unwrap();
+        let mut runtime1 = NotebookRuntime::new().expect("operation should succeed in test");
         runtime1.add_cell("code", "shared_data = 42");
 
         // Export collaborative state
         let export_result = runtime1.export_for_collaboration();
         assert!(export_result.is_ok());
 
-        let state = export_result.unwrap();
+        let state = export_result.expect("operation should succeed in test");
 
         // Import into another runtime
-        let mut runtime2 = NotebookRuntime::new().unwrap();
+        let mut runtime2 = NotebookRuntime::new().expect("operation should succeed in test");
         let import_result = runtime2.import_collaborative_state(&state);
         assert!(import_result.is_ok());
     }
@@ -5094,15 +5152,15 @@ mod tests {
     // Test 65: diff_notebook
     #[test]
     fn test_diff_notebook() {
-        let mut runtime1 = NotebookRuntime::new().unwrap();
+        let mut runtime1 = NotebookRuntime::new().expect("operation should succeed in test");
         runtime1.add_cell("code", "x = 1");
 
-        let mut runtime2 = NotebookRuntime::new().unwrap();
+        let mut runtime2 = NotebookRuntime::new().expect("operation should succeed in test");
         runtime2.add_cell("code", "x = 2");
 
         let diff = runtime1.diff_notebook(&runtime2);
         assert!(diff.is_ok());
-        let diff_result = diff.unwrap();
+        let diff_result = diff.expect("operation should succeed in test");
         assert!(
             !diff_result.added_cells.is_empty()
                 || !diff_result.removed_cells.is_empty()
@@ -5113,10 +5171,10 @@ mod tests {
     // Test 66: merge_notebook
     #[test]
     fn test_merge_notebook() {
-        let mut runtime1 = NotebookRuntime::new().unwrap();
+        let mut runtime1 = NotebookRuntime::new().expect("operation should succeed in test");
         runtime1.add_cell("code", "base = 1");
 
-        let mut runtime2 = NotebookRuntime::new().unwrap();
+        let mut runtime2 = NotebookRuntime::new().expect("operation should succeed in test");
         runtime2.add_cell("code", "feature = 2");
 
         let merge_result = runtime1.merge_notebook(&runtime2);
@@ -5126,7 +5184,8 @@ mod tests {
     // Test 67: resolve_conflict
     #[test]
     fn test_resolve_conflict() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Attempt to resolve a conflict (may not exist)
         let result = runtime.resolve_conflict("conflict-1", "accept-ours");
@@ -5136,7 +5195,8 @@ mod tests {
     // Test 68: merge_branch
     #[test]
     fn test_merge_branch() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.create_branch("feature-branch").ok();
 
         let result = runtime.merge_branch("feature-branch");
@@ -5146,7 +5206,8 @@ mod tests {
     // Test 69: clone_notebook
     #[test]
     fn test_clone_notebook() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "original = 1");
 
         // Create a commit first
@@ -5159,7 +5220,7 @@ mod tests {
     // Test 70: create_pull_request
     #[test]
     fn test_create_pull_request() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let pr = runtime.create_pull_request("main", "feature", "Test PR");
         assert!(pr.is_ok());
@@ -5168,7 +5229,8 @@ mod tests {
     // Test 71: publish_notebook
     #[test]
     fn test_publish_notebook() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "published_code = 1");
 
         let result =
@@ -5179,7 +5241,8 @@ mod tests {
     // Test 72: update_published_notebook
     #[test]
     fn test_update_published_notebook() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // First publish a notebook
         let publish_result = runtime
@@ -5190,7 +5253,7 @@ mod tests {
                 "MIT",
                 true,
             )
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Now update it using the actual notebook ID
         let result = runtime.update_published_notebook(&publish_result.notebook_id);
@@ -5200,7 +5263,8 @@ mod tests {
     // Test 73: create_from_template
     #[test]
     fn test_create_from_template() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let result = runtime.create_from_template("data-science");
         // Template may not exist
@@ -5210,7 +5274,8 @@ mod tests {
     // Test 74: save_as_template
     #[test]
     fn test_save_as_template() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "template_code = 1");
 
         let result = runtime.save_as_template("my-template", "My template", vec!["custom"]);
@@ -5220,7 +5285,8 @@ mod tests {
     // Test 75: semantic_search
     #[test]
     fn test_semantic_search() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "def calculate_mean(): pass");
         runtime.add_cell("markdown", "# Statistics functions");
 
@@ -5231,7 +5297,7 @@ mod tests {
     // Test 76: create_chart
     #[test]
     fn test_create_chart() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Chart data would come from a dataframe
 
@@ -5253,7 +5319,7 @@ mod tests {
     // Test 77: create_interactive_viz
     #[test]
     fn test_create_interactive_viz() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         // Viz data would come from a dataframe
 
@@ -5275,20 +5341,24 @@ mod tests {
     // Test 78: enable_plugin
     #[test]
     fn test_enable_plugin() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let result = runtime.enable_plugin("test-plugin");
         assert!(result.is_ok());
 
         // Verify plugin is in enabled list
-        let enabled = runtime.get_enabled_plugins().unwrap();
+        let enabled = runtime
+            .get_enabled_plugins()
+            .expect("operation should succeed in test");
         assert!(enabled.contains(&"test-plugin".to_string()));
     }
 
     // Test 79: register_plugin
     #[test]
     fn test_register_plugin() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let result = runtime.register_plugin("custom-plugin", "Test plugin", vec!["test"]);
         assert!(result.is_ok());
@@ -5297,31 +5367,32 @@ mod tests {
     // Test 80: check_notebook_health
     #[test]
     fn test_check_notebook_health() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let health = runtime.check_notebook_health();
         assert!(health.is_ok());
 
-        let health_check = health.unwrap();
+        let health_check = health.expect("operation should succeed in test");
         assert!(health_check.is_healthy);
     }
 
     // Test 81: verify_data_integrity
     #[test]
     fn test_verify_data_integrity() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let integrity = runtime.verify_data_integrity();
         assert!(integrity.is_ok());
 
-        let check = integrity.unwrap();
+        let check = integrity.expect("operation should succeed in test");
         assert!(check.all_valid);
     }
 
     // Test 82: mark_for_execution
     #[test]
     fn test_mark_for_execution() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell_id = runtime.add_cell("code", "marked = 1");
 
         let result = runtime.mark_for_execution(&cell_id);
@@ -5331,7 +5402,8 @@ mod tests {
     // Test 83: execute_cells_parallel
     #[test]
     fn test_execute_cells_parallel() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         let cell1 = runtime.add_cell("code", "a = 1");
         let cell2 = runtime.add_cell("code", "b = 2");
         let cell3 = runtime.add_cell("code", "c = 3");
@@ -5343,7 +5415,8 @@ mod tests {
     // Test 84: execute_all_cells
     #[test]
     fn test_execute_all_cells() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "x = 1");
         runtime.add_cell("code", "y = 2");
         runtime.add_cell("code", "z = x + y");
@@ -5355,7 +5428,8 @@ mod tests {
     // Test 85: set_cpu_time_limit
     #[test]
     fn test_set_cpu_time_limit() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_cpu_time_limit(5000); // 5 seconds
                                           // Should not panic
@@ -5364,7 +5438,8 @@ mod tests {
     // Test 86: set_max_output_size
     #[test]
     fn test_set_max_output_size() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_max_output_size(1_000_000); // 1MB
                                                 // Should not panic
@@ -5373,20 +5448,22 @@ mod tests {
     // Test 87: compile_notebook
     #[test]
     fn test_compile_notebook() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "compiled_code = 42");
 
         let result = runtime.compile_notebook();
         assert!(result.is_ok());
 
-        let compiled = result.unwrap();
+        let compiled = result.expect("operation should succeed in test");
         assert!(!compiled.is_empty());
     }
 
     // Test 88: execute_compiled
     #[test]
     fn test_execute_compiled() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let compiled = "compiled_bytecode_here";
         let result = runtime.execute_compiled(compiled);
@@ -5396,19 +5473,19 @@ mod tests {
     // Test 89: optimize_query_plan
     #[test]
     fn test_optimize_query_plan() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let plan = runtime.optimize_query_plan();
         assert!(plan.is_ok());
 
-        let optimized = plan.unwrap();
+        let optimized = plan.expect("operation should succeed in test");
         assert!(!optimized.is_empty());
     }
 
     // Test 90: train_prediction_model
     #[test]
     fn test_train_prediction_model() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let result = runtime.train_prediction_model();
         assert!(result.is_ok());
@@ -5417,7 +5494,7 @@ mod tests {
     // Test 91: get_prefetch_statistics
     #[test]
     fn test_get_prefetch_statistics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let stats = runtime.get_prefetch_statistics();
         assert!(!stats.is_empty());
@@ -5426,7 +5503,8 @@ mod tests {
     // Test 92: execute_distributed
     #[test]
     fn test_execute_distributed() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.enable_distributed_mode(true);
 
         let cell1 = runtime.add_cell("code", "distributed_1 = 1");
@@ -5439,7 +5517,8 @@ mod tests {
     // Test 93: set_cache_policy
     #[test]
     fn test_set_cache_policy() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_cache_policy("lru");
         runtime.set_cache_policy("lfu");
@@ -5450,7 +5529,8 @@ mod tests {
     // Test 94: set_cache_size
     #[test]
     fn test_set_cache_size() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_cache_size(10_000_000); // 10MB
         assert_eq!(runtime.cache_size_limit, 10_000_000);
@@ -5459,7 +5539,8 @@ mod tests {
     // Test 95: add_worker_node
     #[test]
     fn test_add_worker_node() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.add_worker_node("worker1", "http://localhost:8081");
         runtime.add_worker_node("worker2", "http://localhost:8082");
@@ -5470,7 +5551,8 @@ mod tests {
     // Test 96: set_scaling_policy
     #[test]
     fn test_set_scaling_policy() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_scaling_policy("aggressive");
         assert_eq!(runtime.scaling_policy, "aggressive");
@@ -5482,7 +5564,8 @@ mod tests {
     // Test 97: set_initial_workers
     #[test]
     fn test_set_initial_workers() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         runtime.set_initial_workers(4);
         assert_eq!(runtime.initial_workers, 4);
@@ -5491,7 +5574,7 @@ mod tests {
     // Test 98: get_scaling_metrics
     #[test]
     fn test_get_scaling_metrics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let metrics = runtime.get_scaling_metrics();
         assert!(!metrics.is_empty());
@@ -5500,7 +5583,7 @@ mod tests {
     // Test 99: get_distribution_metrics
     #[test]
     fn test_get_distribution_metrics() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let metrics = runtime.get_distribution_metrics();
         assert!(!metrics.is_empty());
@@ -5509,7 +5592,8 @@ mod tests {
     // Test 100: build_search_index
     #[test]
     fn test_build_search_index() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "searchable_function()");
         runtime.add_cell("markdown", "# Searchable header");
 
@@ -5520,7 +5604,8 @@ mod tests {
     // Test 101: search_content
     #[test]
     fn test_search_content() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "def test_function(): pass");
 
         let results = runtime.search_content("test");
@@ -5530,7 +5615,8 @@ mod tests {
     // Test 102: search_code
     #[test]
     fn test_search_code() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("code", "import pandas as pd");
 
         let results = runtime.search_code("import");
@@ -5540,7 +5626,8 @@ mod tests {
     // Test 103: search_markdown
     #[test]
     fn test_search_markdown() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.add_cell("markdown", "## Important section");
 
         let results = runtime.search_markdown("Important");
@@ -5550,7 +5637,7 @@ mod tests {
     // Test 104: get_available_templates
     #[test]
     fn test_get_available_templates() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let templates = runtime.get_available_templates();
         assert!(templates.is_ok());
@@ -5559,7 +5646,7 @@ mod tests {
     // Test 105: get_available_plugins
     #[test]
     fn test_get_available_plugins() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let plugins = runtime.get_available_plugins();
         assert!(plugins.is_ok());
@@ -5568,7 +5655,8 @@ mod tests {
     // Test 106: execute_cell_with_plugins
     #[test]
     fn test_execute_cell_with_plugins() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.enable_plugin("test-plugin").ok();
 
         let cell_id = runtime.add_cell("code", "plugin_test = 1");
@@ -5579,7 +5667,8 @@ mod tests {
     // Test 107: get_commit_history
     #[test]
     fn test_get_commit_history() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
         runtime.commit_notebook("test commit", None).ok();
 
         let history = runtime.get_commit_history();
@@ -5589,7 +5678,7 @@ mod tests {
     // Test 108: list_tags
     #[test]
     fn test_list_tags() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let tags = runtime.list_tags();
         assert!(tags.is_ok());
@@ -5598,7 +5687,8 @@ mod tests {
     // Test 109: checkout_tag
     #[test]
     fn test_checkout_tag() {
-        let mut runtime = NotebookRuntime::new().unwrap();
+        let mut runtime =
+            NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let result = runtime.checkout_tag("v1.0.0");
         assert!(result.is_err()); // Tag doesn't exist
@@ -5630,7 +5720,7 @@ mod tests {
     // Test 114: create_websocket_message
     #[test]
     fn test_create_websocket_message() {
-        let runtime = NotebookRuntime::new().unwrap();
+        let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
         let msg = runtime.create_websocket_message(
             WebSocketEvent::CellUpdated("test-cell".to_string()),
@@ -5662,7 +5752,7 @@ mod property_tests_notebook {
         #[test]
         fn test_add_cell_never_panics(source in ".*", cell_type in "(code|markdown)") {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 let _id = runtime.add_cell(&cell_type, &source);
             });
         }
@@ -5671,7 +5761,7 @@ mod property_tests_notebook {
         #[test]
         fn test_set_execution_mode_never_panics(mode: String) {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 runtime.set_execution_mode(&mode);
             });
         }
@@ -5680,7 +5770,7 @@ mod property_tests_notebook {
         #[test]
         fn test_execute_cell_never_panics(cell_id: String) {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 let _ = runtime.execute_cell(&cell_id);
             });
         }
@@ -5688,7 +5778,7 @@ mod property_tests_notebook {
         /// Property: get_globals always returns valid JSON
         #[test]
         fn test_get_globals_returns_valid_json(_seed: u64) {
-            let runtime = NotebookRuntime::new().unwrap();
+            let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
             let globals = runtime.get_globals();
 
             // Should be valid JSON object
@@ -5700,7 +5790,7 @@ mod property_tests_notebook {
         #[test]
         fn test_api_request_never_panics(method in "(GET|POST|PUT|DELETE)", path: String, body: Option<String>) {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 let body_ref = body.as_deref();
                 let _ = runtime.handle_api_request(&method, &path, body_ref);
             });
@@ -5710,7 +5800,7 @@ mod property_tests_notebook {
         #[test]
         fn test_websocket_message_never_panics(msg_type: String) {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 let message = WebSocketMessage {
                     message_type: msg_type,
                     event: "status_update".to_string(),
@@ -5726,7 +5816,7 @@ mod property_tests_notebook {
         #[test]
         fn test_checkpoint_operations_never_panic(name: String) {
             let _ = std::panic::catch_unwind(|| {
-                let mut runtime = NotebookRuntime::new().unwrap();
+                let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
                 let _ = runtime.create_notebook_checkpoint(&name);
                 let _ = runtime.restore_notebook_checkpoint(&name);
             });
@@ -5735,7 +5825,7 @@ mod property_tests_notebook {
         /// Property: Memory limits are always non-negative
         #[test]
         fn test_memory_limit_safety(limit in 0usize..=usize::MAX) {
-            let mut runtime = NotebookRuntime::new().unwrap();
+            let mut runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
             runtime.set_memory_limit(limit);
             // Should not panic even with extreme values
         }
@@ -5743,7 +5833,7 @@ mod property_tests_notebook {
         /// Property: Export functions always produce valid output
         #[test]
         fn test_exports_always_valid(_seed: u32) {
-            let runtime = NotebookRuntime::new().unwrap();
+            let runtime = NotebookRuntime::new().expect("NotebookRuntime::new should succeed in test");
 
             // All exports should produce non-empty results or valid errors
             let _ = runtime.export_as_jupyter();
