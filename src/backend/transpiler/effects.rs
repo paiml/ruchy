@@ -113,7 +113,9 @@ mod tests {
         );
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("42"));
     }
 
@@ -127,7 +129,9 @@ mod tests {
         );
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("hello"));
     }
 
@@ -138,7 +142,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Identifier("result".to_string()), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("result"));
     }
 
@@ -149,7 +155,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("true"));
     }
 
@@ -164,7 +172,9 @@ mod tests {
         };
         let result = transpile_operation_return_type(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         // Empty return type (no arrow)
         assert!(!tokens.contains("->"));
     }
@@ -183,7 +193,9 @@ mod tests {
         };
         let result = transpile_operation_return_type(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("->"));
         assert!(tokens.contains("i32"));
     }
@@ -202,7 +214,9 @@ mod tests {
         };
         let result = transpile_operation_return_type(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("->"));
         assert!(tokens.contains("String"));
     }
@@ -213,7 +227,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpile_effect_operations(&transpiler, &[]);
         assert!(result.is_ok());
-        let operations = result.unwrap();
+        let operations = result.expect("operation should succeed in test");
         assert_eq!(operations.len(), 0);
     }
 
@@ -223,7 +237,9 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_effect("EmptyEffect", &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("trait EmptyEffect"));
     }
 
@@ -233,7 +249,9 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_effect("FileIO", &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("pub trait FileIO"));
     }
 
@@ -258,7 +276,7 @@ mod tests {
         };
         let result = transpile_operation_params(&transpiler, &operation);
         assert!(result.is_ok());
-        let params = result.unwrap();
+        let params = result.expect("operation should succeed in test");
         assert_eq!(params.len(), 1);
         let param_str = params[0].to_string();
         assert!(param_str.contains("data"));
@@ -304,7 +322,9 @@ mod tests {
         };
         let result = transpile_single_operation(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn tick"));
         assert!(tokens.contains("self"));
     }
@@ -330,7 +350,9 @@ mod tests {
         };
         let result = transpile_single_operation(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn log"));
         assert!(tokens.contains("message"));
         assert!(tokens.contains("String"));
@@ -369,7 +391,9 @@ mod tests {
         };
         let result = transpile_single_operation(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn send"));
         assert!(tokens.contains("to : Address"));
         assert!(tokens.contains("message : String"));
@@ -389,7 +413,9 @@ mod tests {
         };
         let result = transpile_single_operation(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn fetch"));
         assert!(tokens.contains("-> Data"));
     }
@@ -405,7 +431,7 @@ mod tests {
         }];
         let result = transpile_effect_operations(&transpiler, &operations);
         assert!(result.is_ok());
-        let ops = result.unwrap();
+        let ops = result.expect("operation should succeed in test");
         assert_eq!(ops.len(), 1);
         let op_str = ops[0].to_string();
         assert!(op_str.contains("fn close"));
@@ -434,7 +460,7 @@ mod tests {
         ];
         let result = transpile_effect_operations(&transpiler, &operations);
         assert!(result.is_ok());
-        let ops = result.unwrap();
+        let ops = result.expect("operation should succeed in test");
         assert_eq!(ops.len(), 3);
         assert!(ops[0].to_string().contains("fn open"));
         assert!(ops[1].to_string().contains("fn close"));
@@ -452,7 +478,9 @@ mod tests {
         }];
         let result = transpiler.transpile_effect("Resettable", &operations);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("pub trait Resettable"));
         assert!(tokens.contains("fn reset"));
     }
@@ -488,7 +516,9 @@ mod tests {
         ];
         let result = transpiler.transpile_effect("FileSystem", &operations);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("pub trait FileSystem"));
         assert!(tokens.contains("fn read"));
         assert!(tokens.contains("-> String"));
@@ -514,7 +544,9 @@ mod tests {
         );
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("3.14") || tokens.contains(&std::f64::consts::PI.to_string()));
     }
 
@@ -525,7 +557,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
         let result = transpiler.transpile_handler(&expr, &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("None") || tokens.contains("null"));
     }
 
@@ -543,7 +577,9 @@ mod tests {
         };
         let result = transpile_operation_return_type(&transpiler, &operation);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("->"));
         assert!(tokens.contains("bool"));
     }
@@ -584,7 +620,9 @@ mod tests {
         }];
         let result = transpiler.transpile_effect("Processor", &operations);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("pub trait Processor"));
         assert!(tokens.contains("fn process"));
         assert!(tokens.contains("input"));
