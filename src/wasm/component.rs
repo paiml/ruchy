@@ -820,7 +820,7 @@ mod tests {
         // Create a temp file
         let temp_dir = std::env::temp_dir();
         let temp_file = temp_dir.join("test_component_source.ruchy");
-        fs::write(&temp_file, "fn main() {}").unwrap();
+        fs::write(&temp_file, "fn main() {}").expect("operation should succeed in test");
 
         let result = builder.add_source(&temp_file);
         assert!(result.is_ok());
@@ -1116,13 +1116,19 @@ mod tests {
         let file2 = temp_dir.join("file2.ruchy");
         let file3 = temp_dir.join("file3.ruchy");
 
-        fs::write(&file1, "fn main() {}").unwrap();
-        fs::write(&file2, "fn helper() {}").unwrap();
-        fs::write(&file3, "fn utils() {}").unwrap();
+        fs::write(&file1, "fn main() {}").expect("operation should succeed in test");
+        fs::write(&file2, "fn helper() {}").expect("operation should succeed in test");
+        fs::write(&file3, "fn utils() {}").expect("operation should succeed in test");
 
-        builder.add_source(&file1).unwrap();
-        builder.add_source(&file2).unwrap();
-        builder.add_source(&file3).unwrap();
+        builder
+            .add_source(&file1)
+            .expect("operation should succeed in test");
+        builder
+            .add_source(&file2)
+            .expect("operation should succeed in test");
+        builder
+            .add_source(&file3)
+            .expect("operation should succeed in test");
 
         assert_eq!(builder.source_files.len(), 3);
         assert!(builder.source_files.contains(&file1));
