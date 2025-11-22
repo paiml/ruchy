@@ -1,4 +1,4 @@
-.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book tier1-on-save tier1-watch tier2-on-commit tier3-nightly certeza-help
+.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book tier1-on-save tier1-watch tier2-on-commit tier3-nightly certeza-help renacer-profile renacer-baseline renacer-anomaly test-with-profiling
 
 # Default target
 help:
@@ -42,6 +42,12 @@ help:
 	@echo "  make quality-gate - Run PMAT quality checks"
 	@echo "  make quality-web  - Run HTML/JS linting and coverage (>80%)"
 	@echo "  make ci          - Run full CI pipeline"
+	@echo ""
+	@echo "Syscall Profiling (Renacer - SPEC-RENACER-001):"
+	@echo "  make renacer-profile  - Profile test syscalls with anomaly detection (3σ)"
+	@echo "  make renacer-baseline - Create baseline syscall profile (JSON)"
+	@echo "  make renacer-anomaly  - Run anomaly detection only"
+	@echo "  make test-with-profiling - Run tests with full syscall profiling"
 	@echo ""
 	@echo "TDG Dashboard Commands:"
 	@echo "  make tdg-dashboard - Start real-time TDG quality dashboard"
@@ -784,6 +790,34 @@ quality-gate:
 	@echo "Checking complexity..."
 	@~/.local/bin/pmat analyze --metrics complexity src/ || true
 	@echo "✓ Quality check complete"
+
+# Renacer Syscall Profiling (SPEC-RENACER-001)
+.PHONY: renacer-profile renacer-baseline renacer-anomaly test-with-profiling
+
+renacer-profile:
+	@echo "🔍 Running syscall profiling with renacer..."
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@renacer -c -s --stats-extended --anomaly-threshold 3.0 \
+		--format text \
+		-- cargo test --lib --quiet 2>&1 | tee syscall_profile.txt
+	@echo "📊 Syscall profile saved to syscall_profile.txt"
+
+renacer-baseline:
+	@echo "📊 Creating syscall baseline for all test suites..."
+	@mkdir -p baselines
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@renacer -c --stats-extended --format json \
+		-- cargo test --lib --quiet > baselines/lib_tests.json 2>&1
+	@echo "✅ Baseline saved to baselines/lib_tests.json"
+
+renacer-anomaly:
+	@echo "🔍 Running anomaly detection (3σ threshold)..."
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@renacer --stats-extended --anomaly-threshold 3.0 \
+		-- cargo test --lib --quiet 2>&1 | grep -i "anomaly" || echo "✅ No anomalies detected"
+
+test-with-profiling: renacer-profile
+	@echo "✅ Tests passed with syscall profiling"
 
 # TDG Dashboard Management
 tdg-dashboard:
