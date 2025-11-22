@@ -253,7 +253,9 @@ mod tests {
     #[test]
     fn test_transpile_list_empty() {
         let transpiler = test_transpiler();
-        let result = transpiler.transpile_list(&[]).unwrap();
+        let result = transpiler
+            .transpile_list(&[])
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "vec ! []");
     }
 
@@ -262,7 +264,9 @@ mod tests {
     fn test_transpile_list_single() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(42)];
-        let result = transpiler.transpile_list(&elements).unwrap();
+        let result = transpiler
+            .transpile_list(&elements)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("42"));
     }
@@ -272,7 +276,9 @@ mod tests {
     fn test_transpile_list_multiple() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(1), int_expr(2), int_expr(3)];
-        let result = transpiler.transpile_list(&elements).unwrap();
+        let result = transpiler
+            .transpile_list(&elements)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains('1') && result_str.contains('2') && result_str.contains('3'));
     }
@@ -281,7 +287,9 @@ mod tests {
     #[test]
     fn test_transpile_set_empty() {
         let transpiler = test_transpiler();
-        let result = transpiler.transpile_set(&[]).unwrap();
+        let result = transpiler
+            .transpile_set(&[])
+            .expect("operation should succeed in test");
         assert_eq!(
             result.to_string(),
             "std :: collections :: HashSet :: new ()"
@@ -293,7 +301,9 @@ mod tests {
     fn test_transpile_set_single() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(42)];
-        let result = transpiler.transpile_set(&elements).unwrap();
+        let result = transpiler
+            .transpile_set(&elements)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("HashSet")
@@ -307,7 +317,9 @@ mod tests {
     fn test_transpile_set_multiple() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(1), int_expr(2), int_expr(3)];
-        let result = transpiler.transpile_set(&elements).unwrap();
+        let result = transpiler
+            .transpile_set(&elements)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("HashSet") && result_str.contains('1') && result_str.contains('2')
@@ -318,7 +330,9 @@ mod tests {
     #[test]
     fn test_transpile_tuple_empty() {
         let transpiler = test_transpiler();
-        let result = transpiler.transpile_tuple(&[]).unwrap();
+        let result = transpiler
+            .transpile_tuple(&[])
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "()");
     }
 
@@ -327,7 +341,9 @@ mod tests {
     fn test_transpile_tuple_single() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(42)];
-        let result = transpiler.transpile_tuple(&elements).unwrap();
+        let result = transpiler
+            .transpile_tuple(&elements)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "(42)");
     }
 
@@ -336,7 +352,9 @@ mod tests {
     fn test_transpile_tuple_multiple() {
         let transpiler = test_transpiler();
         let elements = vec![int_expr(1), string_expr("hello")];
-        let result = transpiler.transpile_tuple(&elements).unwrap();
+        let result = transpiler
+            .transpile_tuple(&elements)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains('(') && result_str.contains('1') && result_str.contains("hello")
@@ -349,7 +367,9 @@ mod tests {
         let transpiler = test_transpiler();
         let start = int_expr(0);
         let end = int_expr(10);
-        let result = transpiler.transpile_range(&start, &end, false).unwrap();
+        let result = transpiler
+            .transpile_range(&start, &end, false)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "0 .. 10");
     }
 
@@ -359,7 +379,9 @@ mod tests {
         let transpiler = test_transpiler();
         let start = int_expr(0);
         let end = int_expr(10);
-        let result = transpiler.transpile_range(&start, &end, true).unwrap();
+        let result = transpiler
+            .transpile_range(&start, &end, true)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "0 ..= 10");
     }
 
@@ -367,7 +389,9 @@ mod tests {
     #[test]
     fn test_transpile_object_literal_empty() {
         let transpiler = test_transpiler();
-        let result = transpiler.transpile_object_literal(&[]).unwrap();
+        let result = transpiler
+            .transpile_object_literal(&[])
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("BTreeMap") && result_str.contains("new"));
     }
@@ -380,7 +404,9 @@ mod tests {
             key: "name".to_string(),
             value: string_expr("Alice"),
         }];
-        let result = transpiler.transpile_object_literal(&fields).unwrap();
+        let result = transpiler
+            .transpile_object_literal(&fields)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("BTreeMap")
@@ -403,7 +429,9 @@ mod tests {
                 value: int_expr(30),
             },
         ];
-        let result = transpiler.transpile_object_literal(&fields).unwrap();
+        let result = transpiler
+            .transpile_object_literal(&fields)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("name") && result_str.contains("age"));
     }
@@ -418,7 +446,7 @@ mod tests {
         ];
         let result = transpiler
             .transpile_struct_literal("Person", &fields, None)
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("Person")
@@ -441,7 +469,7 @@ mod tests {
         };
         let result = transpiler
             .transpile_struct_literal("Person", &fields, Some(&base))
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("Person")
@@ -456,7 +484,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler
             .transpile_struct_literal("EmptyStruct", &[], None)
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(
             result_str.contains("EmptyStruct")
@@ -473,7 +501,9 @@ mod tests {
             key: "test".to_string(),
             value: int_expr(42),
         }];
-        let result = transpiler.collect_hashmap_field_tokens(&fields).unwrap();
+        let result = transpiler
+            .collect_hashmap_field_tokens(&fields)
+            .expect("operation should succeed in test");
         assert_eq!(result.len(), 1);
         let token_str = result[0].to_string();
         assert!(token_str.contains("insert") && token_str.contains("test"));
@@ -497,7 +527,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_range(&start, &end, false).unwrap();
+        let result = transpiler
+            .transpile_range(&start, &end, false)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "start .. end");
     }
 
@@ -515,7 +547,7 @@ mod tests {
         let fields = vec![("numbers".to_string(), nested_list)];
         let result = transpiler
             .transpile_struct_literal("Data", &fields, None)
-            .unwrap();
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("Data") && result_str.contains("numbers"));
     }
