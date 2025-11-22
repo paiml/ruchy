@@ -1542,7 +1542,9 @@ mod tests {
     fn test_format_integer_literal() {
         let formatter = Formatter::new();
         let expr = create_simple_literal(42);
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "42");
     }
 
@@ -1550,7 +1552,9 @@ mod tests {
     fn test_format_float_literal() {
         let formatter = Formatter::new();
         let expr = Expr::new(ExprKind::Literal(Literal::Float(3.15)), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "3.15");
     }
 
@@ -1561,7 +1565,9 @@ mod tests {
             ExprKind::Literal(Literal::String("hello".to_string())),
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "\"hello\"");
     }
 
@@ -1569,11 +1575,15 @@ mod tests {
     fn test_format_bool_literal() {
         let formatter = Formatter::new();
         let expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "true");
 
         let expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "false");
     }
 
@@ -1581,7 +1591,9 @@ mod tests {
     fn test_format_char_literal() {
         let formatter = Formatter::new();
         let expr = Expr::new(ExprKind::Literal(Literal::Char('a')), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "'a'");
     }
 
@@ -1589,7 +1601,9 @@ mod tests {
     fn test_format_unit_literal() {
         let formatter = Formatter::new();
         let expr = Expr::new(ExprKind::Literal(Literal::Unit), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "()");
     }
 
@@ -1597,7 +1611,9 @@ mod tests {
     fn test_format_identifier() {
         let formatter = Formatter::new();
         let expr = create_identifier("my_var");
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "my_var");
     }
 
@@ -1614,7 +1630,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "1 + 2"); // FIXED: Use Display trait ("+"), not Debug ("Add")
     }
 
@@ -1637,7 +1655,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "let x = 42 in x");
     }
 
@@ -1646,7 +1666,9 @@ mod tests {
         let formatter = Formatter::new();
         let exprs = vec![create_simple_literal(1), create_simple_literal(2)];
         let expr = Expr::new(ExprKind::Block(exprs), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
@@ -1665,7 +1687,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "if true 1 else 2");
     }
 
@@ -1682,7 +1706,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "if true 1");
     }
 
@@ -1702,7 +1728,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
@@ -1736,7 +1764,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
@@ -1766,7 +1796,9 @@ mod tests {
         formatter.config.use_tabs = true;
         let exprs = vec![create_simple_literal(1)];
         let expr = Expr::new(ExprKind::Block(exprs), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter implementation uses hardcoded indentation - config not yet fully connected
         // Just verify it formats without errors for now
         assert!(!result.is_empty());
@@ -1779,7 +1811,9 @@ mod tests {
         formatter.config.indent_width = 2;
         let exprs = vec![create_simple_literal(1)];
         let expr = Expr::new(ExprKind::Block(exprs), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter implementation uses hardcoded indentation - config not yet fully connected
         // Just verify it formats without errors for now
         assert!(!result.is_empty());
@@ -1804,7 +1838,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&outer).unwrap();
+        let result = formatter
+            .format(&outer)
+            .expect("operation should succeed in test");
         // FIXED: Use Display trait ("+", "*"), not Debug ("Add", "Multiply")
         assert!(result.contains("1 + 2"));
         assert!(result.contains("* 3"));
@@ -1846,7 +1882,9 @@ mod tests {
             },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert!(result.contains("x: Int, y: Float"));
     }
 
@@ -1866,7 +1904,9 @@ mod tests {
             ExprKind::Literal(Literal::String("hello \"world\"".to_string())),
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "\"hello \\\"world\\\"\"");
     }
 
@@ -1874,7 +1914,9 @@ mod tests {
     fn test_format_special_characters() {
         let formatter = Formatter::new();
         let expr = Expr::new(ExprKind::Literal(Literal::Char('\n')), Default::default());
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, "'\n'");
     }
 
@@ -1886,7 +1928,9 @@ mod tests {
             ExprKind::StringInterpolation { parts: vec![] },
             Default::default(),
         );
-        let result = formatter.format(&expr).unwrap();
+        let result = formatter
+            .format(&expr)
+            .expect("operation should succeed in test");
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
@@ -1906,7 +1950,9 @@ mod tests {
             Default::default(),
         );
         let outer_block = Expr::new(ExprKind::Block(vec![inner_block]), Default::default());
-        let result = formatter.format(&outer_block).unwrap();
+        let result = formatter
+            .format(&outer_block)
+            .expect("operation should succeed in test");
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
