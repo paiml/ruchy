@@ -1443,7 +1443,10 @@ impl Transpiler {
     }
     /// Check if an expression references any global variables (TRANSPILER-SCOPE)
     fn references_globals(&self, expr: &Expr) -> bool {
-        let globals = self.global_vars.read().unwrap();
+        let globals = self
+            .global_vars
+            .read()
+            .expect("RwLock poisoned: global_vars lock is corrupted");
         if globals.is_empty() {
             return false;
         }
@@ -1484,7 +1487,7 @@ impl Transpiler {
     /// Generate body tokens with async support
     fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
         // Issue #132: No unsafe wrapping needed with LazyLock<Mutex<T>>
-        // Access is thread-safe via .lock().unwrap()
+        // Access is thread-safe via .lock().expect("operation should succeed in test")
 
         let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
@@ -1803,9 +1806,11 @@ impl Transpiler {
                 arms.iter()
                     .any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
             }
-            ExprKind::Block(exprs) if !exprs.is_empty() => {
-                self.body_needs_string_conversion(exprs.last().unwrap())
-            }
+            ExprKind::Block(exprs) if !exprs.is_empty() => self.body_needs_string_conversion(
+                exprs
+                    .last()
+                    .expect("exprs is non-empty due to guard condition"),
+            ),
             ExprKind::Let { body, .. } => {
                 // Let expressions have the return value in their body field
                 self.body_needs_string_conversion(body)
@@ -2245,7 +2250,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("println !"));
     /// assert!(result.contains("Hello, {}"));
     /// ```
@@ -2256,7 +2261,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"println("Simple message")"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("println !"));
     /// assert!(result.contains("Simple message"));
     /// ```
@@ -2267,7 +2272,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("some_function(\"test\")");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("some_function"));
     /// assert!(result.contains("test"));
     /// ```
@@ -2329,7 +2334,7 @@ impl Transpiler {
                 return Ok(quote! { #arg_tokens.len() });
             }
             // TRANSPILER-006: time_micros() builtin (GitHub Issue #139)
-            // Transpile to: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as u64
+            // Transpile to: SystemTime::now().duration_since(UNIX_EPOCH).expect("operation should succeed in test").as_micros() as u64
             if base_name == "time_micros" {
                 if !args.is_empty() {
                     bail!("time_micros() expects no arguments");
@@ -3166,7 +3171,8 @@ impl Transpiler {
                 }
             } else {
                 // Nested clauses: use flat_map to the previous
-                let prev_chain = result_tokens.unwrap();
+                let prev_chain = result_tokens
+                    .expect("result_tokens should be Some after first clause iteration (i > 0)");
                 let outer_var = &clauses[i - 1].variable;
                 let outer_pattern = Self::parse_var_pattern(outer_var)?;
 
@@ -3190,11 +3196,15 @@ impl Transpiler {
         }
 
         // Get the final variable pattern for the map
-        let final_var = &clauses.last().unwrap().variable;
+        let final_var = &clauses
+            .last()
+            .expect("clauses is non-empty, validated at function entry")
+            .variable;
         let final_pattern = Self::parse_var_pattern(final_var)?;
 
         // Add the final map to produce the element
-        let final_chain = result_tokens.unwrap();
+        let final_chain = result_tokens
+            .expect("result_tokens should be Some after processing at least one clause");
         Ok(quote! {
             #final_chain
                 .map(|#final_pattern| #element_tokens)
@@ -3315,7 +3325,8 @@ impl Transpiler {
                 }
             } else {
                 // Nested clauses: use flat_map
-                let prev_chain = result_tokens.unwrap();
+                let prev_chain = result_tokens
+                    .expect("result_tokens should be Some after first clause iteration (i > 0)");
                 let outer_var = &clauses[i - 1].variable;
                 let outer_pattern = Self::parse_var_pattern(outer_var)?;
 
@@ -3339,11 +3350,15 @@ impl Transpiler {
         }
 
         // Get the final variable pattern for the map
-        let final_var = &clauses.last().unwrap().variable;
+        let final_var = &clauses
+            .last()
+            .expect("clauses is non-empty, validated at function entry")
+            .variable;
         let final_pattern = Self::parse_var_pattern(final_var)?;
 
         // Add the final map to produce the element and collect as HashSet
-        let final_chain = result_tokens.unwrap();
+        let final_chain = result_tokens
+            .expect("result_tokens should be Some after processing at least one clause");
         Ok(quote! {
             #final_chain
                 .map(|#final_pattern| #element_tokens)
@@ -3435,7 +3450,8 @@ impl Transpiler {
                 }
             } else {
                 // Nested clauses: use flat_map
-                let prev_chain = result_tokens.unwrap();
+                let prev_chain = result_tokens
+                    .expect("result_tokens should be Some after first clause iteration (i > 0)");
                 let outer_var = &clauses[i - 1].variable;
                 let outer_pattern = Self::parse_var_pattern(outer_var)?;
 
@@ -3459,11 +3475,15 @@ impl Transpiler {
         }
 
         // Get the final variable pattern for the map
-        let final_var = &clauses.last().unwrap().variable;
+        let final_var = &clauses
+            .last()
+            .expect("clauses is non-empty, validated at function entry")
+            .variable;
         let final_pattern = Self::parse_var_pattern(final_var)?;
 
         // Add the final map to produce key-value pairs and collect as HashMap
-        let final_chain = result_tokens.unwrap();
+        let final_chain = result_tokens
+            .expect("result_tokens should be Some after processing at least one clause");
         Ok(quote! {
             #final_chain
                 .map(|#final_pattern| (#key_tokens, #value_tokens))
@@ -4220,7 +4240,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("println(42)");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("println"));
     /// ```
     fn try_transpile_print_macro(
@@ -4340,7 +4360,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("sqrt(4.0)");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("sqrt"));
     /// ```
     fn try_transpile_math_function(
@@ -4430,7 +4450,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("input()");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("read_line"));
     /// ```
     fn try_transpile_input_function(
@@ -4496,7 +4516,7 @@ impl Transpiler {
     /// # use ruchy::backend::transpiler::Transpiler;
     /// let mut transpiler = Transpiler::new();
     /// // str(42) -> 42.to_string()
-    /// // int("42") -> "42".parse::<i64>().unwrap()
+    /// // int("42") -> "42".parse::<i64>().expect("operation should succeed in test")
     /// // float(42) -> 42 as f64
     /// // bool(1) -> 1 != 0
     /// ```
@@ -4731,7 +4751,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("assert(true)");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("assert !"));
     /// ```
     fn try_transpile_assert_function(
@@ -4792,7 +4812,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new("HashMap()");
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("HashMap"));
     /// ```
     fn try_transpile_collection_constructor(
@@ -4819,7 +4839,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"range(0, 10)"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("(0 .. 10)"));
     /// ```
     fn try_transpile_range_function(
@@ -4846,7 +4866,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"col("name")"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("polars"));
     /// ```
     fn try_transpile_dataframe_function(
@@ -5575,7 +5595,7 @@ impl Transpiler {
     /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"my_func("test")"#);
     /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
     /// assert!(result.contains("my_func"));
     /// ```
     fn transpile_regular_function_call(
@@ -5669,7 +5689,9 @@ mod tests {
         let code = "if true { 1 } else { 2 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("if"));
         assert!(rust_str.contains("else"));
@@ -5681,7 +5703,9 @@ mod tests {
         let code = "let x = true; if x { 1 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Should have an if statement with the variable
         assert!(rust_str.contains("if") && rust_str.contains("x"));
@@ -5694,7 +5718,9 @@ mod tests {
         let code = "let x = 5; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("let"));
         assert!(rust_str.contains("x"));
@@ -5706,7 +5732,9 @@ mod tests {
         let code = "let mut x = 5; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("mut"));
     }
@@ -5716,7 +5744,9 @@ mod tests {
         let code = "for x in [1, 2, 3] { x }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("for"));
         assert!(rust_str.contains("in"));
@@ -5727,7 +5757,9 @@ mod tests {
         let code = "while true { }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("while"));
     }
@@ -5737,7 +5769,9 @@ mod tests {
         let code = "fun add(x, y) { x + y }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("fn add"));
         assert!(rust_str.contains("x"));
@@ -5749,7 +5783,9 @@ mod tests {
         let code = "fun hello() { \"world\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("fn hello"));
         assert!(rust_str.contains("()"));
@@ -5760,7 +5796,9 @@ mod tests {
         let code = "match x { 1 => \"one\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
     }
@@ -5770,7 +5808,9 @@ mod tests {
         let code = "(x) => x + 1";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Lambda should be transpiled to closure
         assert!(rust_str.contains("|") || rust_str.contains("move"));
@@ -5781,7 +5821,9 @@ mod tests {
         let code = "let move = 5; move"; // Use 'move' which is reserved in Rust but not Ruchy
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Should handle Rust reserved keywords by prefixing with r#
         assert!(
@@ -5795,7 +5837,9 @@ mod tests {
         let code = "fun identity<T>(x: T) -> T { x }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("fn identity"));
     }
@@ -5805,7 +5849,9 @@ mod tests {
         let code = "fun main() { println(\"Hello\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // main should not have explicit return type
         assert!(!rust_str.contains("fn main() ->"));
@@ -5817,7 +5863,9 @@ mod tests {
         let code = "col(\"name\")";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Should transpile DataFrame column access
         assert!(rust_str.contains("polars") || rust_str.contains("col"));
@@ -5828,7 +5876,9 @@ mod tests {
         let code = "my_func(\"test\")";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Regular function calls should convert string literals
         assert!(rust_str.contains("my_func"));
@@ -5840,7 +5890,9 @@ mod tests {
         let code = "if true { let x = 5; x + 1 } else { 0 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Should handle nested let inside if
         assert!(rust_str.contains("if"));
@@ -5854,21 +5906,27 @@ mod tests {
         let code1 = "fun apply(f, x) { f(x) }";
         let mut parser1 = Parser::new(code1);
         let ast1 = parser1.parse().expect("Failed to parse");
-        let result1 = transpiler.transpile(&ast1).unwrap();
+        let result1 = transpiler
+            .transpile(&ast1)
+            .expect("operation should succeed in test");
         let rust_str1 = result1.to_string();
         assert!(rust_str1.contains("impl Fn"));
         // Test numeric parameter
         let code2 = "fun double(n) { n * 2 }";
         let mut parser2 = Parser::new(code2);
         let ast2 = parser2.parse().expect("Failed to parse");
-        let result2 = transpiler.transpile(&ast2).unwrap();
+        let result2 = transpiler
+            .transpile(&ast2)
+            .expect("operation should succeed in test");
         let rust_str2 = result2.to_string();
         assert!(rust_str2.contains("n : i32") || rust_str2.contains("n: i32"));
         // Test string parameter (now defaults to &str for zero-cost literals)
         let code3 = "fun greet(name) { \"Hello \" + name }";
         let mut parser3 = Parser::new(code3);
         let ast3 = parser3.parse().expect("Failed to parse");
-        let result3 = transpiler.transpile(&ast3).unwrap();
+        let result3 = transpiler
+            .transpile(&ast3)
+            .expect("operation should succeed in test");
         let rust_str3 = result3.to_string();
         assert!(
             rust_str3.contains("name : & str") || rust_str3.contains("name: &str"),
@@ -5882,7 +5940,9 @@ mod tests {
         let code = "fun double(n) { n * 2 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("-> i32"));
     }
@@ -5892,7 +5952,9 @@ mod tests {
         let code = "fun print_hello() { println(\"Hello\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Should not have explicit return type for void functions
         assert!(!rust_str.contains("-> "));
@@ -5903,7 +5965,9 @@ mod tests {
         let code = "fun transform(f, n, m) { f(n + m) * 2 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // f should be function, n and m should be i32
         assert!(rust_str.contains("impl Fn"));
@@ -5940,7 +6004,9 @@ mod tests {
         let code = "while true { if x { break } else { continue } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("break"));
         assert!(rust_str.contains("continue"));
@@ -5953,7 +6019,9 @@ mod tests {
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
         assert!(rust_str.contains("1 =>") || rust_str.contains("1i64 =>"));
@@ -5967,7 +6035,9 @@ mod tests {
         let code = "struct Point { x: i32, y: i32 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("struct Point"));
         assert!(rust_str.contains("x : i32") || rust_str.contains("x: i32"));
@@ -5980,7 +6050,9 @@ mod tests {
         let code = "enum Color { Red, Green, Blue }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("enum Color"));
         assert!(rust_str.contains("Red"));
@@ -6002,7 +6074,7 @@ mod tests {
         );
 
         // Verify it transpiles correctly
-        let ast = result.unwrap();
+        let ast = result.expect("parse should succeed in test");
         let mut transpiler = Transpiler::new();
         let transpile_result = transpiler.transpile_to_program(&ast);
         assert!(
@@ -6018,7 +6090,9 @@ mod tests {
         let code = "async fun fetch_data() { await http_get(\"url\") }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("async fn"));
         assert!(rust_str.contains("await"));
@@ -6030,7 +6104,9 @@ mod tests {
         let code = "try { risky_operation() } catch (e) { handle_error(e) }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         // Try-catch should transpile to match on Result
         assert!(rust_str.contains("match") || rust_str.contains("risky_operation"));
@@ -6101,7 +6177,9 @@ mod tests {
         let code = "fun test() { return 42 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("return"));
         assert!(rust_str.contains("42"));
@@ -6115,7 +6193,9 @@ mod tests {
         let code = "while true { break }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("break"));
 
@@ -6123,7 +6203,9 @@ mod tests {
         let code2 = "for x in [1,2,3] { continue }";
         let mut parser2 = Parser::new(code2);
         let ast2 = parser2.parse().expect("Failed to parse");
-        let result2 = transpiler.transpile(&ast2).unwrap();
+        let result2 = transpiler
+            .transpile(&ast2)
+            .expect("operation should succeed in test");
         let rust_str2 = result2.to_string();
         assert!(rust_str2.contains("continue"));
     }
@@ -6134,7 +6216,9 @@ mod tests {
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
         assert!(rust_str.contains("=>"));
@@ -6149,7 +6233,9 @@ mod tests {
         let code = "let (a, b) = (1, 2); a + b";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("let"));
 
@@ -6157,7 +6243,9 @@ mod tests {
         let code2 = "match list { [] => 0, [x] => x, _ => -1 }";
         let mut parser2 = Parser::new(code2);
         if let Ok(ast2) = parser2.parse() {
-            let result2 = transpiler.transpile(&ast2).unwrap();
+            let result2 = transpiler
+                .transpile(&ast2)
+                .expect("operation should succeed in test");
             let rust_str2 = result2.to_string();
             assert!(rust_str2.contains("match"));
         }
@@ -6169,7 +6257,9 @@ mod tests {
         let code = "loop { break }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("loop"));
         assert!(rust_str.contains("break"));
@@ -6201,7 +6291,9 @@ mod tests {
         let code = "let mut x = 5; x += 10; x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("mut"));
         assert!(rust_str.contains("+="));
@@ -6216,7 +6308,9 @@ mod tests {
         let code = "let mut x = 5; ++x";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("mut"));
 
@@ -6224,7 +6318,9 @@ mod tests {
         let code2 = "let mut y = 5; y++";
         let mut parser2 = Parser::new(code2);
         let ast2 = parser2.parse().expect("Failed to parse");
-        let result2 = transpiler.transpile(&ast2).unwrap();
+        let result2 = transpiler
+            .transpile(&ast2)
+            .expect("operation should succeed in test");
         let rust_str2 = result2.to_string();
         assert!(rust_str2.contains("mut"));
     }
@@ -6236,7 +6332,9 @@ mod tests {
         let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("match"));
         assert!(rust_str.contains("=>"));
@@ -6250,7 +6348,9 @@ mod tests {
         let code = "match x { n if n > 0 => \"positive\", _ => \"non-positive\" }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("if"));
     }
@@ -6279,7 +6379,9 @@ mod tests {
         let code = "async fun fetch_data() { await get_data() }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("async"));
     }
@@ -6342,7 +6444,9 @@ mod tests {
         let code = "fun early_return() { if true { return 42 } 0 }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("return"));
     }
@@ -6356,7 +6460,9 @@ mod tests {
         let code = "while true { if done { break } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("break"));
 
@@ -6364,7 +6470,9 @@ mod tests {
         let code2 = "for x in items { if skip { continue } }";
         let mut parser2 = Parser::new(code2);
         let ast2 = parser2.parse().expect("Failed to parse");
-        let result2 = transpiler.transpile(&ast2).unwrap();
+        let result2 = transpiler
+            .transpile(&ast2)
+            .expect("operation should succeed in test");
         let rust_str2 = result2.to_string();
         assert!(rust_str2.contains("continue"));
     }
@@ -6376,7 +6484,9 @@ mod tests {
         let code = "{ let x = 1; { let y = 2; x + y } }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("{"));
         assert!(rust_str.contains("}"));
@@ -6415,7 +6525,9 @@ mod tests {
         let code = "let (a, b, c) = (1, 2, 3); a + b + c";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
-        let result = transpiler.transpile(&ast).unwrap();
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
         let rust_str = result.to_string();
         assert!(rust_str.contains("let"));
         assert!(rust_str.contains("("));
@@ -7012,7 +7124,7 @@ mod property_tests_statements {
         if let Ok(ast) = parser.parse() {
             let result = transpiler.transpile(&ast);
             assert!(result.is_ok());
-            let output = result.unwrap().to_string();
+            let output = result.expect("result should be Ok in test").to_string();
             assert!(output.contains("if"));
         }
 
@@ -8281,7 +8393,7 @@ mod property_tests_statements {
         let f = quote! { |x| x * 2 };
         let result = transpiler
             .transpile_iterator_methods(&obj, "map", &[f])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("iter"));
         assert!(code.contains("map"));
@@ -8297,7 +8409,7 @@ mod property_tests_statements {
         let f = quote! { |x| x > 10 };
         let result = transpiler
             .transpile_iterator_methods(&obj, "filter", &[f])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("into_iter"));
         assert!(code.contains("filter"));
@@ -8313,7 +8425,7 @@ mod property_tests_statements {
         let f = quote! { |acc, x| acc + x };
         let result = transpiler
             .transpile_iterator_methods(&obj, "reduce", &[f])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("into_iter"));
         assert!(code.contains("reduce"));
@@ -8330,7 +8442,7 @@ mod property_tests_statements {
         let method_ident = proc_macro2::Ident::new("items", ProcSpan::call_site());
         let result = transpiler
             .transpile_map_set_methods(&obj, &method_ident, "items", &[])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("iter"));
         assert!(code.contains("clone"));
@@ -8347,7 +8459,7 @@ mod property_tests_statements {
         let arg = quote! { other_map };
         let result = transpiler
             .transpile_map_set_methods(&obj, &method_ident, "update", &[arg])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("extend"));
     }
@@ -8361,7 +8473,7 @@ mod property_tests_statements {
         let arg = quote! { set2 };
         let result = transpiler
             .transpile_set_operations(&obj, "union", &[arg])
-            .unwrap();
+            .expect("operation should succeed in test");
         let code = result.to_string();
         assert!(code.contains("union"));
         assert!(code.contains("cloned"));
