@@ -147,7 +147,9 @@ mod tests {
     fn test_transpile_unary_not() {
         let transpiler = test_transpiler();
         let operand = ident_expr("x");
-        let result = transpiler.transpile_unary(UnaryOp::Not, &operand).unwrap();
+        let result = transpiler
+            .transpile_unary(UnaryOp::Not, &operand)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "! x");
     }
 
@@ -158,7 +160,7 @@ mod tests {
         let operand = ident_expr("bits");
         let result = transpiler
             .transpile_unary(UnaryOp::BitwiseNot, &operand)
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "! bits");
     }
 
@@ -169,7 +171,7 @@ mod tests {
         let operand = ident_expr("num");
         let result = transpiler
             .transpile_unary(UnaryOp::Negate, &operand)
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "- num");
     }
 
@@ -180,7 +182,7 @@ mod tests {
         let operand = ident_expr("value");
         let result = transpiler
             .transpile_unary(UnaryOp::Reference, &operand)
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "& value");
     }
 
@@ -191,7 +193,7 @@ mod tests {
         let operand = ident_expr("data");
         let result = transpiler
             .transpile_unary(UnaryOp::MutableReference, &operand)
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "& mut data");
     }
 
@@ -202,7 +204,7 @@ mod tests {
         let operand = ident_expr("ptr");
         let result = transpiler
             .transpile_unary(UnaryOp::Deref, &operand)
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "* ptr");
     }
 
@@ -211,7 +213,9 @@ mod tests {
     fn test_transpile_await_basic() {
         let transpiler = test_transpiler();
         let expr = ident_expr("future");
-        let result = transpiler.transpile_await(&expr).unwrap();
+        let result = transpiler
+            .transpile_await(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "future . await");
     }
 
@@ -230,7 +234,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_spawn(&actor).unwrap();
+        let result = transpiler
+            .transpile_spawn(&actor)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("Arc"));
         assert!(result_str.contains("Mutex"));
@@ -243,7 +249,9 @@ mod tests {
     fn test_transpile_spawn_non_struct() {
         let transpiler = test_transpiler();
         let actor = ident_expr("actor_instance");
-        let result = transpiler.transpile_spawn(&actor).unwrap();
+        let result = transpiler
+            .transpile_spawn(&actor)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "actor_instance");
     }
 
@@ -252,7 +260,9 @@ mod tests {
     fn test_transpile_async_block_basic() {
         let transpiler = test_transpiler();
         let body = ident_expr("value");
-        let result = transpiler.transpile_async_block(&body).unwrap();
+        let result = transpiler
+            .transpile_async_block(&body)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "{ value }");
     }
 
@@ -262,7 +272,9 @@ mod tests {
         let transpiler = test_transpiler();
         let params = vec![];
         let body = string_expr("result");
-        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result = transpiler
+            .transpile_async_lambda(&params, &body)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("async move"));
         assert!(result_str.contains("\"result\""));
@@ -274,7 +286,9 @@ mod tests {
         let transpiler = test_transpiler();
         let params = vec!["x".to_string()];
         let body = ident_expr("x");
-        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result = transpiler
+            .transpile_async_lambda(&params, &body)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("| x |"));
         assert!(result_str.contains("async move"));
@@ -286,7 +300,9 @@ mod tests {
         let transpiler = test_transpiler();
         let params = vec!["a".to_string(), "b".to_string(), "c".to_string()];
         let body = ident_expr("result");
-        let result = transpiler.transpile_async_lambda(&params, &body).unwrap();
+        let result = transpiler
+            .transpile_async_lambda(&params, &body)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains('a'));
         assert!(result_str.contains('b'));
@@ -299,7 +315,9 @@ mod tests {
     fn test_transpile_throw_string() {
         let transpiler = test_transpiler();
         let expr = string_expr("Error occurred");
-        let result = transpiler.transpile_throw(&expr).unwrap();
+        let result = transpiler
+            .transpile_throw(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("panic"));
         assert!(result_str.contains("\"Error occurred\""));
@@ -310,7 +328,9 @@ mod tests {
     fn test_transpile_throw_identifier() {
         let transpiler = test_transpiler();
         let expr = ident_expr("error_msg");
-        let result = transpiler.transpile_throw(&expr).unwrap();
+        let result = transpiler
+            .transpile_throw(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("panic"));
         assert!(result_str.contains("error_msg"));
