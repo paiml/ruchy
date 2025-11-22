@@ -38,7 +38,8 @@ impl Transpiler {
                 Ok(Some(quote! { polars::prelude::DataFrame::empty() }))
             } else {
                 Ok(Some(quote! {
-                    polars::prelude::DataFrame::new(vec![#(#series_tokens),*]).unwrap()
+                    polars::prelude::DataFrame::new(vec![#(#series_tokens),*])
+                        .expect("DataFrame::new should succeed with valid Series (incompatible lengths would be a Ruchy type error)")
                 }))
             }
         } else {
@@ -233,9 +234,11 @@ mod tests {
         let expr = build_method_call(dataframe_new_call());
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
-        let output = tokens.unwrap().to_string();
+        let output = tokens
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("empty"));
     }
@@ -251,9 +254,11 @@ mod tests {
         ));
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
-        let output = tokens.unwrap().to_string();
+        let output = tokens
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("Series"));
     }
@@ -268,9 +273,11 @@ mod tests {
         let expr = build_method_call(with_col2);
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
-        let output = tokens.unwrap().to_string();
+        let output = tokens
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("Series"));
         assert!(output.contains("vec"));
@@ -287,7 +294,7 @@ mod tests {
         );
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
     }
 
@@ -298,7 +305,7 @@ mod tests {
         let expr = string_expr("not a builder");
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        assert!(result.unwrap().is_none());
+        assert!(result.expect("operation should succeed in test").is_none());
     }
 
     // Test 6: is_dataframe_builder - DataFrame::new()
@@ -344,7 +351,7 @@ mod tests {
         ));
         let result = transpiler.extract_dataframe_builder_chain(&expr);
         assert!(result.is_some());
-        let (columns, _base) = result.unwrap();
+        let (columns, _base) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 1);
     }
 
@@ -376,7 +383,7 @@ mod tests {
         let expr = column_method_call(dataframe_new_call(), string_expr("x"), list_expr(vec![1]));
         let result = Transpiler::extract_column_chain(&expr);
         assert!(result.is_some());
-        let (columns, _base) = result.unwrap();
+        let (columns, _base) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 1);
     }
 
@@ -388,7 +395,7 @@ mod tests {
         let col2 = column_method_call(col1, string_expr("b"), list_expr(vec![2]));
         let result = Transpiler::extract_column_chain(&col2);
         assert!(result.is_some());
-        let (columns, _base) = result.unwrap();
+        let (columns, _base) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 2);
     }
 
@@ -411,9 +418,11 @@ mod tests {
         let expr = build_method_call(col3);
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
-        let output = tokens.unwrap().to_string();
+        let output = tokens
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("Series"));
         assert!(output.contains("vec"));
     }
@@ -429,7 +438,7 @@ mod tests {
         );
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        assert!(result.unwrap().is_some());
+        assert!(result.expect("operation should succeed in test").is_some());
     }
 
     // Test 18: transpile_dataframe_builder - verify Series generation
@@ -443,7 +452,10 @@ mod tests {
         ));
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("polars"));
         assert!(output.contains("Series"));
         assert!(output.contains("new"));
@@ -460,7 +472,7 @@ mod tests {
         let expr = build_method_call(col3);
         let result = transpiler.extract_dataframe_builder_chain(&expr);
         assert!(result.is_some());
-        let (columns, _base) = result.unwrap();
+        let (columns, _base) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 3);
     }
 
@@ -479,7 +491,7 @@ mod tests {
         ));
         let result = transpiler.extract_dataframe_builder_chain(&expr);
         assert!(result.is_some());
-        let (columns, _) = result.unwrap();
+        let (columns, _) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 2);
     }
 
@@ -492,7 +504,7 @@ mod tests {
         let col3 = column_method_call(col2, string_expr("c"), list_expr(vec![3]));
         let result = Transpiler::extract_column_chain(&col3);
         assert!(result.is_some());
-        let (columns, _base) = result.unwrap();
+        let (columns, _base) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 3);
     }
 
@@ -503,7 +515,7 @@ mod tests {
         let col = column_method_call(base, string_expr("data"), list_expr(vec![5]));
         let result = Transpiler::extract_column_chain(&col);
         assert!(result.is_some());
-        let (columns, base_expr) = result.unwrap();
+        let (columns, base_expr) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 1);
         assert!(matches!(base_expr.kind, ExprKind::Call { .. }));
     }
@@ -546,9 +558,9 @@ mod tests {
         assert!(transpiler.is_dataframe_builder(&expr));
     }
 
-    // Test 26: transpile_dataframe_builder - verify unwrap() in output
+    // Test 26: transpile_dataframe_builder - verify expect() in output (safe code generation)
     #[test]
-    fn test_transpile_dataframe_builder_unwrap_present() {
+    fn test_transpile_dataframe_builder_expect_present() {
         let transpiler = test_transpiler();
         let expr = build_method_call(column_method_call(
             dataframe_new_call(),
@@ -557,8 +569,13 @@ mod tests {
         ));
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().unwrap().to_string();
-        assert!(output.contains("unwrap"));
+        let output = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test")
+            .to_string();
+        // QUALITY-002: Verify safe code generation (expect, not unwrap)
+        assert!(output.contains("expect"));
+        assert!(output.contains("DataFrame::new should succeed"));
     }
 
     // Test 27: transpile_dataframe_builder - empty() for no columns
@@ -568,7 +585,10 @@ mod tests {
         let expr = build_method_call(dataframe_new_call());
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("empty"));
     }
 
@@ -583,7 +603,7 @@ mod tests {
         );
         let result = transpiler.extract_dataframe_builder_chain(&expr);
         assert!(result.is_some());
-        let (columns, _) = result.unwrap();
+        let (columns, _) = result.expect("operation should succeed in test");
         assert_eq!(columns.len(), 1);
     }
 
@@ -613,9 +633,11 @@ mod tests {
         let expr = build_method_call(col4);
         let result = transpiler.transpile_dataframe_builder(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         assert!(tokens.is_some());
-        let output = tokens.unwrap().to_string();
+        let output = tokens
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("DataFrame"));
         assert!(output.contains("new"));
         assert!(output.contains("vec"));
