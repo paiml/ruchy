@@ -29,11 +29,11 @@ use std::time::Instant;
 /// ```
 /// use ruchy::notebook::engine::NotebookEngine;
 ///
-/// let mut engine = NotebookEngine::new().unwrap();
-/// let result = engine.execute_cell("let x = 42").unwrap();
+/// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
+/// let result = engine.execute_cell("let x = 42").expect("operation should succeed in doctest");
 /// assert_eq!(result, "()");
 ///
-/// let result = engine.execute_cell("x + 8").unwrap();
+/// let result = engine.execute_cell("x + 8").expect("operation should succeed in doctest");
 /// assert_eq!(result, "50");
 /// ```
 #[derive(Debug)]
@@ -75,8 +75,8 @@ impl NotebookEngine {
     /// ```
     /// use ruchy::notebook::engine::NotebookEngine;
     ///
-    /// let mut engine = NotebookEngine::new().unwrap();
-    /// let result = engine.execute_cell("1 + 1").unwrap();
+    /// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
+    /// let result = engine.execute_cell("1 + 1").expect("operation should succeed in doctest");
     /// assert_eq!(result, "2");
     /// ```
     pub fn execute_cell(&mut self, code: &str) -> anyhow::Result<String> {
@@ -100,7 +100,7 @@ impl NotebookEngine {
     /// ```
     /// use ruchy::notebook::engine::NotebookEngine;
     ///
-    /// let mut engine = NotebookEngine::new().unwrap();
+    /// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
     /// let result = engine.execute_cell_detailed("1 + 1");
     ///
     /// assert!(result.is_success());
@@ -140,8 +140,8 @@ impl NotebookEngine {
     /// ```
     /// use ruchy::notebook::engine::NotebookEngine;
     ///
-    /// let mut engine = NotebookEngine::new().unwrap();
-    /// engine.execute_cell("let x = 42").unwrap();
+    /// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
+    /// engine.execute_cell("let x = 42").expect("operation should succeed in doctest");
     ///
     /// let checkpoint = engine.create_checkpoint("before_change".to_string());
     /// assert_eq!(checkpoint.name(), "before_change");
@@ -165,14 +165,14 @@ impl NotebookEngine {
     /// ```
     /// use ruchy::notebook::engine::NotebookEngine;
     ///
-    /// let mut engine = NotebookEngine::new().unwrap();
-    /// engine.execute_cell("let x = 10").unwrap();
+    /// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
+    /// engine.execute_cell("let x = 10").expect("operation should succeed in doctest");
     /// let checkpoint = engine.create_checkpoint("save".to_string());
     ///
-    /// engine.execute_cell("x = 99").unwrap();
+    /// engine.execute_cell("x = 99").expect("operation should succeed in doctest");
     /// engine.restore_checkpoint(&checkpoint);
     ///
-    /// let result = engine.execute_cell("x").unwrap();
+    /// let result = engine.execute_cell("x").expect("operation should succeed in doctest");
     /// assert_eq!(result, "10");
     /// ```
     pub fn restore_checkpoint(&mut self, checkpoint: &Checkpoint) {
@@ -196,15 +196,15 @@ impl NotebookEngine {
     /// ```
     /// use ruchy::notebook::engine::NotebookEngine;
     ///
-    /// let mut engine = NotebookEngine::new().unwrap();
-    /// engine.execute_cell("let x = 10").unwrap();
+    /// let mut engine = NotebookEngine::new().expect("operation should succeed in doctest");
+    /// engine.execute_cell("let x = 10").expect("operation should succeed in doctest");
     ///
     /// // This will fail and rollback
     /// let result = engine.execute_transaction("x = invalid_syntax");
     /// assert!(result.is_rolled_back());
     ///
     /// // Original state preserved
-    /// let value = engine.execute_cell("x").unwrap();
+    /// let value = engine.execute_cell("x").expect("operation should succeed in doctest");
     /// assert_eq!(value, "10");
     /// ```
     pub fn execute_transaction(&mut self, code: &str) -> TransactionResult<String> {
@@ -240,35 +240,35 @@ mod tests {
 
     #[test]
     fn test_notebook_001_engine_debug_format() {
-        let engine = NotebookEngine::new().unwrap();
+        let engine = NotebookEngine::new().expect("operation should succeed in test");
         let debug_str = format!("{engine:?}");
         assert!(debug_str.contains("NotebookEngine"));
     }
 
     #[test]
     fn test_notebook_001_execute_simple_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("42");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_arithmetic() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("1 + 1");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_variable_binding() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("let x = 42");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_state_persists_across_cells() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Cell 1: Define variable
         let result1 = engine.execute_cell("let x = 10");
@@ -281,42 +281,42 @@ mod tests {
 
     #[test]
     fn test_notebook_001_execute_string_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("\"hello world\"");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_boolean_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("true");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_invalid_syntax() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("let x = ");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_notebook_001_execute_undefined_variable() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("undefined_var");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_notebook_001_execute_function_definition() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("fn add(a, b) { a + b }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_function_persists_across_cells() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Cell 1: Define function
         let result1 = engine.execute_cell("fn double(x) { x * 2 }");
@@ -329,60 +329,62 @@ mod tests {
 
     #[test]
     fn test_notebook_001_execute_if_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("if true { 1 } else { 0 }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_match_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("match 42 { 42 => true, _ => false }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_array_literal() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("[1, 2, 3]");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_object_literal() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("{ a: 1, b: 2 }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_for_loop() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("for i in [1, 2, 3] { i }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_while_loop() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("let mut x = 0; while x < 3 { x = x + 1 }");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_multiple_statements_per_cell() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("let x = 10; let y = 20; x + y");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_state_isolation_between_engines() {
-        let mut engine1 = NotebookEngine::new().unwrap();
-        let mut engine2 = NotebookEngine::new().unwrap();
+        let mut engine1 = NotebookEngine::new().expect("operation should succeed in test");
+        let mut engine2 = NotebookEngine::new().expect("operation should succeed in test");
 
         // Define variable in engine1
-        engine1.execute_cell("let x = 100").unwrap();
+        engine1
+            .execute_cell("let x = 100")
+            .expect("operation should succeed in test");
 
         // Should fail in engine2 (different state)
         let result = engine2.execute_cell("x");
@@ -391,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_notebook_001_execute_empty_cell() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("");
         // Empty cells should succeed (Jupyter behavior)
         assert!(result.is_ok());
@@ -399,30 +401,36 @@ mod tests {
 
     #[test]
     fn test_notebook_001_execute_comment_only() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("// This is a comment");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_whitespace_only() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("   \n\t  ");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_complex_state_mutation() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Cell 1: Create mutable variable
-        engine.execute_cell("let mut count = 0").unwrap();
+        engine
+            .execute_cell("let mut count = 0")
+            .expect("operation should succeed in test");
 
         // Cell 2: Mutate it
-        engine.execute_cell("count = count + 1").unwrap();
+        engine
+            .execute_cell("count = count + 1")
+            .expect("operation should succeed in test");
 
         // Cell 3: Mutate again
-        engine.execute_cell("count = count + 1").unwrap();
+        engine
+            .execute_cell("count = count + 1")
+            .expect("operation should succeed in test");
 
         // Cell 4: Read value (should be 2)
         let result = engine.execute_cell("count");
@@ -431,10 +439,12 @@ mod tests {
 
     #[test]
     fn test_notebook_001_closure_state_persistence() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Cell 1: Create closure
-        engine.execute_cell("let increment = |x| x + 1").unwrap();
+        engine
+            .execute_cell("let increment = |x| x + 1")
+            .expect("operation should succeed in test");
 
         // Cell 2: Use closure
         let result = engine.execute_cell("increment(41)");
@@ -443,10 +453,12 @@ mod tests {
 
     #[test]
     fn test_notebook_001_error_doesnt_break_engine() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Cell 1: Success
-        engine.execute_cell("let x = 10").unwrap();
+        engine
+            .execute_cell("let x = 10")
+            .expect("operation should succeed in test");
 
         // Cell 2: Error
         let _ = engine.execute_cell("invalid syntax here");
@@ -458,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_notebook_001_execute_multiline_function() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let code = r"
 fn factorial(n) {
     if n <= 1 {
@@ -474,14 +486,14 @@ fn factorial(n) {
 
     #[test]
     fn test_notebook_001_execute_nested_structures() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell("[[1, 2], [3, 4]]");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_notebook_001_execute_struct_literal() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let code = r"
 struct Point { x: i64, y: i64 }
 Point { x: 10, y: 20 }
@@ -494,7 +506,7 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_create_empty_checkpoint() {
-        let engine = NotebookEngine::new().unwrap();
+        let engine = NotebookEngine::new().expect("operation should succeed in test");
         let checkpoint = engine.create_checkpoint("empty".to_string());
 
         assert_eq!(checkpoint.name(), "empty");
@@ -503,9 +515,13 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_create_checkpoint_with_state() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 42").unwrap();
-        engine.execute_cell("let y = 100").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 42")
+            .expect("operation should succeed in test");
+        engine
+            .execute_cell("let y = 100")
+            .expect("operation should succeed in test");
 
         let checkpoint = engine.create_checkpoint("with_state".to_string());
 
@@ -517,43 +533,84 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_restore_checkpoint() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 10").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 10")
+            .expect("operation should succeed in test");
         let checkpoint = engine.create_checkpoint("save".to_string());
 
         // Modify state
-        engine.execute_cell("x = 99").unwrap();
-        assert_eq!(engine.execute_cell("x").unwrap(), "99");
+        engine
+            .execute_cell("x = 99")
+            .expect("operation should succeed in test");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "99"
+        );
 
         // Restore
         engine.restore_checkpoint(&checkpoint);
-        assert_eq!(engine.execute_cell("x").unwrap(), "10");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "10"
+        );
     }
 
     #[test]
     fn test_notebook_003_restore_multiple_variables() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let a = 1").unwrap();
-        engine.execute_cell("let b = 2").unwrap();
-        engine.execute_cell("let c = 3").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let a = 1")
+            .expect("operation should succeed in test");
+        engine
+            .execute_cell("let b = 2")
+            .expect("operation should succeed in test");
+        engine
+            .execute_cell("let c = 3")
+            .expect("operation should succeed in test");
         let checkpoint = engine.create_checkpoint("multi".to_string());
 
         // Modify
-        engine.execute_cell("a = 100").unwrap();
-        engine.execute_cell("b = 200").unwrap();
+        engine
+            .execute_cell("a = 100")
+            .expect("operation should succeed in test");
+        engine
+            .execute_cell("b = 200")
+            .expect("operation should succeed in test");
 
         // Restore
         engine.restore_checkpoint(&checkpoint);
 
-        assert_eq!(engine.execute_cell("a").unwrap(), "1");
-        assert_eq!(engine.execute_cell("b").unwrap(), "2");
-        assert_eq!(engine.execute_cell("c").unwrap(), "3");
+        assert_eq!(
+            engine
+                .execute_cell("a")
+                .expect("operation should succeed in test"),
+            "1"
+        );
+        assert_eq!(
+            engine
+                .execute_cell("b")
+                .expect("operation should succeed in test"),
+            "2"
+        );
+        assert_eq!(
+            engine
+                .execute_cell("c")
+                .expect("operation should succeed in test"),
+            "3"
+        );
     }
 
     #[test]
     fn test_notebook_003_transaction_success() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 10").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 10")
+            .expect("operation should succeed in test");
 
         let result = engine.execute_transaction("x + 5");
 
@@ -563,8 +620,10 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_transaction_failure_rollback() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 10").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 10")
+            .expect("operation should succeed in test");
 
         // This will fail
         let result = engine.execute_transaction("x = invalid_syntax");
@@ -574,21 +633,40 @@ Point { x: 10, y: 20 }
         assert!(result.error().is_some());
 
         // State should be preserved
-        assert_eq!(engine.execute_cell("x").unwrap(), "10");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "10"
+        );
     }
 
     #[test]
     fn test_notebook_003_transaction_preserves_state_on_error() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let a = 1").unwrap();
-        engine.execute_cell("let b = 2").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let a = 1")
+            .expect("operation should succeed in test");
+        engine
+            .execute_cell("let b = 2")
+            .expect("operation should succeed in test");
 
         // Transaction that fails
         let _result = engine.execute_transaction("let c = undefined_var");
 
         // Original state should be intact
-        assert_eq!(engine.execute_cell("a").unwrap(), "1");
-        assert_eq!(engine.execute_cell("b").unwrap(), "2");
+        assert_eq!(
+            engine
+                .execute_cell("a")
+                .expect("operation should succeed in test"),
+            "1"
+        );
+        assert_eq!(
+            engine
+                .execute_cell("b")
+                .expect("operation should succeed in test"),
+            "2"
+        );
 
         // c should not exist
         assert!(engine.execute_cell("c").is_err());
@@ -596,29 +674,47 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_multiple_checkpoints() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
-        engine.execute_cell("let x = 1").unwrap();
+        engine
+            .execute_cell("let x = 1")
+            .expect("operation should succeed in test");
         let cp1 = engine.create_checkpoint("checkpoint1".to_string());
 
-        engine.execute_cell("x = 2").unwrap();
+        engine
+            .execute_cell("x = 2")
+            .expect("operation should succeed in test");
         let cp2 = engine.create_checkpoint("checkpoint2".to_string());
 
-        engine.execute_cell("x = 3").unwrap();
+        engine
+            .execute_cell("x = 3")
+            .expect("operation should succeed in test");
 
         // Restore to cp2
         engine.restore_checkpoint(&cp2);
-        assert_eq!(engine.execute_cell("x").unwrap(), "2");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "2"
+        );
 
         // Restore to cp1
         engine.restore_checkpoint(&cp1);
-        assert_eq!(engine.execute_cell("x").unwrap(), "1");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "1"
+        );
     }
 
     #[test]
     fn test_notebook_003_checkpoint_independence() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 42").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 42")
+            .expect("operation should succeed in test");
 
         let cp1 = engine.create_checkpoint("cp1".to_string());
         let cp2 = engine.create_checkpoint("cp2".to_string());
@@ -631,21 +727,28 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_003_transaction_modifies_state_on_success() {
-        let mut engine = NotebookEngine::new().unwrap();
-        engine.execute_cell("let x = 10").unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+        engine
+            .execute_cell("let x = 10")
+            .expect("operation should succeed in test");
 
         let result = engine.execute_transaction("x = 20");
 
         assert!(result.is_success());
         // State should be modified
-        assert_eq!(engine.execute_cell("x").unwrap(), "20");
+        assert_eq!(
+            engine
+                .execute_cell("x")
+                .expect("operation should succeed in test"),
+            "20"
+        );
     }
 
     // NOTEBOOK-002: Tests for execute_cell_detailed()
 
     #[test]
     fn test_notebook_002_detailed_execution_success() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell_detailed("42");
 
         assert!(result.is_success());
@@ -657,17 +760,20 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_002_detailed_execution_error() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell_detailed("undefined_variable");
 
         assert!(!result.is_success());
         assert!(result.error().is_some());
-        assert!(result.error().unwrap().contains("Undefined variable"));
+        assert!(result
+            .error()
+            .expect("operation should succeed in test")
+            .contains("Undefined variable"));
     }
 
     #[test]
     fn test_notebook_002_detailed_execution_empty_cell() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell_detailed("");
 
         assert!(result.is_success());
@@ -677,7 +783,7 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_002_detailed_execution_timing() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell_detailed("1 + 1");
 
         assert!(result.is_success());
@@ -688,7 +794,7 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_002_detailed_preserves_state() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         let result1 = engine.execute_cell_detailed("let x = 100");
         assert!(result1.is_success());
@@ -700,7 +806,7 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_002_detailed_complex_expression() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let result = engine.execute_cell_detailed("if true { 42 } else { 0 }");
 
         assert!(result.is_success());
@@ -709,7 +815,7 @@ Point { x: 10, y: 20 }
 
     #[test]
     fn test_notebook_002_detailed_multiline_code() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
         let code = r"
 let a = 10
 let b = 20
@@ -723,7 +829,7 @@ a + b
 
     #[test]
     fn test_notebook_002_detailed_error_recovery() {
-        let mut engine = NotebookEngine::new().unwrap();
+        let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
         // Execute valid code
         let result1 = engine.execute_cell_detailed("let x = 5");
@@ -748,14 +854,14 @@ a + b
         proptest! {
             #[test]
             fn notebook_engine_never_panics_on_any_input(code: String) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 // Should never panic on any input, even invalid code
                 let _ = engine.execute_cell(&code);
             }
 
             #[test]
             fn notebook_engine_handles_any_expression(expr in "[0-9]{1,9}") {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let result = engine.execute_cell(&expr);
                 // Valid numbers (up to 9 digits) should work
                 prop_assert!(result.is_ok());
@@ -766,7 +872,7 @@ a + b
                 var_name in "[a-z][a-z0-9_]{0,10}",
                 value in 0i64..1000
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Define variable
                 let define = format!("let {var_name} = {value}");
@@ -782,7 +888,7 @@ a + b
                 spaces_before in 0usize..10,
                 spaces_after in 0usize..10
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let code = format!("{}42{}", " ".repeat(spaces_before), " ".repeat(spaces_after));
                 let result = engine.execute_cell(&code);
                 // Should handle whitespace variations
@@ -794,7 +900,7 @@ a + b
                 a in 1i64..100,
                 b in 1i64..100
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 let add = format!("{a} + {b}");
                 prop_assert!(engine.execute_cell(&add).is_ok());
@@ -811,7 +917,7 @@ a + b
 
             #[test]
             fn notebook_engine_string_literals(s in ".*") {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 // Escape the string properly
                 let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
                 let code = format!("\"{escaped}\"");
@@ -824,7 +930,7 @@ a + b
                 a: bool,
                 b: bool
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 let and = format!("{a} && {b}");
                 prop_assert!(engine.execute_cell(&and).is_ok());
@@ -840,7 +946,7 @@ a + b
             fn notebook_engine_multiple_cells_consistency(
                 operations in prop::collection::vec("[0-9]+ [+\\-*/] [0-9]+", 1..10)
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 for op in operations {
                     // Each operation should be evaluated independently
@@ -857,7 +963,7 @@ a + b
                 valid_code in "[0-9]{1,9}",
                 invalid_code in "[+\\-*/]+",
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Execute valid code (up to 9 digits to avoid overflow)
                 prop_assert!(engine.execute_cell(&valid_code).is_ok());
@@ -873,7 +979,7 @@ a + b
             fn notebook_engine_comment_handling(
                 comment_text in ".*"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let code = format!("// {comment_text}");
                 // Comments should always succeed
                 prop_assert!(engine.execute_cell(&code).is_ok());
@@ -883,7 +989,7 @@ a + b
 
             #[test]
             fn notebook_engine_detailed_never_panics(code: String) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 // Should never panic on any input
                 let _ = engine.execute_cell_detailed(&code);
             }
@@ -892,7 +998,7 @@ a + b
             fn notebook_engine_detailed_timing_is_reasonable(
                 expr in "[0-9]{1,5}"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let result = engine.execute_cell_detailed(&expr);
 
                 // Should complete in reasonable time
@@ -903,7 +1009,7 @@ a + b
             fn notebook_engine_detailed_success_has_output(
                 value in 1i64..1000
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let code = format!("{value}");
                 let result = engine.execute_cell_detailed(&code);
 
@@ -918,13 +1024,13 @@ a + b
             fn notebook_engine_detailed_failure_has_error(
                 invalid in "[+\\-*/]{3,10}"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let result = engine.execute_cell_detailed(&invalid);
 
                 if !result.is_success() {
                     // Failure should have error message
                     prop_assert!(result.error().is_some());
-                    prop_assert!(!result.error().unwrap().is_empty());
+                    prop_assert!(!result.error().expect("operation should succeed in test").is_empty());
                 }
             }
 
@@ -932,7 +1038,7 @@ a + b
             fn notebook_engine_detailed_preserves_timing_order(
                 operations in prop::collection::vec("[0-9]{1,3}", 5..15)
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let mut timings = Vec::new();
 
                 for op in operations {
@@ -950,7 +1056,7 @@ a + b
             fn notebook_engine_detailed_empty_is_fast(
                 spaces in 0usize..20
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let code = " ".repeat(spaces);
                 let result = engine.execute_cell_detailed(&code);
 
@@ -966,8 +1072,8 @@ a + b
                 b in 1i64..100,
                 op in "[+\\-*/]"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
-                let code = format!("{} {} {}", a, op.chars().next().unwrap(), b);
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
+                let code = format!("{} {} {}", a, op.chars().next().expect("operation should succeed in test"), b);
                 let result = engine.execute_cell_detailed(&code);
 
                 // Duration is u128, always non-negative (no assertion needed)
@@ -978,8 +1084,8 @@ a + b
             fn notebook_engine_detailed_consistent_with_basic(
                 expr in "[0-9]{1,5}"
             ) {
-                let mut engine1 = NotebookEngine::new().unwrap();
-                let mut engine2 = NotebookEngine::new().unwrap();
+                let mut engine1 = NotebookEngine::new().expect("operation should succeed in test");
+                let mut engine2 = NotebookEngine::new().expect("operation should succeed in test");
 
                 let basic_result = engine1.execute_cell(&expr);
                 let detailed_result = engine2.execute_cell_detailed(&expr);
@@ -987,7 +1093,7 @@ a + b
                 // Both should agree on success/failure
                 if basic_result.is_ok() {
                     prop_assert!(detailed_result.is_success());
-                    prop_assert_eq!(detailed_result.output(), basic_result.unwrap());
+                    prop_assert_eq!(detailed_result.output(), basic_result.expect("operation should succeed in test"));
                 } else {
                     prop_assert!(!detailed_result.is_success());
                 }
@@ -999,7 +1105,7 @@ a + b
                 value1 in 0i64..100,
                 value2 in 0i64..100
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Define variable
                 let def_result = engine.execute_cell_detailed(&format!("let {var_name} = {value1}"));
@@ -1022,7 +1128,7 @@ a + b
             fn notebook_engine_detailed_error_metadata_complete(
                 invalid in ".*"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let result = engine.execute_cell_detailed(&invalid);
 
                 // Duration is u128, always non-negative (no assertion needed)
@@ -1032,7 +1138,7 @@ a + b
                     prop_assert!(result.error().is_none());
                 } else {
                     prop_assert!(result.error().is_some());
-                    prop_assert!(!result.error().unwrap().is_empty());
+                    prop_assert!(!result.error().expect("operation should succeed in test").is_empty());
                 }
             }
 
@@ -1042,7 +1148,7 @@ a + b
             fn notebook_checkpoint_preserves_variable_count(
                 var_count in 0usize..20
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Get baseline count (REPL has built-in bindings)
                 let baseline = engine.create_checkpoint("baseline".to_string()).variable_count();
@@ -1062,7 +1168,7 @@ a + b
                 var_name in "[a-z][a-z0-9]{0,8}",
                 value in 0i64..1000
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Set variable
                 let def = format!("let {var_name} = {value}");
@@ -1086,7 +1192,7 @@ a + b
             fn notebook_transaction_success_preserves_result(
                 value in 1i64..1000
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 let code = format!("{value}");
                 let result = engine.execute_transaction(&code);
 
@@ -1100,7 +1206,7 @@ a + b
                 initial_value in 0i64..100,
                 invalid_code in "[+\\-*/]{3,10}"
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 // Set initial state
                 if engine.execute_cell(&format!("let x = {initial_value}")).is_ok() {
@@ -1120,7 +1226,7 @@ a + b
             fn notebook_checkpoint_names_are_preserved(
                 name in "[a-zA-Z0-9_]{1,20}"
             ) {
-                let engine = NotebookEngine::new().unwrap();
+                let engine = NotebookEngine::new().expect("operation should succeed in test");
                 let checkpoint = engine.create_checkpoint(name.clone());
                 prop_assert_eq!(checkpoint.name(), name);
             }
@@ -1129,7 +1235,7 @@ a + b
             fn notebook_multiple_checkpoints_independent(
                 vars in prop::collection::vec(("[a-z]{1,5}", 0i64..100), 1..10)
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 for (name, value) in &vars {
                     let _ = engine.execute_cell(&format!("let {name} = {value}"));
@@ -1149,7 +1255,7 @@ a + b
             fn notebook_restore_is_idempotent(
                 value in 1i64..100
             ) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
 
                 if engine.execute_cell(&format!("let x = {value}")).is_ok() {
                     let checkpoint = engine.create_checkpoint("save".to_string());
@@ -1168,7 +1274,7 @@ a + b
 
             #[test]
             fn notebook_transaction_never_panics(code: String) {
-                let mut engine = NotebookEngine::new().unwrap();
+                let mut engine = NotebookEngine::new().expect("operation should succeed in test");
                 // Should never panic on any input
                 let _ = engine.execute_transaction(&code);
             }
@@ -1180,7 +1286,7 @@ a + b
                 use std::thread;
                 use std::time::Duration;
 
-                let engine = NotebookEngine::new().unwrap();
+                let engine = NotebookEngine::new().expect("operation should succeed in test");
                 let cp1 = engine.create_checkpoint("first".to_string());
 
                 thread::sleep(Duration::from_millis(delay_ms));
@@ -1195,8 +1301,8 @@ a + b
             fn notebook_transaction_consistent_with_direct_execution(
                 expr in "[0-9]{1,5}"
             ) {
-                let mut engine1 = NotebookEngine::new().unwrap();
-                let mut engine2 = NotebookEngine::new().unwrap();
+                let mut engine1 = NotebookEngine::new().expect("operation should succeed in test");
+                let mut engine2 = NotebookEngine::new().expect("operation should succeed in test");
 
                 let direct_result = engine1.execute_cell(&expr);
                 let transaction_result = engine2.execute_transaction(&expr);
