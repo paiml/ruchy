@@ -28,7 +28,7 @@ use std::path::{Path, PathBuf};
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::join("/home/user", "documents").unwrap();
+/// let result = path::join("/home/user", "documents").expect("join should succeed in doctest");
 /// assert!(result.contains("documents"));
 /// ```
 ///
@@ -51,7 +51,7 @@ pub fn join(base: &str, component: &str) -> Result<String> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::join_many(&["/home", "user", "documents"]).unwrap();
+/// let result = path::join_many(&["/home", "user", "documents"]).expect("join_many should succeed in doctest");
 /// assert!(result.contains("documents"));
 /// ```
 ///
@@ -77,7 +77,7 @@ pub fn join_many(components: &[&str]) -> Result<String> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::parent("/home/user/file.txt").unwrap();
+/// let result = path::parent("/home/user/file.txt").expect("parent should succeed in doctest");
 /// assert!(result.is_some());
 /// ```
 ///
@@ -100,7 +100,7 @@ pub fn parent(path: &str) -> Result<Option<String>> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::file_name("/home/user/file.txt").unwrap();
+/// let result = path::file_name("/home/user/file.txt").expect("file_name should succeed in doctest");
 /// assert_eq!(result, Some("file.txt".to_string()));
 /// ```
 ///
@@ -123,7 +123,7 @@ pub fn file_name(path: &str) -> Result<Option<String>> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::file_stem("/home/user/file.txt").unwrap();
+/// let result = path::file_stem("/home/user/file.txt").expect("file_stem should succeed in doctest");
 /// assert_eq!(result, Some("file".to_string()));
 /// ```
 ///
@@ -146,7 +146,7 @@ pub fn file_stem(path: &str) -> Result<Option<String>> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::extension("/home/user/file.txt").unwrap();
+/// let result = path::extension("/home/user/file.txt").expect("extension should succeed in doctest");
 /// assert_eq!(result, Some("txt".to_string()));
 /// ```
 ///
@@ -230,7 +230,7 @@ pub fn canonicalize(path: &str) -> Result<String> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::with_extension("/home/user/file.txt", "md").unwrap();
+/// let result = path::with_extension("/home/user/file.txt", "md").expect("with_extension should succeed in doctest");
 /// assert!(result.ends_with(".md"));
 /// ```
 ///
@@ -254,7 +254,7 @@ pub fn with_extension(path: &str, ext: &str) -> Result<String> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::with_file_name("/home/user/old.txt", "new.txt").unwrap();
+/// let result = path::with_file_name("/home/user/old.txt", "new.txt").expect("with_file_name should succeed in doctest");
 /// assert!(result.ends_with("new.txt"));
 /// ```
 ///
@@ -278,7 +278,7 @@ pub fn with_file_name(path: &str, name: &str) -> Result<String> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let components = path::components("/home/user/file.txt").unwrap();
+/// let components = path::components("/home/user/file.txt").expect("components should succeed in doctest");
 /// assert!(components.contains(&"user".to_string()));
 /// ```
 ///
@@ -311,7 +311,7 @@ pub fn components(path: &str) -> Result<Vec<String>> {
 /// ```
 /// use ruchy::stdlib::path;
 ///
-/// let result = path::normalize("/home/user/../admin/./file.txt").unwrap();
+/// let result = path::normalize("/home/user/../admin/./file.txt").expect("normalize should succeed in doctest");
 /// assert!(!result.contains(".."));
 /// ```
 ///
@@ -359,26 +359,26 @@ mod tests {
 
     #[test]
     fn test_join_basic() {
-        let result = join("/home", "user").unwrap();
+        let result = join("/home", "user").expect("join should succeed in test");
         assert!(result.contains("user"));
         assert!(result.contains("home"));
     }
 
     #[test]
     fn test_join_empty_base() {
-        let result = join("", "file.txt").unwrap();
+        let result = join("", "file.txt").expect("operation should succeed in test");
         assert_eq!(result, "file.txt");
     }
 
     #[test]
     fn test_join_empty_component() {
-        let result = join("/home", "").unwrap();
+        let result = join("/home", "").expect("operation should succeed in test");
         assert!(result.contains("home"));
     }
 
     #[test]
     fn test_join_windows_style() {
-        let result = join("C:\\Users", "Documents").unwrap();
+        let result = join("C:\\Users", "Documents").expect("operation should succeed in test");
         assert!(result.contains("Documents"));
     }
 
@@ -388,7 +388,8 @@ mod tests {
 
     #[test]
     fn test_join_many_basic() {
-        let result = join_many(&["/home", "user", "documents"]).unwrap();
+        let result =
+            join_many(&["/home", "user", "documents"]).expect("operation should succeed in test");
         assert!(result.contains("home"));
         assert!(result.contains("user"));
         assert!(result.contains("documents"));
@@ -396,13 +397,13 @@ mod tests {
 
     #[test]
     fn test_join_many_empty() {
-        let result = join_many(&[]).unwrap();
+        let result = join_many(&[]).expect("operation should succeed in test");
         assert_eq!(result, "");
     }
 
     #[test]
     fn test_join_many_single() {
-        let result = join_many(&["/home"]).unwrap();
+        let result = join_many(&["/home"]).expect("operation should succeed in test");
         assert!(result.contains("home"));
     }
 
@@ -412,21 +413,21 @@ mod tests {
 
     #[test]
     fn test_parent_file_path() {
-        let result = parent("/home/user/file.txt").unwrap();
+        let result = parent("/home/user/file.txt").expect("operation should succeed in test");
         assert!(result.is_some());
-        let parent_path = result.unwrap();
+        let parent_path = result.expect("operation should succeed in test");
         assert!(parent_path.contains("user"));
     }
 
     #[test]
     fn test_parent_root() {
-        let result = parent("/").unwrap();
+        let result = parent("/").expect("operation should succeed in test");
         assert!(result.is_none(), "Root path should have no parent");
     }
 
     #[test]
     fn test_parent_relative() {
-        let result = parent("file.txt").unwrap();
+        let result = parent("file.txt").expect("operation should succeed in test");
         assert!(result.is_some() || result.is_none()); // Platform dependent
     }
 
@@ -436,19 +437,19 @@ mod tests {
 
     #[test]
     fn test_file_name_basic() {
-        let result = file_name("/home/user/file.txt").unwrap();
+        let result = file_name("/home/user/file.txt").expect("operation should succeed in test");
         assert_eq!(result, Some("file.txt".to_string()));
     }
 
     #[test]
     fn test_file_name_no_extension() {
-        let result = file_name("/home/user/file").unwrap();
+        let result = file_name("/home/user/file").expect("operation should succeed in test");
         assert_eq!(result, Some("file".to_string()));
     }
 
     #[test]
     fn test_file_name_directory() {
-        let result = file_name("/home/user/").unwrap();
+        let result = file_name("/home/user/").expect("operation should succeed in test");
         assert!(result.is_none() || result == Some("user".to_string()));
     }
 
@@ -458,19 +459,20 @@ mod tests {
 
     #[test]
     fn test_file_stem_basic() {
-        let result = file_stem("/home/user/file.txt").unwrap();
+        let result = file_stem("/home/user/file.txt").expect("operation should succeed in test");
         assert_eq!(result, Some("file".to_string()));
     }
 
     #[test]
     fn test_file_stem_multiple_dots() {
-        let result = file_stem("/home/user/archive.tar.gz").unwrap();
+        let result =
+            file_stem("/home/user/archive.tar.gz").expect("operation should succeed in test");
         assert_eq!(result, Some("archive.tar".to_string()));
     }
 
     #[test]
     fn test_file_stem_no_extension() {
-        let result = file_stem("/home/user/file").unwrap();
+        let result = file_stem("/home/user/file").expect("operation should succeed in test");
         assert_eq!(result, Some("file".to_string()));
     }
 
@@ -480,25 +482,26 @@ mod tests {
 
     #[test]
     fn test_extension_basic() {
-        let result = extension("/home/user/file.txt").unwrap();
+        let result = extension("/home/user/file.txt").expect("operation should succeed in test");
         assert_eq!(result, Some("txt".to_string()));
     }
 
     #[test]
     fn test_extension_multiple_dots() {
-        let result = extension("/home/user/archive.tar.gz").unwrap();
+        let result =
+            extension("/home/user/archive.tar.gz").expect("operation should succeed in test");
         assert_eq!(result, Some("gz".to_string()));
     }
 
     #[test]
     fn test_extension_none() {
-        let result = extension("/home/user/file").unwrap();
+        let result = extension("/home/user/file").expect("operation should succeed in test");
         assert_eq!(result, None);
     }
 
     #[test]
     fn test_extension_hidden_file() {
-        let result = extension("/home/user/.bashrc").unwrap();
+        let result = extension("/home/user/.bashrc").expect("operation should succeed in test");
         assert_eq!(result, None);
     }
 
@@ -551,20 +554,23 @@ mod tests {
 
     #[test]
     fn test_with_extension_replace() {
-        let result = with_extension("/home/user/file.txt", "md").unwrap();
+        let result =
+            with_extension("/home/user/file.txt", "md").expect("operation should succeed in test");
         assert!(result.ends_with(".md"));
         assert!(!result.ends_with(".txt"));
     }
 
     #[test]
     fn test_with_extension_add() {
-        let result = with_extension("/home/user/file", "txt").unwrap();
+        let result =
+            with_extension("/home/user/file", "txt").expect("operation should succeed in test");
         assert!(result.ends_with(".txt"));
     }
 
     #[test]
     fn test_with_extension_empty() {
-        let result = with_extension("/home/user/file.txt", "").unwrap();
+        let result =
+            with_extension("/home/user/file.txt", "").expect("operation should succeed in test");
         assert!(!result.ends_with(".txt"));
     }
 
@@ -574,14 +580,16 @@ mod tests {
 
     #[test]
     fn test_with_file_name_replace() {
-        let result = with_file_name("/home/user/old.txt", "new.txt").unwrap();
+        let result = with_file_name("/home/user/old.txt", "new.txt")
+            .expect("operation should succeed in test");
         assert!(result.ends_with("new.txt"));
         assert!(!result.contains("old"));
     }
 
     #[test]
     fn test_with_file_name_different_extension() {
-        let result = with_file_name("/home/user/file.txt", "data.json").unwrap();
+        let result = with_file_name("/home/user/file.txt", "data.json")
+            .expect("operation should succeed in test");
         assert!(result.ends_with("data.json"));
     }
 
@@ -591,7 +599,7 @@ mod tests {
 
     #[test]
     fn test_components_basic() {
-        let result = components("/home/user/file.txt").unwrap();
+        let result = components("/home/user/file.txt").expect("operation should succeed in test");
         assert!(result.contains(&"home".to_string()));
         assert!(result.contains(&"user".to_string()));
         assert!(result.contains(&"file.txt".to_string()));
@@ -599,14 +607,14 @@ mod tests {
 
     #[test]
     fn test_components_relative() {
-        let result = components("user/file.txt").unwrap();
+        let result = components("user/file.txt").expect("operation should succeed in test");
         assert!(result.contains(&"user".to_string()));
         assert!(result.contains(&"file.txt".to_string()));
     }
 
     #[test]
     fn test_components_empty() {
-        let result = components("").unwrap();
+        let result = components("").expect("operation should succeed in test");
         assert_eq!(result.len(), 0);
     }
 
@@ -616,26 +624,28 @@ mod tests {
 
     #[test]
     fn test_normalize_parent_dir() {
-        let result = normalize("/home/user/../admin/file.txt").unwrap();
+        let result =
+            normalize("/home/user/../admin/file.txt").expect("operation should succeed in test");
         assert!(!result.contains(".."));
         assert!(result.contains("admin"));
     }
 
     #[test]
     fn test_normalize_current_dir() {
-        let result = normalize("/home/user/./file.txt").unwrap();
+        let result = normalize("/home/user/./file.txt").expect("operation should succeed in test");
         assert!(!result.contains("/./"));
     }
 
     #[test]
     fn test_normalize_multiple_dots() {
-        let result = normalize("/home/user/../../etc/file.txt").unwrap();
+        let result =
+            normalize("/home/user/../../etc/file.txt").expect("operation should succeed in test");
         assert!(!result.contains(".."));
     }
 
     #[test]
     fn test_normalize_no_dots() {
-        let result = normalize("/home/user/file.txt").unwrap();
+        let result = normalize("/home/user/file.txt").expect("operation should succeed in test");
         assert!(result.contains("home"));
         assert!(result.contains("user"));
     }
@@ -661,7 +671,7 @@ mod tests {
     fn prop_join_preserves_both_components() {
         let base = "/home";
         let component = "user";
-        let result = join(base, component).unwrap();
+        let result = join(base, component).expect("operation should succeed in test");
 
         assert!(result.contains("home"), "Result should contain base");
         assert!(result.contains("user"), "Result should contain component");
@@ -672,8 +682,8 @@ mod tests {
         let path = "/home/user/file.txt";
         let new_ext = "md";
 
-        let modified = with_extension(path, new_ext).unwrap();
-        let ext = extension(&modified).unwrap();
+        let modified = with_extension(path, new_ext).expect("operation should succeed in test");
+        let ext = extension(&modified).expect("operation should succeed in test");
 
         assert_eq!(
             ext,
@@ -686,9 +696,9 @@ mod tests {
     fn prop_file_stem_plus_extension_equals_file_name() {
         let path = "/home/user/file.txt";
 
-        let stem = file_stem(path).unwrap();
-        let ext = extension(path).unwrap();
-        let name = file_name(path).unwrap();
+        let stem = file_stem(path).expect("operation should succeed in test");
+        let ext = extension(path).expect("operation should succeed in test");
+        let name = file_name(path).expect("operation should succeed in test");
 
         if let (Some(s), Some(e), Some(n)) = (stem, ext, name) {
             assert_eq!(
@@ -705,26 +715,26 @@ mod tests {
 
     #[test]
     fn test_empty_path() {
-        let result = file_name("").unwrap();
+        let result = file_name("").expect("operation should succeed in test");
         assert_eq!(result, None);
     }
 
     #[test]
     fn test_very_long_path() {
         let long_component = "a".repeat(255);
-        let result = join("/home", &long_component).unwrap();
+        let result = join("/home", &long_component).expect("operation should succeed in test");
         assert!(result.len() > 255);
     }
 
     #[test]
     fn test_special_characters() {
-        let result = join("/home", "user@domain").unwrap();
+        let result = join("/home", "user@domain").expect("operation should succeed in test");
         assert!(result.contains('@'));
     }
 
     #[test]
     fn test_unicode_path() {
-        let result = join("/home", "用户").unwrap();
+        let result = join("/home", "用户").expect("operation should succeed in test");
         assert!(result.contains("用户"));
     }
 }
@@ -777,8 +787,8 @@ mod property_tests {
         // Property: Path operations don't modify input, always produce consistent output
         let path = "/home/user/file.txt";
 
-        let result1 = file_name(path).unwrap();
-        let result2 = file_name(path).unwrap();
+        let result1 = file_name(path).expect("operation should succeed in test");
+        let result2 = file_name(path).expect("operation should succeed in test");
 
         assert_eq!(result1, result2, "Path operations should be deterministic");
     }
