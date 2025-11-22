@@ -57,7 +57,7 @@
 //! use ruchy::frontend::{Parser, Expr, ExprKind};
 //!
 //! let mut parser = Parser::new("42 + 3.15");
-//! let ast = parser.parse().unwrap();
+//! let ast = parser.parse().expect("operation should succeed in test");
 //!
 //! if let ExprKind::Binary { left, op, right } = &ast.kind {
 //!     println!("Found binary operation: {:?}", op);
@@ -129,7 +129,7 @@ mod tests {
         let mut parser = Parser::new("42");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Literal(Literal::Integer(42, None))
@@ -141,7 +141,7 @@ mod tests {
         let mut parser = Parser::new("1 + 2");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -156,7 +156,7 @@ mod tests {
         let mut parser = Parser::new(r#""hello world""#);
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Literal(Literal::String(s)) = expr.kind {
             assert_eq!(s, "hello world");
         } else {
@@ -169,13 +169,13 @@ mod tests {
         let mut parser = Parser::new("true");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(true))));
 
         let mut parser = Parser::new("false");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(false))));
     }
 
@@ -184,7 +184,7 @@ mod tests {
         let mut parser = Parser::new("variable_name");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Identifier(name) = expr.kind {
             assert_eq!(name, "variable_name");
         } else {
@@ -197,7 +197,7 @@ mod tests {
         let mut parser = Parser::new("[1, 2, 3]");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::List(items) = expr.kind {
             assert_eq!(items.len(), 3);
         } else {
@@ -210,7 +210,7 @@ mod tests {
         let mut parser = Parser::new("[]");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::List(items) = expr.kind {
             assert!(items.is_empty());
         } else {
@@ -223,7 +223,7 @@ mod tests {
         let mut parser = Parser::new("(1, 2, 3)");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Tuple(items) = expr.kind {
             assert_eq!(items.len(), 3);
         } else {
@@ -236,7 +236,7 @@ mod tests {
         let mut parser = Parser::new("-42");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Unary {
@@ -251,7 +251,7 @@ mod tests {
         let mut parser = Parser::new("!true");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Unary {
@@ -276,7 +276,7 @@ mod tests {
             let mut parser = Parser::new(input);
             let result = parser.parse();
             assert!(result.is_ok(), "Failed to parse: {input}");
-            let expr = result.unwrap();
+            let expr = result.expect("operation should succeed in test");
             if let ExprKind::Binary { op, .. } = expr.kind {
                 assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
@@ -290,7 +290,7 @@ mod tests {
         let mut parser = Parser::new("true && false");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -302,7 +302,7 @@ mod tests {
         let mut parser = Parser::new("true || false");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         assert!(matches!(
             expr.kind,
             ExprKind::Binary {
@@ -326,7 +326,7 @@ mod tests {
             let mut parser = Parser::new(input);
             let result = parser.parse();
             assert!(result.is_ok(), "Failed to parse: {input}");
-            let expr = result.unwrap();
+            let expr = result.expect("operation should succeed in test");
             if let ExprKind::Binary { op, .. } = expr.kind {
                 assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
@@ -347,7 +347,7 @@ mod tests {
             let mut parser = Parser::new(input);
             let result = parser.parse();
             assert!(result.is_ok(), "Failed to parse: {input}");
-            let expr = result.unwrap();
+            let expr = result.expect("operation should succeed in test");
             if let ExprKind::Binary { op, .. } = expr.kind {
                 assert_eq!(op, expected_op, "Wrong operator for: {input}");
             } else {
@@ -361,7 +361,7 @@ mod tests {
         let mut parser = Parser::new("(42)");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         // Parentheses don't create a special node, just affect precedence
         assert!(matches!(
             expr.kind,
@@ -375,7 +375,7 @@ mod tests {
         let mut parser = Parser::new("1 + 2 * 3");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         // Should parse as 1 + (2 * 3), not (1 + 2) * 3
         if let ExprKind::Binary {
             op: BinaryOp::Add,
@@ -400,7 +400,7 @@ mod tests {
         let mut parser = Parser::new("3.15");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Literal(Literal::Float(f)) = expr.kind {
             assert!((f - 3.15).abs() < 0.001);
         } else {
@@ -413,7 +413,7 @@ mod tests {
         let mut parser = Parser::new("'a'");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Literal(Literal::Char(c)) = expr.kind {
             assert_eq!(c, 'a');
         } else {
@@ -478,7 +478,7 @@ mod tests {
         let mut parser = Parser::new("1..10");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Range { inclusive, .. } = expr.kind {
             assert!(!inclusive);
         } else {
@@ -491,7 +491,7 @@ mod tests {
         let mut parser = Parser::new("1..=10");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Range { inclusive, .. } = expr.kind {
             assert!(inclusive);
         } else {
@@ -504,7 +504,7 @@ mod tests {
         let mut parser = Parser::new("[[1, 2], [3, 4]]");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::List(outer) = expr.kind {
             assert_eq!(outer.len(), 2);
             for item in outer {
@@ -520,7 +520,7 @@ mod tests {
         let mut parser = Parser::new("()");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         // Empty tuple might be parsed as unit or as empty tuple
         assert!(
             matches!(expr.kind, ExprKind::Tuple(_))
@@ -533,7 +533,7 @@ mod tests {
         let mut parser = Parser::new("(42,)");
         let result = parser.parse();
         assert!(result.is_ok());
-        let expr = result.unwrap();
+        let expr = result.expect("operation should succeed in test");
         if let ExprKind::Tuple(items) = expr.kind {
             assert_eq!(items.len(), 1);
         } else {
