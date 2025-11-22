@@ -883,7 +883,9 @@ mod tests {
             vec![MessageValue::String("world".to_string())],
         );
 
-        let result = echo.receive(message, &mut context).unwrap();
+        let result = echo
+            .receive(message, &mut context)
+            .expect("operation should succeed in test");
         match result {
             Some(Message::User(msg, values)) => {
                 assert!(msg.contains("Echo: hello"));
@@ -894,7 +896,9 @@ mod tests {
 
         // Test with non-user message
         let start_message = Message::Start;
-        let result = echo.receive(start_message, &mut context).unwrap();
+        let result = echo
+            .receive(start_message, &mut context)
+            .expect("operation should succeed in test");
         assert!(result.is_none());
     }
 
@@ -905,7 +909,9 @@ mod tests {
         let child_id = ActorId(789);
 
         let failed_message = Message::ChildFailed(child_id, "Test error".to_string());
-        let result = supervisor.receive(failed_message, &mut context).unwrap();
+        let result = supervisor
+            .receive(failed_message, &mut context)
+            .expect("operation should succeed in test");
 
         match result {
             Some(Message::ChildRestarted(id)) => assert_eq!(id, child_id),
@@ -924,12 +930,16 @@ mod tests {
 
         // First failure - should restart
         let failed_message = Message::ChildFailed(child_id, "Error 1".to_string());
-        let result = supervisor.receive(failed_message, &mut context).unwrap();
+        let result = supervisor
+            .receive(failed_message, &mut context)
+            .expect("operation should succeed in test");
         assert!(matches!(result, Some(Message::ChildRestarted(_))));
 
         // Second failure - should stop (exceeds max_restarts)
         let failed_message2 = Message::ChildFailed(child_id, "Error 2".to_string());
-        let result = supervisor.receive(failed_message2, &mut context).unwrap();
+        let result = supervisor
+            .receive(failed_message2, &mut context)
+            .expect("operation should succeed in test");
         assert!(result.is_none()); // No response when stopping
     }
 
@@ -939,14 +949,16 @@ mod tests {
         let mut context = create_test_context();
 
         let user_message = Message::User("hello".to_string(), vec![]);
-        let result = supervisor.receive(user_message, &mut context).unwrap();
+        let result = supervisor
+            .receive(user_message, &mut context)
+            .expect("operation should succeed in test");
         assert!(result.is_none());
     }
 
     #[test]
     fn test_actor_system_spawn_duplicate_name() {
         let system = ActorSystem::new();
-        let mut sys = system.lock().unwrap();
+        let mut sys = system.lock().expect("operation should succeed in test");
 
         // Spawn first actor
         let result1 = sys.spawn("duplicate".to_string(), EchoActor);
@@ -962,14 +974,18 @@ mod tests {
     fn test_actor_system_find_by_name() {
         let system = ActorSystem::new();
         let actor_ref = {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("findme".to_string(), EchoActor).unwrap()
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("findme".to_string(), EchoActor)
+                .expect("operation should succeed in test")
         };
 
-        let sys = system.lock().unwrap();
+        let sys = system.lock().expect("operation should succeed in test");
         let found = sys.find_actor_by_name("findme");
         assert!(found.is_some());
-        assert_eq!(found.unwrap().id, actor_ref.id);
+        assert_eq!(
+            found.expect("operation should succeed in test").id,
+            actor_ref.id
+        );
 
         let not_found = sys.find_actor_by_name("nothere");
         assert!(not_found.is_none());
@@ -979,14 +995,18 @@ mod tests {
     fn test_actor_system_get_actor_ref() {
         let system = ActorSystem::new();
         let actor_ref = {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("getref".to_string(), EchoActor).unwrap()
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("getref".to_string(), EchoActor)
+                .expect("operation should succeed in test")
         };
 
-        let sys = system.lock().unwrap();
+        let sys = system.lock().expect("operation should succeed in test");
         let found_ref = sys.get_actor_ref(actor_ref.id);
         assert!(found_ref.is_some());
-        assert_eq!(found_ref.unwrap().id, actor_ref.id);
+        assert_eq!(
+            found_ref.expect("operation should succeed in test").id,
+            actor_ref.id
+        );
 
         let not_found_ref = sys.get_actor_ref(ActorId(99999));
         assert!(not_found_ref.is_none());
@@ -996,19 +1016,20 @@ mod tests {
     fn test_actor_system_stop_actor() {
         let system = ActorSystem::new();
         let actor_ref = {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("stopme".to_string(), EchoActor).unwrap()
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("stopme".to_string(), EchoActor)
+                .expect("operation should succeed in test")
         };
 
         // Stop the actor
         {
-            let mut sys = system.lock().unwrap();
+            let mut sys = system.lock().expect("operation should succeed in test");
             let result = sys.stop_actor(actor_ref.id);
             assert!(result.is_ok());
         }
 
         // Verify actor is removed
-        let sys = system.lock().unwrap();
+        let sys = system.lock().expect("operation should succeed in test");
         let found = sys.get_actor_ref(actor_ref.id);
         assert!(found.is_none());
     }
@@ -1017,9 +1038,11 @@ mod tests {
     fn test_actor_system_shutdown() {
         let system = ActorSystem::new();
         {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("actor1".to_string(), EchoActor).unwrap();
-            sys.spawn("actor2".to_string(), EchoActor).unwrap();
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("actor1".to_string(), EchoActor)
+                .expect("operation should succeed in test");
+            sys.spawn("actor2".to_string(), EchoActor)
+                .expect("operation should succeed in test");
             assert_eq!(sys.actors.len(), 2);
 
             sys.shutdown();
@@ -1032,8 +1055,9 @@ mod tests {
     fn test_actor_ref_send_message() {
         let system = ActorSystem::new();
         let actor_ref = {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("sender_test".to_string(), EchoActor).unwrap()
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("sender_test".to_string(), EchoActor)
+                .expect("operation should succeed in test")
         };
 
         let message = Message::User("ping".to_string(), vec![]);
@@ -1045,8 +1069,9 @@ mod tests {
     fn test_actor_context_find_actor() {
         let system = ActorSystem::new();
         let _actor_ref = {
-            let mut sys = system.lock().unwrap();
-            sys.spawn("findable".to_string(), EchoActor).unwrap()
+            let mut sys = system.lock().expect("operation should succeed in test");
+            sys.spawn("findable".to_string(), EchoActor)
+                .expect("operation should succeed in test")
         };
 
         let context = ActorContext {
