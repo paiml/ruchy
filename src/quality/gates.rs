@@ -577,9 +577,10 @@ mod tests {
     // Test 6: Configuration File Loading (Success)
     #[test]
     fn test_load_config_creates_default() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_root = temp_dir.path();
-        let config = QualityGateEnforcer::load_config(project_root).unwrap();
+        let config = QualityGateEnforcer::load_config(project_root)
+            .expect("operation should succeed in test");
         // Should create default config
         assert_eq!(config.min_score, 0.7);
         assert_eq!(config.min_grade, Grade::BMinus);
@@ -587,7 +588,8 @@ mod tests {
         let config_path = project_root.join(".ruchy").join("score.toml");
         assert!(config_path.exists(), "Config file should be created");
         // File should contain valid TOML
-        let content = std::fs::read_to_string(config_path).unwrap();
+        let content =
+            std::fs::read_to_string(config_path).expect("operation should succeed in test");
         assert!(content.contains("min_score"));
         assert!(content.contains("0.7"));
     }
@@ -596,10 +598,12 @@ mod tests {
     fn test_config_serialization() {
         let original_config = QualityGateConfig::default();
         // Serialize to TOML
-        let toml_content = toml::to_string(&original_config).unwrap();
+        let toml_content =
+            toml::to_string(&original_config).expect("operation should succeed in test");
         assert!(toml_content.contains("min_score"));
         // Deserialize back
-        let deserialized_config: QualityGateConfig = toml::from_str(&toml_content).unwrap();
+        let deserialized_config: QualityGateConfig =
+            toml::from_str(&toml_content).expect("operation should succeed in test");
         assert_eq!(deserialized_config.min_score, original_config.min_score);
         assert_eq!(deserialized_config.min_grade, original_config.min_grade);
     }
@@ -783,7 +787,7 @@ mod tests {
     // Test 16: Anti-Gaming Rules - File Size Warning
     #[test]
     fn test_small_file_size_warning() -> anyhow::Result<()> {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let small_file = temp_dir.path().join("small.rs");
         std::fs::write(&small_file, "// Small file")?; // ~13 bytes, below 100 threshold
 
@@ -803,10 +807,15 @@ mod tests {
     // Test 17: Anti-Gaming Rules - Critical Files Deep Analysis
     #[test]
     fn test_critical_files_deep_analysis() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let critical_file = temp_dir.path().join("src").join("main.rs");
-        std::fs::create_dir_all(critical_file.parent().unwrap()).unwrap();
-        std::fs::write(&critical_file, "fn main() {}").unwrap();
+        std::fs::create_dir_all(
+            critical_file
+                .parent()
+                .expect("operation should succeed in test"),
+        )
+        .expect("operation should succeed in test");
+        std::fs::write(&critical_file, "fn main() {}").expect("operation should succeed in test");
 
         let config = QualityGateConfig::default(); // require_deep_analysis includes "src/main.rs"
         let enforcer = QualityGateEnforcer::new(config);
@@ -857,7 +866,7 @@ mod tests {
     // Test 19: CI Results Export - JSON Format
     #[test]
     fn test_export_json_results() -> anyhow::Result<()> {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let output_dir = temp_dir.path();
 
         let mut config = QualityGateConfig::default();
@@ -884,7 +893,7 @@ mod tests {
     // Test 20: CI Results Export - JUnit XML Format
     #[test]
     fn test_export_junit_xml_results() -> anyhow::Result<()> {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let output_dir = temp_dir.path();
 
         let mut config = QualityGateConfig::default();
@@ -963,8 +972,9 @@ mod tests {
             webhook: Some("https://test.example.com/webhook".to_string()),
         };
 
-        let serialized = serde_json::to_string(&config).unwrap();
-        let deserialized: NotificationConfig = serde_json::from_str(&serialized).unwrap();
+        let serialized = serde_json::to_string(&config).expect("operation should succeed in test");
+        let deserialized: NotificationConfig =
+            serde_json::from_str(&serialized).expect("operation should succeed in test");
 
         assert!(deserialized.slack);
         assert!(!deserialized.email);
