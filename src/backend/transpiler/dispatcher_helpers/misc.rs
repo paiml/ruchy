@@ -138,7 +138,9 @@ mod tests {
     fn test_transpile_type_cast_i32() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i32")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as i32"));
     }
 
@@ -147,7 +149,9 @@ mod tests {
     fn test_transpile_type_cast_i64() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "i64").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i64")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as i64"));
     }
 
@@ -156,7 +160,9 @@ mod tests {
     fn test_transpile_type_cast_f32() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "f32").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "f32")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as f32"));
     }
 
@@ -165,7 +171,9 @@ mod tests {
     fn test_transpile_type_cast_f64() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "f64").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "f64")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as f64"));
     }
 
@@ -174,7 +182,9 @@ mod tests {
     fn test_transpile_type_cast_usize() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "usize").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "usize")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as usize"));
     }
 
@@ -183,7 +193,9 @@ mod tests {
     fn test_transpile_type_cast_u8() {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
-        let result = transpiler.transpile_type_cast(&expr, "u8").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "u8")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as u8"));
     }
 
@@ -214,7 +226,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "break");
     }
 
@@ -232,7 +246,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("42"));
@@ -249,7 +265,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "continue");
     }
 
@@ -264,7 +282,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "return");
     }
 
@@ -281,7 +301,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("return"));
         assert!(result_str.contains("42"));
@@ -357,13 +379,19 @@ mod tests {
         let transpiler = test_transpiler();
         let expr = int_expr(42);
 
-        let u16_result = transpiler.transpile_type_cast(&expr, "u16").unwrap();
+        let u16_result = transpiler
+            .transpile_type_cast(&expr, "u16")
+            .expect("operation should succeed in test");
         assert!(u16_result.to_string().contains("as u16"));
 
-        let u32_result = transpiler.transpile_type_cast(&expr, "u32").unwrap();
+        let u32_result = transpiler
+            .transpile_type_cast(&expr, "u32")
+            .expect("operation should succeed in test");
         assert!(u32_result.to_string().contains("as u32"));
 
-        let u64_result = transpiler.transpile_type_cast(&expr, "u64").unwrap();
+        let u64_result = transpiler
+            .transpile_type_cast(&expr, "u64")
+            .expect("operation should succeed in test");
         assert!(u64_result.to_string().contains("as u64"));
     }
 
@@ -372,7 +400,9 @@ mod tests {
     fn test_transpile_type_cast_i8() {
         let transpiler = test_transpiler();
         let expr = int_expr(127);
-        let result = transpiler.transpile_type_cast(&expr, "i8").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i8")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as i8"));
     }
 
@@ -381,7 +411,9 @@ mod tests {
     fn test_transpile_type_cast_i16() {
         let transpiler = test_transpiler();
         let expr = int_expr(32767);
-        let result = transpiler.transpile_type_cast(&expr, "i16").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i16")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as i16"));
     }
 
@@ -399,7 +431,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("outer"));
@@ -420,7 +454,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("loop1"));
@@ -439,7 +475,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("continue"));
         assert!(result_str.contains("outer"));
@@ -505,7 +543,9 @@ mod tests {
     fn test_transpile_type_cast_negative_value() {
         let transpiler = test_transpiler();
         let expr = int_expr(-42);
-        let result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i32")
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("as i32"));
         assert!(result_str.contains('-') || result_str.contains("42"));
@@ -516,7 +556,9 @@ mod tests {
     fn test_transpile_type_cast_zero() {
         let transpiler = test_transpiler();
         let expr = int_expr(0);
-        let result = transpiler.transpile_type_cast(&expr, "usize").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "usize")
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("as usize"));
         assert!(result_str.contains('0'));
@@ -537,7 +579,9 @@ mod tests {
     fn test_transpile_type_cast_large_value() {
         let transpiler = test_transpiler();
         let expr = int_expr(9_999_999);
-        let result = transpiler.transpile_type_cast(&expr, "i64").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i64")
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("as i64"));
         assert!(result_str.contains("9999999"));
@@ -555,7 +599,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_type_cast(&expr, "f32").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "f32")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as f32"));
     }
 
@@ -571,7 +617,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_type_cast(&expr, "f64").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "f64")
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("as f64"));
     }
 
@@ -632,7 +680,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("return"));
         assert!(result_str.contains("10") || result_str.contains("20"));
@@ -659,7 +709,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("error"));
@@ -670,7 +722,9 @@ mod tests {
     fn test_transpile_type_cast_u8_boundary() {
         let transpiler = test_transpiler();
         let expr = int_expr(255); // Max u8 value
-        let result = transpiler.transpile_type_cast(&expr, "u8").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "u8")
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("as u8"));
         assert!(result_str.contains("255"));
@@ -681,7 +735,9 @@ mod tests {
     fn test_transpile_type_cast_i8_boundary() {
         let transpiler = test_transpiler();
         let expr = int_expr(-128); // Min i8 value
-        let result = transpiler.transpile_type_cast(&expr, "i8").unwrap();
+        let result = transpiler
+            .transpile_type_cast(&expr, "i8")
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("as i8"));
         assert!(result_str.contains('-') || result_str.contains("128"));
@@ -710,7 +766,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("continue"));
         assert!(result_str.contains("very_long_descriptive_loop_label"));
@@ -722,13 +780,19 @@ mod tests {
         let transpiler = test_transpiler();
         let expr = int_expr(100);
 
-        let u16_result = transpiler.transpile_type_cast(&expr, "u16").unwrap();
+        let u16_result = transpiler
+            .transpile_type_cast(&expr, "u16")
+            .expect("operation should succeed in test");
         assert!(u16_result.to_string().contains("as u16"));
 
-        let i32_result = transpiler.transpile_type_cast(&expr, "i32").unwrap();
+        let i32_result = transpiler
+            .transpile_type_cast(&expr, "i32")
+            .expect("operation should succeed in test");
         assert!(i32_result.to_string().contains("as i32"));
 
-        let f64_result = transpiler.transpile_type_cast(&expr, "f64").unwrap();
+        let f64_result = transpiler
+            .transpile_type_cast(&expr, "f64")
+            .expect("operation should succeed in test");
         assert!(f64_result.to_string().contains("as f64"));
     }
 
@@ -763,7 +827,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.transpile_control_misc_expr(&expr).unwrap();
+        let result = transpiler
+            .transpile_control_misc_expr(&expr)
+            .expect("operation should succeed in test");
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("true"));
