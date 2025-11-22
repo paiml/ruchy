@@ -872,8 +872,8 @@ impl Interpreter {
     ///
     /// let mut interpreter = Interpreter::new();
     /// let mut parser = Parser::new("42");
-    /// let expr = parser.parse().unwrap();
-    /// let result = interpreter.eval_expr(&expr).unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// let result = interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
     /// assert_eq!(result.to_string(), "42");
     /// ```
     ///
@@ -883,8 +883,8 @@ impl Interpreter {
     ///
     /// let mut interpreter = Interpreter::new();
     /// let mut parser = Parser::new("2 + 3");
-    /// let expr = parser.parse().unwrap();
-    /// let result = interpreter.eval_expr(&expr).unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// let result = interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
     /// assert_eq!(result.to_string(), "5");
     /// ```
     ///
@@ -2128,9 +2128,13 @@ impl Interpreter {
         cell: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
         key: &str,
     ) -> Result<Value, InterpreterError> {
-        cell.lock().unwrap().get(key).cloned().ok_or_else(|| {
-            InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-        })
+        cell.lock()
+            .expect("Mutex poisoned: object lock is corrupted")
+            .get(key)
+            .cloned()
+            .ok_or_else(|| {
+                InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+            })
     }
 
     /// Index into a `DataFrame` by row index (complexity: 5)
@@ -2248,7 +2252,9 @@ impl Interpreter {
                 ..
             } => {
                 // Class field access
-                let fields_read = fields.read().unwrap();
+                let fields_read = fields
+                    .read()
+                    .expect("RwLock poisoned: class fields lock is corrupted");
                 fields_read.get(field).cloned().ok_or_else(|| {
                     InterpreterError::RuntimeError(format!(
                         "Field '{field}' not found in class {class_name}"
@@ -2300,7 +2306,9 @@ impl Interpreter {
         cell: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
         field: &str,
     ) -> Result<Value, InterpreterError> {
-        let object_map = cell.lock().unwrap();
+        let object_map = cell
+            .lock()
+            .expect("Mutex poisoned: object map lock is corrupted");
 
         // Check for actor field access
         if let Some(actor_field) = Self::check_actor_field_access(&object_map, field)? {
@@ -2693,7 +2701,7 @@ impl Interpreter {
                 // Extract class name and constructor name from the marker
                 let parts: Vec<&str> = s
                     .strip_prefix("__class_constructor__:")
-                    .unwrap()
+                    .expect("prefix exists due to starts_with guard")
                     .split(':')
                     .collect();
 
@@ -2710,7 +2718,7 @@ impl Interpreter {
                 // Extract class name and method name from the marker
                 let parts: Vec<&str> = s
                     .strip_prefix("__class_static_method__:")
-                    .unwrap()
+                    .expect("prefix exists due to starts_with guard")
                     .split(':')
                     .collect();
 
@@ -2726,12 +2734,16 @@ impl Interpreter {
             }
             Value::String(ref s) if s.starts_with("__struct_constructor__:") => {
                 // Extract struct name from the marker
-                let struct_name = s.strip_prefix("__struct_constructor__:").unwrap();
+                let struct_name = s
+                    .strip_prefix("__struct_constructor__:")
+                    .expect("prefix exists due to starts_with guard");
                 self.instantiate_struct_with_args(struct_name, args)
             }
             Value::String(ref s) if s.starts_with("__actor_constructor__:") => {
                 // Extract actor name from the marker
-                let actor_name = s.strip_prefix("__actor_constructor__:").unwrap();
+                let actor_name = s
+                    .strip_prefix("__actor_constructor__:")
+                    .expect("prefix exists due to starts_with guard");
                 self.instantiate_actor_with_args(actor_name, args)
             }
             Value::String(s) if s.starts_with("__builtin_") => {
@@ -3249,7 +3261,7 @@ impl Interpreter {
     /// use ruchy::runtime::interpreter::Interpreter;
     ///
     /// let mut interpreter = Interpreter::new();
-    /// let result = interpreter.eval_string("2 * 21").unwrap();
+    /// let result = interpreter.eval_string("2 * 21").expect("eval_string should succeed in doctest");
     /// assert_eq!(result.to_string(), "42");
     /// ```
     ///
@@ -4019,10 +4031,10 @@ impl Interpreter {
     /// "#;
     ///
     /// let mut parser = Parser::new(code);
-    /// let expr = parser.parse().unwrap();
-    /// interpreter.eval_expr(&expr).unwrap();
-    /// let main_call = Parser::new("main()").parse().unwrap();
-    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
+    /// let result = interpreter.eval_expr(&main_call).expect("eval_expr should succeed in doctest");
     /// assert!(matches!(result, Value::Integer(10)));
     /// ```
     fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
@@ -4056,12 +4068,16 @@ impl Interpreter {
                             }
                             Value::ObjectMut(ref cell) => {
                                 // Mutable object: update in place via RefCell
-                                cell.lock().unwrap().insert(field.clone(), val.clone());
+                                cell.lock()
+                                    .expect("Mutex poisoned: object lock is corrupted")
+                                    .insert(field.clone(), val.clone());
                                 Ok(val)
                             }
                             Value::Class { ref fields, .. } => {
                                 // Class: update field in place via RwLock
-                                let mut fields_write = fields.write().unwrap();
+                                let mut fields_write = fields
+                                    .write()
+                                    .expect("RwLock poisoned: class fields lock is corrupted");
                                 fields_write.insert(field.clone(), val.clone());
                                 Ok(val)
                             }
@@ -4382,7 +4398,9 @@ impl Interpreter {
                         let arg_value = self.eval_expr(&args[0])?;
 
                         // Get mutable access to the object
-                        let mut obj = cell_rc.lock().unwrap();
+                        let mut obj = cell_rc
+                            .lock()
+                            .expect("Mutex poisoned: object lock is corrupted");
 
                         // Get the field value
                         if let Some(field_value) = obj.get(field) {
@@ -4418,7 +4436,10 @@ impl Interpreter {
             // Check if receiver is an actor instance (immutable or mutable)
             let is_actor = match &receiver_value {
                 Value::Object(ref obj) => obj.contains_key("__actor"),
-                Value::ObjectMut(ref cell) => cell.lock().unwrap().contains_key("__actor"),
+                Value::ObjectMut(ref cell) => cell
+                    .lock()
+                    .expect("Mutex poisoned: object lock is corrupted")
+                    .contains_key("__actor"),
                 _ => false,
             };
 
@@ -4595,7 +4616,9 @@ impl Interpreter {
             Value::ObjectMut(cell_rc) => {
                 // Dispatch mutable objects the same way as immutable ones
                 // Safe borrow: We only read metadata fields to determine dispatch
-                let obj = cell_rc.lock().unwrap();
+                let obj = cell_rc
+                    .lock()
+                    .expect("Mutex poisoned: object lock is corrupted");
 
                 // Check if this is an actor instance
                 if let Some(Value::String(actor_name)) = obj.get("__actor") {
@@ -4849,7 +4872,9 @@ impl Interpreter {
         }
 
         // For other methods, delegate to non-mut version
-        let instance = cell_rc.lock().unwrap();
+        let instance = cell_rc
+            .lock()
+            .expect("Mutex poisoned: instance lock is corrupted");
         self.eval_actor_instance_method(&instance, actor_name, method, arg_values)
     }
 
@@ -5018,7 +5043,9 @@ impl Interpreter {
 
         // Clone instance data before executing method
         let instance_data = {
-            let locked = cell_rc.lock().unwrap();
+            let locked = cell_rc
+                .lock()
+                .expect("Mutex poisoned: cell lock is corrupted");
             locked.clone()
         };
 
@@ -5032,7 +5059,9 @@ impl Interpreter {
 
         // If self was modified, write fields back to ObjectMut
         if let Some(modified_fields) = modified_self_opt {
-            let mut locked = cell_rc.lock().unwrap();
+            let mut locked = cell_rc
+                .lock()
+                .expect("Mutex poisoned: cell lock is corrupted");
             for (field_name, field_value) in modified_fields.iter() {
                 locked.insert(field_name.clone(), field_value.clone());
             }
@@ -5153,7 +5182,9 @@ impl Interpreter {
                     ));
                 }
 
-                let mut obj = file_obj.lock().unwrap();
+                let mut obj = file_obj
+                    .lock()
+                    .expect("Mutex poisoned: file object lock is corrupted");
 
                 // Check if closed
                 if let Some(Value::Bool(true)) = obj.get("closed") {
@@ -5200,7 +5231,9 @@ impl Interpreter {
                     ));
                 }
 
-                let obj = file_obj.lock().unwrap();
+                let obj = file_obj
+                    .lock()
+                    .expect("Mutex poisoned: file object lock is corrupted");
 
                 // Check if closed
                 if let Some(Value::Bool(true)) = obj.get("closed") {
@@ -5241,7 +5274,9 @@ impl Interpreter {
                     ));
                 }
 
-                let mut obj = file_obj.lock().unwrap();
+                let mut obj = file_obj
+                    .lock()
+                    .expect("Mutex poisoned: file object lock is corrupted");
                 obj.insert("closed".to_string(), Value::Bool(true));
                 Ok(Value::Nil)
             }
@@ -5259,7 +5294,9 @@ impl Interpreter {
         arg_values: &[Value],
         args_empty: bool,
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.lock().unwrap();
+        let instance = cell_rc
+            .lock()
+            .expect("Mutex poisoned: instance lock is corrupted");
         self.eval_object_method(&instance, method, arg_values, args_empty)
     }
 
@@ -5291,10 +5328,10 @@ impl Interpreter {
     /// "#;
     ///
     /// let mut parser = Parser::new(code);
-    /// let expr = parser.parse().unwrap();
-    /// interpreter.eval_expr(&expr).unwrap();
-    /// let main_call = Parser::new("main()").parse().unwrap();
-    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
+    /// let result = interpreter.eval_expr(&main_call).expect("eval_expr should succeed in doctest");
     /// // Actor instance returned
     /// ```
     fn eval_actor_instance_method(
@@ -5508,9 +5545,9 @@ impl Interpreter {
     /// "#;
     ///
     /// let mut parser = Parser::new(code);
-    /// let expr = parser.parse().unwrap();
-    /// interpreter.eval_expr(&expr).unwrap();
-    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
     /// let result = interpreter.eval_expr(&main_call);
     /// assert!(result.is_ok());
     /// ```
@@ -5583,7 +5620,9 @@ impl Interpreter {
         cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
         message: &Value,
     ) -> Result<Value, InterpreterError> {
-        let instance = cell_rc.lock().unwrap();
+        let instance = cell_rc
+            .lock()
+            .expect("Mutex poisoned: instance lock is corrupted");
 
         // Parse the message to extract type and arguments
         let (msg_type, msg_args) = Self::extract_message_type_and_data(message)?;
@@ -6535,10 +6574,10 @@ impl Interpreter {
     /// "#;
     ///
     /// let mut parser = Parser::new(code);
-    /// let expr = parser.parse().unwrap();
-    /// interpreter.eval_expr(&expr).unwrap();
-    /// let main_call = Parser::new("main()").parse().unwrap();
-    /// let result = interpreter.eval_expr(&main_call).unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
+    /// let result = interpreter.eval_expr(&main_call).expect("eval_expr should succeed in doctest");
     /// assert!(matches!(result, Value::Integer(3)));
     /// ```
     fn instantiate_class_with_constructor(
@@ -6899,9 +6938,9 @@ impl Interpreter {
     /// "#;
     ///
     /// let mut parser = Parser::new(code);
-    /// let expr = parser.parse().unwrap();
-    /// interpreter.eval_expr(&expr).unwrap();
-    /// let main_call = Parser::new("main()").parse().unwrap();
+    /// let expr = parser.parse().expect("parse should succeed in doctest");
+    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
     /// let result = interpreter.eval_expr(&main_call);
     /// assert!(result.is_ok());
     /// ```
