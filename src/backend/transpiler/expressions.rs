@@ -129,7 +129,12 @@ impl Transpiler {
         // DEADLOCK FIX (Issue #132): Check if assigning to a global that's also in value
         // If so, use single-lock pattern to avoid deadlock
         if let ExprKind::Identifier(target_name) = &target.kind {
-            if self.global_vars.read().unwrap().contains(target_name) {
+            if self
+                .global_vars
+                .read()
+                .expect("rwlock should not be poisoned")
+                .contains(target_name)
+            {
                 // Target is a global - check if value also references it
                 if Self::expr_references_var(value, target_name) {
                     // DEADLOCK SCENARIO: counter = counter + 1
@@ -197,7 +202,7 @@ impl Transpiler {
 
         Ok(quote! {
             {
-                let mut __guard = #var_ident.lock().unwrap();
+                let mut __guard = #var_ident.lock().expect("mutex should not be poisoned");
                 *__guard = #value_tokens;
             }
         })
@@ -319,14 +324,19 @@ impl Transpiler {
         // Example: total += x is really total = total + x
         // So if target is a global, we need single-lock pattern
         if let ExprKind::Identifier(target_name) = &target.kind {
-            if self.global_vars.read().unwrap().contains(target_name) {
+            if self
+                .global_vars
+                .read()
+                .expect("rwlock should not be poisoned")
+                .contains(target_name)
+            {
                 let var_ident = format_ident!("{}", target_name);
                 let value_tokens = self.transpile_expr(value)?;
                 let op_tokens = Self::get_compound_op_token(op)?;
 
                 return Ok(quote! {
                     {
-                        let mut __guard = #var_ident.lock().unwrap();
+                        let mut __guard = #var_ident.lock().expect("mutex should not be poisoned");
                         *__guard #op_tokens #value_tokens
                     }
                 });
@@ -673,7 +683,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_string_interpolation(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains("\"\""));
     }
@@ -685,7 +695,7 @@ mod tests {
         let parts = vec![StringPart::Text("hello".to_string())];
         let result = transpiler.transpile_string_interpolation(&parts);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         // Should contain either "hello" directly or in format! call
         assert!(tokens_str.contains("hello"));
@@ -732,7 +742,7 @@ mod tests {
     fn test_get_compound_op_token_add() {
         let result = Transpiler::get_compound_op_token(BinaryOp::Add);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains("+="));
     }
@@ -879,7 +889,7 @@ mod tests {
         ];
         let result = transpiler.transpile_string_interpolation(&parts);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains("format"));
         assert!(tokens_str.contains("Hello"));
@@ -896,7 +906,7 @@ mod tests {
         }];
         let result = transpiler.transpile_string_interpolation(&parts);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains(":>10"));
     }
@@ -972,7 +982,7 @@ mod tests {
     fn test_get_compound_op_token_subtract() {
         let result = Transpiler::get_compound_op_token(BinaryOp::Subtract);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains("-="));
     }
@@ -982,7 +992,7 @@ mod tests {
     fn test_get_compound_op_token_modulo() {
         let result = Transpiler::get_compound_op_token(BinaryOp::Modulo);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let tokens_str = tokens.to_string();
         assert!(tokens_str.contains("%="));
     }
