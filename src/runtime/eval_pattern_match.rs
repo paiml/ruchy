@@ -526,18 +526,20 @@ mod tests {
     fn test_wildcard_pattern() {
         let pattern = Pattern::Wildcard;
         let value = Value::Integer(42);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        assert!(result.unwrap().is_empty());
+        assert!(result.expect("result should be Some in test").is_empty());
     }
 
     #[test]
     fn test_identifier_pattern() {
         let pattern = Pattern::Identifier("x".to_string());
         let value = Value::Integer(42);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "x");
         assert_eq!(bindings[0].1, Value::Integer(42));
@@ -547,7 +549,8 @@ mod tests {
     fn test_literal_pattern_match() {
         let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(42);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
     }
 
@@ -555,7 +558,8 @@ mod tests {
     fn test_literal_pattern_no_match() {
         let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(43);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -568,9 +572,10 @@ mod tests {
         let pattern = Pattern::Tuple(patterns);
         let value = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert_eq!(bindings.len(), 2);
         assert_eq!(bindings[0].0, "x");
         assert_eq!(bindings[0].1, Value::Integer(1));
@@ -587,15 +592,18 @@ mod tests {
         };
 
         let value = Value::Integer(3);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
 
         let value = Value::Integer(5);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
 
         let value = Value::Integer(6);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -609,11 +617,13 @@ mod tests {
         let pattern = Pattern::Or(patterns);
 
         let value = Value::Integer(2);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
 
         let value = Value::Integer(4);
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -626,9 +636,10 @@ mod tests {
             data: Some(vec![Value::Integer(42)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "x");
         assert_eq!(bindings[0].1, Value::Integer(42));
@@ -643,7 +654,8 @@ mod tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -656,9 +668,10 @@ mod tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert!(bindings.is_empty());
     }
 
@@ -671,7 +684,8 @@ mod tests {
             data: Some(vec![Value::Integer(42)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -684,9 +698,10 @@ mod tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert!(bindings.is_empty()); // Unit variants have no bindings
     }
 
@@ -699,7 +714,8 @@ mod tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -712,7 +728,8 @@ mod tests {
             data: Some(vec![Value::from_string("failed".to_string())]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none()); // Should not match - has data
     }
 
@@ -728,9 +745,10 @@ mod tests {
             data: Some(vec![Value::from_string("failed".to_string())]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "msg");
         assert_eq!(bindings[0].1, Value::from_string("failed".to_string()));
@@ -751,9 +769,10 @@ mod tests {
             data: Some(vec![Value::Integer(10), Value::Integer(20)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_some());
-        let bindings = result.unwrap();
+        let bindings = result.expect("result should be Some in test");
         assert_eq!(bindings.len(), 2);
         assert_eq!(bindings[0].0, "x");
         assert_eq!(bindings[0].1, Value::Integer(10));
@@ -773,7 +792,8 @@ mod tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 
@@ -792,7 +812,8 @@ mod tests {
             data: Some(vec![Value::Integer(10)]), // Only 1 element, pattern expects 2
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal).unwrap();
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("try_pattern_match should succeed in test");
         assert!(result.is_none());
     }
 }
@@ -819,9 +840,13 @@ mod property_tests {
         fn prop_wildcard_always_matches(value: i64) {
             let pattern = Pattern::Wildcard;
             let val = Value::Integer(value);
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_some());
-            prop_assert_eq!(result.unwrap().len(), 0); // No bindings
+            prop_assert_eq!(
+                result.expect("result should be Some in test").len(),
+                0
+            ); // No bindings
         }
 
         /// Property: Identifier pattern always matches and binds
@@ -829,9 +854,10 @@ mod property_tests {
         fn prop_identifier_always_binds(name in "[a-z]{1,10}", value: i64) {
             let pattern = Pattern::Identifier(name.clone());
             let val = Value::Integer(value);
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_some());
-            let bindings = result.unwrap();
+            let bindings = result.expect("result should be Some in test");
             prop_assert_eq!(bindings.len(), 1);
             prop_assert_eq!(&bindings[0].0, &name);
             prop_assert_eq!(&bindings[0].1, &Value::Integer(value));
@@ -842,7 +868,8 @@ mod property_tests {
         fn prop_literal_exact_match(target: i64, test: i64) {
             let pattern = Pattern::Literal(Literal::Integer(target, None));
             let val = Value::Integer(test);
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
 
             if target == test {
                 prop_assert!(result.is_some());
@@ -862,14 +889,16 @@ mod property_tests {
             // Correct arity - should match
             let values: Vec<Value> = (0..size).map(|i| Value::Integer(i as i64)).collect();
             let val = Value::Tuple(std::sync::Arc::from(values));
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_some());
 
             // Wrong arity (one less) - should not match
             if size > 1 {
                 let wrong_values: Vec<Value> = (0..size-1).map(|i| Value::Integer(i as i64)).collect();
                 let wrong_val = Value::Tuple(std::sync::Arc::from(wrong_values));
-                let result = try_pattern_match(&pattern, &wrong_val, &test_eval_literal).unwrap();
+                let result = try_pattern_match(&pattern, &wrong_val, &test_eval_literal)
+                    .expect("try_pattern_match should succeed in test");
                 prop_assert!(result.is_none());
             }
         }
@@ -885,7 +914,8 @@ mod property_tests {
                 variant_name: variant_name.clone(),
                 data: None,
             };
-            let result = try_pattern_match(&pattern, &val_unit, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val_unit, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_some());
 
             // Tuple variant (with data) - should NOT match
@@ -894,7 +924,8 @@ mod property_tests {
                 variant_name,
                 data: Some(vec![Value::Integer(42)]),
             };
-            let result = try_pattern_match(&pattern, &val_tuple, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val_tuple, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_none());
         }
 
@@ -921,10 +952,11 @@ mod property_tests {
                 data: Some(variant_values),
             };
 
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
             prop_assert!(result.is_some());
 
-            let bindings = result.unwrap();
+            let bindings = result.expect("result should be Some in test");
             prop_assert_eq!(bindings.len(), count);
 
             for i in 0..count {
@@ -942,7 +974,8 @@ mod property_tests {
 
             let pattern = Pattern::Or(patterns);
             let val = Value::Integer(target);
-            let result = try_pattern_match(&pattern, &val, &test_eval_literal).unwrap();
+            let result = try_pattern_match(&pattern, &val, &test_eval_literal)
+                .expect("try_pattern_match should succeed in test");
 
             if options.contains(&target) {
                 prop_assert!(result.is_some());
