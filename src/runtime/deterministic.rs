@@ -245,10 +245,12 @@ mod tests {
     #[test]
     fn test_deterministic_execution() {
         // Each test gets isolated temp directory for idempotence
-        let temp_dir1 = TempDir::new().unwrap();
-        let temp_dir2 = TempDir::new().unwrap();
-        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
-        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
+        let temp_dir1 = TempDir::new().expect("TempDir::new should succeed in test");
+        let temp_dir2 = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl1 =
+            Repl::new(temp_dir1.path().to_path_buf()).expect("Repl::new should succeed in test");
+        let mut repl2 =
+            Repl::new(temp_dir2.path().to_path_buf()).expect("Repl::new should succeed in test");
         // Execute same commands with same seed
         let result1 = repl1.execute_with_seed("let x = 42", 12345);
         let result2 = repl2.execute_with_seed("let x = 42", 12345);
@@ -259,18 +261,23 @@ mod tests {
     }
     #[test]
     fn test_checkpoint_restore() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
         // Create some state
-        repl.eval("let x = 10").unwrap();
-        repl.eval("let y = 20").unwrap();
+        repl.eval("let x = 10")
+            .expect("eval should succeed in test");
+        repl.eval("let y = 20")
+            .expect("eval should succeed in test");
         // Create checkpoint using DeterministicRepl trait
         let checkpoint = DeterministicRepl::checkpoint(&repl);
         // Modify state
-        repl.eval("let x = 99").unwrap();
-        repl.eval("let z = 30").unwrap();
+        repl.eval("let x = 99")
+            .expect("eval should succeed in test");
+        repl.eval("let z = 30")
+            .expect("eval should succeed in test");
         // Restore checkpoint
-        DeterministicRepl::restore(&mut repl, &checkpoint).unwrap();
+        DeterministicRepl::restore(&mut repl, &checkpoint).expect("restore should succeed in test");
         // Check that state was restored
         // Note: Values are restored from debug format, so they may have different representation
         assert!(repl.eval("x").is_ok());
@@ -280,19 +287,29 @@ mod tests {
     }
     #[test]
     fn test_determinism_validation() {
-        let temp_dir1 = TempDir::new().unwrap();
-        let temp_dir2 = TempDir::new().unwrap();
-        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
-        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
+        let temp_dir1 = TempDir::new().expect("TempDir::new should succeed in test");
+        let temp_dir2 = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl1 =
+            Repl::new(temp_dir1.path().to_path_buf()).expect("Repl::new should succeed in test");
+        let mut repl2 =
+            Repl::new(temp_dir2.path().to_path_buf()).expect("Repl::new should succeed in test");
         // Same operations
-        repl1.eval("let x = 1").unwrap();
-        repl2.eval("let x = 1").unwrap();
+        repl1
+            .eval("let x = 1")
+            .expect("eval should succeed in test");
+        repl2
+            .eval("let x = 1")
+            .expect("eval should succeed in test");
         let validation = repl1.validate_determinism(&repl2);
         assert!(validation.is_deterministic);
         assert!(validation.divergences.is_empty());
         // Different operations
-        repl1.eval("let y = 2").unwrap();
-        repl2.eval("let y = 3").unwrap();
+        repl1
+            .eval("let y = 2")
+            .expect("eval should succeed in test");
+        repl2
+            .eval("let y = 3")
+            .expect("eval should succeed in test");
         let validation = repl1.validate_determinism(&repl2);
         assert!(!validation.is_deterministic);
         assert!(!validation.divergences.is_empty());
@@ -305,15 +322,17 @@ mod tests {
         // MISSED: replace * with + in estimate_heap_usage (lines 210, 211)
         // MISSED: replace * with / in estimate_heap_usage (line 211)
 
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Empty state should have 0 heap usage
         let empty_heap = repl.estimate_heap_usage();
         assert_eq!(empty_heap, 0, "Empty REPL should have 0 heap usage");
 
         // Add string variable - should increase heap
-        repl.eval("let s = \"hello world\"").unwrap();
+        repl.eval("let s = \"hello world\"")
+            .expect("eval should succeed in test");
         let with_string = repl.estimate_heap_usage();
         assert!(
             with_string > empty_heap,
@@ -321,7 +340,8 @@ mod tests {
         );
 
         // Add array - should increase heap more (multiplication in line 210)
-        repl.eval("let arr = [1, 2, 3, 4, 5]").unwrap();
+        repl.eval("let arr = [1, 2, 3, 4, 5]")
+            .expect("eval should succeed in test");
         let with_array = repl.estimate_heap_usage();
         assert!(
             with_array > with_string,
@@ -343,8 +363,9 @@ mod tests {
         // MISSED: replace estimate_stack_depth -> usize with 0
         // MISSED: replace / with % in estimate_stack_depth (line 221)
 
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Get initial depth (may not be 1 due to internal bindings)
         let initial_depth = repl.estimate_stack_depth();
@@ -352,7 +373,8 @@ mod tests {
 
         // Add exactly 10 bindings
         for i in 0..10 {
-            repl.eval(&format!("let var{i} = {i}")).unwrap();
+            repl.eval(&format!("let var{i} = {i}"))
+                .expect("eval should succeed in test");
         }
         let bindings_after_10 = repl.get_bindings().len();
         let depth_after_10 = repl.estimate_stack_depth();
@@ -370,7 +392,8 @@ mod tests {
 
         // Add 10 more bindings
         for i in 10..20 {
-            repl.eval(&format!("let var{i} = {i}")).unwrap();
+            repl.eval(&format!("let var{i} = {i}"))
+                .expect("eval should succeed in test");
         }
         let bindings_after_20 = repl.get_bindings().len();
         let depth_after_20 = repl.estimate_stack_depth();
@@ -395,8 +418,9 @@ mod tests {
         // MISSED: replace - with + in execute_with_seed (lines 87, 80)
         // MISSED: replace - with / in execute_with_seed (line 80)
 
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = Repl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl =
+            Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // First execution - should increase heap
         let result1 = repl.execute_with_seed("let x = 10", 12345);
@@ -448,10 +472,12 @@ mod tests {
         // These mutations reveal that the string parsing logic is not being used.
         // The real functionality we can test is deterministic state hashing.
 
-        let temp_dir1 = TempDir::new().unwrap();
-        let temp_dir2 = TempDir::new().unwrap();
-        let mut repl1 = Repl::new(temp_dir1.path().to_path_buf()).unwrap();
-        let mut repl2 = Repl::new(temp_dir2.path().to_path_buf()).unwrap();
+        let temp_dir1 = TempDir::new().expect("TempDir::new should succeed in test");
+        let temp_dir2 = TempDir::new().expect("TempDir::new should succeed in test");
+        let mut repl1 =
+            Repl::new(temp_dir1.path().to_path_buf()).expect("Repl::new should succeed in test");
+        let mut repl2 =
+            Repl::new(temp_dir2.path().to_path_buf()).expect("Repl::new should succeed in test");
 
         // Same input should produce same state hash (the actual working code)
         let result1 = repl1.execute_with_seed("let x = 42", 12345);
