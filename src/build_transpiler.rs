@@ -187,7 +187,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let pattern = temp_dir.path().join("**/*.ruchy");
 
-        let files = find_ruchy_files(pattern.to_str().unwrap()).expect("Should succeed");
+        let files = find_ruchy_files(pattern.to_str().expect("operation should succeed in test"))
+            .expect("Should succeed");
         assert_eq!(files.len(), 0, "Should find no files in empty directory");
     }
 
@@ -258,9 +259,9 @@ fun main() {
 
         // Transpile
         transpile_all(
-            src_dir.to_str().unwrap(),
+            src_dir.to_str().expect("operation should succeed in test"),
             "**/*.ruchy",
-            src_dir.to_str().unwrap(),
+            src_dir.to_str().expect("operation should succeed in test"),
         )
         .expect("Transpilation should succeed");
 
@@ -318,9 +319,9 @@ fun main() {
 
             // Transpile
             transpile_all(
-                src_dir.to_str().unwrap(),
+                src_dir.to_str().expect("operation should succeed in test"),
                 "**/*.ruchy",
-                src_dir.to_str().unwrap(),
+                src_dir.to_str().expect("operation should succeed in test"),
             )
             .expect("Transpilation should succeed");
 
@@ -364,9 +365,9 @@ fun main() {
 
             // Transpile
             transpile_all(
-                src_dir.to_str().unwrap(),
+                src_dir.to_str().expect("operation should succeed in test"),
                 "**/*.ruchy",
-                src_dir.to_str().unwrap(),
+                src_dir.to_str().expect("operation should succeed in test"),
             )
             .expect("Transpilation should succeed");
 
@@ -382,8 +383,8 @@ fun main() {
                 "Both enum and main() must exist in generated code"
             );
 
-            let enum_idx = enum_pos.unwrap();
-            let main_idx = main_pos.unwrap();
+            let enum_idx = enum_pos.expect("operation should succeed in test");
+            let main_idx = main_pos.expect("operation should succeed in test");
 
             prop_assert!(
                 enum_idx < main_idx,
