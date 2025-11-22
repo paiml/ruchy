@@ -332,7 +332,7 @@ mod tests {
         let args = vec![int_expr(42)];
         let result = transpiler.try_transpile_type_conversion_refactored("str", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().is_some());
+        assert!(result.expect("operation should succeed in test").is_some());
     }
 
     // Test 2: try_transpile_type_conversion_refactored - int() with 1 arg
@@ -342,7 +342,7 @@ mod tests {
         let args = vec![string_expr("123")];
         let result = transpiler.try_transpile_type_conversion_refactored("int", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().is_some());
+        assert!(result.expect("operation should succeed in test").is_some());
     }
 
     // Test 3: try_transpile_type_conversion_refactored - unknown function returns None
@@ -352,7 +352,7 @@ mod tests {
         let args = vec![int_expr(42)];
         let result = transpiler.try_transpile_type_conversion_refactored("unknown", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().is_none());
+        assert!(result.expect("operation should succeed in test").is_none());
     }
 
     // Test 4: try_transpile_type_conversion_refactored - str() with 0 args (error path)
@@ -387,7 +387,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_string(&int_expr(42));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         // TokenStream formats as "format ! (...)" with spaces
         assert!(output.contains("format") && output.contains('!'));
@@ -399,7 +401,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_int(&string_expr("123"));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("parse"));
         assert!(output.contains("i64"));
@@ -411,7 +415,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_int(&float_expr(std::f64::consts::PI));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("as i64"));
     }
@@ -422,7 +428,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_int(&bool_expr(true));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("if"));
         assert!(output.contains("1i64"));
@@ -435,7 +443,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_float(&string_expr("3.14"));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("parse"));
         assert!(output.contains("f64"));
@@ -447,7 +457,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_float(&int_expr(42));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("as f64"));
     }
@@ -458,7 +470,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_bool(&int_expr(42));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("!= 0"));
     }
@@ -469,7 +483,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_bool(&string_expr("hello"));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("is_empty"));
     }
@@ -480,7 +496,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_bool(&bool_expr(true));
         assert!(result.is_ok());
-        assert!(result.unwrap().is_some());
+        assert!(result.expect("operation should succeed in test").is_some());
     }
 
     // Test 15: convert_to_bool - list (!is_empty())
@@ -489,7 +505,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_bool(&list_expr(vec![int_expr(1)]));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("is_empty"));
     }
@@ -500,7 +518,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_bool(&none_expr());
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         assert_eq!(tokens.to_string(), "false");
     }
 
@@ -510,7 +530,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_list(&string_expr("hello"));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("chars"));
         assert!(output.contains("collect"));
@@ -522,7 +544,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_set(&list_expr(vec![int_expr(1), int_expr(2)]));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("HashSet"));
     }
@@ -533,7 +557,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_set(&string_expr("abc"));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("chars"));
         assert!(output.contains("HashSet"));
@@ -545,7 +571,9 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.convert_to_dict(&int_expr(42));
         assert!(result.is_ok());
-        let tokens = result.unwrap().unwrap();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         let output = tokens.to_string();
         assert!(output.contains("HashMap"));
         assert!(output.contains("new"));
