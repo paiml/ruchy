@@ -288,7 +288,7 @@ mod tests {
             snapshot_dir: PathBuf::from("target/test-snapshots"),
             fail_on_missing: false,
         };
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
         // Test a simple expression
         runner
             .test("simple_addition", "1 + 2", |input| {
@@ -298,7 +298,7 @@ mod tests {
                 let tokens = transpiler.transpile(&ast)?;
                 Ok(tokens.to_string())
             })
-            .unwrap();
+            .expect("operation should succeed in test");
     }
     #[test]
     #[ignore = "Flaky test when run with full test suite"]
@@ -308,7 +308,7 @@ mod tests {
             snapshot_dir: PathBuf::from("target/test-snapshots-determinism"),
             fail_on_missing: false,
         };
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
         // Run the same test multiple times - should produce identical hashes
         for i in 0..3 {
             runner
@@ -319,7 +319,7 @@ mod tests {
                     let tokens = transpiler.transpile(&ast)?;
                     Ok(tokens.to_string())
                 })
-                .unwrap();
+                .expect("operation should succeed in test");
         }
     }
 
@@ -425,7 +425,7 @@ mod tests {
         // Clean up any existing file
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let runner = SnapshotRunner::load(config).unwrap();
+        let runner = SnapshotRunner::load(config).expect("operation should succeed in test");
         assert_eq!(runner.suite.tests.len(), 0);
     }
 
@@ -440,12 +440,12 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // First test - creates snapshot
         runner
             .test("test1", "input1", |_| Ok("output1".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(runner.suite.tests.len(), 1);
 
         // Second test with different output - should fail because auto_update is false
@@ -464,18 +464,18 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // First test - creates snapshot
         runner
             .test("test1", "input1", |_| Ok("output1".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         let original_hash = runner.suite.tests[0].output_hash.clone();
 
         // Second test with different output - should update because auto_update is true
         runner
             .test("test1", "input1", |_| Ok("output2".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         let new_hash = &runner.suite.tests[0].output_hash;
 
         assert_ne!(original_hash, *new_hash);
@@ -493,7 +493,7 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // Should fail because snapshot doesn't exist and fail_on_missing is true
         let result = runner.test("missing_test", "input", |_| Ok("output".to_string()));
@@ -512,21 +512,21 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // Create initial snapshot
         runner
             .test("match_test", "input", |_| {
                 Ok("consistent_output".to_string())
             })
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Test with same output - should pass
         runner
             .test("match_test", "input", |_| {
                 Ok("consistent_output".to_string())
             })
-            .unwrap();
+            .expect("operation should succeed in test");
 
         assert_eq!(runner.suite.tests.len(), 1);
     }
@@ -542,15 +542,15 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // Add some test snapshots
         runner
             .test("test1", "input1", |_| Ok("output1".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         runner
             .test("test2", "input2", |_| Ok("output2".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Run all tests with consistent transform
         let result = runner.run_all(|input| match input {
@@ -573,11 +573,11 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         runner
             .test("metadata_test", "input", |_| Ok("output".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
 
         assert_eq!(runner.suite.tests.len(), 1);
         let test = &runner.suite.tests[0];
@@ -601,18 +601,18 @@ mod tests {
         // Clean up
         let _ = std::fs::remove_dir_all(&config.snapshot_dir);
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("operation should succeed in test");
 
         // Create multiple snapshots
         runner
             .test("test_a", "input_a", |_| Ok("output_a".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         runner
             .test("test_b", "input_b", |_| Ok("output_b".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
         runner
             .test("test_c", "input_c", |_| Ok("output_c".to_string()))
-            .unwrap();
+            .expect("operation should succeed in test");
 
         assert_eq!(runner.suite.tests.len(), 3);
 
