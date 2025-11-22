@@ -142,7 +142,7 @@ impl Transpiler {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
         Ok(quote! {
-            #actor_tokens.lock().unwrap().handle_message(#message_tokens)
+            #actor_tokens.lock().expect("operation should succeed in test").handle_message(#message_tokens)
         })
     }
     /// Transpiles ask operations (actor ? message)
@@ -172,12 +172,12 @@ impl Transpiler {
             let _timeout_tokens = self.transpile_expr(timeout_expr)?;
             // Simplified: ignore timeout for now, just handle message
             Ok(quote! {
-                #actor_tokens.lock().unwrap().handle_message(#message_tokens)
+                #actor_tokens.lock().expect("operation should succeed in test").handle_message(#message_tokens)
             })
         } else {
             // Simplified: no timeout parameter
             Ok(quote! {
-                #actor_tokens.lock().unwrap().handle_message(#message_tokens)
+                #actor_tokens.lock().expect("operation should succeed in test").handle_message(#message_tokens)
             })
         }
     }
@@ -242,7 +242,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("enum CounterMessage"));
         assert!(tokens.contains("struct Counter"));
     }
@@ -263,7 +265,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("count :"));
     }
 
@@ -279,7 +283,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Reset"));
         assert!(tokens.contains("CounterMessage :: Reset"));
     }
@@ -303,7 +309,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Add"));
     }
 
@@ -331,7 +339,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Counter", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Increment"));
         assert!(tokens.contains("Decrement"));
         assert!(tokens.contains("Reset"));
@@ -340,14 +350,16 @@ mod tests {
     #[test]
     fn test_transpile_send() {
         // SPEC-001-F: Actors use simplified synchronous message handling
-        // Tests updated to reflect actual implementation: lock().unwrap().handle_message()
+        // Tests updated to reflect actual implementation: lock().expect("operation should succeed in test").handle_message()
         let transpiler = make_transpiler();
         let actor = make_ident("my_actor");
         let message = make_ident("Message");
 
         let result = transpiler.transpile_send(&actor, &message);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
     }
@@ -362,7 +374,9 @@ mod tests {
 
         let result = transpiler.transpile_ask(&actor, &message, timeout.as_ref());
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("my_actor . ask"));
         assert!(tokens.contains("await"));
     }
@@ -376,7 +390,9 @@ mod tests {
 
         let result = transpiler.transpile_ask(&actor, &message, None);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("my_actor . ask"));
         assert!(tokens.contains("Duration :: from_secs"));
         assert!(tokens.contains("await"));
@@ -392,7 +408,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Command :: new"));
         assert!(tokens.contains("echo"));
         assert!(tokens.contains("hello"));
@@ -410,7 +428,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Command :: new"));
         assert!(tokens.contains("ls"));
     }
@@ -443,7 +463,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Calculator", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Compute"));
     }
 
@@ -473,7 +495,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Storage", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("struct Storage"));
         assert!(tokens.contains("value :"));
         assert!(tokens.contains("count :"));
@@ -489,7 +513,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Worker", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("async fn run"));
         assert!(tokens.contains("async fn handle_message"));
         assert!(tokens.contains("self . receiver . recv"));
@@ -504,7 +530,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Service", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn new"));
         assert!(tokens.contains("tokio :: sync :: mpsc :: channel"));
         assert!(tokens.contains("fn sender"));
@@ -530,7 +558,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Store", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Update"));
         assert!(tokens.contains("String"));
     }
@@ -564,7 +594,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Robot", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Move"));
         assert!(tokens.contains("f64"));
     }
@@ -589,7 +621,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Worker", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("enum WorkerMessage"));
         assert!(tokens.contains("Start"));
         assert!(tokens.contains("Stop"));
@@ -614,7 +648,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Echo", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("msg"));
         assert!(tokens.contains("handle_message"));
     }
@@ -646,7 +682,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Service", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("fn new"));
         assert!(tokens.contains("counter : Default :: default"));
         assert!(tokens.contains("name : Default :: default"));
@@ -661,7 +699,9 @@ mod tests {
 
         let result = transpiler.transpile_send(&actor, &message);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
         assert!(tokens.contains("Hello"));
@@ -682,7 +722,9 @@ mod tests {
 
         let result = transpiler.transpile_send(&actor, &message);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
         assert!(tokens.contains("Message"));
@@ -698,7 +740,9 @@ mod tests {
 
         let result = transpiler.transpile_ask(&actor, &message, None);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
     }
@@ -713,7 +757,9 @@ mod tests {
 
         let result = transpiler.transpile_ask(&actor, &message, timeout.as_ref());
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         // Simplified version generates same code as no-timeout
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
@@ -728,7 +774,9 @@ mod tests {
 
         let result = transpiler.transpile_ask(&actor, &message, None);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Query"));
         assert!(tokens.contains("lock"));
     }
@@ -747,7 +795,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Command :: new"));
         assert!(tokens.contains("node"));
         assert!(tokens.contains("script.js"));
@@ -765,7 +815,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Command :: new"));
         assert!(tokens.contains("make"));
         assert!(tokens.contains("build"));
@@ -789,7 +841,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("git"));
         assert!(tokens.contains("commit"));
         assert!(tokens.contains("test message"));
@@ -816,7 +870,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("PingPong", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("struct PingPong"));
         assert!(tokens.contains("Ping"));
         assert!(tokens.contains("Pong"));
@@ -832,7 +888,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("Simple", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("# [derive (Debug , Clone)]"));
         assert!(tokens.contains("enum SimpleMessage"));
         assert!(tokens.contains("struct Simple"));
@@ -853,7 +911,9 @@ mod tests {
 
         let result = transpiler.transpile_send(&actor, &message);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("lock"));
         assert!(tokens.contains("handle_message"));
     }
@@ -873,7 +933,9 @@ mod tests {
 
         let result = transpiler.transpile_command(program, &args, &env, &working_dir);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("echo"));
         assert!(tokens.contains("Hello, World!"));
         assert!(tokens.contains("Test@#$%"));
@@ -900,7 +962,9 @@ mod tests {
 
         let result = transpiler.transpile_actor("MultiAction", &state, &handlers);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("match msg"));
         assert!(tokens.contains("MultiActionMessage :: Action1"));
         assert!(tokens.contains("MultiActionMessage :: Action2"));
