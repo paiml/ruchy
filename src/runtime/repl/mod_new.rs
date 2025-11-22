@@ -209,15 +209,15 @@ mod tests {
 
     #[test]
     fn test_repl_creation() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf());
         assert!(repl.is_ok());
     }
 
     #[test]
     fn test_prompt_generation() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
+        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
         assert_eq!(repl.get_prompt(), "ruchy> ");
 
@@ -230,50 +230,50 @@ mod tests {
 
     #[test]
     fn test_empty_line_processing() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
+        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
-        let should_exit = repl.process_line("").unwrap();
+        let should_exit = repl.process_line("").expect("operation should succeed in test");
         assert!(!should_exit);
 
-        let should_exit = repl.process_line("   ").unwrap();
+        let should_exit = repl.process_line("   ").expect("operation should succeed in test");
         assert!(!should_exit);
     }
 
     #[test]
     fn test_command_detection() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
+        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
         // Commands start with :
-        let should_exit = repl.process_line(":help").unwrap();
+        let should_exit = repl.process_line(":help").expect("operation should succeed in test");
         assert!(!should_exit);
 
         // :quit should request exit
-        let should_exit = repl.process_line(":quit").unwrap();
+        let should_exit = repl.process_line(":quit").expect("operation should succeed in test");
         assert!(should_exit);
     }
 
     #[test]
     fn test_history_saving_and_loading() {
-        let temp_dir = TempDir::new().unwrap();
-        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
+        let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
         repl.state.add_to_history("test1".to_string());
         repl.state.add_to_history("test2".to_string());
 
-        repl.save_history().unwrap();
+        repl.save_history().expect("operation should succeed in test");
 
-        let mut repl2 = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
-        repl2.load_history().unwrap();
+        let mut repl2 = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
+        repl2.load_history().expect("operation should succeed in test");
 
         assert_eq!(repl2.state.get_history(), &["test1", "test2"]);
     }
 
     #[test]
     fn test_value_printing() {
-        let temp_dir = TempDir::new().unwrap();
-        let repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
+        let repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
         // Unit values shouldn't print anything
         repl.print_value(&Value::Unit);
@@ -299,8 +299,8 @@ mod tests {
         proptest! {
             #[test]
             fn test_repl_never_panics_on_input(input: String) {
-                let temp_dir = TempDir::new().unwrap();
-                let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+                let temp_dir = TempDir::new().expect("operation should succeed in test");
+                let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
                 // Should never panic
                 let _ = repl.process_line(&input);
@@ -308,8 +308,8 @@ mod tests {
 
             #[test]
             fn test_commands_never_panic(cmd in ":[a-z]{1,20}") {
-                let temp_dir = TempDir::new().unwrap();
-                let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).unwrap();
+                let temp_dir = TempDir::new().expect("operation should succeed in test");
+                let mut repl = ExtremeQualityRepl::new(temp_dir.path().to_path_buf()).expect("operation should succeed in test");
 
                 // Should handle any command-like input
                 let _ = repl.process_line(&cmd);
