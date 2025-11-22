@@ -18,7 +18,7 @@ impl Transpiler {
     /// let mut parser = Parser::new(r#"match x { 1 => "one", _ => "other" }"#);
     /// let ast = parser.parse().expect("Failed to parse");
     ///
-    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let result = transpiler.transpile(&ast).expect("transpilation should succeed in doctest");
     /// let code = result.to_string();
     /// assert!(code.contains("match"));
     /// assert!(code.contains("1"));
@@ -325,7 +325,9 @@ mod tests {
     fn test_transpile_wildcard_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Wildcard;
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "_");
     }
 
@@ -333,7 +335,9 @@ mod tests {
     fn test_transpile_literal_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Literal(Literal::Integer(42, None));
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         // The output should contain the integer value
         let output = result.to_string();
         // Note: transpile_literal is not a public method, the pattern transpiler handles it internally
@@ -344,7 +348,9 @@ mod tests {
     fn test_transpile_identifier_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Identifier("x".to_string());
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "x");
     }
 
@@ -355,7 +361,9 @@ mod tests {
             Pattern::Identifier("a".to_string()),
             Pattern::Identifier("b".to_string()),
         ]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('('));
         assert!(output.contains(')'));
@@ -367,7 +375,9 @@ mod tests {
     fn test_transpile_empty_list_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::List(vec![]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains('['));
         assert!(result.to_string().contains(']'));
     }
@@ -376,7 +386,9 @@ mod tests {
     fn test_transpile_rest_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::Rest;
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "..");
     }
 
@@ -384,7 +396,9 @@ mod tests {
     fn test_transpile_rest_named_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::RestNamed("rest".to_string());
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("rest"));
         assert!(result.to_string().contains('@'));
     }
@@ -393,7 +407,9 @@ mod tests {
     fn test_transpile_qualified_name_pattern() {
         let transpiler = Transpiler::new();
         let pattern = Pattern::QualifiedName(vec!["Some".to_string()]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("Some"));
     }
 
@@ -405,7 +421,9 @@ mod tests {
             "option".to_string(),
             "Option".to_string(),
         ]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("std"));
         assert!(output.contains("::"));
@@ -420,7 +438,9 @@ mod tests {
             fields: vec![],
             has_rest: false,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert!(result.to_string().contains("Point"));
     }
 
@@ -441,7 +461,9 @@ mod tests {
             ],
             has_rest: false,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("Point"));
         assert!(output.contains('x'));
@@ -459,7 +481,9 @@ mod tests {
             }],
             has_rest: true,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("Config"));
         assert!(output.contains(".."));
@@ -473,7 +497,9 @@ mod tests {
             end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
             inclusive: false,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('1'));
         assert!(output.contains("10"));
@@ -489,7 +515,9 @@ mod tests {
             end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
             inclusive: true,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('1'));
         assert!(output.contains("10"));
@@ -504,7 +532,9 @@ mod tests {
             Pattern::Literal(Literal::Integer(2, None)),
             Pattern::Literal(Literal::Integer(3, None)),
         ]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('1'));
         assert!(output.contains('2'));
@@ -523,7 +553,9 @@ mod tests {
             )),
         };
         // WithDefault just uses the pattern part in matches
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "x");
     }
 
@@ -554,7 +586,9 @@ mod tests {
                 span: Span::new(0, 0),
             },
         ];
-        let result = transpiler.transpile_match(&expr, &arms).unwrap();
+        let result = transpiler
+            .transpile_match(&expr, &arms)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("match"));
         assert!(output.contains('x'));
@@ -588,7 +622,9 @@ mod tests {
             )),
             span: Span::new(0, 0),
         }];
-        let result = transpiler.transpile_match(&expr, &arms).unwrap();
+        let result = transpiler
+            .transpile_match(&expr, &arms)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains("match"));
         assert!(output.contains("if"));
@@ -601,7 +637,9 @@ mod tests {
             Pattern::Identifier("first".to_string()),
             Pattern::Rest,
         ]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('['));
         assert!(output.contains("first"));
@@ -616,7 +654,9 @@ mod tests {
             Pattern::Identifier("head".to_string()),
             Pattern::RestNamed("tail".to_string()),
         ]);
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         let output = result.to_string();
         assert!(output.contains('['));
         assert!(output.contains("head"));
@@ -633,7 +673,9 @@ mod tests {
             fields: vec![],
             has_rest: false,
         };
-        let result = transpiler.transpile_pattern(&pattern).unwrap();
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "_");
     }
 }
