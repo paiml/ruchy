@@ -545,7 +545,9 @@ mod tests {
         );
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("42"));
     }
 
@@ -556,7 +558,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Identifier("my_var".to_string()), Span::default());
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("my_var"));
     }
 
@@ -573,7 +577,9 @@ mod tests {
         );
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("HashMap"));
     }
 
@@ -604,7 +610,9 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_macro("println", &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("println"));
     }
 
@@ -618,7 +626,9 @@ mod tests {
         );
         let result = transpiler.transpile_macro("vec", &[elem]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("vec"));
     }
 
@@ -629,7 +639,9 @@ mod tests {
         let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_macro("assert", &[condition]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("assert"));
     }
 
@@ -639,7 +651,9 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_macro("json", &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("json"));
     }
 
@@ -653,7 +667,9 @@ mod tests {
         );
         let result = transpiler.transpile_result_ok(&value);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Ok"));
         assert!(tokens.contains("42"));
     }
@@ -668,7 +684,9 @@ mod tests {
         );
         let result = transpiler.transpile_result_ok(&value);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Ok"));
         assert!(tokens.contains("to_string"));
     }
@@ -683,7 +701,9 @@ mod tests {
         );
         let result = transpiler.transpile_result_err(&error);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Err"));
         assert!(tokens.contains("404"));
     }
@@ -698,7 +718,9 @@ mod tests {
         );
         let result = transpiler.transpile_result_err(&error);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Err"));
         assert!(tokens.contains("to_string"));
     }
@@ -713,7 +735,9 @@ mod tests {
         );
         let result = transpiler.transpile_option_some(&value);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Some"));
         assert!(tokens.contains("123"));
     }
@@ -728,7 +752,9 @@ mod tests {
         );
         let result = transpiler.transpile_option_some(&value);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Some"));
         assert!(tokens.contains("to_string"));
     }
@@ -743,7 +769,9 @@ mod tests {
         );
         let result = transpiler.transpile_try_operator(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("result_value"));
         assert!(tokens.contains('?'));
     }
@@ -755,7 +783,9 @@ mod tests {
         let expr = Expr::new(ExprKind::None, Span::default());
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("None"));
     }
 
@@ -770,7 +800,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Ok { value }, Span::default());
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Ok"));
     }
 
@@ -785,7 +817,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Err { error }, Span::default());
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Err"));
     }
 
@@ -800,7 +834,9 @@ mod tests {
         let expr = Expr::new(ExprKind::Some { value }, Span::default());
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("Some"));
     }
 
@@ -887,7 +923,9 @@ mod tests {
         );
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains('5') && tokens.contains('3'));
     }
 
@@ -908,7 +946,9 @@ mod tests {
         );
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains('-'));
     }
 
@@ -931,7 +971,9 @@ mod tests {
         );
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains('x'));
     }
 
@@ -956,7 +998,9 @@ mod tests {
         );
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("count"));
     }
 
@@ -1000,7 +1044,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("if"));
     }
 
@@ -1029,7 +1075,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("match"));
     }
 
@@ -1071,7 +1119,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("while"));
     }
 
@@ -1088,7 +1138,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("loop"));
     }
 
@@ -1111,7 +1163,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("if") && tokens.contains("let"));
     }
 
@@ -1134,7 +1188,9 @@ mod tests {
         );
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(tokens.contains("while") && tokens.contains("let"));
     }
 }
