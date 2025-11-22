@@ -206,8 +206,10 @@ mod tests {
     #[test]
     fn test_safe_arena() {
         let arena = SafeArena::new(1024);
-        let v1 = arena.alloc(42).unwrap();
-        let v2 = arena.alloc("hello".to_string()).unwrap();
+        let v1 = arena.alloc(42).expect("operation should succeed in test");
+        let v2 = arena
+            .alloc("hello".to_string())
+            .expect("operation should succeed in test");
         assert_eq!(*v1, 42);
         assert_eq!(*v2, "hello");
         arena.reset();
@@ -216,11 +218,19 @@ mod tests {
     #[test]
     fn test_transactional() {
         let mut arena = TransactionalArena::new(1024);
-        arena.arena().alloc(1).unwrap();
+        arena
+            .arena()
+            .alloc(1)
+            .expect("operation should succeed in test");
         let checkpoint = arena.checkpoint();
-        arena.arena().alloc(2).unwrap();
+        arena
+            .arena()
+            .alloc(2)
+            .expect("operation should succeed in test");
         let used_before = arena.arena().used();
-        arena.rollback(checkpoint).unwrap();
+        arena
+            .rollback(checkpoint)
+            .expect("operation should succeed in test");
         let used_after = arena.arena().used();
         assert!(used_after < used_before);
     }
@@ -228,7 +238,9 @@ mod tests {
     fn test_arena_memory_limit() {
         let arena = SafeArena::new(16); // Very small limit
                                         // First allocation should succeed
-        let _val1 = arena.alloc([0u8; 8]).unwrap();
+        let _val1 = arena
+            .alloc([0u8; 8])
+            .expect("operation should succeed in test");
         // Second allocation should fail due to memory limit
         let result = arena.alloc([0u8; 16]);
         assert!(result.is_err());
@@ -241,17 +253,23 @@ mod tests {
     fn test_arena_used_tracking() {
         let arena = SafeArena::new(1024);
         assert_eq!(arena.used(), 0);
-        let _val1 = arena.alloc(42i32).unwrap();
+        let _val1 = arena
+            .alloc(42i32)
+            .expect("operation should succeed in test");
         let used_after_int = arena.used();
         assert!(used_after_int >= 4); // At least size of i32
-        let _val2 = arena.alloc("test".to_string()).unwrap();
+        let _val2 = arena
+            .alloc("test".to_string())
+            .expect("operation should succeed in test");
         let used_after_string = arena.used();
         assert!(used_after_string > used_after_int);
     }
     #[test]
     fn test_arena_ref_deref() {
         let arena = SafeArena::new(1024);
-        let val = arena.alloc(vec![1, 2, 3, 4]).unwrap();
+        let val = arena
+            .alloc(vec![1, 2, 3, 4])
+            .expect("operation should succeed in test");
         // Test Deref trait
         assert_eq!(val.len(), 4);
         assert_eq!(val[0], 1);
@@ -267,15 +285,26 @@ mod tests {
     fn test_transactional_arena_multiple_checkpoints() {
         let mut arena = TransactionalArena::new(1024);
         // Initial allocation
-        arena.arena().alloc(100).unwrap();
+        arena
+            .arena()
+            .alloc(100)
+            .expect("operation should succeed in test");
         // First checkpoint
         let cp1 = arena.checkpoint();
-        arena.arena().alloc(200).unwrap();
+        arena
+            .arena()
+            .alloc(200)
+            .expect("operation should succeed in test");
         // Second checkpoint
         let _cp2 = arena.checkpoint();
-        arena.arena().alloc(300).unwrap();
+        arena
+            .arena()
+            .alloc(300)
+            .expect("operation should succeed in test");
         // Rollback to first checkpoint
-        arena.rollback(cp1).unwrap();
+        arena
+            .rollback(cp1)
+            .expect("operation should succeed in test");
         // Should only have allocations up to first checkpoint
         let used = arena.arena().used();
         assert!(used >= 4); // At least the first allocation
@@ -298,7 +327,7 @@ mod tests {
         let _cp = arena.checkpoint();
         assert!(!arena.checkpoints.is_empty());
         // Commit should remove the checkpoint
-        arena.commit().unwrap();
+        arena.commit().expect("operation should succeed in test");
         assert!(arena.checkpoints.is_empty());
     }
     #[test]
@@ -316,9 +345,15 @@ mod tests {
     fn test_transactional_arena_reset() {
         let mut arena = TransactionalArena::new(1024);
         // Add some data and checkpoints
-        arena.arena().alloc(42).unwrap();
+        arena
+            .arena()
+            .alloc(42)
+            .expect("operation should succeed in test");
         arena.checkpoint();
-        arena.arena().alloc(84).unwrap();
+        arena
+            .arena()
+            .alloc(84)
+            .expect("operation should succeed in test");
         assert!(arena.arena().used() > 0);
         assert!(!arena.checkpoints.is_empty());
         // Reset should clear everything
@@ -340,10 +375,16 @@ mod tests {
     fn test_arena_with_different_types() {
         let arena = SafeArena::new(1024);
         // Allocate different types
-        let int_val = arena.alloc(42i32).unwrap();
-        let string_val = arena.alloc("hello".to_string()).unwrap();
-        let vec_val = arena.alloc(vec![1, 2, 3]).unwrap();
-        let bool_val = arena.alloc(true).unwrap();
+        let int_val = arena
+            .alloc(42i32)
+            .expect("operation should succeed in test");
+        let string_val = arena
+            .alloc("hello".to_string())
+            .expect("operation should succeed in test");
+        let vec_val = arena
+            .alloc(vec![1, 2, 3])
+            .expect("operation should succeed in test");
+        let bool_val = arena.alloc(true).expect("operation should succeed in test");
         // Verify all values
         assert_eq!(*int_val, 42);
         assert_eq!(*string_val, "hello");
@@ -354,16 +395,27 @@ mod tests {
     fn test_transactional_arena_nested_operations() {
         let mut arena = TransactionalArena::new(1024);
         // Initial state
-        arena.arena().alloc(1).unwrap();
+        arena
+            .arena()
+            .alloc(1)
+            .expect("operation should succeed in test");
         let initial_used = arena.arena().used();
         // Start transaction
         let cp = arena.checkpoint();
-        arena.arena().alloc(2).unwrap();
-        arena.arena().alloc(3).unwrap();
+        arena
+            .arena()
+            .alloc(2)
+            .expect("operation should succeed in test");
+        arena
+            .arena()
+            .alloc(3)
+            .expect("operation should succeed in test");
         let mid_used = arena.arena().used();
         assert!(mid_used > initial_used);
         // Rollback
-        arena.rollback(cp).unwrap();
+        arena
+            .rollback(cp)
+            .expect("operation should succeed in test");
         let final_used = arena.arena().used();
         assert_eq!(final_used, initial_used);
     }
