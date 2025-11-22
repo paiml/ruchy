@@ -1,0 +1,95 @@
+# Ruchy PMAT Configuration (Certeza-aligned)
+# Based on: https://github.com/paiml/certeza
+# Specification: docs/specifications/certeza-ideas-integration.md
+
+[project]
+name = "ruchy"
+version = "1.0.0"
+rust_edition = "2021"
+
+[quality]
+# Complexity limits (Toyota Way: ≤10)
+max_cyclomatic_complexity = 10
+max_cognitive_complexity = 10
+max_nesting_depth = 5
+max_lines_per_function = 50
+
+# Coverage requirements (Certeza standards)
+min_line_coverage = 85.0
+min_branch_coverage = 80.0
+min_function_coverage = 90.0
+target_line_coverage = 95.0
+
+# SATD: Zero tolerance
+max_satd = 0
+satd_patterns = ["TODO", "FIXME", "HACK", "XXX", "BUG"]
+satd_require_issue_link = true
+
+# Mutation testing (Tier 3)
+min_mutation_score = 85.0
+mutation_tool = "cargo-mutants"
+mutation_strategy = "incremental"  # Per-file, not full baseline
+
+# Documentation
+min_rustdoc_coverage = 90.0
+require_examples = true
+
+[testing]
+# Testing pyramid distribution (Certeza)
+target_unit_tests = 60      # 60% of tests
+target_property_tests = 30  # 30% of tests
+target_integration_tests = 10  # 10% of tests
+
+# Minimum test counts
+min_unit_tests = 20
+min_integration_tests = 10
+min_property_tests = 5
+
+# Proptest configuration
+proptest_min_cases = 256
+proptest_max_cases = 10000
+proptest_timeout_ms = 5000
+
+[security]
+# Unsafe code policy (QUALITY-002)
+max_unsafe_blocks = 0  # Forbid unsafe (transpiler must generate safe code)
+audit_vulnerabilities = "deny"
+audit_unmaintained = "warn"
+
+[risk_based_verification]
+# Certeza risk-based strategy (40% of time on 5-10% highest-risk code)
+
+# Very High Risk: 90-95% mutation score
+very_high_risk_components = [
+    "src/runtime/actor_concurrent.rs",  # Mutex/RwLock poisoning (29 CRITICAL fixes)
+    "src/runtime/eval_control_flow_new.rs",  # Complex control flow
+    "src/backend/transpiler/codegen_minimal.rs",  # Code generation safety
+]
+
+# High Risk: 85-90% mutation score
+high_risk_components = [
+    "src/frontend/parser/**/*.rs",  # Parser core
+    "src/backend/transpiler/**/*.rs",  # Transpiler pipeline
+    "src/runtime/eval*.rs",  # Runtime evaluation
+    "src/middleend/typechecker.rs",  # Type checking
+]
+
+# Medium Risk: 80-85% mutation score
+medium_risk_components = [
+    "src/runtime/repl/**/*.rs",  # REPL
+    "src/quality/**/*.rs",  # Linter
+    "src/stdlib/**/*.rs",  # Standard library
+    "src/bin/**/*.rs",  # CLI handlers
+]
+
+# Low Risk: No mutation testing (90% coverage only)
+low_risk_components = [
+    "src/utils/**/*.rs",  # Utilities
+    "src/testing/**/*.rs",  # Test helpers
+]
+
+# Mutation testing targets by risk
+very_high_mutation_target = 92.5  # Very high risk: 90-95%
+high_mutation_target = 87.5       # High risk: 85-90%
+medium_mutation_target = 82.5     # Medium risk: 80-85%
+low_mutation_target = 0.0         # Low risk: No mutation testing
