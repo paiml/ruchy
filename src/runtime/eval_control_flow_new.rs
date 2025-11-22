@@ -646,7 +646,8 @@ mod tests {
             Span::new(5, 7),
         );
 
-        let result = eval_if_expr(&condition, &then_branch, None, eval_expr).unwrap();
+        let result = eval_if_expr(&condition, &then_branch, None, eval_expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -669,7 +670,8 @@ mod tests {
             ),
         ];
 
-        let result = eval_list_expr(&elements, eval_expr).unwrap();
+        let result =
+            eval_list_expr(&elements, eval_expr).expect("operation should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 2);
             assert_eq!(arr[0], Value::Integer(1));
@@ -698,18 +700,28 @@ mod tests {
             ),
         ];
 
-        let result = eval_block_expr(&statements, eval_expr).unwrap();
+        let result =
+            eval_block_expr(&statements, eval_expr).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(20)); // Last statement result
     }
 
     #[test]
     fn test_pattern_matches_simple() {
         let wildcard_pattern = Pattern::Wildcard;
-        assert!(pattern_matches_simple(&wildcard_pattern, &Value::Integer(42)).unwrap());
+        assert!(
+            pattern_matches_simple(&wildcard_pattern, &Value::Integer(42))
+                .expect("operation should succeed in test")
+        );
 
         let literal_pattern = Pattern::Literal(Literal::Integer(42, None));
-        assert!(pattern_matches_simple(&literal_pattern, &Value::Integer(42)).unwrap());
-        assert!(!pattern_matches_simple(&literal_pattern, &Value::Integer(43)).unwrap());
+        assert!(
+            pattern_matches_simple(&literal_pattern, &Value::Integer(42))
+                .expect("operation should succeed in test")
+        );
+        assert!(
+            !pattern_matches_simple(&literal_pattern, &Value::Integer(43))
+                .expect("operation should succeed in test")
+        );
     }
 
     // ===== TUPLE EXPRESSION TESTS =====
@@ -733,7 +745,8 @@ mod tests {
             ),
         ];
 
-        let result = eval_tuple_expr(&elements, eval_expr).unwrap();
+        let result =
+            eval_tuple_expr(&elements, eval_expr).expect("operation should succeed in test");
         if let Value::Tuple(tuple) = result {
             assert_eq!(tuple.len(), 2);
             assert_eq!(tuple[0], Value::Integer(1));
@@ -747,7 +760,7 @@ mod tests {
     fn test_eval_tuple_expr_empty() {
         let eval_expr =
             |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
-        let result = eval_tuple_expr(&[], eval_expr).unwrap();
+        let result = eval_tuple_expr(&[], eval_expr).expect("operation should succeed in test");
         if let Value::Tuple(tuple) = result {
             assert_eq!(tuple.len(), 0);
         } else {
@@ -778,7 +791,8 @@ mod tests {
             Span::new(2, 3),
         );
 
-        let result = eval_range_expr(&start, &end, true, eval_expr).unwrap();
+        let result = eval_range_expr(&start, &end, true, eval_expr)
+            .expect("operation should succeed in test");
         if let Value::Range {
             start: s,
             end: e,
@@ -814,7 +828,8 @@ mod tests {
             Span::new(2, 3),
         );
 
-        let result = eval_range_expr(&start, &end, false, eval_expr).unwrap();
+        let result = eval_range_expr(&start, &end, false, eval_expr)
+            .expect("operation should succeed in test");
         if let Value::Range { inclusive, .. } = result {
             assert!(!inclusive);
         } else {
@@ -832,7 +847,8 @@ mod tests {
         );
         let mut eval_expr =
             |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(true)) };
-        let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
+        let result = eval_loop_condition(&condition, &mut eval_expr)
+            .expect("operation should succeed in test");
         assert!(result);
     }
 
@@ -844,7 +860,8 @@ mod tests {
         );
         let mut eval_expr =
             |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(false)) };
-        let result = eval_loop_condition(&condition, &mut eval_expr).unwrap();
+        let result = eval_loop_condition(&condition, &mut eval_expr)
+            .expect("operation should succeed in test");
         assert!(!result);
     }
 
@@ -860,22 +877,32 @@ mod tests {
     #[test]
     fn test_match_literal_pattern_integer() {
         let lit = Literal::Integer(42, None);
-        assert!(match_literal_pattern(&lit, &Value::Integer(42)).unwrap());
-        assert!(!match_literal_pattern(&lit, &Value::Integer(43)).unwrap());
+        assert!(match_literal_pattern(&lit, &Value::Integer(42))
+            .expect("operation should succeed in test"));
+        assert!(!match_literal_pattern(&lit, &Value::Integer(43))
+            .expect("operation should succeed in test"));
     }
 
     #[test]
     fn test_match_literal_pattern_bool() {
         let lit_true = Literal::Bool(true);
-        assert!(match_literal_pattern(&lit_true, &Value::Bool(true)).unwrap());
-        assert!(!match_literal_pattern(&lit_true, &Value::Bool(false)).unwrap());
+        assert!(match_literal_pattern(&lit_true, &Value::Bool(true))
+            .expect("operation should succeed in test"));
+        assert!(!match_literal_pattern(&lit_true, &Value::Bool(false))
+            .expect("operation should succeed in test"));
     }
 
     #[test]
     fn test_match_literal_pattern_string() {
         let lit = Literal::String("hello".to_string());
-        assert!(match_literal_pattern(&lit, &Value::String(Arc::from("hello"))).unwrap());
-        assert!(!match_literal_pattern(&lit, &Value::String(Arc::from("world"))).unwrap());
+        assert!(
+            match_literal_pattern(&lit, &Value::String(Arc::from("hello")))
+                .expect("operation should succeed in test")
+        );
+        assert!(
+            !match_literal_pattern(&lit, &Value::String(Arc::from("world")))
+                .expect("operation should succeed in test")
+        );
     }
 
     #[test]
@@ -891,14 +918,16 @@ mod tests {
             Pattern::Literal(Literal::Integer(2, None)),
         ];
         let arr = Arc::from([Value::Integer(1), Value::Integer(2)]);
-        assert!(match_list_pattern(&patterns, &Value::Array(arr)).unwrap());
+        assert!(match_list_pattern(&patterns, &Value::Array(arr))
+            .expect("operation should succeed in test"));
     }
 
     #[test]
     fn test_match_list_pattern_length_mismatch() {
         let patterns = vec![Pattern::Literal(Literal::Integer(1, None))];
         let arr = Arc::from([Value::Integer(1), Value::Integer(2)]);
-        assert!(!match_list_pattern(&patterns, &Value::Array(arr)).unwrap());
+        assert!(!match_list_pattern(&patterns, &Value::Array(arr))
+            .expect("operation should succeed in test"));
     }
 
     #[test]
@@ -908,14 +937,16 @@ mod tests {
             Pattern::Wildcard,
         ];
         let tuple = Arc::from([Value::Integer(1), Value::Integer(2)]);
-        assert!(match_tuple_pattern(&patterns, &Value::Tuple(tuple)).unwrap());
+        assert!(match_tuple_pattern(&patterns, &Value::Tuple(tuple))
+            .expect("operation should succeed in test"));
     }
 
     #[test]
     fn test_match_tuple_pattern_length_mismatch() {
         let patterns = vec![Pattern::Wildcard];
         let tuple = Arc::from([Value::Integer(1), Value::Integer(2)]);
-        assert!(!match_tuple_pattern(&patterns, &Value::Tuple(tuple)).unwrap());
+        assert!(!match_tuple_pattern(&patterns, &Value::Tuple(tuple))
+            .expect("operation should succeed in test"));
     }
 
     // ===== RANGE HELPERS TESTS =====
@@ -927,7 +958,8 @@ mod tests {
             end: Box::new(Value::Integer(10)),
             inclusive: true,
         };
-        let (start, end, inclusive) = extract_range_bounds(&range).unwrap();
+        let (start, end, inclusive) =
+            extract_range_bounds(&range).expect("operation should succeed in test");
         assert_eq!(start, 1);
         assert_eq!(end, 10);
         assert!(inclusive);
@@ -940,7 +972,8 @@ mod tests {
             end: Box::new(Value::Integer(5)),
             inclusive: false,
         };
-        let (start, end, inclusive) = extract_range_bounds(&range).unwrap();
+        let (start, end, inclusive) =
+            extract_range_bounds(&range).expect("operation should succeed in test");
         assert_eq!(start, 0);
         assert_eq!(end, 5);
         assert!(!inclusive);
@@ -997,7 +1030,8 @@ mod tests {
             Span::new(6, 8),
         );
 
-        let result = eval_if_expr(&condition, &then_branch, None, eval_expr).unwrap();
+        let result = eval_if_expr(&condition, &then_branch, None, eval_expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil); // No else branch, returns Nil
     }
 
@@ -1026,7 +1060,8 @@ mod tests {
             Span::new(14, 16),
         );
 
-        let result = eval_if_expr(&condition, &then_branch, Some(&else_branch), eval_expr).unwrap();
+        let result = eval_if_expr(&condition, &then_branch, Some(&else_branch), eval_expr)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(99));
     }
 
@@ -1036,7 +1071,7 @@ mod tests {
     fn test_eval_block_expr_empty() {
         let eval_expr =
             |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
-        let result = eval_block_expr(&[], eval_expr).unwrap();
+        let result = eval_block_expr(&[], eval_expr).expect("operation should succeed in test");
         assert_eq!(result, Value::Nil); // Empty block returns Nil
     }
 
@@ -1048,7 +1083,8 @@ mod tests {
             crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
             Span::new(0, 2),
         )];
-        let result = eval_block_expr(&statements, eval_expr).unwrap();
+        let result =
+            eval_block_expr(&statements, eval_expr).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -1058,7 +1094,7 @@ mod tests {
     fn test_eval_list_expr_empty() {
         let eval_expr =
             |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
-        let result = eval_list_expr(&[], eval_expr).unwrap();
+        let result = eval_list_expr(&[], eval_expr).expect("operation should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 0);
         } else {
@@ -1089,7 +1125,8 @@ mod tests {
             Span::new(4, 5),
         );
 
-        let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
+        let result = eval_array_init_expr(&element, &size, eval_expr)
+            .expect("operation should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 3);
             assert_eq!(arr[0], Value::Integer(42));
@@ -1121,7 +1158,8 @@ mod tests {
             Span::new(4, 5),
         );
 
-        let result = eval_array_init_expr(&element, &size, eval_expr).unwrap();
+        let result = eval_array_init_expr(&element, &size, eval_expr)
+            .expect("operation should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 0);
         } else {
