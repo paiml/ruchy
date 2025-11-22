@@ -232,7 +232,7 @@ impl WasmRepl {
 }
 impl Default for WasmRepl {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("WasmRepl::new() should succeed in Default impl")
     }
 }
 // ============================================================================
@@ -252,7 +252,7 @@ fn generate_session_id() -> String {
             "session-{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .expect("SystemTime should be after UNIX_EPOCH")
                 .as_millis()
         )
     }
@@ -267,7 +267,7 @@ fn get_timestamp() -> f64 {
     {
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .expect("SystemTime should be after UNIX_EPOCH")
             .as_millis() as f64
     }
 }
@@ -350,7 +350,7 @@ mod tests {
     }
     #[test]
     fn test_session_id() {
-        let repl = WasmRepl::new().unwrap();
+        let repl = WasmRepl::new().expect("operation should succeed in test");
         assert!(repl.session_id().starts_with("session-"));
     }
     #[test]
@@ -369,9 +369,12 @@ mod tests {
     #[test]
     #[ignore = "WASM REPL test isolation issue - runs fine with --test-threads=1"]
     fn test_println_captured() {
-        let mut repl = WasmRepl::new().unwrap();
-        let result = repl.eval(r#"println("Hello, World!")"#).unwrap();
-        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
+        let result = repl
+            .eval(r#"println("Hello, World!")"#)
+            .expect("operation should succeed in test");
+        let output: ReplOutput =
+            serde_json::from_str(&result).expect("operation should succeed in test");
 
         assert!(output.success, "println should execute successfully");
         assert_eq!(
@@ -384,14 +387,15 @@ mod tests {
     #[test]
     #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_multiple_println() {
-        let mut repl = WasmRepl::new().unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
         let code = r#"
             println("Line 1");
             println("Line 2");
             println("Line 3");
         "#;
-        let result = repl.eval(code).unwrap();
-        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+        let result = repl.eval(code).expect("operation should succeed in test");
+        let output: ReplOutput =
+            serde_json::from_str(&result).expect("operation should succeed in test");
 
         assert!(output.success);
         assert_eq!(
@@ -404,13 +408,14 @@ mod tests {
     #[test]
     #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_println_with_variables() {
-        let mut repl = WasmRepl::new().unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
         let code = r#"
             let name = "Alice";
             println("Hello,", name);
         "#;
-        let result = repl.eval(code).unwrap();
-        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+        let result = repl.eval(code).expect("operation should succeed in test");
+        let output: ReplOutput =
+            serde_json::from_str(&result).expect("operation should succeed in test");
 
         assert!(output.success);
         assert_eq!(
@@ -422,11 +427,14 @@ mod tests {
 
     #[test]
     fn test_expression_vs_println() {
-        let mut repl = WasmRepl::new().unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
 
         // Expression should return value
-        let expr_result = repl.eval("1 + 1").unwrap();
-        let expr_output: ReplOutput = serde_json::from_str(&expr_result).unwrap();
+        let expr_result = repl
+            .eval("1 + 1")
+            .expect("operation should succeed in test");
+        let expr_output: ReplOutput =
+            serde_json::from_str(&expr_result).expect("operation should succeed in test");
         assert_eq!(
             expr_output.display,
             Some("2".to_string()),
@@ -434,8 +442,11 @@ mod tests {
         );
 
         // println should return output, not nil
-        let print_result = repl.eval(r#"println("Hello")"#).unwrap();
-        let print_output: ReplOutput = serde_json::from_str(&print_result).unwrap();
+        let print_result = repl
+            .eval(r#"println("Hello")"#)
+            .expect("operation should succeed in test");
+        let print_output: ReplOutput =
+            serde_json::from_str(&print_result).expect("operation should succeed in test");
         assert_eq!(
             print_output.display,
             Some("Hello".to_string()),
@@ -446,15 +457,16 @@ mod tests {
     #[test]
     #[ignore = "WASM REPL test isolation issue"] // DEFER: WASM REPL test isolation issue - tests share global OUTPUT_BUFFER state (investigate Interpreter routing)
     fn test_println_in_function() {
-        let mut repl = WasmRepl::new().unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
         let code = r#"
             fun greet(name) {
                 println("Hello,", name);
             }
             greet("Bob")
         "#;
-        let result = repl.eval(code).unwrap();
-        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+        let result = repl.eval(code).expect("operation should succeed in test");
+        let output: ReplOutput =
+            serde_json::from_str(&result).expect("operation should succeed in test");
 
         assert!(output.success);
         assert_eq!(
@@ -467,19 +479,20 @@ mod tests {
     #[test]
     #[ignore = "WASM REPL test isolation issue - runs fine with --test-threads=1"]
     fn test_mixed_println_and_expression() {
-        let mut repl = WasmRepl::new().unwrap();
+        let mut repl = WasmRepl::new().expect("operation should succeed in test");
         let code = r#"
             println("Debug: starting");
             let x = 10;
             println("x =", x);
             x * 2
         "#;
-        let result = repl.eval(code).unwrap();
-        let output: ReplOutput = serde_json::from_str(&result).unwrap();
+        let result = repl.eval(code).expect("operation should succeed in test");
+        let output: ReplOutput =
+            serde_json::from_str(&result).expect("operation should succeed in test");
 
         assert!(output.success);
         // When both println and expression exist, stdout should take precedence
-        let display = output.display.unwrap();
+        let display = output.display.expect("operation should succeed in test");
         assert!(
             display.contains("Debug: starting"),
             "Should contain first println"
