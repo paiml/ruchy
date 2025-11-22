@@ -761,11 +761,11 @@ mod tests {
 
     #[test]
     fn test_read_file_with_context() {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("operation should succeed in test");
         let file_path = dir.path().join("test.txt");
-        std::fs::write(&file_path, "test content").unwrap();
+        std::fs::write(&file_path, "test content").expect("operation should succeed in test");
 
-        let result = read_file_with_context(&file_path).unwrap();
+        let result = read_file_with_context(&file_path).expect("operation should succeed in test");
         assert_eq!(result, "test content");
 
         // Test non-existent file
@@ -775,11 +775,13 @@ mod tests {
 
     #[test]
     fn test_write_file_with_context() {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("operation should succeed in test");
         let file_path = dir.path().join("test.txt");
 
-        write_file_with_context(&file_path, "test content").unwrap();
-        let content = std::fs::read_to_string(&file_path).unwrap();
+        write_file_with_context(&file_path, "test content")
+            .expect("operation should succeed in test");
+        let content =
+            std::fs::read_to_string(&file_path).expect("operation should succeed in test");
         assert_eq!(content, "test content");
     }
 
@@ -870,14 +872,17 @@ mod tests {
     #[test]
     fn test_write_output_or_print() {
         // Test with output file
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("operation should succeed in test");
         let file_path = dir.path().join("output.txt");
-        write_output_or_print("test output".to_string(), Some(&file_path)).unwrap();
-        let content = std::fs::read_to_string(&file_path).unwrap();
+        write_output_or_print("test output".to_string(), Some(&file_path))
+            .expect("operation should succeed in test");
+        let content =
+            std::fs::read_to_string(&file_path).expect("operation should succeed in test");
         assert_eq!(content, "test output");
 
         // Test without output file (just shouldn't panic)
-        write_output_or_print("test output".to_string(), None).unwrap();
+        write_output_or_print("test output".to_string(), None)
+            .expect("operation should succeed in test");
     }
 
     #[test]
@@ -950,7 +955,7 @@ mod tests {
     #[test]
     fn test_unwrap_or_bail() {
         let result = unwrap_or_bail(Some(42), "error");
-        assert_eq!(result.unwrap(), 42);
+        assert_eq!(result.expect("operation should succeed in test"), 42);
 
         let result = unwrap_or_bail::<i32>(None, "value not found");
         assert!(result.is_err());
@@ -960,7 +965,7 @@ mod tests {
     #[test]
     fn test_unwrap_result_or_bail() {
         let result = unwrap_result_or_bail(Ok::<i32, &str>(42), "error");
-        assert_eq!(result.unwrap(), 42);
+        assert_eq!(result.expect("operation should succeed in test"), 42);
 
         let result = unwrap_result_or_bail(Err::<i32, _>("failure"), "operation failed");
         assert!(result.is_err());
@@ -1011,10 +1016,22 @@ mod tests {
 
     #[test]
     fn test_unescape_string() {
-        assert_eq!(unescape_string("hello\\nworld").unwrap(), "hello\nworld");
-        assert_eq!(unescape_string("tab\\there").unwrap(), "tab\there");
-        assert_eq!(unescape_string("quote\\\"").unwrap(), "quote\"");
-        assert_eq!(unescape_string("normal").unwrap(), "normal");
+        assert_eq!(
+            unescape_string("hello\\nworld").expect("operation should succeed in test"),
+            "hello\nworld"
+        );
+        assert_eq!(
+            unescape_string("tab\\there").expect("operation should succeed in test"),
+            "tab\there"
+        );
+        assert_eq!(
+            unescape_string("quote\\\"").expect("operation should succeed in test"),
+            "quote\""
+        );
+        assert_eq!(
+            unescape_string("normal").expect("operation should succeed in test"),
+            "normal"
+        );
 
         // Test invalid escape
         assert!(unescape_string("\\x").is_err());
@@ -1127,7 +1144,7 @@ mod tests {
     fn test_result_context_ext() {
         let result: Result<i32, std::io::Error> = Ok(42);
         let with_context = result.file_context("read", Path::new("/test.txt"));
-        assert_eq!(with_context.unwrap(), 42);
+        assert_eq!(with_context.expect("operation should succeed in test"), 42);
 
         let error = std::io::Error::new(std::io::ErrorKind::NotFound, "not found");
         let result: Result<i32, std::io::Error> = Err(error);
