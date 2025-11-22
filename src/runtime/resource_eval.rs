@@ -322,19 +322,19 @@ mod tests {
     use proptest::prelude::*;
     #[test]
     fn test_bounded_evaluation() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new().expect("operation should succeed in test");
         // Should succeed within limits
         let result = repl.eval_bounded("1 + 1", Some(1024), Some(Duration::from_secs(1)));
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "2");
+        assert_eq!(result.expect("operation should succeed in test"), "2");
     }
     #[test]
     fn test_atomic_evaluation() {
-        let mut repl = Repl::new().unwrap();
+        let mut repl = Repl::new().expect("operation should succeed in test");
         // All should succeed
         let results = repl
             .eval_atomic(&["let x = 1", "let y = 2", "x + y"])
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(results.len(), 3);
         assert_eq!(results[2], "3");
         // Failure should rollback all
@@ -345,29 +345,29 @@ mod tests {
     }
     #[test]
     fn test_checkpoint() {
-        let mut repl = Repl::new().unwrap();
-        repl.eval("let x = 1").unwrap();
+        let mut repl = Repl::new().expect("operation should succeed in test");
+        repl.eval("let x = 1").expect("operation should succeed in test");
         // Create checkpoint
-        let checkpoint = repl.checkpoint().unwrap();
+        let checkpoint = repl.checkpoint().expect("operation should succeed in test");
         // Make changes
-        repl.eval("let x = 2").unwrap();
-        repl.eval("let y = 3").unwrap();
+        repl.eval("let x = 2").expect("operation should succeed in test");
+        repl.eval("let y = 3").expect("operation should succeed in test");
         // Rollback
-        checkpoint.rollback().unwrap();
+        checkpoint.rollback().expect("operation should succeed in test");
         // x should be 1, y should not exist
-        assert_eq!(repl.eval("x").unwrap(), "1");
+        assert_eq!(repl.eval("x").expect("operation should succeed in test"), "1");
         assert!(repl.eval("y").is_err());
     }
     #[test]
     fn test_sandbox() {
         let limits = ResourceLimits::testing();
-        let mut sandbox = Sandbox::new(limits).unwrap();
+        let mut sandbox = Sandbox::new(limits).expect("operation should succeed in test");
         // Simple evaluation should work
-        let result = sandbox.eval("2 * 3").unwrap();
+        let result = sandbox.eval("2 * 3").expect("operation should succeed in test");
         assert_eq!(result, "6");
         // Reset should clear state
-        sandbox.eval("let a = 42").unwrap();
-        sandbox.reset().unwrap();
+        sandbox.eval("let a = 42").expect("operation should succeed in test");
+        sandbox.reset().expect("operation should succeed in test");
         assert!(sandbox.eval("a").is_err());
     }
 }
