@@ -307,51 +307,59 @@ mod tests {
 
     #[test]
     fn test_write_and_read_round_trip() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("test.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         let content = "Hello, Ruchy!";
-        write(path_str, content).unwrap();
-        let read_content = read_to_string(path_str).unwrap();
+        write(path_str, content).expect("write should succeed in test");
+        let read_content = read_to_string(path_str).expect("read_to_string should succeed in test");
 
         assert_eq!(content, read_content, "Round-trip should preserve content");
     }
 
     #[test]
     fn test_write_empty_string() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("empty.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        write(path_str, "").unwrap();
-        let content = read_to_string(path_str).unwrap();
+        write(path_str, "").expect("write should succeed in test");
+        let content = read_to_string(path_str).expect("read_to_string should succeed in test");
 
         assert_eq!(content, "", "Empty file should read as empty string");
     }
 
     #[test]
     fn test_write_multiline_content() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("multiline.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         let content = "Line 1\nLine 2\nLine 3";
-        write(path_str, content).unwrap();
-        let read_content = read_to_string(path_str).unwrap();
+        write(path_str, content).expect("write should succeed in test");
+        let read_content = read_to_string(path_str).expect("read_to_string should succeed in test");
 
         assert_eq!(content, read_content);
     }
 
     #[test]
     fn test_write_unicode() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("unicode.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         let content = "Hello 世界 🦀";
-        write(path_str, content).unwrap();
-        let read_content = read_to_string(path_str).unwrap();
+        write(path_str, content).expect("write should succeed in test");
+        let read_content = read_to_string(path_str).expect("read_to_string should succeed in test");
 
         assert_eq!(content, read_content, "Unicode should round-trip");
     }
@@ -374,14 +382,16 @@ mod tests {
 
     #[test]
     fn test_read_binary_data() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("binary.dat");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         let binary_data = vec![0u8, 1, 2, 255, 128];
-        std::fs::write(&file_path, &binary_data).unwrap();
+        std::fs::write(&file_path, &binary_data).expect("std::fs::write should succeed in test");
 
-        let read_data = read(path_str).unwrap();
+        let read_data = read(path_str).expect("read should succeed in test");
         assert_eq!(binary_data, read_data, "Binary data should round-trip");
     }
 
@@ -391,14 +401,16 @@ mod tests {
 
     #[test]
     fn test_create_and_remove_dir() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dir_path = temp_dir.path().join("new_dir");
-        let path_str = dir_path.to_str().unwrap();
+        let path_str = dir_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir(path_str).unwrap();
+        create_dir(path_str).expect("create_dir should succeed in test");
         assert!(exists(path_str), "Directory should exist after creation");
 
-        remove_dir(path_str).unwrap();
+        remove_dir(path_str).expect("remove_dir should succeed in test");
         assert!(
             !exists(path_str),
             "Directory should not exist after removal"
@@ -407,11 +419,13 @@ mod tests {
 
     #[test]
     fn test_create_dir_already_exists() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dir_path = temp_dir.path().join("existing_dir");
-        let path_str = dir_path.to_str().unwrap();
+        let path_str = dir_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir(path_str).unwrap();
+        create_dir(path_str).expect("create_dir should succeed in test");
         let result = create_dir(path_str);
 
         assert!(result.is_err(), "Creating existing directory should fail");
@@ -432,21 +446,25 @@ mod tests {
 
     #[test]
     fn test_create_dir_all_nested() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let nested_path = temp_dir.path().join("a/b/c/d");
-        let path_str = nested_path.to_str().unwrap();
+        let path_str = nested_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir_all(path_str).unwrap();
+        create_dir_all(path_str).expect("create_dir_all should succeed in test");
         assert!(exists(path_str), "Nested directories should be created");
     }
 
     #[test]
     fn test_create_dir_all_already_exists() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dir_path = temp_dir.path().join("existing");
-        let path_str = dir_path.to_str().unwrap();
+        let path_str = dir_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir_all(path_str).unwrap();
+        create_dir_all(path_str).expect("create_dir_all should succeed in test");
         // Should not error if directory already exists
         let result = create_dir_all(path_str);
         assert!(result.is_ok(), "create_dir_all should be idempotent");
@@ -458,14 +476,16 @@ mod tests {
 
     #[test]
     fn test_remove_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("to_remove.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        write(path_str, "content").unwrap();
+        write(path_str, "content").expect("write should succeed in test");
         assert!(exists(path_str), "File should exist");
 
-        remove_file(path_str).unwrap();
+        remove_file(path_str).expect("remove_file should succeed in test");
         assert!(!exists(path_str), "File should not exist after removal");
     }
 
@@ -481,28 +501,31 @@ mod tests {
 
     #[test]
     fn test_copy_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let source = temp_dir.path().join("source.txt");
         let dest = temp_dir.path().join("dest.txt");
-        let source_str = source.to_str().unwrap();
-        let dest_str = dest.to_str().unwrap();
+        let source_str = source.to_str().expect("path should be valid UTF-8 in test");
+        let dest_str = dest.to_str().expect("path should be valid UTF-8 in test");
 
         let content = "Copy me!";
-        write(source_str, content).unwrap();
+        write(source_str, content).expect("write should succeed in test");
 
-        let bytes_copied = copy(source_str, dest_str).unwrap();
+        let bytes_copied = copy(source_str, dest_str).expect("copy should succeed in test");
         assert_eq!(bytes_copied as usize, content.len());
 
-        let dest_content = read_to_string(dest_str).unwrap();
+        let dest_content = read_to_string(dest_str).expect("read_to_string should succeed in test");
         assert_eq!(content, dest_content, "Copied content should match");
     }
 
     #[test]
     fn test_copy_nonexistent_source() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dest = temp_dir.path().join("dest.txt");
 
-        let result = copy("/nonexistent/source.txt", dest.to_str().unwrap());
+        let result = copy(
+            "/nonexistent/source.txt",
+            dest.to_str().expect("path should be valid UTF-8 in test"),
+        );
         assert!(result.is_err(), "Copying nonexistent file should fail");
     }
 
@@ -512,26 +535,35 @@ mod tests {
 
     #[test]
     fn test_rename_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let old_path = temp_dir.path().join("old_name.txt");
         let new_path = temp_dir.path().join("new_name.txt");
-        let old_str = old_path.to_str().unwrap();
-        let new_str = new_path.to_str().unwrap();
+        let old_str = old_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
+        let new_str = new_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        write(old_str, "content").unwrap();
+        write(old_str, "content").expect("write should succeed in test");
         assert!(exists(old_str));
 
-        rename(old_str, new_str).unwrap();
+        rename(old_str, new_str).expect("rename should succeed in test");
         assert!(!exists(old_str), "Old path should not exist");
         assert!(exists(new_str), "New path should exist");
     }
 
     #[test]
     fn test_rename_nonexistent_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let new_path = temp_dir.path().join("new.txt");
 
-        let result = rename("/nonexistent/file.txt", new_path.to_str().unwrap());
+        let result = rename(
+            "/nonexistent/file.txt",
+            new_path
+                .to_str()
+                .expect("path should be valid UTF-8 in test"),
+        );
         assert!(result.is_err(), "Renaming nonexistent file should fail");
     }
 
@@ -541,21 +573,30 @@ mod tests {
 
     #[test]
     fn test_read_dir_empty() {
-        let temp_dir = TempDir::new().unwrap();
-        let entries = read_dir(temp_dir.path().to_str().unwrap()).unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let entries = read_dir(
+            temp_dir
+                .path()
+                .to_str()
+                .expect("path should be valid UTF-8 in test"),
+        )
+        .expect("read_dir should succeed in test");
         assert_eq!(entries.len(), 0, "Empty directory should have no entries");
     }
 
     #[test]
     fn test_read_dir_with_files() {
-        let temp_dir = TempDir::new().unwrap();
-        let path_str = temp_dir.path().to_str().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
+        let path_str = temp_dir
+            .path()
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         // Create some files
-        write(&format!("{path_str}/file1.txt"), "content1").unwrap();
-        write(&format!("{path_str}/file2.txt"), "content2").unwrap();
+        write(&format!("{path_str}/file1.txt"), "content1").expect("write should succeed in test");
+        write(&format!("{path_str}/file2.txt"), "content2").expect("write should succeed in test");
 
-        let entries = read_dir(path_str).unwrap();
+        let entries = read_dir(path_str).expect("read_dir should succeed in test");
         assert_eq!(entries.len(), 2, "Directory should have 2 entries");
     }
 
@@ -571,27 +612,31 @@ mod tests {
 
     #[test]
     fn test_metadata_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("meta.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         let content = "test content";
-        write(path_str, content).unwrap();
+        write(path_str, content).expect("write should succeed in test");
 
-        let meta = metadata(path_str).unwrap();
+        let meta = metadata(path_str).expect("metadata should succeed in test");
         assert!(meta.is_file(), "Metadata should indicate file");
         assert_eq!(meta.len(), content.len() as u64, "Size should match");
     }
 
     #[test]
     fn test_metadata_dir() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dir_path = temp_dir.path().join("meta_dir");
-        let path_str = dir_path.to_str().unwrap();
+        let path_str = dir_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir(path_str).unwrap();
+        create_dir(path_str).expect("create_dir should succeed in test");
 
-        let meta = metadata(path_str).unwrap();
+        let meta = metadata(path_str).expect("metadata should succeed in test");
         assert!(meta.is_dir(), "Metadata should indicate directory");
     }
 
@@ -611,7 +656,11 @@ mod tests {
         let file_path = temp_dir.path().join("test.txt");
         std::fs::write(&file_path, "test").expect("Failed to write file");
 
-        assert!(exists(file_path.to_str().unwrap()));
+        assert!(exists(
+            file_path
+                .to_str()
+                .expect("path should be valid UTF-8 in test")
+        ));
     }
 
     #[test]
@@ -621,9 +670,14 @@ mod tests {
 
     #[test]
     fn test_exists_directory() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         assert!(
-            exists(temp_dir.path().to_str().unwrap()),
+            exists(
+                temp_dir
+                    .path()
+                    .to_str()
+                    .expect("path should be valid UTF-8 in test")
+            ),
             "exists() should return true for directories"
         );
     }
@@ -641,7 +695,7 @@ mod property_tests {
     // Property: Write then read should preserve content (idempotent)
     #[test]
     fn prop_write_read_round_trip() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let test_cases = [
             "",
             "Hello",
@@ -652,10 +706,13 @@ mod property_tests {
 
         for (i, content) in test_cases.iter().enumerate() {
             let file_path = temp_dir.path().join(format!("test_{i}.txt"));
-            let path_str = file_path.to_str().unwrap();
+            let path_str = file_path
+                .to_str()
+                .expect("path should be valid UTF-8 in test");
 
-            write(path_str, content).unwrap();
-            let read_back = read_to_string(path_str).unwrap();
+            write(path_str, content).expect("write should succeed in test");
+            let read_back =
+                read_to_string(path_str).expect("read_to_string should succeed in test");
 
             assert_eq!(
                 *content, read_back,
@@ -667,19 +724,20 @@ mod property_tests {
     // Property: Copy creates identical file
     #[test]
     fn prop_copy_creates_identical_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let source = temp_dir.path().join("source.txt");
         let dest = temp_dir.path().join("dest.txt");
-        let source_str = source.to_str().unwrap();
-        let dest_str = dest.to_str().unwrap();
+        let source_str = source.to_str().expect("path should be valid UTF-8 in test");
+        let dest_str = dest.to_str().expect("path should be valid UTF-8 in test");
 
         let content = "Original content";
-        write(source_str, content).unwrap();
+        write(source_str, content).expect("write should succeed in test");
 
-        copy(source_str, dest_str).unwrap();
+        copy(source_str, dest_str).expect("copy should succeed in test");
 
-        let source_content = read_to_string(source_str).unwrap();
-        let dest_content = read_to_string(dest_str).unwrap();
+        let source_content =
+            read_to_string(source_str).expect("read_to_string should succeed in test");
+        let dest_content = read_to_string(dest_str).expect("read_to_string should succeed in test");
 
         assert_eq!(
             source_content, dest_content,
@@ -690,16 +748,20 @@ mod property_tests {
     // Property: rename is a move (source disappears, dest appears)
     #[test]
     fn prop_rename_is_move_operation() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let old_path = temp_dir.path().join("old.txt");
         let new_path = temp_dir.path().join("new.txt");
-        let old_str = old_path.to_str().unwrap();
-        let new_str = new_path.to_str().unwrap();
+        let old_str = old_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
+        let new_str = new_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        write(old_str, "content").unwrap();
+        write(old_str, "content").expect("write should succeed in test");
         assert!(exists(old_str), "Source should exist before rename");
 
-        rename(old_str, new_str).unwrap();
+        rename(old_str, new_str).expect("rename should succeed in test");
 
         assert!(!exists(old_str), "Source should not exist after rename");
         assert!(exists(new_str), "Destination should exist after rename");
@@ -708,11 +770,13 @@ mod property_tests {
     // Property: create_dir_all is idempotent
     #[test]
     fn prop_create_dir_all_idempotent() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let dir_path = temp_dir.path().join("a/b/c");
-        let path_str = dir_path.to_str().unwrap();
+        let path_str = dir_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
-        create_dir_all(path_str).unwrap();
+        create_dir_all(path_str).expect("create_dir_all should succeed in test");
         assert!(exists(path_str));
 
         // Second call should succeed (idempotent)
@@ -751,9 +815,11 @@ mod property_tests {
     // Property: exists() consistency with metadata()
     #[test]
     fn prop_exists_consistent_with_metadata() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
         let file_path = temp_dir.path().join("consistency.txt");
-        let path_str = file_path.to_str().unwrap();
+        let path_str = file_path
+            .to_str()
+            .expect("path should be valid UTF-8 in test");
 
         // Non-existent path
         assert_eq!(
@@ -763,7 +829,7 @@ mod property_tests {
         );
 
         // Create file
-        write(path_str, "content").unwrap();
+        write(path_str, "content").expect("write should succeed in test");
         assert_eq!(
             exists(path_str),
             metadata(path_str).is_ok(),
