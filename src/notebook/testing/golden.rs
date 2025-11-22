@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn test_golden_manager_new() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         assert_eq!(manager.base_path, temp_dir.path());
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_save_golden_value_output() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Value("test_value".to_string());
 
@@ -97,13 +97,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content = std::fs::read_to_string(temp_dir.path().join("test.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("test.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, "test_value");
     }
 
     #[test]
     fn test_save_golden_error_output() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Error("RuntimeError: test error".to_string());
 
@@ -111,13 +112,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content = std::fs::read_to_string(temp_dir.path().join("error.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("error.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, "RuntimeError: test error");
     }
 
     #[test]
     fn test_save_golden_html_output() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Html("<h1>Test HTML</h1>".to_string());
 
@@ -125,13 +127,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content = std::fs::read_to_string(temp_dir.path().join("html.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("html.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, "<h1>Test HTML</h1>");
     }
 
     #[test]
     fn test_save_golden_none_output() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::None;
 
@@ -139,13 +142,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content = std::fs::read_to_string(temp_dir.path().join("none.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("none.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, "");
     }
 
     #[test]
     fn test_save_golden_with_nested_path() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Value("nested_value".to_string());
 
@@ -154,13 +158,14 @@ mod tests {
         assert!(result.is_ok());
 
         let saved_content =
-            std::fs::read_to_string(temp_dir.path().join("nested/deep/test.golden")).unwrap();
+            std::fs::read_to_string(temp_dir.path().join("nested/deep/test.golden"))
+                .expect("operation should succeed in test");
         assert_eq!(saved_content, "nested_value");
     }
 
     #[test]
     fn test_save_golden_creates_parent_directories() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Value("test".to_string());
 
@@ -175,20 +180,20 @@ mod tests {
 
     #[test]
     fn test_load_golden_existing_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         // First save a golden file
         let output = CellOutput::Value("saved_content".to_string());
         manager
             .save_golden(&PathBuf::from("test.golden"), &output)
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Then load it
         let result = manager.load_golden(&PathBuf::from("test.golden"));
 
         assert!(result.is_ok());
-        match result.unwrap() {
+        match result.expect("operation should succeed in test") {
             CellOutput::Value(content) => assert_eq!(content, "saved_content"),
             _ => panic!("Expected Value output"),
         }
@@ -196,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_load_golden_nonexistent_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         let result = manager.load_golden(&PathBuf::from("nonexistent.golden"));
@@ -207,16 +212,17 @@ mod tests {
 
     #[test]
     fn test_load_golden_empty_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         // Create empty file
-        std::fs::write(temp_dir.path().join("empty.golden"), "").unwrap();
+        std::fs::write(temp_dir.path().join("empty.golden"), "")
+            .expect("operation should succeed in test");
 
         let result = manager.load_golden(&PathBuf::from("empty.golden"));
 
         assert!(result.is_ok());
-        match result.unwrap() {
+        match result.expect("operation should succeed in test") {
             CellOutput::Value(content) => assert_eq!(content, ""),
             _ => panic!("Expected Value output"),
         }
@@ -224,16 +230,16 @@ mod tests {
 
     #[test]
     fn test_round_trip_value() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let original = CellOutput::Value("round_trip_test".to_string());
 
         manager
             .save_golden(&PathBuf::from("round_trip.golden"), &original)
-            .unwrap();
+            .expect("operation should succeed in test");
         let loaded = manager
             .load_golden(&PathBuf::from("round_trip.golden"))
-            .unwrap();
+            .expect("operation should succeed in test");
 
         match loaded {
             CellOutput::Value(content) => assert_eq!(content, "round_trip_test"),
@@ -243,14 +249,16 @@ mod tests {
 
     #[test]
     fn test_round_trip_error() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let original = CellOutput::Error("Error message".to_string());
 
         manager
             .save_golden(&PathBuf::from("error.golden"), &original)
-            .unwrap();
-        let loaded = manager.load_golden(&PathBuf::from("error.golden")).unwrap();
+            .expect("operation should succeed in test");
+        let loaded = manager
+            .load_golden(&PathBuf::from("error.golden"))
+            .expect("operation should succeed in test");
 
         match loaded {
             CellOutput::Value(content) => assert_eq!(content, "Error message"),
@@ -260,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_save_golden_special_characters() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let special_content = "Special chars: 🦀 日本語 αβγ \"quotes\" 'apostrophes' \n\t\r";
         let output = CellOutput::Value(special_content.to_string());
@@ -269,14 +277,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content =
-            std::fs::read_to_string(temp_dir.path().join("special.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("special.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, special_content);
     }
 
     #[test]
     fn test_save_golden_large_content() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let large_content = "x".repeat(100_000);
         let output = CellOutput::Value(large_content.clone());
@@ -285,13 +293,14 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let saved_content = std::fs::read_to_string(temp_dir.path().join("large.golden")).unwrap();
+        let saved_content = std::fs::read_to_string(temp_dir.path().join("large.golden"))
+            .expect("operation should succeed in test");
         assert_eq!(saved_content, large_content);
     }
 
     #[test]
     fn test_multiple_files_same_manager() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         let outputs = vec![
@@ -310,7 +319,9 @@ mod tests {
 
         // Verify all files exist and have correct content
         for (filename, expected_output) in outputs {
-            let loaded = manager.load_golden(&PathBuf::from(&filename)).unwrap();
+            let loaded = manager
+                .load_golden(&PathBuf::from(&filename))
+                .expect("operation should succeed in test");
             let expected_content = match expected_output {
                 CellOutput::Value(s) | CellOutput::Error(s) | CellOutput::Html(s) => s,
                 CellOutput::DataFrame(df) => format!("{df:?}"),
@@ -327,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_path_with_extension() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
         let output = CellOutput::Value("test".to_string());
 
@@ -336,7 +347,7 @@ mod tests {
 
         let loaded = manager
             .load_golden(&PathBuf::from("test.txt.golden"))
-            .unwrap();
+            .expect("operation should succeed in test");
         match loaded {
             CellOutput::Value(content) => assert_eq!(content, "test"),
             _ => panic!("Expected Value output"),
@@ -345,25 +356,25 @@ mod tests {
 
     #[test]
     fn test_overwrite_existing_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let manager = GoldenManager::new(temp_dir.path());
 
         // Save initial content
         let initial = CellOutput::Value("initial".to_string());
         manager
             .save_golden(&PathBuf::from("overwrite.golden"), &initial)
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Overwrite with new content
         let updated = CellOutput::Value("updated".to_string());
         manager
             .save_golden(&PathBuf::from("overwrite.golden"), &updated)
-            .unwrap();
+            .expect("operation should succeed in test");
 
         // Verify new content
         let loaded = manager
             .load_golden(&PathBuf::from("overwrite.golden"))
-            .unwrap();
+            .expect("operation should succeed in test");
         match loaded {
             CellOutput::Value(content) => assert_eq!(content, "updated"),
             _ => panic!("Expected Value output"),
