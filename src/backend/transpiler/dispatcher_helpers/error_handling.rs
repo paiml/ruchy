@@ -126,7 +126,12 @@ impl Transpiler {
                     // Transpile let-else pattern: let PAT = EXPR else { BLOCK }
                     self.transpile_let_pattern_else(pattern, value, body, else_expr)
                 } else {
-                    self.transpile_let_pattern_with_type(pattern, type_annotation.as_ref(), value, body)
+                    self.transpile_let_pattern_with_type(
+                        pattern,
+                        type_annotation.as_ref(),
+                        value,
+                        body,
+                    )
                 }
             }
             ExprKind::Block(exprs) => self.transpile_block(exprs),
@@ -211,7 +216,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
 }
 
 #[cfg(test)]
@@ -263,7 +267,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_ok(&int_expr(42));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Ok"));
         assert!(output.contains("42"));
@@ -275,7 +279,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_ok(&string_expr("success"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Ok"));
         assert!(output.contains("to_string"));
@@ -287,7 +291,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_err(&int_expr(404));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Err"));
         assert!(output.contains("404"));
@@ -299,7 +303,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_err(&string_expr("error"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Err"));
         assert!(output.contains("to_string"));
@@ -311,7 +315,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_option_some(&int_expr(99));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Some"));
         assert!(output.contains("99"));
@@ -323,7 +327,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_option_some(&string_expr("value"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Some"));
         assert!(output.contains("to_string"));
@@ -335,7 +339,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_try_operator(&ident_expr("fallible_func"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         assert_eq!(tokens.to_string(), "fallible_func ?");
     }
 
@@ -352,7 +356,10 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().to_string(), "None");
+        assert_eq!(
+            result.expect("result should be Ok in test").to_string(),
+            "None"
+        );
     }
 
     // Test 9: transpile_error_only_expr - Ok
@@ -370,7 +377,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Ok"));
     }
 
@@ -389,7 +396,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Err"));
     }
 
@@ -408,7 +415,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Some"));
     }
 
@@ -427,7 +434,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("?"));
     }
 
@@ -462,7 +469,7 @@ mod tests {
         };
         let result = transpiler.transpile_type_decl_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("type"));
         assert!(output.contains("MyType"));
     }
@@ -473,7 +480,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_ok(&ident_expr("value"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Ok"));
         assert!(output.contains("value"));
@@ -486,7 +493,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_err(&ident_expr("error"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Err"));
         assert!(output.contains("error"));
@@ -499,7 +506,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_option_some(&ident_expr("opt"));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Some"));
         assert!(output.contains("opt"));
@@ -521,7 +528,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("panic"));
     }
 
@@ -531,7 +538,7 @@ mod tests {
         let transpiler = test_transpiler();
         let result = transpiler.transpile_result_ok(&string_expr(""));
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("result should be Ok in test");
         let output = tokens.to_string();
         assert!(output.contains("Ok"));
         assert!(output.contains("to_string"));
@@ -553,7 +560,7 @@ mod tests {
         };
         let result = transpiler.transpile_try_operator(&complex_expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("?"));
     }
 
@@ -577,7 +584,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("let"));
         assert!(output.contains("x"));
     }
@@ -602,7 +609,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("let"));
         assert!(output.contains("mut"));
     }
@@ -623,7 +630,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("use"));
     }
 
@@ -643,7 +650,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("use"));
         assert!(output.contains("*"));
     }
@@ -664,7 +671,10 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().to_string(), "break");
+        assert_eq!(
+            result.expect("result should be Ok in test").to_string(),
+            "break"
+        );
     }
 
     // Test 26: transpile_misc_expr - Continue (via transpile_control_misc_expr)
@@ -680,7 +690,10 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().to_string(), "continue");
+        assert_eq!(
+            result.expect("result should be Ok in test").to_string(),
+            "continue"
+        );
     }
 
     // Test 27: transpile_misc_expr - Return (via transpile_control_misc_expr)
@@ -698,7 +711,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("return"));
         assert!(output.contains("42"));
     }
@@ -719,7 +732,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("use"));
     }
 
@@ -738,7 +751,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("panic"));
     }
 
@@ -757,7 +770,7 @@ mod tests {
         };
         let result = transpiler.transpile_result_ok(&nested);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Ok"));
     }
 
@@ -776,7 +789,7 @@ mod tests {
         };
         let result = transpiler.transpile_result_err(&nested);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Err"));
     }
 
@@ -795,7 +808,7 @@ mod tests {
         };
         let result = transpiler.transpile_option_some(&nested);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Some"));
     }
 
@@ -825,7 +838,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("let"));
     }
 
@@ -855,7 +868,7 @@ mod tests {
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("?"));
         assert!(output.contains("read"));
     }
@@ -900,7 +913,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
         assert!(output.contains("use"));
     }
@@ -925,7 +938,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
         assert!(output.contains("*"));
     }
@@ -946,7 +959,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("use"));
     }
 
@@ -966,7 +979,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
         assert!(output.contains("use"));
     }
@@ -987,7 +1000,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("mod"));
         assert!(output.contains("utils"));
     }
@@ -1011,7 +1024,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("trait"));
     }
 
@@ -1034,7 +1047,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("impl"));
     }
 
@@ -1054,7 +1067,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("impl"));
     }
 
@@ -1086,7 +1099,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("enum"));
         assert!(output.contains("Color"));
     }
@@ -1107,7 +1120,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
     }
 
@@ -1126,7 +1139,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
     }
 
@@ -1145,7 +1158,7 @@ mod tests {
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("pub"));
     }
 
@@ -1162,7 +1175,7 @@ mod tests {
         };
         let result = transpiler.transpile_result_ok(&bool_expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Ok"));
         assert!(output.contains("true"));
     }
@@ -1180,7 +1193,7 @@ mod tests {
         };
         let result = transpiler.transpile_result_err(&bool_expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Err"));
         assert!(output.contains("false"));
     }
@@ -1198,7 +1211,7 @@ mod tests {
         };
         let result = transpiler.transpile_option_some(&bool_expr);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result.expect("result should be Ok in test").to_string();
         assert!(output.contains("Some"));
         assert!(output.contains("true"));
     }
