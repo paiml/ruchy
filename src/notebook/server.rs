@@ -282,7 +282,7 @@ async fn save_notebook_handler(
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     start_server(8080).await.unwrap();
+///     start_server(8080).await.expect("operation should succeed in doctest");
 /// }
 /// ```
 pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
@@ -333,14 +333,15 @@ mod tests {
         let request = ExecuteRequest {
             source: "test code".to_string(),
         };
-        let json = serde_json::to_string(&request).unwrap();
+        let json = serde_json::to_string(&request).expect("operation should succeed in test");
         assert!(json.contains("test code"));
     }
 
     #[test]
     fn test_execute_request_deserialization() {
         let json = r#"{"source": "println(42)"}"#;
-        let request: ExecuteRequest = serde_json::from_str(json).unwrap();
+        let request: ExecuteRequest =
+            serde_json::from_str(json).expect("operation should succeed in test");
         assert_eq!(request.source, "println(42)");
     }
 
@@ -364,7 +365,10 @@ mod tests {
             error: Some("Parse error".to_string()),
         };
         assert!(!response.success);
-        assert_eq!(response.error.unwrap(), "Parse error");
+        assert_eq!(
+            response.error.expect("operation should succeed in test"),
+            "Parse error"
+        );
     }
 
     #[test]
@@ -374,7 +378,7 @@ mod tests {
             success: true,
             error: None,
         };
-        let json = serde_json::to_string(&response).unwrap();
+        let json = serde_json::to_string(&response).expect("operation should succeed in test");
         assert!(json.contains("result"));
         assert!(json.contains("true"));
         // error field should be omitted when None
@@ -388,7 +392,7 @@ mod tests {
             success: false,
             error: Some("error message".to_string()),
         };
-        let json = serde_json::to_string(&response).unwrap();
+        let json = serde_json::to_string(&response).expect("operation should succeed in test");
         assert!(json.contains("error message"));
         assert!(json.contains("false"));
     }
@@ -424,9 +428,13 @@ mod tests {
                 let request = Request::builder()
                     .uri("/health")
                     .body(Body::empty())
-                    .unwrap();
+                    .expect("operation should succeed in test");
 
-                let response = app.clone().oneshot(request).await.unwrap();
+                let response = app
+                    .clone()
+                    .oneshot(request)
+                    .await
+                    .expect("operation should succeed in test");
                 assert_eq!(response.status(), StatusCode::OK);
             })
             .await;
@@ -451,10 +459,16 @@ mod tests {
                     .uri("/api/execute")
                     .method("POST")
                     .header("content-type", "application/json")
-                    .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-                    .unwrap();
+                    .body(Body::from(
+                        serde_json::to_string(&request_body)
+                            .expect("operation should succeed in test"),
+                    ))
+                    .expect("operation should succeed in test");
 
-                let response = app.oneshot(request).await.unwrap();
+                let response = app
+                    .oneshot(request)
+                    .await
+                    .expect("operation should succeed in test");
                 assert_eq!(response.status(), StatusCode::OK);
             })
             .await;
@@ -476,9 +490,12 @@ mod tests {
                     .method("POST")
                     .header("content-type", "application/json")
                     .body(Body::from("invalid json"))
-                    .unwrap();
+                    .expect("operation should succeed in test");
 
-                let response = app.oneshot(request).await.unwrap();
+                let response = app
+                    .oneshot(request)
+                    .await
+                    .expect("operation should succeed in test");
                 // Should return an error status for invalid JSON
                 assert_ne!(response.status(), StatusCode::OK);
             })
@@ -519,7 +536,8 @@ mod tests {
             error: None,
         };
 
-        let json = serde_json::to_string(&response_without_error).unwrap();
+        let json = serde_json::to_string(&response_without_error)
+            .expect("operation should succeed in test");
         // Should skip serializing error field when None
         assert!(!json.contains("\"error\""));
 
@@ -529,7 +547,8 @@ mod tests {
             error: Some("error".to_string()),
         };
 
-        let json = serde_json::to_string(&response_with_error).unwrap();
+        let json =
+            serde_json::to_string(&response_with_error).expect("operation should succeed in test");
         // Should include error field when Some
         assert!(json.contains("\"error\""));
     }
@@ -578,16 +597,22 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
 
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         // RED TEST: This will fail because handler is stubbed
         assert!(response_data.success, "Expected success=true");
@@ -610,14 +635,20 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(response_data.success);
         assert!(response_data.html.contains("<p>"));
@@ -635,14 +666,20 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(response_data.success);
         assert!(response_data.html.contains("<code>") || response_data.html.contains("<pre>"));
@@ -660,14 +697,20 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(response_data.success);
         assert_eq!(response_data.html, "");
@@ -686,14 +729,20 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(response_data.success);
         // Raw HTML should be escaped (not rendered)
@@ -723,14 +772,20 @@ mod tests {
             .uri("/api/render-markdown")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: RenderMarkdownResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: RenderMarkdownResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(response_data.success);
         assert!(response_data.html.contains("<table>"));
@@ -759,14 +814,20 @@ mod tests {
         use tempfile::NamedTempFile;
 
         // Create a temporary .rnb file
-        let mut temp_file = NamedTempFile::new().unwrap();
+        let mut temp_file = NamedTempFile::new().expect("operation should succeed in test");
         let mut notebook = Notebook::new();
         notebook.add_cell(Cell::markdown("# Hello"));
         notebook.add_cell(Cell::code("println(42)"));
 
-        let json = serde_json::to_string_pretty(&notebook).unwrap();
-        std::io::Write::write_all(&mut temp_file, json.as_bytes()).unwrap();
-        let path = temp_file.path().to_str().unwrap().to_string();
+        let json =
+            serde_json::to_string_pretty(&notebook).expect("operation should succeed in test");
+        std::io::Write::write_all(&mut temp_file, json.as_bytes())
+            .expect("operation should succeed in test");
+        let path = temp_file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test")
+            .to_string();
 
         let app = Router::new().route("/api/notebook/load", post(load_notebook_handler));
 
@@ -776,16 +837,22 @@ mod tests {
             .uri("/api/notebook/load")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         assert_eq!(response.status(), StatusCode::OK);
 
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: LoadNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: LoadNotebookResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         // RED TEST: This will fail because handler is stubbed
         assert!(response_data.success, "Expected success=true");
@@ -806,14 +873,20 @@ mod tests {
             .uri("/api/notebook/load")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: LoadNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: LoadNotebookResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         assert!(!response_data.success);
         assert!(response_data.error.is_some());
@@ -824,9 +897,12 @@ mod tests {
         use crate::notebook::types::{Cell, Notebook};
         use tempfile::tempdir;
 
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let file_path = temp_dir.path().join("test.rnb");
-        let path = file_path.to_str().unwrap().to_string();
+        let path = file_path
+            .to_str()
+            .expect("operation should succeed in test")
+            .to_string();
 
         let mut notebook = Notebook::new();
         notebook.add_cell(Cell::markdown("# Test"));
@@ -843,14 +919,20 @@ mod tests {
             .uri("/api/notebook/save")
             .method("POST")
             .header("content-type", "application/json")
-            .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-            .unwrap();
+            .body(Body::from(
+                serde_json::to_string(&request_body).expect("operation should succeed in test"),
+            ))
+            .expect("operation should succeed in test");
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = app
+            .oneshot(request)
+            .await
+            .expect("operation should succeed in test");
         let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
-            .unwrap();
-        let response_data: SaveNotebookResponse = serde_json::from_slice(&body_bytes).unwrap();
+            .expect("operation should succeed in test");
+        let response_data: SaveNotebookResponse =
+            serde_json::from_slice(&body_bytes).expect("operation should succeed in test");
 
         // RED TEST: This will fail because handler is stubbed
         assert!(response_data.success, "Expected success=true");
