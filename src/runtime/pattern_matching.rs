@@ -549,7 +549,7 @@ mod tests {
         // Variable pattern should bind value
         let binding = match_pattern(&Pattern::Identifier("x".to_string()), &Value::Integer(42));
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "x");
         assert!(values_equal(&bindings[0].1, &Value::Integer(42)));
@@ -578,7 +578,7 @@ mod tests {
 
         let binding = match_pattern(&tuple_pattern, &tuple_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "s");
         assert!(values_equal(
@@ -620,12 +620,18 @@ mod tests {
 
         let binding = match_pattern(&list_pattern, &list_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 2);
 
         // Check bindings (order may vary, so check both)
-        let first_binding = bindings.iter().find(|(name, _)| name == "first").unwrap();
-        let last_binding = bindings.iter().find(|(name, _)| name == "last").unwrap();
+        let first_binding = bindings
+            .iter()
+            .find(|(name, _)| name == "first")
+            .expect("operation should succeed in test");
+        let last_binding = bindings
+            .iter()
+            .find(|(name, _)| name == "last")
+            .expect("operation should succeed in test");
         assert!(values_equal(&first_binding.1, &Value::Integer(1)));
         assert!(values_equal(&last_binding.1, &Value::Integer(3)));
 
@@ -657,7 +663,7 @@ mod tests {
 
         let binding = match_pattern(&rest_pattern, &list_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "first");
         assert!(values_equal(&bindings[0].1, &Value::Integer(1)));
@@ -671,12 +677,21 @@ mod tests {
 
         let binding = match_pattern(&named_rest_pattern, &list_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 3);
 
-        let first_binding = bindings.iter().find(|(name, _)| name == "first").unwrap();
-        let middle_binding = bindings.iter().find(|(name, _)| name == "middle").unwrap();
-        let last_binding = bindings.iter().find(|(name, _)| name == "last").unwrap();
+        let first_binding = bindings
+            .iter()
+            .find(|(name, _)| name == "first")
+            .expect("operation should succeed in test");
+        let middle_binding = bindings
+            .iter()
+            .find(|(name, _)| name == "middle")
+            .expect("operation should succeed in test");
+        let last_binding = bindings
+            .iter()
+            .find(|(name, _)| name == "last")
+            .expect("operation should succeed in test");
 
         assert!(values_equal(&first_binding.1, &Value::Integer(1)));
         assert!(values_equal(&last_binding.1, &Value::Integer(4)));
@@ -726,7 +741,7 @@ mod tests {
         let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("value".to_string())));
         let binding = match_pattern(&some_pattern, &some_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0].0, "value");
         assert!(values_equal(&bindings[0].1, &Value::Integer(42)));
@@ -772,17 +787,17 @@ mod tests {
 
         let binding = match_pattern(&struct_pattern, &struct_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 2);
 
         let name_binding = bindings
             .iter()
             .find(|(name, _)| name == "person_name")
-            .unwrap();
+            .expect("operation should succeed in test");
         let age_binding = bindings
             .iter()
             .find(|(name, _)| name == "person_age")
-            .unwrap();
+            .expect("operation should succeed in test");
 
         assert!(values_equal(
             &name_binding.1,
@@ -842,21 +857,21 @@ mod tests {
 
         let binding = match_pattern(&nested_pattern, &complex_value);
         assert!(binding.is_some());
-        let bindings = binding.unwrap();
+        let bindings = binding.expect("operation should succeed in test");
         assert_eq!(bindings.len(), 3); // Only 3 bindings now
 
         let outer_binding = bindings
             .iter()
             .find(|(name, _)| name == "outer_str")
-            .unwrap();
+            .expect("operation should succeed in test");
         let first_binding = bindings
             .iter()
             .find(|(name, _)| name == "first_int")
-            .unwrap();
+            .expect("operation should succeed in test");
         let second_binding = bindings
             .iter()
             .find(|(name, _)| name == "second_int")
-            .unwrap();
+            .expect("operation should succeed in test");
 
         assert!(values_equal(
             &outer_binding.1,
