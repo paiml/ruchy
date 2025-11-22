@@ -37,7 +37,7 @@ mod tests {
     fn test_eval_literal() {
         let mut interp = Interpreter::new();
         let expr = make_literal(42);
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(42));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(42));
     }
 
     #[test]
@@ -46,19 +46,19 @@ mod tests {
 
         // Test addition
         let expr = make_binary(make_literal(10), AstBinaryOp::Add, make_literal(5));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(15));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(15));
 
         // Test subtraction
         let expr = make_binary(make_literal(10), AstBinaryOp::Subtract, make_literal(3));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(7));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(7));
 
         // Test multiplication
         let expr = make_binary(make_literal(4), AstBinaryOp::Multiply, make_literal(7));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(28));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(28));
 
         // Test division
         let expr = make_binary(make_literal(20), AstBinaryOp::Divide, make_literal(4));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(5));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(5));
     }
 
     #[test]
@@ -67,18 +67,18 @@ mod tests {
 
         // Test equality
         let expr = make_binary(make_literal(5), AstBinaryOp::Equal, make_literal(5));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Bool(true));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Bool(true));
 
         let expr = make_binary(make_literal(5), AstBinaryOp::NotEqual, make_literal(3));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Bool(true));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Bool(true));
 
         // Test less than
         let expr = make_binary(make_literal(3), AstBinaryOp::Less, make_literal(5));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Bool(true));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Bool(true));
 
         // Test greater than
         let expr = make_binary(make_literal(7), AstBinaryOp::Greater, make_literal(2));
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Bool(true));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Bool(true));
     }
 
     #[test]
@@ -94,7 +94,7 @@ mod tests {
             span: Span::default(),
         };
 
-        assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(42));
+        assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(42));
     }
 
     #[test]
@@ -114,7 +114,7 @@ mod tests {
 
         // Test string concatenation
         let expr = make_binary(hello, AstBinaryOp::Add, world);
-        let result = interp.eval_expr(&expr).unwrap();
+        let result = interp.eval_expr(&expr).expect("operation should succeed in test");
 
         match result {
             Value::String(s) => assert_eq!(&**s, "Hello World"),
@@ -132,7 +132,7 @@ mod tests {
             span: Span::default(),
         };
 
-        let result = interp.eval_expr(&arr).unwrap();
+        let result = interp.eval_expr(&arr).expect("operation should succeed in test");
         match result {
             Value::Array(a) => {
                 assert_eq!(a.len(), 3);
@@ -161,7 +161,7 @@ mod tests {
             span: Span::default(),
         };
 
-        assert_eq!(interp.eval_expr(&if_expr).unwrap(), Value::Integer(10));
+        assert_eq!(interp.eval_expr(&if_expr).expect("operation should succeed in test"), Value::Integer(10));
 
         // if false { 10 } else { 20 }
         let if_expr = Expr {
@@ -176,7 +176,7 @@ mod tests {
             span: Span::default(),
         };
 
-        assert_eq!(interp.eval_expr(&if_expr).unwrap(), Value::Integer(20));
+        assert_eq!(interp.eval_expr(&if_expr).expect("operation should succeed in test"), Value::Integer(20));
     }
 
     #[test]
@@ -194,7 +194,7 @@ mod tests {
                 kind: ExprKind::Identifier("x".to_string()),
                 span: Span::default(),
             };
-            assert_eq!(interp.eval_expr(&expr).unwrap(), Value::Integer(42));
+            assert_eq!(interp.eval_expr(&expr).expect("operation should succeed in test"), Value::Integer(42));
         }
 
         // Check type feedback state
