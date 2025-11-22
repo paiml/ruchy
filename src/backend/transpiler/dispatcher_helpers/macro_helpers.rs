@@ -264,7 +264,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_println_macro(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
     }
 
@@ -278,7 +278,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("Hello"));
     }
@@ -297,7 +297,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[format_arg, value_arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("Value: {}"));
         assert!(tokens.contains("42"));
@@ -309,7 +309,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_print_macro(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
     }
 
@@ -323,7 +323,7 @@ mod tests {
         );
         let result = transpiler.transpile_print_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
         assert!(tokens.contains("test"));
     }
@@ -334,7 +334,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_panic_macro(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
     }
 
@@ -348,7 +348,7 @@ mod tests {
         );
         let result = transpiler.transpile_panic_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
         assert!(tokens.contains("Error occurred"));
     }
@@ -359,7 +359,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_vec_macro(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
     }
 
@@ -377,7 +377,7 @@ mod tests {
         );
         let result = transpiler.transpile_vec_macro(&[elem1, elem2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
         assert!(tokens.contains('1'));
         assert!(tokens.contains('2'));
@@ -389,7 +389,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_assert_macro(&[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert"));
     }
 
@@ -400,7 +400,7 @@ mod tests {
         let arg = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_assert_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert"));
         assert!(tokens.contains("true"));
     }
@@ -419,7 +419,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_eq_macro(&[left, right]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_eq"));
     }
 
@@ -453,7 +453,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_ne_macro(&[left, right]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_ne"));
     }
 
@@ -483,7 +483,7 @@ mod tests {
         );
         let result = transpiler.transpile_passthrough_macro("custom_macro", &[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("custom_macro"));
         assert!(tokens.contains("42"));
     }
@@ -498,7 +498,7 @@ mod tests {
         );
         let result = transpiler.transpile_print_args(&[arg]);
         assert!(result.is_ok());
-        let tokens_vec = result.unwrap();
+        let tokens_vec = result.expect("result should be Ok in test");
         assert!(!tokens_vec.is_empty());
         let tokens_str = tokens_vec[0].to_string();
         // Should include Debug format {:?}
@@ -520,7 +520,7 @@ mod tests {
         );
         let result = transpiler.transpile_panic_macro(&[format_arg, value_arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
         assert!(tokens.contains("Error: {}"));
         assert!(tokens.contains("error_code"));
@@ -540,7 +540,7 @@ mod tests {
         );
         let result = transpiler.transpile_passthrough_macro("my_macro", &[arg1, arg2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("my_macro"));
         assert!(tokens.contains('1'));
         assert!(tokens.contains('2'));
@@ -564,7 +564,7 @@ mod tests {
         );
         let result = transpiler.transpile_print_macro(&[format_arg, arg1, arg2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
         assert!(tokens.contains("x: {}, y: {}"));
         assert!(tokens.contains("10"));
@@ -589,7 +589,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_eq_macro(&[left, right, message]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_eq"));
         assert!(tokens.contains('5'));
         assert!(tokens.contains("Values should be equal"));
@@ -613,7 +613,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_ne_macro(&[left, right, message]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_ne"));
         assert!(tokens.contains('5'));
         assert!(tokens.contains("10"));
@@ -631,7 +631,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_macro(&[condition, message]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert"));
         assert!(tokens.contains("true"));
     }
@@ -646,7 +646,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("{:?}"));
         assert!(tokens.contains("123"));
@@ -658,7 +658,7 @@ mod tests {
         let transpiler = Transpiler::new();
         let result = transpiler.transpile_passthrough_macro("empty_macro", &[]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("empty_macro"));
     }
 
@@ -672,7 +672,7 @@ mod tests {
         );
         let result = transpiler.transpile_vec_macro(&[elem]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
         assert!(tokens.contains("single"));
     }
@@ -700,7 +700,7 @@ mod tests {
         let arg2 = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_println_macro(&[arg1, arg2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("{:?}"));
         assert!(tokens.contains("42"));
@@ -721,7 +721,7 @@ mod tests {
         );
         let result = transpiler.transpile_print_macro(&[arg1, arg2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
     }
 
@@ -735,7 +735,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[format_str]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
     }
 
@@ -761,7 +761,7 @@ mod tests {
         );
         let result = transpiler.transpile_vec_macro(&[elem1, elem2, elem3, elem4]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
         assert!(tokens.contains('1'));
         assert!(tokens.contains('4'));
@@ -782,7 +782,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_macro(&[condition, message, extra]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert"));
     }
 
@@ -815,11 +815,17 @@ mod tests {
         let result1 =
             transpiler.transpile_passthrough_macro("custom_macro", std::slice::from_ref(&arg));
         assert!(result1.is_ok());
-        assert!(result1.unwrap().to_string().contains("custom_macro"));
+        assert!(result1
+            .expect("result should be Ok in test")
+            .to_string()
+            .contains("custom_macro"));
 
         let result2 = transpiler.transpile_passthrough_macro("another", std::slice::from_ref(&arg));
         assert!(result2.is_ok());
-        assert!(result2.unwrap().to_string().contains("another"));
+        assert!(result2
+            .expect("result should be Ok in test")
+            .to_string()
+            .contains("another"));
     }
 
     // Test 35: transpile_panic_macro with single format string argument
@@ -832,7 +838,7 @@ mod tests {
         );
         let result = transpiler.transpile_panic_macro(&[format_str]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
     }
 
@@ -846,7 +852,7 @@ mod tests {
         );
         let result = transpiler.transpile_print_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
         assert!(tokens.contains("{:?}"));
         assert!(tokens.contains("999"));
@@ -866,7 +872,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_eq_macro(&[left, right]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_eq"));
         assert!(tokens.contains('5'));
     }
@@ -879,7 +885,7 @@ mod tests {
         let elem2 = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
         let result = transpiler.transpile_vec_macro(&[elem1, elem2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
         assert!(tokens.contains("true"));
         assert!(tokens.contains("false"));
@@ -892,7 +898,7 @@ mod tests {
         let arg = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
         let result = transpiler.transpile_println_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("{:?}"));
         assert!(tokens.contains("false"));
@@ -912,7 +918,7 @@ mod tests {
         );
         let result = transpiler.transpile_panic_macro(&[arg1, arg2]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
     }
 
@@ -930,7 +936,7 @@ mod tests {
         );
         let result = transpiler.transpile_assert_ne_macro(&[left, right]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("assert_ne"));
         assert!(tokens.contains("10"));
         assert!(tokens.contains("20"));
@@ -951,7 +957,7 @@ mod tests {
         let arg3 = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_passthrough_macro("complex_macro", &[arg1, arg2, arg3]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("complex_macro"));
         assert!(tokens.contains("arg1"));
         assert!(tokens.contains("42"));
@@ -972,7 +978,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[format_str, arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
         assert!(tokens.contains("Debug: {:?}"));
     }
@@ -988,7 +994,7 @@ mod tests {
         let arg = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
         let result = transpiler.transpile_print_macro(&[format_str, arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("print"));
         assert!(tokens.contains("Pretty: {:#?}"));
     }
@@ -1007,7 +1013,7 @@ mod tests {
         );
         let result = transpiler.transpile_panic_macro(&[format_str, arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("panic"));
         assert!(tokens.contains("Hex: {:x}"));
     }
@@ -1022,7 +1028,7 @@ mod tests {
         );
         let result = transpiler.transpile_println_macro(&[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("println"));
     }
 
@@ -1044,7 +1050,7 @@ mod tests {
         );
         let result = transpiler.transpile_vec_macro(&[elem1, elem2, elem3]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("vec"));
         assert!(tokens.contains("first"));
         assert!(tokens.contains("second"));
@@ -1085,7 +1091,7 @@ mod tests {
         );
         let result = transpiler.transpile_passthrough_macro("custom_macro", &[arg]);
         assert!(result.is_ok());
-        let tokens = result.unwrap().to_string();
+        let tokens = result.expect("result should be Ok in test").to_string();
         assert!(tokens.contains("custom_macro"));
         assert!(tokens.contains("single_arg"));
     }
