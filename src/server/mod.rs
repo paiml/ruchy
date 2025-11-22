@@ -118,16 +118,16 @@ mod tests {
     /// RED: This test should FAIL because `PidFile::new()` is unimplemented
     #[test]
     fn test_pid_file_creation() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
         let pid_path = temp_dir.path().join("test.pid");
 
-        let _pid_file = PidFile::new(pid_path.clone()).unwrap();
+        let _pid_file = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
 
         // PID file should exist
         assert!(pid_path.exists(), "PID file should be created");
 
         // Should contain current process ID
-        let contents = fs::read_to_string(&pid_path).unwrap();
+        let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
         let expected = process::id().to_string();
         assert_eq!(
             contents, expected,
@@ -140,11 +140,12 @@ mod tests {
     /// RED: This test should FAIL because Drop is not implemented
     #[test]
     fn test_pid_file_cleanup() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
         let pid_path = temp_dir.path().join("test.pid");
 
         {
-            let _pid_file = PidFile::new(pid_path.clone()).unwrap();
+            let _pid_file =
+                PidFile::new(pid_path.clone()).expect("operation should succeed in test");
             assert!(pid_path.exists(), "PID file should exist while in scope");
         } // PidFile dropped here
 
@@ -157,16 +158,16 @@ mod tests {
     /// RED: This test should FAIL because `PidFile::new()` doesn't check for stale PIDs
     #[test]
     fn test_pid_file_replaces_stale() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
         let pid_path = temp_dir.path().join("test.pid");
 
         // Write stale PID (non-existent process)
-        fs::write(&pid_path, "999999").unwrap();
+        fs::write(&pid_path, "999999").expect("operation should succeed in test");
 
-        let _pid_file = PidFile::new(pid_path.clone()).unwrap();
+        let _pid_file = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
 
         // Should have replaced with current PID
-        let contents = fs::read_to_string(&pid_path).unwrap();
+        let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
         let expected = process::id().to_string();
         assert_eq!(
             contents, expected,
@@ -180,19 +181,19 @@ mod tests {
     #[test]
     #[ignore = "Requires Unix signals - run with: cargo test -- --ignored"]
     fn test_pid_file_kills_running_process() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
         let pid_path = temp_dir.path().join("test.pid");
 
         // Spawn a child process and write its PID
         let mut child = std::process::Command::new("sleep")
             .arg("10")
             .spawn()
-            .unwrap();
+            .expect("operation should succeed in test");
         let child_pid = child.id();
-        fs::write(&pid_path, child_pid.to_string()).unwrap();
+        fs::write(&pid_path, child_pid.to_string()).expect("operation should succeed in test");
 
         // Create PidFile - should kill the child process
-        let _pid_file = PidFile::new(pid_path).unwrap();
+        let _pid_file = PidFile::new(pid_path).expect("operation should succeed in test");
 
         // Wait a moment for kill to take effect
         thread::sleep(Duration::from_millis(100));
@@ -223,16 +224,16 @@ mod tests {
         use proptest::prelude::*;
 
         proptest!(|(seed in any::<u32>())| {
-            let temp_dir = tempfile::tempdir().unwrap();
+            let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
             let pid_path = temp_dir.path().join(format!("test_{seed}.pid"));
 
-            let _pid_file = PidFile::new(pid_path.clone()).unwrap();
+            let _pid_file = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
 
             // PID file should exist and contain valid PID
             prop_assert!(pid_path.exists());
 
-            let contents = fs::read_to_string(&pid_path).unwrap();
-            let pid: u32 = contents.parse().unwrap();
+            let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
+            let pid: u32 = contents.parse().expect("operation should succeed in test");
             prop_assert_eq!(pid, process::id());
         });
     }
