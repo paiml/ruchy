@@ -750,7 +750,7 @@ mod tests {
         assert!(result.is_err());
 
         // Test with existing file (use temp file)
-        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let temp_file = tempfile::NamedTempFile::new().expect("operation should succeed in test");
         let result = verify_output_exists(temp_file.path());
         assert!(result.is_ok());
     }
@@ -933,10 +933,18 @@ mod tests {
             if let Ok((_temp_dir, rust_file)) = result {
                 // Verify file was created
                 assert!(rust_file.exists());
-                assert!(rust_file.file_name().unwrap() == "main.rs");
+                assert!(
+                    rust_file
+                        .file_name()
+                        .expect("operation should succeed in test")
+                        == "main.rs"
+                );
 
                 // Verify parent directory exists
-                assert!(rust_file.parent().unwrap().exists());
+                assert!(rust_file
+                    .parent()
+                    .expect("operation should succeed in test")
+                    .exists());
 
                 // When _temp_dir goes out of scope, cleanup should happen automatically
                 // This tests the RAII behavior of TempDir
@@ -955,7 +963,10 @@ mod tests {
         let result = execute_compilation(cmd);
         assert!(result.is_err());
 
-        let error_msg = format!("{}", result.err().unwrap());
+        let error_msg = format!(
+            "{}",
+            result.err().expect("operation should succeed in test")
+        );
         assert!(error_msg.contains("Compilation failed"));
     }
 
@@ -1017,7 +1028,8 @@ mod tests {
         if let Ok((_temp_dir, rust_file)) = result {
             // Verify empty file was created
             assert!(rust_file.exists());
-            let contents = std::fs::read_to_string(&rust_file).unwrap();
+            let contents =
+                std::fs::read_to_string(&rust_file).expect("operation should succeed in test");
             assert!(contents.is_empty());
         }
     }
@@ -1026,12 +1038,12 @@ mod tests {
     #[test]
     fn test_verify_output_scenarios() {
         // Test with temporary file that exists
-        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let temp_file = tempfile::NamedTempFile::new().expect("operation should succeed in test");
         let result = verify_output_exists(temp_file.path());
         assert!(result.is_ok());
 
         // Test with directory instead of file
-        let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_dir = tempfile::TempDir::new().expect("operation should succeed in test");
         let result = verify_output_exists(temp_dir.path());
         assert!(result.is_ok()); // Directory exists, so should pass
 
@@ -1101,16 +1113,17 @@ mod tests {
         use std::fs;
 
         // Create a temporary directory for our tests
-        let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_dir = tempfile::TempDir::new().expect("operation should succeed in test");
         let source_file = temp_dir.path().join("test_program.ruchy");
 
         // Write a simple test program
         let source_content = "fun main() { println(\"Integration test\"); }";
-        fs::write(&source_file, source_content).unwrap();
+        fs::write(&source_file, source_content).expect("operation should succeed in test");
 
         // Verify file was created and can be read
         assert!(source_file.exists());
-        let read_content = fs::read_to_string(&source_file).unwrap();
+        let read_content =
+            fs::read_to_string(&source_file).expect("operation should succeed in test");
         assert_eq!(read_content, source_content);
 
         // Test compile_to_binary with actual file
