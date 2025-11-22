@@ -179,7 +179,10 @@ impl ActorRuntime {
 
     /// Generate a unique actor ID
     pub fn generate_actor_id(&self) -> String {
-        let mut id = self.next_actor_id.lock().unwrap();
+        let mut id = self
+            .next_actor_id
+            .lock()
+            .expect("mutex should not be poisoned");
         *id += 1;
         format!("actor_{id}")
     }
@@ -195,7 +198,7 @@ impl ActorRuntime {
         let mut instance = ActorInstance::new(actor_type, initial_state);
         instance.receive_handlers = receive_handlers;
 
-        let mut actors = self.actors.write().unwrap();
+        let mut actors = self.actors.write().expect("rwlock should not be poisoned");
         actors.insert(actor_id.clone(), Arc::new(Mutex::new(instance)));
 
         Ok(actor_id)
@@ -207,9 +210,9 @@ impl ActorRuntime {
         actor_id: &str,
         message: ActorMessage,
     ) -> Result<(), InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self.actors.read().expect("rwlock should not be poisoned");
         if let Some(actor) = actors.get(actor_id) {
-            let mut instance = actor.lock().unwrap();
+            let mut instance = actor.lock().expect("mutex should not be poisoned");
             instance.send(message)?;
             // Process the message immediately (synchronous for now)
             instance.process_mailbox()?;
@@ -226,9 +229,9 @@ impl ActorRuntime {
         &self,
         actor_id: &str,
     ) -> Result<HashMap<String, ActorFieldValue>, InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self.actors.read().expect("rwlock should not be poisoned");
         if let Some(actor) = actors.get(actor_id) {
-            let instance = actor.lock().unwrap();
+            let instance = actor.lock().expect("mutex should not be poisoned");
             Ok(instance.state.clone())
         } else {
             Err(InterpreterError::RuntimeError(format!(
@@ -243,9 +246,9 @@ impl ActorRuntime {
         actor_id: &str,
         field_name: &str,
     ) -> Result<ActorFieldValue, InterpreterError> {
-        let actors = self.actors.read().unwrap();
+        let actors = self.actors.read().expect("rwlock should not be poisoned");
         if let Some(actor) = actors.get(actor_id) {
-            let instance = actor.lock().unwrap();
+            let instance = actor.lock().expect("mutex should not be poisoned");
             Ok(instance
                 .state
                 .get(field_name)
@@ -302,8 +305,12 @@ mod tests {
             data: vec![],
         };
 
-        instance.send(msg).unwrap();
-        instance.process_mailbox().unwrap();
+        instance
+            .send(msg)
+            .expect("operation should succeed in test");
+        instance
+            .process_mailbox()
+            .expect("operation should succeed in test");
 
         assert_eq!(
             instance.state.get("count"),
@@ -327,7 +334,7 @@ mod mutation_tests {
                 message_type: "test".into(),
                 data: vec![],
             })
-            .unwrap();
+            .expect("operation should succeed in test");
         assert!(!mailbox.is_empty(), "Non-empty mailbox should return false");
     }
 
@@ -347,10 +354,10 @@ mod mutation_tests {
         let runtime = ActorRuntime::new();
         let id1 = runtime
             .spawn_actor("TestActor".into(), HashMap::new(), HashMap::new())
-            .unwrap();
+            .expect("operation should succeed in test");
         let id2 = runtime
             .spawn_actor("TestActor".into(), HashMap::new(), HashMap::new())
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_ne!(id1, id2, "spawn_actor should return unique IDs");
         assert!(!id1.is_empty(), "ID should not be empty string");
     }
