@@ -487,7 +487,10 @@ mod tests {
         let mut builder = MirBuilder::new();
         builder.start_function("test".to_string(), Type::Bool);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.name, "test");
         assert_eq!(func.return_ty, Type::Bool);
         assert!(func.params.is_empty());
@@ -511,7 +514,10 @@ mod tests {
         assert_eq!(builder.get_local("y"), Some(Local(1)));
         assert_eq!(builder.get_local("z"), None);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.params.len(), 2);
         assert_eq!(func.locals.len(), 2);
     }
@@ -528,7 +534,10 @@ mod tests {
         assert_eq!(local1, Local(0));
         assert_eq!(local2, Local(1));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.locals.len(), 2);
         assert!(!func.locals[0].mutable);
         assert!(func.locals[1].mutable);
@@ -546,7 +555,10 @@ mod tests {
         assert_eq!(local, Local(0));
         assert_eq!(builder.get_local("var"), Some(Local(0)));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.locals[0].name, Some("var".to_string()));
         assert_eq!(func.locals[0].ty, Type::String);
         assert!(func.locals[0].mutable);
@@ -564,7 +576,10 @@ mod tests {
         assert_eq!(block1, BlockId(0));
         assert_eq!(block2, BlockId(1));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks.len(), 2);
         assert_eq!(func.blocks[0].id, block1);
         assert_eq!(func.blocks[1].id, block2);
@@ -580,7 +595,10 @@ mod tests {
         // Test valid block access
         let block_ref = builder.block_mut(block);
         assert!(block_ref.is_some());
-        assert_eq!(block_ref.unwrap().id, block);
+        assert_eq!(
+            block_ref.expect("operation should succeed in test").id,
+            block
+        );
 
         // Test invalid block access
         let invalid_block = builder.block_mut(BlockId(999));
@@ -598,7 +616,10 @@ mod tests {
         let stmt = Statement::StorageLive(local);
         builder.push_statement(block, stmt);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), 1);
         assert!(matches!(
             func.blocks[0].statements[0],
@@ -615,7 +636,10 @@ mod tests {
 
         builder.set_terminator(block, Terminator::Return(None));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(
             func.blocks[0].terminator,
             Terminator::Return(None)
@@ -630,7 +654,7 @@ mod tests {
 
         let func = builder.finish_function();
         assert!(func.is_some());
-        assert_eq!(func.unwrap().name, "test");
+        assert_eq!(func.expect("operation should succeed in test").name, "test");
         assert!(builder.current_function.is_none());
 
         // Test finishing when no function is active
@@ -649,7 +673,10 @@ mod tests {
         let rvalue = Rvalue::Use(Operand::Constant(Constant::Int(42, Type::I32)));
         builder.assign(block, Place::Local(local), rvalue);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), 1);
         assert!(matches!(
             func.blocks[0].statements[0],
@@ -667,7 +694,10 @@ mod tests {
 
         builder.storage_live(block, local);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(
             func.blocks[0].statements[0],
             Statement::StorageLive(_)
@@ -684,7 +714,10 @@ mod tests {
 
         builder.storage_dead(block, local);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(
             func.blocks[0].statements[0],
             Statement::StorageDead(_)
@@ -701,7 +734,10 @@ mod tests {
 
         builder.goto(block1, block2);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(func.blocks[0].terminator, Terminator::Goto(_)));
         if let Terminator::Goto(target) = &func.blocks[0].terminator {
             assert_eq!(*target, block2);
@@ -720,7 +756,10 @@ mod tests {
         let cond = Operand::Constant(Constant::Bool(true));
         builder.branch(entry, cond, then_block, else_block);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Terminator::If {
             condition: _,
             then_block: tb,
@@ -745,7 +784,10 @@ mod tests {
         let operand = Operand::Constant(Constant::Int(42, Type::I32));
         builder.return_(block, Some(operand));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(
             func.blocks[0].terminator,
             Terminator::Return(Some(_))
@@ -761,7 +803,10 @@ mod tests {
 
         builder.return_(block, None);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert!(matches!(
             func.blocks[0].terminator,
             Terminator::Return(None)
@@ -786,7 +831,10 @@ mod tests {
             Some((Place::Local(local), block2)),
         );
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Terminator::Call {
             func: _,
             args,
@@ -817,7 +865,10 @@ mod tests {
         ];
         builder.switch(entry, discriminant, targets, Some(default));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Terminator::Switch {
             targets: t,
             default: d,
@@ -843,7 +894,10 @@ mod tests {
         let right = Operand::Constant(Constant::Int(3, Type::I32));
         builder.binary_op(block, dest, BinOp::Add, left, right);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(rvalue, Rvalue::BinaryOp(BinOp::Add, _, _)));
@@ -863,7 +917,10 @@ mod tests {
         let operand = Operand::Constant(Constant::Int(-5, Type::I32));
         builder.unary_op(block, dest, UnOp::Neg, operand);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(rvalue, Rvalue::UnaryOp(UnOp::Neg, _)));
@@ -886,7 +943,10 @@ mod tests {
 
         assert_eq!(next_block, BlockId(1));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks.len(), 2);
         if let Terminator::Call { destination, .. } = &func.blocks[0].terminator {
             assert_eq!(destination, &Some((Place::Local(dest), next_block)));
@@ -906,7 +966,10 @@ mod tests {
         let operand = Operand::Constant(Constant::Int(42, Type::I32));
         builder.cast(block, dest, CastKind::Numeric, operand, Type::F64);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             if let Rvalue::Cast(kind, _, target_ty) = rvalue {
@@ -935,7 +998,10 @@ mod tests {
 
         builder.ref_(block, dest, Mutability::Mutable, Place::Local(source));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(rvalue, Rvalue::Ref(Mutability::Mutable, _)));
@@ -955,7 +1021,10 @@ mod tests {
 
         builder.move_(block, Place::Local(dest), Place::Local(source));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(rvalue, Rvalue::Use(Operand::Move(_))));
@@ -975,7 +1044,10 @@ mod tests {
 
         builder.copy(block, Place::Local(dest), Place::Local(source));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(rvalue, Rvalue::Use(Operand::Copy(_))));
@@ -994,7 +1066,10 @@ mod tests {
 
         builder.const_(block, Place::Local(dest), Constant::Bool(true));
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Statement::Assign(place, rvalue) = &func.blocks[0].statements[0] {
             assert_eq!(*place, Place::Local(dest));
             assert!(matches!(
@@ -1024,7 +1099,9 @@ mod tests {
             Operand::Copy(Place::Local(b)),
         );
         builder.return_(entry, Some(Operand::Move(Place::Local(result))));
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.name, "add");
         assert_eq!(func.params.len(), 2);
         assert_eq!(func.blocks.len(), 1);
@@ -1062,7 +1139,9 @@ mod tests {
         builder.goto(else_block, merge_block);
         // Merge and return
         builder.return_(merge_block, Some(Operand::Copy(Place::Local(x))));
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks.len(), 4);
     }
 
@@ -1112,7 +1191,9 @@ mod tests {
             Some(Operand::Constant(Constant::Int(0, Type::I32))),
         );
 
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks.len(), 5);
 
         // Verify switch structure
@@ -1166,7 +1247,9 @@ mod tests {
             builder.binary_op(block, dest, *op, left, right);
         }
 
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), ops.len());
     }
 
@@ -1185,7 +1268,9 @@ mod tests {
             builder.unary_op(block, dest, op, operand);
         }
 
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), 4);
     }
 
@@ -1204,7 +1289,9 @@ mod tests {
             builder.cast(block, dest, kind, operand, Type::F64);
         }
 
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), 3);
     }
 
@@ -1237,7 +1324,9 @@ mod tests {
         );
         builder.ref_(block, mut_ref, Mutability::Mutable, Place::Local(source));
 
-        let func = builder.finish_function().unwrap();
+        let func = builder
+            .finish_function()
+            .expect("operation should succeed in test");
         assert_eq!(func.blocks[0].statements.len(), 2);
     }
 
@@ -1252,7 +1341,10 @@ mod tests {
         let args = vec![Operand::Constant(Constant::String("hello".to_string()))];
         builder.call_term(block, func_operand, args, None);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Terminator::Call { destination, .. } = &func.blocks[0].terminator {
             assert!(destination.is_none());
         } else {
@@ -1272,7 +1364,10 @@ mod tests {
         let targets = vec![(Constant::Int(1, Type::I32), case1)];
         builder.switch(entry, discriminant, targets, None);
 
-        let func = builder.current_function.as_ref().unwrap();
+        let func = builder
+            .current_function
+            .as_ref()
+            .expect("operation should succeed in test");
         if let Terminator::Switch { default, .. } = &func.blocks[0].terminator {
             assert!(default.is_none());
         } else {
@@ -1303,7 +1398,7 @@ mod property_tests_builder {
             let mut builder = MirBuilder::new();
             builder.start_function(name.clone(), return_type.clone());
 
-            let func = builder.finish_function().unwrap();
+            let func = builder.finish_function().expect("operation should succeed in test");
             prop_assert_eq!(func.name, name);
             prop_assert_eq!(func.return_ty, return_type);
         }
@@ -1392,7 +1487,7 @@ mod property_tests_builder {
                 let local = builder.alloc_local(Type::I32, false, None);
                 builder.push_statement(block, Statement::StorageLive(local));
 
-                let func = builder.current_function.as_ref().unwrap();
+                let func = builder.current_function.as_ref().expect("operation should succeed in test");
                 prop_assert_eq!(func.blocks[0].statements.len(), i + 1);
             }
         }
@@ -1412,7 +1507,7 @@ mod property_tests_builder {
             let right = Operand::Constant(Constant::Int(2, Type::I32));
             builder.binary_op(block, dest, op, left, right);
 
-            let func = builder.finish_function().unwrap();
+            let func = builder.finish_function().expect("operation should succeed in test");
             if let Statement::Assign(_, Rvalue::BinaryOp(actual_op, _, _)) = &func.blocks[0].statements[0] {
                 prop_assert_eq!(*actual_op, op);
             } else {
@@ -1434,7 +1529,7 @@ mod property_tests_builder {
             let operand = Operand::Constant(Constant::Int(42, Type::I32));
             builder.unary_op(block, dest, op, operand);
 
-            let func = builder.finish_function().unwrap();
+            let func = builder.finish_function().expect("operation should succeed in test");
             if let Statement::Assign(_, Rvalue::UnaryOp(actual_op, _)) = &func.blocks[0].statements[0] {
                 prop_assert_eq!(*actual_op, op);
             } else {
