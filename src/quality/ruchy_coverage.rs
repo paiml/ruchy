@@ -477,9 +477,10 @@ mod tests {
     use tempfile::NamedTempFile;
 
     fn create_test_file(content: &str) -> NamedTempFile {
-        let mut file = NamedTempFile::new().unwrap();
-        file.write_all(content.as_bytes()).unwrap();
-        file.flush().unwrap();
+        let mut file = NamedTempFile::new().expect("operation should succeed in test");
+        file.write_all(content.as_bytes())
+            .expect("operation should succeed in test");
+        file.flush().expect("operation should succeed in test");
         file
     }
 
@@ -587,8 +588,14 @@ mod tests {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
         assert_eq!(coverage.total_lines, 0);
         assert_eq!(coverage.total_functions, 0);
     }
@@ -607,8 +614,14 @@ fn hello() {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
         assert_eq!(coverage.total_lines, 3); // Non-empty, non-comment lines
         assert_eq!(coverage.total_functions, 1);
     }
@@ -630,8 +643,14 @@ fun multiply(x, y) {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
         assert_eq!(coverage.total_functions, 2);
     }
 
@@ -663,8 +682,14 @@ fn test_branches(x) {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
         // if (2 branches) + match (1) + while (1) + for (1) = 5 branches
         assert_eq!(coverage.total_branches, 5);
     }
@@ -680,7 +705,10 @@ fn test_branches(x) {
 
         collector.mark_covered("test.ruchy", vec![1, 3, 5]);
 
-        let coverage = collector.coverage_data.get("test.ruchy").unwrap();
+        let coverage = collector
+            .coverage_data
+            .get("test.ruchy")
+            .expect("operation should succeed in test");
         assert!(coverage.covered_lines.contains(&1));
         assert!(coverage.covered_lines.contains(&3));
         assert!(coverage.covered_lines.contains(&5));
@@ -700,7 +728,10 @@ fn test_branches(x) {
         collector.mark_function_covered("test.ruchy", "main");
         collector.mark_function_covered("test.ruchy", "helper");
 
-        let coverage = collector.coverage_data.get("test.ruchy").unwrap();
+        let coverage = collector
+            .coverage_data
+            .get("test.ruchy")
+            .expect("operation should succeed in test");
         assert!(coverage.covered_functions.contains("main"));
         assert!(coverage.covered_functions.contains("helper"));
         assert!((coverage.function_coverage() - 66.666_666_666_666_67).abs() < 1e-10);
@@ -868,7 +899,9 @@ fn test_branches(x) {
             .runtime_instrumentation
             .mark_function_executed("test.ruchy", "main");
 
-        let (lines, functions) = collector.get_runtime_coverage("test.ruchy").unwrap();
+        let (lines, functions) = collector
+            .get_runtime_coverage("test.ruchy")
+            .expect("operation should succeed in test");
 
         if let Some(lines) = lines {
             assert!(lines.contains(&1));
@@ -909,8 +942,14 @@ fn test_helper() {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
         assert_eq!(coverage.total_functions, 3);
 
         // Should mark test functions as covered
@@ -954,8 +993,14 @@ fun helper() {
         let result = collector.analyze_file(file.path());
         assert!(result.is_ok());
 
-        let file_path = file.path().to_str().unwrap();
-        let coverage = collector.coverage_data.get(file_path).unwrap();
+        let file_path = file
+            .path()
+            .to_str()
+            .expect("operation should succeed in test");
+        let coverage = collector
+            .coverage_data
+            .get(file_path)
+            .expect("operation should succeed in test");
 
         // Should count non-comment, non-empty lines
         assert!(coverage.total_lines > 10);
