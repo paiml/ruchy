@@ -181,8 +181,18 @@ impl Clone for Transpiler {
             current_function_return_type: std::cell::RefCell::new(
                 self.current_function_return_type.borrow().clone(),
             ),
-            global_vars: std::sync::RwLock::new(self.global_vars.read().unwrap().clone()),
-            const_vars: std::sync::RwLock::new(self.const_vars.read().unwrap().clone()),
+            global_vars: std::sync::RwLock::new(
+                self.global_vars
+                    .read()
+                    .expect("rwlock should not be poisoned")
+                    .clone(),
+            ),
+            const_vars: std::sync::RwLock::new(
+                self.const_vars
+                    .read()
+                    .expect("rwlock should not be poisoned")
+                    .clone(),
+            ),
         }
     }
 }
@@ -285,7 +295,10 @@ impl Transpiler {
             // Check for const attribute (before it's lost in optimization)
             let is_const = expr.attributes.iter().any(|attr| attr.name == "const");
             if is_const {
-                self.const_vars.write().unwrap().insert(name.clone());
+                self.const_vars
+                    .write()
+                    .expect("rwlock should not be poisoned")
+                    .insert(name.clone());
             }
         }
         // Recursively check nested expressions
@@ -1033,7 +1046,11 @@ impl Transpiler {
         // TRANSPILER-SCOPE: First pass - collect names of mutable Lets that will become globals
         // SPEC-001-B: Const names are collected earlier (before optimization) in collect_const_declarations()
         let mut global_var_names = std::collections::HashSet::new();
-        let const_var_names = self.const_vars.read().unwrap().clone();
+        let const_var_names = self
+            .const_vars
+            .read()
+            .expect("rwlock should not be poisoned")
+            .clone();
         for expr in exprs {
             if let ExprKind::Function { name, .. } = &expr.kind {
                 if name == "main" {
@@ -1061,7 +1078,11 @@ impl Transpiler {
         }
 
         // TRANSPILER-SCOPE: Store global variable names for use during expression transpilation
-        (*self.global_vars.write().unwrap()).clone_from(&global_var_names);
+        (*self
+            .global_vars
+            .write()
+            .expect("rwlock should not be poisoned"))
+        .clone_from(&global_var_names);
 
         // Second pass - categorize expressions, skipping main() calls and promoted globals
         for expr in exprs {
@@ -1337,14 +1358,25 @@ impl Transpiler {
         let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
         if has_statements {
             // Split into statements and possible final expression
-            let (statements, final_expr) =
-                if !exprs.is_empty() && !self.is_statement_expr(exprs.last().unwrap()) {
-                    // Last item is an expression, not a statement
-                    (&exprs[..exprs.len() - 1], Some(exprs.last().unwrap()))
-                } else {
-                    // All are statements
-                    (exprs, None)
-                };
+            let (statements, final_expr) = if !exprs.is_empty()
+                && !self.is_statement_expr(
+                    exprs
+                        .last()
+                        .expect("vec is non-empty due to is_empty check"),
+                ) {
+                // Last item is an expression, not a statement
+                (
+                    &exprs[..exprs.len() - 1],
+                    Some(
+                        exprs
+                            .last()
+                            .expect("vec is non-empty due to is_empty check"),
+                    ),
+                )
+            } else {
+                // All are statements
+                (exprs, None)
+            };
             // Transpile all statements and add semicolons intelligently
             let statement_results: Result<Vec<_>> = statements
                 .iter()
@@ -2197,7 +2229,7 @@ mod tests {
         let result = transpiler.transpile(&literal_expr);
         assert!(result.is_ok());
 
-        let token_stream = result.unwrap();
+        let token_stream = result.expect("operation should succeed in test");
         let code = token_stream.to_string();
         assert!(code.contains("42"));
     }
@@ -2242,7 +2274,7 @@ mod tests {
         let result = transpiler.transpile_to_program(&literal_expr);
         assert!(result.is_ok());
 
-        let token_stream = result.unwrap();
+        let token_stream = result.expect("operation should succeed in test");
         let code = token_stream.to_string();
 
         // Should contain main function and the literal
