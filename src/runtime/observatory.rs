@@ -976,7 +976,8 @@ mod tests {
                 .memory_usage
                 .expect("memory_usage should be Some")
                 > 10240
-        ); // > 10KB indicates potential leak
+        );
+        // > 10KB indicates potential leak
     }
 
     #[test]

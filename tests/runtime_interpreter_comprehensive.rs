@@ -57,8 +57,12 @@ fn test_closure_captures_environment() {
 
 #[test]
 fn test_nested_scopes() {
-    ruchy_cmd().arg("-e").arg("let x = 1; fn outer() { let x = 2; fn inner() { let x = 3; x }; inner() }; println(outer())")
-        .assert().success().stdout(predicate::str::contains("3"));
+    ruchy_cmd()
+        .arg("-e")
+        .arg("let x = 1; fn outer() { let x = 2; fn inner() { let x = 3; x }; inner() }; println(outer())")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("3"));
 }
 
 // ============================================================================

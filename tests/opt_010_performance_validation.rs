@@ -77,22 +77,15 @@ fn test_opt_010_arithmetic_speedup() {
 
 #[test]
 fn test_opt_010_loop_speedup() {
-    let workloads = vec![
-        (
-            "count_to_10",
-            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
-            1000,
-        ),
+    let workloads =
+        vec![
+        ("count_to_10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }", 1000),
         (
             "sum_1_to_10",
             "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",
             1000,
         ),
-        (
-            "countdown",
-            "{ let mut i = 10; while i > 0 { i = i - 1 }; i }",
-            1000,
-        ),
+        ("countdown", "{ let mut i = 10; while i > 0 { i = i - 1 }; i }", 1000),
     ];
 
     for (name, code, iterations) in workloads {
@@ -210,25 +203,18 @@ fn test_opt_010_fibonacci_speedup() {
 fn test_opt_010_comprehensive_performance_report() {
     println!("\n=== OPT-010: Comprehensive Performance Report ===\n");
 
-    let workloads = vec![
+    let workloads =
+        vec![
         ("Arithmetic/Simple", "10 + 32", 10000),
         ("Arithmetic/Complex", "(10 + 5) * 2 + 12", 10000),
-        (
-            "Loop/Count10",
-            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
-            1000,
-        ),
+        ("Loop/Count10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }", 1000),
         (
             "Loop/Sum10",
             "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",
             1000,
         ),
         ("Comparison/Eq", "42 == 42", 10000),
-        (
-            "Comparison/Chain",
-            "(10 < 20) && (20 < 30) && (30 < 40)",
-            10000,
-        ),
+        ("Comparison/Chain", "(10 < 20) && (20 < 30) && (30 < 40)", 10000),
         ("ControlFlow/If", "if true { 42 } else { 0 }", 10000),
         (
             "ControlFlow/Nested",

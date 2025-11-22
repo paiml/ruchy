@@ -346,7 +346,9 @@ impl NotebookRuntime {
                         {
                             if let Ok(size) = size_str.parse::<usize>() {
                                 if size > limit {
-                                    return Err(JsValue::from(&format!("Cannot allocate {size} bytes: exceeds memory limit of {limit}")));
+                                    return Err(JsValue::from(&format!(
+                                        "Cannot allocate {size} bytes: exceeds memory limit of {limit}"
+                                    )));
                                 }
                             }
                         }
@@ -847,7 +849,9 @@ impl NotebookRuntime {
         html.push_str(".code-cell { background: #f8f8f8; }\n");
         html.push_str(".markdown-cell { }\n");
         html.push_str("pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }\n");
-        html.push_str(".output { background: #fff; border-left: 3px solid #4CAF50; padding: 10px; margin-top: 10px; }\n");
+        html.push_str(
+            ".output { background: #fff; border-left: 3px solid #4CAF50; padding: 10px; margin-top: 10px; }\n",
+        );
         html.push_str("</style>\n");
         html.push_str("</head>\n<body>\n");
         html.push_str(&format!("<h1>{}</h1>\n", "Ruchy Notebook"));
@@ -1703,7 +1707,8 @@ impl NotebookRuntime {
             "memory_allocations": total_memory,
             "execution_breakdown": breakdown,
             "hotspots": hotspots.len()
-        }).to_string()
+        })
+        .to_string()
     }
     /// Get optimization suggestions
     /// # Examples
@@ -1771,7 +1776,8 @@ impl NotebookRuntime {
         // Return as formatted string for test compatibility
         // Always provide at least one suggestion
         if suggestions.is_empty() {
-            "general: No specific optimizations needed - notebook is running efficiently (Priority: 3, Impact: None)".to_string()
+            "general: No specific optimizations needed - notebook is running efficiently (Priority: 3, Impact: None)"
+                .to_string()
         } else {
             suggestions
                 .iter()

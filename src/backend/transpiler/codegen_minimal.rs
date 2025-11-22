@@ -28,26 +28,33 @@ impl MinimalCodeGen {
             ExprKind::Function { name, params, body, .. } => Self::gen_function_expr(name, params, body),
             ExprKind::Lambda { params, body } => Self::gen_lambda_expr(params, body),
             ExprKind::Call { func, args } => Self::gen_call_expr(func, args),
-            ExprKind::If { condition, then_branch, else_branch } =>
-                Self::gen_if_expr(condition, then_branch, else_branch.as_deref()),
-            ExprKind::Ternary { condition, true_expr, false_expr } =>
-                // Ternary is just syntactic sugar for if-else
-                Self::gen_if_expr(condition, true_expr, Some(false_expr)),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => Self::gen_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Ternary {
+                condition,
+                true_expr,
+                false_expr,
+            } =>
+            // Ternary is just syntactic sugar for if-else
+            {
+                Self::gen_if_expr(condition, true_expr, Some(false_expr))
+            }
             ExprKind::Block(exprs) => Self::gen_block_expr(exprs),
             ExprKind::Match { expr, arms } => Self::gen_match_expr(expr, arms),
             ExprKind::List(elements) => Self::gen_list_expr(elements),
             ExprKind::Struct { name, fields, .. } => Self::gen_struct_def(name, fields),
-            ExprKind::StructLiteral { name, fields, base: _ } =>
-                Self::gen_struct_literal(name, fields),
-            ExprKind::MethodCall { receiver, method, args } =>
-                Self::gen_method_call(receiver, method, args),
+            ExprKind::StructLiteral { name, fields, base: _ } => Self::gen_struct_literal(name, fields),
+            ExprKind::MethodCall { receiver, method, args } => Self::gen_method_call(receiver, method, args),
             ExprKind::Macro { name, args } => Self::gen_macro_call(name, args),
             ExprKind::QualifiedName { module, name } => Ok(format!("{module}::{name}")),
             ExprKind::StringInterpolation { parts } => Self::gen_string_interpolation(parts),
             _ => Err(anyhow::anyhow!(
-                "Minimal codegen does not support {:?} - use full transpiler for complete language support", 
+                "Minimal codegen does not support {:?} - use full transpiler for complete language support",
                 expr.kind
-            ))
+            )),
         }
     }
     fn gen_binary_expr(left: &Expr, op: BinaryOp, right: &Expr) -> Result<String> {

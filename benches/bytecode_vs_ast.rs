@@ -58,15 +58,10 @@ fn bench_loops(c: &mut Criterion) {
     let mut group = c.benchmark_group("loops");
     group.measurement_time(Duration::from_secs(10));
 
-    let workloads = vec![
-        (
-            "count_to_10",
-            "{ let mut i = 0; while i < 10 { i = i + 1 }; i }",
-        ),
-        (
-            "count_to_100",
-            "{ let mut i = 0; while i < 100 { i = i + 1 }; i }",
-        ),
+    let workloads =
+        vec![
+        ("count_to_10", "{ let mut i = 0; while i < 10 { i = i + 1 }; i }"),
+        ("count_to_100", "{ let mut i = 0; while i < 100 { i = i + 1 }; i }"),
         (
             "sum_1_to_10",
             "{ let mut sum = 0; let mut i = 1; while i <= 10 { sum = sum + i; i = i + 1 }; sum }",

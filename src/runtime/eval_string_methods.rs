@@ -333,7 +333,7 @@ fn eval_float_method(f: f64, method: &str, args_empty: bool) -> Result<Value, In
     // Issue #91: Special case for powf - suggest ** operator instead
     if method == "powf" {
         return Err(InterpreterError::RuntimeError(
-            "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)".to_string()
+            "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)".to_string(),
         ));
     }
 
@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn test_string_length() {
         let s = Arc::from("hello");
-        let result = eval_string_method(&s, "len", &[]).unwrap();
+        let result = eval_string_method(&s, "len", &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -473,10 +473,12 @@ mod tests {
     fn test_string_case_conversion() {
         let s = Arc::from("Hello World");
 
-        let upper = eval_string_method(&s, "to_upper", &[]).unwrap();
+        let upper =
+            eval_string_method(&s, "to_upper", &[]).expect("operation should succeed in test");
         assert_eq!(upper, Value::from_string("HELLO WORLD".to_string()));
 
-        let lower = eval_string_method(&s, "to_lower", &[]).unwrap();
+        let lower =
+            eval_string_method(&s, "to_lower", &[]).expect("operation should succeed in test");
         assert_eq!(lower, Value::from_string("hello world".to_string()));
     }
 
@@ -485,7 +487,8 @@ mod tests {
         let s = Arc::from("hello world");
         let needle = Value::from_string("world".to_string());
 
-        let result = eval_string_method(&s, "contains", &[needle]).unwrap();
+        let result = eval_string_method(&s, "contains", &[needle])
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -494,7 +497,8 @@ mod tests {
         let s = Arc::from("a,b,c");
         let sep = Value::from_string(",".to_string());
 
-        let result = eval_string_method(&s, "split", &[sep]).unwrap();
+        let result =
+            eval_string_method(&s, "split", &[sep]).expect("operation should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 3);
             assert_eq!(arr[0], Value::from_string("a".to_string()));
@@ -511,7 +515,8 @@ mod tests {
         let start = Value::Integer(1);
         let end = Value::Integer(4);
 
-        let result = eval_string_method(&s, "substring", &[start, end]).unwrap();
+        let result = eval_string_method(&s, "substring", &[start, end])
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("ell".to_string()));
     }
 
@@ -520,32 +525,38 @@ mod tests {
         let s = Arc::from("hi");
         let count = Value::Integer(3);
 
-        let result = eval_string_method(&s, "repeat", &[count]).unwrap();
+        let result =
+            eval_string_method(&s, "repeat", &[count]).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hihihi".to_string()));
     }
 
     #[test]
     fn test_float_methods() {
-        let result = eval_float_method(3.7, "round", true).unwrap();
+        let result =
+            eval_float_method(3.7, "round", true).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(4.0));
 
-        let result = eval_float_method(-5.2, "abs", true).unwrap();
+        let result =
+            eval_float_method(-5.2, "abs", true).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(5.2));
     }
 
     #[test]
     fn test_integer_methods() {
-        let result = eval_integer_method(-42, "abs", &[]).unwrap();
+        let result =
+            eval_integer_method(-42, "abs", &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42));
 
-        let result = eval_integer_method(123, "to_string", &[]).unwrap();
+        let result =
+            eval_integer_method(123, "to_string", &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("123".to_string()));
     }
 
     #[test]
     fn test_generic_to_string() {
         let value = Value::Bool(true);
-        let result = eval_generic_method(&value, "to_string", true).unwrap();
+        let result = eval_generic_method(&value, "to_string", true)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("true".to_string()));
     }
 
@@ -555,7 +566,8 @@ mod tests {
         let s = Arc::from("Hello, {}!");
         let arg = Value::from_string("Alice".to_string());
 
-        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        let result =
+            eval_string_method(&s, "format", &[arg]).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("Hello, Alice!".to_string()));
     }
 
@@ -566,7 +578,8 @@ mod tests {
         let arg2 = Value::Integer(3);
         let arg3 = Value::Integer(5);
 
-        let result = eval_string_method(&s, "format", &[arg1, arg2, arg3]).unwrap();
+        let result = eval_string_method(&s, "format", &[arg1, arg2, arg3])
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("2 + 3 = 5".to_string()));
     }
 
@@ -575,7 +588,8 @@ mod tests {
         let s = Arc::from("Hello, World!");
         let arg = Value::from_string("Alice".to_string());
 
-        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        let result =
+            eval_string_method(&s, "format", &[arg]).expect("operation should succeed in test");
         // Should return unchanged string if no placeholders
         assert_eq!(result, Value::from_string("Hello, World!".to_string()));
     }
@@ -585,7 +599,8 @@ mod tests {
         let s = Arc::from("{} and {}");
         let arg = Value::from_string("Alice".to_string());
 
-        let result = eval_string_method(&s, "format", &[arg]).unwrap();
+        let result =
+            eval_string_method(&s, "format", &[arg]).expect("operation should succeed in test");
         // Should replace first placeholder only
         assert_eq!(result, Value::from_string("Alice and {}".to_string()));
     }
@@ -602,7 +617,8 @@ mod mutation_tests {
     fn test_eval_zero_arg_string_method_to_string() {
         // MISSED: delete match arm "to_string" in eval_zero_arg_string_method (line 35)
         let s = Arc::from("hello");
-        let result = eval_zero_arg_string_method(&s, "to_string").unwrap();
+        let result =
+            eval_zero_arg_string_method(&s, "to_string").expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -610,7 +626,8 @@ mod mutation_tests {
     fn test_eval_zero_arg_string_method_trim() {
         // MISSED: delete match arm "trim" in eval_zero_arg_string_method (line 37)
         let s = Arc::from("  hello  ");
-        let result = eval_zero_arg_string_method(&s, "trim").unwrap();
+        let result =
+            eval_zero_arg_string_method(&s, "trim").expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -618,7 +635,8 @@ mod mutation_tests {
     fn test_eval_zero_arg_string_method_trim_start() {
         // MISSED: delete match arm "trim_start" in eval_zero_arg_string_method (line 38)
         let s = Arc::from("  hello");
-        let result = eval_zero_arg_string_method(&s, "trim_start").unwrap();
+        let result = eval_zero_arg_string_method(&s, "trim_start")
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -626,7 +644,8 @@ mod mutation_tests {
     fn test_eval_zero_arg_string_method_trim_end() {
         // MISSED: delete match arm "trim_end" in eval_zero_arg_string_method (line 39)
         let s = Arc::from("hello  ");
-        let result = eval_zero_arg_string_method(&s, "trim_end").unwrap();
+        let result =
+            eval_zero_arg_string_method(&s, "trim_end").expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -634,7 +653,8 @@ mod mutation_tests {
     fn test_eval_zero_arg_string_method_chars() {
         // MISSED: delete match arm "chars" in eval_zero_arg_string_method (line 40)
         let s = Arc::from("abc");
-        let result = eval_zero_arg_string_method(&s, "chars").unwrap();
+        let result =
+            eval_zero_arg_string_method(&s, "chars").expect("operation should succeed in test");
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 3);
@@ -649,7 +669,8 @@ mod mutation_tests {
         // MISSED: delete match arm "starts_with" in eval_single_arg_string_method (line 55)
         let s = Arc::from("hello world");
         let arg = Value::from_string("hello".to_string());
-        let result = eval_single_arg_string_method(&s, "starts_with", &arg).unwrap();
+        let result = eval_single_arg_string_method(&s, "starts_with", &arg)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -659,35 +680,40 @@ mod mutation_tests {
         let s = Arc::from("hello world");
         let arg1 = Value::from_string("world".to_string());
         let arg2 = Value::from_string("Ruchy".to_string());
-        let result = eval_two_arg_string_method(&s, "replace", &arg1, &arg2).unwrap();
+        let result = eval_two_arg_string_method(&s, "replace", &arg1, &arg2)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello Ruchy".to_string()));
     }
 
     #[test]
     fn test_eval_float_method_sqrt() {
         // MISSED: delete match arm "sqrt" in eval_float_method (line 276)
-        let result = eval_float_method(4.0, "sqrt", true).unwrap();
+        let result =
+            eval_float_method(4.0, "sqrt", true).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(2.0));
     }
 
     #[test]
     fn test_eval_float_method_floor() {
         // MISSED: delete match arm "floor" in eval_float_method (line 279)
-        let result = eval_float_method(3.7, "floor", true).unwrap();
+        let result =
+            eval_float_method(3.7, "floor", true).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(3.0));
     }
 
     #[test]
     fn test_eval_float_method_ceil() {
         // MISSED: delete match arm "ceil" in eval_float_method (line 280)
-        let result = eval_float_method(3.2, "ceil", true).unwrap();
+        let result =
+            eval_float_method(3.2, "ceil", true).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(4.0));
     }
 
     #[test]
     fn test_eval_float_method_to_string() {
         // MISSED: delete match arm "to_string" in eval_float_method (line 281)
-        let result = eval_float_method(3.15, "to_string", true).unwrap();
+        let result =
+            eval_float_method(3.15, "to_string", true).expect("operation should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "3.15"),
             _ => panic!("Expected string result from to_string()"),
@@ -698,7 +724,8 @@ mod mutation_tests {
     fn test_eval_primitive_method_float_match_arm() {
         // MISSED: delete match arm Value::Float(f) in eval_primitive_method (line 258)
         let float_val = Value::Float(4.0);
-        let result = eval_primitive_method(&float_val, "sqrt", &[], true).unwrap();
+        let result = eval_primitive_method(&float_val, "sqrt", &[], true)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Float(2.0));
     }
 
@@ -726,7 +753,8 @@ mod mutation_tests {
         let int_val = Value::Integer(42);
 
         // Both conditions true: should call to_string
-        let result = eval_generic_method(&int_val, "to_string", true).unwrap();
+        let result = eval_generic_method(&int_val, "to_string", true)
+            .expect("operation should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string result"),
@@ -744,7 +772,8 @@ mod mutation_tests {
         let start = Value::Integer(1);
         let end = Value::Integer(3);
 
-        let result = eval_string_substring(&s, &start, &end).unwrap();
+        let result =
+            eval_string_substring(&s, &start, &end).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("el".to_string()));
     }
 }

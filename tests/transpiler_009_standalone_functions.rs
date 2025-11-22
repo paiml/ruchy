@@ -114,9 +114,10 @@ fun main() {
         .expect("Failed to execute rustc");
 
     // BUG: This will FAIL because square() is missing
-    assert!(output.status.success(),
-            "TRANSPILER-009: Code failed to compile (missing square function)!\n\nRust:\n{}\n\nErrors:\n{}",
-            rust_code,
-            String::from_utf8_lossy(&output.stderr)
-        );
+    assert!(
+        output.status.success(),
+        "TRANSPILER-009: Code failed to compile (missing square function)!\n\nRust:\n{}\n\nErrors:\n{}",
+        rust_code,
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
