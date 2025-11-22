@@ -155,7 +155,11 @@ impl TacticLibrary {
             }
         }
         // Sort by confidence
-        suggestions.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
+        suggestions.sort_by(|a, b| {
+            b.confidence
+                .partial_cmp(&a.confidence)
+                .expect("confidence scores should be valid f64 values, not NaN")
+        });
         Ok(suggestions)
     }
     /// Calculate confidence for a tactic
@@ -514,7 +518,9 @@ mod tests {
     fn test_tactic_library_get_tactic() {
         let library = TacticLibrary::default();
 
-        let intro = library.get_tactic("intro").unwrap();
+        let intro = library
+            .get_tactic("intro")
+            .expect("operation should succeed in test");
         assert_eq!(intro.name(), "intro");
 
         let result = library.get_tactic("nonexistent");
@@ -539,7 +545,9 @@ mod tests {
         let goal = create_test_goal("A -> B");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "B"),
             _ => panic!("Expected simplified result"),
@@ -552,7 +560,9 @@ mod tests {
         let goal = create_test_goal("A && B");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
@@ -577,7 +587,9 @@ mod tests {
         let goal = create_test_goal("A && B");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Subgoals(subgoals) => {
                 assert_eq!(subgoals.len(), 2);
@@ -594,7 +606,9 @@ mod tests {
         let goal = create_test_goal("A && B && C");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Subgoals(subgoals) => {
                 assert_eq!(subgoals.len(), 3);
@@ -625,7 +639,9 @@ mod tests {
         let goal = create_test_goal("P(n)");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &["n"], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &["n"], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Subgoals(subgoals) => {
                 assert_eq!(subgoals.len(), 2);
@@ -642,7 +658,9 @@ mod tests {
         let goal = create_test_goal("P(n)");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(msg) => assert!(msg.contains("requires a variable")),
             _ => panic!("Expected failed result"),
@@ -669,7 +687,9 @@ mod tests {
         context.assumptions.push("A".to_string());
         context.assumptions.push("!A".to_string());
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Solved => {}
             _ => panic!("Expected solved result"),
@@ -693,7 +713,9 @@ mod tests {
         let goal = create_test_goal("x == x");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Solved => {}
             _ => panic!("Expected solved result"),
@@ -706,7 +728,9 @@ mod tests {
         let goal = create_test_goal("x == y");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
@@ -728,7 +752,9 @@ mod tests {
         let goal = create_test_goal("true && A");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "A"),
             _ => panic!("Expected simplified result"),
@@ -741,7 +767,9 @@ mod tests {
         let goal = create_test_goal("false || B");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "B"),
             _ => panic!("Expected simplified result"),
@@ -754,7 +782,9 @@ mod tests {
         let goal = create_test_goal("!!A");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "A"),
             _ => panic!("Expected simplified result"),
@@ -767,7 +797,9 @@ mod tests {
         let goal = create_test_goal("A");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(_) => {}
             _ => panic!("Expected failed result when no simplification possible"),
@@ -792,7 +824,9 @@ mod tests {
         let goal = create_test_goal("double(x) > 0");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &["double"], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &["double"], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "x * 2(x) > 0"),
             _ => panic!("Expected simplified result"),
@@ -805,7 +839,9 @@ mod tests {
         let goal = create_test_goal("double(x)");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(msg) => assert!(msg.contains("requires a definition name")),
             _ => panic!("Expected failed result"),
@@ -832,7 +868,9 @@ mod tests {
         let mut context = ProofContext::new();
         context.assumptions.push("x == 5".to_string());
 
-        let result = tactic.apply(&goal, &["x"], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &["x"], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Simplified(s) => assert_eq!(s, "5 + y"),
             _ => panic!("Expected simplified result"),
@@ -854,7 +892,9 @@ mod tests {
         let goal = create_test_goal("P(x)");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(msg) => assert!(msg.contains("requires a theorem name")),
             _ => panic!("Expected failed result"),
@@ -879,7 +919,9 @@ mod tests {
         let goal = create_test_goal("x > 0");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Solved => {}
             _ => panic!("Expected solved result"),
@@ -892,7 +934,9 @@ mod tests {
         let goal = create_test_goal("z < 0");
         let context = create_test_context();
 
-        let result = tactic.apply(&goal, &[], &context).unwrap();
+        let result = tactic
+            .apply(&goal, &[], &context)
+            .expect("operation should succeed in test");
         match result {
             StepResult::Failed(_) => {}
             _ => panic!("Expected failed result"),
@@ -919,7 +963,9 @@ mod tests {
         let goal = create_test_goal("A -> B");
         let context = create_test_context();
 
-        let suggestions = library.suggest_tactics(&goal, &context).unwrap();
+        let suggestions = library
+            .suggest_tactics(&goal, &context)
+            .expect("operation should succeed in test");
         assert!(!suggestions.is_empty());
 
         // Should suggest intro for implication
@@ -933,7 +979,9 @@ mod tests {
         let goal = create_test_goal("x == x");
         let context = create_test_context();
 
-        let suggestions = library.suggest_tactics(&goal, &context).unwrap();
+        let suggestions = library
+            .suggest_tactics(&goal, &context)
+            .expect("operation should succeed in test");
 
         // Should be sorted by confidence (highest first)
         for i in 1..suggestions.len() {
