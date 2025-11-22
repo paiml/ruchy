@@ -1107,27 +1107,56 @@ mod tests {
     fn test_handle_command_navigation() {
         let mut ui = create_test_ui();
         // Test overview mode navigation
-        assert_eq!(ui.handle_command("overview").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("overview")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Overview);
-        assert_eq!(ui.handle_command("metrics").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("metrics")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Metrics);
-        assert_eq!(ui.handle_command("history").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("history")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::History);
-        assert_eq!(ui.handle_command("help").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("help")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Help);
     }
     #[test]
     fn test_handle_command_quit() {
         let mut ui = create_test_ui();
-        assert_eq!(ui.handle_command("quit").unwrap(), UIAction::Exit);
-        assert_eq!(ui.handle_command("exit").unwrap(), UIAction::Exit);
-        assert_eq!(ui.handle_command("q").unwrap(), UIAction::Exit);
+        assert_eq!(
+            ui.handle_command("quit")
+                .expect("operation should succeed in test"),
+            UIAction::Exit
+        );
+        assert_eq!(
+            ui.handle_command("exit")
+                .expect("operation should succeed in test"),
+            UIAction::Exit
+        );
+        assert_eq!(
+            ui.handle_command("q")
+                .expect("operation should succeed in test"),
+            UIAction::Exit
+        );
     }
     #[test]
     fn test_handle_command_breakpoints() {
         let mut ui = create_test_ui();
         assert_eq!(
-            ui.handle_command("breakpoints").unwrap(),
+            ui.handle_command("breakpoints")
+                .expect("operation should succeed in test"),
             UIAction::Continue
         );
         assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
@@ -1135,9 +1164,11 @@ mod tests {
     #[test]
     fn test_handle_command_colors() {
         let mut ui = create_test_ui();
-        ui.handle_command("colors on").unwrap();
+        ui.handle_command("colors on")
+            .expect("operation should succeed in test");
         assert!(ui.colors_enabled);
-        ui.handle_command("colors off").unwrap();
+        ui.handle_command("colors off")
+            .expect("operation should succeed in test");
         assert!(!ui.colors_enabled);
     }
     #[test]
@@ -1145,14 +1176,22 @@ mod tests {
         let mut ui = create_test_ui();
         // Small delay to ensure time difference
         std::thread::sleep(Duration::from_millis(1));
-        assert_eq!(ui.handle_command("refresh").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("refresh")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         // The refresh command updates last_refresh to trigger a refresh
     }
     #[test]
     fn test_handle_command_unknown() {
         let mut ui = create_test_ui();
         let initial_mode = ui.display_mode.clone();
-        assert_eq!(ui.handle_command("xyz").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("xyz")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, initial_mode); // Should not change
     }
     // ========== Refresh and Update Tests ==========
@@ -1322,16 +1361,29 @@ mod tests {
     fn test_interactive_command_sequence() {
         let mut ui = create_test_ui();
         // Simulate user interaction sequence
-        assert_eq!(ui.handle_command("metrics").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("metrics")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Metrics);
-        assert_eq!(ui.handle_command("overview").unwrap(), UIAction::Continue);
+        assert_eq!(
+            ui.handle_command("overview")
+                .expect("operation should succeed in test"),
+            UIAction::Continue
+        );
         assert_eq!(ui.display_mode, DisplayMode::Overview);
         assert_eq!(
-            ui.handle_command("breakpoints").unwrap(),
+            ui.handle_command("breakpoints")
+                .expect("operation should succeed in test"),
             UIAction::Continue
         );
         assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
-        assert_eq!(ui.handle_command("quit").unwrap(), UIAction::Exit);
+        assert_eq!(
+            ui.handle_command("quit")
+                .expect("operation should succeed in test"),
+            UIAction::Exit
+        );
     }
     #[test]
     fn test_config_variations() {
