@@ -766,7 +766,7 @@ fn eval_dataframe_groupby(
             "Group column '{group_column}' not found in DataFrame"
         )));
     }
-    let group_col = group_col.unwrap();
+    let group_col = group_col.expect("group_col cannot be None after is_none() check on line 764");
 
     perform_groupby_aggregation(columns, group_col, group_column)
 }
@@ -1041,7 +1041,7 @@ fn eval_dataframe_groupby_multiple(
             "Group column '{group_column}' not found in DataFrame"
         )));
     }
-    let group_col = group_col.unwrap();
+    let group_col = group_col.expect("group_col cannot be None after is_none() check on line 1039");
 
     perform_groupby_aggregation(columns, group_col, group_column)
 }
@@ -1254,7 +1254,7 @@ mod tests {
             },
         ];
 
-        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        let result = eval_dataframe_sum(&columns, &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(13.5));
     }
 
@@ -1265,7 +1265,7 @@ mod tests {
             values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
         }];
 
-        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        let result = eval_dataframe_sum(&columns, &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(60));
     }
 
@@ -1281,14 +1281,14 @@ mod tests {
             ],
         }];
 
-        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        let result = eval_dataframe_sum(&columns, &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Float(7.5));
     }
 
     #[test]
     fn test_dataframe_sum_empty() {
         let columns = vec![];
-        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        let result = eval_dataframe_sum(&columns, &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(0));
     }
 
@@ -1318,7 +1318,8 @@ mod tests {
         ];
 
         let args = vec![Value::from_string("a".to_string())];
-        let result = eval_dataframe_select(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_select(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1384,7 +1385,8 @@ mod tests {
         }];
 
         let args = vec![Value::Integer(1), Value::Integer(2)];
-        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_slice(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1406,7 +1408,8 @@ mod tests {
         }];
 
         let args = vec![Value::Integer(5), Value::Integer(2)];
-        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_slice(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1426,7 +1429,8 @@ mod tests {
         }];
 
         let args = vec![Value::Integer(1), Value::Integer(10)];
-        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_slice(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1507,7 +1511,8 @@ mod tests {
         };
         let args = vec![other_df, Value::from_string("id".to_string())];
 
-        let result = eval_dataframe_join(&left_columns, &args).unwrap();
+        let result =
+            eval_dataframe_join(&left_columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1646,7 +1651,8 @@ mod tests {
         ];
 
         let args = vec![Value::from_string("group".to_string())];
-        let result = eval_dataframe_groupby(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_groupby(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1716,8 +1722,18 @@ mod tests {
         // The to_string() method includes quotes, so we test for "A" and "B"
         assert!(groups.contains_key("\"A\""));
         assert!(groups.contains_key("\"B\""));
-        assert_eq!(groups.get("\"A\"").unwrap(), &vec![0, 2]);
-        assert_eq!(groups.get("\"B\"").unwrap(), &vec![1]);
+        assert_eq!(
+            groups
+                .get("\"A\"")
+                .expect("operation should succeed in test"),
+            &vec![0, 2]
+        );
+        assert_eq!(
+            groups
+                .get("\"B\"")
+                .expect("operation should succeed in test"),
+            &vec![1]
+        );
     }
 
     #[test]
@@ -1799,7 +1815,8 @@ mod tests {
             Ok(Value::Bool(eval_calls % 2 == 1)) // True for odd calls (rows 0, 2)
         };
 
-        let result = eval_dataframe_filter(&columns, &condition, eval_with_context).unwrap();
+        let result = eval_dataframe_filter(&columns, &condition, eval_with_context)
+            .expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1820,7 +1837,8 @@ mod tests {
         let eval_with_context =
             |_expr: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Bool(true));
 
-        let result = eval_dataframe_filter(&columns, &condition, eval_with_context).unwrap();
+        let result = eval_dataframe_filter(&columns, &condition, eval_with_context)
+            .expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -1980,7 +1998,8 @@ mod tests {
         ];
         let column_names = vec!["a".to_string(), "b".to_string()];
 
-        let result = eval_dataframe_select_multiple(&columns, &column_names).unwrap();
+        let result = eval_dataframe_select_multiple(&columns, &column_names)
+            .expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
