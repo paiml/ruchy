@@ -69,7 +69,7 @@ pub fn eval_float_method(
     // Issue #91: Special case for powf - suggest ** operator instead
     if method == "powf" {
         return Err(InterpreterError::RuntimeError(
-            "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)".to_string()
+            "Float method 'powf' not available. Use ** operator for exponentiation (e.g., 2.0 ** 3.0)".to_string(),
         ));
     }
 

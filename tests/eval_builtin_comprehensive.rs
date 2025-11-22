@@ -372,9 +372,13 @@ fn test_dbg_returns_value() {
 fn property_sqrt_pow_inverse() {
     // Property: sqrt(pow(x, 2)) ≈ x
     for x in [2.0, 5.0, 10.0] {
-        ruchy_cmd().arg("-e")
-            .arg(format!("let result = sqrt(pow({x}, 2.0)); assert(result >= {x} - 0.1); assert(result <= {x} + 0.1)"))
-            .assert().success();
+        ruchy_cmd()
+            .arg("-e")
+            .arg(format!(
+                "let result = sqrt(pow({x}, 2.0)); assert(result >= {x} - 0.1); assert(result <= {x} + 0.1)"
+            ))
+            .assert()
+            .success();
     }
 }
 

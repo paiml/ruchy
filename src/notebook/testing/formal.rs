@@ -663,7 +663,8 @@ mod tests {
         let cell = Cell {
             id: "cell1".to_string(),
             cell_type: CellType::Code,
-            source: "fn test(x: i32) { if x > 0 { println!(\"positive\"); } else { println!(\"negative\"); } }".to_string(),
+            source: "fn test(x: i32) { if x > 0 { println!(\"positive\"); } else { println!(\"negative\"); } }"
+                .to_string(),
             metadata: CellMetadata { test: None },
         };
 

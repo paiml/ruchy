@@ -115,7 +115,10 @@ impl SnapshotRunner {
                 // Fail the test
                 bail!(
                     "Snapshot mismatch for '{}':\n  Expected hash: {}\n  Actual hash: {}\n  Output:\n{}",
-                    name, existing.output_hash, output_hash, output
+                    name,
+                    existing.output_hash,
+                    output_hash,
+                    output
                 );
             }
         } else {

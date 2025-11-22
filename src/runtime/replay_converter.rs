@@ -144,19 +144,24 @@ impl ReplayConverter {
                 // Extract actual value from String("...") format if present
                 let actual_value = if value.starts_with("String(\"") && value.ends_with("\")") {
                     // Extract content from String("value")
-                    &value[8..value.len()-2]
+                    &value[8..value.len() - 2]
                 } else {
                     value.as_str()
                 };
                 let sanitized_value = actual_value.replace('\"', "\\\"").replace('\\', "\\\\");
-                (format!("Ok(\"{sanitized_value}\")"), format!("assert!(result.is_ok() && result.unwrap() == r#\"{actual_value}\"#);"))
+                (
+                    format!("Ok(\"{sanitized_value}\")"),
+                    format!("assert!(result.is_ok() && result.unwrap() == r#\"{actual_value}\"#);"),
+                )
             }
-            EvalResult::Error { message } => {
-                (format!("Err(r#\"{message}\"#)"), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{message}\"#));"))
-            }
-            EvalResult::Unit => {
-                ("Ok(\"\")".to_string(), "assert!(result.is_ok() && result.unwrap().is_empty());".to_string())
-            }
+            EvalResult::Error { message } => (
+                format!("Err(r#\"{message}\"#)"),
+                format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{message}\"#));"),
+            ),
+            EvalResult::Unit => (
+                "Ok(\"\")".to_string(),
+                "assert!(result.is_ok() && result.unwrap().is_empty());".to_string(),
+            ),
         };
         let mode_comment = match mode {
             InputMode::Interactive => "// Interactive REPL input",

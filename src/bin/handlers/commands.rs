@@ -69,7 +69,8 @@ fn generate_json_output(ast: &ruchy::Expr) -> Result<String> {
 }
 /// Generate DOT graph representation
 fn generate_graph_output() -> String {
-    "digraph AST {\n  // AST graph visualization\n  node [shape=box];\n  // Graph generation placeholder\n}\n".to_string()
+    "digraph AST {\n  // AST graph visualization\n  node [shape=box];\n  // Graph generation placeholder\n}\n"
+        .to_string()
 }
 /// Generate metrics output
 fn generate_metrics_output(ast: &ruchy::Expr) -> String {

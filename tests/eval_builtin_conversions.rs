@@ -343,9 +343,13 @@ fn property_str_int_roundtrip() {
 fn property_str_float_roundtrip() {
     // Property: float(str(f)) ≈ f for floats
     for f in [0.0, 3.14, -2.5] {
-        ruchy_cmd().arg("-e")
-            .arg(format!("let s = str({f}); let back = float(s); assert(back >= {f} - 0.01); assert(back <= {f} + 0.01)"))
-            .assert().success();
+        ruchy_cmd()
+            .arg("-e")
+            .arg(format!(
+                "let s = str({f}); let back = float(s); assert(back >= {f} - 0.01); assert(back <= {f} + 0.01)"
+            ))
+            .assert()
+            .success();
     }
 }
 

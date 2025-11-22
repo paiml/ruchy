@@ -96,9 +96,7 @@ pub fn test() -> String {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Transpiled code fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}"
-        );
+        panic!("CRITICAL: Transpiled code fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}");
     }
 }
 

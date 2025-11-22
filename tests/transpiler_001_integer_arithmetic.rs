@@ -57,9 +57,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Integer addition fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}"
-        );
+        panic!("CRITICAL: Integer addition fails rustc compilation:\n{stderr}\n\nGenerated code:\n{rust_code}");
     }
 }
 

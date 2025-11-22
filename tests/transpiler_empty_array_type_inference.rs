@@ -186,8 +186,6 @@ fn test_transpiler_type_compile_bench_002() {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        panic!(
-            "BENCH-002 should compile successfully. Errors:\n{stderr}\n\nGenerated code:\n{code_str}"
-        );
+        panic!("BENCH-002 should compile successfully. Errors:\n{stderr}\n\nGenerated code:\n{code_str}");
     }
 }

@@ -677,8 +677,8 @@ fn property_array_reverse_twice() {
         ruchy_cmd()
             .arg("-e")
             .arg(format!(
-            "let arr = [{elements}]; let rev = reverse(reverse(arr)); assert_eq(len(arr), len(rev))"
-        ))
+                "let arr = [{elements}]; let rev = reverse(reverse(arr)); assert_eq(len(arr), len(rev))"
+            ))
             .assert()
             .success();
     }

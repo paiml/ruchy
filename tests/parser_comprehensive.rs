@@ -405,8 +405,11 @@ fn test_parse_loop_break() {
 
 #[test]
 fn test_parse_loop_continue() {
-    ruchy_cmd().arg("-e").arg("let mut sum = 0; for i in range(10) { if i % 2 == 0 { continue }; sum = sum + i }; println(sum)")
-        .assert().success();
+    ruchy_cmd()
+        .arg("-e")
+        .arg("let mut sum = 0; for i in range(10) { if i % 2 == 0 { continue }; sum = sum + i }; println(sum)")
+        .assert()
+        .success();
 }
 
 // ============================================================================

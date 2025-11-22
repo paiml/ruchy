@@ -93,9 +93,7 @@ impl Unifier {
                 }
                 for ((name1, ty1), (name2, ty2)) in cols1.iter().zip(cols2.iter()) {
                     if name1 != name2 {
-                        bail!(
-                            "Cannot unify DataFrames with different column names: {name1} vs {name2}"
-                        );
+                        bail!("Cannot unify DataFrames with different column names: {name1} vs {name2}");
                     }
                     self.unify(ty1, ty2)?;
                 }

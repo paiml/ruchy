@@ -134,9 +134,7 @@ fn fib(n: i32) -> i32 {
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
-        panic!(
-            "CRITICAL: Fibonacci benchmark (Issue #139) fails compilation:\n{stderr}\n\nCode:\n{rust_code}"
-        );
+        panic!("CRITICAL: Fibonacci benchmark (Issue #139) fails compilation:\n{stderr}\n\nCode:\n{rust_code}");
     }
 }
 

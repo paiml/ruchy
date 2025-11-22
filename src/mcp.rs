@@ -314,12 +314,8 @@ fn create_lint_tool() -> (&'static str, RuchyMCPTool) {
             "ruchy-lint".to_string(),
             "Real-time code linting with auto-fix suggestions".to_string(),
             |args| {
-                let code = args["code"]
-                    .as_str()
-                    .ok_or_else(|| anyhow!("Missing 'code' field"))?;
-                let fix = args.get("fix")
-                    .and_then(serde_json::Value::as_bool)
-                    .unwrap_or(false);
+                let code = args["code"].as_str().ok_or_else(|| anyhow!("Missing 'code' field"))?;
+                let fix = args.get("fix").and_then(serde_json::Value::as_bool).unwrap_or(false);
                 // Parse the code to detect issues
                 let mut parser = crate::frontend::parser::Parser::new(code);
                 let parse_result = parser.parse();
@@ -329,7 +325,7 @@ fn create_lint_tool() -> (&'static str, RuchyMCPTool) {
                     Ok(_) => {
                         // Code parsed successfully
                         suggestions.push("Code syntax is correct".to_string());
-                    },
+                    }
                     Err(e) => {
                         issues.push(serde_json::json!({
                             "category": "syntax",

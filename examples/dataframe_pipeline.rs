@@ -13,7 +13,8 @@ fn main() -> Result<()> {
 
     // Create sample sales data
     println!("1. Creating sales DataFrame:");
-    let sales_data = repl.eval(r#"
+    let sales_data = repl.eval(
+        r#"
         let sales = df![
             product => ["Laptop", "Mouse", "Keyboard", "Monitor", "Laptop", "Mouse"],
             category => ["Electronics", "Accessories", "Accessories", "Electronics", "Electronics", "Accessories"],
@@ -21,7 +22,8 @@ fn main() -> Result<()> {
             quantity => [2, 10, 5, 3, 1, 8],
             date => ["2024-01-01", "2024-01-02", "2024-01-01", "2024-01-03", "2024-01-02", "2024-01-03"]
         ]
-    "#)?;
+    "#,
+    )?;
     println!("{}\n", sales_data);
 
     // Create customer data

@@ -2069,14 +2069,13 @@ fn eval_fs_copy(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("fs_copy", args, 2)?;
 
     match (&args[0], &args[1]) {
-        (Value::String(from), Value::String(to)) => {
-            match std::fs::copy(from.as_ref(), to.as_ref()) {
-                Ok(_) => Ok(Value::Nil),
-                Err(e) => Err(InterpreterError::RuntimeError(format!(
-                    "Failed to copy file: {e}"
-                ))),
-            }
-        }
+        (Value::String(from), Value::String(to)) => match std::fs::copy(from.as_ref(), to.as_ref())
+        {
+            Ok(_) => Ok(Value::Nil),
+            Err(e) => Err(InterpreterError::RuntimeError(format!(
+                "Failed to copy file: {e}"
+            ))),
+        },
         _ => Err(InterpreterError::RuntimeError(
             "fs_copy() expects two string arguments".to_string(),
         )),

@@ -270,7 +270,9 @@ impl RuchyCoverageCollector {
         report.push_str(&format!(
             "Total Lines: {total_covered_lines}/{total_lines} ({overall_line_coverage:.1}%)\n"
         ));
-        report.push_str(&format!("Total Functions: {total_covered_functions}/{total_functions} ({overall_function_coverage:.1}%)\n"));
+        report.push_str(&format!(
+            "Total Functions: {total_covered_functions}/{total_functions} ({overall_function_coverage:.1}%)\n"
+        ));
         report.push_str(&format!(
             "Overall Coverage: {:.1}%\n",
             overall_line_coverage * 0.7 + overall_function_coverage * 0.3

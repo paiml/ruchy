@@ -407,7 +407,10 @@ mod tests {
                     let code = tokens.to_string();
                     println!("Generated code: {code}");
                     assert!(
-                        code.contains("format!") || code.contains("format !") || code.starts_with('"') || code.is_empty(),
+                        code.contains("format!")
+                            || code.contains("format !")
+                            || code.starts_with('"')
+                            || code.is_empty(),
                         "String interpolation should produce format! call or string literal, got: {code}"
                     );
                 }

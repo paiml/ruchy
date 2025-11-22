@@ -240,12 +240,12 @@ fn test_pub_fun_library_crate() {
             "Both pub fun definitions should be preserved"
         );
 
-        let has_get_endpoint = exprs.iter().any(|e| {
-            matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "get_endpoint")
-        });
-        let has_next_event = exprs.iter().any(|e| {
-            matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "next_event")
-        });
+        let has_get_endpoint = exprs
+            .iter()
+            .any(|e| matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "get_endpoint"));
+        let has_next_event = exprs
+            .iter()
+            .any(|e| matches!(&e.kind, ExprKind::Function { name, is_pub: true, .. } if name == "next_event"));
 
         assert!(has_get_endpoint, "BUG #136: pub fun 'get_endpoint' missing");
         assert!(has_next_event, "BUG #136: pub fun 'next_event' missing");

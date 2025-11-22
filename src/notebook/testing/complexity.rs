@@ -372,7 +372,9 @@ impl ComplexityAnalyzer {
         match result.time_complexity {
             TimeComplexity::ON2 | TimeComplexity::ON3 => {
                 if cell.source.contains("for") && cell.source.contains("==") {
-                    suggestions.push("Consider using a hash map or index for O(1) lookups instead of nested loops".to_string());
+                    suggestions.push(
+                        "Consider using a hash map or index for O(1) lookups instead of nested loops".to_string(),
+                    );
                 }
                 if cell.source.contains("sort") {
                     suggestions.push(
