@@ -361,7 +361,7 @@ Enter expressions to evaluate them.
                 }
             }
             Value::ObjectMut(obj) => {
-                let borrowed = obj.lock().unwrap();
+                let borrowed = obj.lock().expect("mutex should not be poisoned");
                 output.push_str(&format!("Fields: {}\n", borrowed.len()));
                 output.push_str("Properties:\n");
                 for (key, val) in borrowed.iter() {
@@ -409,7 +409,7 @@ Enter expressions to evaluate them.
                 methods,
             } => {
                 output.push_str(&format!("Class: {class_name}\n"));
-                let fields_read = fields.read().unwrap();
+                let fields_read = fields.read().expect("rwlock should not be poisoned");
                 output.push_str(&format!("Fields: {}\n", fields_read.len()));
                 output.push_str(&format!("Methods: {}\n", methods.len()));
                 output.push_str("Values:\n");
@@ -462,7 +462,7 @@ Enter expressions to evaluate them.
                 size_of::<std::collections::HashMap<String, Value>>()
                     + obj
                         .lock()
-                        .unwrap()
+                        .expect("mutex should not be poisoned")
                         .iter()
                         .map(|(k, v)| k.len() + Self::estimate_value_memory(v))
                         .sum::<usize>()
@@ -514,7 +514,7 @@ Enter expressions to evaluate them.
                 fields,
                 methods,
             } => {
-                let fields_read = fields.read().unwrap();
+                let fields_read = fields.read().expect("rwlock should not be poisoned");
                 size_of::<String>()
                     + class_name.len()
                     + size_of::<std::collections::HashMap<String, Value>>()
@@ -586,7 +586,10 @@ mod tests {
             state: &mut state,
         };
 
-        match registry.execute(":help", &mut context).unwrap() {
+        match registry
+            .execute(":help", &mut context)
+            .expect("operation should succeed in test")
+        {
             CommandResult::Success(help) => {
                 assert!(help.contains("Commands"));
                 assert!(help.contains(":help"));
@@ -606,7 +609,10 @@ mod tests {
             state: &mut state,
         };
 
-        match registry.execute(":quit", &mut context).unwrap() {
+        match registry
+            .execute(":quit", &mut context)
+            .expect("operation should succeed in test")
+        {
             CommandResult::Exit => {}
             result => panic!("Expected Exit, got {result:?}"),
         }
@@ -622,7 +628,10 @@ mod tests {
             state: &mut state,
         };
 
-        match registry.execute(":mode", &mut context).unwrap() {
+        match registry
+            .execute(":mode", &mut context)
+            .expect("operation should succeed in test")
+        {
             CommandResult::ModeChange(ReplMode::Debug) => {}
             result => panic!("Expected ModeChange(Debug), got {result:?}"),
         }
