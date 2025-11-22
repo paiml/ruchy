@@ -171,7 +171,7 @@ mod tests {
     fn test_simple_text() {
         let result = parse_fstring_into_parts("Hello World");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 1);
         assert!(matches!(parts[0], StringPart::Text(_)));
     }
@@ -180,7 +180,7 @@ mod tests {
     fn test_simple_interpolation() {
         let result = parse_fstring_into_parts("Hello {name}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 2);
         assert!(matches!(parts[0], StringPart::Text(_)));
         assert!(matches!(parts[1], StringPart::Expr(_)));
@@ -190,7 +190,7 @@ mod tests {
     fn test_escaped_braces() {
         let result = parse_fstring_into_parts("Value {{literal}}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 1);
         if let StringPart::Text(text) = &parts[0] {
             assert_eq!(text, "Value {literal}");
@@ -203,7 +203,7 @@ mod tests {
     fn test_format_specifier() {
         let result = parse_fstring_into_parts("{value:.2f}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 1);
         assert!(matches!(parts[0], StringPart::ExprWithFormat { .. }));
     }
@@ -212,7 +212,7 @@ mod tests {
     fn test_empty_placeholder() {
         let result = parse_fstring_into_parts("Value: {}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 2);
         assert!(matches!(parts[0], StringPart::Text(_)));
         assert!(matches!(parts[1], StringPart::Text(_)));
@@ -222,7 +222,7 @@ mod tests {
     fn test_multiple_interpolations() {
         let result = parse_fstring_into_parts("{a} + {b} = {c}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 5); // expr, text, expr, text, expr
     }
 
@@ -242,7 +242,7 @@ mod tests {
     fn test_nested_braces() {
         let result = parse_fstring_into_parts("Result: {obj.method()}");
         assert!(result.is_ok());
-        let parts = result.unwrap();
+        let parts = result.expect("operation should succeed in test");
         assert_eq!(parts.len(), 2);
     }
 
@@ -297,7 +297,7 @@ mod tests {
             fn prop_empty_string_parses(_n in 0..100) {
                 let result = parse_fstring_into_parts("");
                 prop_assert!(result.is_ok(), "Empty string should parse");
-                let parts = result.unwrap();
+                let parts = result.expect("operation should succeed in test");
                 prop_assert_eq!(parts.len(), 0, "Empty string should have no parts");
             }
 
@@ -307,7 +307,7 @@ mod tests {
                 let input = "{{".repeat(n);
                 let result = parse_fstring_into_parts(&input);
                 prop_assert!(result.is_ok());
-                let parts = result.unwrap();
+                let parts = result.expect("operation should succeed in test");
                 if let Some(StringPart::Text(text)) = parts.first() {
                     prop_assert_eq!(text.len(), n, "Escaped {{{{ should produce half as many braces");
                 }
