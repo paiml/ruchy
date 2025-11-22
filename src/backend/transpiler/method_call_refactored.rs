@@ -508,7 +508,10 @@ mod tests {
         let args = vec![quote! { |a, b| a + b }];
         let result = t.transpile_iterator_method(&tokens, "reduce", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("reduce"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("reduce"));
     }
 
     // Test 6: iterator any method
@@ -519,7 +522,10 @@ mod tests {
         let args = vec![quote! { |x| x > 0 }];
         let result = t.transpile_iterator_method(&tokens, "any", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("any"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("any"));
     }
 
     // Test 7: iterator all method
@@ -530,7 +536,10 @@ mod tests {
         let args = vec![quote! { |x| x > 0 }];
         let result = t.transpile_iterator_method(&tokens, "all", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("all"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("all"));
     }
 
     // Test 8: iterator find method
@@ -541,7 +550,9 @@ mod tests {
         let args = vec![quote! { |x| x == 5 }];
         let result = t.transpile_iterator_method(&tokens, "find", &args);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("find"));
         assert!(output.contains("cloned"));
     }
@@ -554,7 +565,10 @@ mod tests {
         let args = vec![quote! { other_set }];
         let result = t.transpile_hashset_method(&tokens, "intersection", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("intersection"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("intersection"));
     }
 
     // Test 10: hashset difference method
@@ -565,7 +579,10 @@ mod tests {
         let args = vec![quote! { other_set }];
         let result = t.transpile_hashset_method(&tokens, "difference", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("difference"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("difference"));
     }
 
     // Test 11: hashset symmetric_difference method
@@ -576,7 +593,10 @@ mod tests {
         let args = vec![quote! { other_set }];
         let result = t.transpile_hashset_method(&tokens, "symmetric_difference", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("symmetric_difference"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("symmetric_difference"));
     }
 
     // Test 12: collection accessor first method
@@ -586,7 +606,9 @@ mod tests {
         let tokens: TokenStream = quote! { vec };
         let result = t.transpile_collection_accessor(&tokens, "first", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("first"));
         assert!(output.contains("cloned"));
     }
@@ -598,7 +620,9 @@ mod tests {
         let tokens: TokenStream = quote! { vec };
         let result = t.transpile_collection_accessor(&tokens, "last", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("last"));
         assert!(output.contains("cloned"));
     }
@@ -611,7 +635,9 @@ mod tests {
         let args = vec![quote! { 0 }, quote! { 5 }];
         let result = t.transpile_collection_accessor(&tokens, "slice", &args);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains(".."));
         assert!(output.contains("to_vec"));
     }
@@ -632,7 +658,9 @@ mod tests {
         let tokens: TokenStream = quote! { "  hello  " };
         let result = t.transpile_string_method(&tokens, "trim", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("trim"));
         assert!(output.contains("to_string"));
     }
@@ -644,7 +672,9 @@ mod tests {
         let tokens: TokenStream = quote! { "hello world" };
         let result = t.transpile_string_method(&tokens, "split", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("split_whitespace"));
     }
 
@@ -656,7 +686,10 @@ mod tests {
         let args = vec![quote! { "h" }, quote! { "H" }];
         let result = t.transpile_string_method(&tokens, "replace", &args);
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("replace"));
+        assert!(result
+            .expect("operation should succeed in test")
+            .to_string()
+            .contains("replace"));
     }
 
     // Test 19: hashmap items method
@@ -666,7 +699,9 @@ mod tests {
         let tokens: TokenStream = quote! { map };
         let result = t.transpile_hashmap_method(&tokens, "items", &[]);
         assert!(result.is_ok());
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains("iter"));
         assert!(output.contains("clone"));
     }
@@ -689,7 +724,9 @@ mod tests {
         let result = t.transpile_method_call_refactored(&obj, "contains", &[field_access]);
         assert!(result.is_ok());
         // Verify that field access argument is wrapped with &
-        let output = result.unwrap().to_string();
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(output.contains('&'));
     }
 }
