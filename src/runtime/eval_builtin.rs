@@ -3574,50 +3574,50 @@ mod tests {
     #[test]
     fn test_eval_sqrt() {
         let args = vec![Value::Integer(16)];
-        let result = eval_sqrt(&args).unwrap();
+        let result = eval_sqrt(&args).expect("eval_sqrt should succeed in test");
         assert_eq!(result, Value::Float(4.0));
 
         let args = vec![Value::Float(9.0)];
-        let result = eval_sqrt(&args).unwrap();
+        let result = eval_sqrt(&args).expect("eval_sqrt should succeed in test");
         assert_eq!(result, Value::Float(3.0));
     }
 
     #[test]
     fn test_eval_pow() {
         let args = vec![Value::Integer(2), Value::Integer(3)];
-        let result = eval_pow(&args).unwrap();
+        let result = eval_pow(&args).expect("eval_pow should succeed in test");
         assert_eq!(result, Value::Integer(8));
 
         let args = vec![Value::Float(2.0), Value::Float(3.0)];
-        let result = eval_pow(&args).unwrap();
+        let result = eval_pow(&args).expect("eval_pow should succeed in test");
         assert_eq!(result, Value::Float(8.0));
     }
 
     #[test]
     fn test_eval_abs() {
         let args = vec![Value::Integer(-42)];
-        let result = eval_abs(&args).unwrap();
+        let result = eval_abs(&args).expect("eval_abs should succeed in test");
         assert_eq!(result, Value::Integer(42));
 
         let args = vec![Value::Float(-3.15)];
-        let result = eval_abs(&args).unwrap();
+        let result = eval_abs(&args).expect("eval_abs should succeed in test");
         assert_eq!(result, Value::Float(3.15));
     }
 
     #[test]
     fn test_eval_min_max() {
         let args = vec![Value::Integer(5), Value::Integer(3)];
-        let min_result = eval_min(&args).unwrap();
+        let min_result = eval_min(&args).expect("eval_min should succeed in test");
         assert_eq!(min_result, Value::Integer(3));
 
-        let max_result = eval_max(&args).unwrap();
+        let max_result = eval_max(&args).expect("eval_max should succeed in test");
         assert_eq!(max_result, Value::Integer(5));
     }
 
     #[test]
     fn test_eval_len() {
         let args = vec![Value::from_string("hello".to_string())];
-        let result = eval_len(&args).unwrap();
+        let result = eval_len(&args).expect("eval_len should succeed in test");
         assert_eq!(result, Value::Integer(5));
 
         let args = vec![Value::Array(Arc::from(vec![
@@ -3625,25 +3625,25 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]))];
-        let result = eval_len(&args).unwrap();
+        let result = eval_len(&args).expect("eval_len should succeed in test");
         assert_eq!(result, Value::Integer(3));
     }
 
     #[test]
     fn test_eval_type() {
         let args = vec![Value::Integer(42)];
-        let result = eval_type(&args).unwrap();
+        let result = eval_type(&args).expect("eval_type should succeed in test");
         assert_eq!(result, Value::from_string("integer".to_string()));
 
         let args = vec![Value::Float(3.15)];
-        let result = eval_type(&args).unwrap();
+        let result = eval_type(&args).expect("eval_type should succeed in test");
         assert_eq!(result, Value::from_string("float".to_string()));
     }
 
     #[test]
     fn test_eval_range() {
         let args = vec![Value::Integer(3)];
-        let result = eval_range(&args).unwrap();
+        let result = eval_range(&args).expect("eval_range should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 3);
             assert_eq!(arr[0], Value::Integer(0));
@@ -3661,7 +3661,7 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]))];
-        let result = eval_reverse(&args).unwrap();
+        let result = eval_reverse(&args).expect("eval_reverse should succeed in test");
         if let Value::Array(arr) = result {
             assert_eq!(arr[0], Value::Integer(3));
             assert_eq!(arr[1], Value::Integer(2));
@@ -3671,7 +3671,7 @@ mod tests {
         }
 
         let args = vec![Value::from_string("hello".to_string())];
-        let result = eval_reverse(&args).unwrap();
+        let result = eval_reverse(&args).expect("eval_reverse should succeed in test");
         assert_eq!(result, Value::from_string("olleh".to_string()));
     }
 
@@ -3687,50 +3687,50 @@ mod tests {
     #[test]
     fn test_eval_floor() {
         let args = vec![Value::Float(3.7)];
-        let result = eval_floor(&args).unwrap();
+        let result = eval_floor(&args).expect("eval_floor should succeed in test");
         assert_eq!(result, Value::Integer(3));
 
         let args = vec![Value::Float(-2.3)];
-        let result = eval_floor(&args).unwrap();
+        let result = eval_floor(&args).expect("eval_floor should succeed in test");
         assert_eq!(result, Value::Integer(-3));
 
         let args = vec![Value::Integer(5)];
-        let result = eval_floor(&args).unwrap();
+        let result = eval_floor(&args).expect("eval_floor should succeed in test");
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_eval_ceil() {
         let args = vec![Value::Float(3.2)];
-        let result = eval_ceil(&args).unwrap();
+        let result = eval_ceil(&args).expect("eval_ceil should succeed in test");
         assert_eq!(result, Value::Integer(4));
 
         let args = vec![Value::Float(-2.7)];
-        let result = eval_ceil(&args).unwrap();
+        let result = eval_ceil(&args).expect("eval_ceil should succeed in test");
         assert_eq!(result, Value::Integer(-2));
 
         let args = vec![Value::Integer(5)];
-        let result = eval_ceil(&args).unwrap();
+        let result = eval_ceil(&args).expect("eval_ceil should succeed in test");
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_eval_round() {
         let args = vec![Value::Float(3.5)];
-        let result = eval_round(&args).unwrap();
+        let result = eval_round(&args).expect("eval_round should succeed in test");
         assert_eq!(result, Value::Integer(4));
 
         let args = vec![Value::Float(3.4)];
-        let result = eval_round(&args).unwrap();
+        let result = eval_round(&args).expect("eval_round should succeed in test");
         assert_eq!(result, Value::Integer(3));
 
         // Note: Rust's round() uses banker's rounding (round half to even)
         let args = vec![Value::Float(-2.5)];
-        let result = eval_round(&args).unwrap();
+        let result = eval_round(&args).expect("eval_round should succeed in test");
         assert_eq!(result, Value::Integer(-3));
 
         let args = vec![Value::Integer(7)];
-        let result = eval_round(&args).unwrap();
+        let result = eval_round(&args).expect("eval_round should succeed in test");
         assert_eq!(result, Value::Integer(7));
     }
 
@@ -3739,7 +3739,7 @@ mod tests {
         use std::f64::consts::PI;
 
         let args = vec![Value::Float(0.0)];
-        let result = eval_sin(&args).unwrap();
+        let result = eval_sin(&args).expect("eval_sin should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 0.0).abs() < 1e-10, "sin(0) should be ~0");
         } else {
@@ -3747,7 +3747,7 @@ mod tests {
         }
 
         let args = vec![Value::Float(PI / 2.0)];
-        let result = eval_sin(&args).unwrap();
+        let result = eval_sin(&args).expect("eval_sin should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 1.0).abs() < 1e-10, "sin(π/2) should be ~1");
         } else {
@@ -3755,7 +3755,7 @@ mod tests {
         }
 
         let args = vec![Value::Integer(0)];
-        let result = eval_sin(&args).unwrap();
+        let result = eval_sin(&args).expect("eval_sin should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 0.0).abs() < 1e-10);
         } else {
@@ -3768,7 +3768,7 @@ mod tests {
         use std::f64::consts::PI;
 
         let args = vec![Value::Float(0.0)];
-        let result = eval_cos(&args).unwrap();
+        let result = eval_cos(&args).expect("eval_cos should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 1.0).abs() < 1e-10, "cos(0) should be ~1");
         } else {
@@ -3776,7 +3776,7 @@ mod tests {
         }
 
         let args = vec![Value::Float(PI)];
-        let result = eval_cos(&args).unwrap();
+        let result = eval_cos(&args).expect("eval_cos should succeed in test");
         if let Value::Float(v) = result {
             assert!((v + 1.0).abs() < 1e-10, "cos(π) should be ~-1");
         } else {
@@ -3784,7 +3784,7 @@ mod tests {
         }
 
         let args = vec![Value::Integer(0)];
-        let result = eval_cos(&args).unwrap();
+        let result = eval_cos(&args).expect("eval_cos should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 1.0).abs() < 1e-10);
         } else {
@@ -3797,7 +3797,7 @@ mod tests {
         use std::f64::consts::PI;
 
         let args = vec![Value::Float(0.0)];
-        let result = eval_tan(&args).unwrap();
+        let result = eval_tan(&args).expect("eval_tan should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 0.0).abs() < 1e-10, "tan(0) should be ~0");
         } else {
@@ -3805,7 +3805,7 @@ mod tests {
         }
 
         let args = vec![Value::Float(PI / 4.0)];
-        let result = eval_tan(&args).unwrap();
+        let result = eval_tan(&args).expect("eval_tan should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 1.0).abs() < 1e-10, "tan(π/4) should be ~1");
         } else {
@@ -3813,7 +3813,7 @@ mod tests {
         }
 
         let args = vec![Value::Integer(0)];
-        let result = eval_tan(&args).unwrap();
+        let result = eval_tan(&args).expect("eval_tan should succeed in test");
         if let Value::Float(v) = result {
             assert!((v - 0.0).abs() < 1e-10);
         } else {
@@ -3830,7 +3830,10 @@ mod tests {
         let args = vec![Value::Bool(true)];
         let result = eval_assert(&args);
         assert!(result.is_ok(), "assert(true) should succeed");
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Nil
+        );
     }
 
     #[test]
@@ -3870,7 +3873,10 @@ mod tests {
         let args = vec![Value::Integer(42), Value::Integer(42)];
         let result = eval_assert_eq(&args);
         assert!(result.is_ok(), "assert_eq(42, 42) should succeed");
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Nil
+        );
     }
 
     #[test]
@@ -3907,7 +3913,10 @@ mod tests {
         let args = vec![Value::from_string("Hello, World!".to_string())];
         let result = eval_println(&args);
         assert!(result.is_ok(), "println should not panic");
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Nil
+        );
     }
 
     #[test]
@@ -3935,7 +3944,10 @@ mod tests {
         let args = vec![Value::from_string("Test".to_string())];
         let result = eval_print(&args);
         assert!(result.is_ok(), "print should not panic");
-        assert_eq!(result.unwrap(), Value::Nil);
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Nil
+        );
     }
 
     #[test]
@@ -3951,7 +3963,10 @@ mod tests {
         let result = eval_dbg(&args);
         assert!(result.is_ok(), "dbg should not panic");
         // dbg returns the value, not Nil
-        assert_eq!(result.unwrap(), Value::Integer(123));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(123)
+        );
     }
 
     #[test]
@@ -3959,7 +3974,10 @@ mod tests {
         let args = vec![Value::from_string("debug".to_string())];
         let result = eval_dbg(&args);
         assert!(result.is_ok(), "dbg should not panic");
-        assert_eq!(result.unwrap(), Value::from_string("debug".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("debug".to_string())
+        );
     }
 
     // --------------------------------------------------------------------------
@@ -3972,8 +3990,10 @@ mod tests {
         let test_values = vec![3.1, 3.9, -2.3, -2.9, 0.0, 5.0];
 
         for val in test_values {
-            let floor_result = eval_floor(&[Value::Float(val)]).unwrap();
-            let ceil_result = eval_ceil(&[Value::Float(val)]).unwrap();
+            let floor_result =
+                eval_floor(&[Value::Float(val)]).expect("eval_floor should succeed in test");
+            let ceil_result =
+                eval_ceil(&[Value::Float(val)]).expect("eval_ceil should succeed in test");
 
             if let (Value::Integer(floor), Value::Integer(ceil)) = (floor_result, ceil_result) {
                 let floor_f = floor as f64;
@@ -3992,8 +4012,10 @@ mod tests {
         let test_angles = vec![0.0, PI / 6.0, PI / 4.0, PI / 3.0, PI / 2.0];
 
         for angle in test_angles {
-            let sin_val = eval_sin(&[Value::Float(angle)]).unwrap();
-            let cos_val = eval_cos(&[Value::Float(angle)]).unwrap();
+            let sin_val =
+                eval_sin(&[Value::Float(angle)]).expect("eval_sin should succeed in test");
+            let cos_val =
+                eval_cos(&[Value::Float(angle)]).expect("eval_cos should succeed in test");
 
             if let (Value::Float(s), Value::Float(c)) = (sin_val, cos_val) {
                 let identity = s * s + c * c;
@@ -4018,7 +4040,7 @@ mod tests {
         ];
 
         for val in test_values {
-            let result = eval_abs(&[val]).unwrap();
+            let result = eval_abs(&[val]).expect("eval_abs should succeed in test");
             match result {
                 Value::Integer(i) => assert!(i >= 0, "abs should be non-negative"),
                 Value::Float(f) => assert!(f >= 0.0, "abs should be non-negative"),
