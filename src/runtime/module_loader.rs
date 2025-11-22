@@ -332,33 +332,36 @@ mod tests {
 
     #[test]
     fn test_resolve_simple_module() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("utils.ruchy");
-        fs::write(&module_path, "fun test() { 1 }").unwrap();
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
-        let resolved = resolve_module_path("utils", temp_dir.path()).unwrap();
+        let resolved = resolve_module_path("utils", temp_dir.path())
+            .expect("operation should succeed in test");
         assert_eq!(resolved, module_path);
     }
 
     #[test]
     fn test_resolve_nested_module() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let foo_dir = temp_dir.path().join("foo");
-        fs::create_dir(&foo_dir).unwrap();
+        fs::create_dir(&foo_dir).expect("operation should succeed in test");
         let bar_path = foo_dir.join("bar.ruchy");
-        fs::write(&bar_path, "fun test() { 1 }").unwrap();
+        fs::write(&bar_path, "fun test() { 1 }").expect("operation should succeed in test");
 
-        let resolved = resolve_module_path("foo::bar", temp_dir.path()).unwrap();
+        let resolved = resolve_module_path("foo::bar", temp_dir.path())
+            .expect("operation should succeed in test");
         assert_eq!(resolved, bar_path);
     }
 
     #[test]
     fn test_load_simple_module() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun add(x, y) { x + y }").unwrap();
+        fs::write(&module_path, "fun add(x, y) { x + y }")
+            .expect("operation should succeed in test");
 
-        let module = load_module_from_file(&module_path).unwrap();
+        let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         assert_eq!(module.path(), &module_path);
         assert!(module.is_loaded());
         assert_eq!(module.symbols().len(), 1);
@@ -367,15 +370,15 @@ mod tests {
 
     #[test]
     fn test_extract_multiple_functions() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("math.ruchy");
         fs::write(
             &module_path,
             "fun add(x, y) { x + y }\nfun sub(x, y) { x - y }",
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
-        let module = load_module_from_file(&module_path).unwrap();
+        let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let functions = extract_functions(&module);
 
         assert_eq!(functions.len(), 2);
@@ -385,13 +388,17 @@ mod tests {
 
     #[test]
     fn test_module_cache() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("cached.ruchy");
-        fs::write(&module_path, "fun test() { 1 }").unwrap();
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let cache = ModuleCache::new();
-        let module1 = cache.load(&module_path).unwrap();
-        let module2 = cache.load(&module_path).unwrap();
+        let module1 = cache
+            .load(&module_path)
+            .expect("operation should succeed in test");
+        let module2 = cache
+            .load(&module_path)
+            .expect("operation should succeed in test");
 
         // Same Rc pointer means same cached instance
         assert!(Rc::ptr_eq(&module1, &module2));
