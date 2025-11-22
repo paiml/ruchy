@@ -253,14 +253,14 @@ mod tests {
     #[test]
     fn test_string_len() {
         let s = Arc::from("hello");
-        let result = eval_string_len(&s).unwrap();
+        let result = eval_string_len(&s).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_string_to_upper() {
         let s = Arc::from("hello");
-        let result = eval_string_to_upper(&s).unwrap();
+        let result = eval_string_to_upper(&s).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("HELLO".to_string()));
     }
 
@@ -268,7 +268,7 @@ mod tests {
     fn test_string_contains() {
         let s = Arc::from("hello world");
         let needle = Value::from_string("world".to_string());
-        let result = eval_string_contains(&s, &needle).unwrap();
+        let result = eval_string_contains(&s, &needle).expect("operation should succeed in test");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -276,7 +276,7 @@ mod tests {
     fn test_string_split() {
         let s = Arc::from("a,b,c");
         let separator = Value::from_string(",".to_string());
-        let result = eval_string_split(&s, &separator).unwrap();
+        let result = eval_string_split(&s, &separator).expect("operation should succeed in test");
         if let Value::Array(parts) = result {
             assert_eq!(parts.len(), 3);
             assert_eq!(parts[0], Value::from_string("a".to_string()));
@@ -290,7 +290,7 @@ mod tests {
         let s = Arc::from("hello world");
         let from = Value::from_string("world".to_string());
         let to = Value::from_string("Rust".to_string());
-        let result = eval_string_replace(&s, &from, &to).unwrap();
+        let result = eval_string_replace(&s, &from, &to).expect("operation should succeed in test");
         assert_eq!(result, Value::from_string("hello Rust".to_string()));
     }
 
@@ -307,7 +307,10 @@ mod tests {
             result.is_ok(),
             "Zero-arg dispatch should work (match arm 0)"
         );
-        assert_eq!(result.unwrap(), Value::Integer(5));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(5)
+        );
 
         // Test that wrong arg count fails
         let result = eval_string_method(&s, "len", &[Value::Integer(1)]);
@@ -330,11 +333,15 @@ mod tests {
             result.is_ok(),
             "trim_start method should exist (match arm test)"
         );
-        assert_eq!(result.unwrap(), Value::from_string("hello  ".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("hello  ".to_string())
+        );
 
         // Also test it actually trims (not just returns the string)
         let s2 = Arc::from("  test");
-        let result2 = dispatch_zero_arg_string_method(&s2, "trim_start").unwrap();
+        let result2 = dispatch_zero_arg_string_method(&s2, "trim_start")
+            .expect("operation should succeed in test");
         assert_eq!(result2, Value::from_string("test".to_string()));
     }
 
@@ -351,7 +358,10 @@ mod tests {
             result.is_ok(),
             "char_at method should exist (match arm test)"
         );
-        assert_eq!(result.unwrap(), Value::from_string("e".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("e".to_string())
+        );
     }
 
     #[test]
@@ -368,7 +378,10 @@ mod tests {
             result.is_ok(),
             "substring method should exist (match arm test)"
         );
-        assert_eq!(result.unwrap(), Value::from_string("ell".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("ell".to_string())
+        );
     }
 
     #[test]
@@ -384,12 +397,18 @@ mod tests {
             result.is_ok(),
             "char_at with index 0 should work (tests >= 0 check)"
         );
-        assert_eq!(result.unwrap(), Value::from_string("h".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("h".to_string())
+        );
 
         // Test with valid positive index
         let result = eval_string_char_at(&s, &Value::Integer(2));
         assert!(result.is_ok(), "char_at with positive index should work");
-        assert_eq!(result.unwrap(), Value::from_string("l".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("l".to_string())
+        );
 
         // Test with negative index - should fail (proves >= not <)
         let result = eval_string_char_at(&s, &Value::Integer(-1));
@@ -412,7 +431,10 @@ mod tests {
             result.is_ok(),
             "substring with valid indices should work (tests && logic)"
         );
-        assert_eq!(result.unwrap(), Value::from_string("el".to_string()));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::from_string("el".to_string())
+        );
 
         // Test with start < 0 (first condition false) - should fail
         let result = eval_string_substring(&s, &Value::Integer(-1), &Value::Integer(3));
