@@ -591,7 +591,7 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]);
-        let result = eval_array_len(&arr).unwrap();
+        let result = eval_array_len(&arr).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(3));
     }
 
@@ -602,7 +602,7 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]);
-        let result = eval_array_first(&arr).unwrap();
+        let result = eval_array_first(&arr).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -613,14 +613,15 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]);
-        let result = eval_array_last(&arr).unwrap();
+        let result = eval_array_last(&arr).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(3));
     }
 
     #[test]
     fn test_array_push() {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let result = eval_array_push(&arr, &Value::Integer(3)).unwrap();
+        let result =
+            eval_array_push(&arr, &Value::Integer(3)).expect("operation should succeed in test");
         if let Value::Array(new_arr) = result {
             assert_eq!(new_arr.len(), 3);
             assert_eq!(new_arr[2], Value::Integer(3));
@@ -636,7 +637,8 @@ mod tests {
             Value::Integer(2),
             Value::Integer(3),
         ]);
-        let result = eval_array_get(&arr, &Value::Integer(1)).unwrap();
+        let result =
+            eval_array_get(&arr, &Value::Integer(1)).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -647,7 +649,8 @@ mod tests {
         let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
 
         let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
-        let result = eval_array_method(&arr, "append", &[other], dummy_eval).unwrap();
+        let result = eval_array_method(&arr, "append", &[other], dummy_eval)
+            .expect("operation should succeed in test");
 
         if let Value::Array(result_arr) = result {
             assert_eq!(result_arr.len(), 4);
@@ -666,7 +669,8 @@ mod tests {
         let other = Value::Array(Arc::from(vec![]));
 
         let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
-        let result = eval_array_method(&arr, "append", &[other], dummy_eval).unwrap();
+        let result = eval_array_method(&arr, "append", &[other], dummy_eval)
+            .expect("operation should succeed in test");
 
         if let Value::Array(result_arr) = result {
             assert_eq!(result_arr.len(), 1);
@@ -705,7 +709,10 @@ mod tests {
         // Test "first" with no args (should work)
         let result = eval_array_method(&arr, "first", &[], dummy_eval);
         assert!(result.is_ok(), "first with 0 args should work");
-        assert_eq!(result.unwrap(), Value::Integer(1));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(1)
+        );
 
         // Test "first" with args (should fail due to guard)
         let result = eval_array_method(&arr, "first", &[Value::Integer(0)], dummy_eval);
@@ -891,7 +898,8 @@ mod tests {
 
         // all() should return false because one element is false
         // This tests the !func_result.is_truthy() logic
-        let result = eval_array_all(&arr, &[closure], &mut |f, a| eval_identity(f, a)).unwrap();
+        let result = eval_array_all(&arr, &[closure], &mut |f, a| eval_identity(f, a))
+            .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::Bool(false),
@@ -912,8 +920,8 @@ mod tests {
             }),
             env: Default::default(),
         };
-        let result =
-            eval_array_all(&all_true_arr, &[closure2], &mut |f, a| eval_identity(f, a)).unwrap();
+        let result = eval_array_all(&all_true_arr, &[closure2], &mut |f, a| eval_identity(f, a))
+            .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::Bool(true),
@@ -928,14 +936,18 @@ mod tests {
             Value::Integer(20),
             Value::Integer(30),
         ]);
-        let result = eval_array_nth(&arr, &Value::Integer(1)).unwrap();
+        let result =
+            eval_array_nth(&arr, &Value::Integer(1)).expect("operation should succeed in test");
 
         // Should return Option::Some(20)
         match result {
             Value::EnumVariant {
                 variant_name, data, ..
             } if variant_name == "Some" => {
-                assert_eq!(data.unwrap()[0], Value::Integer(20));
+                assert_eq!(
+                    data.expect("operation should succeed in test")[0],
+                    Value::Integer(20)
+                );
             }
             _ => panic!("Expected Some variant"),
         }
@@ -944,7 +956,8 @@ mod tests {
     #[test]
     fn test_array_nth_out_of_bounds() {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let result = eval_array_nth(&arr, &Value::Integer(10)).unwrap();
+        let result =
+            eval_array_nth(&arr, &Value::Integer(10)).expect("operation should succeed in test");
 
         // Should return Option::None
         match result {
@@ -960,7 +973,8 @@ mod tests {
     #[test]
     fn test_array_nth_negative_index() {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let result = eval_array_nth(&arr, &Value::Integer(-1)).unwrap();
+        let result =
+            eval_array_nth(&arr, &Value::Integer(-1)).expect("operation should succeed in test");
 
         // Should return Option::None for negative indices
         match result {
@@ -989,13 +1003,13 @@ mod tests {
                 let arr = Arc::from(
                     values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
                 );
-                let result = eval_array_nth(&arr, &Value::Integer(idx as i64)).unwrap();
+                let result = eval_array_nth(&arr, &Value::Integer(idx as i64)).expect("operation should succeed in test");
 
                 // Should return Some variant
                 match result {
                     Value::EnumVariant { variant_name, data, .. } if variant_name == "Some" => {
                         prop_assert!(data.is_some());
-                        prop_assert_eq!(&data.unwrap()[0], &Value::Integer(values[idx]));
+                        prop_assert_eq!(&data.expect("operation should succeed in test")[0], &Value::Integer(values[idx]));
                     }
                     _ => prop_assert!(false, "Expected Some variant"),
                 }
@@ -1007,7 +1021,7 @@ mod tests {
                 let arr = Arc::from(
                     values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
                 );
-                let result = eval_array_nth(&arr, &Value::Integer(idx)).unwrap();
+                let result = eval_array_nth(&arr, &Value::Integer(idx)).expect("operation should succeed in test");
 
                 // Should return None variant
                 match result {
@@ -1024,7 +1038,7 @@ mod tests {
                 let arr = Arc::from(
                     values.iter().map(|&v| Value::Integer(v)).collect::<Vec<_>>()
                 );
-                let result = eval_array_nth(&arr, &Value::Integer(idx)).unwrap();
+                let result = eval_array_nth(&arr, &Value::Integer(idx)).expect("operation should succeed in test");
 
                 // Should return None variant
                 match result {
