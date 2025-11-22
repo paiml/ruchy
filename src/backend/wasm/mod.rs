@@ -2067,7 +2067,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
         assert!(!bytes.is_empty());
         // Check WASM magic number
         assert_eq!(&bytes[0..4], b"\0asm");
@@ -2081,7 +2081,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
         // Should contain i32.const instruction (0x41)
         assert!(bytes.contains(&0x41));
     }
@@ -2094,7 +2094,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
         // Should contain i32.add instruction (0x6a)
         assert!(bytes.contains(&0x6a));
 
@@ -2103,7 +2103,7 @@ mod tests {
         let expr = parser.parse().expect("Should parse subtraction");
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
         // Should contain i32.sub instruction (0x6b)
         assert!(bytes.contains(&0x6b));
 
@@ -2112,7 +2112,7 @@ mod tests {
         let expr = parser.parse().expect("Should parse multiplication");
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
         // Should contain i32.mul instruction (0x6c)
         assert!(bytes.contains(&0x6c));
     }
@@ -2124,7 +2124,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should have WASM magic number
         assert_eq!(&bytes[0..4], b"\0asm");
@@ -2139,7 +2139,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain if instruction (0x04)
         assert!(bytes.contains(&0x04));
@@ -2152,7 +2152,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain local.set (0x21) or local.get (0x20)
         assert!(bytes.iter().any(|&b| b == 0x20 || b == 0x21));
@@ -2165,7 +2165,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain i32.gt_s instruction (0x4a)
         assert!(bytes.contains(&0x4a));
@@ -2178,7 +2178,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // true should emit i32.const 1
         assert!(bytes.windows(2).any(|w| w == [0x41, 0x01]));
@@ -2187,7 +2187,7 @@ mod tests {
         let expr = parser.parse().expect("Should parse boolean");
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // false should emit i32.const 0
         assert!(bytes.windows(2).any(|w| w == [0x41, 0x00]));
@@ -2200,7 +2200,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain block instruction (0x02)
         assert!(bytes.contains(&0x02));
@@ -2213,7 +2213,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain loop instruction (0x03)
         assert!(bytes.contains(&0x03));
@@ -2226,7 +2226,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain br instruction (0x0c)
         assert!(bytes.contains(&0x0c));
@@ -2239,7 +2239,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain br instruction for continue
         assert!(bytes.contains(&0x0c));
@@ -2252,7 +2252,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain return instruction (0x0f)
         assert!(bytes.contains(&0x0f));
@@ -2265,7 +2265,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain add, sub, and mul instructions
         assert!(bytes.contains(&0x6a)); // add
@@ -2280,7 +2280,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should generate valid WASM bytecode (specific instruction may vary)
         assert!(!bytes.is_empty());
@@ -2289,7 +2289,7 @@ mod tests {
         let expr = parser.parse().expect("Should parse logical or");
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should generate valid WASM bytecode (specific instruction may vary)
         assert!(!bytes.is_empty());
@@ -2302,7 +2302,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain i32.eqz instruction (0x45)
         assert!(bytes.contains(&0x45));
@@ -2331,7 +2331,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should be valid WASM
         assert_eq!(&bytes[0..4], b"\0asm");
@@ -2387,7 +2387,7 @@ mod tests {
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
         assert!(result.is_ok());
-        let bytes = result.unwrap();
+        let bytes = result.expect("operation should succeed in test");
 
         // Should contain i32.div_s instruction (0x6d)
         assert!(bytes.contains(&0x6d));
@@ -2397,10 +2397,12 @@ mod tests {
     fn test_wasm_has_import_section_for_println() {
         // RED phase: Test that WASM module has import section for println
         let mut parser = Parser::new(r#"println("Hello")"#);
-        let ast = parser.parse().unwrap();
+        let ast = parser.parse().expect("operation should succeed in test");
 
         let emitter = WasmEmitter::new();
-        let wasm_bytes = emitter.emit(&ast).unwrap();
+        let wasm_bytes = emitter
+            .emit(&ast)
+            .expect("operation should succeed in test");
 
         // Parse WASM and verify import section exists
         let parser = wasmparser::Parser::new(0);
@@ -2424,7 +2426,7 @@ mod tests {
         // RED phase: F-strings should compile to WASM
         // This test WILL FAIL until we implement string interpolation support
         let mut parser = Parser::new(r#"let x = 10; println(f"Value: {x}")"#);
-        let ast = parser.parse().unwrap();
+        let ast = parser.parse().expect("operation should succeed in test");
 
         let emitter = WasmEmitter::new();
         let wasm_bytes = emitter.emit(&ast);
@@ -2437,7 +2439,7 @@ mod tests {
         );
 
         // Validate WASM bytecode
-        let bytes = wasm_bytes.unwrap();
+        let bytes = wasm_bytes.expect("operation should succeed in test");
         let validation = wasmparser::validate(&bytes);
         assert!(
             validation.is_ok(),
@@ -2460,7 +2462,7 @@ mod tests {
             }
         "#;
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
+        let ast = parser.parse().expect("operation should succeed in test");
 
         let emitter = WasmEmitter::new();
         let wasm_bytes = emitter.emit(&ast);
@@ -2473,7 +2475,7 @@ mod tests {
         );
 
         // Validate WASM bytecode
-        let bytes = wasm_bytes.unwrap();
+        let bytes = wasm_bytes.expect("operation should succeed in test");
         let validation = wasmparser::validate(&bytes);
         assert!(
             validation.is_ok(),
