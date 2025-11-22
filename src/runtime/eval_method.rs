@@ -288,23 +288,23 @@ mod tests {
     #[test]
     fn test_eval_float_method() {
         assert_eq!(
-            eval_float_method(4.0, "sqrt", true).unwrap(),
+            eval_float_method(4.0, "sqrt", true).expect("operation should succeed in test"),
             Value::Float(2.0)
         );
         assert_eq!(
-            eval_float_method(-3.5, "abs", true).unwrap(),
+            eval_float_method(-3.5, "abs", true).expect("operation should succeed in test"),
             Value::Float(3.5)
         );
         assert_eq!(
-            eval_float_method(3.7, "round", true).unwrap(),
+            eval_float_method(3.7, "round", true).expect("operation should succeed in test"),
             Value::Float(4.0)
         );
         assert_eq!(
-            eval_float_method(3.7, "floor", true).unwrap(),
+            eval_float_method(3.7, "floor", true).expect("operation should succeed in test"),
             Value::Float(3.0)
         );
         assert_eq!(
-            eval_float_method(3.2, "ceil", true).unwrap(),
+            eval_float_method(3.2, "ceil", true).expect("operation should succeed in test"),
             Value::Float(4.0)
         );
     }
@@ -313,12 +313,13 @@ mod tests {
     fn test_eval_integer_method() {
         // Test abs() - no arguments
         assert_eq!(
-            eval_integer_method(-5, "abs", &[]).unwrap(),
+            eval_integer_method(-5, "abs", &[]).expect("operation should succeed in test"),
             Value::Integer(5)
         );
 
         // Test to_string() - no arguments
-        let result = eval_integer_method(42, "to_string", &[]).unwrap();
+        let result =
+            eval_integer_method(42, "to_string", &[]).expect("operation should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string value"),
@@ -326,15 +327,18 @@ mod tests {
 
         // Test pow() - with argument
         assert_eq!(
-            eval_integer_method(2, "pow", &[Value::Integer(3)]).unwrap(),
+            eval_integer_method(2, "pow", &[Value::Integer(3)])
+                .expect("operation should succeed in test"),
             Value::Integer(8)
         );
         assert_eq!(
-            eval_integer_method(5, "pow", &[Value::Integer(2)]).unwrap(),
+            eval_integer_method(5, "pow", &[Value::Integer(2)])
+                .expect("operation should succeed in test"),
             Value::Integer(25)
         );
         assert_eq!(
-            eval_integer_method(10, "pow", &[Value::Integer(0)]).unwrap(),
+            eval_integer_method(10, "pow", &[Value::Integer(0)])
+                .expect("operation should succeed in test"),
             Value::Integer(1)
         );
 
@@ -348,7 +352,8 @@ mod tests {
     #[test]
     fn test_eval_generic_method() {
         let val = Value::Integer(42);
-        let result = eval_generic_method(&val, "to_string", true).unwrap();
+        let result =
+            eval_generic_method(&val, "to_string", true).expect("operation should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "42"),
             _ => panic!("Expected string value"),
@@ -378,11 +383,13 @@ mod tests {
         ]);
 
         // Test "len" match arm
-        let result = eval_array_method_simple(&arr, "len", &[]).unwrap();
+        let result =
+            eval_array_method_simple(&arr, "len", &[]).expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(3), "len should return array length");
 
         // Test "length" alias
-        let result = eval_array_method_simple(&arr, "length", &[]).unwrap();
+        let result = eval_array_method_simple(&arr, "length", &[])
+            .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::Integer(3),
@@ -390,7 +397,8 @@ mod tests {
         );
 
         // Test "is_empty" match arm with non-empty array
-        let result = eval_array_method_simple(&arr, "is_empty", &[]).unwrap();
+        let result = eval_array_method_simple(&arr, "is_empty", &[])
+            .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::Bool(false),
@@ -399,7 +407,8 @@ mod tests {
 
         // Test "is_empty" with empty array
         let empty_arr = Arc::from(vec![]);
-        let result = eval_array_method_simple(&empty_arr, "is_empty", &[]).unwrap();
+        let result = eval_array_method_simple(&empty_arr, "is_empty", &[])
+            .expect("operation should succeed in test");
         assert_eq!(
             result,
             Value::Bool(true),
@@ -441,7 +450,8 @@ mod tests {
         ];
 
         // Test "columns" match arm
-        let result = eval_dataframe_method_simple(&columns, "columns", &[]).unwrap();
+        let result = eval_dataframe_method_simple(&columns, "columns", &[])
+            .expect("operation should succeed in test");
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 2, "Should return 2 column names");
@@ -475,7 +485,8 @@ mod tests {
 
         // Test Array dispatch
         let arr_val = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = dispatch_method_call(&arr_val, "len", &[], true).unwrap();
+        let result = dispatch_method_call(&arr_val, "len", &[], true)
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(2), "Array should dispatch to len");
 
         // Test DataFrame dispatch
@@ -485,7 +496,8 @@ mod tests {
                 values: vec![Value::Integer(1)],
             }],
         };
-        let result = dispatch_method_call(&df_val, "columns", &[], true).unwrap();
+        let result = dispatch_method_call(&df_val, "columns", &[], true)
+            .expect("operation should succeed in test");
         match result {
             Value::Array(_) => {} // Success
             _ => panic!("DataFrame should dispatch to columns"),
@@ -506,7 +518,7 @@ mod mutation_tests {
 
         assert!(result.is_ok(), "Float should dispatch to eval_float_method");
         assert_eq!(
-            result.unwrap(),
+            result.expect("operation should succeed in test"),
             Value::Float(2.0),
             "sqrt(4.0) should be 2.0"
         );
@@ -542,7 +554,7 @@ mod mutation_tests {
         );
 
         // Verify it returns an array (normal dispatch working)
-        match result.unwrap() {
+        match result.expect("operation should succeed in test") {
             Value::Array(_) => {} // Success - normal dispatch occurred
             _ => panic!("DataFrame.columns should return array via normal dispatch"),
         }
