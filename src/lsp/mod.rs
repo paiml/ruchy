@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn test_workspace_add_document() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
         let content = "let x = 42".to_string();
 
         workspace.add_document(uri.clone(), content.clone());
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn test_workspace_update_document() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri.clone(), "initial".to_string());
         workspace.update_document(&uri, "updated".to_string());
@@ -184,20 +184,21 @@ mod tests {
     #[test]
     fn test_workspace_get_document() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
         let content = "let x = 42".to_string();
 
         workspace.add_document(uri.clone(), content.clone());
 
         let result = workspace.get_document(&uri);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), &content);
+        assert_eq!(result.expect("operation should succeed in test"), &content);
     }
 
     #[test]
     fn test_workspace_get_document_not_found() {
         let workspace = Workspace::new();
-        let uri = Url::parse("file:///nonexistent.ruchy").unwrap();
+        let uri =
+            Url::parse("file:///nonexistent.ruchy").expect("operation should succeed in test");
 
         let result = workspace.get_document(&uri);
         assert!(result.is_err());
@@ -210,7 +211,7 @@ mod tests {
     #[test]
     fn test_workspace_remove_document() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri.clone(), "content".to_string());
         assert_eq!(workspace.documents.len(), 1);
@@ -222,7 +223,7 @@ mod tests {
     #[test]
     fn test_workspace_remove_nonexistent_document() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
 
         // Should not panic when removing non-existent document
         workspace.remove_document(&uri);
@@ -232,46 +233,74 @@ mod tests {
     #[test]
     fn test_workspace_multiple_documents() {
         let mut workspace = Workspace::new();
-        let uri1 = Url::parse("file:///test1.ruchy").unwrap();
-        let uri2 = Url::parse("file:///test2.ruchy").unwrap();
-        let uri3 = Url::parse("file:///test3.ruchy").unwrap();
+        let uri1 = Url::parse("file:///test1.ruchy").expect("operation should succeed in test");
+        let uri2 = Url::parse("file:///test2.ruchy").expect("operation should succeed in test");
+        let uri3 = Url::parse("file:///test3.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri1.clone(), "content1".to_string());
         workspace.add_document(uri2.clone(), "content2".to_string());
         workspace.add_document(uri3.clone(), "content3".to_string());
 
         assert_eq!(workspace.documents.len(), 3);
-        assert_eq!(workspace.get_document(&uri1).unwrap(), "content1");
-        assert_eq!(workspace.get_document(&uri2).unwrap(), "content2");
-        assert_eq!(workspace.get_document(&uri3).unwrap(), "content3");
+        assert_eq!(
+            workspace
+                .get_document(&uri1)
+                .expect("operation should succeed in test"),
+            "content1"
+        );
+        assert_eq!(
+            workspace
+                .get_document(&uri2)
+                .expect("operation should succeed in test"),
+            "content2"
+        );
+        assert_eq!(
+            workspace
+                .get_document(&uri3)
+                .expect("operation should succeed in test"),
+            "content3"
+        );
     }
 
     #[test]
     fn test_workspace_update_overwrites() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///test.ruchy").unwrap();
+        let uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri.clone(), "v1".to_string());
         workspace.add_document(uri.clone(), "v2".to_string());
         workspace.update_document(&uri, "v3".to_string());
 
         assert_eq!(workspace.documents.len(), 1);
-        assert_eq!(workspace.get_document(&uri).unwrap(), "v3");
+        assert_eq!(
+            workspace
+                .get_document(&uri)
+                .expect("operation should succeed in test"),
+            "v3"
+        );
     }
 
     #[test]
     fn test_workspace_with_different_schemes() {
         let mut workspace = Workspace::new();
-        let file_uri = Url::parse("file:///test.ruchy").unwrap();
-        let untitled_uri = Url::parse("untitled:untitled-1").unwrap();
+        let file_uri = Url::parse("file:///test.ruchy").expect("operation should succeed in test");
+        let untitled_uri =
+            Url::parse("untitled:untitled-1").expect("operation should succeed in test");
 
         workspace.add_document(file_uri.clone(), "file content".to_string());
         workspace.add_document(untitled_uri.clone(), "untitled content".to_string());
 
         assert_eq!(workspace.documents.len(), 2);
-        assert_eq!(workspace.get_document(&file_uri).unwrap(), "file content");
         assert_eq!(
-            workspace.get_document(&untitled_uri).unwrap(),
+            workspace
+                .get_document(&file_uri)
+                .expect("operation should succeed in test"),
+            "file content"
+        );
+        assert_eq!(
+            workspace
+                .get_document(&untitled_uri)
+                .expect("operation should succeed in test"),
             "untitled content"
         );
     }
@@ -279,20 +308,30 @@ mod tests {
     #[test]
     fn test_workspace_empty_content() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///empty.ruchy").unwrap();
+        let uri = Url::parse("file:///empty.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri.clone(), String::new());
-        assert_eq!(workspace.get_document(&uri).unwrap(), "");
+        assert_eq!(
+            workspace
+                .get_document(&uri)
+                .expect("operation should succeed in test"),
+            ""
+        );
     }
 
     #[test]
     fn test_workspace_large_content() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///large.ruchy").unwrap();
+        let uri = Url::parse("file:///large.ruchy").expect("operation should succeed in test");
         let large_content = "x".repeat(10000);
 
         workspace.add_document(uri.clone(), large_content.clone());
-        assert_eq!(workspace.get_document(&uri).unwrap(), &large_content);
+        assert_eq!(
+            workspace
+                .get_document(&uri)
+                .expect("operation should succeed in test"),
+            &large_content
+        );
     }
 
     #[test]
@@ -353,7 +392,7 @@ mod tests {
     #[test]
     fn test_workspace_concurrent_updates() {
         let mut workspace = Workspace::new();
-        let uri = Url::parse("file:///concurrent.ruchy").unwrap();
+        let uri = Url::parse("file:///concurrent.ruchy").expect("operation should succeed in test");
 
         // Simulate multiple updates
         for i in 0..10 {
@@ -361,7 +400,12 @@ mod tests {
         }
 
         // Should have the last update
-        assert_eq!(workspace.get_document(&uri).unwrap(), "version 9");
+        assert_eq!(
+            workspace
+                .get_document(&uri)
+                .expect("operation should succeed in test"),
+            "version 9"
+        );
     }
 
     #[test]
@@ -369,13 +413,20 @@ mod tests {
         let mut workspace = Workspace::new();
 
         // Different representations of the same file
-        let uri1 = Url::parse("file:///home/user/test.ruchy").unwrap();
-        let uri2 = Url::parse("file:///home/user/test.ruchy").unwrap();
+        let uri1 =
+            Url::parse("file:///home/user/test.ruchy").expect("operation should succeed in test");
+        let uri2 =
+            Url::parse("file:///home/user/test.ruchy").expect("operation should succeed in test");
 
         workspace.add_document(uri1, "content".to_string());
 
         // Should retrieve with equivalent URI
-        assert_eq!(workspace.get_document(&uri2).unwrap(), "content");
+        assert_eq!(
+            workspace
+                .get_document(&uri2)
+                .expect("operation should succeed in test"),
+            "content"
+        );
     }
 }
 
