@@ -88,8 +88,9 @@ mod tests {
     #[test]
     fn test_analysis_config_serialization() {
         let config = create_test_config();
-        let json = serde_json::to_string(&config).unwrap();
-        let deserialized: AnalysisConfig = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&config).expect("operation should succeed in test");
+        let deserialized: AnalysisConfig =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(config.target_platforms, deserialized.target_platforms);
     }
     // ========== ComponentInfo Tests ==========
@@ -120,8 +121,9 @@ mod tests {
     #[test]
     fn test_component_info_serialization() {
         let info = create_test_component_info();
-        let json = serde_json::to_string(&info).unwrap();
-        let deserialized: ComponentInfo = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&info).expect("operation should succeed in test");
+        let deserialized: ComponentInfo =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(info.name, deserialized.name);
         assert_eq!(info.size, deserialized.size);
     }
@@ -138,16 +140,52 @@ mod tests {
     #[test]
     fn test_portability_score_platform_lookup() {
         let score = create_test_portability_score();
-        assert_eq!(*score.platform_scores.get("wasmtime").unwrap(), 0.95);
-        assert_eq!(*score.platform_scores.get("wasmer").unwrap(), 0.92);
-        assert_eq!(*score.platform_scores.get("browser").unwrap(), 0.88);
+        assert_eq!(
+            *score
+                .platform_scores
+                .get("wasmtime")
+                .expect("operation should succeed in test"),
+            0.95
+        );
+        assert_eq!(
+            *score
+                .platform_scores
+                .get("wasmer")
+                .expect("operation should succeed in test"),
+            0.92
+        );
+        assert_eq!(
+            *score
+                .platform_scores
+                .get("browser")
+                .expect("operation should succeed in test"),
+            0.88
+        );
     }
     #[test]
     fn test_portability_score_feature_lookup() {
         let score = create_test_portability_score();
-        assert_eq!(*score.feature_scores.get("memory").unwrap(), 0.9);
-        assert_eq!(*score.feature_scores.get("threading").unwrap(), 0.7);
-        assert_eq!(*score.feature_scores.get("simd").unwrap(), 0.6);
+        assert_eq!(
+            *score
+                .feature_scores
+                .get("memory")
+                .expect("operation should succeed in test"),
+            0.9
+        );
+        assert_eq!(
+            *score
+                .feature_scores
+                .get("threading")
+                .expect("operation should succeed in test"),
+            0.7
+        );
+        assert_eq!(
+            *score
+                .feature_scores
+                .get("simd")
+                .expect("operation should succeed in test"),
+            0.6
+        );
     }
     #[test]
     fn test_portability_score_perfect() {
@@ -239,8 +277,9 @@ mod tests {
             impact: 0.05,
             platforms: vec!["browser".to_string()],
         };
-        let json = serde_json::to_string(&rec).unwrap();
-        let deserialized: Recommendation = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&rec).expect("operation should succeed in test");
+        let deserialized: Recommendation =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(rec.title, deserialized.title);
         assert_eq!(rec.impact, deserialized.impact);
     }
@@ -336,7 +375,13 @@ mod tests {
             platform_limits: HashMap::new(),
         };
         assert_eq!(analysis.section_sizes.len(), 3);
-        assert_eq!(*analysis.section_sizes.get("debug").unwrap(), 500);
+        assert_eq!(
+            *analysis
+                .section_sizes
+                .get("debug")
+                .expect("operation should succeed in test"),
+            500
+        );
     }
     // ========== PortabilityAnalyzer Tests ==========
     #[test]
@@ -478,8 +523,9 @@ mod tests {
                 platform_limits: HashMap::new(),
             },
         };
-        let json = serde_json::to_string(&report).unwrap();
-        let deserialized: PortabilityReport = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&report).expect("operation should succeed in test");
+        let deserialized: PortabilityReport =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(report.component_info.name, deserialized.component_info.name);
         assert_eq!(report.score.overall_score, deserialized.score.overall_score);
     }
@@ -734,8 +780,20 @@ mod tests {
         };
         assert_eq!(analysis.section_sizes.len(), 11);
         assert_eq!(analysis.platform_limits.len(), 2);
-        assert_eq!(*analysis.section_sizes.get("code").unwrap(), 8192);
-        assert_eq!(*analysis.platform_limits.get("browser").unwrap(), 4_194_304);
+        assert_eq!(
+            *analysis
+                .section_sizes
+                .get("code")
+                .expect("operation should succeed in test"),
+            8192
+        );
+        assert_eq!(
+            *analysis
+                .platform_limits
+                .get("browser")
+                .expect("operation should succeed in test"),
+            4_194_304
+        );
     }
 }
 use super::component::WasmComponent;
