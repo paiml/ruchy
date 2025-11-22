@@ -541,9 +541,9 @@ mod tests {
     fn test_arena_allocation() {
         let arena = Arena::new(1024 * 1024); // 1MB limit
                                              // Allocate some values
-        let v1 = arena.alloc(42i32).unwrap();
-        let v2 = arena.alloc("hello".to_string()).unwrap();
-        let v3 = arena.alloc(vec![1, 2, 3]).unwrap();
+        let v1 = arena.alloc(42i32).expect("operation should succeed in test");
+        let v2 = arena.alloc("hello".to_string()).expect("operation should succeed in test");
+        let v3 = arena.alloc(vec![1, 2, 3]).expect("operation should succeed in test");
         assert_eq!(*v1, 42);
         assert_eq!(*v2, "hello");
         assert_eq!(*v3, vec![1, 2, 3]);
@@ -555,7 +555,7 @@ mod tests {
         let arena = Arena::new(1024 * 1024);
         // Allocate some memory
         for i in 0..100 {
-            arena.alloc(i).unwrap();
+            arena.alloc(i).expect("operation should succeed in test");
         }
         let used_before = arena.used();
         assert!(used_before > 0);
@@ -568,15 +568,15 @@ mod tests {
     fn test_transactional_arena() {
         let mut arena = TransactionalArena::new(1024 * 1024);
         // Initial allocation
-        arena.arena().alloc(1).unwrap();
+        arena.arena().alloc(1).expect("operation should succeed in test");
         // Create checkpoint
         let checkpoint = arena.checkpoint();
         // More allocations
-        arena.arena().alloc(2).unwrap();
-        arena.arena().alloc(3).unwrap();
+        arena.arena().alloc(2).expect("operation should succeed in test");
+        arena.arena().alloc(3).expect("operation should succeed in test");
         let used_before = arena.arena().used();
         // Rollback
-        arena.rollback(checkpoint).unwrap();
+        arena.rollback(checkpoint).expect("operation should succeed in test");
         let used_after = arena.arena().used();
         assert!(used_after < used_before);
     }
@@ -584,7 +584,7 @@ mod tests {
     fn test_memory_limit() {
         let arena = Arena::new(100); // Very small limit
                                      // This should succeed
-        arena.alloc([0u8; 50]).unwrap();
+        arena.alloc([0u8; 50]).expect("operation should succeed in test");
         // This should fail - would exceed limit
         let result = arena.alloc([0u8; 60]);
         assert!(result.is_err());
@@ -595,11 +595,11 @@ mod tests {
         let pool: Pool<i32> = Pool::new(arena);
         // Allocate and free
         {
-            let v1 = pool.alloc(42).unwrap();
+            let v1 = pool.alloc(42).expect("operation should succeed in test");
             assert_eq!(*v1, 42);
         } // v1 dropped, returned to pool
           // Next allocation should reuse
-        let v2 = pool.alloc(100).unwrap();
+        let v2 = pool.alloc(100).expect("operation should succeed in test");
         #[cfg(test)]
         #[ignore = "Property tests not fully configured"]
         use proptest::prelude::*;
