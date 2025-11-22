@@ -721,11 +721,11 @@ mod tests {
     #[test]
     fn test_float_sqrt() {
         assert_eq!(
-            eval_float_method(9.0, "sqrt", true).unwrap(),
+            eval_float_method(9.0, "sqrt", true).expect("eval_float_method should succeed in test"),
             Value::Float(3.0)
         );
         assert_eq!(
-            eval_float_method(0.0, "sqrt", true).unwrap(),
+            eval_float_method(0.0, "sqrt", true).expect("eval_float_method should succeed in test"),
             Value::Float(0.0)
         );
     }
@@ -733,11 +733,11 @@ mod tests {
     #[test]
     fn test_float_abs() {
         assert_eq!(
-            eval_float_method(-5.5, "abs", true).unwrap(),
+            eval_float_method(-5.5, "abs", true).expect("eval_float_method should succeed in test"),
             Value::Float(5.5)
         );
         assert_eq!(
-            eval_float_method(5.5, "abs", true).unwrap(),
+            eval_float_method(5.5, "abs", true).expect("eval_float_method should succeed in test"),
             Value::Float(5.5)
         );
     }
@@ -745,11 +745,13 @@ mod tests {
     #[test]
     fn test_float_round() {
         assert_eq!(
-            eval_float_method(3.7, "round", true).unwrap(),
+            eval_float_method(3.7, "round", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(4.0)
         );
         assert_eq!(
-            eval_float_method(3.2, "round", true).unwrap(),
+            eval_float_method(3.2, "round", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(3.0)
         );
     }
@@ -757,11 +759,13 @@ mod tests {
     #[test]
     fn test_float_floor() {
         assert_eq!(
-            eval_float_method(3.7, "floor", true).unwrap(),
+            eval_float_method(3.7, "floor", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(3.0)
         );
         assert_eq!(
-            eval_float_method(-3.7, "floor", true).unwrap(),
+            eval_float_method(-3.7, "floor", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(-4.0)
         );
     }
@@ -769,11 +773,12 @@ mod tests {
     #[test]
     fn test_float_ceil() {
         assert_eq!(
-            eval_float_method(3.2, "ceil", true).unwrap(),
+            eval_float_method(3.2, "ceil", true).expect("eval_float_method should succeed in test"),
             Value::Float(4.0)
         );
         assert_eq!(
-            eval_float_method(-3.2, "ceil", true).unwrap(),
+            eval_float_method(-3.2, "ceil", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(-3.0)
         );
     }
@@ -781,30 +786,45 @@ mod tests {
     #[test]
     fn test_float_trig() {
         // sin, cos, tan
-        assert!((eval_float_method(0.0, "sin", true).unwrap() == Value::Float(0.0)));
-        assert!((eval_float_method(0.0, "cos", true).unwrap() == Value::Float(1.0)));
-        assert!((eval_float_method(0.0, "tan", true).unwrap() == Value::Float(0.0)));
+        assert!(
+            (eval_float_method(0.0, "sin", true)
+                .expect("eval_float_method should succeed in test")
+                == Value::Float(0.0))
+        );
+        assert!(
+            (eval_float_method(0.0, "cos", true)
+                .expect("eval_float_method should succeed in test")
+                == Value::Float(1.0))
+        );
+        assert!(
+            (eval_float_method(0.0, "tan", true)
+                .expect("eval_float_method should succeed in test")
+                == Value::Float(0.0))
+        );
     }
 
     #[test]
     fn test_float_log() {
         assert_eq!(
-            eval_float_method(std::f64::consts::E, "ln", true).unwrap(),
+            eval_float_method(std::f64::consts::E, "ln", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(1.0)
         );
         assert_eq!(
-            eval_float_method(10.0, "log10", true).unwrap(),
+            eval_float_method(10.0, "log10", true)
+                .expect("eval_float_method should succeed in test"),
             Value::Float(1.0)
         );
         assert_eq!(
-            eval_float_method(0.0, "exp", true).unwrap(),
+            eval_float_method(0.0, "exp", true).expect("eval_float_method should succeed in test"),
             Value::Float(1.0)
         );
     }
 
     #[test]
     fn test_float_to_string() {
-        let result = eval_float_method(std::f64::consts::PI, "to_string", true).unwrap();
+        let result = eval_float_method(std::f64::consts::PI, "to_string", true)
+            .expect("eval_float_method should succeed in test");
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), &std::f64::consts::PI.to_string()),
             _ => panic!("Expected String"),
@@ -845,15 +865,17 @@ mod tests {
     #[test]
     fn test_integer_abs() {
         assert_eq!(
-            eval_integer_method(-42, "abs", &[]).unwrap(),
+            eval_integer_method(-42, "abs", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Integer(42)
         );
         assert_eq!(
-            eval_integer_method(42, "abs", &[]).unwrap(),
+            eval_integer_method(42, "abs", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Integer(42)
         );
         assert_eq!(
-            eval_integer_method(0, "abs", &[]).unwrap(),
+            eval_integer_method(0, "abs", &[]).expect("eval_integer_method should succeed in test"),
             Value::Integer(0)
         );
     }
@@ -861,11 +883,13 @@ mod tests {
     #[test]
     fn test_integer_sqrt() {
         assert_eq!(
-            eval_integer_method(16, "sqrt", &[]).unwrap(),
+            eval_integer_method(16, "sqrt", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Float(4.0)
         );
         assert_eq!(
-            eval_integer_method(0, "sqrt", &[]).unwrap(),
+            eval_integer_method(0, "sqrt", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Float(0.0)
         );
     }
@@ -873,43 +897,51 @@ mod tests {
     #[test]
     fn test_integer_to_float() {
         assert_eq!(
-            eval_integer_method(42, "to_float", &[]).unwrap(),
+            eval_integer_method(42, "to_float", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Float(42.0)
         );
         assert_eq!(
-            eval_integer_method(-5, "to_float", &[]).unwrap(),
+            eval_integer_method(-5, "to_float", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Float(-5.0)
         );
     }
 
     #[test]
     fn test_integer_to_string() {
-        let result = eval_integer_method(123, "to_string", &[]).unwrap();
+        let result = eval_integer_method(123, "to_string", &[])
+            .expect("eval_integer_method should succeed in test");
         assert_eq!(result, Value::from_string("123".to_string()));
     }
 
     #[test]
     fn test_integer_signum() {
         assert_eq!(
-            eval_integer_method(42, "signum", &[]).unwrap(),
+            eval_integer_method(42, "signum", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Integer(1)
         );
         assert_eq!(
-            eval_integer_method(-42, "signum", &[]).unwrap(),
+            eval_integer_method(-42, "signum", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Integer(-1)
         );
         assert_eq!(
-            eval_integer_method(0, "signum", &[]).unwrap(),
+            eval_integer_method(0, "signum", &[])
+                .expect("eval_integer_method should succeed in test"),
             Value::Integer(0)
         );
     }
 
     #[test]
     fn test_integer_pow() {
-        let result = eval_integer_method(2, "pow", &[Value::Integer(3)]).unwrap();
+        let result = eval_integer_method(2, "pow", &[Value::Integer(3)])
+            .expect("eval_integer_method should succeed in test");
         assert_eq!(result, Value::Integer(8));
 
-        let result = eval_integer_method(5, "pow", &[Value::Integer(0)]).unwrap();
+        let result = eval_integer_method(5, "pow", &[Value::Integer(0)])
+            .expect("eval_integer_method should succeed in test");
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -968,7 +1000,8 @@ mod tests {
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_count(&columns, &[]).unwrap(),
+            eval_dataframe_count(&columns, &[])
+                .expect("eval_dataframe_count should succeed in test"),
             Value::Integer(3)
         );
     }
@@ -980,7 +1013,7 @@ mod tests {
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_sum(&columns, &[]).unwrap(),
+            eval_dataframe_sum(&columns, &[]).expect("eval_dataframe_sum should succeed in test"),
             Value::Float(6.0)
         );
     }
@@ -992,7 +1025,7 @@ mod tests {
             values: vec![Value::Integer(1), Value::Float(2.5), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_sum(&columns, &[]).unwrap(),
+            eval_dataframe_sum(&columns, &[]).expect("eval_dataframe_sum should succeed in test"),
             Value::Float(6.5)
         );
     }
@@ -1004,7 +1037,7 @@ mod tests {
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_mean(&columns, &[]).unwrap(),
+            eval_dataframe_mean(&columns, &[]).expect("eval_dataframe_mean should succeed in test"),
             Value::Float(2.0)
         );
     }
@@ -1016,7 +1049,7 @@ mod tests {
             values: vec![Value::Integer(1), Value::Integer(5), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_max(&columns, &[]).unwrap(),
+            eval_dataframe_max(&columns, &[]).expect("eval_dataframe_max should succeed in test"),
             Value::Float(5.0)
         );
     }
@@ -1028,7 +1061,7 @@ mod tests {
             values: vec![Value::Integer(5), Value::Integer(1), Value::Integer(3)],
         }];
         assert_eq!(
-            eval_dataframe_min(&columns, &[]).unwrap(),
+            eval_dataframe_min(&columns, &[]).expect("eval_dataframe_min should succeed in test"),
             Value::Float(1.0)
         );
     }
@@ -1045,7 +1078,8 @@ mod tests {
                 values: vec![Value::Integer(2)],
             },
         ];
-        let result = eval_dataframe_columns(&columns, &[]).unwrap();
+        let result = eval_dataframe_columns(&columns, &[])
+            .expect("eval_dataframe_columns should succeed in test");
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 2);
@@ -1068,7 +1102,8 @@ mod tests {
                 values: vec![Value::Integer(4), Value::Integer(5), Value::Integer(6)],
             },
         ];
-        let result = eval_dataframe_shape(&columns, &[]).unwrap();
+        let result = eval_dataframe_shape(&columns, &[])
+            .expect("eval_dataframe_shape should succeed in test");
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr[0], Value::Integer(3)); // rows
@@ -1086,7 +1121,8 @@ mod tests {
     fn test_generic_to_string_bool() {
         let value = Value::Bool(true);
         assert_eq!(
-            eval_generic_method(&value, "to_string", true).unwrap(),
+            eval_generic_method(&value, "to_string", true)
+                .expect("eval_generic_method should succeed in test"),
             Value::from_string("true".to_string())
         );
     }
@@ -1094,7 +1130,8 @@ mod tests {
     #[test]
     fn test_generic_to_string_nil() {
         let value = Value::Nil;
-        let result = eval_generic_method(&value, "to_string", true).unwrap();
+        let result = eval_generic_method(&value, "to_string", true)
+            .expect("eval_generic_method should succeed in test");
         assert_eq!(result, Value::from_string("nil".to_string()));
     }
 
