@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// let timestamp = time::now().unwrap();
+/// let timestamp = time::now().expect("operation should succeed in test");
 /// assert!(timestamp > 0);
 /// ```
 ///
@@ -36,9 +36,9 @@ pub fn now() -> Result<u128, String> {
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// let start = time::now().unwrap();
+/// let start = time::now().expect("operation should succeed in test");
 /// // ... do work ...
-/// let elapsed = time::elapsed_millis(start).unwrap();
+/// let elapsed = time::elapsed_millis(start).expect("operation should succeed in test");
 /// assert!(elapsed >= 0);
 /// ```
 ///
@@ -57,7 +57,7 @@ pub fn elapsed_millis(start: u128) -> Result<u128, String> {
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// time::sleep_millis(100).unwrap();  // Sleep for 100ms
+/// time::sleep_millis(100).expect("operation should succeed in test");  // Sleep for 100ms
 /// ```
 pub fn sleep_millis(millis: u64) -> Result<(), String> {
     thread::sleep(Duration::from_millis(millis));
@@ -71,7 +71,7 @@ pub fn sleep_millis(millis: u64) -> Result<(), String> {
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// let secs = time::duration_secs(1500).unwrap();
+/// let secs = time::duration_secs(1500).expect("operation should succeed in test");
 /// assert!((secs - 1.5).abs() < 0.01);  // ~1.5 seconds
 /// ```
 pub fn duration_secs(millis: u128) -> Result<f64, String> {
@@ -85,7 +85,7 @@ pub fn duration_secs(millis: u128) -> Result<f64, String> {
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// let formatted = time::format_duration(90500).unwrap();
+/// let formatted = time::format_duration(90500).expect("operation should succeed in test");
 /// assert_eq!(formatted, "1m 30s");
 /// ```
 pub fn format_duration(millis: u128) -> Result<String, String> {
@@ -129,7 +129,7 @@ pub fn format_duration(millis: u128) -> Result<String, String> {
 /// ```
 /// use ruchy::stdlib::time;
 ///
-/// let millis = time::parse_duration("1h 30m").unwrap();
+/// let millis = time::parse_duration("1h 30m").expect("operation should succeed in test");
 /// assert_eq!(millis, 5_400_000);
 /// ```
 ///
@@ -188,16 +188,16 @@ mod tests {
 
     #[test]
     fn test_now_positive() {
-        let timestamp = now().unwrap();
+        let timestamp = now().expect("operation should succeed in test");
         assert!(timestamp > 0);
         assert!(timestamp > 946_684_800_000); // After year 2000
     }
 
     #[test]
     fn test_elapsed_millis_basic() {
-        let start = now().unwrap();
+        let start = now().expect("operation should succeed in test");
         std::thread::sleep(std::time::Duration::from_millis(10));
-        let elapsed = elapsed_millis(start).unwrap();
+        let elapsed = elapsed_millis(start).expect("operation should succeed in test");
         assert!(elapsed >= 10);
     }
 
@@ -209,53 +209,109 @@ mod tests {
 
     #[test]
     fn test_duration_secs_conversion() {
-        assert_eq!(duration_secs(1000).unwrap(), 1.0);
-        assert!((duration_secs(1500).unwrap() - 1.5).abs() < 0.01);
+        assert_eq!(
+            duration_secs(1000).expect("operation should succeed in test"),
+            1.0
+        );
+        assert!(
+            (duration_secs(1500).expect("operation should succeed in test") - 1.5).abs() < 0.01
+        );
     }
 
     #[test]
     fn test_format_duration_ms() {
-        assert_eq!(format_duration(0).unwrap(), "0ms");
-        assert_eq!(format_duration(500).unwrap(), "500ms");
+        assert_eq!(
+            format_duration(0).expect("operation should succeed in test"),
+            "0ms"
+        );
+        assert_eq!(
+            format_duration(500).expect("operation should succeed in test"),
+            "500ms"
+        );
     }
 
     #[test]
     fn test_format_duration_seconds() {
-        assert_eq!(format_duration(1000).unwrap(), "1s");
-        assert_eq!(format_duration(5000).unwrap(), "5s");
+        assert_eq!(
+            format_duration(1000).expect("operation should succeed in test"),
+            "1s"
+        );
+        assert_eq!(
+            format_duration(5000).expect("operation should succeed in test"),
+            "5s"
+        );
     }
 
     #[test]
     fn test_format_duration_minutes() {
-        assert_eq!(format_duration(60_000).unwrap(), "1m");
-        assert_eq!(format_duration(90_000).unwrap(), "1m 30s");
+        assert_eq!(
+            format_duration(60_000).expect("operation should succeed in test"),
+            "1m"
+        );
+        assert_eq!(
+            format_duration(90_000).expect("operation should succeed in test"),
+            "1m 30s"
+        );
     }
 
     #[test]
     fn test_format_duration_hours() {
-        assert_eq!(format_duration(3_600_000).unwrap(), "1h");
-        assert_eq!(format_duration(5_400_000).unwrap(), "1h 30m");
+        assert_eq!(
+            format_duration(3_600_000).expect("operation should succeed in test"),
+            "1h"
+        );
+        assert_eq!(
+            format_duration(5_400_000).expect("operation should succeed in test"),
+            "1h 30m"
+        );
     }
 
     #[test]
     fn test_format_duration_days() {
-        assert_eq!(format_duration(86_400_000).unwrap(), "1d");
-        assert_eq!(format_duration(90_000_000).unwrap(), "1d 1h");
+        assert_eq!(
+            format_duration(86_400_000).expect("operation should succeed in test"),
+            "1d"
+        );
+        assert_eq!(
+            format_duration(90_000_000).expect("operation should succeed in test"),
+            "1d 1h"
+        );
     }
 
     #[test]
     fn test_parse_duration_simple() {
-        assert_eq!(parse_duration("500ms").unwrap(), 500);
-        assert_eq!(parse_duration("1s").unwrap(), 1_000);
-        assert_eq!(parse_duration("1m").unwrap(), 60_000);
-        assert_eq!(parse_duration("1h").unwrap(), 3_600_000);
-        assert_eq!(parse_duration("1d").unwrap(), 86_400_000);
+        assert_eq!(
+            parse_duration("500ms").expect("operation should succeed in test"),
+            500
+        );
+        assert_eq!(
+            parse_duration("1s").expect("operation should succeed in test"),
+            1_000
+        );
+        assert_eq!(
+            parse_duration("1m").expect("operation should succeed in test"),
+            60_000
+        );
+        assert_eq!(
+            parse_duration("1h").expect("operation should succeed in test"),
+            3_600_000
+        );
+        assert_eq!(
+            parse_duration("1d").expect("operation should succeed in test"),
+            86_400_000
+        );
     }
 
     #[test]
     fn test_parse_duration_compound() {
-        assert_eq!(parse_duration("1h 30m").unwrap(), 5_400_000);
-        assert_eq!(parse_duration("1d 2h").unwrap(), 93_600_000);
+        assert_eq!(
+            parse_duration("1h 30m").expect("operation should succeed in test"),
+            5_400_000
+        );
+        assert_eq!(
+            parse_duration("1d 2h").expect("operation should succeed in test"),
+            93_600_000
+        );
     }
 
     #[test]
@@ -269,8 +325,8 @@ mod tests {
     #[test]
     fn test_format_parse_roundtrip() {
         for millis in [1000, 60_000, 90_000, 3_600_000, 86_400_000] {
-            let formatted = format_duration(millis).unwrap();
-            let parsed = parse_duration(&formatted).unwrap();
+            let formatted = format_duration(millis).expect("operation should succeed in test");
+            let parsed = parse_duration(&formatted).expect("operation should succeed in test");
             assert_eq!(parsed, millis);
         }
     }
