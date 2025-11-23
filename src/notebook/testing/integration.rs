@@ -450,7 +450,13 @@ mod tests {
         let result = integrator.configure(config);
         assert!(result.is_ok());
         assert!(integrator.config.is_some());
-        assert_eq!(integrator.config.unwrap().coverage_threshold, 75.5);
+        assert_eq!(
+            integrator
+                .config
+                .expect("operation should succeed in test")
+                .coverage_threshold,
+            75.5
+        );
     }
 
     #[test]
@@ -514,7 +520,9 @@ mod tests {
             coverage_threshold: 80.0,
             complexity_threshold: 10,
         };
-        integrator.configure(config).unwrap();
+        integrator
+            .configure(config)
+            .expect("operation should succeed in test");
 
         let workflow = integrator.generate_workflow();
         assert!(workflow.contains("name: CI"));
@@ -538,7 +546,9 @@ mod tests {
             coverage_threshold: 0.0,
             complexity_threshold: 5,
         };
-        integrator.configure(config).unwrap();
+        integrator
+            .configure(config)
+            .expect("operation should succeed in test");
 
         let workflow = integrator.generate_workflow();
         assert!(workflow.contains("stages:"));
@@ -559,7 +569,9 @@ mod tests {
             coverage_threshold: 0.0,
             complexity_threshold: 12,
         };
-        integrator.configure(config).unwrap();
+        integrator
+            .configure(config)
+            .expect("operation should succeed in test");
 
         let workflow = integrator.generate_workflow();
         assert!(workflow.contains("pipeline {"));
@@ -579,7 +591,9 @@ mod tests {
             coverage_threshold: 60.0,
             complexity_threshold: 8,
         };
-        integrator.configure(config).unwrap();
+        integrator
+            .configure(config)
+            .expect("operation should succeed in test");
 
         let workflow = integrator.generate_workflow();
         assert!(workflow.contains("version: 2"));
@@ -657,10 +671,16 @@ mod tests {
         let distribution = coordinator.distribute(&tests);
 
         assert_eq!(distribution.len(), 1);
-        assert_eq!(distribution.get("worker1").unwrap().len(), 3);
+        assert_eq!(
+            distribution
+                .get("worker1")
+                .expect("operation should succeed in test")
+                .len(),
+            3
+        );
         assert!(distribution
             .get("worker1")
-            .unwrap()
+            .expect("operation should succeed in test")
             .contains(&"test1".to_string()));
     }
 
@@ -679,8 +699,20 @@ mod tests {
 
         assert_eq!(distribution.len(), 2);
         // Round-robin distribution: worker1 gets test1,test3; worker2 gets test2
-        assert_eq!(distribution.get("worker1").unwrap().len(), 2);
-        assert_eq!(distribution.get("worker2").unwrap().len(), 1);
+        assert_eq!(
+            distribution
+                .get("worker1")
+                .expect("operation should succeed in test")
+                .len(),
+            2
+        );
+        assert_eq!(
+            distribution
+                .get("worker2")
+                .expect("operation should succeed in test")
+                .len(),
+            1
+        );
     }
 
     #[test]
