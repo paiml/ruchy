@@ -1,0 +1,45 @@
+
+Original DataFrame:
+DataFrame with 4 columns:
+  name: 5 rows
+  age: 5 rows
+  city: 5 rows
+  salary: 5 rows
+
+
+=== Filtering ===
+People aged 30+:
+DataFrame with 4 columns:
+  name: 3 rows
+  age: 3 rows
+  city: 3 rows
+  salary: 3 rows
+
+
+=== Column Selection ===
+Error: Evaluation error: Runtime error: DataFrame.select() expects column name as string
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 25.46    0.000288          10        27           mmap
+ 10.61    0.000120          10        12           read
+ 12.02    0.000136          13        10           write
+  8.13    0.000092          10         9           brk
+  8.31    0.000094          10         9           mprotect
+  4.69    0.000053           6         8           close
+  6.98    0.000079           9         8           openat
+  4.24    0.000048           6         7           newfstatat
+  2.74    0.000031           6         5           rt_sigaction
+  2.21    0.000025           6         4           pread64
+  2.30    0.000026           6         4           unknown
+  2.12    0.000024           8         3           sigaltstack
+  1.33    0.000015           7         2         1 arch_prctl
+  1.24    0.000014           7         2           getrandom
+  3.09    0.000035          17         2           munmap
+  0.71    0.000008           8         1           poll
+  0.62    0.000007           7         1         1 ioctl
+  0.62    0.000007           7         1           set_tid_address
+  0.88    0.000010          10         1           statx
+  1.15    0.000013          13         1         1 access
+  0.53    0.000006           6         1           set_robust_list
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.001131           9       118         3 total

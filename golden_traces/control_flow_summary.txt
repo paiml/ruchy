@@ -1,0 +1,63 @@
+
+Age 25: adult
+Score 85: Grade B
+
+=== Pattern Matching ===
+42 is medium
+Saturday is a weekend
+
+=== Loops ===
+For loop with range:
+  i = 0
+  i = 1
+  i = 2
+  i = 3
+  i = 4
+
+For loop with list:
+  apple
+  banana
+  orange
+
+While loop:
+  count = 0
+  count = 1
+  count = 2
+
+Loop with break:
+  n = 0
+  n = 1
+  n = 2
+
+Loop with continue (skip even numbers):
+  1 is odd
+  3 is odd
+  5 is odd
+
+Pattern guard result: positive value
+Error: Evaluation error: Runtime error: Expression type not yet implemented: IfLet { pattern: Some(Identifier("x")), expr: Expr { kind: Identifier("optional"), span: Span { start: 2358, end: 2366 }, attributes: [], leading_comments: [], trailing_comment: None }, then_branch: Expr { kind: Block([Expr { kind: Call { func: Expr { kind: Identifier("println"), span: Span { start: 2377, end: 2384 }, attributes: [], leading_comments: [], trailing_comment: None }, args: [Expr { kind: StringInterpolation { parts: [Text("Found value: "), Expr(Expr { kind: Identifier("x"), span: Span { start: 0, end: 1 }, attributes: [], leading_comments: [], trailing_comment: None })] }, span: Span { start: 2385, end: 2404 }, attributes: [], leading_comments: [], trailing_comment: None }] }, span: Span { start: 0, end: 0 }, attributes: [], leading_comments: [], trailing_comment: None }]), span: Span { start: 2367, end: 2368 }, attributes: [], leading_comments: [], trailing_comment: None }, else_branch: None }
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 25.75    0.000368          11        33           write
+ 23.79    0.000340          12        27           mmap
+  8.33    0.000119           9        12           read
+  6.65    0.000095          10         9           mprotect
+  5.25    0.000075           9         8           brk
+  4.34    0.000062           7         8           close
+  6.93    0.000099          12         8           openat
+  4.20    0.000060           8         7           newfstatat
+  2.17    0.000031           6         5           rt_sigaction
+  1.75    0.000025           6         4           pread64
+  1.82    0.000026           6         4           unknown
+  1.26    0.000018           6         3           sigaltstack
+  1.89    0.000027          13         2           munmap
+  0.98    0.000014           7         2           getrandom
+  1.33    0.000019           9         2         1 arch_prctl
+  0.49    0.000007           7         1         1 ioctl
+  0.42    0.000006           6         1           set_robust_list
+  0.49    0.000007           7         1           poll
+  0.42    0.000006           6         1           set_tid_address
+  0.98    0.000014          14         1         1 access
+  0.77    0.000011          11         1           statx
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.001429          10       140         3 total

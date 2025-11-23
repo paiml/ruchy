@@ -1,0 +1,49 @@
+Integer: 42
+Float: 3.14159
+String: Hello, Ruchy!
+Boolean: true
+
+=== Arithmetic ===
+42 + 8 = 50
+42 * 2 = 84
+42 / 6 = 7
+42 % 5 = 2
+
+=== Strings ===
+Hello, World!
+Uppercase: HELLO, WORLD!
+Lowercase: hello, world!
+Length: 13
+
+=== Type Conversions ===
+String '123' to int: 123
+Float 3.7 to int: 3
+
+=== Mutability ===
+Initial counter: 0
+After increments: 2
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 29.19    0.000387          14        27           mmap
+ 11.61    0.000154           7        21           write
+  9.35    0.000124          10        12           read
+  8.97    0.000119          13         9           mprotect
+  8.14    0.000108          13         8           openat
+  6.41    0.000085          10         8           brk
+  4.83    0.000064           8         8           close
+  4.52    0.000060           8         7           newfstatat
+  2.41    0.000032           6         5           rt_sigaction
+  1.89    0.000025           6         4           pread64
+  2.11    0.000028           7         4           unknown
+  1.58    0.000021           7         3           sigaltstack
+  2.41    0.000032          16         2           munmap
+  1.13    0.000015           7         2           getrandom
+  1.36    0.000018           9         2         1 arch_prctl
+  0.83    0.000011          11         1           statx
+  0.60    0.000008           8         1         1 ioctl
+  0.53    0.000007           7         1           set_tid_address
+  0.60    0.000008           8         1           poll
+  0.98    0.000013          13         1         1 access
+  0.53    0.000007           7         1           set_robust_list
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.001326          10       128         3 total
