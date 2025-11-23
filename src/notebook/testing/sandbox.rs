@@ -137,7 +137,8 @@ impl WasmSandbox {
         Self {
             limits: None,
             runtime: WasmRuntime {
-                engine: wasmtime::Engine::new(&config).unwrap(),
+                engine: wasmtime::Engine::new(&config)
+                    .expect("wasmtime engine should be created successfully"),
                 store: None,
             },
         }
@@ -639,9 +640,13 @@ impl SandboxCoordinator {
         let id = self.next_id;
         self.next_id += 1;
         let mut sandbox = WasmSandbox::new();
-        sandbox.configure(limits).unwrap();
+        sandbox
+            .configure(limits)
+            .expect("sandbox configuration should succeed");
         self.workers.insert(id, Worker { id, sandbox });
-        self.workers.get(&id).unwrap()
+        self.workers
+            .get(&id)
+            .expect("worker should exist immediately after insertion")
     }
     /// Get worker by ID
     pub fn get_worker(&self, id: usize) -> Option<&Worker> {
@@ -656,7 +661,9 @@ impl SandboxCoordinator {
         let id = self.next_id;
         self.next_id += 1;
         let mut sandbox = WasmSandbox::new();
-        sandbox.configure(limits).unwrap();
+        sandbox
+            .configure(limits)
+            .expect("sandbox configuration should succeed");
         self.workers.insert(id, Worker { id, sandbox });
         id
     }
@@ -749,7 +756,10 @@ impl ProblemGenerator {
         let seed = student_id.bytes().fold(0u64, |acc, b| {
             acc.wrapping_mul(31).wrapping_add(u64::from(b))
         });
-        let template = self.templates.get(problem_type).unwrap();
+        let template = self
+            .templates
+            .get(problem_type)
+            .expect("problem type template should exist");
         let mut params = Vec::new();
         // Generate parameters based on seed
         for (min, max) in &template.parameter_ranges {
@@ -1276,7 +1286,10 @@ mod tests {
             RuchyStatement::If(_, then_branch, else_branch) => {
                 assert_eq!(then_branch.len(), 1);
                 assert!(else_branch.is_some());
-                assert_eq!(else_branch.unwrap().len(), 1);
+                assert_eq!(
+                    else_branch.expect("operation should succeed in test").len(),
+                    1
+                );
             }
             _ => panic!("Expected If statement"),
         }
