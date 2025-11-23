@@ -352,7 +352,7 @@ impl WasmEmitter {
 
     /// Check if expression tree uses any built-in functions
     /// Complexity: 4 (Toyota Way: <10 ✓)
-    fn uses_builtins( expr: &Expr) -> bool {
+    fn uses_builtins(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Call { func, .. } => {
                 if let ExprKind::Identifier(name) = &func.kind {
@@ -1890,7 +1890,7 @@ impl WasmEmitter {
         }
     }
     /// Check if an expression has return statements with values
-    fn has_return_with_value( expr: &Expr) -> bool {
+    fn has_return_with_value(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Return { value } => value.is_some(),
             ExprKind::Block(exprs) => exprs.iter().any(Self::has_return_with_value),

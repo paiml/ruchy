@@ -28,7 +28,9 @@ impl fmt::Display for Value {
             Value::DataFrame { columns } => format_dataframe(f, columns),
             Value::Object(obj) => format_object(f, obj),
             Value::ObjectMut(cell) => {
-                let obj = cell.lock().unwrap();
+                let obj = cell
+                    .lock()
+                    .expect("Mutex poisoned in Value::ObjectMut Display - indicates panic in another thread");
                 format_object(f, &obj)
             }
             Value::Range {
@@ -223,7 +225,9 @@ fn format_class(
     write!(f, "{class_name} {{")?;
 
     // Sort keys for deterministic output
-    let fields_read = fields.read().unwrap();
+    let fields_read = fields
+        .read()
+        .expect("RwLock poisoned in format_class - indicates panic in another thread");
     let mut keys: Vec<&String> = fields_read.keys().collect();
     keys.sort();
 

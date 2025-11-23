@@ -47,9 +47,16 @@ impl Transpiler {
             let ident = format_ident!("{}", safe_name);
 
             // Issue #132: Check if this is a global variable (LazyLock<Mutex<T>>)
-            // If so, wrap with .lock().unwrap() dereference
-            if self.global_vars.read().unwrap().contains(name) {
-                quote! { *#ident.lock().unwrap() }
+            // If so, wrap with .lock().expect() dereference
+            if self
+                .global_vars
+                .read()
+                .expect(
+                    "RwLock poisoned in transpile_identifier - indicates panic in another thread",
+                )
+                .contains(name)
+            {
+                quote! { *#ident.lock().expect("LazyLock Mutex poisoned - indicates panic while accessing global variable") }
             } else {
                 quote! { #ident }
             }
