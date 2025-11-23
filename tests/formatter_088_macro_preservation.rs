@@ -10,7 +10,6 @@
 //
 // ROOT CAUSE (Five Whys): Untested code path - formatter doesn't preserve `!` for macro calls
 
-use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;

@@ -965,7 +965,7 @@ mod tests {
 
         let error_msg = format!(
             "{}",
-            result.err().expect("operation should succeed in test")
+            result.expect_err("operation should fail in test")
         );
         assert!(error_msg.contains("Compilation failed"));
     }

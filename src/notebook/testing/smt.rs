@@ -722,7 +722,7 @@ mod tests {
 
     #[test]
     fn test_duration_ext() {
-        let duration = Duration::from_hours(2);
+        let duration = <Duration as DurationExt>::from_hours(2);
         assert_eq!(duration, Duration::from_secs(7200));
     }
 }

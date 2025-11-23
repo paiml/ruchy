@@ -4,7 +4,6 @@
 //
 // Test naming convention: test_debugger_014_<scenario>
 
-use assert_cmd::Command;
 
 /// Test #1: Verify --trace flag is recognized (doesn't error)
 #[test]

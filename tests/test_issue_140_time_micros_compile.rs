@@ -2,7 +2,6 @@
 ///
 /// This test verifies that `ruchy compile` correctly transpiles `time_micros()`
 /// to `SystemTime` API, not raw `time_micros()` function calls
-use assert_cmd::Command;
 use std::fs;
 use tempfile::NamedTempFile;
 
