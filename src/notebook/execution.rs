@@ -284,7 +284,10 @@ mod tests {
             CellExecutionResult::failure("Parse error".to_string(), Duration::from_millis(1));
 
         assert!(!result.is_success());
-        assert_eq!(result.error().unwrap(), "Parse error");
+        assert_eq!(
+            result.error().expect("operation should succeed in test"),
+            "Parse error"
+        );
         assert_eq!(result.output(), "");
         assert_eq!(result.duration_ms(), 1);
     }
@@ -427,9 +430,12 @@ mod tests {
         assert!(!result.is_success());
         assert!(result
             .error()
-            .unwrap()
+            .expect("operation should succeed in test")
             .contains("Runtime error: Division by zero"));
-        assert!(result.error().unwrap().contains("line 42"));
+        assert!(result
+            .error()
+            .expect("operation should succeed in test")
+            .contains("line 42"));
     }
 
     #[test]
@@ -537,9 +543,18 @@ mod tests {
             Duration::from_millis(2),
         );
 
-        assert!(result.error().unwrap().contains("\"quoted\""));
-        assert!(result.error().unwrap().contains('\n'));
-        assert!(result.error().unwrap().contains('\t'));
+        assert!(result
+            .error()
+            .expect("operation should succeed in test")
+            .contains("\"quoted\""));
+        assert!(result
+            .error()
+            .expect("operation should succeed in test")
+            .contains('\n'));
+        assert!(result
+            .error()
+            .expect("operation should succeed in test")
+            .contains('\t'));
     }
 
     #[test]
