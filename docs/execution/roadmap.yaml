@@ -87,20 +87,27 @@ metadata:
     documentation: "420-line integration guide + comprehensive CHANGELOG"
 
   technical_debt_inventory:
-    last_audit: "2025-11-21"
+    last_audit: "2025-11-23"
     total_items: 6
     policy: "Zero tolerance - All TODO/FIXME/HACK comments must have corresponding tickets"
     items:
       - id: "QUALITY-002"
         type: "CODE_QUALITY"
-        location: "src/ (~123 production unwrap() calls in 10 files)"
+        location: "src/ (~134 unwrap() calls remaining, down from 150)"
         description: "Replace unwrap() with expect() in production code - Cloudflare-class defect risk"
         ticket: "QUALITY-002"
         priority: "Critical"
-        status: "In Progress"
+        status: "In Progress - Phase 2 Complete"
         estimated_effort: "1-2 days"
-        rationale: "~3,284 total unwrap() calls (~123 in production, 3,161 in tests - acceptable). Unwrap panics caused 3+ hour Cloudflare outage (2025-11-18). Must use .expect() with descriptive messages. Previous work reduced from 3,636→123 via commits da57ffa3, bffaa61e, 8a0d4da4, 79b23b5d, 4fe040dc, 48169ed3."
-        progress: "96% complete - only ~123 production unwrap() remaining, concentrated in src/stdlib/dataframe.rs (16), src/middleend/infer.rs (7), and 8 other files"
+        rationale: "Unwrap panics caused 3+ hour Cloudflare outage (2025-11-18). Must use .expect() with descriptive messages. Previous work reduced from 3,636→123 via commits da57ffa3, bffaa61e, 8a0d4da4, 79b23b5d, 4fe040dc, 48169ed3."
+        progress: "89% complete (150→134 remaining) - Phase 2: Fixed 5 production unwrap() in notebook/testing/, 16 doctest unwrap() in stdlib/dataframe.rs. Remaining: ~118 unwrap() scattered across src/ (mostly in test helpers and other doctests)"
+        phase_2_complete: "2025-11-23"
+        files_fixed:
+          - "src/notebook/testing/smt.rs (2)"
+          - "src/notebook/testing/tutorial.rs (1)"
+          - "src/notebook/testing/educational.rs (1)"
+          - "src/notebook/testing/complexity.rs (1)"
+          - "src/stdlib/dataframe.rs (16 doctests)"
       - id: "DEBT-001"
         type: "TODO"
         location: "src/bin/handlers/mod.rs:339"

@@ -190,7 +190,7 @@ impl EducationalPlatform {
             .assignments
             .iter()
             .find(|a| a.id == submission.assignment_id)
-            .unwrap();
+            .expect("Assignment ID must exist in assignments list for auto-grading");
         let mut total_points = 0;
         let mut feedback = Vec::new();
         // Run test cases

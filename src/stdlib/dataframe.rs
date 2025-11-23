@@ -21,7 +21,7 @@ use std::fs::File;
 /// let df = dataframe::from_columns(vec![
 ///     ("age", vec![25, 30, 35]),
 ///     ("score", vec![95, 87, 92])
-/// ]).unwrap();
+/// ]).expect("Failed to create DataFrame from columns");
 /// # }
 /// ```
 ///
@@ -71,7 +71,7 @@ pub fn from_columns(columns: Vec<(&str, Vec<i64>)>) -> Result<DataFrame, String>
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let df = dataframe::read_csv("data.csv").unwrap();
+/// let df = dataframe::read_csv("data.csv").expect("Failed to read CSV file");
 /// # }
 /// ```
 ///
@@ -95,8 +95,8 @@ pub fn read_csv(path: &str) -> Result<DataFrame, String> {
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let mut df = dataframe::from_columns(vec![("age", vec![25, 30])]).unwrap();
-/// dataframe::write_csv(&mut df, "output.csv").unwrap();
+/// let mut df = dataframe::from_columns(vec![("age", vec![25, 30])]).expect("Failed to create DataFrame");
+/// dataframe::write_csv(&mut df, "output.csv").expect("Failed to write CSV file");
 /// # }
 /// ```
 ///
@@ -125,8 +125,8 @@ pub fn write_csv(df: &mut DataFrame, path: &str) -> Result<(), String> {
 /// let df = dataframe::from_columns(vec![
 ///     ("age", vec![25, 30]),
 ///     ("score", vec![95, 87])
-/// ]).unwrap();
-/// let subset = dataframe::select(&df, &["age"]).unwrap();
+/// ]).expect("Failed to create DataFrame");
+/// let subset = dataframe::select(&df, &["age"]).expect("Failed to select columns");
 /// # }
 /// ```
 ///
@@ -147,8 +147,8 @@ pub fn select(df: &DataFrame, columns: &[&str]) -> Result<DataFrame, String> {
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35, 40])]).unwrap();
-/// let top3 = dataframe::head(&df, 3).unwrap();
+/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35, 40])]).expect("Failed to create DataFrame");
+/// let top3 = dataframe::head(&df, 3).expect("Failed to get head of DataFrame");
 /// # }
 /// ```
 pub fn head(df: &DataFrame, n: usize) -> Result<DataFrame, String> {
@@ -164,8 +164,8 @@ pub fn head(df: &DataFrame, n: usize) -> Result<DataFrame, String> {
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35, 40])]).unwrap();
-/// let bottom3 = dataframe::tail(&df, 3).unwrap();
+/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35, 40])]).expect("Failed to create DataFrame");
+/// let bottom3 = dataframe::tail(&df, 3).expect("Failed to get tail of DataFrame");
 /// # }
 /// ```
 pub fn tail(df: &DataFrame, n: usize) -> Result<DataFrame, String> {
@@ -181,8 +181,8 @@ pub fn tail(df: &DataFrame, n: usize) -> Result<DataFrame, String> {
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35])]).unwrap();
-/// let (rows, cols) = dataframe::shape(&df).unwrap();
+/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35])]).expect("Failed to create DataFrame");
+/// let (rows, cols) = dataframe::shape(&df).expect("Failed to get DataFrame shape");
 /// # }
 /// ```
 pub fn shape(df: &DataFrame) -> Result<(usize, usize), String> {
@@ -201,8 +201,8 @@ pub fn shape(df: &DataFrame) -> Result<(usize, usize), String> {
 /// let df = dataframe::from_columns(vec![
 ///     ("age", vec![25, 30]),
 ///     ("score", vec![95, 87])
-/// ]).unwrap();
-/// let names = dataframe::columns(&df).unwrap();
+/// ]).expect("Failed to create DataFrame");
+/// let names = dataframe::columns(&df).expect("Failed to get column names");
 /// # }
 /// ```
 pub fn columns(df: &DataFrame) -> Result<Vec<String>, String> {
@@ -222,8 +222,8 @@ pub fn columns(df: &DataFrame) -> Result<Vec<String>, String> {
 /// # {
 /// use ruchy::stdlib::dataframe;
 ///
-/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35])]).unwrap();
-/// let count = dataframe::row_count(&df).unwrap();
+/// let df = dataframe::from_columns(vec![("age", vec![25, 30, 35])]).expect("Failed to create DataFrame");
+/// let count = dataframe::row_count(&df).expect("Failed to get row count");
 /// # }
 /// ```
 pub fn row_count(df: &DataFrame) -> Result<usize, String> {
