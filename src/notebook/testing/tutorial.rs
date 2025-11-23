@@ -152,7 +152,10 @@ impl InteractiveTutorial {
         }
     }
     fn generate_feedback(&self, step_id: &str, _submission: &str) -> String {
-        let progress = self.progress.get(step_id).unwrap();
+        let progress = self
+            .progress
+            .get(step_id)
+            .expect("Tutorial step ID must exist in progress map");
         match progress.attempts {
             1 => "Not quite right. Try again!".to_string(),
             2 => "Still not correct. Check the instruction carefully.".to_string(),

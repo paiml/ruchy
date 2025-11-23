@@ -337,7 +337,11 @@ impl ComplexityAnalyzer {
             }
         }
         // Sort by impact
-        hotspots.sort_by(|a, b| b.impact.partial_cmp(&a.impact).unwrap());
+        hotspots.sort_by(|a, b| {
+            b.impact
+                .partial_cmp(&a.impact)
+                .expect("Impact values must be valid f64 (not NaN) for sorting")
+        });
         hotspots
     }
     fn calculate_impact(&self, result: &ComplexityResult) -> f64 {

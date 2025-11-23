@@ -231,14 +231,18 @@ impl SmtSolver {
             .spawn()
             .unwrap_or_else(|_| {
                 // Fallback: return empty child process that will be handled below
-                std::process::Command::new("echo").spawn().unwrap()
+                std::process::Command::new("echo")
+                    .spawn()
+                    .expect("Failed to spawn fallback echo command for SMT solver")
             });
         // Send query to solver
         if let Some(stdin) = cmd.stdin.as_mut() {
             stdin.write_all(query.as_bytes()).ok();
         }
         // Get response
-        let output = cmd.wait_with_output().unwrap();
+        let output = cmd
+            .wait_with_output()
+            .expect("Failed to wait for SMT solver process output");
         let response = String::from_utf8_lossy(&output.stdout);
         self.parse_solver_response(&response)
     }
