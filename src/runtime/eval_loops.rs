@@ -294,7 +294,7 @@ mod tests {
             },
             |_expr| Ok(Value::Integer(10)),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(10));
         assert_eq!(last_set, Value::Integer(3)); // Last iteration value
@@ -321,7 +321,7 @@ mod tests {
             },
             |_expr| Ok(Value::Integer(10)),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(10));
         assert_eq!(count, 3); // 1, 2, 3
@@ -348,7 +348,7 @@ mod tests {
             },
             |_expr| Ok(Value::Integer(10)),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(10));
         assert_eq!(count, 3); // 1, 2, 3
@@ -381,7 +381,7 @@ mod tests {
                 }
             },
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(10));
         assert_eq!(*count.borrow(), 2); // Stopped at 2
@@ -407,7 +407,7 @@ mod tests {
                 Ok(Value::Integer(42)) // Body result
             }
         })
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Integer(42));
         assert_eq!(condition_checks, 4); // 3 iterations + 1 final check
