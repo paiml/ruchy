@@ -31,7 +31,7 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let code = tokens.to_string();
         assert!(code.contains("&="));
     }
@@ -49,7 +49,7 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let code = tokens.to_string();
         assert!(code.contains("|="));
     }
@@ -67,7 +67,7 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let code = tokens.to_string();
         assert!(code.contains("^="));
     }
@@ -85,7 +85,7 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let code = tokens.to_string();
         assert!(code.contains("<<="));
     }
@@ -103,7 +103,7 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
+        let tokens = result.expect("operation should succeed in test");
         let code = tokens.to_string();
         assert!(code.contains(">>="));
     }
@@ -121,7 +121,9 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("+="));
     }
 
@@ -138,7 +140,9 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("-="));
     }
 
@@ -155,7 +159,9 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("*="));
     }
 
@@ -172,7 +178,9 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("/="));
     }
 
@@ -189,7 +197,9 @@ mod transpiler_compound_assignment_tests {
         );
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("%="));
     }
 
@@ -261,9 +271,11 @@ mod transpiler_compound_assignment_tests {
         assert!(ast.is_ok());
 
         let transpiler = Transpiler::new();
-        let result = transpiler.transpile_expr(&ast.unwrap());
+        let result = transpiler.transpile_expr(&ast.expect("operation should succeed in test"));
         assert!(result.is_ok());
-        let code = result.unwrap().to_string();
+        let code = result
+            .expect("operation should succeed in test")
+            .to_string();
         assert!(code.contains("+="));
     }
 
