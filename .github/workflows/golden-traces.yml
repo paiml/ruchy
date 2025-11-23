@@ -1,0 +1,187 @@
+name: Golden Trace Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly to detect performance regressions early
+    - cron: '0 2 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RENACER_VERSION: "0.6.2"
+
+jobs:
+  validate-golden-traces:
+    name: Validate Golden Traces
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Renacer
+        run: |
+          cargo install renacer --version ${{ env.RENACER_VERSION }} --locked
+          renacer --version
+
+      - name: Build ruchy (release mode)
+        run: cargo build --release --bin ruchy
+
+      - name: Verify examples exist
+        run: |
+          test -f examples/01_basics.ruchy || (echo "Missing 01_basics.ruchy" && exit 1)
+          test -f examples/03_control_flow.ruchy || (echo "Missing 03_control_flow.ruchy" && exit 1)
+          test -f examples/18_algorithms.ruchy || (echo "Missing 18_algorithms.ruchy" && exit 1)
+
+      - name: Capture fresh golden traces
+        run: |
+          chmod +x scripts/capture_golden_traces.sh
+          ./scripts/capture_golden_traces.sh
+
+      - name: Verify trace files were generated
+        run: |
+          test -f golden_traces/basics.json || (echo "Missing basics.json" && exit 1)
+          test -f golden_traces/basics_summary.txt || (echo "Missing basics_summary.txt" && exit 1)
+          test -f golden_traces/control_flow.json || (echo "Missing control_flow.json" && exit 1)
+          test -f golden_traces/control_flow_summary.txt || (echo "Missing control_flow_summary.txt" && exit 1)
+          test -f golden_traces/algorithms.json || (echo "Missing algorithms.json" && exit 1)
+          test -f golden_traces/algorithms_summary.txt || (echo "Missing algorithms_summary.txt" && exit 1)
+
+      - name: Extract performance metrics
+        id: metrics
+        run: |
+          # Extract runtime from summary files (in milliseconds)
+          basics_ms=$(grep "total$" golden_traces/basics_summary.txt | awk '{print $2 * 1000}')
+          control_flow_ms=$(grep "total$" golden_traces/control_flow_summary.txt | awk '{print $2 * 1000}')
+          algorithms_ms=$(grep "total$" golden_traces/algorithms_summary.txt | awk '{print $2 * 1000}')
+
+          echo "basics_ms=$basics_ms" >> $GITHUB_OUTPUT
+          echo "control_flow_ms=$control_flow_ms" >> $GITHUB_OUTPUT
+          echo "algorithms_ms=$algorithms_ms" >> $GITHUB_OUTPUT
+
+          # Extract syscall counts
+          basics_calls=$(grep "total$" golden_traces/basics_summary.txt | awk '{print $4}')
+          control_flow_calls=$(grep "total$" golden_traces/control_flow_summary.txt | awk '{print $4}')
+          algorithms_calls=$(grep "total$" golden_traces/algorithms_summary.txt | awk '{print $4}')
+
+          echo "basics_calls=$basics_calls" >> $GITHUB_OUTPUT
+          echo "control_flow_calls=$control_flow_calls" >> $GITHUB_OUTPUT
+          echo "algorithms_calls=$algorithms_calls" >> $GITHUB_OUTPUT
+
+      - name: Validate performance budgets
+        run: |
+          # Performance budgets from renacer.toml
+          MAX_LATENCY_MS=500
+          MAX_SYSCALLS=2000
+
+          basics_ms=${{ steps.metrics.outputs.basics_ms }}
+          control_flow_ms=${{ steps.metrics.outputs.control_flow_ms }}
+          algorithms_ms=${{ steps.metrics.outputs.algorithms_ms }}
+
+          basics_calls=${{ steps.metrics.outputs.basics_calls }}
+          control_flow_calls=${{ steps.metrics.outputs.control_flow_calls }}
+          algorithms_calls=${{ steps.metrics.outputs.algorithms_calls }}
+
+          echo "=== Performance Metrics ==="
+          echo "basics: ${basics_ms}ms, ${basics_calls} syscalls"
+          echo "control_flow: ${control_flow_ms}ms, ${control_flow_calls} syscalls"
+          echo "algorithms: ${algorithms_ms}ms, ${algorithms_calls} syscalls"
+          echo ""
+
+          # Check latency budget
+          if (( $(echo "$basics_ms > $MAX_LATENCY_MS" | bc -l) )); then
+            echo "❌ FAIL: basics exceeded latency budget (${basics_ms}ms > ${MAX_LATENCY_MS}ms)"
+            exit 1
+          fi
+
+          if (( $(echo "$control_flow_ms > $MAX_LATENCY_MS" | bc -l) )); then
+            echo "❌ FAIL: control_flow exceeded latency budget (${control_flow_ms}ms > ${MAX_LATENCY_MS}ms)"
+            exit 1
+          fi
+
+          if (( $(echo "$algorithms_ms > $MAX_LATENCY_MS" | bc -l) )); then
+            echo "❌ FAIL: algorithms exceeded latency budget (${algorithms_ms}ms > ${MAX_LATENCY_MS}ms)"
+            exit 1
+          fi
+
+          # Check syscall budget
+          if (( basics_calls > MAX_SYSCALLS )); then
+            echo "❌ FAIL: basics exceeded syscall budget (${basics_calls} > ${MAX_SYSCALLS})"
+            exit 1
+          fi
+
+          if (( control_flow_calls > MAX_SYSCALLS )); then
+            echo "❌ FAIL: control_flow exceeded syscall budget (${control_flow_calls} > ${MAX_SYSCALLS})"
+            exit 1
+          fi
+
+          if (( algorithms_calls > MAX_SYSCALLS )); then
+            echo "❌ FAIL: algorithms exceeded syscall budget (${algorithms_calls} > ${MAX_SYSCALLS})"
+            exit 1
+          fi
+
+          echo "✅ All performance budgets met!"
+
+      - name: Upload golden traces as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-traces-${{ github.sha }}
+          path: golden_traces/
+          retention-days: 30
+
+      - name: Report performance summary
+        if: always()
+        run: |
+          echo "## 📊 Golden Trace Performance Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Example | Runtime | Syscalls | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| basics | ${{ steps.metrics.outputs.basics_ms }}ms | ${{ steps.metrics.outputs.basics_calls }} | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| control_flow | ${{ steps.metrics.outputs.control_flow_ms }}ms | ${{ steps.metrics.outputs.control_flow_calls }} | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| algorithms | ${{ steps.metrics.outputs.algorithms_ms }}ms | ${{ steps.metrics.outputs.algorithms_calls }} | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Budgets**: <500ms latency, <2000 syscalls" >> $GITHUB_STEP_SUMMARY
+
+  validate-renacer-assertions:
+    name: Validate Renacer Assertions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Renacer
+        run: |
+          cargo install renacer --version ${{ env.RENACER_VERSION }} --locked
+
+      - name: Verify renacer.toml exists
+        run: test -f renacer.toml || (echo "Missing renacer.toml" && exit 1)
+
+      - name: Build ruchy (release mode)
+        run: cargo build --release --bin ruchy
+
+      - name: Run Renacer assertions
+        run: |
+          echo "Running Renacer assertions from renacer.toml..."
+
+          # Run with renacer checking assertions
+          renacer --assert -- ./target/release/ruchy run examples/01_basics.ruchy
+
+          echo "✅ All Renacer assertions passed!"

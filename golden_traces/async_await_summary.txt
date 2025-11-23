@@ -1,0 +1,26 @@
+Error: Syntax error: Expected RightBrace, found Identifier("println")
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 28.56    0.000301          11        27           mmap
+ 11.39    0.000120          10        12           read
+  8.82    0.000093          10         9           mprotect
+  6.17    0.000065           8         8           close
+  8.92    0.000094          11         8           openat
+  5.98    0.000063           9         7           newfstatat
+  5.88    0.000062          10         6           brk
+  4.65    0.000049           8         6           write
+  2.94    0.000031           6         5           rt_sigaction
+  2.56    0.000027           6         4           unknown
+  2.37    0.000025           6         4           pread64
+  1.71    0.000018           6         3           sigaltstack
+  1.80    0.000019           9         2         1 arch_prctl
+  1.33    0.000014           7         2           getrandom
+  2.18    0.000023          11         2           munmap
+  0.57    0.000006           6         1           set_tid_address
+  0.57    0.000006           6         1           set_robust_list
+  1.23    0.000013          13         1         1 access
+  0.66    0.000007           7         1           poll
+  1.04    0.000011          11         1           statx
+  0.66    0.000007           7         1         1 ioctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.001054           9       111         3 total

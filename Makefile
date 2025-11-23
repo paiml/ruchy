@@ -48,6 +48,9 @@ help:
 	@echo "  make renacer-baseline - Create baseline syscall profile (JSON)"
 	@echo "  make renacer-anomaly  - Run anomaly detection only"
 	@echo "  make test-with-profiling - Run tests with full syscall profiling"
+	@echo "  make golden-traces       - Validate golden trace performance budgets"
+	@echo "  make golden-traces-capture - Capture fresh golden traces (Renacer)"
+	@echo "  make golden-traces-validate - Validate against performance budgets"
 	@echo ""
 	@echo "TDG Dashboard Commands:"
 	@echo "  make tdg-dashboard - Start real-time TDG quality dashboard"
@@ -1622,4 +1625,77 @@ coverage-notebook-e2e: test-notebook-e2e
 	}"
 	@echo ""
 	@echo "📄 Detailed HTML report: playwright-report/index.html"
+
+
+# ==============================================================================
+# Golden Trace Validation (Renacer Integration)
+# ==============================================================================
+
+.PHONY: golden-traces golden-traces-capture golden-traces-validate
+
+# Capture golden traces using Renacer
+golden-traces-capture:
+	@echo "📊 Capturing golden traces..."
+	@if ! command -v renacer &> /dev/null; then \
+		echo "⚠️  Renacer not found. Installing..."; \
+		cargo install renacer --version 0.6.2 --locked; \
+	fi
+	@chmod +x scripts/capture_golden_traces.sh
+	./scripts/capture_golden_traces.sh
+	@echo "✅ Golden traces captured"
+
+# Validate performance against golden traces
+golden-traces-validate: golden-traces-capture
+	@echo ""
+	@echo "🔍 Validating performance budgets..."
+	@bash -c ' \
+	basics_ms=$$(grep "total$$" golden_traces/basics_summary.txt | awk "{print \$$2 * 1000}"); \
+	control_flow_ms=$$(grep "total$$" golden_traces/control_flow_summary.txt | awk "{print \$$2 * 1000}"); \
+	algorithms_ms=$$(grep "total$$" golden_traces/algorithms_summary.txt | awk "{print \$$2 * 1000}"); \
+	basics_calls=$$(grep "total$$" golden_traces/basics_summary.txt | awk "{print \$$4}"); \
+	control_flow_calls=$$(grep "total$$" golden_traces/control_flow_summary.txt | awk "{print \$$4}"); \
+	algorithms_calls=$$(grep "total$$" golden_traces/algorithms_summary.txt | awk "{print \$$4}"); \
+	echo ""; \
+	echo "Performance Metrics:"; \
+	echo "  basics:        $${basics_ms}ms, $${basics_calls} syscalls"; \
+	echo "  control_flow:  $${control_flow_ms}ms, $${control_flow_calls} syscalls"; \
+	echo "  algorithms:    $${algorithms_ms}ms, $${algorithms_calls} syscalls"; \
+	echo ""; \
+	if (( $$(echo "$$basics_ms > 500" | bc -l) )); then \
+		echo "❌ FAIL: basics exceeded latency budget ($$basics_ms ms > 500ms)"; \
+		exit 1; \
+	fi; \
+	if (( $$(echo "$$control_flow_ms > 500" | bc -l) )); then \
+		echo "❌ FAIL: control_flow exceeded latency budget ($$control_flow_ms ms > 500ms)"; \
+		exit 1; \
+	fi; \
+	if (( $$(echo "$$algorithms_ms > 500" | bc -l) )); then \
+		echo "❌ FAIL: algorithms exceeded latency budget ($$algorithms_ms ms > 500ms)"; \
+		exit 1; \
+	fi; \
+	if (( basics_calls > 2000 )); then \
+		echo "❌ FAIL: basics exceeded syscall budget ($$basics_calls > 2000)"; \
+		exit 1; \
+	fi; \
+	if (( control_flow_calls > 2000 )); then \
+		echo "❌ FAIL: control_flow exceeded syscall budget ($$control_flow_calls > 2000)"; \
+		exit 1; \
+	fi; \
+	if (( algorithms_calls > 2000 )); then \
+		echo "❌ FAIL: algorithms exceeded syscall budget ($$algorithms_calls > 2000)"; \
+		exit 1; \
+	fi; \
+	echo "✅ All performance budgets met!"; \
+	'
+
+# Full golden trace validation (alias)
+golden-traces: golden-traces-validate
+	@echo ""
+	@echo "✅ Golden trace validation complete!"
+	@echo ""
+	@echo "📄 View traces:"
+	@echo "   - golden_traces/ANALYSIS.md"
+	@echo "   - golden_traces/basics_summary.txt"
+	@echo "   - golden_traces/control_flow_summary.txt"
+	@echo "   - golden_traces/algorithms_summary.txt"
 
