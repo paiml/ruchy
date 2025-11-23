@@ -380,7 +380,10 @@ mod tests {
     fn test_lazy_value_computed() {
         let lazy = LazyValue::computed(Value::Integer(42));
         assert!(lazy.is_computed());
-        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
+        assert_eq!(
+            lazy.force().expect("operation should succeed in test"),
+            Value::Integer(42)
+        );
     }
     #[test]
     fn test_lazy_value_deferred() {
@@ -393,10 +396,16 @@ mod tests {
         assert!(!lazy.is_computed());
         assert_eq!(*counter.borrow(), 0);
         // First force computes
-        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
+        assert_eq!(
+            lazy.force().expect("operation should succeed in test"),
+            Value::Integer(42)
+        );
         assert_eq!(*counter.borrow(), 1);
         // Second force uses cache
-        assert_eq!(lazy.force().unwrap(), Value::Integer(42));
+        assert_eq!(
+            lazy.force().expect("operation should succeed in test"),
+            Value::Integer(42)
+        );
         assert_eq!(*counter.borrow(), 1); // Not incremented again
     }
     #[test]
@@ -409,7 +418,7 @@ mod tests {
                 Ok(v)
             }
         });
-        let result = lazy.collect().unwrap();
+        let result = lazy.collect().expect("operation should succeed in test");
         assert_eq!(
             result,
             vec![Value::Integer(2), Value::Integer(4), Value::Integer(6)]
@@ -430,7 +439,7 @@ mod tests {
                 Ok(false)
             }
         });
-        let result = lazy.collect().unwrap();
+        let result = lazy.collect().expect("operation should succeed in test");
         assert_eq!(result, vec![Value::Integer(2), Value::Integer(4)]);
     }
     #[test]
@@ -444,7 +453,7 @@ mod tests {
                 *counter_clone.borrow_mut() += 1;
                 Ok(Value::Integer(42))
             })
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42));
         assert_eq!(*counter.borrow(), 1);
         // Second call uses cache
@@ -454,7 +463,7 @@ mod tests {
                 *counter_clone.borrow_mut() += 1;
                 Ok(Value::Integer(100))
             })
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(42)); // Cached value
         assert_eq!(*counter.borrow(), 1); // Not incremented
     }
