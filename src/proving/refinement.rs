@@ -554,7 +554,7 @@ mod tests {
         let bounded = RefinementType::bounded_int(-10, 10);
         assert_eq!(bounded.base, BaseType::Int);
         assert!(bounded.predicate.is_some());
-        let pred = bounded.predicate.unwrap();
+        let pred = bounded.predicate.expect("operation should succeed in test");
         assert_eq!(pred.var, "x");
         assert!(pred.expr.contains("-10"));
         assert!(pred.expr.contains("10"));
@@ -565,7 +565,7 @@ mod tests {
         let pos = RefinementType::positive_int();
         assert_eq!(pos.base, BaseType::Int);
         assert!(pos.predicate.is_some());
-        let pred = pos.predicate.unwrap();
+        let pred = pos.predicate.expect("operation should succeed in test");
         assert_eq!(pred.var, "x");
         assert_eq!(pred.expr, "(> x 0)");
     }
@@ -578,7 +578,9 @@ mod tests {
             _ => panic!("Expected array type"),
         }
         assert!(non_empty.predicate.is_some());
-        let pred = non_empty.predicate.unwrap();
+        let pred = non_empty
+            .predicate
+            .expect("operation should succeed in test");
         assert_eq!(pred.var, "a");
         assert!(pred.expr.contains("len"));
     }
@@ -591,7 +593,7 @@ mod tests {
             _ => panic!("Expected array type"),
         }
         assert!(sorted.predicate.is_some());
-        let pred = sorted.predicate.unwrap();
+        let pred = sorted.predicate.expect("operation should succeed in test");
         assert!(pred.expr.contains("sorted"));
     }
 
@@ -664,7 +666,9 @@ mod tests {
             params: vec![],
         };
         let ty2 = ty1.clone();
-        assert!(checker.is_subtype(&ty1, &ty2).unwrap());
+        assert!(checker
+            .is_subtype(&ty1, &ty2)
+            .expect("operation should succeed in test"));
     }
 
     #[test]
@@ -682,7 +686,9 @@ mod tests {
             params: vec![],
         };
 
-        assert!(!checker.is_subtype(&int_ty, &bool_ty).unwrap());
+        assert!(!checker
+            .is_subtype(&int_ty, &bool_ty)
+            .expect("operation should succeed in test"));
     }
 
     #[test]
@@ -697,7 +703,9 @@ mod tests {
             params: vec![],
         };
 
-        assert!(checker.is_subtype(&pos_int, &plain_int).unwrap());
+        assert!(checker
+            .is_subtype(&pos_int, &plain_int)
+            .expect("operation should succeed in test"));
 
         // Plain int is not subtype of positive int
         // This would require SMT solver, so we'll just check it doesn't panic
