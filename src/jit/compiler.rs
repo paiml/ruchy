@@ -226,7 +226,9 @@ impl JitCompiler {
                     name, params, body, ..
                 } = &e.kind
                 {
-                    let func_id = *table.get(name).unwrap();
+                    let func_id = *table
+                        .get(name)
+                        .expect("function name should exist in symbol table");
                     self.compile_function_body(func_id, params, body, table)?;
                 }
             }
@@ -1122,33 +1124,39 @@ mod tests {
     #[test]
     fn test_jit_simple_literal() {
         let code = "42";
-        let ast = Parser::new(code).parse().unwrap();
-        let mut compiler = JitCompiler::new().unwrap();
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
         let result = compiler.compile_and_execute(&ast);
         assert!(result.is_ok(), "JIT should compile literal: {result:?}");
-        assert_eq!(result.unwrap(), 42);
+        assert_eq!(result.expect("operation should succeed in test"), 42);
     }
 
     #[test]
     fn test_jit_simple_addition() {
         let code = "2 + 3";
-        let ast = Parser::new(code).parse().unwrap();
-        let mut compiler = JitCompiler::new().unwrap();
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
         let result = compiler.compile_and_execute(&ast);
         assert!(result.is_ok(), "JIT should compile addition: {result:?}");
-        assert_eq!(result.unwrap(), 5);
+        assert_eq!(result.expect("operation should succeed in test"), 5);
     }
 
     #[test]
     fn test_jit_complex_arithmetic() {
         let code = "(10 + 5) * 2 - 8 / 4";
-        let ast = Parser::new(code).parse().unwrap();
-        let mut compiler = JitCompiler::new().unwrap();
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
         let result = compiler.compile_and_execute(&ast);
         assert!(
             result.is_ok(),
             "JIT should compile complex arithmetic: {result:?}"
         );
-        assert_eq!(result.unwrap(), 28); // (15) * 2 - 2 = 30 - 2 = 28
+        assert_eq!(result.expect("operation should succeed in test"), 28); // (15) * 2 - 2 = 30 - 2 = 28
     }
 }
