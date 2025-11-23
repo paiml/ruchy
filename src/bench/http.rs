@@ -139,11 +139,14 @@ pub fn benchmark_http(
                 match req.send() {
                     Ok(response) if response.status().is_success() => {
                         let elapsed = request_start.elapsed();
-                        results.lock().unwrap().push(elapsed);
-                        *successful.lock().unwrap() += 1;
+                        results
+                            .lock()
+                            .expect("mutex should not be poisoned")
+                            .push(elapsed);
+                        *successful.lock().expect("mutex should not be poisoned") += 1;
                     }
                     _ => {
-                        *failed.lock().unwrap() += 1;
+                        *failed.lock().expect("mutex should not be poisoned") += 1;
                     }
                 }
             }
@@ -202,7 +205,7 @@ mod tests {
             None,
             vec!["User-Agent: ruchy-bench/1.0".to_string()],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(results.total_requests, 10);
         assert!(
@@ -225,7 +228,7 @@ mod tests {
             Some(r#"{"test": "data"}"#),
             vec!["Content-Type: application/json".to_string()],
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(results.total_requests, 5);
         assert!(results.successful_requests > 0);
@@ -243,7 +246,7 @@ mod tests {
             None,
             Vec::new(),
         )
-        .unwrap();
+        .expect("operation should succeed in test");
 
         assert_eq!(results.total_requests, 20);
         // With concurrency, should be faster than sequential
@@ -270,7 +273,7 @@ mod tests {
                 "GET",
                 None,
                 Vec::new(),
-            ).unwrap();
+            ).expect("operation should succeed in test");
 
             // Accounting invariant
             prop_assert_eq!(
