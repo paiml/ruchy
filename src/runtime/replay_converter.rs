@@ -564,7 +564,9 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "basic").unwrap();
+        let tests = converter
+            .convert_session(&session, "basic")
+            .expect("operation should succeed in test");
         // Should generate at least unit and integration tests
         assert!(tests.len() >= 2);
         assert!(tests.iter().any(|t| t.category == TestCategory::Unit));
