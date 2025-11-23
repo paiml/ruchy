@@ -2,16 +2,15 @@
 ///
 /// ROOT CAUSE: Double-locking when assigning to globals
 /// Example: counter = counter + 1 transpiles to:
-///   *`counter.lock().unwrap()` = *`counter.lock().unwrap()` + 1;
+///   *`counter.lock().expect("operation should succeed in test")` = *`counter.lock().expect("operation should succeed in test")` + 1;
 ///   ^^^^^^^^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^^^^^^^^
 ///   Lock #1                     Lock #2 → DEADLOCK!
 ///
 /// EXPECTED: Should lock once and operate on guard
 ///   {
-///       let mut guard = `counter.lock().unwrap()`;
+///       let mut guard = `counter.lock().expect("operation should succeed in test")`;
 ///       *guard = *guard + 1;
 ///   }
-use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command as StdCommand;
@@ -33,9 +32,9 @@ println!("{}", counter)
 "#;
 
     // Write to temp file
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
@@ -46,11 +45,11 @@ println!("{}", counter)
         .expect("Failed to transpile");
 
     assert!(output.status.success(), "Transpile failed");
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Write transpiled code
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -60,7 +59,7 @@ println!("{}", counter)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert!(
         compile.status.success(),
@@ -122,9 +121,9 @@ add_value(10)
 println!("{}", total)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
@@ -135,10 +134,10 @@ println!("{}", total)
         .expect("Failed to transpile");
 
     assert!(output.status.success(), "Transpile failed");
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -148,7 +147,7 @@ println!("{}", total)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert!(
         compile.status.success(),
@@ -200,9 +199,9 @@ compute()
 println!("{}", x)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     let output = cmd
@@ -212,10 +211,10 @@ println!("{}", x)
         .expect("Failed to transpile");
 
     assert!(output.status.success(), "Transpile failed");
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
@@ -224,7 +223,7 @@ println!("{}", x)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert!(
         compile.status.success(),
@@ -291,18 +290,18 @@ println!("{{}}", {var_name})
 "#
             );
 
-            let temp = NamedTempFile::new().unwrap();
+            let temp = NamedTempFile::new().expect("operation should succeed in test");
             let ruchy_path = temp.path().with_extension("ruchy");
-            fs::write(&ruchy_path, code).unwrap();
+            fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
             // Transpile
             let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-            let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+            let output = cmd.arg("transpile").arg(&ruchy_path).output().expect("operation should succeed in test");
             prop_assert!(output.status.success(), "Transpile failed");
 
-            let transpiled = String::from_utf8(output.stdout).unwrap();
+            let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
             let rs_path = temp.path().with_extension("rs");
-            fs::write(&rs_path, transpiled).unwrap();
+            fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
             // Compile
             let compile = StdCommand::new("rustc")
@@ -310,7 +309,7 @@ println!("{{}}", {var_name})
                 .arg("--crate-name").arg("prop_test")
                 .arg("-o").arg(temp.path().with_extension("exe"))
                 .output()
-                .unwrap();
+                .expect("operation should succeed in test");
             prop_assert!(compile.status.success(), "Compilation failed");
 
             // Run with timeout - should never deadlock
@@ -319,7 +318,7 @@ println!("{{}}", {var_name})
                 .arg("2")
                 .arg(&exe_path)
                 .output()
-                .unwrap();
+                .expect("operation should succeed in test");
 
             prop_assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
             prop_assert!(run.status.success(), "Execution failed");
@@ -358,24 +357,24 @@ println!("{{}}", {var_name})
 "#
             );
 
-            let temp = NamedTempFile::new().unwrap();
+            let temp = NamedTempFile::new().expect("operation should succeed in test");
             let ruchy_path = temp.path().with_extension("ruchy");
-            fs::write(&ruchy_path, code).unwrap();
+            fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
             let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-            let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+            let output = cmd.arg("transpile").arg(&ruchy_path).output().expect("operation should succeed in test");
             prop_assert!(output.status.success());
 
-            let transpiled = String::from_utf8(output.stdout).unwrap();
+            let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
             let rs_path = temp.path().with_extension("rs");
-            fs::write(&rs_path, transpiled).unwrap();
+            fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
             let compile = StdCommand::new("rustc")
                 .arg(&rs_path)
                 .arg("--crate-name").arg("prop_compound")
                 .arg("-o").arg(temp.path().with_extension("exe"))
                 .output()
-                .unwrap();
+                .expect("operation should succeed in test");
             prop_assert!(compile.status.success());
 
             let exe_path = temp.path().with_extension("exe");
@@ -383,7 +382,7 @@ println!("{{}}", {var_name})
                 .arg("2")
                 .arg(&exe_path)
                 .output()
-                .unwrap();
+                .expect("operation should succeed in test");
 
             prop_assert_ne!(run.status.code(), Some(124));
             prop_assert!(run.status.success());
@@ -415,15 +414,19 @@ fn compute() {
 compute()
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success(), "Transpile failed");
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Should NOT contain guard pattern for local variables
     assert!(
@@ -453,17 +456,21 @@ set_result()
 println!("{}", result)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success());
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -473,7 +480,7 @@ println!("{}", result)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed:\n{}",
@@ -486,7 +493,7 @@ println!("{}", result)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124));
     assert!(run.status.success());
@@ -513,15 +520,19 @@ negate()
 println!("{}", value)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success());
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Should contain guard pattern
     assert!(
@@ -530,7 +541,7 @@ println!("{}", value)
     );
 
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
@@ -539,7 +550,7 @@ println!("{}", value)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed:\n{}",
@@ -551,7 +562,7 @@ println!("{}", value)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124));
     assert!(run.status.success());
@@ -578,15 +589,19 @@ fn process() {
 process()
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success());
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Simple string assignment doesn't need guard
     assert!(transpiled.contains("static text"));
@@ -608,21 +623,25 @@ complex_update()
 println!("{}", num)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success());
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Should use guard pattern for nested expression
     assert!(transpiled.contains("__guard"));
 
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
@@ -631,7 +650,7 @@ println!("{}", num)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed:\n{}",
@@ -643,7 +662,7 @@ println!("{}", num)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124));
     assert!(run.status.success());
@@ -670,22 +689,26 @@ test_ops()
 println!("{}", x)
 "#;
 
-    let temp = NamedTempFile::new().unwrap();
+    let temp = NamedTempFile::new().expect("operation should succeed in test");
     let ruchy_path = temp.path().with_extension("ruchy");
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    let output = cmd.arg("transpile").arg(&ruchy_path).output().unwrap();
+    let output = cmd
+        .arg("transpile")
+        .arg(&ruchy_path)
+        .output()
+        .expect("operation should succeed in test");
     assert!(output.status.success());
 
-    let transpiled = String::from_utf8(output.stdout).unwrap();
+    let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Should use guard for global compound assignment
     assert!(transpiled.contains("__guard"));
     assert!(transpiled.contains("*="));
 
     let rs_path = temp.path().with_extension("rs");
-    fs::write(&rs_path, transpiled).unwrap();
+    fs::write(&rs_path, transpiled).expect("operation should succeed in test");
 
     let compile = StdCommand::new("rustc")
         .arg(&rs_path)
@@ -694,7 +717,7 @@ println!("{}", x)
         .arg("-o")
         .arg(temp.path().with_extension("exe"))
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed:\n{}",
@@ -706,7 +729,7 @@ println!("{}", x)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124));
     assert!(run.status.success());
@@ -737,17 +760,17 @@ println!("{}", flags)
     let rs_path = PathBuf::from("/tmp/test_bitwise.rs");
     let exe_path = PathBuf::from("/tmp/test_bitwise");
 
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let transpile = StdCommand::new("cargo")
         .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
         .arg(&ruchy_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(transpile.status.success());
 
-    fs::write(&rs_path, transpile.stdout).unwrap();
+    fs::write(&rs_path, transpile.stdout).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -757,7 +780,7 @@ println!("{}", flags)
         .arg("-o")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed: {}",
@@ -769,7 +792,7 @@ println!("{}", flags)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
     assert!(run.status.success());
@@ -800,17 +823,17 @@ println!("{}", status)
     let rs_path = PathBuf::from("/tmp/test_comparison.rs");
     let exe_path = PathBuf::from("/tmp/test_comparison");
 
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let transpile = StdCommand::new("cargo")
         .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
         .arg(&ruchy_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(transpile.status.success());
 
-    fs::write(&rs_path, transpile.stdout).unwrap();
+    fs::write(&rs_path, transpile.stdout).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -820,7 +843,7 @@ println!("{}", status)
         .arg("-o")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed: {}",
@@ -832,7 +855,7 @@ println!("{}", status)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
     assert!(run.status.success());
@@ -863,17 +886,17 @@ println!("{}", index)
     let rs_path = PathBuf::from("/tmp/test_modulo.rs");
     let exe_path = PathBuf::from("/tmp/test_modulo");
 
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let transpile = StdCommand::new("cargo")
         .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
         .arg(&ruchy_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(transpile.status.success());
 
-    fs::write(&rs_path, transpile.stdout).unwrap();
+    fs::write(&rs_path, transpile.stdout).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -883,7 +906,7 @@ println!("{}", index)
         .arg("-o")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed: {}",
@@ -895,7 +918,7 @@ println!("{}", index)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
     assert!(run.status.success());
@@ -926,17 +949,17 @@ println!("{}", result)
     let rs_path = PathBuf::from("/tmp/test_logical.rs");
     let exe_path = PathBuf::from("/tmp/test_logical");
 
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let transpile = StdCommand::new("cargo")
         .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
         .arg(&ruchy_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(transpile.status.success());
 
-    fs::write(&rs_path, transpile.stdout).unwrap();
+    fs::write(&rs_path, transpile.stdout).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -946,7 +969,7 @@ println!("{}", result)
         .arg("-o")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed: {}",
@@ -958,7 +981,7 @@ println!("{}", result)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
     assert!(run.status.success());
@@ -989,17 +1012,17 @@ println!("{}", value)
     let rs_path = PathBuf::from("/tmp/test_shift.rs");
     let exe_path = PathBuf::from("/tmp/test_shift");
 
-    fs::write(&ruchy_path, code).unwrap();
+    fs::write(&ruchy_path, code).expect("operation should succeed in test");
 
     // Transpile
     let transpile = StdCommand::new("cargo")
         .args(["run", "--release", "--bin", "ruchy", "--", "transpile"])
         .arg(&ruchy_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(transpile.status.success());
 
-    fs::write(&rs_path, transpile.stdout).unwrap();
+    fs::write(&rs_path, transpile.stdout).expect("operation should succeed in test");
 
     // Compile
     let compile = StdCommand::new("rustc")
@@ -1009,7 +1032,7 @@ println!("{}", value)
         .arg("-o")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
     assert!(
         compile.status.success(),
         "Compilation failed: {}",
@@ -1021,7 +1044,7 @@ println!("{}", value)
         .arg("2")
         .arg(&exe_path)
         .output()
-        .unwrap();
+        .expect("operation should succeed in test");
 
     assert_ne!(run.status.code(), Some(124), "DEADLOCK detected!");
     assert!(run.status.success());
