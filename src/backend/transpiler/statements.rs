@@ -907,7 +907,7 @@ impl Transpiler {
         };
 
         // Trace variable assignments in body
-        self.trace_param_assignments(body, &mut var_to_param, params);
+        Self::trace_param_assignments(body, &mut var_to_param, params);
 
         // Extract final expression from body (handle nested Let/Block structures)
         let final_expr = Self::get_final_expression(body);
@@ -946,7 +946,6 @@ impl Transpiler {
     /// Helper: Trace variable assignments to find which vars hold parameter values
     /// Complexity: 6 (recursive traversal with simple matching)
     fn trace_param_assignments<'a>(
-        &self,
         expr: &Expr,
         var_to_param: &mut std::collections::HashMap<String, &'a Type>,
         params: &'a [Param],
@@ -954,7 +953,7 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Block(exprs) => {
                 for e in exprs {
-                    self.trace_param_assignments(e, var_to_param, params);
+                    Self::trace_param_assignments(e, var_to_param, params);
                 }
             }
             ExprKind::Let {
@@ -971,7 +970,7 @@ impl Transpiler {
                 {
                     var_to_param.insert(name.clone(), inferred_type);
                 }
-                self.trace_param_assignments(body, var_to_param, params);
+                Self::trace_param_assignments(body, var_to_param, params);
             }
             _ => {}
         }
@@ -1088,16 +1087,16 @@ impl Transpiler {
 
     /// TRANSPILER-013: Check if expression returns an object literal (transpiled to `BTreeMap`)
     /// Used to infer return type annotation for functions
-    fn returns_object_literal(&self, body: &Expr) -> bool {
+    fn returns_object_literal(body: &Expr) -> bool {
         match &body.kind {
             // Direct object literal { key: value, ... }
             ExprKind::ObjectLiteral { .. } => true,
 
             // Return statement with object literal
-            ExprKind::Return { value: Some(val) } => self.returns_object_literal(val),
+            ExprKind::Return { value: Some(val) } => Self::returns_object_literal(val),
 
             // Block - check last expression
-            ExprKind::Block(exprs) => exprs.last().is_some_and(|e| self.returns_object_literal(e)),
+            ExprKind::Block(exprs) => exprs.last().is_some_and(Self::returns_object_literal),
 
             // If expression - both branches return object literal
             ExprKind::If {
@@ -1105,16 +1104,16 @@ impl Transpiler {
                 else_branch,
                 ..
             } => {
-                let then_is_object = self.returns_object_literal(then_branch);
+                let then_is_object = Self::returns_object_literal(then_branch);
                 let else_is_object = else_branch
                     .as_ref()
-                    .is_some_and(|e| self.returns_object_literal(e));
+                    .is_some_and(|e| Self::returns_object_literal(e));
                 then_is_object && else_is_object
             }
 
             // Let expression - body returns object literal
             ExprKind::Let { body: let_body, .. } | ExprKind::LetPattern { body: let_body, .. } => {
-                self.returns_object_literal(let_body)
+                Self::returns_object_literal(let_body)
             }
 
             _ => false,
@@ -1429,7 +1428,7 @@ impl Transpiler {
             Ok(quote! { -> &'static str })
         // TRANSPILER-013 FIX: Check for object literal BEFORE numeric fallback
         // Object literals transpile to BTreeMap, not i32
-        } else if self.returns_object_literal(body) {
+        } else if Self::returns_object_literal(body) {
             Ok(quote! { -> std::collections::BTreeMap<String, String> })
         // TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
         // Functions returning parameter values should use parameter's type, not default to i32
@@ -1795,7 +1794,7 @@ impl Transpiler {
     }
 
     /// DEFECT-012/013: Check if expression body needs .`to_string()` conversion
-    fn body_needs_string_conversion(&self, body: &Expr) -> bool {
+    fn body_needs_string_conversion(body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::Identifier(_) => true, // Could be &str variable
@@ -1806,14 +1805,14 @@ impl Transpiler {
                 arms.iter()
                     .any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
             }
-            ExprKind::Block(exprs) if !exprs.is_empty() => self.body_needs_string_conversion(
+            ExprKind::Block(exprs) if !exprs.is_empty() => Self::body_needs_string_conversion(
                 exprs
                     .last()
                     .expect("exprs is non-empty due to guard condition"),
             ),
             ExprKind::Let { body, .. } => {
                 // Let expressions have the return value in their body field
-                self.body_needs_string_conversion(body)
+                Self::body_needs_string_conversion(body)
             }
             _ => false,
         }
@@ -2168,7 +2167,7 @@ impl Transpiler {
 
         // DEFECT-012 FIX: Generate body tokens with special handling for String return type
         let body_tokens = if let Some(ret_type) = effective_return_type {
-            if self.is_string_type(ret_type) && self.body_needs_string_conversion(body) {
+            if self.is_string_type(ret_type) && Self::body_needs_string_conversion(body) {
                 self.generate_body_tokens_with_string_conversion(body, is_async)?
             } else {
                 self.generate_body_tokens(body, is_async)?
@@ -2496,7 +2495,7 @@ impl Transpiler {
             ExprKind::MethodCall {
                 receiver, method, ..
             } if method == "build" => {
-                if let Some(result) = self.extract_dataframe_columns(receiver) {
+                if let Some(result) = Self::extract_dataframe_columns(receiver) {
                     result
                 } else {
                     return Ok(None);
@@ -2509,7 +2508,7 @@ impl Transpiler {
             } if method == "column" && args.len() == 2 => {
                 // Builder without .build() - still valid
                 let mut cols = vec![(args[0].clone(), args[1].clone())];
-                if let Some((mut prev_cols, base)) = self.extract_dataframe_columns(receiver) {
+                if let Some((mut prev_cols, base)) = Self::extract_dataframe_columns(receiver) {
                     prev_cols.append(&mut cols);
                     (prev_cols, base)
                 } else {
@@ -2541,14 +2540,14 @@ impl Transpiler {
     }
 
     /// Extract `DataFrame` column chain recursively
-    fn extract_dataframe_columns(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
+    fn extract_dataframe_columns(expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
         match &expr.kind {
             ExprKind::MethodCall {
                 receiver,
                 method,
                 args,
             } if method == "column" && args.len() == 2 => {
-                if let Some((mut cols, base)) = self.extract_dataframe_columns(receiver) {
+                if let Some((mut cols, base)) = Self::extract_dataframe_columns(receiver) {
                     cols.push((args[0].clone(), args[1].clone()));
                     Some((cols, base))
                 } else {
@@ -8357,31 +8356,28 @@ mod property_tests_statements {
     // Test 121: body_needs_string_conversion - string literal
     #[test]
     fn test_body_needs_string_conversion_string_literal() {
-        let transpiler = Transpiler::new();
         let body = Expr::new(
             ExprKind::Literal(Literal::String("hello".to_string())),
             Span::default(),
         );
-        assert!(transpiler.body_needs_string_conversion(&body));
+        assert!(Transpiler::body_needs_string_conversion(&body));
     }
 
     // Test 122: body_needs_string_conversion - identifier
     #[test]
     fn test_body_needs_string_conversion_identifier() {
-        let transpiler = Transpiler::new();
         let body = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
-        assert!(transpiler.body_needs_string_conversion(&body));
+        assert!(Transpiler::body_needs_string_conversion(&body));
     }
 
     // Test 123: body_needs_string_conversion - integer literal
     #[test]
     fn test_body_needs_string_conversion_integer() {
-        let transpiler = Transpiler::new();
         let body = Expr::new(
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        assert!(!transpiler.body_needs_string_conversion(&body));
+        assert!(!Transpiler::body_needs_string_conversion(&body));
     }
 
     // Test 124: transpile_iterator_methods - map
@@ -8605,7 +8601,6 @@ mod property_tests_statements {
     // Test 138: returns_object_literal - with object
     #[test]
     fn test_returns_object_literal_true() {
-        let transpiler = Transpiler::new();
         let body = Expr {
             kind: ExprKind::ObjectLiteral { fields: vec![] },
             span: Span::default(),
@@ -8613,13 +8608,12 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.returns_object_literal(&body));
+        assert!(Transpiler::returns_object_literal(&body));
     }
 
     // Test 139: returns_object_literal - with non-object
     #[test]
     fn test_returns_object_literal_false() {
-        let transpiler = Transpiler::new();
         let body = Expr {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
             span: Span::default(),
@@ -8627,7 +8621,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!transpiler.returns_object_literal(&body));
+        assert!(!Transpiler::returns_object_literal(&body));
     }
 
     // Test 140: expr_is_string - with string literal

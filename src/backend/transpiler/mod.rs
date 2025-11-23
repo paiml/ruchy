@@ -380,7 +380,7 @@ impl Transpiler {
             ExprKind::Function { name, params, .. } => {
                 let param_types: Vec<String> = params
                     .iter()
-                    .map(|param| self.type_to_string(&param.ty))
+                    .map(|param| Self::type_to_string(&param.ty))
                     .collect();
                 let signature = FunctionSignature {
                     name: name.clone(),
@@ -399,11 +399,11 @@ impl Transpiler {
             _ => {}
         }
     }
-    fn type_to_string(&self, ty: &crate::frontend::ast::Type) -> String {
+    fn type_to_string(ty: &crate::frontend::ast::Type) -> String {
         use crate::frontend::ast::TypeKind;
         match &ty.kind {
             TypeKind::Named(name) => name.clone(),
-            TypeKind::Reference { inner, .. } => format!("&{}", self.type_to_string(inner)),
+            TypeKind::Reference { inner, .. } => format!("&{}", Self::type_to_string(inner)),
             _ => "Unknown".to_string(),
         }
     }
@@ -530,7 +530,7 @@ impl Transpiler {
         file_path: Option<&std::path::Path>,
     ) -> Result<Expr> {
         // Check if expression contains any file imports that need resolution
-        if !self.contains_file_imports(expr) {
+        if !Self::contains_file_imports(expr) {
             // No file imports to resolve, return original expression to preserve attributes
             return Ok(expr.clone());
         }
@@ -546,18 +546,18 @@ impl Transpiler {
     }
 
     /// Check if an expression tree contains any import statements
-    fn contains_imports(&self, expr: &Expr) -> bool {
+    fn contains_imports(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Import { .. }
             | ExprKind::ImportAll { .. }
             | ExprKind::ImportDefault { .. } => true,
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.contains_imports(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::contains_imports),
             _ => false,
         }
     }
 
     /// Check if an expression tree contains any file imports (local .ruchy files)
-    fn contains_file_imports(&self, expr: &Expr) -> bool {
+    fn contains_file_imports(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Import { module, .. }
             | ExprKind::ImportAll { module, .. }
@@ -570,7 +570,7 @@ impl Transpiler {
                         && !module.contains('.')
                         && !Self::is_standard_library(module))
             }
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.contains_file_imports(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::contains_file_imports),
             _ => false,
         }
     }
@@ -1355,11 +1355,11 @@ impl Transpiler {
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
         // Check if this is a statement sequence (contains let, assignments, etc.) or an expression sequence
-        let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
+        let has_statements = exprs.iter().any(Self::is_statement_expr);
         if has_statements {
             // Split into statements and possible final expression
             let (statements, final_expr) = if !exprs.is_empty()
-                && !self.is_statement_expr(
+                && !Self::is_statement_expr(
                     exprs
                         .last()
                         .expect("vec is non-empty due to is_empty check"),
@@ -1443,7 +1443,7 @@ impl Transpiler {
             self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
         }
     }
-    fn is_statement_expr(&self, expr: &Expr) -> bool {
+    fn is_statement_expr(expr: &Expr) -> bool {
         match &expr.kind {
             // Let bindings are statements
             ExprKind::Let { .. } | ExprKind::LetPattern { .. } => true,
@@ -1466,13 +1466,13 @@ impl Transpiler {
                 ..
             } => {
                 // If both branches are statements, the whole if is a statement
-                self.is_statement_expr(then_branch)
+                Self::is_statement_expr(then_branch)
                     && else_branch
                         .as_ref()
-                        .is_none_or(|e| self.is_statement_expr(e))
+                        .is_none_or(|e| Self::is_statement_expr(e))
             }
             // Blocks containing statements
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.is_statement_expr(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::is_statement_expr),
             // Most other expressions are not statements
             _ => false,
         }
@@ -1741,7 +1741,7 @@ impl Transpiler {
             _ => {
                 let body = self.transpile_expr(expr)?;
                 // Check if this is a statement vs expression
-                if self.is_statement_expr(expr) {
+                if Self::is_statement_expr(expr) {
                     // For statements, execute directly without result wrapping
                     self.wrap_statement_in_main(body, needs_polars, needs_hashmap)
                 } else {
@@ -2100,24 +2100,22 @@ mod tests {
     // Test 3: Type String Conversion
     #[test]
     fn test_type_to_string() {
-        let transpiler = Transpiler::new();
-
         let int_type = create_simple_type("i64");
         let float_type = create_simple_type("f64");
         let string_type = create_simple_type("String");
         let bool_type = create_simple_type("bool");
 
         // Test basic type handling (exact behavior depends on implementation)
-        let int_result = transpiler.type_to_string(&int_type);
+        let int_result = Transpiler::type_to_string(&int_type);
         assert!(!int_result.is_empty());
 
-        let float_result = transpiler.type_to_string(&float_type);
+        let float_result = Transpiler::type_to_string(&float_type);
         assert!(!float_result.is_empty());
 
-        let string_result = transpiler.type_to_string(&string_type);
+        let string_result = Transpiler::type_to_string(&string_type);
         assert!(!string_result.is_empty());
 
-        let bool_result = transpiler.type_to_string(&bool_type);
+        let bool_result = Transpiler::type_to_string(&bool_type);
         assert!(!bool_result.is_empty());
 
         // Test list type
@@ -2125,7 +2123,7 @@ mod tests {
             kind: TypeKind::List(Box::new(create_simple_type("i64"))),
             span: Span::default(),
         };
-        let list_result = transpiler.type_to_string(&list_type);
+        let list_result = Transpiler::type_to_string(&list_type);
         assert!(!list_result.is_empty());
     }
 
@@ -2572,15 +2570,14 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.contains_imports(&import_expr));
+        assert!(Transpiler::contains_imports(&import_expr));
     }
 
     // Test 23: contains_imports - with non-import expression
     #[test]
     fn test_contains_imports_false() {
-        let transpiler = Transpiler::new();
         let literal_expr = create_test_literal_expr(42);
-        assert!(!transpiler.contains_imports(&literal_expr));
+        assert!(!Transpiler::contains_imports(&literal_expr));
     }
 
     // Test 24: contains_file_imports - with relative path
@@ -2597,13 +2594,12 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.contains_file_imports(&file_import));
+        assert!(Transpiler::contains_file_imports(&file_import));
     }
 
     // Test 25: contains_file_imports - with parent path
     #[test]
     fn test_contains_file_imports_parent() {
-        let transpiler = Transpiler::new();
         let file_import = Expr {
             kind: ExprKind::Import {
                 module: "../parent_module".to_string(),
@@ -2614,13 +2610,12 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.contains_file_imports(&file_import));
+        assert!(Transpiler::contains_file_imports(&file_import));
     }
 
     // Test 26: contains_file_imports - with std library (not a file)
     #[test]
     fn test_contains_file_imports_std_false() {
-        let transpiler = Transpiler::new();
         let std_import = Expr {
             kind: ExprKind::Import {
                 module: "std::collections::HashMap".to_string(),
@@ -2631,13 +2626,12 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!transpiler.contains_file_imports(&std_import));
+        assert!(!Transpiler::contains_file_imports(&std_import));
     }
 
     // Test 27: is_statement_expr - with Let binding
     #[test]
     fn test_is_statement_expr_let() {
-        let transpiler = Transpiler::new();
         let let_expr = Expr {
             kind: ExprKind::Let {
                 name: "x".to_string(),
@@ -2652,13 +2646,12 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.is_statement_expr(&let_expr));
+        assert!(Transpiler::is_statement_expr(&let_expr));
     }
 
     // Test 28: is_statement_expr - with Assignment
     #[test]
     fn test_is_statement_expr_assign() {
-        let transpiler = Transpiler::new();
         let assign_expr = Expr {
             kind: ExprKind::Assign {
                 target: Box::new(create_test_variable_expr("x")),
@@ -2669,13 +2662,12 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.is_statement_expr(&assign_expr));
+        assert!(Transpiler::is_statement_expr(&assign_expr));
     }
 
     // Test 29: is_statement_expr - with While loop
     #[test]
     fn test_is_statement_expr_while() {
-        let transpiler = Transpiler::new();
         let while_expr = Expr {
             kind: ExprKind::While {
                 condition: Box::new(create_test_literal_expr(1)),
@@ -2687,15 +2679,14 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.is_statement_expr(&while_expr));
+        assert!(Transpiler::is_statement_expr(&while_expr));
     }
 
     // Test 30: is_statement_expr - with expression (not statement)
     #[test]
     fn test_is_statement_expr_false() {
-        let transpiler = Transpiler::new();
         let literal_expr = create_test_literal_expr(42);
-        assert!(!transpiler.is_statement_expr(&literal_expr));
+        assert!(!Transpiler::is_statement_expr(&literal_expr));
     }
 
     // Test 31: generate_use_statements - with polars and HashMap
@@ -2897,7 +2888,6 @@ mod tests {
     // Test 44: type_to_string - reference type
     #[test]
     fn test_type_to_string_reference() {
-        let transpiler = Transpiler::new();
         let ref_type = Type {
             kind: TypeKind::Reference {
                 inner: Box::new(create_simple_type("i64")),
@@ -2906,7 +2896,7 @@ mod tests {
             },
             span: Span::default(),
         };
-        let result = transpiler.type_to_string(&ref_type);
+        let result = Transpiler::type_to_string(&ref_type);
         assert!(result.contains('&') || result.contains("i64"));
     }
 

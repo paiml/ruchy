@@ -227,7 +227,7 @@ impl Linter {
 
         // LINTER-086: Two-pass analysis for forward reference resolution (GitHub Issue #69)
         // Pass 1: Build symbol table (collect all function definitions)
-        self.collect_definitions(ast, &mut scope);
+        Self::collect_definitions(ast, &mut scope);
 
         // Pass 2: Analyze the AST with variable tracking (now with complete symbol table)
         self.analyze_expr(ast, &mut scope, &mut issues);
@@ -239,7 +239,7 @@ impl Linter {
             .rules
             .iter()
             .any(|r| matches!(r, LintRule::ComplexityLimit))
-            && self.calculate_complexity(ast) > self.max_complexity
+            && Self::calculate_complexity(ast) > self.max_complexity
         {
             issues.push(LintIssue {
                 line: 1,
@@ -330,7 +330,7 @@ impl Linter {
 
     /// LINTER-086: Pass 1 - Collect all function definitions for forward reference resolution
     /// Complexity: 4 (≤10 target)
-    fn collect_definitions(&self, expr: &Expr, scope: &mut Scope) {
+    fn collect_definitions(expr: &Expr, scope: &mut Scope) {
         match &expr.kind {
             ExprKind::Function { name, .. } => {
                 // Define function in symbol table (Pass 1)
@@ -339,12 +339,12 @@ impl Linter {
             ExprKind::Block(exprs) => {
                 // Recursively collect definitions from block
                 for expr in exprs {
-                    self.collect_definitions(expr, scope);
+                    Self::collect_definitions(expr, scope);
                 }
             }
             ExprKind::Let { body, .. } => {
                 // Recursively collect from let body
-                self.collect_definitions(body, scope);
+                Self::collect_definitions(body, scope);
             }
             _ => {
                 // No definitions to collect for other expression types
@@ -430,7 +430,7 @@ impl Linter {
                 let mut func_scope = Scope::with_parent(scope.clone());
                 // Add parameters to scope with correct type
                 for param in params {
-                    self.extract_param_bindings(&param.pattern, &mut func_scope);
+                    Self::extract_param_bindings(&param.pattern, &mut func_scope);
                 }
                 // Analyze function body
                 self.analyze_expr(body, &mut func_scope, issues);
@@ -458,7 +458,7 @@ impl Linter {
                 let mut loop_scope = Scope::with_parent(scope.clone());
                 // Add loop variable to scope
                 if let Some(pat) = pattern {
-                    self.extract_loop_bindings(pat, &mut loop_scope);
+                    Self::extract_loop_bindings(pat, &mut loop_scope);
                 } else {
                     // Fall back to var field for backward compatibility
                     loop_scope.define(var.clone(), 2, 1, VarType::LoopVariable);
@@ -477,7 +477,7 @@ impl Linter {
                 for arm in arms {
                     let mut branch_scope = Scope::with_parent(scope.clone());
                     // Add pattern bindings to scope
-                    self.extract_pattern_bindings(&arm.pattern, &mut branch_scope);
+                    Self::extract_pattern_bindings(&arm.pattern, &mut branch_scope);
                     // Analyze guard if present
                     if let Some(guard) = &arm.guard {
                         self.analyze_expr(guard, &mut branch_scope, issues);
@@ -547,7 +547,7 @@ impl Linter {
                 let mut lambda_scope = Scope::with_parent(scope.clone());
                 // Add parameters to scope
                 for param in params {
-                    self.extract_param_bindings(&param.pattern, &mut lambda_scope);
+                    Self::extract_param_bindings(&param.pattern, &mut lambda_scope);
                 }
                 // Analyze lambda body
                 self.analyze_expr(body, &mut lambda_scope, issues);
@@ -603,7 +603,7 @@ impl Linter {
             }
         }
     }
-    fn extract_loop_bindings(&self, pattern: &Pattern, scope: &mut Scope) {
+    fn extract_loop_bindings(pattern: &Pattern, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
@@ -613,13 +613,13 @@ impl Linter {
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    self.extract_loop_bindings(p, scope);
+                    Self::extract_loop_bindings(p, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        self.extract_loop_bindings(pattern, scope);
+                        Self::extract_loop_bindings(pattern, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
                         scope.define(field.name.clone(), 2, 1, VarType::LoopVariable);
@@ -628,13 +628,13 @@ impl Linter {
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    self.extract_loop_bindings(p, scope);
+                    Self::extract_loop_bindings(p, scope);
                 }
             }
             _ => {}
         }
     }
-    fn extract_param_bindings(&self, pattern: &Pattern, scope: &mut Scope) {
+    fn extract_param_bindings(pattern: &Pattern, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
@@ -644,13 +644,13 @@ impl Linter {
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    self.extract_param_bindings(p, scope);
+                    Self::extract_param_bindings(p, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        self.extract_param_bindings(pattern, scope);
+                        Self::extract_param_bindings(pattern, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
                         scope.define(field.name.clone(), 1, 1, VarType::Parameter);
@@ -659,13 +659,13 @@ impl Linter {
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    self.extract_param_bindings(p, scope);
+                    Self::extract_param_bindings(p, scope);
                 }
             }
             _ => {}
         }
     }
-    fn extract_pattern_bindings(&self, pattern: &Pattern, scope: &mut Scope) {
+    fn extract_pattern_bindings(pattern: &Pattern, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
@@ -675,13 +675,13 @@ impl Linter {
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    self.extract_pattern_bindings(p, scope);
+                    Self::extract_pattern_bindings(p, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        self.extract_pattern_bindings(pattern, scope);
+                        Self::extract_pattern_bindings(pattern, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
                         scope.define(field.name.clone(), 3, 1, VarType::MatchBinding);
@@ -690,11 +690,11 @@ impl Linter {
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    self.extract_pattern_bindings(p, scope);
+                    Self::extract_pattern_bindings(p, scope);
                 }
             }
             Pattern::Some(inner) | Pattern::Ok(inner) | Pattern::Err(inner) => {
-                self.extract_pattern_bindings(inner, scope);
+                Self::extract_pattern_bindings(inner, scope);
             }
             _ => {}
         }
@@ -754,7 +754,7 @@ impl Linter {
         }
         Ok(fixed)
     }
-    fn calculate_complexity(&self, expr: &Expr) -> usize {
+    fn calculate_complexity(expr: &Expr) -> usize {
         match &expr.kind {
             ExprKind::If {
                 condition: _,
@@ -762,14 +762,14 @@ impl Linter {
                 else_branch,
                 ..
             } => {
-                1 + self.calculate_complexity(then_branch)
+                1 + Self::calculate_complexity(then_branch)
                     + else_branch
                         .as_ref()
-                        .map_or(0, |e| self.calculate_complexity(e))
+                        .map_or(0, |e| Self::calculate_complexity(e))
             }
             ExprKind::Match { .. } => 2,
             ExprKind::While { .. } | ExprKind::For { .. } => 2,
-            ExprKind::Block(exprs) => exprs.iter().map(|e| self.calculate_complexity(e)).sum(),
+            ExprKind::Block(exprs) => exprs.iter().map(Self::calculate_complexity).sum(),
             _ => 0,
         }
     }
@@ -1362,7 +1362,7 @@ mod tests {
     fn test_complexity_calculation_simple() {
         let linter = create_test_linter();
         let expr = create_test_expr_literal_int(42);
-        assert_eq!(linter.calculate_complexity(&expr), 0);
+        assert_eq!(Linter::calculate_complexity(&expr), 0);
     }
     #[test]
     fn test_complexity_calculation_if() {
@@ -1372,7 +1372,7 @@ mod tests {
             create_test_expr_literal_int(2),
             Some(create_test_expr_literal_int(3)),
         );
-        assert_eq!(linter.calculate_complexity(&expr), 1);
+        assert_eq!(Linter::calculate_complexity(&expr), 1);
     }
     #[test]
     fn test_complexity_calculation_match() {
@@ -1382,7 +1382,7 @@ mod tests {
             create_test_expr_literal_int(42),
         );
         let expr = create_test_expr_match(create_test_expr_literal_int(1), vec![arm]);
-        assert_eq!(linter.calculate_complexity(&expr), 2);
+        assert_eq!(Linter::calculate_complexity(&expr), 2);
     }
     #[test]
     fn test_complexity_calculation_while() {
@@ -1391,7 +1391,7 @@ mod tests {
             create_test_expr_literal_int(1),
             create_test_expr_literal_int(2),
         );
-        assert_eq!(linter.calculate_complexity(&expr), 2);
+        assert_eq!(Linter::calculate_complexity(&expr), 2);
     }
     #[test]
     fn test_complexity_calculation_for() {
@@ -1402,7 +1402,7 @@ mod tests {
             create_test_expr_literal_int(42),
             create_test_expr_literal_int(0),
         );
-        assert_eq!(linter.calculate_complexity(&expr), 2);
+        assert_eq!(Linter::calculate_complexity(&expr), 2);
     }
     #[test]
     fn test_complexity_limit_violation() {
@@ -1443,7 +1443,7 @@ mod tests {
             Pattern::Identifier("x".to_string()),
             Pattern::Identifier("y".to_string()),
         ]);
-        linter.extract_loop_bindings(&pattern, &mut scope);
+        Linter::extract_loop_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("x"));
         assert!(scope.is_defined("y"));
     }
@@ -1455,7 +1455,7 @@ mod tests {
             Pattern::Identifier("first".to_string()),
             Pattern::Identifier("second".to_string()),
         ]);
-        linter.extract_loop_bindings(&pattern, &mut scope);
+        Linter::extract_loop_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("first"));
         assert!(scope.is_defined("second"));
     }
@@ -1477,7 +1477,7 @@ mod tests {
             ],
             has_rest: false,
         };
-        linter.extract_loop_bindings(&pattern, &mut scope);
+        Linter::extract_loop_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("x_val"));
         assert!(scope.is_defined("y"));
     }
@@ -1486,7 +1486,7 @@ mod tests {
         let linter = create_test_linter();
         let mut scope = Scope::new();
         let pattern = Pattern::Identifier("_".to_string());
-        linter.extract_param_bindings(&pattern, &mut scope);
+        Linter::extract_param_bindings(&pattern, &mut scope);
         assert!(!scope.is_defined("_"));
     }
     #[test]
@@ -1494,7 +1494,7 @@ mod tests {
         let linter = create_test_linter();
         let mut scope = Scope::new();
         let pattern = Pattern::Some(Box::new(Pattern::Identifier("value".to_string())));
-        linter.extract_pattern_bindings(&pattern, &mut scope);
+        Linter::extract_pattern_bindings(&pattern, &mut scope);
         assert!(scope.is_defined("value"));
     }
     #[test]
@@ -1502,10 +1502,10 @@ mod tests {
         let linter = create_test_linter();
         let mut scope = Scope::new();
         let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("success".to_string())));
-        linter.extract_pattern_bindings(&ok_pattern, &mut scope);
+        Linter::extract_pattern_bindings(&ok_pattern, &mut scope);
         assert!(scope.is_defined("success"));
         let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("error".to_string())));
-        linter.extract_pattern_bindings(&err_pattern, &mut scope);
+        Linter::extract_pattern_bindings(&err_pattern, &mut scope);
         assert!(scope.is_defined("error"));
     }
     // ========== Expression Analysis Tests ==========
@@ -2042,7 +2042,7 @@ mod sprint_44_tests {
             Pattern::Identifier("c".to_string()),
         ]);
 
-        linter.extract_pattern_bindings(&nested_tuple, &mut scope);
+        Linter::extract_pattern_bindings(&nested_tuple, &mut scope);
         assert!(scope.is_defined("a"));
         assert!(scope.is_defined("b"));
         assert!(scope.is_defined("c"));
@@ -2076,7 +2076,7 @@ mod sprint_44_tests {
 
         // Test empty block
         let empty_block = Expr::new(ExprKind::Block(vec![]), Span { start: 0, end: 1 });
-        assert_eq!(linter.calculate_complexity(&empty_block), 0);
+        assert_eq!(Linter::calculate_complexity(&empty_block), 0);
 
         // Test single expression block
         let single_block = Expr::new(
@@ -2086,7 +2086,7 @@ mod sprint_44_tests {
             )]),
             Span { start: 0, end: 1 },
         );
-        assert_eq!(linter.calculate_complexity(&single_block), 0);
+        assert_eq!(Linter::calculate_complexity(&single_block), 0);
     }
 
     #[test]
@@ -2535,7 +2535,7 @@ mod sprint_44_tests {
             );
         }
 
-        let complexity = linter.calculate_complexity(&nested_expr);
+        let complexity = Linter::calculate_complexity(&nested_expr);
         assert_eq!(complexity, 5); // Each if adds 1 complexity
     }
 
@@ -2704,7 +2704,7 @@ mod sprint_44_tests {
         );
 
         // Test complexity calculation performance
-        let complexity = linter.calculate_complexity(&complex_expr);
+        let complexity = Linter::calculate_complexity(&complex_expr);
         assert_eq!(complexity, 0); // Binary operations don't add complexity in current implementation
     }
 

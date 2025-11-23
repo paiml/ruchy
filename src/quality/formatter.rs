@@ -88,7 +88,7 @@ impl Formatter {
             Ok(self.format_expr(ast, 0))
         }
     }
-    fn format_type(&self, ty_kind: &crate::frontend::ast::TypeKind) -> String {
+    fn format_type(ty_kind: &crate::frontend::ast::TypeKind) -> String {
         use crate::frontend::ast::TypeKind;
 
         match ty_kind {
@@ -96,7 +96,7 @@ impl Formatter {
             TypeKind::Generic { base, params } => {
                 let params_str = params
                     .iter()
-                    .map(|t| self.format_type(&t.kind))
+                    .map(|t| Self::format_type(&t.kind))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{base}<{params_str}>")
@@ -104,23 +104,23 @@ impl Formatter {
             TypeKind::Function { params, ret } => {
                 let params_str = params
                     .iter()
-                    .map(|t| self.format_type(&t.kind))
+                    .map(|t| Self::format_type(&t.kind))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("({}) -> {}", params_str, self.format_type(&ret.kind))
+                format!("({}) -> {}", params_str, Self::format_type(&ret.kind))
             }
             TypeKind::Tuple(types) => {
                 format!(
                     "({})",
                     types
                         .iter()
-                        .map(|t| self.format_type(&t.kind))
+                        .map(|t| Self::format_type(&t.kind))
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
             }
             TypeKind::Array { elem_type, size } => {
-                format!("[{}; {}]", self.format_type(&elem_type.kind), size)
+                format!("[{}; {}]", Self::format_type(&elem_type.kind), size)
             }
             _ => format!("{ty_kind:?}"),
         }
@@ -150,7 +150,7 @@ impl Formatter {
             };
 
             // Find the true end by recursing through the AST to find the rightmost span
-            let mut end = self.find_rightmost_span_end(expr);
+            let mut end = Self::find_rightmost_span_end(expr);
 
             // WORKAROUND for incomplete parser spans: scan forward to find actual end
             // For expressions like functions and blocks, the span often doesn't include closing braces
@@ -233,27 +233,27 @@ impl Formatter {
     }
 
     /// Recursively find the rightmost (maximum) span end in an expression tree
-    fn find_rightmost_span_end(&self, expr: &Expr) -> usize {
+    fn find_rightmost_span_end(expr: &Expr) -> usize {
         use ExprKind::{Binary, Block, Function, Let};
         let mut max_end = expr.span.end;
 
         match &expr.kind {
             Let { value, body, .. } => {
-                max_end = max_end.max(self.find_rightmost_span_end(value));
-                max_end = max_end.max(self.find_rightmost_span_end(body));
+                max_end = max_end.max(Self::find_rightmost_span_end(value));
+                max_end = max_end.max(Self::find_rightmost_span_end(body));
             }
             Binary { left, right, .. } => {
-                max_end = max_end.max(self.find_rightmost_span_end(left));
-                max_end = max_end.max(self.find_rightmost_span_end(right));
+                max_end = max_end.max(Self::find_rightmost_span_end(left));
+                max_end = max_end.max(Self::find_rightmost_span_end(right));
             }
             Function { body, .. } => {
                 // Function body is the rightmost part
-                max_end = max_end.max(self.find_rightmost_span_end(body));
+                max_end = max_end.max(Self::find_rightmost_span_end(body));
             }
             Block(exprs) => {
                 // Last expression in block is the rightmost
                 if let Some(last) = exprs.last() {
-                    max_end = max_end.max(self.find_rightmost_span_end(last));
+                    max_end = max_end.max(Self::find_rightmost_span_end(last));
                 }
             }
             _ => {
@@ -416,7 +416,7 @@ impl Formatter {
                             }
                         } else {
                             result.push_str(": ");
-                            result.push_str(&self.format_type(&param.ty.kind));
+                            result.push_str(&Self::format_type(&param.ty.kind));
                         }
                     }
                 }
@@ -424,7 +424,7 @@ impl Formatter {
                 // Return type
                 if let Some(ret_ty) = return_type {
                     result.push_str(" -> ");
-                    result.push_str(&self.format_type(&ret_ty.kind));
+                    result.push_str(&Self::format_type(&ret_ty.kind));
                 }
                 result.push(' ');
                 result.push_str(&self.format_expr(body.as_ref(), indent));
@@ -779,7 +779,7 @@ impl Formatter {
                 };
                 let fields_str = fields
                     .iter()
-                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{pub_str}struct {name}{type_params_str} {{ {fields_str} }}")
@@ -799,7 +799,7 @@ impl Formatter {
                 };
                 let fields_str = fields
                     .iter()
-                    .map(|ty| self.format_type(&ty.kind))
+                    .map(|ty| Self::format_type(&ty.kind))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{pub_str}struct {name}{type_params_str}({fields_str})")
@@ -878,7 +878,7 @@ impl Formatter {
                 };
                 let fields_str = fields
                     .iter()
-                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("class {name}{type_params_str} {{ {fields_str} }}")
@@ -952,7 +952,7 @@ impl Formatter {
             } => {
                 let state_str = state
                     .iter()
-                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
                 let handlers_str = handlers
@@ -1171,7 +1171,7 @@ impl Formatter {
                 format!("{module}::{name}")
             }
             ExprKind::TypeAlias { name, target_type } => {
-                format!("type {} = {}", name, self.format_type(&target_type.kind))
+                format!("type {} = {}", name, Self::format_type(&target_type.kind))
             }
             ExprKind::Spread { expr } => {
                 format!("...{}", self.format_expr(expr, indent))
@@ -1441,7 +1441,7 @@ impl Formatter {
             EnumVariantKind::Tuple(types) => {
                 let types_str = types
                     .iter()
-                    .map(|t| self.format_type(&t.kind))
+                    .map(|t| Self::format_type(&t.kind))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({})", variant.name, types_str)
@@ -1449,7 +1449,7 @@ impl Formatter {
             EnumVariantKind::Struct(fields) => {
                 let fields_str = fields
                     .iter()
-                    .map(|f| format!("{}: {}", f.name, self.format_type(&f.ty.kind)))
+                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{} {{ {} }}", variant.name, fields_str)
@@ -1466,13 +1466,13 @@ impl Formatter {
                 format!(
                     "{}: {}",
                     self.format_pattern(&p.pattern),
-                    self.format_type(&p.ty.kind)
+                    Self::format_type(&p.ty.kind)
                 )
             })
             .collect::<Vec<_>>()
             .join(", ");
         let return_str = method.return_type.as_ref().map_or(String::new(), |t| {
-            format!(" -> {}", self.format_type(&t.kind))
+            format!(" -> {}", Self::format_type(&t.kind))
         });
         format!("fun {}({}){}; ", method.name, params_str, return_str)
     }
@@ -1486,13 +1486,13 @@ impl Formatter {
                 format!(
                     "{}: {}",
                     self.format_pattern(&p.pattern),
-                    self.format_type(&p.ty.kind)
+                    Self::format_type(&p.ty.kind)
                 )
             })
             .collect::<Vec<_>>()
             .join(", ");
         let return_str = method.return_type.as_ref().map_or(String::new(), |t| {
-            format!(" -> {}", self.format_type(&t.kind))
+            format!(" -> {}", Self::format_type(&t.kind))
         });
         format!(
             "fun {}({}){}  {}",
@@ -1775,7 +1775,7 @@ mod tests {
     fn test_format_type_named() {
         let formatter = Formatter::new();
         let type_kind = TypeKind::Named("String".to_string());
-        let result = formatter.format_type(&type_kind);
+        let result = Formatter::format_type(&type_kind);
         assert_eq!(result, "String");
     }
 
@@ -1786,7 +1786,7 @@ mod tests {
             kind: TypeKind::Named("Int".to_string()),
             span: Default::default(),
         }));
-        let result = formatter.format_type(&type_kind);
+        let result = Formatter::format_type(&type_kind);
         assert!(result.contains("List"));
     }
 

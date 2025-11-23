@@ -91,14 +91,14 @@ impl RuchyMCP {
     /// Returns an error if the operation fails
     pub fn validate_against_type(&self, value: &Value, type_name: &str) -> Result<()> {
         if let Some(expected_type) = self.type_registry.get(type_name) {
-            self.validate_json_value(value, expected_type)
+            Self::validate_json_value(value, expected_type)
         } else {
             Err(anyhow!("Type '{type_name}' not registered"))
         }
     }
     /// Validate JSON value against `MonoType`
     #[allow(clippy::only_used_in_recursion)]
-    fn validate_json_value(&self, value: &Value, expected_type: &MonoType) -> Result<()> {
+    fn validate_json_value(value: &Value, expected_type: &MonoType) -> Result<()> {
         match (value, expected_type) {
             (Value::String(_), MonoType::String)
             | (Value::Bool(_), MonoType::Bool)
@@ -107,7 +107,7 @@ impl RuchyMCP {
             (Value::Number(n), MonoType::Float) if n.is_f64() => Ok(()),
             (Value::Array(arr), MonoType::List(inner_type)) => {
                 for item in arr {
-                    self.validate_json_value(item, inner_type)?;
+                    Self::validate_json_value(item, inner_type)?;
                 }
                 Ok(())
             }

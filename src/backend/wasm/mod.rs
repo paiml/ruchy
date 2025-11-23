@@ -277,7 +277,7 @@ impl WasmEmitter {
         // Type index 0: Built-in functions println_i32 - (i32) -> ()
         // Type index 1: Built-in functions println_f32 - (f32) -> ()
         // These must be first because imports reference them
-        if self.uses_builtins(expr) {
+        if Self::uses_builtins(expr) {
             types.function(vec![wasm_encoder::ValType::I32], vec![]);
             types.function(vec![wasm_encoder::ValType::F32], vec![]);
         }
@@ -289,7 +289,7 @@ impl WasmEmitter {
 
                 // Determine return type: check for explicit return OR implicit value
                 let returns_value =
-                    self.has_return_with_value(body) || self.expression_produces_value(body);
+                    Self::has_return_with_value(body) || self.expression_produces_value(body);
                 let return_types = if returns_value {
                     vec![wasm_encoder::ValType::I32]
                 } else {
@@ -335,7 +335,7 @@ impl WasmEmitter {
     /// Complexity: 3 (Toyota Way: <10 ✓)
     fn emit_import_section(&self, expr: &Expr) -> Option<wasm_encoder::ImportSection> {
         // Check if expression uses any built-in functions
-        if !self.uses_builtins(expr) {
+        if !Self::uses_builtins(expr) {
             return None;
         }
 
@@ -352,7 +352,7 @@ impl WasmEmitter {
 
     /// Check if expression tree uses any built-in functions
     /// Complexity: 4 (Toyota Way: <10 ✓)
-    fn uses_builtins(&self, expr: &Expr) -> bool {
+    fn uses_builtins( expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Call { func, .. } => {
                 if let ExprKind::Identifier(name) = &func.kind {
@@ -361,34 +361,34 @@ impl WasmEmitter {
                     false
                 }
             }
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.uses_builtins(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::uses_builtins),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                self.uses_builtins(condition)
-                    || self.uses_builtins(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| self.uses_builtins(e))
+                Self::uses_builtins(condition)
+                    || Self::uses_builtins(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| Self::uses_builtins(e))
             }
             ExprKind::Let { value, body, .. } => {
-                self.uses_builtins(value) || self.uses_builtins(body)
+                Self::uses_builtins(value) || Self::uses_builtins(body)
             }
             ExprKind::Binary { left, right, .. } => {
-                self.uses_builtins(left) || self.uses_builtins(right)
+                Self::uses_builtins(left) || Self::uses_builtins(right)
             }
             ExprKind::StringInterpolation { parts } => parts.iter().any(|part| {
                 if let StringPart::Expr(e) | StringPart::ExprWithFormat { expr: e, .. } = part {
-                    self.uses_builtins(e)
+                    Self::uses_builtins(e)
                 } else {
                     false
                 }
             }),
             ExprKind::Match { expr, arms } => {
-                self.uses_builtins(expr) || arms.iter().any(|arm| self.uses_builtins(&arm.body))
+                Self::uses_builtins(expr) || arms.iter().any(|arm| Self::uses_builtins(&arm.body))
             }
-            ExprKind::Function { body, .. } => self.uses_builtins(body),
-            ExprKind::Lambda { body, .. } => self.uses_builtins(body),
+            ExprKind::Function { body, .. } => Self::uses_builtins(body),
+            ExprKind::Lambda { body, .. } => Self::uses_builtins(body),
             _ => false,
         }
     }
@@ -404,7 +404,7 @@ impl WasmEmitter {
         let has_functions = !func_defs.is_empty();
 
         // Type index offset: if we have built-ins, they occupy type indices 0 and 1
-        let type_offset = if self.uses_builtins(expr) { 2 } else { 0 };
+        let type_offset = if Self::uses_builtins(expr) { 2 } else { 0 };
 
         if has_functions {
             for i in 0..func_defs.len() {
@@ -422,7 +422,7 @@ impl WasmEmitter {
     /// Emit memory section if needed
     /// Complexity: 2 (Toyota Way: <10 ✓)
     fn emit_memory_section(&self, expr: &Expr) -> Option<MemorySection> {
-        if self.needs_memory(expr) {
+        if Self::needs_memory(expr) {
             let mut memories = MemorySection::new();
             memories.memory(MemoryType {
                 minimum: 1,
@@ -443,7 +443,7 @@ impl WasmEmitter {
     /// Creates a mutable global `$heap_ptr` initialized to 0
     /// This is used by the bump allocator for memory allocation
     fn emit_global_section(&self, expr: &Expr) -> Option<GlobalSection> {
-        if self.needs_memory(expr) {
+        if Self::needs_memory(expr) {
             let mut globals = GlobalSection::new();
             // Global 0: heap pointer (mutable i32, starts at 0)
             globals.global(
@@ -463,7 +463,7 @@ impl WasmEmitter {
     /// Emit export section if needed
     /// Complexity: 2 (Toyota Way: <10 ✓)
     fn emit_export_section(&self, expr: &Expr) -> Option<ExportSection> {
-        if self.has_main_function(expr) {
+        if Self::has_main_function(expr) {
             let mut exports = ExportSection::new();
             exports.export("main", wasm_encoder::ExportKind::Func, 0);
             Some(exports)
@@ -586,7 +586,7 @@ impl WasmEmitter {
     fn collect_local_types(&self, expr: &Expr) -> Vec<(u32, wasm_encoder::ValType)> {
         let symbols = self.symbols.borrow();
         let local_count = symbols.local_count();
-        let needs_temp = self.needs_memory(expr); // Need temp local for tuple allocation
+        let needs_temp = Self::needs_memory(expr); // Need temp local for tuple allocation
 
         if local_count == 0 && !needs_temp {
             return vec![];
@@ -1756,13 +1756,13 @@ impl WasmEmitter {
         let mut index_map = std::collections::HashMap::new();
 
         // Calculate offset: imports come first (2 built-ins: println_i32 and println_f32)
-        let import_offset = if self.uses_builtins(expr) { 2 } else { 0 };
+        let import_offset = if Self::uses_builtins(expr) { 2 } else { 0 };
 
         // Map each user function to (index, is_void)
         for (i, (name, _, body)) in func_defs.iter().enumerate() {
             let index = (i as u32) + import_offset;
             let returns_value =
-                self.has_return_with_value(body) || self.expression_produces_value(body);
+                Self::has_return_with_value(body) || self.expression_produces_value(body);
             let is_void = !returns_value;
             index_map.insert(name.clone(), (index, is_void));
         }
@@ -1776,11 +1776,10 @@ impl WasmEmitter {
         expr: &Expr,
     ) -> Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)> {
         let mut functions = Vec::new();
-        self.collect_functions_rec(expr, &mut functions);
+        Self::collect_functions_rec(expr, &mut functions);
         functions
     }
     fn collect_functions_rec(
-        &self,
         expr: &Expr,
         functions: &mut Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)>,
     ) {
@@ -1802,11 +1801,11 @@ impl WasmEmitter {
                     functions.push((name.clone(), params.clone(), lambda_body.clone()));
                 }
                 // Continue recursing into the let body
-                self.collect_functions_rec(body, functions);
+                Self::collect_functions_rec(body, functions);
             }
             ExprKind::Block(exprs) => {
                 for e in exprs {
-                    self.collect_functions_rec(e, functions);
+                    Self::collect_functions_rec(e, functions);
                 }
             }
             _ => {}
@@ -1852,94 +1851,94 @@ impl WasmEmitter {
     }
     /// Check if an expression needs memory (for arrays/strings/tuples/structs)
     /// Complexity: 10 (Toyota Way: ≤10 ✓)
-    fn needs_memory(&self, expr: &Expr) -> bool {
+    fn needs_memory(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Literal(Literal::String(_)) => true,
             ExprKind::List(_) => true,
             ExprKind::ArrayInit { .. } => true,
             ExprKind::Tuple(_) => true, // Tuples need memory allocation
             ExprKind::StructLiteral { .. } => true, // Structs need memory allocation
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_memory(e)),
-            ExprKind::Function { body, .. } => self.needs_memory(body),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::needs_memory),
+            ExprKind::Function { body, .. } => Self::needs_memory(body),
             ExprKind::Let { value, body, .. } => {
-                self.needs_memory(value) || self.needs_memory(body)
+                Self::needs_memory(value) || Self::needs_memory(body)
             }
             ExprKind::LetPattern { value, body, .. } => {
-                self.needs_memory(value) || self.needs_memory(body)
+                Self::needs_memory(value) || Self::needs_memory(body)
             }
             ExprKind::Binary { left, right, .. } => {
-                self.needs_memory(left) || self.needs_memory(right)
+                Self::needs_memory(left) || Self::needs_memory(right)
             }
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                self.needs_memory(condition)
-                    || self.needs_memory(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| self.needs_memory(e))
+                Self::needs_memory(condition)
+                    || Self::needs_memory(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| Self::needs_memory(e))
             }
             _ => false,
         }
     }
     /// Check if an expression contains a main function
-    fn has_main_function(&self, expr: &Expr) -> bool {
+    fn has_main_function(expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Function { name, .. } => name == "main",
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.has_main_function(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::has_main_function),
             _ => false,
         }
     }
     /// Check if an expression has return statements with values
-    fn has_return_with_value(&self, expr: &Expr) -> bool {
+    fn has_return_with_value( expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::Return { value } => value.is_some(),
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.has_return_with_value(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::has_return_with_value),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                self.has_return_with_value(condition)
-                    || self.has_return_with_value(then_branch)
+                Self::has_return_with_value(condition)
+                    || Self::has_return_with_value(then_branch)
                     || else_branch
                         .as_ref()
-                        .is_some_and(|e| self.has_return_with_value(e))
+                        .is_some_and(|e| Self::has_return_with_value(e))
             }
             ExprKind::While {
                 condition, body, ..
-            } => self.has_return_with_value(condition) || self.has_return_with_value(body),
+            } => Self::has_return_with_value(condition) || Self::has_return_with_value(body),
             ExprKind::Function { .. } => false, // Functions are compiled separately
             ExprKind::Let { value, body, .. } => {
-                self.has_return_with_value(value) || self.has_return_with_value(body)
+                Self::has_return_with_value(value) || Self::has_return_with_value(body)
             }
             ExprKind::Binary { left, right, .. } => {
-                self.has_return_with_value(left) || self.has_return_with_value(right)
+                Self::has_return_with_value(left) || Self::has_return_with_value(right)
             }
             _ => false,
         }
     }
     /// Check if an expression needs local variables
-    fn needs_locals(&self, expr: &Expr) -> bool {
+    fn needs_locals(expr: &Expr) -> bool {
         let result = match &expr.kind {
             ExprKind::Let { .. } => true,
             ExprKind::Identifier(_) => true,
             ExprKind::Function { .. } => true,
-            ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_locals(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(Self::needs_locals),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                self.needs_locals(condition)
-                    || self.needs_locals(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| self.needs_locals(e))
+                Self::needs_locals(condition)
+                    || Self::needs_locals(then_branch)
+                    || else_branch.as_ref().is_some_and(|e| Self::needs_locals(e))
             }
             ExprKind::While {
                 condition, body, ..
-            } => self.needs_locals(condition) || self.needs_locals(body),
+            } => Self::needs_locals(condition) || Self::needs_locals(body),
             ExprKind::Binary { left, right, .. } => {
-                self.needs_locals(left) || self.needs_locals(right)
+                Self::needs_locals(left) || Self::needs_locals(right)
             }
             _ => false,
         };
@@ -2347,11 +2346,11 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Default::default(),
         );
-        assert!(!emitter.needs_memory(&expr));
+        assert!(!WasmEmitter::needs_memory(&expr));
 
         // List should need memory
         let list_expr = Expr::new(ExprKind::List(vec![]), Default::default());
-        assert!(emitter.needs_memory(&list_expr));
+        assert!(WasmEmitter::needs_memory(&list_expr));
     }
 
     #[test]
