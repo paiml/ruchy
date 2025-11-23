@@ -449,15 +449,13 @@ mod tests {
 
     #[test]
     fn test_estimate_object_size() {
-        let gc = ConservativeGC::new();
-
-        assert_eq!(gc.estimate_object_size(&Value::Integer(42)), 8);
-        assert_eq!(gc.estimate_object_size(&Value::Float(3.15)), 8);
-        assert_eq!(gc.estimate_object_size(&Value::Bool(true)), 1);
-        assert_eq!(gc.estimate_object_size(&Value::Nil), 0);
+        assert_eq!(ConservativeGC::estimate_object_size(&Value::Integer(42)), 8);
+        assert_eq!(ConservativeGC::estimate_object_size(&Value::Float(3.15)), 8);
+        assert_eq!(ConservativeGC::estimate_object_size(&Value::Bool(true)), 1);
+        assert_eq!(ConservativeGC::estimate_object_size(&Value::Nil), 0);
 
         let s = Value::from_string("hello".to_string());
-        assert_eq!(gc.estimate_object_size(&s), 24 + 5);
+        assert_eq!(ConservativeGC::estimate_object_size(&s), 24 + 5);
     }
 
     #[test]
