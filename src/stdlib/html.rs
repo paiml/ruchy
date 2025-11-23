@@ -301,7 +301,7 @@ impl HtmlElement {
         let mut text = String::new();
 
         match &node.data {
-            NodeData::Text { contents} => {
+            NodeData::Text { contents } => {
                 text.push_str(&contents.borrow());
             }
             _ => {

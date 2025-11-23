@@ -31,7 +31,11 @@ fn parse_at_style_decorators(
 
 /// Parse single @-style decorator
 fn parse_single_at_decorator(state: &mut ParserState) -> Result<Attribute> {
-    let span = state.tokens.peek().unwrap().1;
+    let span = state
+        .tokens
+        .peek()
+        .expect("peek() should return Some after matches! check in caller")
+        .1;
     state.tokens.advance(); // consume @
 
     let name = parse_decorator_name(state)?;

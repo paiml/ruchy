@@ -43,7 +43,11 @@ pub fn is_object(value: &Value) -> bool {
 pub fn get_object_field(value: &Value, field: &str) -> Option<Value> {
     match value {
         Value::Object(map) => map.get(field).cloned(),
-        Value::ObjectMut(cell) => cell.lock().unwrap().get(field).cloned(),
+        Value::ObjectMut(cell) => cell
+            .lock()
+            .expect("Mutex poisoned in get_object_field - indicates panic in another thread")
+            .get(field)
+            .cloned(),
         _ => None,
     }
 }
@@ -81,7 +85,9 @@ pub fn set_object_field(
             "Cannot mutate immutable object field '{field}'"
         ))),
         Value::ObjectMut(cell) => {
-            cell.lock().unwrap().insert(field.to_string(), new_value);
+            cell.lock()
+                .expect("Mutex poisoned in set_object_field - indicates panic in another thread")
+                .insert(field.to_string(), new_value);
             Ok(())
         }
         _ => Err(InterpreterError::RuntimeError(format!(
@@ -184,7 +190,11 @@ pub fn to_mutable(value: &Value) -> Value {
 /// ```
 pub fn to_immutable(value: &Value) -> Value {
     match value {
-        Value::ObjectMut(cell) => Value::Object(Arc::new(cell.lock().unwrap().clone())),
+        Value::ObjectMut(cell) => Value::Object(Arc::new(
+            cell.lock()
+                .expect("Mutex poisoned in to_immutable - indicates panic in another thread")
+                .clone(),
+        )),
         Value::Object(_) => value.clone(),
         _ => value.clone(),
     }
