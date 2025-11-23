@@ -645,7 +645,7 @@ mod tests {
         let result = parser.parse(json);
         assert!(result.is_ok());
 
-        let notebook = result.unwrap();
+        let notebook = result.expect("operation should succeed in test");
         assert_eq!(notebook.cells.len(), 1);
         assert_eq!(notebook.cells[0].id, "1");
     }
@@ -795,12 +795,13 @@ mod tests {
         let config = TestConfig::new();
 
         // Serialize to JSON
-        let json = serde_json::to_string(&config).unwrap();
+        let json = serde_json::to_string(&config).expect("operation should succeed in test");
         assert!(json.contains("tolerance"));
         assert!(json.contains("1e-6"));
 
         // Deserialize back
-        let deserialized: TestConfig = serde_json::from_str(&json).unwrap();
+        let deserialized: TestConfig =
+            serde_json::from_str(&json).expect("operation should succeed in test");
         assert_eq!(deserialized.tolerance, config.tolerance);
         assert_eq!(deserialized.coverage, config.coverage);
     }
@@ -810,8 +811,10 @@ mod tests {
         let code_type = CellType::Code;
         let markdown_type = CellType::Markdown;
 
-        let code_json = serde_json::to_string(&code_type).unwrap();
-        let markdown_json = serde_json::to_string(&markdown_type).unwrap();
+        let code_json =
+            serde_json::to_string(&code_type).expect("operation should succeed in test");
+        let markdown_json =
+            serde_json::to_string(&markdown_type).expect("operation should succeed in test");
 
         assert_eq!(code_json, "\"code\"");
         assert_eq!(markdown_json, "\"markdown\"");
@@ -846,8 +849,9 @@ mod tests {
         };
 
         // Serialize and deserialize
-        let json = serde_json::to_string(&notebook).unwrap();
-        let deserialized: Notebook = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&notebook).expect("operation should succeed in test");
+        let deserialized: Notebook =
+            serde_json::from_str(&json).expect("operation should succeed in test");
 
         assert_eq!(deserialized.cells.len(), 1);
         assert_eq!(deserialized.cells[0].id, "test_cell");
