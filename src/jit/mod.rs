@@ -52,8 +52,10 @@ mod tests {
     #[ignore = "Enable once JIT implementation is complete"]
     fn test_jit_simple_arithmetic() {
         let code = "2 + 2";
-        let ast = Parser::new(code).parse().unwrap();
-        let result = jit_execute(&ast).unwrap();
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let result = jit_execute(&ast).expect("operation should succeed in test");
         assert_eq!(result, 4);
     }
 
@@ -70,8 +72,10 @@ mod tests {
             }
             fib(10)
         ";
-        let ast = Parser::new(code).parse().unwrap();
-        let result = jit_execute(&ast).unwrap();
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let result = jit_execute(&ast).expect("operation should succeed in test");
         assert_eq!(result, 55); // fibonacci(10) = 55
     }
 }
