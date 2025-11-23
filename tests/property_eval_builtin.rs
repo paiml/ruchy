@@ -52,7 +52,7 @@ proptest! {
         let result_neg = eval_builtin_function("__builtin_abs__", &[Value::Integer(-x)]);
 
         prop_assert!(result_pos.is_ok() && result_neg.is_ok());
-        prop_assert_eq!(result_pos.unwrap(), result_neg.unwrap(),
+        prop_assert_eq!(result_pos.expect("operation should succeed in test"), result_neg.expect("operation should succeed in test"),
             "abs({}) ≠ abs({})", x, -x);
     }
 
@@ -137,7 +137,7 @@ proptest! {
             &[Value::Integer(x), Value::Integer(0)]);
 
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(1)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(1)),
             "pow({}, 0) ≠ 1", x);
     }
 
@@ -149,7 +149,7 @@ proptest! {
             &[Value::Integer(x), Value::Integer(1)]);
 
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(x)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(x)),
             "pow({}, 1) ≠ {}", x, x);
     }
 
@@ -162,7 +162,7 @@ proptest! {
             &[Value::Integer(2), Value::Integer(i64::from(n))]);
 
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(expected)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(expected)),
             "pow(2, {}) ≠ {}", n, expected);
     }
 
@@ -274,7 +274,7 @@ proptest! {
 
         let result = eval_builtin_function("__builtin_len__", &[array]);
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(elements.len() as i64)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(elements.len() as i64)),
             "len(array) ≠ {}", elements.len());
     }
 
@@ -284,7 +284,7 @@ proptest! {
     fn prop_len_string(s in ".*") {
         let result = eval_builtin_function("__builtin_len__", &[Value::String(Arc::from(s.as_str()))]);
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(s.len() as i64)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(s.len() as i64)),
             "len(\"{}\") ≠ {}", s, s.len());
     }
 
@@ -376,7 +376,7 @@ proptest! {
             // int(str(x))
             let int_result = eval_builtin_function("__builtin_int__", &[Value::String(s)]);
             prop_assert!(int_result.is_ok());
-            prop_assert_eq!(int_result.unwrap(), Some(Value::Integer(x)),
+            prop_assert_eq!(int_result.expect("operation should succeed in test"), Some(Value::Integer(x)),
                 "int(str({})) ≠ {}", x, x);
         }
     }
@@ -413,7 +413,7 @@ proptest! {
         let s = x.to_string();
         let result = eval_builtin_function("__builtin_parse_int__", &[Value::String(Arc::from(s.as_str()))]);
         prop_assert!(result.is_ok());
-        prop_assert_eq!(result.unwrap(), Some(Value::Integer(x)),
+        prop_assert_eq!(result.expect("operation should succeed in test"), Some(Value::Integer(x)),
             "parse_int(\"{}\") ≠ {}", s, x);
     }
 }
@@ -665,7 +665,10 @@ fn test_assert_eq_success() {
     );
     assert!(result.is_ok());
     // assert_eq returns Nil on success
-    assert_eq!(result.unwrap(), Some(Value::Nil));
+    assert_eq!(
+        result.expect("operation should succeed in test"),
+        Some(Value::Nil)
+    );
 }
 
 /// Unit test: `assert_eq` fails on unequal values
@@ -686,7 +689,10 @@ fn test_assert_eq_failure() {
 fn test_assert_true() {
     let result = eval_builtin_function("__builtin_assert__", &[Value::Bool(true)]);
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), Some(Value::Nil));
+    assert_eq!(
+        result.expect("operation should succeed in test"),
+        Some(Value::Nil)
+    );
 }
 
 /// Unit test: assert fails on false
@@ -705,7 +711,7 @@ fn test_dbg_passthrough() {
     let test_value = Value::Integer(42);
     let result = eval_builtin_function("__builtin_dbg__", &[test_value]);
     assert!(result.is_ok());
-    match result.unwrap() {
+    match result.expect("operation should succeed in test") {
         Some(Value::Integer(42)) => (), // Expected
         other => panic!("dbg should return input value, got {other:?}"),
     }
@@ -1651,11 +1657,15 @@ fn test_compute_hash() {
     use std::fs;
 
     // Create temp file with known content
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("test.txt");
-    fs::write(&file_path, "test content").unwrap();
+    fs::write(&file_path, "test content").expect("operation should succeed in test");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_compute_hash__", &[path]);
 
     assert!(result.is_ok(), "compute_hash should succeed");
@@ -1677,11 +1687,15 @@ fn test_compute_hash() {
 /// Unit test: `fs_read` reads file content and returns `Result::Ok`
 #[test]
 fn test_fs_read() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("test.txt");
-    std::fs::write(&file_path, "test content").unwrap();
+    std::fs::write(&file_path, "test content").expect("operation should succeed in test");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_read__", &[path]);
 
     assert!(result.is_ok(), "fs_read should succeed");
@@ -1699,10 +1713,14 @@ fn test_fs_read() {
 /// Unit test: `fs_write` writes content to file and returns `Result::Ok`
 #[test]
 fn test_fs_write() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("output.txt");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let content = Value::String(Arc::from("test write"));
     let result = eval_builtin_function("__builtin_fs_write__", &[path, content]);
 
@@ -1713,19 +1731,23 @@ fn test_fs_write() {
 
     // Verify file was created
     assert!(file_path.exists(), "File should be created");
-    let written = std::fs::read_to_string(&file_path).unwrap();
+    let written = std::fs::read_to_string(&file_path).expect("operation should succeed in test");
     assert_eq!(written, "test write", "Content should match");
 }
 
 /// Unit test: `fs_exists` checks if path exists
 #[test]
 fn test_fs_exists() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let existing_file = temp_dir.path().join("exists.txt");
-    std::fs::write(&existing_file, "exists").unwrap();
+    std::fs::write(&existing_file, "exists").expect("operation should succeed in test");
 
     // Test existing file
-    let path = Value::String(Arc::from(existing_file.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        existing_file
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_exists__", &[path]);
     assert!(result.is_ok(), "fs_exists should succeed");
     if let Ok(Some(Value::Bool(exists))) = result {
@@ -1734,7 +1756,11 @@ fn test_fs_exists() {
 
     // Test non-existing file
     let non_existing = temp_dir.path().join("not_exists.txt");
-    let path2 = Value::String(Arc::from(non_existing.to_str().unwrap()));
+    let path2 = Value::String(Arc::from(
+        non_existing
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result2 = eval_builtin_function("__builtin_fs_exists__", &[path2]);
     if let Ok(Some(Value::Bool(exists))) = result2 {
         assert!(!exists, "Non-existing file should return false");
@@ -1744,10 +1770,12 @@ fn test_fs_exists() {
 /// Unit test: `fs_create_dir` creates directory
 #[test]
 fn test_fs_create_dir() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let new_dir = temp_dir.path().join("new_dir");
 
-    let path = Value::String(Arc::from(new_dir.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        new_dir.to_str().expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_create_dir__", &[path]);
 
     assert!(result.is_ok(), "fs_create_dir should succeed");
@@ -1763,13 +1791,17 @@ fn test_fs_create_dir() {
 /// Unit test: `fs_remove_file` removes a file
 #[test]
 fn test_fs_remove_file() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("to_remove.txt");
-    std::fs::write(&file_path, "remove me").unwrap();
+    std::fs::write(&file_path, "remove me").expect("operation should succeed in test");
 
     assert!(file_path.exists(), "File should exist before removal");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_remove_file__", &[path]);
 
     assert!(result.is_ok(), "fs_remove_file should succeed");
@@ -1784,13 +1816,15 @@ fn test_fs_remove_file() {
 /// Unit test: `fs_remove_dir` removes a directory
 #[test]
 fn test_fs_remove_dir() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let dir_path = temp_dir.path().join("to_remove_dir");
-    std::fs::create_dir(&dir_path).unwrap();
+    std::fs::create_dir(&dir_path).expect("operation should succeed in test");
 
     assert!(dir_path.exists(), "Directory should exist before removal");
 
-    let path = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        dir_path.to_str().expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_remove_dir__", &[path]);
 
     assert!(result.is_ok(), "fs_remove_dir should succeed");
@@ -1805,33 +1839,45 @@ fn test_fs_remove_dir() {
 /// Unit test: `fs_copy` copies a file
 #[test]
 fn test_fs_copy() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let source_file = temp_dir.path().join("source.txt");
     let dest_file = temp_dir.path().join("dest.txt");
-    std::fs::write(&source_file, "copy me").unwrap();
+    std::fs::write(&source_file, "copy me").expect("operation should succeed in test");
 
-    let from = Value::String(Arc::from(source_file.to_str().unwrap()));
-    let to = Value::String(Arc::from(dest_file.to_str().unwrap()));
+    let from = Value::String(Arc::from(
+        source_file
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
+    let to = Value::String(Arc::from(
+        dest_file
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_copy__", &[from, to]);
 
     assert!(result.is_ok(), "fs_copy should succeed");
 
     // Verify file was copied
     assert!(dest_file.exists(), "Destination file should exist");
-    let content = std::fs::read_to_string(&dest_file).unwrap();
+    let content = std::fs::read_to_string(&dest_file).expect("operation should succeed in test");
     assert_eq!(content, "copy me", "Content should match source");
 }
 
 /// Unit test: `fs_rename` renames/moves a file
 #[test]
 fn test_fs_rename() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let old_path = temp_dir.path().join("old_name.txt");
     let new_path = temp_dir.path().join("new_name.txt");
-    std::fs::write(&old_path, "rename me").unwrap();
+    std::fs::write(&old_path, "rename me").expect("operation should succeed in test");
 
-    let from = Value::String(Arc::from(old_path.to_str().unwrap()));
-    let to = Value::String(Arc::from(new_path.to_str().unwrap()));
+    let from = Value::String(Arc::from(
+        old_path.to_str().expect("operation should succeed in test"),
+    ));
+    let to = Value::String(Arc::from(
+        new_path.to_str().expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_rename__", &[from, to]);
 
     assert!(result.is_ok(), "fs_rename should succeed");
@@ -1839,18 +1885,22 @@ fn test_fs_rename() {
     // Verify file was renamed
     assert!(!old_path.exists(), "Old path should not exist");
     assert!(new_path.exists(), "New path should exist");
-    let content = std::fs::read_to_string(&new_path).unwrap();
+    let content = std::fs::read_to_string(&new_path).expect("operation should succeed in test");
     assert_eq!(content, "rename me", "Content should be preserved");
 }
 
 /// Unit test: `fs_metadata` returns file metadata
 #[test]
 fn test_fs_metadata() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("metadata.txt");
-    std::fs::write(&file_path, "12345").unwrap();
+    std::fs::write(&file_path, "12345").expect("operation should succeed in test");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_metadata__", &[path]);
 
     assert!(result.is_ok(), "fs_metadata should succeed");
@@ -1872,15 +1922,17 @@ fn test_fs_metadata() {
 /// Unit test: `fs_read_dir` reads directory contents
 #[test]
 fn test_fs_read_dir() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let dir_path = temp_dir.path().join("read_dir_test");
-    std::fs::create_dir(&dir_path).unwrap();
+    std::fs::create_dir(&dir_path).expect("operation should succeed in test");
 
     // Create some files
-    std::fs::write(dir_path.join("file1.txt"), "one").unwrap();
-    std::fs::write(dir_path.join("file2.txt"), "two").unwrap();
+    std::fs::write(dir_path.join("file1.txt"), "one").expect("operation should succeed in test");
+    std::fs::write(dir_path.join("file2.txt"), "two").expect("operation should succeed in test");
 
-    let path = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        dir_path.to_str().expect("operation should succeed in test"),
+    ));
     let result = eval_builtin_function("__builtin_fs_read_dir__", &[path]);
 
     assert!(result.is_ok(), "fs_read_dir should succeed");
@@ -1907,15 +1959,19 @@ fn test_fs_canonicalize() {
 /// Unit test: `fs_is_file` checks if path is a file
 #[test]
 fn test_fs_is_file() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("is_file_test.txt");
     let dir_path = temp_dir.path().join("is_file_dir");
 
-    std::fs::write(&file_path, "file").unwrap();
-    std::fs::create_dir(&dir_path).unwrap();
+    std::fs::write(&file_path, "file").expect("operation should succeed in test");
+    std::fs::create_dir(&dir_path).expect("operation should succeed in test");
 
     // Test file
-    let path1 = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path1 = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
     let result1 = eval_builtin_function("__builtin_fs_is_file__", &[path1]);
     assert!(result1.is_ok(), "fs_is_file should succeed");
     if let Ok(Some(Value::Bool(is_file))) = result1 {
@@ -1923,7 +1979,9 @@ fn test_fs_is_file() {
     }
 
     // Test directory
-    let path2 = Value::String(Arc::from(dir_path.to_str().unwrap()));
+    let path2 = Value::String(Arc::from(
+        dir_path.to_str().expect("operation should succeed in test"),
+    ));
     let result2 = eval_builtin_function("__builtin_fs_is_file__", &[path2]);
     if let Ok(Some(Value::Bool(is_file))) = result2 {
         assert!(!is_file, "Directory should return false");
@@ -1974,7 +2032,11 @@ fn test_env_set_var() {
     // Verify variable was set
     let var = std::env::var("RUCHY_TEST_SET_VAR");
     assert!(var.is_ok(), "Variable should be set");
-    assert_eq!(var.unwrap(), "new_value", "Value should match");
+    assert_eq!(
+        var.expect("operation should succeed in test"),
+        "new_value",
+        "Value should match"
+    );
 
     // Cleanup
     std::env::remove_var("RUCHY_TEST_SET_VAR");
@@ -2005,11 +2067,14 @@ fn test_env_remove_var() {
 #[test]
 fn test_env_set_current_dir() {
     // Save current directory
-    let original_dir = std::env::current_dir().unwrap();
+    let original_dir = std::env::current_dir().expect("operation should succeed in test");
 
     // Create temp directory
-    let temp_dir = TempDir::new().unwrap();
-    let temp_path = temp_dir.path().to_str().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
+    let temp_path = temp_dir
+        .path()
+        .to_str()
+        .expect("operation should succeed in test");
 
     let path = Value::String(Arc::from(temp_path));
     let result = eval_builtin_function("__builtin_env_set_current_dir__", &[path]);
@@ -2018,15 +2083,15 @@ fn test_env_set_current_dir() {
     assert!(matches!(result, Ok(Some(Value::Nil))), "Should return Nil");
 
     // Verify directory was changed
-    let new_dir = std::env::current_dir().unwrap();
+    let new_dir = std::env::current_dir().expect("operation should succeed in test");
     assert_eq!(
-        new_dir.to_str().unwrap(),
+        new_dir.to_str().expect("operation should succeed in test"),
         temp_path,
         "Current directory should be changed"
     );
 
     // Restore original directory
-    std::env::set_current_dir(original_dir).unwrap();
+    std::env::set_current_dir(original_dir).expect("operation should succeed in test");
 }
 
 // ============================================================================
@@ -2311,9 +2376,11 @@ fn test_json_set_simple_path() {
 /// Coverage target: `eval_json_write` (line 2655)
 #[test]
 fn test_json_write_basic() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("test.json");
-    let file_path_str = file_path.to_str().unwrap();
+    let file_path_str = file_path
+        .to_str()
+        .expect("operation should succeed in test");
 
     let path = Value::String(Arc::from(file_path_str));
     let data = Value::from_string(r#"{"name": "Alice", "age": 30}"#.to_string());
@@ -2325,7 +2392,7 @@ fn test_json_write_basic() {
     assert!(file_path.exists(), "JSON file should be created");
 
     // Verify content is valid JSON
-    let content = std::fs::read_to_string(&file_path).unwrap();
+    let content = std::fs::read_to_string(&file_path).expect("operation should succeed in test");
     assert!(content.contains("name"), "JSON should contain written data");
 }
 
@@ -2333,13 +2400,18 @@ fn test_json_write_basic() {
 /// Coverage target: `eval_json_read` (line 2641)
 #[test]
 fn test_json_read_basic() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("test.json");
 
     // Write test JSON file
-    std::fs::write(&file_path, r#"{"name": "Bob", "score": 95}"#).unwrap();
+    std::fs::write(&file_path, r#"{"name": "Bob", "score": 95}"#)
+        .expect("operation should succeed in test");
 
-    let path = Value::String(Arc::from(file_path.to_str().unwrap()));
+    let path = Value::String(Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    ));
 
     let result = eval_builtin_function("__builtin_json_read__", &[path]);
     assert!(result.is_ok(), "json_read should succeed");
@@ -2356,9 +2428,13 @@ fn test_json_read_basic() {
 /// Property: write(read(file)) preserves data
 #[test]
 fn test_json_write_read_roundtrip() {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new().expect("operation should succeed in test");
     let file_path = temp_dir.path().join("roundtrip.json");
-    let file_path_str = Arc::from(file_path.to_str().unwrap());
+    let file_path_str = Arc::from(
+        file_path
+            .to_str()
+            .expect("operation should succeed in test"),
+    );
 
     // Original data
     let original = Value::from_string(r#"{"test": true, "count": 42}"#.to_string());
