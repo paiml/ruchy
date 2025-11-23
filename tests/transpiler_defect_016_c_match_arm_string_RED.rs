@@ -39,7 +39,6 @@
 //!
 //! **Test Strategy**: EXTREME TDD (RED → GREEN → REFACTOR)
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::TempDir;
 

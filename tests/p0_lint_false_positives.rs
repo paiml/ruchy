@@ -2,7 +2,6 @@
 /// P0-LINT: False Positive TDD Tests
 /// These tests define the expected behavior for variable usage tracking
 /// to eliminate false positives in the lint tool
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

@@ -8,7 +8,6 @@
 //! 2. Integer parameters incorrectly inferred as `&str`
 //! 3. Vector return types incorrectly inferred as `i32`
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Bug 1: Boolean return type inference

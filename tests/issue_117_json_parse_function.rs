@@ -5,7 +5,6 @@
 // ROOT CAUSE: Benchmarks expect parse_json() function, but only JSON.parse() method was implemented
 // FIX: Register "parse_json" and "stringify_json" as builtin functions
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 #[test]
