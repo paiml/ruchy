@@ -69,7 +69,7 @@ impl HtmlDocument {
         let dom = parse_document(RcDom::default(), Default::default())
             .from_utf8()
             .read_from(&mut content.as_bytes())
-            .unwrap();
+            .expect("HTML content should be valid UTF-8");
 
         Self { dom: Arc::new(dom) }
     }
@@ -375,56 +375,69 @@ mod tests {
     #[test]
     fn test_select_by_tag() {
         let html = HtmlDocument::parse("<div><p>Test</p></div>");
-        let elements = html.select("p").unwrap();
+        let elements = html.select("p").expect("operation should succeed in test");
         assert_eq!(elements.len(), 1);
     }
 
     #[test]
     fn test_select_by_class() {
         let html = HtmlDocument::parse("<div class='test'>Hello</div>");
-        let elements = html.select(".test").unwrap();
+        let elements = html
+            .select(".test")
+            .expect("operation should succeed in test");
         assert_eq!(elements.len(), 1);
     }
 
     #[test]
     fn test_element_text() {
         let html = HtmlDocument::parse("<p>Hello World</p>");
-        let p = html.query_selector("p").unwrap().unwrap();
+        let p = html
+            .query_selector("p")
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         assert_eq!(p.text().trim(), "Hello World");
     }
 
     #[test]
     fn test_element_attr() {
         let html = HtmlDocument::parse("<a href='test.html'>Link</a>");
-        let link = html.query_selector("a").unwrap().unwrap();
+        let link = html
+            .query_selector("a")
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         assert_eq!(link.attr("href"), Some("test.html".to_string()));
     }
 
     #[test]
     fn test_element_attr_missing() {
         let html = HtmlDocument::parse("<a>Link</a>");
-        let link = html.query_selector("a").unwrap().unwrap();
+        let link = html
+            .query_selector("a")
+            .expect("operation should succeed in test")
+            .expect("operation should succeed in test");
         assert_eq!(link.attr("href"), None);
     }
 
     #[test]
     fn test_multiple_elements() {
         let html = HtmlDocument::parse("<p>1</p><p>2</p><p>3</p>");
-        let elements = html.select("p").unwrap();
+        let elements = html.select("p").expect("operation should succeed in test");
         assert_eq!(elements.len(), 3);
     }
 
     #[test]
     fn test_query_selector_none() {
         let html = HtmlDocument::parse("<div>Test</div>");
-        let element = html.query_selector("p").unwrap();
+        let element = html
+            .query_selector("p")
+            .expect("operation should succeed in test");
         assert!(element.is_none());
     }
 
     #[test]
     fn test_malformed_html() {
         let html = HtmlDocument::parse("<div><p>Unclosed");
-        let elements = html.select("p").unwrap();
+        let elements = html.select("p").expect("operation should succeed in test");
         assert_eq!(elements.len(), 1);
     }
 
@@ -432,7 +445,9 @@ mod tests {
     fn test_method_chaining_simulation() {
         // Simulate the exact pattern from test_http002d_11
         let html = HtmlDocument::parse("<div class='content'>Hello World</div>");
-        let elements = html.select(".content").unwrap();
+        let elements = html
+            .select(".content")
+            .expect("operation should succeed in test");
         assert_eq!(elements.len(), 1, "Should have 1 element");
 
         let element = &elements[0];
@@ -443,7 +458,7 @@ mod tests {
     #[test]
     fn test_empty_html() {
         let html = HtmlDocument::parse("");
-        let elements = html.select("*").unwrap();
+        let elements = html.select("*").expect("operation should succeed in test");
         assert_eq!(elements.len(), 0);
     }
 
