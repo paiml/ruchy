@@ -442,7 +442,9 @@ mod tests {
         session.add_goal("forall x, x = x".to_string());
         assert_eq!(session.goals.len(), 1);
         assert!(!session.is_complete());
-        let current_goal = session.current_goal().unwrap();
+        let current_goal = session
+            .current_goal()
+            .expect("operation should succeed in test");
         assert_eq!(current_goal.statement, "forall x, x = x");
     }
     #[test]
@@ -451,7 +453,9 @@ mod tests {
         session.add_goal("goal1".to_string());
         session.add_goal("goal2".to_string());
         assert_eq!(session.goals.len(), 2);
-        let current = session.current_goal().unwrap();
+        let current = session
+            .current_goal()
+            .expect("operation should succeed in test");
         assert_eq!(current.statement, "goal1");
     }
     #[test]
@@ -467,7 +471,9 @@ mod tests {
         let mut session = create_test_session();
         session.add_goal("original goal".to_string());
         session.update_goal("updated goal".to_string());
-        let current = session.current_goal().unwrap();
+        let current = session
+            .current_goal()
+            .expect("operation should succeed in test");
         assert_eq!(current.statement, "updated goal");
     }
     #[test]
@@ -551,11 +557,17 @@ mod tests {
         let mut session = create_test_session();
         let result = prover
             .process_input(&mut session, "prove forall x, x = x")
-            .unwrap();
+            .expect("operation should succeed in test");
         match result {
             ProofResult::Progress => {
                 assert_eq!(session.goals.len(), 1);
-                assert_eq!(session.current_goal().unwrap().statement, "forall x, x = x");
+                assert_eq!(
+                    session
+                        .current_goal()
+                        .expect("operation should succeed in test")
+                        .statement,
+                    "forall x, x = x"
+                );
             }
             _ => panic!("Expected Progress result"),
         }
@@ -564,7 +576,9 @@ mod tests {
     fn test_process_empty_input() {
         let mut prover = create_test_prover();
         let mut session = create_test_session();
-        let result = prover.process_input(&mut session, "").unwrap();
+        let result = prover
+            .process_input(&mut session, "")
+            .expect("operation should succeed in test");
         match result {
             ProofResult::Failed(msg) => {
                 assert!(msg.contains("Unknown command"));
@@ -665,7 +679,10 @@ mod tests {
         // Update current goal
         session.update_goal("modified subgoal".to_string());
         assert_eq!(
-            session.current_goal().unwrap().statement,
+            session
+                .current_goal()
+                .expect("operation should succeed in test")
+                .statement,
             "modified subgoal"
         );
         // Complete remaining goals
