@@ -171,7 +171,10 @@ impl TransactionalState {
             return Err(anyhow!("Transaction ID mismatch"));
         }
         // Restore state from snapshot
-        let tx = self.transactions.pop().unwrap();
+        let tx = self
+            .transactions
+            .pop()
+            .expect("transaction stack must not be empty after last() check succeeded");
         self.bindings = tx.bindings_snapshot;
         self.binding_mutability = tx.mutability_snapshot;
         // Rollback arena
@@ -542,12 +545,14 @@ mod tests {
         // Begin transaction
         let tx = state
             .begin_transaction(TransactionMetadata::default())
-            .unwrap();
+            .expect("operation should succeed in test");
         // Modify binding
         state.insert_binding("x".to_string(), Value::Integer(2), false);
         state.insert_binding("y".to_string(), Value::Integer(3), false);
         // Commit
-        state.commit_transaction(tx).unwrap();
+        state
+            .commit_transaction(tx)
+            .expect("operation should succeed in test");
         // Changes should persist
         assert_eq!(state.bindings.get("x"), Some(&Value::Integer(2)));
         assert_eq!(state.bindings.get("y"), Some(&Value::Integer(3)));
@@ -560,12 +565,14 @@ mod tests {
         // Begin transaction
         let tx = state
             .begin_transaction(TransactionMetadata::default())
-            .unwrap();
+            .expect("operation should succeed in test");
         // Modify binding
         state.insert_binding("x".to_string(), Value::Integer(2), false);
         state.insert_binding("y".to_string(), Value::Integer(3), false);
         // Rollback
-        state.rollback_transaction(tx).unwrap();
+        state
+            .rollback_transaction(tx)
+            .expect("operation should succeed in test");
         // Changes should be reverted
         assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
         assert_eq!(state.bindings.get("y"), None);
@@ -578,7 +585,7 @@ mod tests {
     //     state.insert_binding("x".to_string(), Value::Integer(1), false);
     //
     //     {
-    //         let sp = state.savepoint().unwrap();
+    //         let sp = state.savepoint().expect("operation should succeed in test");
     //         state.insert_binding("x".to_string(), Value::Integer(2), false);
     //         // SavePoint dropped here, automatic rollback
     //     }
