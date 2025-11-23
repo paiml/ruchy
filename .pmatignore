@@ -1,4 +1,7 @@
-# Exclude disabled test directories from PMAT analysis
+# Exclude test directories from PMAT analysis
+# (unwrap() is acceptable in tests, only production code matters)
+tests/
+tests/**
 tests_temp_disabled_for_sprint7_mutation/
 tests_temp_disabled_for_sprint7_mutation/**
 tests.disabled/
