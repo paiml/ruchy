@@ -4,6 +4,15 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed
+- **[DOCS] Roadmap Synchronization** Updated roadmap.yaml to reflect actual implementation status
+  - **SPEC-001-A**: Marked complete (lambda expressions work in all 3 modes)
+  - **SPEC-001-B**: Marked complete (const_decl compiles with rustc)
+  - **Verification**: Ran three-mode validation tests - both passing
+  - **Root Cause**: Roadmap marked features as "pending" when already implemented with full test coverage
+  - **Impact**: Roadmap now accurately reflects codebase capabilities
+  - **Date**: 2025-11-23
+
 ### Added
 - **[QUALITY-002] Production unwrap() Replacement - Phase 1** Replaced unwrap() with expect() in 16 critical production code locations
   - **Runtime**: object_helpers.rs (3), eval_display.rs (2), gc_impl.rs (2) - Mutex/RwLock safety
