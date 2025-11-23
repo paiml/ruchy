@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn test_validate_directory_empty() {
         let harness = RuchyTestHarness::new();
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let result = harness.validate_directory(temp_dir.path());
         assert!(result.is_ok());
         if let Ok(results) = result {
@@ -321,9 +321,9 @@ mod tests {
     #[test]
     fn test_validate_directory_with_ruchy_file() {
         let harness = RuchyTestHarness::new();
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let file_path = temp_dir.path().join("test.ruchy");
-        fs::write(&file_path, "let x = 1").unwrap();
+        fs::write(&file_path, "let x = 1").expect("operation should succeed in test");
 
         let result = harness.validate_directory(temp_dir.path());
         if let Ok(results) = result {
@@ -356,8 +356,14 @@ mod tests {
             stderr: Some("error".to_string()),
         };
         assert!(result.compiled);
-        assert_eq!(result.output.unwrap(), "output");
-        assert_eq!(result.stderr.unwrap(), "error");
+        assert_eq!(
+            result.output.expect("operation should succeed in test"),
+            "output"
+        );
+        assert_eq!(
+            result.stderr.expect("operation should succeed in test"),
+            "error"
+        );
     }
 
     #[test]
@@ -485,9 +491,17 @@ mod tests {
         assert!(result.parse_success);
         assert!(result.transpile_success);
         assert!(result.compile_success);
-        assert_eq!(result.execution_output.unwrap(), "42");
+        assert_eq!(
+            result
+                .execution_output
+                .expect("operation should succeed in test"),
+            "42"
+        );
         assert!(result.rust_code.is_some());
-        assert!(result.rust_code.unwrap().contains("main"));
+        assert!(result
+            .rust_code
+            .expect("operation should succeed in test")
+            .contains("main"));
     }
 
     #[test]
@@ -505,7 +519,12 @@ mod tests {
         assert!(result.parse_success);
         assert!(result.transpile_success);
         assert!(result.compile_success);
-        assert_eq!(result.execution_output.unwrap(), "42");
+        assert_eq!(
+            result
+                .execution_output
+                .expect("operation should succeed in test"),
+            "42"
+        );
         assert!(result.rust_code.is_none());
     }
 
@@ -519,7 +538,10 @@ mod tests {
 
         assert!(!result.compiled);
         assert!(result.output.is_none());
-        assert_eq!(result.stderr.unwrap(), "compilation error");
+        assert_eq!(
+            result.stderr.expect("operation should succeed in test"),
+            "compilation error"
+        );
     }
 
     #[test]
@@ -531,7 +553,10 @@ mod tests {
         };
 
         assert!(result.compiled);
-        assert_eq!(result.output.unwrap(), "Hello, World!");
+        assert_eq!(
+            result.output.expect("operation should succeed in test"),
+            "Hello, World!"
+        );
         assert!(result.stderr.is_none());
     }
 
@@ -546,7 +571,10 @@ mod tests {
         assert!(result.compiled);
         assert!(result.output.is_some());
         assert!(result.stderr.is_some());
-        assert!(result.stderr.unwrap().contains("warning"));
+        assert!(result
+            .stderr
+            .expect("operation should succeed in test")
+            .contains("warning"));
     }
 
     #[test]
