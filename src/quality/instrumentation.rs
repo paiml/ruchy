@@ -252,16 +252,16 @@ mod tests {
         coverage.mark_branch_executed("test.ruchy", "if_1");
         assert!(coverage
             .get_executed_lines("test.ruchy")
-            .unwrap()
+            .expect("operation should succeed in test")
             .contains(&5));
         assert!(coverage
             .get_executed_functions("test.ruchy")
-            .unwrap()
+            .expect("operation should succeed in test")
             .contains("main"));
         assert_eq!(
             coverage
                 .get_executed_branches("test.ruchy")
-                .unwrap()
+                .expect("operation should succeed in test")
                 .get("if_1"),
             Some(&1)
         );
@@ -304,10 +304,14 @@ use proptest::prelude::*;
         coverage2.mark_line_executed("test.ruchy", 2);
         coverage2.mark_function_executed("test.ruchy", "func2");
         coverage1.merge(&coverage2);
-        let lines = coverage1.get_executed_lines("test.ruchy").unwrap();
+        let lines = coverage1
+            .get_executed_lines("test.ruchy")
+            .expect("operation should succeed in test");
         assert!(lines.contains(&1));
         assert!(lines.contains(&2));
-        let functions = coverage1.get_executed_functions("test.ruchy").unwrap();
+        let functions = coverage1
+            .get_executed_functions("test.ruchy")
+            .expect("operation should succeed in test");
         assert!(functions.contains("func1"));
         assert!(functions.contains("func2"));
     }
