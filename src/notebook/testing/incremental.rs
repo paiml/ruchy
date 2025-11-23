@@ -154,7 +154,9 @@ impl IncrementalTester {
             self.find_cells_to_execute(notebook, changed_cells, &execution_order);
         // Execute or retrieve from cache
         for cell_id in &execution_order {
-            let cell = notebook.get_cell(cell_id).unwrap();
+            let cell = notebook
+                .get_cell(cell_id)
+                .expect("cell from execution order should exist in notebook");
             if cells_to_execute.contains(cell_id) {
                 // Execute and cache
                 let result = self.execute_cell(cell);
@@ -211,7 +213,9 @@ impl IncrementalTester {
                 to_execute.insert(cell_id.clone());
             }
             // Check if cached result is stale
-            let cell = notebook.get_cell(cell_id).unwrap();
+            let cell = notebook
+                .get_cell(cell_id)
+                .expect("cell from execution order should exist in notebook");
             if !self.is_cache_valid(cell_id, &cell.source) {
                 to_execute.insert(cell_id.clone());
             }
@@ -675,7 +679,7 @@ mod tests {
 
     #[test]
     fn test_test_result_cache_new() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let cache = TestResultCache::new(temp_dir.path().to_path_buf(), 10);
         assert_eq!(cache.max_size, 10);
         assert!(cache.cache.is_empty());
@@ -684,7 +688,7 @@ mod tests {
 
     #[test]
     fn test_cache_store_and_get() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let mut cache = TestResultCache::new(temp_dir.path().to_path_buf(), 10);
 
         let test_result = TestResult {
@@ -698,7 +702,7 @@ mod tests {
 
         let cached = cache.get("test_cell");
         assert!(cached.is_some());
-        let cached = cached.unwrap();
+        let cached = cached.expect("operation should succeed in test");
         assert_eq!(cached.cell_id, "test_cell");
         assert_eq!(cached.result.output, "test output");
         assert_eq!(cached.result.duration_ms, 100);
@@ -745,9 +749,18 @@ mod tests {
         let order = tracker.topological_sort(&notebook);
         assert_eq!(order.len(), 3);
         // cell1 should come before cell2, cell2 before cell3
-        let pos1 = order.iter().position(|x| x == "cell1").unwrap();
-        let pos2 = order.iter().position(|x| x == "cell2").unwrap();
-        let pos3 = order.iter().position(|x| x == "cell3").unwrap();
+        let pos1 = order
+            .iter()
+            .position(|x| x == "cell1")
+            .expect("operation should succeed in test");
+        let pos2 = order
+            .iter()
+            .position(|x| x == "cell2")
+            .expect("operation should succeed in test");
+        let pos3 = order
+            .iter()
+            .position(|x| x == "cell3")
+            .expect("operation should succeed in test");
         assert!(pos1 < pos2);
         assert!(pos2 < pos3);
     }
@@ -758,7 +771,10 @@ mod tests {
 
         let cell = notebook.get_cell("cell1");
         assert!(cell.is_some());
-        assert_eq!(cell.unwrap().source, "x = 1");
+        assert_eq!(
+            cell.expect("operation should succeed in test").source,
+            "x = 1"
+        );
 
         let nonexistent = notebook.get_cell("nonexistent");
         assert!(nonexistent.is_none());
