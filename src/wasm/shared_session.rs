@@ -305,7 +305,7 @@ impl GlobalRegistry {
                 size
             }
             Value::ObjectMut(cell) => {
-                let map = cell.lock().unwrap();
+                let map = cell.lock().expect("mutex lock should not be poisoned");
                 let mut size = 32; // HashMap + Mutex overhead
                 for (key, value) in map.iter() {
                     size += key.len(); // Key size
@@ -344,7 +344,7 @@ impl GlobalRegistry {
                 methods,
             } => {
                 let mut size = class_name.len() + 24; // Name + HashMap overhead
-                let fields_read = fields.read().unwrap();
+                let fields_read = fields.read().expect("rwlock should not be poisoned");
                 for (key, value) in fields_read.iter() {
                     size += key.len(); // Key size
                     size += self.estimate_value_size(value); // Value size
@@ -733,13 +733,13 @@ impl SharedSession {
     #[cfg(test)]
     ///
     /// let mut session = SharedSession::new();
-    /// session.execute("cell1", "let x = 42").unwrap();
+    /// session.execute("cell1", "let x = 42").expect("operation should succeed in test");
     ///
     /// // Save checkpoint
-    /// session.create_checkpoint("before_changes").unwrap();
+    /// session.create_checkpoint("before_changes").expect("operation should succeed in test");
     ///
     /// // Make some changes
-    /// session.execute("cell2", "let x = 100").unwrap();
+    /// session.execute("cell2", "let x = 100").expect("operation should succeed in test");
     ///
     /// // Can restore later with restore_from_checkpoint
     /// ```
@@ -1058,7 +1058,12 @@ mod tests {
         assert_eq!(step.cell_id, "test_cell");
         assert_eq!(step.estimated_time, 15.5);
         assert!(step.dependencies.is_some());
-        assert_eq!(step.dependencies.unwrap().len(), 2);
+        assert_eq!(
+            step.dependencies
+                .expect("operation should succeed in test")
+                .len(),
+            2
+        );
         assert!(step.can_skip);
         assert!(!step.skipped);
     }
