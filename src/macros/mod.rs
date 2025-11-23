@@ -222,7 +222,9 @@ mod tests {
     fn test_expand_non_macro_expression() {
         let expander = MacroExpander::new();
         let test_expr = create_test_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = expander.expand(&test_expr).unwrap();
+        let result = expander
+            .expand(&test_expr)
+            .expect("operation should succeed in test");
 
         match result.kind {
             ExprKind::Literal(Literal::Integer(42, None)) => {}
@@ -238,7 +240,9 @@ mod tests {
             args: vec![],
         });
 
-        let result = expander.expand(&macro_expr).unwrap();
+        let result = expander
+            .expand(&macro_expr)
+            .expect("operation should succeed in test");
         match result.kind {
             ExprKind::Literal(Literal::String(s)) => {
                 assert_eq!(s, "hello + world");
@@ -255,7 +259,9 @@ mod tests {
             args: vec![],
         });
 
-        let result = expander.expand(&macro_expr).unwrap();
+        let result = expander
+            .expand(&macro_expr)
+            .expect("operation should succeed in test");
         match result.kind {
             ExprKind::Literal(Literal::Integer(42, None)) => {}
             _ => panic!("Expected integer literal"),
@@ -270,7 +276,9 @@ mod tests {
             args: vec![],
         });
 
-        let result = expander.expand(&macro_expr).unwrap();
+        let result = expander
+            .expand(&macro_expr)
+            .expect("operation should succeed in test");
         match result.kind {
             ExprKind::Literal(Literal::String(s)) => {
                 assert_eq!(s, "test.ruchy");
@@ -287,7 +295,9 @@ mod tests {
             args: vec![],
         });
 
-        let result = expander.expand(&macro_expr).unwrap();
+        let result = expander
+            .expand(&macro_expr)
+            .expect("operation should succeed in test");
         // Should return the original expression unchanged
         match result.kind {
             ExprKind::MacroInvocation { name, .. } => {
