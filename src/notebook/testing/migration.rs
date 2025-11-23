@@ -467,7 +467,7 @@ mod tests {
     #[test]
     fn test_find_test_files_empty_dir() {
         let tool = MigrationTool::new(TestFramework::Nbval);
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let files = tool.find_test_files(temp_dir.path());
         assert_eq!(files.len(), 0);
     }
@@ -475,11 +475,13 @@ mod tests {
     #[test]
     fn test_find_test_files_nbval() {
         let tool = MigrationTool::new(TestFramework::Nbval);
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
 
         // Create test files
-        fs::write(temp_dir.path().join("test.ipynb"), "{}").unwrap();
-        fs::write(temp_dir.path().join("other.txt"), "data").unwrap();
+        fs::write(temp_dir.path().join("test.ipynb"), "{}")
+            .expect("operation should succeed in test");
+        fs::write(temp_dir.path().join("other.txt"), "data")
+            .expect("operation should succeed in test");
 
         let files = tool.find_test_files(temp_dir.path());
         assert_eq!(files.len(), 1);
@@ -489,20 +491,21 @@ mod tests {
     #[test]
     fn test_find_test_files_pytest() {
         let tool = MigrationTool::new(TestFramework::Pytest);
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
 
         // Create test files
         fs::write(
             temp_dir.path().join("test_example.py"),
             "def test_foo(): pass",
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         fs::write(
             temp_dir.path().join("example_test.py"),
             "def test_bar(): pass",
         )
-        .unwrap();
-        fs::write(temp_dir.path().join("regular.py"), "print('hi')").unwrap();
+        .expect("operation should succeed in test");
+        fs::write(temp_dir.path().join("regular.py"), "print('hi')")
+            .expect("operation should succeed in test");
 
         let files = tool.find_test_files(temp_dir.path());
         assert_eq!(files.len(), 2);
@@ -559,8 +562,8 @@ mod tests {
     #[test]
     fn test_migrate_directory_empty() {
         let tool = MigrationTool::new(TestFramework::Nbval);
-        let input_dir = tempdir().unwrap();
-        let output_dir = tempdir().unwrap();
+        let input_dir = tempdir().expect("operation should succeed in test");
+        let output_dir = tempdir().expect("operation should succeed in test");
 
         let result = tool.migrate_directory(input_dir.path(), output_dir.path());
         assert_eq!(result.stats.files_processed, 0);
