@@ -203,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_create_session_metadata() {
-        let metadata = Repl::create_session_metadata().unwrap();
+        let metadata = Repl::create_session_metadata().expect("operation should succeed in test");
         assert!(metadata.session_id.starts_with("ruchy-session-"));
         assert_eq!(metadata.ruchy_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(metadata.tags, vec!["interactive"]);
@@ -216,9 +216,9 @@ mod tests {
     #[test]
     fn test_create_session_metadata_unique_ids() {
         // Create multiple metadata objects to verify unique session IDs
-        let metadata1 = Repl::create_session_metadata().unwrap();
+        let metadata1 = Repl::create_session_metadata().expect("operation should succeed in test");
         std::thread::sleep(std::time::Duration::from_millis(2)); // Ensure different timestamps
-        let metadata2 = Repl::create_session_metadata().unwrap();
+        let metadata2 = Repl::create_session_metadata().expect("operation should succeed in test");
 
         // Verify both have proper format, even if timestamps might be same
         assert!(metadata1.session_id.starts_with("ruchy-session-"));
@@ -443,7 +443,10 @@ mod tests {
 
         // Test session_id format
         assert!(metadata.session_id.starts_with("ruchy-session-"));
-        let timestamp_part = metadata.session_id.strip_prefix("ruchy-session-").unwrap();
+        let timestamp_part = metadata
+            .session_id
+            .strip_prefix("ruchy-session-")
+            .expect("operation should succeed in test");
         assert!(timestamp_part.parse::<u64>().is_ok());
 
         // Test created_at is valid RFC3339
@@ -510,8 +513,14 @@ mod tests {
         let metadata2 = Repl::create_session_metadata()?;
 
         // Extract timestamps from session IDs
-        let ts1_str = metadata1.session_id.strip_prefix("ruchy-session-").unwrap();
-        let ts2_str = metadata2.session_id.strip_prefix("ruchy-session-").unwrap();
+        let ts1_str = metadata1
+            .session_id
+            .strip_prefix("ruchy-session-")
+            .expect("operation should succeed in test");
+        let ts2_str = metadata2
+            .session_id
+            .strip_prefix("ruchy-session-")
+            .expect("operation should succeed in test");
         let ts1: u64 = ts1_str.parse()?;
         let ts2: u64 = ts2_str.parse()?;
 
