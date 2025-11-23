@@ -963,10 +963,7 @@ mod tests {
         let result = execute_compilation(cmd);
         assert!(result.is_err());
 
-        let error_msg = format!(
-            "{}",
-            result.expect_err("operation should fail in test")
-        );
+        let error_msg = format!("{}", result.expect_err("operation should fail in test"));
         assert!(error_msg.contains("Compilation failed"));
     }
 

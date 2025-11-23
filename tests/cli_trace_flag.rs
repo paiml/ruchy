@@ -4,7 +4,6 @@
 //
 // Test naming convention: test_debugger_014_<scenario>
 
-
 /// Test #1: Verify --trace flag is recognized (doesn't error)
 #[test]
 fn test_debugger_014_trace_flag_recognized() {

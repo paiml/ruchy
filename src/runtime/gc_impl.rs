@@ -223,11 +223,7 @@ impl ConservativeGC {
             Value::Nil => 0,
             Value::String(s) => 24 + s.len(), // Rc overhead + string data
             Value::Array(arr) => {
-                24 + arr.len() * 8
-                    + arr
-                        .iter()
-                        .map(Self::estimate_object_size)
-                        .sum::<usize>()
+                24 + arr.len() * 8 + arr.iter().map(Self::estimate_object_size).sum::<usize>()
             }
             Value::Tuple(elements) => {
                 24 + elements.len() * 8
@@ -251,7 +247,9 @@ impl ConservativeGC {
                         .sum::<usize>()
             }
             Value::ObjectMut(cell) => {
-                let map = cell.lock().unwrap();
+                let map = cell.lock().expect(
+                    "Mutex poisoned in estimate_object_size - indicates panic in another thread",
+                );
                 56 + map.len() * 32 // Extra 8 bytes for RefCell borrow counter
                     + map
                         .iter()
@@ -276,7 +274,9 @@ impl ConservativeGC {
                 fields,
                 methods,
             } => {
-                let fields_read = fields.read().unwrap();
+                let fields_read = fields.read().expect(
+                    "RwLock poisoned in estimate_object_size - indicates panic in another thread",
+                );
                 48 + class_name.len()
                     + fields_read.len() * 32
                     + fields_read

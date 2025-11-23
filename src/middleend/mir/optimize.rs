@@ -484,7 +484,11 @@ impl CommonSubexpressionElimination {
             Place::Local(local) => format!("local({})", local.0),
             Place::Field(base, field) => format!("field({}, {})", Self::place_key(base), field.0),
             Place::Index(base, index) => {
-                format!("index({}, {})", Self::place_key(base), Self::place_key(index))
+                format!(
+                    "index({}, {})",
+                    Self::place_key(base),
+                    Self::place_key(index)
+                )
             }
             Place::Deref(base) => format!("deref({})", Self::place_key(base)),
         }
