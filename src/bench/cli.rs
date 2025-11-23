@@ -113,7 +113,7 @@ mod tests {
     /// RED: This test should PASS because `benchmark_cli()` is implemented
     #[test]
     fn test_cli_benchmark_echo() {
-        let results = benchmark_cli("echo 'test'", 5, 2).unwrap();
+        let results = benchmark_cli("echo 'test'", 5, 2).expect("operation should succeed in test");
 
         assert_eq!(results.total_requests, 5);
         assert_eq!(results.successful_requests, 5);
@@ -135,7 +135,7 @@ mod tests {
     /// Test CLI benchmark with sleep command (timing validation)
     #[test]
     fn test_cli_benchmark_timing() {
-        let results = benchmark_cli("sleep 0.01", 3, 1).unwrap();
+        let results = benchmark_cli("sleep 0.01", 3, 1).expect("operation should succeed in test");
 
         assert_eq!(results.total_requests, 3);
         assert_eq!(results.successful_requests, 3);
@@ -149,8 +149,10 @@ mod tests {
     /// Test warmup iterations don't affect timing
     #[test]
     fn test_cli_benchmark_warmup() {
-        let with_warmup = benchmark_cli("echo 'test'", 10, 5).unwrap();
-        let without_warmup = benchmark_cli("echo 'test'", 10, 0).unwrap();
+        let with_warmup =
+            benchmark_cli("echo 'test'", 10, 5).expect("operation should succeed in test");
+        let without_warmup =
+            benchmark_cli("echo 'test'", 10, 0).expect("operation should succeed in test");
 
         // Both should have same number of timed iterations
         assert_eq!(with_warmup.total_requests, 10);
@@ -169,7 +171,7 @@ mod tests {
             iterations in 1usize..20,
             warmup in 0usize..5,
         )| {
-            let results = benchmark_cli("echo 'test'", iterations, warmup).unwrap();
+            let results = benchmark_cli("echo 'test'", iterations, warmup).expect("operation should succeed in test");
 
             // All iterations should succeed
             prop_assert_eq!(results.successful_requests, iterations);
