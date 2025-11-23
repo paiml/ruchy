@@ -146,20 +146,22 @@ mod tests {
     #[test]
     fn test_cell_type_serialization() {
         let code = CellType::Code;
-        let json = serde_json::to_string(&code).unwrap();
+        let json = serde_json::to_string(&code).expect("operation should succeed in test");
         assert_eq!(json, r#""code""#);
 
         let markdown = CellType::Markdown;
-        let json = serde_json::to_string(&markdown).unwrap();
+        let json = serde_json::to_string(&markdown).expect("operation should succeed in test");
         assert_eq!(json, r#""markdown""#);
     }
 
     #[test]
     fn test_cell_type_deserialization() {
-        let code: CellType = serde_json::from_str(r#""code""#).unwrap();
+        let code: CellType =
+            serde_json::from_str(r#""code""#).expect("operation should succeed in test");
         assert_eq!(code, CellType::Code);
 
-        let markdown: CellType = serde_json::from_str(r#""markdown""#).unwrap();
+        let markdown: CellType =
+            serde_json::from_str(r#""markdown""#).expect("operation should succeed in test");
         assert_eq!(markdown, CellType::Markdown);
     }
 
@@ -186,7 +188,7 @@ mod tests {
     #[test]
     fn test_cell_serialization() {
         let cell = Cell::code("42");
-        let json = serde_json::to_string(&cell).unwrap();
+        let json = serde_json::to_string(&cell).expect("operation should succeed in test");
         assert!(json.contains(r#""cell_type":"code""#));
         assert!(json.contains(r#""source":"42""#));
         // output and execution_count should be omitted when None
@@ -200,7 +202,7 @@ mod tests {
         cell.output = Some("42".to_string());
         cell.execution_count = Some(1);
 
-        let json = serde_json::to_string(&cell).unwrap();
+        let json = serde_json::to_string(&cell).expect("operation should succeed in test");
         assert!(json.contains(r#""output":"42""#));
         assert!(json.contains(r#""execution_count":1"#));
     }
@@ -208,7 +210,7 @@ mod tests {
     #[test]
     fn test_cell_deserialization() {
         let json = r#"{"cell_type":"code","source":"42"}"#;
-        let cell: Cell = serde_json::from_str(json).unwrap();
+        let cell: Cell = serde_json::from_str(json).expect("operation should succeed in test");
         assert_eq!(cell.cell_type, CellType::Code);
         assert_eq!(cell.source, "42");
         assert!(cell.output.is_none());
@@ -259,7 +261,8 @@ mod tests {
         notebook.add_cell(Cell::markdown("# Hello"));
         notebook.add_cell(Cell::code("println(42)"));
 
-        let json = serde_json::to_string_pretty(&notebook).unwrap();
+        let json =
+            serde_json::to_string_pretty(&notebook).expect("operation should succeed in test");
         assert!(json.contains(r#""cells""#));
         assert!(json.contains(r#""metadata""#));
         assert!(json.contains(r#""language": "ruchy""#));
@@ -279,7 +282,8 @@ mod tests {
             }
         }"##;
 
-        let notebook: Notebook = serde_json::from_str(json).unwrap();
+        let notebook: Notebook =
+            serde_json::from_str(json).expect("operation should succeed in test");
         assert_eq!(notebook.cells.len(), 2);
         assert!(notebook.cells[0].is_markdown());
         assert!(notebook.cells[1].is_code());
@@ -294,10 +298,11 @@ mod tests {
         notebook.add_cell(Cell::markdown("This returns 42"));
 
         // Serialize
-        let json = serde_json::to_string(&notebook).unwrap();
+        let json = serde_json::to_string(&notebook).expect("operation should succeed in test");
 
         // Deserialize
-        let notebook2: Notebook = serde_json::from_str(&json).unwrap();
+        let notebook2: Notebook =
+            serde_json::from_str(&json).expect("operation should succeed in test");
 
         // Verify
         assert_eq!(notebook2.cells.len(), 3);
