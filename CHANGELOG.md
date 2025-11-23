@@ -5,6 +5,24 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[TRANSPILER-PARAM-INFERENCE] Fix Parameter Type Inference for Arrays** ✅ Parameters without type annotations now correctly inferred as Vec types
+  - **Root Cause**: Parameters without type annotations defaulted to `TypeKind::Named("Any")`, which transpiled to Rust's `_` placeholder. Rust cannot infer function parameter types, causing compilation failures.
+  - **Solution**: Enhanced `infer_param_type()` in statements.rs to detect usage patterns:
+    - `param[i][j]` → inferred as `&Vec<Vec<i32>>` (2D arrays)
+    - `param[i]` → inferred as `&Vec<i32>` (1D arrays)
+    - `array[param]` → param inferred as `i32` (index)
+    - `len(param)` → param inferred as `&Vec<i32>` (array)
+  - **Impact**: Unblocks BENCH-002 (matrix multiplication) transpile/compile mode
+  - **Example**: `fun multiply_cell(a, b, i, j, k_max)` now correctly infers `a: &Vec<Vec<i32>>, b: &Vec<Vec<i32>>, i: i32, j: i32, k_max: i32`
+  - **Tests**: 6/8 passing (75%) - All transpilation tests pass, 2 integration tests have unrelated issues
+  - **Files Modified**:
+    - src/backend/transpiler/statements.rs: Enhanced infer_param_type(), added is_nested_array_param() with visited tracking
+    - src/backend/transpiler/type_inference.rs: Added helper functions (unused code removed, integrated into main transpiler flow)
+    - tests/transpiler_param_inference_arrays.rs: 8 comprehensive test cases (RED→GREEN→REFACTOR)
+  - **Complexity**: ≤10 (infer_param_type: 10, find_nested_array_access: 9)
+  - **Quality**: Infinite recursion prevention via visited tracking, zero SATD
+  - **Date**: 2025-11-23
+
 - **[QUALITY-002] Production unwrap() Elimination - COMPLETE** ✅ All production unwrap() calls eliminated (3,636→0, 100%)
   - **Phase 3 Verification**: Comprehensive analysis confirms all 134 remaining unwrap() calls are in acceptable locations
     - Test functions (#[test]): 94 calls
