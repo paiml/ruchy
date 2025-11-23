@@ -507,35 +507,45 @@ mod tests {
     #[test]
     fn test_parse_result_sat() {
         let solver = SmtSolver::new(SmtBackend::Z3);
-        let result = solver.parse_result("sat").unwrap();
+        let result = solver
+            .parse_result("sat")
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Sat);
     }
 
     #[test]
     fn test_parse_result_unsat() {
         let solver = SmtSolver::new(SmtBackend::Z3);
-        let result = solver.parse_result("unsat").unwrap();
+        let result = solver
+            .parse_result("unsat")
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Unsat);
     }
 
     #[test]
     fn test_parse_result_unknown() {
         let solver = SmtSolver::new(SmtBackend::Z3);
-        let result = solver.parse_result("unknown").unwrap();
+        let result = solver
+            .parse_result("unknown")
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Unknown);
     }
 
     #[test]
     fn test_parse_result_timeout() {
         let solver = SmtSolver::new(SmtBackend::Z3);
-        let result = solver.parse_result("timeout").unwrap();
+        let result = solver
+            .parse_result("timeout")
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Timeout);
     }
 
     #[test]
     fn test_parse_result_error() {
         let solver = SmtSolver::new(SmtBackend::Z3);
-        let result = solver.parse_result("unexpected output").unwrap();
+        let result = solver
+            .parse_result("unexpected output")
+            .expect("operation should succeed in test");
         if let SmtResult::Error(msg) = result {
             assert!(msg.contains("Unexpected output"));
         } else {
@@ -648,11 +658,13 @@ mod tests {
         // Test case where output contains both "sat" and "unsat" - should prefer unsat
         let result = solver
             .parse_result("something unsat something sat")
-            .unwrap();
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Unsat);
 
         // Test case where output only contains "sat"
-        let result = solver.parse_result("the result is sat").unwrap();
+        let result = solver
+            .parse_result("the result is sat")
+            .expect("operation should succeed in test");
         assert_eq!(result, SmtResult::Sat);
     }
 
