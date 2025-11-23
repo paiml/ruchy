@@ -319,7 +319,7 @@ mod tests {
     use tempfile::TempDir;
     fn create_test_ruchy_file(dir: &Path, filename: &str, content: &str) -> std::path::PathBuf {
         let file_path = dir.join(filename);
-        fs::write(&file_path, content).unwrap();
+        fs::write(&file_path, content).expect("operation should succeed in test");
         file_path
     }
     fn create_test_project_structure(dir: &Path) -> std::path::PathBuf {
@@ -328,9 +328,9 @@ mod tests {
             dir.join("Cargo.toml"),
             "[package]\nname = \"test\"\nversion = \"0.1.0\"",
         )
-        .unwrap();
+        .expect("operation should succeed in test");
         // Create .ruchy directory
-        fs::create_dir_all(dir.join(".ruchy")).unwrap();
+        fs::create_dir_all(dir.join(".ruchy")).expect("operation should succeed in test");
         // Create some test Ruchy files
         create_test_ruchy_file(dir, "test.ruchy", "let x = 5\nprintln(x)");
         create_test_ruchy_file(dir, "simple.ruchy", "println(\"hello\")");
@@ -339,53 +339,56 @@ mod tests {
     // Test 1: Project Root Finding
     #[test]
     fn test_find_project_root_with_cargo_toml() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = temp_dir.path();
         // Create Cargo.toml
-        fs::write(project_dir.join("Cargo.toml"), "[package]").unwrap();
-        let found_root = find_project_root(project_dir).unwrap();
+        fs::write(project_dir.join("Cargo.toml"), "[package]")
+            .expect("operation should succeed in test");
+        let found_root = find_project_root(project_dir).expect("operation should succeed in test");
         assert_eq!(found_root, project_dir);
     }
     #[test]
     fn test_find_project_root_with_ruchy_dir() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = temp_dir.path();
         // Create .ruchy directory
-        fs::create_dir_all(project_dir.join(".ruchy")).unwrap();
-        let found_root = find_project_root(project_dir).unwrap();
+        fs::create_dir_all(project_dir.join(".ruchy")).expect("operation should succeed in test");
+        let found_root = find_project_root(project_dir).expect("operation should succeed in test");
         assert_eq!(found_root, project_dir);
     }
     #[test]
     fn test_find_project_root_from_file() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = temp_dir.path();
         // Create Cargo.toml
-        fs::write(project_dir.join("Cargo.toml"), "[package]").unwrap();
+        fs::write(project_dir.join("Cargo.toml"), "[package]")
+            .expect("operation should succeed in test");
         // Create a file in project
         let file_path = create_test_ruchy_file(project_dir, "test.ruchy", "let x = 5");
-        let found_root = find_project_root(&file_path).unwrap();
+        let found_root = find_project_root(&file_path).expect("operation should succeed in test");
         assert_eq!(found_root, project_dir);
     }
     #[test]
     fn test_find_project_root_nested() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = temp_dir.path();
         // Create nested directory structure
         let nested_dir = project_dir.join("src").join("deep");
-        fs::create_dir_all(&nested_dir).unwrap();
+        fs::create_dir_all(&nested_dir).expect("operation should succeed in test");
         // Create Cargo.toml at root
-        fs::write(project_dir.join("Cargo.toml"), "[package]").unwrap();
+        fs::write(project_dir.join("Cargo.toml"), "[package]")
+            .expect("operation should succeed in test");
         // Create file in nested directory
         let file_path = create_test_ruchy_file(&nested_dir, "nested.ruchy", "println(\"nested\")");
-        let found_root = find_project_root(&file_path).unwrap();
+        let found_root = find_project_root(&file_path).expect("operation should succeed in test");
         assert_eq!(found_root, project_dir);
     }
     #[test]
     fn test_find_project_root_fallback() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let some_dir = temp_dir.path().join("no_project_markers");
-        fs::create_dir_all(&some_dir).unwrap();
-        let found_root = find_project_root(&some_dir).unwrap();
+        fs::create_dir_all(&some_dir).expect("operation should succeed in test");
+        let found_root = find_project_root(&some_dir).expect("operation should succeed in test");
         // Should either fallback to current directory OR find a project root in parent hierarchy
         // Note: /tmp may have Cargo.toml or .ruchy, so we accept both behaviors
         assert!(
@@ -429,7 +432,7 @@ mod tests {
     // Test 3: Analysis Depth Parsing
     #[test]
     fn test_analysis_depth_parsing() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "depth_test.ruchy", "let x = 1");
         // Test all valid depth values
@@ -470,7 +473,7 @@ mod tests {
     // Test 4: Format Validation
     #[test]
     fn test_format_validation() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "format_test.ruchy", "let x = 1");
         let formats = vec![
@@ -509,7 +512,7 @@ mod tests {
     // Test 5: File vs Directory Processing
     #[test]
     fn test_single_file_processing() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "single.ruchy", "println(\"test\")");
         // This should not crash and should process the single file
@@ -524,7 +527,7 @@ mod tests {
     }
     #[test]
     fn test_directory_processing() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         // Create multiple files
         create_test_ruchy_file(&project_dir, "file1.ruchy", "let a = 1");
@@ -548,7 +551,7 @@ mod tests {
     }
     #[test]
     fn test_nonexistent_path() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let nonexistent = temp_dir.path().join("does_not_exist.ruchy");
         let result = enforce_quality_gates(
             &nonexistent,
@@ -565,13 +568,13 @@ mod tests {
     // Test 6: Configuration Loading
     #[test]
     fn test_custom_config_loading() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "config_test.ruchy", "let x = 1");
         // Create custom config
         let config_dir = temp_dir.path().join("custom_config");
-        fs::create_dir_all(&config_dir).unwrap();
-        fs::create_dir_all(config_dir.join(".ruchy")).unwrap();
+        fs::create_dir_all(&config_dir).expect("operation should succeed in test");
+        fs::create_dir_all(config_dir.join(".ruchy")).expect("operation should succeed in test");
         // Create custom score.toml
         let config_content = r#"
 min_score = 0.5
@@ -583,7 +586,8 @@ maintainability = 0.4
 safety = 0.4
 idiomaticity = 0.4
 "#;
-        fs::write(config_dir.join(".ruchy").join("score.toml"), config_content).unwrap();
+        fs::write(config_dir.join(".ruchy").join("score.toml"), config_content)
+            .expect("operation should succeed in test");
         let custom_config_path = config_dir.join("score.toml");
         let result = enforce_quality_gates(
             &file_path,
@@ -604,7 +608,7 @@ idiomaticity = 0.4
     // Test 7: Export Functionality
     #[test]
     fn test_export_directory_creation() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "export_test.ruchy", "let x = 1");
         let export_dir = temp_dir.path().join("exports");
@@ -624,7 +628,7 @@ idiomaticity = 0.4
     // Test 8: Error Handling
     #[test]
     fn test_invalid_ruchy_syntax() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         // Create file with invalid syntax
         let bad_file = create_test_ruchy_file(
@@ -641,7 +645,7 @@ idiomaticity = 0.4
     // Test 9: Verbose Output Mode
     #[test]
     fn test_verbose_mode_flag() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         let file_path = create_test_ruchy_file(&project_dir, "verbose_test.ruchy", "let x = 1");
         // Test both verbose modes (this mainly tests that verbose flag is accepted)
@@ -659,7 +663,7 @@ idiomaticity = 0.4
     // Test 10: Fail Fast Mode
     #[test]
     fn test_fail_fast_mode() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("operation should succeed in test");
         let project_dir = create_test_project_structure(temp_dir.path());
         // Create multiple files
         create_test_ruchy_file(&project_dir, "fail1.ruchy", "let a = 1");
