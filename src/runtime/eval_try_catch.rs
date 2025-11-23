@@ -254,7 +254,8 @@ mod mutation_tests {
         };
 
         // Pattern should match, so result should be Some
-        let result = try_catch_clause(&mut interp, &error_value, &catch_clause).unwrap();
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause)
+            .expect("operation should succeed in test");
         assert!(
             result.is_some(),
             "Matching pattern should return Some (! is critical)"
@@ -276,10 +277,11 @@ mod mutation_tests {
             )),
         };
 
-        let result = try_catch_clause(&mut interp, &error_value, &catch_clause).unwrap();
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause)
+            .expect("operation should succeed in test");
         assert!(result.is_some(), "Should not be stub Ok(None)");
         assert_eq!(
-            result.unwrap(),
+            result.expect("operation should succeed in test"),
             Value::Integer(99),
             "Should return actual body result"
         );
@@ -293,15 +295,16 @@ mod mutation_tests {
         // Test true case - Identifier pattern matches any value
         let pattern_match = Pattern::Identifier("x".to_string());
         let value_match = Value::Integer(42);
-        let result_match = pattern_matches(&mut interp, &pattern_match, &value_match).unwrap();
+        let result_match = pattern_matches(&mut interp, &pattern_match, &value_match)
+            .expect("operation should succeed in test");
         assert!(result_match, "Identifier pattern should match any value");
 
         // Test false case - Literal pattern with wrong value
         // This will fail if mutation replaces function with Ok(true) stub
         let pattern_nomatch = Pattern::Literal(Literal::Integer(99, None));
         let value_nomatch = Value::Integer(42);
-        let result_nomatch =
-            pattern_matches(&mut interp, &pattern_nomatch, &value_nomatch).unwrap();
+        let result_nomatch = pattern_matches(&mut interp, &pattern_nomatch, &value_nomatch)
+            .expect("operation should succeed in test");
         assert!(
             !result_nomatch,
             "Non-matching literal pattern should return false (not stub Ok(true))"
@@ -325,7 +328,7 @@ mod mutation_tests {
         let result = error_to_value(error);
 
         if let Value::Object(obj) = result {
-            let type_val = obj.get("type").unwrap();
+            let type_val = obj.get("type").expect("operation should succeed in test");
             assert!(
                 matches!(type_val, Value::String(_)),
                 "TypeError should have type field"
@@ -346,7 +349,7 @@ mod mutation_tests {
         let result = error_to_value(error);
 
         if let Value::Object(obj) = result {
-            let type_val = obj.get("type").unwrap();
+            let type_val = obj.get("type").expect("operation should succeed in test");
             assert!(
                 matches!(type_val, Value::String(_)),
                 "RuntimeError should have type field"
