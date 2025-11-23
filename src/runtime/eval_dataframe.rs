@@ -197,8 +197,10 @@ fn perform_inner_join(
         )));
     }
 
-    let left_join_col = left_join_col.unwrap();
-    let right_join_col = right_join_col.unwrap();
+    let left_join_col =
+        left_join_col.expect("join column must exist after is_none() check succeeded");
+    let right_join_col =
+        right_join_col.expect("join column must exist after is_none() check succeeded");
 
     // Setup result columns
     let mut joined_columns = setup_join_columns(left_columns, right_columns, join_column);
@@ -663,7 +665,8 @@ mod tests {
         ];
 
         let args = vec![Value::from_string("name".to_string())];
-        let result = eval_dataframe_select(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_select(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
@@ -684,7 +687,7 @@ mod tests {
         }];
 
         let args = vec![];
-        let result = eval_dataframe_sum(&columns, &args).unwrap();
+        let result = eval_dataframe_sum(&columns, &args).expect("operation should succeed in test");
 
         assert_eq!(result, Value::Float(35.5));
     }
@@ -704,7 +707,8 @@ mod tests {
 
         // slice(start=1, length=2) should get elements at indices 1,2 -> values 2,3
         let args = vec![Value::Integer(1), Value::Integer(2)];
-        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        let result =
+            eval_dataframe_slice(&columns, &args).expect("operation should succeed in test");
 
         if let Value::DataFrame {
             columns: result_cols,
