@@ -14,7 +14,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut repl = Repl::new(std::env::temp_dir())?;
 
-    // Basic println examples
+    basic_println_examples(&mut repl)?;
+    variable_examples(&mut repl)?;
+    expression_examples(&mut repl)?;
+    formatting_examples(&mut repl)?;
+    print_vs_println_examples(&mut repl)?;
+    control_flow_examples(&mut repl)?;
+    error_handling_examples(&mut repl)?;
+
+    println!("\n🎉 Function call examples completed!");
+    println!("All function calls returned unit type '()' as expected.");
+
+    Ok(())
+}
+
+/// Basic println examples
+fn basic_println_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n📝 Basic println Examples:");
 
     println!("1. Simple string:");
@@ -26,7 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("3. Different types:");
     repl.eval("println(42, 3.14, true, \"mixed\")")?;
 
-    // Variables in function calls
+    Ok(())
+}
+
+/// Variables in function calls
+fn variable_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🔗 Variables in Function Calls:");
 
     repl.eval("let name = \"Alice\"")?;
@@ -36,7 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("4. Variables as arguments:");
     repl.eval(r#"println("Name:", name, "Age:", age, "Score:", score)"#)?;
 
-    // Expressions in function calls
+    Ok(())
+}
+
+/// Expressions in function calls
+fn expression_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🧮 Expressions in Function Calls:");
 
     println!("5. Arithmetic expressions:");
@@ -46,7 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("6. Complex expressions:");
     repl.eval("println(\"Result:\", (5 + 3) * 2 - 1)")?;
 
-    // String formatting patterns
+    Ok(())
+}
+
+/// String formatting patterns
+fn formatting_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n📋 String Formatting Patterns:");
 
     println!("7. Formatted output:");
@@ -54,7 +81,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     repl.eval("let y = 58")?;
     repl.eval(r#"println("x =", x, ", y =", y, ", x + y =", x + y)"#)?;
 
-    // Print vs println
+    Ok(())
+}
+
+/// Print vs println examples
+fn print_vs_println_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🖨️  Print vs Println:");
 
     println!("8. Print without newline:");
@@ -67,7 +98,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     repl.eval("print(2 + 2)")?;
     repl.eval(r#"println(" (calculated)")"#)?;
 
-    // Function calls in control flow
+    Ok(())
+}
+
+/// Function calls in control flow
+fn control_flow_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🔄 Function Calls in Control Flow:");
 
     println!("10. Function calls in if expressions:");
@@ -77,7 +112,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     repl.eval("let debug = true")?;
     repl.eval(r#"if debug { println("Debug: Variables loaded successfully") }"#)?;
 
-    // Error handling examples
+    Ok(())
+}
+
+/// Error handling examples
+fn error_handling_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n⚠️  Error Handling:");
 
     println!("12. Unknown function (should error):");
@@ -85,9 +124,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(_) => println!("   Unexpected success!"),
         Err(e) => println!("   ✅ Correctly errored: {e}"),
     }
-
-    println!("\n🎉 Function call examples completed!");
-    println!("All function calls returned unit type '()' as expected.");
 
     Ok(())
 }
