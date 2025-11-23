@@ -5,6 +5,17 @@ All notable changes to the Ruchy programming language will be documented in this
 ## [Unreleased]
 
 ### Fixed
+- **[SPEC-001-C] Pipeline Expression Verification** Verified pipeline expressions work in all 3 modes
+  - **Status**: Changed from pending → complete (implementation already existed)
+  - **Verification Results**:
+    - ✅ INTERPRETER (ruchy run): 5 |> double |> add_one → outputs "11"
+    - ✅ TRANSPILE (ruchy transpile): Generates add_one(double(5))
+    - ✅ COMPILE (rustc): Compiles successfully
+  - **Implementation**: ExprKind::Pipeline evaluation in interpreter.rs:1661-1681, transpile_pipeline() in statements.rs:2915-2945
+  - **Test**: test_spec_001_pipeline_expr_three_modes exists in spec_001_three_mode_validation.rs
+  - **Root Cause**: Feature was already fully implemented but roadmap wasn't updated
+  - **Date**: 2025-11-23
+
 - **[DOCS] Roadmap Synchronization** Updated roadmap.yaml to reflect actual implementation status
   - **SPEC-001-A**: Marked complete (lambda expressions work in all 3 modes)
   - **SPEC-001-B**: Marked complete (const_decl compiles with rustc)
