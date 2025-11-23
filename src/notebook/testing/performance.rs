@@ -139,7 +139,10 @@ impl PerformanceBenchmarker {
         self.calculate_statistics(&benchmark.id, &mut times)
     }
     fn calculate_statistics(&self, id: &str, times: &mut [f64]) -> BenchmarkResult {
-        times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        times.sort_by(|a, b| {
+            a.partial_cmp(b)
+                .expect("f64 values should be comparable (not NaN)")
+        });
         let mean = times.iter().sum::<f64>() / times.len() as f64;
         let median = times[times.len() / 2];
         let min = times[0];
@@ -243,7 +246,10 @@ impl ParallelTestExecutor {
         for handle in handles {
             handle.join().expect("Thread failed to join");
         }
-        Arc::try_unwrap(results).unwrap().into_inner().unwrap()
+        Arc::try_unwrap(results)
+            .expect("all thread handles joined, Arc should have no other references")
+            .into_inner()
+            .expect("mutex should not be poisoned")
     }
 }
 /// Test result caching system
@@ -777,7 +783,7 @@ mod tests {
 
         let retrieved = cache.get("test_key");
         assert!(retrieved.is_some());
-        let retrieved = retrieved.unwrap();
+        let retrieved = retrieved.expect("operation should succeed in test");
         assert_eq!(retrieved.cell_id, "cell1");
         assert!(retrieved.success);
     }
@@ -820,7 +826,10 @@ mod tests {
 
         monitor.stop();
         // After stopping, monitoring should be false
-        let monitoring = monitor.monitoring.lock().unwrap();
+        let monitoring = monitor
+            .monitoring
+            .lock()
+            .expect("operation should succeed in test");
         assert!(!*monitoring);
     }
 
