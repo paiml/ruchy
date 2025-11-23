@@ -84,14 +84,15 @@ mod tests {
 
     #[test]
     fn test_watcher_detects_file_creation() {
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
 
-        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 100).unwrap();
+        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 100)
+            .expect("operation should succeed in test");
 
         // Create a file
         let test_file = watch_path.join("test.txt");
-        fs::write(&test_file, "hello").unwrap();
+        fs::write(&test_file, "hello").expect("operation should succeed in test");
 
         // Wait for event to propagate
         thread::sleep(Duration::from_millis(200));
@@ -103,19 +104,20 @@ mod tests {
 
     #[test]
     fn test_watcher_debounces_rapid_changes() {
-        let temp_dir = tempdir().unwrap();
+        let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
 
-        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 200).unwrap();
+        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 200)
+            .expect("operation should succeed in test");
 
         let test_file = watch_path.join("test.txt");
 
         // Rapid changes
-        fs::write(&test_file, "1").unwrap();
+        fs::write(&test_file, "1").expect("operation should succeed in test");
         thread::sleep(Duration::from_millis(50));
-        fs::write(&test_file, "2").unwrap();
+        fs::write(&test_file, "2").expect("operation should succeed in test");
         thread::sleep(Duration::from_millis(50));
-        fs::write(&test_file, "3").unwrap();
+        fs::write(&test_file, "3").expect("operation should succeed in test");
 
         thread::sleep(Duration::from_millis(100));
 
@@ -124,7 +126,7 @@ mod tests {
         assert!(first.is_some(), "First check should detect changes");
 
         // Immediate second check should be debounced
-        fs::write(&test_file, "4").unwrap();
+        fs::write(&test_file, "4").expect("operation should succeed in test");
         thread::sleep(Duration::from_millis(50));
         let second = watcher.check_changes();
         assert!(second.is_none(), "Should debounce rapid changes");
