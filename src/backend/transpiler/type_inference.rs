@@ -515,6 +515,63 @@ pub fn is_param_used_as_index(param_name: &str, expr: &Expr) -> bool {
     })
 }
 
+/// Infer parameter type based on usage patterns in function body
+/// TRANSPILER-PARAM-INFERENCE: Main orchestration function
+///
+/// # Type Inference Rules
+/// - `param[i]` or `param[i][j]` → Vec<T> or Vec<Vec<T>>
+/// - `len(param)` → Vec<T>
+/// - `array[param]` → param is i32 (index)
+/// - Otherwise → Keep original type (or default to Any)
+///
+/// # Complexity: 8
+pub fn infer_param_type(param_name: &str, body: &Expr) -> Option<&'static str> {
+    // Check for array indexing patterns
+    if is_param_used_as_array(param_name, body) {
+        // Detect dimensionality
+        if is_nested_array_access(param_name, body) {
+            return Some("Vec<Vec<i32>>");
+        }
+        return Some("Vec<i32>");
+    }
+
+    // Check for len() usage
+    if is_param_used_with_len(param_name, body) {
+        return Some("Vec<i32>");
+    }
+
+    // Check if used as index
+    if is_param_used_as_index(param_name, body) {
+        return Some("i32");
+    }
+
+    // Check for builtin function usage
+    if let Some(typ) = infer_param_type_from_builtin_usage(param_name, body) {
+        return Some(typ);
+    }
+
+    // No inference - keep original type
+    None
+}
+
+/// Detect nested array access like param[i][j]
+/// Complexity: 3
+fn is_nested_array_access(param_name: &str, expr: &Expr) -> bool {
+    traverse_expr_for_check(expr, |e| {
+        if let ExprKind::IndexAccess { object, .. } = &e.kind {
+            // Check if object is itself an index access on our param
+            if let ExprKind::IndexAccess { object: inner, .. } = &object.kind {
+                if let ExprKind::Identifier(name) = &inner.kind {
+                    if name == param_name {
+                        return Some(true);
+                    }
+                }
+            }
+        }
+        None
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
