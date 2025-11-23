@@ -29,85 +29,161 @@ struct ExecuteResponse {
     error: Option<String>,
 }
 
+/// Parser state for markdown extraction
+struct ParserState {
+    in_code_block: bool,
+    in_expected_block: bool,
+    current_code: String,
+    current_expected: Option<String>,
+    expecting_output_next: bool,
+}
+
+impl ParserState {
+    fn new() -> Self {
+        Self {
+            in_code_block: false,
+            in_expected_block: false,
+            current_code: String::new(),
+            current_expected: None,
+            expecting_output_next: false,
+        }
+    }
+
+    /// Check if we have unsaved code to finalize
+    fn has_pending_code(&self) -> bool {
+        !self.current_code.trim().is_empty()
+    }
+
+    /// Finalize current example and reset state
+    fn finalize_example(&mut self) -> Option<(String, Option<String>)> {
+        if self.has_pending_code() {
+            let example = (self.current_code.clone(), self.current_expected.clone());
+            self.current_code.clear();
+            self.current_expected = None;
+            self.expecting_output_next = false;
+            Some(example)
+        } else {
+            None
+        }
+    }
+}
+
 /// Extract code examples from a markdown file
 /// Returns: Vec<(code, `expected_output`)>
 fn extract_examples(md_path: &Path) -> Vec<(String, Option<String>)> {
     let content = fs::read_to_string(md_path).expect("Failed to read MD file");
     let mut examples = Vec::new();
-    let mut in_code_block = false;
-    let mut in_expected_block = false;
-    let mut current_code = String::new();
-    let mut current_expected: Option<String> = None;
-    let mut expecting_output_next = false;
+    let mut state = ParserState::new();
 
     for line in content.lines() {
-        // Check for ruchy code block start
-        if line.starts_with("```ruchy") {
-            in_code_block = true;
-            current_code.clear();
+        if process_ruchy_code_start(line, &mut state) {
             continue;
         }
 
-        // Check for code block end (either ruchy or expected output)
-        if line.starts_with("```") && !line.starts_with("```ruchy") {
-            if in_code_block {
-                // Ruchy code block ended
-                in_code_block = false;
-                // Don't save yet - wait to see if there's an expected output
-                continue;
-            } else if in_expected_block {
-                // Expected output block ended
-                in_expected_block = false;
-                // Now save the code + expected output pair
-                if !current_code.trim().is_empty() {
-                    examples.push((current_code.clone(), current_expected.clone()));
-                    current_code.clear();
-                    current_expected = None;
-                }
-                continue;
-            } else if expecting_output_next {
-                // This is the start of the expected output block
-                in_expected_block = true;
-                expecting_output_next = false;
-                current_expected = Some(String::new());
-                continue;
-            }
-        }
-
-        // Check for "Expected Output:" marker
-        if line.starts_with("**Expected Output**:") {
-            expecting_output_next = true;
+        if process_code_block_end(line, &mut state, &mut examples) {
             continue;
         }
 
-        // If we're in a new section and have unsaved code (no expected output followed)
-        if line.starts_with("###") && !current_code.trim().is_empty() {
-            // Save code without expected output
-            examples.push((current_code.clone(), None));
-            current_code.clear();
-            current_expected = None;
-            expecting_output_next = false;
+        if process_expected_output_marker(line, &mut state) {
             continue;
         }
 
-        // Collect code or expected output
-        if in_code_block {
-            current_code.push_str(line);
-            current_code.push('\n');
-        } else if in_expected_block {
-            if let Some(ref mut expected) = current_expected {
-                expected.push_str(line);
-                expected.push('\n');
-            }
+        if process_section_boundary(line, &mut state, &mut examples) {
+            continue;
         }
+
+        collect_line_content(line, &mut state);
     }
 
     // Save any remaining code
-    if !current_code.trim().is_empty() {
-        examples.push((current_code, current_expected));
+    if let Some(example) = state.finalize_example() {
+        examples.push(example);
     }
 
     examples
+}
+
+/// Process ruchy code block start marker
+fn process_ruchy_code_start(line: &str, state: &mut ParserState) -> bool {
+    if line.starts_with("```ruchy") {
+        state.in_code_block = true;
+        state.current_code.clear();
+        return true;
+    }
+    false
+}
+
+/// Process code block end markers (``` not followed by ruchy)
+fn process_code_block_end(
+    line: &str,
+    state: &mut ParserState,
+    examples: &mut Vec<(String, Option<String>)>,
+) -> bool {
+    if !line.starts_with("```") || line.starts_with("```ruchy") {
+        return false;
+    }
+
+    if state.in_code_block {
+        // Ruchy code block ended - wait for possible expected output
+        state.in_code_block = false;
+        return true;
+    }
+
+    if state.in_expected_block {
+        // Expected output block ended - finalize example
+        state.in_expected_block = false;
+        if let Some(example) = state.finalize_example() {
+            examples.push(example);
+        }
+        return true;
+    }
+
+    if state.expecting_output_next {
+        // Start of expected output block
+        state.in_expected_block = true;
+        state.expecting_output_next = false;
+        state.current_expected = Some(String::new());
+        return true;
+    }
+
+    false
+}
+
+/// Process "Expected Output:" marker
+fn process_expected_output_marker(line: &str, state: &mut ParserState) -> bool {
+    if line.starts_with("**Expected Output**:") {
+        state.expecting_output_next = true;
+        return true;
+    }
+    false
+}
+
+/// Process section boundary (###) - save pending code without expected output
+fn process_section_boundary(
+    line: &str,
+    state: &mut ParserState,
+    examples: &mut Vec<(String, Option<String>)>,
+) -> bool {
+    if line.starts_with("###") && state.has_pending_code() {
+        if let Some(example) = state.finalize_example() {
+            examples.push(example);
+        }
+        return true;
+    }
+    false
+}
+
+/// Collect line content into current code or expected output
+fn collect_line_content(line: &str, state: &mut ParserState) {
+    if state.in_code_block {
+        state.current_code.push_str(line);
+        state.current_code.push('\n');
+    } else if state.in_expected_block {
+        if let Some(ref mut expected) = state.current_expected {
+            expected.push_str(line);
+            expected.push('\n');
+        }
+    }
 }
 
 /// Execute code through notebook API
