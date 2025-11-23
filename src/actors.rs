@@ -424,7 +424,7 @@ mod tests {
         let response = handle.ask(msg).await?;
         assert!(response.error.is_some());
         assert!(response.result.is_none());
-        let error = response.error.unwrap();
+        let error = response.error.expect("operation should succeed in test");
         assert_eq!(error.code, -32601);
         assert!(error.message.contains("Unknown method"));
         Ok(())
@@ -447,7 +447,7 @@ mod tests {
         let response = handle.ask(msg).await?;
         assert!(response.error.is_some());
         assert!(response.result.is_none());
-        let error = response.error.unwrap();
+        let error = response.error.expect("operation should succeed in test");
         assert_eq!(error.code, -32601);
         assert!(error.message.contains("Unknown tool"));
         Ok(())
@@ -746,8 +746,12 @@ mod tests {
         assert!(response.error.is_none());
 
         // Verify tools structure
-        let result = response.result.unwrap();
-        let tools = result.get("tools").unwrap().as_array().unwrap();
+        let result = response.result.expect("operation should succeed in test");
+        let tools = result
+            .get("tools")
+            .expect("operation should succeed in test")
+            .as_array()
+            .expect("operation should succeed in test");
         assert_eq!(tools.len(), 3);
 
         // Check first tool structure
@@ -973,7 +977,10 @@ mod tests {
             id: Some("propagate_me".to_string()),
         };
 
-        let response = actor.receive(msg).await.unwrap();
+        let response = actor
+            .receive(msg)
+            .await
+            .expect("operation should succeed in test");
         assert_eq!(response.id, Some("propagate_me".to_string()));
         Ok(())
     }
@@ -1029,7 +1036,7 @@ mod tests {
             tokio::time::timeout(tokio::time::Duration::from_millis(100), handle.ask(msg)).await;
 
         // Timeout or error expected
-        assert!(result.is_err() || result.unwrap().is_err());
+        assert!(result.is_err() || result.expect("operation should succeed in test").is_err());
     }
 }
 #[cfg(test)]
