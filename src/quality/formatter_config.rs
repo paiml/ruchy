@@ -270,7 +270,7 @@ mod tests {
         ignore_patterns = ["*.test.rs"]
         "#;
 
-        let config = FormatterConfig::from_toml(toml).unwrap();
+        let config = FormatterConfig::from_toml(toml).expect("operation should succeed in test");
         assert_eq!(config.indent_width, 2);
         assert!(config.use_tabs);
         assert_eq!(config.max_line_length, 80);
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_to_toml() {
         let config = FormatterConfig::default();
-        let toml = config.to_toml().unwrap();
+        let toml = config.to_toml().expect("operation should succeed in test");
 
         assert!(toml.contains("indent_width = 4"));
         assert!(toml.contains("use_tabs = false"));
@@ -321,8 +321,10 @@ mod tests {
             ..Default::default()
         };
 
-        let toml = original.to_toml().unwrap();
-        let loaded = FormatterConfig::from_toml(&toml).unwrap();
+        let toml = original
+            .to_toml()
+            .expect("operation should succeed in test");
+        let loaded = FormatterConfig::from_toml(&toml).expect("operation should succeed in test");
 
         assert_eq!(loaded.indent_width, original.indent_width);
         assert_eq!(loaded.use_tabs, original.use_tabs);
