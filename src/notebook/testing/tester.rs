@@ -428,7 +428,9 @@ mod tests {
             metadata: CellMetadata { test: None },
         };
 
-        let result = tester.execute_cell(&cell).unwrap();
+        let result = tester
+            .execute_cell(&cell)
+            .expect("operation should succeed in test");
         assert_eq!(result, CellOutput::None);
         assert_eq!(tester.cell_count(), 0); // Markdown cells don't get stored
     }
@@ -490,10 +492,14 @@ mod tests {
             metadata: CellMetadata { test: None },
         };
 
-        tester.execute_cell(&cell1).unwrap();
+        tester
+            .execute_cell(&cell1)
+            .expect("operation should succeed in test");
         assert_eq!(tester.cell_count(), 1);
 
-        tester.execute_cell(&cell2).unwrap();
+        tester
+            .execute_cell(&cell2)
+            .expect("operation should succeed in test");
         assert_eq!(tester.cell_count(), 2);
     }
 
@@ -724,7 +730,7 @@ mod tests {
         let tester = NotebookTester::new();
 
         // Create a temporary file with valid notebook JSON
-        let mut temp_file = NamedTempFile::new().unwrap();
+        let mut temp_file = NamedTempFile::new().expect("operation should succeed in test");
         let notebook_json = r#"{
             "cells": [
                 {
@@ -736,12 +742,14 @@ mod tests {
             ],
             "metadata": null
         }"#;
-        temp_file.write_all(notebook_json.as_bytes()).unwrap();
+        temp_file
+            .write_all(notebook_json.as_bytes())
+            .expect("operation should succeed in test");
 
         let result = tester.test_file(temp_file.path());
         assert!(result.is_ok());
 
-        let report = result.unwrap();
+        let report = result.expect("operation should succeed in test");
         assert_eq!(report.total_tests, 0); // No cells with test metadata
     }
 
@@ -757,8 +765,10 @@ mod tests {
         let tester = NotebookTester::new();
 
         // Create a temporary file with invalid JSON
-        let mut temp_file = NamedTempFile::new().unwrap();
-        temp_file.write_all(b"invalid json").unwrap();
+        let mut temp_file = NamedTempFile::new().expect("operation should succeed in test");
+        temp_file
+            .write_all(b"invalid json")
+            .expect("operation should succeed in test");
 
         let result = tester.test_file(temp_file.path());
         assert!(result.is_err());
@@ -789,14 +799,19 @@ mod tests {
         let checkpoint_id = session.create_checkpoint("test");
 
         assert!(checkpoint_id.is_some());
-        assert_eq!(checkpoint_id.unwrap(), "checkpoint_test");
+        assert_eq!(
+            checkpoint_id.expect("operation should succeed in test"),
+            "checkpoint_test"
+        );
         assert_eq!(session.checkpoints.len(), 1);
     }
 
     #[test]
     fn test_restore_checkpoint_success() {
         let mut session = NotebookTestSession::new();
-        let checkpoint_id = session.create_checkpoint("test").unwrap();
+        let checkpoint_id = session
+            .create_checkpoint("test")
+            .expect("operation should succeed in test");
 
         let restored = session.restore_checkpoint(&checkpoint_id);
         assert!(restored);
@@ -813,8 +828,12 @@ mod tests {
     fn test_multiple_checkpoints() {
         let mut session = NotebookTestSession::new();
 
-        let cp1 = session.create_checkpoint("first").unwrap();
-        let cp2 = session.create_checkpoint("second").unwrap();
+        let cp1 = session
+            .create_checkpoint("first")
+            .expect("operation should succeed in test");
+        let cp2 = session
+            .create_checkpoint("second")
+            .expect("operation should succeed in test");
 
         assert_eq!(session.checkpoints.len(), 2);
         assert_ne!(cp1, cp2);
