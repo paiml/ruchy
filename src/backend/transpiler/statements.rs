@@ -1288,15 +1288,22 @@ impl Transpiler {
         // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an array (indexed)
         // This must come before builtin usage check because len() works on both arrays and strings
         if is_param_used_as_array(&param.name(), body) {
-            // Parameter accessed with indexing like param[i] should be slice
-            // Using &[i32] is most flexible - works with Vec, arrays, and slices
-            return quote! { &[i32] };
+            // Detect 2D array access (nested indexing like param[i][j])
+            if self.is_nested_array_param(&param.name(), body) {
+                return quote! { &Vec<Vec<i32>> };
+            }
+            // 1D array access
+            return quote! { &Vec<i32> };
         }
 
         // TRANSPILER-PARAM-INFERENCE: Check if parameter is used with len()
         // Since len() works on both arrays and strings, default to array type
         if is_param_used_with_len(&param.name(), body) {
-            return quote! { &[i32] };
+            // Check if it's len() on nested array access (like len(param[0]))
+            if self.is_nested_array_param(&param.name(), body) {
+                return quote! { &Vec<Vec<i32>> };
+            }
+            return quote! { &Vec<i32> };
         }
 
         // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an index
@@ -1323,6 +1330,87 @@ impl Transpiler {
 
         // Default to &str for zero-cost string literals
         quote! { &str }
+    }
+
+    /// Helper to detect nested array access (2D arrays)
+    /// Detects patterns like: param[i][j], param[row][col], param[0][i]
+    /// Complexity: 10
+    fn is_nested_array_param(&self, param_name: &str, expr: &Expr) -> bool {
+        self.find_nested_array_access(param_name, expr, &mut std::collections::HashSet::new())
+    }
+
+    /// Internal helper with visited tracking to prevent infinite recursion
+    /// Complexity: 9
+    fn find_nested_array_access(
+        &self,
+        param_name: &str,
+        expr: &Expr,
+        visited: &mut std::collections::HashSet<usize>,
+    ) -> bool {
+        use crate::frontend::ast::ExprKind;
+
+        // Prevent infinite recursion by tracking visited nodes
+        let expr_addr = expr as *const _ as usize;
+        if visited.contains(&expr_addr) {
+            return false;
+        }
+        visited.insert(expr_addr);
+
+        match &expr.kind {
+            // Direct nested indexing: param[i][j]
+            ExprKind::IndexAccess { object, .. } => {
+                // Check if the object being indexed is itself an index access on our param
+                if let ExprKind::IndexAccess { object: inner, .. } = &object.kind {
+                    if let ExprKind::Identifier(name) = &inner.kind {
+                        if name == param_name {
+                            return true;
+                        }
+                    }
+                }
+                // Recurse into object
+                self.find_nested_array_access(param_name, object, visited)
+            }
+            // Recurse into block expressions
+            ExprKind::Block(exprs) => exprs
+                .iter()
+                .any(|e| self.find_nested_array_access(param_name, e, visited)),
+            // Let bindings
+            ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
+                self.find_nested_array_access(param_name, value, visited)
+                    || self.find_nested_array_access(param_name, body, visited)
+            }
+            // Binary operations
+            ExprKind::Binary { left, right, .. } => {
+                self.find_nested_array_access(param_name, left, visited)
+                    || self.find_nested_array_access(param_name, right, visited)
+            }
+            // While loops
+            ExprKind::While {
+                condition, body, ..
+            } => {
+                self.find_nested_array_access(param_name, condition, visited)
+                    || self.find_nested_array_access(param_name, body, visited)
+            }
+            // If expressions
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.find_nested_array_access(param_name, condition, visited)
+                    || self.find_nested_array_access(param_name, then_branch, visited)
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|e| self.find_nested_array_access(param_name, e, visited))
+            }
+            // Assignments
+            ExprKind::Assign { target, value }
+            | ExprKind::CompoundAssign { target, value, .. } => {
+                self.find_nested_array_access(param_name, target, visited)
+                    || self.find_nested_array_access(param_name, value, visited)
+            }
+            _ => false,
+        }
     }
     /// Generate parameter tokens with proper type inference
     fn generate_param_tokens(
