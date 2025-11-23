@@ -78,11 +78,11 @@ impl LoweringContext {
         body: &Expr,
     ) -> Result<Program> {
         let func_name = name.to_string();
-        let ret_ty = return_type.map_or(Type::Unit, |t| self.ast_to_mir_type(t));
+        let ret_ty = return_type.map_or(Type::Unit, Self::ast_to_mir_type);
         self.builder.start_function(func_name.clone(), ret_ty);
         // Add parameters
         for param in params {
-            let ty = self.ast_to_mir_type(&param.ty);
+            let ty = Self::ast_to_mir_type(&param.ty);
             self.builder.add_param(param.name(), ty);
         }
         // Create entry block
@@ -292,7 +292,7 @@ impl LoweringContext {
     }
     /// Convert AST Type to MIR Type
     #[allow(clippy::only_used_in_recursion)]
-    fn ast_to_mir_type(&self, ast_ty: &AstType) -> Type {
+    fn ast_to_mir_type(ast_ty: &AstType) -> Type {
         use crate::frontend::ast::TypeKind;
         match &ast_ty.kind {
             TypeKind::Named(name) => match name.as_str() {
@@ -316,11 +316,11 @@ impl LoweringContext {
             TypeKind::Generic { base, params } => {
                 match base.as_str() {
                     "Vec" if params.len() == 1 => {
-                        Type::Vec(Box::new(self.ast_to_mir_type(&params[0])))
+                        Type::Vec(Box::new(Self::ast_to_mir_type(&params[0])))
                     }
                     "Array" if params.len() == 1 => {
                         // For simplicity, treat arrays as vectors for now
-                        Type::Vec(Box::new(self.ast_to_mir_type(&params[0])))
+                        Type::Vec(Box::new(Self::ast_to_mir_type(&params[0])))
                     }
                     _ => Type::UserType(base.clone()),
                 }
@@ -330,14 +330,14 @@ impl LoweringContext {
                 Type::UserType(format!("Option<{:?}>", inner.kind))
             }
             TypeKind::Function { params, ret } => {
-                let param_types = params.iter().map(|p| self.ast_to_mir_type(p)).collect();
-                Type::FnPtr(param_types, Box::new(self.ast_to_mir_type(ret)))
+                let param_types = params.iter().map(Self::ast_to_mir_type).collect();
+                Type::FnPtr(param_types, Box::new(Self::ast_to_mir_type(ret)))
             }
-            TypeKind::List(inner) => Type::Vec(Box::new(self.ast_to_mir_type(inner))),
+            TypeKind::List(inner) => Type::Vec(Box::new(Self::ast_to_mir_type(inner))),
             TypeKind::Array { elem_type, size: _ } => {
                 // For MIR, treat arrays as vectors for now
                 // The size information is preserved in the AST
-                Type::Vec(Box::new(self.ast_to_mir_type(elem_type)))
+                Type::Vec(Box::new(Self::ast_to_mir_type(elem_type)))
             }
             TypeKind::DataFrame { .. } => {
                 // Map DataFrames to a user type for now
@@ -348,16 +348,16 @@ impl LoweringContext {
                 Type::UserType("Series".to_string())
             }
             TypeKind::Tuple(types) => {
-                let mir_types: Vec<_> = types.iter().map(|t| self.ast_to_mir_type(t)).collect();
+                let mir_types: Vec<_> = types.iter().map(Self::ast_to_mir_type).collect();
                 Type::Tuple(mir_types)
             }
             TypeKind::Reference { inner, .. } => {
                 // For MIR, treat references as the inner type for now
-                self.ast_to_mir_type(inner)
+                Self::ast_to_mir_type(inner)
             }
             // SPEC-001-H: Refined types - extract base type, ignore constraint
             // MIR operates on structural types, not refinements
-            TypeKind::Refined { base, .. } => self.ast_to_mir_type(base),
+            TypeKind::Refined { base, .. } => Self::ast_to_mir_type(base),
         }
     }
     /// Infer result type for binary operations

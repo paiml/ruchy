@@ -501,7 +501,7 @@ impl WitGenerator {
                     s.push_str(&format!(
                         "    {}: {},\n",
                         field.name,
-                        self.format_wit_type(&field.field_type)
+                        Self::format_wit_type(&field.field_type)
                     ));
                 }
                 s.push_str("  }");
@@ -517,7 +517,7 @@ impl WitGenerator {
                         s.push_str(&format!(
                             "    {}({}),\n",
                             case.name,
-                            self.format_wit_type(payload)
+                            Self::format_wit_type(payload)
                         ));
                     } else {
                         s.push_str(&format!("    {},\n", case.name));
@@ -538,7 +538,7 @@ impl WitGenerator {
                 format!(
                     "type {} = {}",
                     type_def.name,
-                    self.format_wit_type(wit_type)
+                    Self::format_wit_type(wit_type)
                 )
             }
             _ => format!("type {}", type_def.name),
@@ -548,17 +548,17 @@ impl WitGenerator {
         let params = func
             .params
             .iter()
-            .map(|p| format!("{}: {}", p.name, self.format_wit_type(&p.param_type)))
+            .map(|p| format!("{}: {}", p.name, Self::format_wit_type(&p.param_type)))
             .collect::<Vec<_>>()
             .join(", ");
         let return_part = if let Some(ret) = &func.return_type {
-            format!(" -> {}", self.format_wit_type(ret))
+            format!(" -> {}", Self::format_wit_type(ret))
         } else {
             String::new()
         };
         format!("{}: func({}){};", func.name, params, return_part)
     }
-    fn format_wit_type(&self, wit_type: &WitType) -> String {
+    fn format_wit_type(wit_type: &WitType) -> String {
         match wit_type {
             WitType::Bool => "bool".to_string(),
             WitType::U8 => "u8".to_string(),
@@ -574,21 +574,21 @@ impl WitGenerator {
             WitType::Char => "char".to_string(),
             WitType::String => "string".to_string(),
             WitType::Named(name) => name.clone(),
-            WitType::List(inner) => format!("list<{}>", self.format_wit_type(inner)),
-            WitType::Option(inner) => format!("option<{}>", self.format_wit_type(inner)),
+            WitType::List(inner) => format!("list<{}>", Self::format_wit_type(inner)),
+            WitType::Option(inner) => format!("option<{}>", Self::format_wit_type(inner)),
             WitType::Result { ok, err } => {
                 let ok_str = ok
                     .as_ref()
-                    .map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                    .map_or_else(|| "_".to_string(), |t| Self::format_wit_type(t));
                 let err_str = err
                     .as_ref()
-                    .map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                    .map_or_else(|| "_".to_string(), |t| Self::format_wit_type(t));
                 format!("result<{ok_str}, {err_str}>")
             }
             WitType::Tuple(types) => {
                 let types_str = types
                     .iter()
-                    .map(|t| self.format_wit_type(t))
+                    .map(Self::format_wit_type)
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("tuple<{types_str}>")

@@ -247,13 +247,13 @@ impl GlobalRegistry {
         let mut total_size = 0;
         for (key, (value, _def_id)) in self.values.iter() {
             total_size += key.len(); // Key size
-            total_size += self.estimate_value_size(value); // Value size
+            total_size += Self::estimate_value_size(value); // Value size
         }
         // Add function sizes
         total_size += self.functions.len() * 128; // Approximate function size
         total_size
     }
-    fn estimate_value_size(&self, value: &Value) -> usize {
+    fn estimate_value_size(value: &Value) -> usize {
         match value {
             Value::Integer(_) => 8,
             Value::Float(_) => 8,
@@ -264,14 +264,14 @@ impl GlobalRegistry {
             Value::Array(arr) => {
                 let mut size = 24; // Vec overhead
                 for v in arr.iter() {
-                    size += self.estimate_value_size(v);
+                    size += Self::estimate_value_size(v);
                 }
                 size
             }
             Value::Tuple(tuple) => {
                 let mut size = 24; // Vec overhead
                 for v in tuple.iter() {
-                    size += self.estimate_value_size(v);
+                    size += Self::estimate_value_size(v);
                 }
                 size
             }
@@ -291,7 +291,7 @@ impl GlobalRegistry {
                     size += col.name.len(); // Column name
                     size += 24; // Vec overhead for values
                     for value in &col.values {
-                        size += self.estimate_value_size(value);
+                        size += Self::estimate_value_size(value);
                     }
                 }
                 size
@@ -300,7 +300,7 @@ impl GlobalRegistry {
                 let mut size = 24; // HashMap overhead
                 for (key, value) in map.iter() {
                     size += key.len(); // Key size
-                    size += self.estimate_value_size(value); // Value size
+                    size += Self::estimate_value_size(value); // Value size
                 }
                 size
             }
@@ -309,13 +309,13 @@ impl GlobalRegistry {
                 let mut size = 32; // HashMap + Mutex overhead
                 for (key, value) in map.iter() {
                     size += key.len(); // Key size
-                    size += self.estimate_value_size(value); // Value size
+                    size += Self::estimate_value_size(value); // Value size
                 }
                 size
             }
             Value::Range { start, end, .. } => {
                 // Size of start value + end value + metadata
-                self.estimate_value_size(start) + self.estimate_value_size(end) + 8
+                Self::estimate_value_size(start) + Self::estimate_value_size(end) + 8
             }
             Value::EnumVariant {
                 variant_name, data, ..
@@ -324,7 +324,7 @@ impl GlobalRegistry {
                 if let Some(values) = data {
                     size += 24; // Vec overhead
                     for value in values {
-                        size += self.estimate_value_size(value);
+                        size += Self::estimate_value_size(value);
                     }
                 }
                 size
@@ -334,7 +334,7 @@ impl GlobalRegistry {
                 let mut size = name.len() + 24; // Name + HashMap overhead
                 for (key, value) in fields.iter() {
                     size += key.len(); // Key size
-                    size += self.estimate_value_size(value); // Value size
+                    size += Self::estimate_value_size(value); // Value size
                 }
                 size
             }
@@ -347,7 +347,7 @@ impl GlobalRegistry {
                 let fields_read = fields.read().expect("rwlock should not be poisoned");
                 for (key, value) in fields_read.iter() {
                     size += key.len(); // Key size
-                    size += self.estimate_value_size(value); // Value size
+                    size += Self::estimate_value_size(value); // Value size
                 }
                 size += methods.len() * 32; // Rough method overhead
                 size

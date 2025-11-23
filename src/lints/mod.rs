@@ -57,24 +57,24 @@ struct ComplexityRule {
 }
 impl ComplexityRule {
     #[allow(clippy::only_used_in_recursion)]
-    fn calculate_complexity(&self, expr: &Expr) -> usize {
+    fn calculate_complexity(expr: &Expr) -> usize {
         match &expr.kind {
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                1 + self.calculate_complexity(condition)
-                    + self.calculate_complexity(then_branch)
+                1 + Self::calculate_complexity(condition)
+                    + Self::calculate_complexity(then_branch)
                     + else_branch
                         .as_ref()
-                        .map_or(0, |e| self.calculate_complexity(e))
+                        .map_or(0, |e| Self::calculate_complexity(e))
             }
             ExprKind::Match { expr, arms } => {
-                1 + self.calculate_complexity(expr)
+                1 + Self::calculate_complexity(expr)
                     + arms
                         .iter()
-                        .map(|arm| self.calculate_complexity(&arm.body))
+                        .map(|arm| Self::calculate_complexity(&arm.body))
                         .sum::<usize>()
             }
             ExprKind::While {
@@ -82,12 +82,12 @@ impl ComplexityRule {
                 condition,
                 body,
                 ..
-            } => 1 + self.calculate_complexity(condition) + self.calculate_complexity(body),
+            } => 1 + Self::calculate_complexity(condition) + Self::calculate_complexity(body),
             ExprKind::For { iter, body, .. } => {
-                1 + self.calculate_complexity(iter) + self.calculate_complexity(body)
+                1 + Self::calculate_complexity(iter) + Self::calculate_complexity(body)
             }
             ExprKind::Binary { left, right, .. } => {
-                self.calculate_complexity(left) + self.calculate_complexity(right)
+                Self::calculate_complexity(left) + Self::calculate_complexity(right)
             }
             _ => 0,
         }
@@ -104,7 +104,7 @@ impl LintRule for ComplexityRule {
         } else {
             self.max_complexity
         };
-        let complexity = self.calculate_complexity(expr);
+        let complexity = Self::calculate_complexity(expr);
         if complexity > max {
             violations.push(LintViolation::Violation {
                 location: format!("position {}", expr.span.start),

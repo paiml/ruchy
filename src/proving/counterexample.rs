@@ -252,32 +252,32 @@ impl TestCase {
             code.push_str(&format!(
                 "    let {} = {};\n",
                 name,
-                self.value_to_ruchy(value)
+                Self::value_to_ruchy(value)
             ));
         }
         code.push_str(&format!("    assert!({});\n", self.property));
         if let Some(expected) = &self.expected {
             code.push_str(&format!(
                 "    assert_eq!(result, {});\n",
-                self.value_to_ruchy(expected)
+                Self::value_to_ruchy(expected)
             ));
         }
         code.push_str("}\n");
         code
     }
     /// Convert value to Ruchy syntax
-    fn value_to_ruchy(&self, value: &Value) -> String {
+    fn value_to_ruchy(value: &Value) -> String {
         match value {
             Value::Int(n) => n.to_string(),
             Value::Bool(b) => b.to_string(),
             Value::String(s) => format!("\"{s}\""),
             Value::Float(x) => format!("{x:.6}"),
             Value::Array(vs) => {
-                let items: Vec<String> = vs.iter().map(|v| self.value_to_ruchy(v)).collect();
+                let items: Vec<String> = vs.iter().map(Self::value_to_ruchy).collect();
                 format!("[{}]", items.join(", "))
             }
             Value::Tuple(vs) => {
-                let items: Vec<String> = vs.iter().map(|v| self.value_to_ruchy(v)).collect();
+                let items: Vec<String> = vs.iter().map(Self::value_to_ruchy).collect();
                 format!("({})", items.join(", "))
             }
             Value::Null => "None".to_string(),

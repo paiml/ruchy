@@ -94,7 +94,7 @@ impl HtmlDocument {
         // Validate selector syntax before attempting to match
         self.validate_selector(selector)?;
 
-        let elements = self.select_nodes(&self.dom.document, selector);
+        let elements = Self::select_nodes(&self.dom.document, selector);
         Ok(elements
             .into_iter()
             .map(|handle| HtmlElement { handle })
@@ -126,17 +126,17 @@ impl HtmlDocument {
     ///
     /// Internal helper for traversing DOM tree.
     /// Complexity: 8 (within Toyota Way limits)
-    fn select_nodes(&self, node: &Handle, selector: &str) -> Vec<Handle> {
+    fn select_nodes(node: &Handle, selector: &str) -> Vec<Handle> {
         let mut results = Vec::new();
 
         // Check if current node matches
-        if self.matches_selector(node, selector) {
+        if Self::matches_selector(node, selector) {
             results.push(node.clone());
         }
 
         // Recursively check children
         for child in node.children.borrow().iter() {
-            results.extend(self.select_nodes(child, selector));
+            results.extend(Self::select_nodes(child, selector));
         }
 
         results
@@ -146,7 +146,7 @@ impl HtmlDocument {
     ///
     /// Supports: tag, .class, #id, [attr], [attr=value]
     /// Complexity: 10 (at Toyota Way limit)
-    fn matches_selector(&self, node: &Handle, selector: &str) -> bool {
+    fn matches_selector(node: &Handle, selector: &str) -> bool {
         let selector = selector.trim();
 
         match &node.data {
@@ -192,7 +192,7 @@ impl HtmlDocument {
                 if selector.contains(' ') {
                     let parts: Vec<&str> = selector.split_whitespace().collect();
                     if let Some(&last) = parts.last() {
-                        return self.matches_selector(node, last);
+                        return Self::matches_selector(node, last);
                     }
                 }
 
@@ -252,7 +252,7 @@ impl HtmlElement {
     /// assert_eq!(p.text(), "Hello World");
     /// ```
     pub fn text(&self) -> String {
-        self.collect_text(&self.handle)
+        Self::collect_text(&self.handle)
     }
 
     /// Get attribute value
@@ -291,22 +291,22 @@ impl HtmlElement {
     /// assert!(div.html().contains("<p>Test</p>"));
     /// ```
     pub fn html(&self) -> String {
-        self.serialize_node(&self.handle)
+        Self::serialize_node(&self.handle)
     }
 
     /// Recursively collect text from node and children
     ///
     /// Complexity: 5 (well within Toyota Way limits)
-    fn collect_text(&self, node: &Handle) -> String {
+    fn collect_text(node: &Handle) -> String {
         let mut text = String::new();
 
         match &node.data {
-            NodeData::Text { contents } => {
+            NodeData::Text { contents} => {
                 text.push_str(&contents.borrow());
             }
             _ => {
                 for child in node.children.borrow().iter() {
-                    text.push_str(&self.collect_text(child));
+                    text.push_str(&Self::collect_text(child));
                 }
             }
         }
@@ -318,7 +318,7 @@ impl HtmlElement {
     ///
     /// Simplified HTML serialization.
     /// Complexity: 8 (within Toyota Way limits)
-    fn serialize_node(&self, node: &Handle) -> String {
+    fn serialize_node(node: &Handle) -> String {
         let mut html = String::new();
 
         match &node.data {
@@ -340,7 +340,7 @@ impl HtmlElement {
 
                 // Add children
                 for child in node.children.borrow().iter() {
-                    html.push_str(&self.serialize_node(child));
+                    html.push_str(&Self::serialize_node(child));
                 }
 
                 html.push_str("</");
@@ -353,7 +353,7 @@ impl HtmlElement {
             _ => {
                 // Serialize children for other node types
                 for child in node.children.borrow().iter() {
-                    html.push_str(&self.serialize_node(child));
+                    html.push_str(&Self::serialize_node(child));
                 }
             }
         }

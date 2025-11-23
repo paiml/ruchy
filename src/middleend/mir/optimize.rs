@@ -472,21 +472,21 @@ impl CommonSubexpressionElimination {
     /// Generate a key for an operand
     fn operand_key(&self, operand: &Operand) -> String {
         match operand {
-            Operand::Copy(place) => format!("copy({})", self.place_key(place)),
-            Operand::Move(place) => format!("move({})", self.place_key(place)),
+            Operand::Copy(place) => format!("copy({})", Self::place_key(place)),
+            Operand::Move(place) => format!("move({})", Self::place_key(place)),
             Operand::Constant(c) => format!("const({c:?})"),
         }
     }
     /// Generate a key for a place
     #[allow(clippy::only_used_in_recursion)]
-    fn place_key(&self, place: &Place) -> String {
+    fn place_key(place: &Place) -> String {
         match place {
             Place::Local(local) => format!("local({})", local.0),
-            Place::Field(base, field) => format!("field({}, {})", self.place_key(base), field.0),
+            Place::Field(base, field) => format!("field({}, {})", Self::place_key(base), field.0),
             Place::Index(base, index) => {
-                format!("index({}, {})", self.place_key(base), self.place_key(index))
+                format!("index({}, {})", Self::place_key(base), Self::place_key(index))
             }
-            Place::Deref(base) => format!("deref({})", self.place_key(base)),
+            Place::Deref(base) => format!("deref({})", Self::place_key(base)),
         }
     }
 }

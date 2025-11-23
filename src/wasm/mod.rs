@@ -88,7 +88,7 @@ impl WasmCompiler {
 
                 // Generate function body
                 let mut func = Function::new(vec![]);
-                self.compile_expr(body, &mut func)?;
+                Self::compile_expr(body, &mut func)?;
                 if !self.has_return(body) {
                     func.instruction(&Instruction::I32Const(0));
                 }
@@ -113,7 +113,7 @@ impl WasmCompiler {
                 functions.function(0);
 
                 let mut func = Function::new(vec![]);
-                self.compile_expr(ast, &mut func)?;
+                Self::compile_expr(ast, &mut func)?;
                 func.instruction(&Instruction::End);
                 code.function(&func);
             }
@@ -139,7 +139,7 @@ impl WasmCompiler {
     }
 
     /// Compile an expression to WASM instructions
-    fn compile_expr(&self, expr: &Expr, func: &mut Function) -> Result<()> {
+    fn compile_expr(expr: &Expr, func: &mut Function) -> Result<()> {
         match &expr.kind {
             ExprKind::Literal(lit) => match lit {
                 Literal::Integer(n, _) => {
@@ -158,8 +158,8 @@ impl WasmCompiler {
             },
             ExprKind::Binary { left, op, right } => {
                 use crate::frontend::ast::BinaryOp;
-                self.compile_expr(left, func)?;
-                self.compile_expr(right, func)?;
+                Self::compile_expr(left, func)?;
+                Self::compile_expr(right, func)?;
                 match op {
                     BinaryOp::Add => func.instruction(&Instruction::I32Add),
                     BinaryOp::Subtract => func.instruction(&Instruction::I32Sub),

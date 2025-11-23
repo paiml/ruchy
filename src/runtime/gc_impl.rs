@@ -61,7 +61,7 @@ impl ConservativeGC {
     /// # Complexity
     /// Cyclomatic complexity: 3 (within Toyota Way limits)
     pub fn track_object(&mut self, value: Value) -> usize {
-        let size = self.estimate_object_size(&value);
+        let size = Self::estimate_object_size(&value);
         let id = self.next_object_id();
 
         let obj = GCObject {
@@ -214,7 +214,7 @@ impl ConservativeGC {
     ///
     /// # Complexity
     /// Cyclomatic complexity: 8 (within Toyota Way limits)
-    fn estimate_object_size(&self, value: &Value) -> usize {
+    fn estimate_object_size(value: &Value) -> usize {
         match value {
             Value::Integer(_) => 8,
             Value::Float(_) => 8,
@@ -226,14 +226,14 @@ impl ConservativeGC {
                 24 + arr.len() * 8
                     + arr
                         .iter()
-                        .map(|v| self.estimate_object_size(v))
+                        .map(Self::estimate_object_size)
                         .sum::<usize>()
             }
             Value::Tuple(elements) => {
                 24 + elements.len() * 8
                     + elements
                         .iter()
-                        .map(|v| self.estimate_object_size(v))
+                        .map(Self::estimate_object_size)
                         .sum::<usize>()
             }
             Value::Closure { params, .. } => 48 + params.len() * 16,
@@ -247,7 +247,7 @@ impl ConservativeGC {
                 48 + map.len() * 32
                     + map
                         .iter()
-                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .map(|(k, v)| k.len() + Self::estimate_object_size(v))
                         .sum::<usize>()
             }
             Value::ObjectMut(cell) => {
@@ -255,7 +255,7 @@ impl ConservativeGC {
                 56 + map.len() * 32 // Extra 8 bytes for RefCell borrow counter
                     + map
                         .iter()
-                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .map(|(k, v)| k.len() + Self::estimate_object_size(v))
                         .sum::<usize>()
             }
             Value::Range { .. } => 24,
@@ -268,7 +268,7 @@ impl ConservativeGC {
                     + fields.len() * 32
                     + fields
                         .iter()
-                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .map(|(k, v)| k.len() + Self::estimate_object_size(v))
                         .sum::<usize>()
             }
             Value::Class {
@@ -281,7 +281,7 @@ impl ConservativeGC {
                     + fields_read.len() * 32
                     + fields_read
                         .iter()
-                        .map(|(k, v)| k.len() + self.estimate_object_size(v))
+                        .map(|(k, v)| k.len() + Self::estimate_object_size(v))
                         .sum::<usize>()
                     + methods.len() * 32
             }
