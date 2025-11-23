@@ -55,34 +55,34 @@ fun main() {{
 #[test]
 fn prop_parse_json_roundtrip_arrays() {
     proptest!(|(
-                                    values in prop::collection::vec(0i32..100, 1..5)
-                                )| {
-                                    let json_array = format!("[{}]", values.iter()
-                                        .map(std::string::ToString::to_string)
-                                        .collect::<Vec<_>>()
-                                        .join(", "));
+                                        values in prop::collection::vec(0i32..100, 1..5)
+                                    )| {
+                                        let json_array = format!("[{}]", values.iter()
+                                            .map(std::string::ToString::to_string)
+                                            .collect::<Vec<_>>()
+                                            .join(", "));
 
-                                    let script = format!(r"
+                                        let script = format!(r"
 fun main() {{
     let arr = parse_json('{json_array}')
     println(arr[0])
 }}
 ");
 
-                                    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                        .arg("-e")
-                                        .arg(&script)
-                                        .assert()
-                                        .success()
-                                        .get_output()
-                                        .stdout
-                                        .clone();
+                                        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                            .arg("-e")
+                                            .arg(&script)
+                                            .assert()
+                                            .success()
+                                            .get_output()
+                                            .stdout
+                                            .clone();
 
-                                    let output_str = String::from_utf8(output).unwrap().trim().to_string();
+                                        let output_str = String::from_utf8(output).unwrap().trim().to_string();
 
-                                    // Property: First element matches
-                                    prop_assert_eq!(output_str, values[0].to_string());
-                                });
+                                        // Property: First element matches
+                                        prop_assert_eq!(output_str, values[0].to_string());
+                                    });
 }
 
 // ============================================================================

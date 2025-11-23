@@ -80,11 +80,28 @@ fn create_pattern_for_variant(variant_name: String, patterns: Vec<Pattern>) -> R
         match variant_name.as_str() {
             "Some" => {
                 return Ok(Pattern::Some(Box::new(
-                    patterns.into_iter().next().unwrap(),
+                    patterns
+                        .into_iter()
+                        .next()
+                        .expect("patterns.len() == 1 so next() must return Some"),
                 )))
             }
-            "Ok" => return Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap()))),
-            "Err" => return Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap()))),
+            "Ok" => {
+                return Ok(Pattern::Ok(Box::new(
+                    patterns
+                        .into_iter()
+                        .next()
+                        .expect("patterns.len() == 1 so next() must return Some"),
+                )))
+            }
+            "Err" => {
+                return Ok(Pattern::Err(Box::new(
+                    patterns
+                        .into_iter()
+                        .next()
+                        .expect("patterns.len() == 1 so next() must return Some"),
+                )))
+            }
             _ => {}
         }
     }
