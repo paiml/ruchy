@@ -392,7 +392,7 @@ mod tests {
         let pattern = Pattern::Wildcard;
         let value = Value::Integer(42);
 
-        let result = match_pattern(&pattern, &value).unwrap();
+        let result = match_pattern(&pattern, &value).expect("operation should succeed in test");
         assert!(result.matches);
         assert!(result.bindings.is_empty());
     }
@@ -402,7 +402,7 @@ mod tests {
         let pattern = Pattern::Identifier("x".to_string());
         let value = Value::Integer(42);
 
-        let result = match_pattern(&pattern, &value).unwrap();
+        let result = match_pattern(&pattern, &value).expect("operation should succeed in test");
         assert!(result.matches);
         assert_eq!(result.bindings.get("x"), Some(&Value::Integer(42)));
     }
@@ -412,11 +412,13 @@ mod tests {
         let pattern = Pattern::Literal(Literal::Integer(42, None));
 
         let matching_value = Value::Integer(42);
-        let result = match_pattern(&pattern, &matching_value).unwrap();
+        let result =
+            match_pattern(&pattern, &matching_value).expect("operation should succeed in test");
         assert!(result.matches);
 
         let non_matching_value = Value::Integer(43);
-        let result = match_pattern(&pattern, &non_matching_value).unwrap();
+        let result =
+            match_pattern(&pattern, &non_matching_value).expect("operation should succeed in test");
         assert!(!result.matches);
     }
 
@@ -430,7 +432,7 @@ mod tests {
         let pattern = Pattern::List(patterns);
 
         let value = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = match_pattern(&pattern, &value).unwrap();
+        let result = match_pattern(&pattern, &value).expect("operation should succeed in test");
         assert!(result.matches);
         assert_eq!(result.bindings.get("x"), Some(&Value::Integer(1)));
     }
