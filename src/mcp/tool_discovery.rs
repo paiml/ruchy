@@ -736,13 +736,13 @@ mod property_tests_tool_discovery {
             assert!(info.get("categories").is_some());
 
             // Specific field validations
-            assert_eq!(info.get("discovery_service").unwrap().as_str().unwrap(),
+            assert_eq!(info.get("discovery_service").expect("operation should succeed in test").as_str().expect("operation should succeed in test"),
                       "ruchy_tool_discovery");
-            assert_eq!(info.get("version").unwrap().as_str().unwrap(), "1.0.0");
+            assert_eq!(info.get("version").expect("operation should succeed in test").as_str().expect("operation should succeed in test"), "1.0.0");
 
             // Tools array should match total_tools count
-            let total_tools = info.get("total_tools").unwrap().as_u64().unwrap();
-            let tools_array = info.get("tools").unwrap().as_array().unwrap();
+            let total_tools = info.get("total_tools").expect("operation should succeed in test").as_u64().expect("operation should succeed in test");
+            let tools_array = info.get("tools").expect("operation should succeed in test").as_array().expect("operation should succeed in test");
             assert_eq!(total_tools as usize, tools_array.len());
         }
 
@@ -847,11 +847,11 @@ mod property_tests_tool_discovery {
             let json_str = serde_json::to_string(&info);
             assert!(json_str.is_ok(), "Discovery info should serialize to JSON");
 
-            let json_str = json_str.unwrap();
+            let json_str = json_str.expect("operation should succeed in test");
             let deserialized = serde_json::from_str::<Value>(&json_str);
             assert!(deserialized.is_ok(), "Discovery info should deserialize from JSON");
 
-            let deserialized = deserialized.unwrap();
+            let deserialized = deserialized.expect("operation should succeed in test");
 
             // Key fields should remain intact
             assert_eq!(deserialized.get("discovery_service"), info.get("discovery_service"));
