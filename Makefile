@@ -794,6 +794,27 @@ quality-gate:
 	@~/.local/bin/pmat analyze --metrics complexity src/ || true
 	@echo "✓ Quality check complete"
 
+# Validate documentation accuracy (PMAT Phase 3.5 - Documentation Accuracy)
+validate-docs:
+	@echo "📋 Validating documentation accuracy..."
+	@echo ""
+	@echo "Step 1: Generating deep context..."
+	@pmat context --output deep_context.md --format llm-optimized
+	@echo ""
+	@echo "Step 2: Validating documentation files..."
+	@pmat validate-readme \
+		--targets README.md CLAUDE.md GEMINI.md \
+		--deep-context deep_context.md \
+		--fail-on-contradiction \
+		--verbose || { \
+		echo ""; \
+		echo "❌ Documentation validation failed!"; \
+		echo "   Fix contradictions and broken references before committing"; \
+		exit 1; \
+	}
+	@echo ""
+	@echo "✅ Documentation validation complete"
+
 # Renacer Syscall Profiling (SPEC-RENACER-001)
 .PHONY: renacer-profile renacer-baseline renacer-anomaly test-with-profiling
 

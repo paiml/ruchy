@@ -78,5 +78,6 @@ pkg/
 *.old
 docs/notebook/book/book/
 *.proptest-regressions
-# Performance clippy check added
+# PMAT TDG baseline and O(1) Quality Gates metrics
 .pmat/baseline.json
+.pmat-metrics/
