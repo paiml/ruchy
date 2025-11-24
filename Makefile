@@ -492,22 +492,24 @@ coverage:
 	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	# PROPTEST_CASES=100: bashrs pattern for statistical significance (90-percent-coverage-strategy-spec.md)
-	# More random inputs → more branches covered (5 cases insufficient for edge case discovery)
-	@env PROPTEST_CASES=100 QUICKCHECK_TESTS=100 cargo llvm-cov --no-report nextest --no-fail-fast --no-tests=warn --lib --all-features || true
+	@echo "   - Property test cases: 100 (reduced for speed)"
+	@echo "   - Test runner: cargo-nextest with workspace"
+	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-tests=warn --all-features --workspace
 	@echo "📊 Phase 2: Generating coverage reports..."
-	@cargo llvm-cov report --html --output-dir target/coverage/html || true
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info || true
-	@echo ""
-	@echo "📊 Coverage Summary:"
-	@awk -F: 'BEGIN{lf=0;lh=0} /^LF:/{lf+=$$2} /^LH:/{lh+=$$2} END{if(lf>0){printf "%.2f%% coverage (%d/%d lines)\n", (lh/lf)*100, lh, lf}else{print "No coverage data"}}' target/coverage/lcov.info 2>/dev/null || echo "Coverage data in HTML report"
-	@echo ""
+	@cargo llvm-cov report --html --output-dir target/coverage/html
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
 	@echo "⚙️  Restoring global cargo config..."
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
-	@echo "✅ Coverage analysis complete!"
-	@echo "📊 HTML report: target/coverage/html/index.html"
-	@echo "📊 LCOV report: target/coverage/lcov.info"
+	@echo "📊 Coverage Summary:"
+	@echo "=================="
+	@cargo llvm-cov report --summary-only
+	@echo ""
+	@echo "💡 COVERAGE INSIGHTS:"
+	@echo "- HTML report: target/coverage/html/index.html"
+	@echo "- LCOV file: target/coverage/lcov.info"
+	@echo "- Open HTML: make coverage-open"
+	@echo "- Property test cases: 100 (bashrs pattern for speed)"
 	@echo ""
 
 # Open coverage report in browser
@@ -973,10 +975,8 @@ sprint-close: check-docs
 .PHONY: test-quick test-memory test-heavy find-heavy-tests
 
 # Quick smoke tests only
-test-quick:
-	@echo "Running quick smoke tests..."
-	@PROPTEST_CASES=5 cargo test --lib -- --test-threads=2 --skip property_
-	@echo "✓ Quick tests complete"
+test-quick: test-fast ## Alias for test-fast (bashrs pattern)
+	@echo "✓ Quick tests completed!"
 
 # Fast tests (TDD cycle - MANDATORY: <5 min)
 # Reduced PROPTEST_CASES=10 for speed (default is 32)
@@ -985,13 +985,18 @@ test-quick:
 # Actual timing: 1m10s ✅
 test-fast:
 	@echo "⚡ Running fast test suite (MANDATORY: <5 min)..."
-	@PROPTEST_CASES=10 cargo test --lib --quiet -- --test-threads=4 \
-		--skip test_transpile_impl_block \
-		--skip test_derive_attribute \
-		--skip test_parse_rust_attribute_arguments_not_stub \
-		--skip test_compile_impl \
-		--skip test_compile_traits
-	@echo "✓ Fast tests complete"
+	@echo "   - Property test cases: 50 (reduced for speed)"
+	@echo "   - Threads: $$(nproc) parallel"
+	@echo "   - Test runner: cargo-nextest (or cargo test fallback)"
+	@if command -v cargo-nextest >/dev/null 2>&1; then \
+		PROPTEST_CASES=50 RUST_TEST_THREADS=$$(nproc) cargo nextest run \
+			--workspace \
+			--status-level skip \
+			--failure-output immediate; \
+	else \
+		PROPTEST_CASES=50 cargo test --workspace; \
+	fi
+	@echo "✓ Fast tests complete (target: <5 min)"
 
 # Pre-commit fast tests (MANDATORY: <30 seconds)
 # Minimal property test cases for rapid pre-commit validation
