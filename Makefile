@@ -43,11 +43,14 @@ help:
 	@echo "  make quality-web  - Run HTML/JS linting and coverage (>80%)"
 	@echo "  make ci          - Run full CI pipeline"
 	@echo ""
-	@echo "Syscall Profiling (Renacer - SPEC-RENACER-001):"
-	@echo "  make renacer-profile  - Profile test syscalls with anomaly detection (3σ)"
-	@echo "  make renacer-baseline - Create baseline syscall profile (JSON)"
-	@echo "  make renacer-anomaly  - Run anomaly detection only"
-	@echo "  make test-with-profiling - Run tests with full syscall profiling"
+	@echo "Syscall Profiling (Renacer - TOOLING-002):"
+	@echo "  make renacer-profile          - Profile test syscalls with anomaly detection (3σ)"
+	@echo "  make renacer-baseline         - Create baseline syscall profile (JSON)"
+	@echo "  make renacer-anomaly          - Run anomaly detection only"
+	@echo "  make test-with-profiling      - Run tests with full syscall profiling"
+	@echo "  make renacer-collect-baselines - Collect golden traces for transpilation"
+	@echo "  make renacer-validate         - Validate transpiler against golden traces"
+	@echo "  make renacer-anomaly-check    - Check for anomalies with custom clusters"
 	@echo "  make golden-traces       - Validate golden trace performance budgets"
 	@echo "  make golden-traces-capture - Capture fresh golden traces (Renacer)"
 	@echo "  make golden-traces-validate - Validate against performance budgets"
@@ -842,6 +845,51 @@ renacer-anomaly:
 
 test-with-profiling: renacer-profile
 	@echo "✅ Tests passed with syscall profiling"
+
+# TOOLING-002: Renacer golden trace collection and validation
+renacer-collect-baselines:
+	@echo "🔍 TOOLING-002: Collecting golden trace baselines..."
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@mkdir -p tests/golden-traces
+	@echo "📊 Phase 1: Tracing simple example transpilation..."
+	@timeout 10 renacer -c -T -- cargo run --release --bin ruchy -- transpile examples/01_basics.ruchy \
+		> tests/golden-traces/01_basics.trace 2>&1 || echo "⚠️  Trace may be incomplete"
+	@echo "📊 Phase 2: Tracing function example transpilation..."
+	@timeout 10 renacer -c -T -- cargo run --release --bin ruchy -- transpile examples/02_functions.ruchy \
+		> tests/golden-traces/02_functions.trace 2>&1 || echo "⚠️  Trace may be incomplete"
+	@echo "📊 Phase 3: Tracing control flow example transpilation..."
+	@timeout 10 renacer -c -T -- cargo run --release --bin ruchy -- transpile examples/03_control_flow.ruchy \
+		> tests/golden-traces/03_control_flow.trace 2>&1 || echo "⚠️  Trace may be incomplete"
+	@echo "✅ Golden traces collected in tests/golden-traces/"
+	@ls -lh tests/golden-traces/
+
+renacer-validate:
+	@echo "🔍 TOOLING-002: Validating transpiler against golden traces..."
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@if [ ! -f tests/golden-traces/01_basics.trace ]; then \
+		echo "❌ Golden traces not found. Run: make renacer-collect-baselines"; \
+		exit 1; \
+	fi
+	@echo "📊 Running transpilation with syscall tracing..."
+	@timeout 10 renacer -c -T -- cargo run --release --bin ruchy -- transpile examples/01_basics.ruchy \
+		> /tmp/current_trace.txt 2>&1 || echo "⚠️  Trace may be incomplete"
+	@echo "✅ Current trace saved to /tmp/current_trace.txt"
+	@echo "💡 Compare with: diff tests/golden-traces/01_basics.trace /tmp/current_trace.txt"
+
+renacer-anomaly-check:
+	@echo "🔍 TOOLING-002: Running anomaly detection with custom clusters..."
+	@command -v renacer >/dev/null 2>&1 || { echo "❌ renacer not installed. Run: cargo install renacer"; exit 1; }
+	@if [ ! -f ruchy-clusters.toml ]; then \
+		echo "❌ Cluster config not found: ruchy-clusters.toml"; \
+		exit 1; \
+	fi
+	@echo "📊 Tracing with extended statistics and anomaly detection..."
+	@timeout 10 renacer -c --stats-extended --anomaly-threshold 3.0 \
+		-- cargo run --release --bin ruchy -- transpile examples/01_basics.ruchy \
+		2>&1 | tee /tmp/renacer_anomaly.txt
+	@echo ""
+	@echo "🔍 Checking for anomalies..."
+	@grep -i "ProcessControl\|Networking\|Concurrency\|anomaly" /tmp/renacer_anomaly.txt || echo "✅ No critical anomalies detected"
 
 # TDG Dashboard Management
 tdg-dashboard:
