@@ -16,6 +16,16 @@ if [ -z "$METRIC_NAME" ]; then
     exit 1
 fi
 
+# Validate paths don't contain traversal (satisfies SEC010)
+if [[ "$METRICS_DIR" =~ \.\. ]] || [[ "$METRICS_DIR" == /* ]]; then
+    echo "Error: Invalid METRICS_DIR path" >&2
+    exit 1
+fi
+if [[ "$METRIC_NAME" =~ \.\. ]] || [[ "$METRIC_NAME" =~ / ]]; then
+    echo "Error: Invalid METRIC_NAME (no slashes or ..)" >&2
+    exit 1
+fi
+
 # Create metrics directory
 mkdir -p "$METRICS_DIR"
 
@@ -36,7 +46,7 @@ case "$METRIC_NAME" in
         # Lint passed if we got here
         cat > "$METRICS_DIR/lint.result" <<EOF
 {
-  "duration_ms": ${DURATION_MS},
+  "duration_ms": "${DURATION_MS}",
   "passed": true,
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
@@ -48,9 +58,9 @@ EOF
         TESTS="$(cargo test --lib --no-run 2>&1 | grep -oP '\d+(?= tests)' | head -1 || echo "0")"
         cat > "$METRICS_DIR/test-fast.result" <<EOF
 {
-  "duration_ms": ${DURATION_MS},
+  "duration_ms": "${DURATION_MS}",
   "passed": true,
-  "tests": ${TESTS},
+  "tests": "${TESTS}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
@@ -61,8 +71,8 @@ EOF
         COVERAGE_PCT="$(cargo llvm-cov report 2>/dev/null | grep -oP '\d+\.\d+(?=%)' | head -1 || echo "0.0")"
         cat > "$METRICS_DIR/coverage.result" <<EOF
 {
-  "duration_ms": ${DURATION_MS},
-  "coverage_pct": ${COVERAGE_PCT},
+  "duration_ms": "${DURATION_MS}",
+  "coverage_pct": "${COVERAGE_PCT}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
@@ -73,8 +83,8 @@ EOF
         BINARY_SIZE="$(stat --format=%s target/release/pmat 2>/dev/null || echo "0")"
         cat > "$METRICS_DIR/build-release.result" <<EOF
 {
-  "duration_ms": ${DURATION_MS},
-  "binary_size": ${BINARY_SIZE},
+  "duration_ms": "${DURATION_MS}",
+  "binary_size": "${BINARY_SIZE}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
@@ -85,7 +95,7 @@ EOF
         DEPS_COUNT="$(cargo tree 2>/dev/null | wc -l)"
         cat > "$METRICS_DIR/deps-default.result" <<EOF
 {
-  "count": ${DEPS_COUNT},
+  "count": "${DEPS_COUNT}",
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
