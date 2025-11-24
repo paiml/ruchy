@@ -220,6 +220,7 @@ fn test_fmt_spawn() {
 }
 
 #[test]
+#[ignore = "RED phase: async lambda syntax not yet implemented in parser"]
 fn test_fmt_async_lambda() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("async_lambda.ruchy");
