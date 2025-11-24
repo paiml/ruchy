@@ -52,13 +52,18 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str, trace: bool)
     };
 
     match repl.eval(&expr_to_eval) {
-        Ok(_result) => {
+        Ok(result) => {
             if verbose {
                 eprintln!("Evaluation successful");
             }
-            // CLI-UNIFY-003: Don't print eval results (match file execution behavior)
-            // Only explicit println() output should be shown (like Python/Ruby/Node)
-            // This fixes inconsistency caught by property test prop_021_consistency_eval_equals_file
+            // [CLI-EVAL-001] FIX: Print result for REPL one-liners (unless already printed)
+            // - `ruchy -e "42"` → prints "42" (REPL behavior)
+            // - `ruchy -e "println(42)"` → prints "42" only once (println returns "nil", don't double-print)
+            // This fixes tests: non_tty_omits_interactive_features, cli_eval_flag_executes_inline
+            // Preserves: prop_021_consistency_eval_equals_file (println behavior still consistent)
+            if result != "nil" && !result.is_empty() {
+                println!("{result}");
+            }
             Ok(())
         }
         Err(e) => {

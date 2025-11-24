@@ -199,7 +199,6 @@ fn repl_detects_interactive_tty() {
 }
 
 #[test]
-#[ignore = "BUG: ruchy -e hangs in non-TTY mode (timeout after 5s with no output). Needs investigation."]
 fn non_tty_omits_interactive_features() {
     use std::process::{Command, Stdio};
 
