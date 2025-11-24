@@ -1331,8 +1331,8 @@ mod tests {
         let temp_dir = tempfile::tempdir().expect("Failed to create temporary test directory");
         // Create a test file with some content
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "let x = 42;").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-            test_file.display()));
+        fs::write(&test_file, "let x = 42;")
+            .unwrap_or_else(|_| panic!("Failed to write test file: {}", test_file.display()));
 
         let command = Commands::Coverage {
             path: test_file, // Use the file path, not directory

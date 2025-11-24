@@ -29,10 +29,7 @@ fn renacer_available() -> bool {
 /// Test 1: Verify renacer is installed and accessible
 #[test]
 fn test_tooling_002_01_renacer_installed() {
-    let output = Command::new("renacer")
-        .arg("--version")
-        .assert()
-        .success();
+    let output = Command::new("renacer").arg("--version").assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
@@ -69,8 +66,8 @@ fn test_tooling_002_03_cluster_config_valid() {
         "Cluster config should exist at {config_path:?}"
     );
 
-    let content = fs::read_to_string(&config_path)
-        .expect("Should be able to read ruchy-clusters.toml");
+    let content =
+        fs::read_to_string(&config_path).expect("Should be able to read ruchy-clusters.toml");
 
     // Verify expected clusters exist
     assert!(
@@ -238,11 +235,13 @@ fn test_tooling_002_06_cluster_config_parseable() {
 
     // Note: renacer 0.6.2 doesn't have a --validate-config flag yet,
     // so we verify the TOML is valid by parsing it ourselves
-    let content = fs::read_to_string(&config_path)
-        .expect("Should read cluster config");
+    let content = fs::read_to_string(&config_path).expect("Should read cluster config");
 
     // Basic TOML validity check
-    assert!(content.contains("[[cluster]]"), "Should have cluster definitions");
+    assert!(
+        content.contains("[[cluster]]"),
+        "Should have cluster definitions"
+    );
     assert!(content.contains("name ="), "Should have cluster names");
     assert!(content.contains("syscalls ="), "Should have syscall lists");
 }
@@ -251,8 +250,7 @@ fn test_tooling_002_06_cluster_config_parseable() {
 #[test]
 fn test_tooling_002_07_makefile_targets_exist() {
     let makefile_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Makefile");
-    let content = fs::read_to_string(&makefile_path)
-        .expect("Should read Makefile");
+    let content = fs::read_to_string(&makefile_path).expect("Should read Makefile");
 
     // Check for renacer targets
     assert!(

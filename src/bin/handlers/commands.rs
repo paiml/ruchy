@@ -1879,8 +1879,8 @@ mod tests {
         let output_path = temp_dir.path().join("output.txt");
         let result = write_ast_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap_or_else(|_| panic!("Failed to read output file: {}",
-            output_path.display()));
+        let content = std::fs::read_to_string(&output_path)
+            .unwrap_or_else(|_| panic!("Failed to read output file: {}", output_path.display()));
         assert_eq!(content, "test content");
     }
 
@@ -2035,8 +2035,8 @@ mod tests {
         let output_path = temp_dir.path().join("provability.txt");
         let result = write_provability_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap_or_else(|_| panic!("Failed to read output file: {}",
-            output_path.display()));
+        let content = std::fs::read_to_string(&output_path)
+            .unwrap_or_else(|_| panic!("Failed to read output file: {}", output_path.display()));
         assert_eq!(content, "test content");
     }
 
@@ -2108,8 +2108,8 @@ mod tests {
         let output_path = temp_dir.path().join("runtime.txt");
         let result = write_runtime_output("test content".to_string(), Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap_or_else(|_| panic!("Failed to read output file: {}",
-            output_path.display()));
+        let content = std::fs::read_to_string(&output_path)
+            .unwrap_or_else(|_| panic!("Failed to read output file: {}", output_path.display()));
         assert_eq!(content, "test content");
     }
 
@@ -2172,8 +2172,8 @@ mod tests {
         let output_path = temp_dir.path().join("output.txt");
         let result = write_output("test content", Some(&output_path));
         assert!(result.is_ok());
-        let content = std::fs::read_to_string(&output_path).unwrap_or_else(|_| panic!("Failed to read output file: {}",
-            output_path.display()));
+        let content = std::fs::read_to_string(&output_path)
+            .unwrap_or_else(|_| panic!("Failed to read output file: {}", output_path.display()));
         assert_eq!(content, "test content");
     }
 

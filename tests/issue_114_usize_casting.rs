@@ -16,7 +16,6 @@ use std::io::Write;
 
 #[cfg(test)]
 mod property_tests {
-    
 
     #[test]
     #[ignore = "Run with: cargo test --test issue_114_usize_casting property_tests -- --ignored --nocapture"]

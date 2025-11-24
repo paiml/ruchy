@@ -8,7 +8,6 @@
 #![allow(clippy::case_sensitive_file_extension_comparisons)] // Path tests intentionally test exact strings
 #![allow(missing_docs)]
 #![allow(clippy::collapsible_if)] // Test readability over compactness
-#![allow(missing_docs)]
 
 use std::path::Path;
 use tempfile::TempDir;

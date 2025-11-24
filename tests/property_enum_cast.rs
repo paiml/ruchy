@@ -13,7 +13,7 @@ use proptest::prelude::*;
 #[test]
 fn test_property_runtime_092_enum_to_i32() {
     proptest!(|(disc0 in 0i64..10, disc1 in 10i64..20)| {
-                                        let code = format!(r"
+                                            let code = format!(r"
 enum TestEnum {{
     Variant0 = {disc0},
     Variant1 = {disc1},
@@ -28,22 +28,22 @@ fun main() {{
 }}
 ");
 
-                                        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                            .arg("-e")
-                                            .arg(&code)
-                                            .timeout(std::time::Duration::from_secs(5))
-                                            .assert()
-                                            .success()
-                                            .stdout(predicate::str::contains(disc0.to_string()))
-                                            .stdout(predicate::str::contains(disc1.to_string()));
-                                    });
+                                            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                                .arg("-e")
+                                                .arg(&code)
+                                                .timeout(std::time::Duration::from_secs(5))
+                                                .assert()
+                                                .success()
+                                                .stdout(predicate::str::contains(disc0.to_string()))
+                                                .stdout(predicate::str::contains(disc1.to_string()));
+                                        });
 }
 
 /// Property test: Enum casts in arithmetic expressions
 #[test]
 fn test_property_runtime_092_enum_arithmetic() {
     proptest!(|(disc in 0i64..100, add_val in 1i64..10)| {
-                                        let code = format!(r"
+                                            let code = format!(r"
 enum Value {{
     X = {disc},
 }}
@@ -54,22 +54,22 @@ fun main() {{
 }}
 ");
 
-                                        let expected = disc + add_val;
-                                        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                            .arg("-e")
-                                            .arg(&code)
-                                            .timeout(std::time::Duration::from_secs(5))
-                                            .assert()
-                                            .success()
-                                            .stdout(predicate::str::contains(expected.to_string()));
-                                    });
+                                            let expected = disc + add_val;
+                                            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                                .arg("-e")
+                                                .arg(&code)
+                                                .timeout(std::time::Duration::from_secs(5))
+                                                .assert()
+                                                .success()
+                                                .stdout(predicate::str::contains(expected.to_string()));
+                                        });
 }
 
 /// Property test: Multiple enum variables with different discriminants
 #[test]
 fn test_property_runtime_092_multiple_variables() {
     proptest!(|(d0 in 0i64..10, d1 in 10i64..20, d2 in 20i64..30)| {
-                                        let code = format!(r"
+                                            let code = format!(r"
 enum Status {{
     A = {d0},
     B = {d1},
@@ -85,23 +85,23 @@ fun main() {{
 }}
 ");
 
-                                        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                            .arg("-e")
-                                            .arg(&code)
-                                            .timeout(std::time::Duration::from_secs(5))
-                                            .assert()
-                                            .success()
-                                            .stdout(predicate::str::contains(d0.to_string()))
-                                            .stdout(predicate::str::contains(d1.to_string()))
-                                            .stdout(predicate::str::contains(d2.to_string()));
-                                    });
+                                            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                                .arg("-e")
+                                                .arg(&code)
+                                                .timeout(std::time::Duration::from_secs(5))
+                                                .assert()
+                                                .success()
+                                                .stdout(predicate::str::contains(d0.to_string()))
+                                                .stdout(predicate::str::contains(d1.to_string()))
+                                                .stdout(predicate::str::contains(d2.to_string()));
+                                        });
 }
 
 /// Property test: Enum cast to different integer types (i32, i64, isize)
 #[test]
 fn test_property_runtime_092_multiple_int_types() {
     proptest!(|(disc in 0i64..1000)| {
-                                        let code = format!(r"
+                                            let code = format!(r"
 enum Value {{
     X = {disc},
 }}
@@ -118,21 +118,21 @@ fun main() {{
 }}
 ");
 
-                                        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                            .arg("-e")
-                                            .arg(&code)
-                                            .timeout(std::time::Duration::from_secs(5))
-                                            .assert()
-                                            .success()
-                                            .stdout(predicate::str::contains(disc.to_string()).count(3));
-                                    });
+                                            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                                .arg("-e")
+                                                .arg(&code)
+                                                .timeout(std::time::Duration::from_secs(5))
+                                                .assert()
+                                                .success()
+                                                .stdout(predicate::str::contains(disc.to_string()).count(3));
+                                        });
 }
 
 /// Property test: Enum casts preserve discriminant values through operations
 #[test]
 fn test_property_runtime_092_discriminant_preservation() {
     proptest!(|(disc in 0i64..50)| {
-                                        let code = format!(r"
+                                            let code = format!(r"
 enum Priority {{
     Level = {disc},
 }}
@@ -146,13 +146,13 @@ fun main() {{
 }}
 ");
 
-                                        let expected = disc * 2;
-                                        assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                            .arg("-e")
-                                            .arg(&code)
-                                            .timeout(std::time::Duration::from_secs(5))
-                                            .assert()
-                                            .success()
-                                            .stdout(predicate::str::contains(expected.to_string()));
-                                    });
+                                            let expected = disc * 2;
+                                            assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+                                                .arg("-e")
+                                                .arg(&code)
+                                                .timeout(std::time::Duration::from_secs(5))
+                                                .assert()
+                                                .success()
+                                                .stdout(predicate::str::contains(expected.to_string()));
+                                        });
 }

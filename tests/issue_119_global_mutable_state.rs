@@ -250,7 +250,7 @@ fn test_issue_119_08_multiple_globals() {
 
 #[cfg(test)]
 mod property_tests {
-    
+
     use proptest::prelude::*;
 
     // Property 1: Global mutations are visible after function returns
