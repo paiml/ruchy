@@ -1,0 +1,7 @@
+# .bashrsignore for ruchy project
+# See: https://paiml.github.io/bashrs/reference/ignore-file.html
+
+# Metrics recording script from paiml-mcp-agent-toolkit
+# Rationale: This script intentionally uses timestamps for metrics tracking
+# The warnings are about subshell variable scope, not actual bugs
+scripts/record-metric.sh
