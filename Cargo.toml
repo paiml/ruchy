@@ -427,8 +427,13 @@ harness = false
 # name = "shared_session_performance"
 # harness = false
 
+# ⚡ [BUILD-TIME-002] Dev Profile Optimization (same strategy as test profile)
+# CRITICAL: Reduces cargo build from slow to fast with parallel compilation
 [profile.dev]
-opt-level = 0
+opt-level = 0              # No optimization for dev builds (faster compile)
+lto = false                # Disable link-time optimization (faster linking)
+codegen-units = 256        # ← CRITICAL: Maximum parallelization!
+incremental = true         # ← CRITICAL: Reuse previous builds!
 
 # ⚡ [BUILD-TIME-001] Test Profile Optimization (copied from paiml-mcp-agent-toolkit)
 # CRITICAL: Reduces test compilation from 10+ minutes to ~1-2 minutes
