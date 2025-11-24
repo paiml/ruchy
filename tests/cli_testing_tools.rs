@@ -27,6 +27,7 @@ fn test_property_tests_command_exists() {
 
 /// RED PHASE TEST 2: property-tests runs on `lang_comp` directory
 #[test]
+#[ignore = "Slow E2E test (17s): Runs full cargo run (compile+execute) - use 'make test-e2e'"]
 fn test_property_tests_runs_on_lang_comp() {
     let output = Command::new("cargo")
         .args([
@@ -56,6 +57,7 @@ fn test_property_tests_runs_on_lang_comp() {
 
 /// RED PHASE TEST 3: property-tests generates JSON report
 #[test]
+#[ignore = "Slow E2E test (22s): Runs full cargo run (compile+execute) - use 'make test-e2e'"]
 fn test_property_tests_json_format() {
     let output = Command::new("cargo")
         .args([
