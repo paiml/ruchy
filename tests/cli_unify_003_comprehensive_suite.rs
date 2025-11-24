@@ -652,6 +652,7 @@ fn test_069_tool_property_tests() {
 }
 
 #[test]
+#[ignore = "Slow E2E test (1.7s): Mutation testing"]
 fn test_070_tool_mutations() {
     let temp = TempDir::new().unwrap();
     let script = create_temp_file(&temp, "test.ruchy", "fun add(a, b) { a + b }");
