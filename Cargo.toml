@@ -430,6 +430,18 @@ harness = false
 [profile.dev]
 opt-level = 0
 
+# ⚡ [BUILD-TIME-001] Test Profile Optimization (copied from paiml-mcp-agent-toolkit)
+# CRITICAL: Reduces test compilation from 10+ minutes to ~1-2 minutes
+# Strategy: Maximum parallelization + incremental compilation
+[profile.test]
+opt-level = 0              # No optimization for test code (faster compile)
+lto = false                # Disable link-time optimization (faster linking)
+codegen-units = 256        # ← CRITICAL: Maximum parallelization!
+incremental = true         # ← CRITICAL: Reuse previous builds!
+
+[profile.test.package."*"]
+opt-level = 0              # No optimization for dependencies in tests
+
 # ⚡ [PERF-001] DEFAULT CHANGED: Speed-first optimization (BREAKING CHANGE v3.174.0)
 # Was: opt="z" (size) → Now: opt=3 (speed) - 28% faster!
 # Migration: Use --profile release-tiny for embedded/size-constrained environments
