@@ -4,6 +4,39 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Added
+- **[TOOLING-002] Renacer Syscall Tracing Integration for Self-Hosting Validation** ✅ Complete integration of renacer v0.6.2 for performance regression detection
+  - **Purpose**: Ensure ruchy can compile itself without regressions, detect performance hotspots, catch behavioral anomalies
+  - **Deliverables**:
+    - Golden trace baseline collection (tests/golden-traces/)
+    - Custom cluster configuration (ruchy-clusters.toml) with 8 categories
+    - Integration tests (tests/tooling_002_renacer_integration.rs) with 8 test cases
+    - Enhanced Makefile targets (renacer-collect-baselines, renacer-validate, renacer-anomaly-check)
+  - **Cluster Categories**:
+    - FileIO: Expected (40-70% time) - Ruchy source reading, Rust output writing
+    - MemoryManagement: Expected (10-30% time) - AST construction, code generation
+    - DynamicLinking: Expected (5-20% time) - Rust stdlib, cargo dependencies
+    - ProcessControl: UNEXPECTED (critical alert) - Detects accidental subprocess spawning
+    - Networking: UNEXPECTED (critical alert) - Detects telemetry leaks, remote deps
+    - Concurrency: UNEXPECTED (high alert) - Threading in single-shot transpiler
+    - SelfHostingBootstrap: Expected (50-80% time) - Compiling ruchy with itself
+    - SignalHandling: Expected (<5% time) - CTRL+C, panic recovery
+  - **Tests**: 8/8 passing (100%) - renacer installed, golden traces, cluster config, no subprocess spawning, no network calls
+  - **Makefile Targets**:
+    - `make renacer-collect-baselines` - Collect golden traces for 3 example files
+    - `make renacer-validate` - Validate transpiler against golden traces
+    - `make renacer-anomaly-check` - Run anomaly detection with custom clusters
+  - **Files Created**:
+    - tests/golden-traces/ (directory for baseline traces)
+    - ruchy-clusters.toml (8 cluster definitions with anomaly thresholds)
+    - tests/tooling_002_renacer_integration.rs (8 comprehensive tests)
+  - **Files Modified**:
+    - Makefile (3 new targets, updated help section)
+    - docs/execution/roadmap.yaml (TOOLING-002 ticket)
+  - **Complexity**: All helper functions ≤10
+  - **Quality**: Zero SATD, comprehensive documentation, TDD approach (RED→GREEN→REFACTOR)
+  - **Date**: 2025-11-24
+
 ### Fixed
 - **[TRANSPILER-PARAM-INFERENCE] Fix Parameter Type Inference for Arrays** ✅ Parameters without type annotations now correctly inferred as Vec types
   - **Root Cause**: Parameters without type annotations defaulted to `TypeKind::Named("Any")`, which transpiled to Rust's `_` placeholder. Rust cannot infer function parameter types, causing compilation failures.

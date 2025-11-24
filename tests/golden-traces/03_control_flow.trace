@@ -1,0 +1,45 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+error: `cargo run` could not determine which binary to run. Use the `--bin` option to specify a binary, or the `default-run` manifest key.
+available binaries: ruchy, ruchy-lsp
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+  9.22    0.001292           8       149           brk
+  8.60    0.001205          10       112           mmap
+  6.55    0.000918           8       106        49 statx
+ 11.89    0.001665          16       101           read
+  6.76    0.000947           9        98        58 openat
+  4.48    0.000627           6        97           rt_sigprocmask
+  4.31    0.000604           7        83           futex
+  5.00    0.000701          10        68           mprotect
+  6.35    0.000889          18        48           clone3
+  2.52    0.000353           7        45        20 newfstatat
+  2.30    0.000322           8        40           close
+  0.71    0.000100           8        12         6 access
+  0.76    0.000106           8        12        10 readlink
+  0.57    0.000080           6        12           rt_sigaction
+  0.61    0.000085           7        12           unknown
+  2.06    0.000289          24        12           getdents64
+  0.56    0.000079           7        11           getpid
+  0.49    0.000068           6        10        10 ioctl
+  0.36    0.000051           6         8           pread64
+  0.46    0.000065           8         8           stat
+  0.40    0.000056           8         7           getcwd
+  1.57    0.000220          36         6           munmap
+  0.25    0.000035           7         5           sigaltstack
+  0.26    0.000036           7         5           getrandom
+  0.19    0.000027           6         4           uname
+  0.32    0.000045          11         4           write
+  0.21    0.000029           7         4         2 arch_prctl
+  0.14    0.000019           6         3           getuid
+  0.13    0.000018           6         3           setgid
+  0.10    0.000014           7         2           set_tid_address
+  0.09    0.000013           6         2           lseek
+  0.10    0.000014           7         2           poll
+  0.09    0.000012           6         2           set_robust_list
+  0.19    0.000027          13         2           sysinfo
+ 21.35    0.002990        2990         1           execve
+  0.04    0.000006           6         1           fcntl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.014007          12      1097       155 total

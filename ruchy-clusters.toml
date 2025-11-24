@@ -1,0 +1,165 @@
+# Renacer Syscall Cluster Configuration for Ruchy Transpiler
+#
+# This configuration defines expected syscall patterns for the Ruchy transpiler
+# and helps detect anomalies that might indicate bugs or performance issues.
+#
+# Reference: TOOLING-002 - Renacer Integration for Self-Hosting Validation
+
+[[cluster]]
+name = "FileIO"
+description = "Ruchy source file reading and Rust output writing"
+syscalls = ["read", "mmap", "munmap", "open", "openat", "close", "write", "fsync", "lseek", "stat", "fstat"]
+expected_for_transpiler = true
+anomaly_threshold = 0.30  # Allow 30% variance (expected variance in file sizes)
+severity = "medium"
+explanation = """
+File I/O is the dominant operation for transpilers:
+- Reading Ruchy source files
+- Writing generated Rust code
+- Loading standard library modules
+Expected: 40-70% of total syscall time
+"""
+
+[[cluster]]
+name = "MemoryManagement"
+description = "Memory allocation and management"
+syscalls = ["mmap", "munmap", "brk", "madvise", "mprotect"]
+expected_for_transpiler = true
+anomaly_threshold = 0.40  # Memory patterns can vary significantly
+severity = "low"
+explanation = """
+Memory management is expected for AST construction and code generation.
+Large files will trigger more allocations.
+Expected: 10-30% of total syscall time
+"""
+
+[[cluster]]
+name = "DynamicLinking"
+description = "Loading Rust standard library and dynamic dependencies"
+syscalls = ["dlopen", "dlsym", "dlclose"]
+expected_for_transpiler = true
+anomaly_threshold = 0.40  # Linking patterns are fairly stable
+severity = "medium"
+explanation = """
+Dynamic linking occurs during:
+- Rust stdlib loading
+- Cargo dependency resolution
+- Ruchy runtime initialization
+Expected: 5-20% of total syscall time
+"""
+
+[[cluster]]
+name = "ProcessControl"
+description = "UNEXPECTED - Subprocess spawning (indicates potential bug)"
+syscalls = ["fork", "execve", "waitpid", "clone", "wait4", "vfork"]
+expected_for_transpiler = false  # ← CRITICAL: Transpilers should NOT spawn processes!
+anomaly_threshold = 0.05  # Even 5% is too much
+severity = "critical"
+explanation = """
+⚠️ ANOMALY DETECTED ⚠️
+Single-shot transpilers should NEVER spawn subprocesses.
+
+Possible causes:
+1. Accidental shell command execution (system(), backticks)
+2. File operations using shell (File.popen(), IO.popen())
+3. External tool invocation (rustfmt, cargo)
+
+Root cause investigation:
+- Search for system() calls
+- Check for ` (backtick) operator usage
+- Verify no File.popen() or IO.popen()
+- Look for subprocess::Command usage
+
+Expected: 0% of total syscall time
+Action: STOP THE LINE and fix immediately
+"""
+
+[[cluster]]
+name = "Networking"
+description = "UNEXPECTED - Network calls (indicates telemetry leak or remote dependency fetching)"
+syscalls = ["socket", "connect", "send", "sendto", "recv", "recvfrom", "bind", "listen", "accept"]
+expected_for_transpiler = false  # ← Transpilers should NOT make network calls!
+anomaly_threshold = 0.05
+severity = "critical"
+explanation = """
+⚠️ ANOMALY DETECTED ⚠️
+Transpilers should not make network calls during compilation.
+
+Possible causes:
+1. Telemetry/analytics library in dependencies
+2. Remote dependency fetching (should be pre-downloaded)
+3. License verification checks
+4. Update checks
+
+Root cause investigation:
+- Check Cargo.toml for telemetry dependencies
+- Verify no reqwest, hyper, or ureq in production code
+- Look for phone-home analytics
+- Check for update notification systems
+
+Expected: 0% of total syscall time
+Action: STOP THE LINE and remove telemetry immediately
+"""
+
+[[cluster]]
+name = "Concurrency"
+description = "UNEXPECTED - Threading in single-shot transpiler"
+syscalls = ["futex", "pthread_create", "pthread_join", "pthread_mutex_lock", "pthread_mutex_unlock"]
+expected_for_transpiler = false  # ← Single-shot transpilers typically don't need threads
+anomaly_threshold = 0.10
+severity = "high"
+explanation = """
+⚠️ ANOMALY DETECTED ⚠️
+Single-shot transpilers typically don't require threading.
+
+However, this might be legitimate if:
+- Parallel parsing of multiple files
+- Concurrent code generation
+- Async runtime initialization (tokio)
+
+Investigate:
+- Is this intentional parallelism?
+- Is tokio runtime being initialized unnecessarily?
+- Are rayon or crossbeam being used for performance?
+
+Expected: 0-10% of total syscall time (if parallel mode enabled)
+Action: Verify this is intentional optimization, not accidental overhead
+"""
+
+[[cluster]]
+name = "SelfHostingBootstrap"
+description = "Syscalls during self-hosting bootstrap (ruchy v1 → ruchy v2)"
+syscalls = ["mmap", "brk", "munmap", "read", "write", "open", "close", "execve"]
+expected_for_transpiler = true
+anomaly_threshold = 0.50  # Bootstrap can have high variance
+severity = "high"
+explanation = """
+Self-hosting bootstrap involves:
+1. Compiling ruchy source with ruchy v1
+2. Generating Rust code for ruchy v2
+3. Invoking rustc to compile ruchy v2
+4. Verifying semantic equivalence
+
+This is the MOST CRITICAL test for self-hosting compilers.
+Bootstrap must converge to a fixed point (v2 == v3).
+
+Expected: 50-80% of total syscall time
+Action: Track bootstrap time carefully - regressions here are critical
+"""
+
+[[cluster]]
+name = "SignalHandling"
+description = "Signal handling for CTRL+C and error recovery"
+syscalls = ["rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "sigaltstack"]
+expected_for_transpiler = true
+anomaly_threshold = 0.60  # Signal patterns are noisy
+severity = "low"
+explanation = """
+Signal handling is expected for:
+- CTRL+C (SIGINT) handling
+- Panic recovery (SIGSEGV, SIGABRT)
+- Timeout enforcement
+
+Expected: <5% of total syscall time
+This is normal overhead for Rust binaries.
+"""
