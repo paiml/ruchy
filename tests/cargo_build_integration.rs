@@ -42,6 +42,7 @@ fn test_build_command_missing_cargo_toml() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_command_debug_mode() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 
@@ -63,6 +64,7 @@ fn test_build_command_debug_mode() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_command_release_mode() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 
@@ -85,6 +87,7 @@ fn test_build_command_release_mode() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_command_transpiles_ruchy_files() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 
@@ -118,6 +121,7 @@ fn test_build_command_transpiles_ruchy_files() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_command_incremental() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 
@@ -139,6 +143,7 @@ fn test_build_command_incremental() {
 
 // Property-based test: Building twice should be idempotent
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_command_idempotent() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 
@@ -187,6 +192,7 @@ fn test_build_command_idempotent() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_build_then_run_workflow() {
     let (_temp_dir, project_path) = create_test_ruchy_project();
 

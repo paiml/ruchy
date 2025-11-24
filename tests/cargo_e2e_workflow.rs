@@ -13,6 +13,7 @@ fn ruchy_cmd() -> Command {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_create_project_add_dependency_build() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let project_name = "e2e_test_project";
@@ -89,6 +90,7 @@ fn test_e2e_create_project_add_dependency_build() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_library_project_with_dependencies() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let project_name = "e2e_lib_project";
@@ -136,6 +138,7 @@ fn test_e2e_library_project_with_dependencies() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_multiple_dependencies_and_build() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let project_name = "e2e_multi_deps";
@@ -179,6 +182,7 @@ fn test_e2e_multiple_dependencies_and_build() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_modify_source_rebuild() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let project_name = "e2e_rebuild_test";
@@ -229,6 +233,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_release_build_optimization() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let project_name = "e2e_release_test";
@@ -271,6 +276,7 @@ fn test_e2e_release_build_optimization() {
 
 // Property-based test: Workflow should be reproducible
 #[test]
+#[ignore = "E2E test: Runs full cargo build (>60s timeout) - use 'make test-e2e' for full E2E suite"]
 fn test_e2e_workflow_reproducibility() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
 
