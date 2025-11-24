@@ -13,7 +13,6 @@
 //! ⏸️ GREEN Phase: Implement parser support for `fn()` type syntax
 //! ⏸️ REFACTOR Phase: Apply quality gates (complexity ≤10)
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::NamedTempFile;
 

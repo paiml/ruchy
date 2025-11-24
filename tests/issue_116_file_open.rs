@@ -3,7 +3,6 @@
 //
 // EXTREME TDD: RED → GREEN → REFACTOR → VALIDATE
 
-use assert_cmd::Command;
 
 #[test]
 fn test_issue_116_open_function_with_file_methods() {

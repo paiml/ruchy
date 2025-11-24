@@ -5,7 +5,6 @@
 // Target: 5-15% code size reduction
 // Dependencies: PERF-002-A (constant folding), PERF-002-B (constant propagation) complete
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until DCE is implemented

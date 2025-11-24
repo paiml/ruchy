@@ -4,7 +4,6 @@
 //
 // Test naming convention: test_lint_008_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

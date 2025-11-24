@@ -6,7 +6,6 @@
 //! Root Cause: `Value::Closure` only stores Vec<String>, not default values
 //! Fix: Change to store Vec<(String, Option<Expr>)> + update call logic
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 // ============================================================================

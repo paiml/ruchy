@@ -14,7 +14,6 @@
 // - PARSER-080: Vec<T> support (v3.96.0 - already implemented)
 // - Tests document that both features work correctly
 
-use assert_cmd::Command as AssertCommand;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

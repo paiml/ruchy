@@ -15,7 +15,6 @@
 // - GREEN: Fix type inference to detect String returns
 // - REFACTOR: Apply PMAT quality gates (≤10 complexity, zero SATD)
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 #[test]

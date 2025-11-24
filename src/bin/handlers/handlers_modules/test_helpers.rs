@@ -517,10 +517,8 @@ mod tests {
         // Create a new file with .ruchy extension
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::copy(temp_file.path(), &ruchy_file).expect(&format!(
-            "Failed to copy test file to {}",
-            ruchy_file.display()
-        ));
+        fs::copy(temp_file.path(), &ruchy_file).unwrap_or_else(|_| panic!("Failed to copy test file to {}",
+            ruchy_file.display()));
 
         let result = discover_test_files(&ruchy_file, None, false);
         assert!(result.is_ok() || result.is_err()); // Tests that function doesn't panic
@@ -542,7 +540,7 @@ mod tests {
         for file in &files {
             assert!(
                 file.extension()
-                    .expect(&format!("File has no extension: {}", file.display()))
+                    .unwrap_or_else(|| panic!("File has no extension: {}", file.display()))
                     == "ruchy"
             );
         }
@@ -576,10 +574,8 @@ mod tests {
     fn test_discover_test_files_non_ruchy_file() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let txt_file = temp_dir.path().join("test.txt");
-        fs::write(&txt_file, "not a ruchy file").expect(&format!(
-            "Failed to write test file: {}",
-            txt_file.display()
-        ));
+        fs::write(&txt_file, "not a ruchy file").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            txt_file.display()));
 
         let result = discover_test_files(&txt_file, None, false);
         assert!(result.is_err());
@@ -604,10 +600,8 @@ mod tests {
     fn test_validate_and_add_file_ruchy() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::write(&ruchy_file, "println(\"test\")").expect(&format!(
-            "Failed to write test file: {}",
-            ruchy_file.display()
-        ));
+        fs::write(&ruchy_file, "println(\"test\")").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            ruchy_file.display()));
 
         let mut test_files = Vec::new();
         let result = validate_and_add_file(&ruchy_file, &mut test_files);
@@ -621,10 +615,8 @@ mod tests {
     fn test_validate_and_add_file_non_ruchy() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let txt_file = temp_dir.path().join("test.txt");
-        fs::write(&txt_file, "not ruchy").expect(&format!(
-            "Failed to write test file: {}",
-            txt_file.display()
-        ));
+        fs::write(&txt_file, "not ruchy").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            txt_file.display()));
 
         let mut test_files = Vec::new();
         let result = validate_and_add_file(&txt_file, &mut test_files);
@@ -671,10 +663,8 @@ mod tests {
     fn test_should_include_file_ruchy_no_filter() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::write(&ruchy_file, "test").expect(&format!(
-            "Failed to write test file: {}",
-            ruchy_file.display()
-        ));
+        fs::write(&ruchy_file, "test").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            ruchy_file.display()));
 
         let entry = WalkDir::new(temp_dir.path())
             .into_iter()
@@ -689,10 +679,8 @@ mod tests {
     fn test_should_include_file_ruchy_with_matching_filter() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let ruchy_file = temp_dir.path().join("my_test.ruchy");
-        fs::write(&ruchy_file, "test").expect(&format!(
-            "Failed to write test file: {}",
-            ruchy_file.display()
-        ));
+        fs::write(&ruchy_file, "test").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            ruchy_file.display()));
 
         let entry = WalkDir::new(temp_dir.path())
             .into_iter()
@@ -707,10 +695,8 @@ mod tests {
     fn test_should_include_file_ruchy_with_non_matching_filter() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::write(&ruchy_file, "test").expect(&format!(
-            "Failed to write test file: {}",
-            ruchy_file.display()
-        ));
+        fs::write(&ruchy_file, "test").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            ruchy_file.display()));
 
         let entry = WalkDir::new(temp_dir.path())
             .into_iter()
@@ -725,10 +711,8 @@ mod tests {
     fn test_should_include_file_non_ruchy() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let txt_file = temp_dir.path().join("test.txt");
-        fs::write(&txt_file, "test").expect(&format!(
-            "Failed to write test file: {}",
-            txt_file.display()
-        ));
+        fs::write(&txt_file, "test").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            txt_file.display()));
 
         let entry = WalkDir::new(temp_dir.path())
             .into_iter()
@@ -744,10 +728,8 @@ mod tests {
     fn test_run_test_file_success() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_file.display()
-        )); // Simple valid Ruchy code
+        fs::write(&test_file, "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_file.display())); // Simple valid Ruchy code
 
         let result = run_test_file(&test_file, false);
         // Note: This may fail due to Ruchy interpreter not being available in test environment
@@ -759,10 +741,8 @@ mod tests {
     fn test_run_test_file_verbose() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "println(\"Hello\")").expect(&format!(
-            "Failed to write test file: {}",
-            test_file.display()
-        ));
+        fs::write(&test_file, "println(\"Hello\")").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_file.display()));
 
         let result = run_test_file(&test_file, true);
         // Function should handle verbose mode without crashing
@@ -877,10 +857,8 @@ mod tests {
     fn test_generate_coverage_report_text() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_files = vec![temp_dir.path().join("test.ruchy")];
-        fs::write(&test_files[0], "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_files[0].display()
-        ));
+        fs::write(&test_files[0], "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_files[0].display()));
 
         let result = generate_coverage_report(&test_files, &[], "text", 0.0);
         // Function should complete without error (whether coverage works or not)
@@ -891,10 +869,8 @@ mod tests {
     fn test_generate_coverage_report_html() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_files = vec![temp_dir.path().join("test.ruchy")];
-        fs::write(&test_files[0], "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_files[0].display()
-        ));
+        fs::write(&test_files[0], "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_files[0].display()));
 
         let result = generate_coverage_report(&test_files, &[], "html", 0.0);
         // Function should complete without error
@@ -905,10 +881,8 @@ mod tests {
     fn test_generate_coverage_report_json() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_files = vec![temp_dir.path().join("test.ruchy")];
-        fs::write(&test_files[0], "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_files[0].display()
-        ));
+        fs::write(&test_files[0], "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_files[0].display()));
 
         let result = generate_coverage_report(&test_files, &[], "json", 0.0);
         // Function should complete without error
@@ -955,10 +929,8 @@ mod tests {
     fn test_execute_tests_verbose() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_file.display()
-        ));
+        fs::write(&test_file, "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_file.display()));
 
         let test_files = vec![test_file];
         let result = execute_tests(&test_files, true);
@@ -970,10 +942,8 @@ mod tests {
     fn test_execute_tests_json_output() {
         let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
         let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "42").expect(&format!(
-            "Failed to write test file: {}",
-            test_file.display()
-        ));
+        fs::write(&test_file, "42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
+            test_file.display()));
 
         let test_files = vec![test_file];
         let result = execute_tests(&test_files, false);

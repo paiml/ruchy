@@ -10,7 +10,6 @@
 //
 // This test will FAIL until ruchy publish is implemented
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::TempDir;
 

@@ -7,7 +7,6 @@
 //! ROOT CAUSE: Functions defined with `VarType::Local` instead of `VarType::Function`
 //! FIX: Add `VarType::Function` variant and exclude from unused checks
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use proptest::prelude::*;
 use std::fs;

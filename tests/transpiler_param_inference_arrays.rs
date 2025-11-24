@@ -3,7 +3,7 @@
 //! **Bug**: Parameters without type annotations used as arrays are inferred as `_` (invalid)
 //! **Impact**: Blocks BENCH-002 transpile/compile mode
 //! **Root Cause**: Parser defaults to "Any", transpiler converts to `_`, Rust can't infer params
-//! **Solution**: Use type_inference.rs helpers to detect usage patterns and infer concrete types
+//! **Solution**: Use `type_inference.rs` helpers to detect usage patterns and infer concrete types
 
 use assert_cmd::Command;
 use ruchy::backend::transpiler::Transpiler;
@@ -43,7 +43,7 @@ fun get_cell(a, i, j) {
     );
 }
 
-/// Test 2: len() usage should infer Vec<T>
+/// Test 2: `len()` usage should infer Vec<T>
 /// Pattern: len(a) → a must be Vec<T>
 #[test]
 fn test_transpiler_param_inference_002_array_with_len() {
@@ -126,7 +126,7 @@ fun process(matrix, row_idx, col_idx) {
     );
 }
 
-/// Test 5: BENCH-002 multiply_cell function (real-world case)
+/// Test 5: BENCH-002 `multiply_cell` function (real-world case)
 /// This is the exact function that blocks BENCH-002
 #[test]
 fn test_transpiler_param_inference_005_bench_002_multiply_cell() {
@@ -212,10 +212,10 @@ fun main() {
 
     assert!(exec_result.status.success());
     let output = String::from_utf8_lossy(&exec_result.stdout);
-    assert!(output.contains("6"), "Expected sum 1+2+3=6, got: {output}");
+    assert!(output.contains('6'), "Expected sum 1+2+3=6, got: {output}");
 }
 
-/// Test 7: Nested arrays with len() usage
+/// Test 7: Nested arrays with `len()` usage
 /// Pattern: len(matrix[0]) → matrix[0] is Vec, so matrix is Vec<Vec<T>>
 #[test]
 fn test_transpiler_param_inference_007_nested_arrays() {
@@ -289,7 +289,7 @@ fun main() {
     // but if it succeeds, verify output
     if run_result.status.success() {
         let output = String::from_utf8_lossy(&run_result.stdout);
-        assert!(output.contains("2"), "Expected length 2: {output}");
+        assert!(output.contains('2'), "Expected length 2: {output}");
     }
 
     // Mode 2: Transpile

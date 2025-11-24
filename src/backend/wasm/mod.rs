@@ -2339,7 +2339,7 @@ mod tests {
 
     #[test]
     fn test_needs_memory_check() {
-        let emitter = WasmEmitter::new();
+        let _emitter = WasmEmitter::new();
 
         // Simple integer shouldn't need memory
         let expr = Expr::new(

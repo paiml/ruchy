@@ -27,7 +27,6 @@
 //
 // Test naming convention: test_regression_085_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Basic `Command::new()` and `output()` (minimal reproduction from Issue #85)

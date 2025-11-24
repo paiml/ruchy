@@ -5,7 +5,6 @@
 // Target: 10-20% speedup on compute-heavy workloads
 // Dependencies: PERF-002-A (constant folding) complete
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until constant propagation is implemented

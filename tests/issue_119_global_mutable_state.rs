@@ -12,7 +12,6 @@
 // - Modifications inside function don't propagate back to parent scope
 // - Each function call gets fresh copy of captured environment
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -251,7 +250,7 @@ fn test_issue_119_08_multiple_globals() {
 
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    
     use proptest::prelude::*;
 
     // Property 1: Global mutations are visible after function returns

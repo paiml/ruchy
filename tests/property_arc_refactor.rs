@@ -11,7 +11,6 @@
 #![allow(clippy::expect_used)]
 #![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
-#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::runtime::interpreter::Value;

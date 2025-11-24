@@ -9,7 +9,6 @@
 // EXPECTED: Logger::new_with_options() should work (did in v3.146.0)
 // ACTUAL (v3.147.1): Infinite hang when calling methods with String parameters
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test Case 1: Minimal `Logger::new_with_options()` hang

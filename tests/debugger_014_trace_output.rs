@@ -4,7 +4,6 @@
 //
 // Test naming convention: test_debugger_014_phase_1_3_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Verify --trace outputs function entry/exit for simple function

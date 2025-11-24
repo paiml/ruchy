@@ -5,7 +5,6 @@
 //! Reference: <https://github.com/paiml/ruchy/issues/97>
 //! EXTREME TDD: These tests demonstrate the expected behavior
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test basic try operator with Err propagation

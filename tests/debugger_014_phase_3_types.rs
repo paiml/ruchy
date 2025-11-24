@@ -8,7 +8,6 @@
 //!
 //! Test naming convention: `test_debugger_014_phase_3`_<feature>_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Trace integer argument with type annotation

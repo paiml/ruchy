@@ -5,7 +5,6 @@
 // ROOT CAUSE: eval_fs_read() returns Result::Ok(string) but benchmarks expect plain string
 // FIX: Create read_file() alias that unwraps Result automatically
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;

@@ -1,8 +1,4 @@
 #![allow(missing_docs)]
-/// P0-BOOK-004: Network Programming TDD Tests
-/// These tests define the expected behavior for network programming features
-/// Based on ruchy-book chapter 9 examples that are not yet working
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

@@ -11,7 +11,6 @@
 //
 // Test Strategy: E2E tests verifying helpful error message with actionable suggestion
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test 1: .`powf()` with arguments shows helpful error (not misleading "takes no arguments")

@@ -2,7 +2,6 @@
 // EXTREME TDD Protocol: RED → GREEN → REFACTOR → VALIDATE
 // Target: 10-20% speedup on BENCH-003, BENCH-007
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until constant folder is implemented

@@ -10,7 +10,6 @@
 // EXPECTED: Vec::new() should generate FieldAccess (existing behavior in v3.146.0)
 // ACTUAL (v3.147.0): Vec::new() generates QualifiedName (breaks runtime)
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test Case 1: Minimal `Vec::new()` with while loop (8 lines)

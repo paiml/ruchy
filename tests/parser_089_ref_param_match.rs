@@ -14,7 +14,6 @@
 //! - ✅ Works: Function WITH parameter, WITHOUT match
 //! - ROOT: Reference parameter parsing doesn't reset state before match expression
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::NamedTempFile;
 

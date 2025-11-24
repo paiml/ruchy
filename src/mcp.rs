@@ -577,12 +577,12 @@ mod tests {
     }
     #[test]
     fn test_type_validation() {
-        let mcp = RuchyMCP::new();
+        let _mcp = RuchyMCP::new();
         let value = serde_json::json!("test string");
         // Test validation against String type
-        assert!(mcp.validate_json_value(&value, &MonoType::String).is_ok());
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::String).is_ok());
         // Test validation against Int type (should fail)
-        assert!(mcp.validate_json_value(&value, &MonoType::Int).is_err());
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Int).is_err());
     }
     #[test]
     fn test_ruchy_tool_creation() {

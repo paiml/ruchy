@@ -4,7 +4,6 @@
 // Expected: Two-pass analysis should resolve forward references
 // Status: RED phase - This test SHOULD FAIL until GREEN phase
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test forward function reference (calling function defined later)

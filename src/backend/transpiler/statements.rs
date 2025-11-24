@@ -1336,13 +1336,12 @@ impl Transpiler {
     /// Detects patterns like: param[i][j], param[row][col], param[0][i]
     /// Complexity: 10
     fn is_nested_array_param(&self, param_name: &str, expr: &Expr) -> bool {
-        self.find_nested_array_access(param_name, expr, &mut std::collections::HashSet::new())
+        Self::find_nested_array_access(param_name, expr, &mut std::collections::HashSet::new())
     }
 
     /// Internal helper with visited tracking to prevent infinite recursion
     /// Complexity: 9
     fn find_nested_array_access(
-        &self,
         param_name: &str,
         expr: &Expr,
         visited: &mut std::collections::HashSet<usize>,
@@ -1350,7 +1349,7 @@ impl Transpiler {
         use crate::frontend::ast::ExprKind;
 
         // Prevent infinite recursion by tracking visited nodes
-        let expr_addr = expr as *const _ as usize;
+        let expr_addr = std::ptr::from_ref(expr) as usize;
         if visited.contains(&expr_addr) {
             return false;
         }
@@ -1368,28 +1367,28 @@ impl Transpiler {
                     }
                 }
                 // Recurse into object
-                self.find_nested_array_access(param_name, object, visited)
+                Self::find_nested_array_access(param_name, object, visited)
             }
             // Recurse into block expressions
             ExprKind::Block(exprs) => exprs
                 .iter()
-                .any(|e| self.find_nested_array_access(param_name, e, visited)),
+                .any(|e| Self::find_nested_array_access(param_name, e, visited)),
             // Let bindings
             ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
-                self.find_nested_array_access(param_name, value, visited)
-                    || self.find_nested_array_access(param_name, body, visited)
+                Self::find_nested_array_access(param_name, value, visited)
+                    || Self::find_nested_array_access(param_name, body, visited)
             }
             // Binary operations
             ExprKind::Binary { left, right, .. } => {
-                self.find_nested_array_access(param_name, left, visited)
-                    || self.find_nested_array_access(param_name, right, visited)
+                Self::find_nested_array_access(param_name, left, visited)
+                    || Self::find_nested_array_access(param_name, right, visited)
             }
             // While loops
             ExprKind::While {
                 condition, body, ..
             } => {
-                self.find_nested_array_access(param_name, condition, visited)
-                    || self.find_nested_array_access(param_name, body, visited)
+                Self::find_nested_array_access(param_name, condition, visited)
+                    || Self::find_nested_array_access(param_name, body, visited)
             }
             // If expressions
             ExprKind::If {
@@ -1397,17 +1396,17 @@ impl Transpiler {
                 then_branch,
                 else_branch,
             } => {
-                self.find_nested_array_access(param_name, condition, visited)
-                    || self.find_nested_array_access(param_name, then_branch, visited)
+                Self::find_nested_array_access(param_name, condition, visited)
+                    || Self::find_nested_array_access(param_name, then_branch, visited)
                     || else_branch
                         .as_ref()
-                        .is_some_and(|e| self.find_nested_array_access(param_name, e, visited))
+                        .is_some_and(|e| Self::find_nested_array_access(param_name, e, visited))
             }
             // Assignments
             ExprKind::Assign { target, value }
             | ExprKind::CompoundAssign { target, value, .. } => {
-                self.find_nested_array_access(param_name, target, visited)
-                    || self.find_nested_array_access(param_name, value, visited)
+                Self::find_nested_array_access(param_name, target, visited)
+                    || Self::find_nested_array_access(param_name, value, visited)
             }
             _ => false,
         }
