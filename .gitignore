@@ -83,3 +83,4 @@ docs/notebook/book/book/
 .pmat-metrics/
 .pmat-metrics/
 benchmarks/results/
+coverage-improvement-report.json
