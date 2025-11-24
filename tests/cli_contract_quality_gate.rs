@@ -147,5 +147,5 @@ fn test_quality_gate_help() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("quality gate"));
+        .stdout(predicate::str::contains("Quality gate"));
 }
