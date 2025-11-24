@@ -1,66 +1,24 @@
-# Nextest configuration for Ruchy
-# https://nexte.st/book/configuration
+# Nextest configuration for ruchy
+# Handles thread-sensitive tests properly
 
 [profile.default]
-# Test retries
-retries = { backoff = "exponential", count = 2, delay = "1s" }
-
-# Slow test threshold
-slow-timeout = { period = "30s", terminate-after = 2 }
-
-# Test threads - use all available cores
-test-threads = "num-cpus"
-
-# Failure output
-failure-output = "immediate-final"
-
-# Status output
-status-level = "pass"
-
-[profile.ci]
-# More verbose output for CI
-status-level = "retry"
-failure-output = "immediate"
-
-# No retries in CI
-retries = 0
-
-# Fail fast in CI
-fail-fast = true
-
-[profile.quick]
-# Quick profile for rapid feedback during development - FAST ONLY
-test-threads = "num-cpus"
-retries = 0
-fail-fast = true
-status-level = "fail"
-slow-timeout = { period = "5s", terminate-after = 1 }  # Kill any test taking >5s
-
-[test-groups]
-# Group tests by category
-unit = { max-threads = 8 }
-integration = { max-threads = 4 }
-property = { max-threads = 2 }
+# Default: parallel execution
+threads = "num-cpus"
 
 [[profile.default.overrides]]
-# Property tests may take longer
-filter = "test(property)"
-slow-timeout = { period = "60s" }
-threads-required = 2
+# Class property tests require single-threaded execution
+# Reason: Interpreter is not thread-safe by design
+filter = 'test(class_property)'
+threads-required = 1
 
 [[profile.default.overrides]]
-# Integration tests get more time
-filter = "test(integration)"
-slow-timeout = { period = "45s" }
+# File watcher tests are timing-sensitive
+filter = 'test(watcher)'
+threads-required = 1
+# Give watcher tests more time to complete
+slow-timeout = { period = "60s", terminate-after = 2 }
 
 [[profile.default.overrides]]
-# REPL tests need exclusive access to temp directory
-filter = "test(repl)"
-threads-required = "num-test-threads"
-
-[[profile.default.overrides]]
-# Fuzzing tests are heavy
-filter = "test(fuzz)"
-threads-required = 4
-slow-timeout = { period = "120s" }
-
+# REPL tests may have shared state
+filter = 'test(repl)'
+threads-required = 1
