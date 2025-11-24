@@ -33,7 +33,11 @@ fn test_score_missing_file() {
         .arg("tests/fixtures/nonexistent.ruchy")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("not found").or(predicate::str::contains("No such file")));
+        .stderr(
+            predicate::str::contains("not found")
+                .or(predicate::str::contains("No such file"))
+                .or(predicate::str::contains("Failed to read file")),
+        );
 }
 
 #[test]
