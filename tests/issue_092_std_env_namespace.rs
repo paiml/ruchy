@@ -12,7 +12,6 @@
 // Test Strategy: E2E tests verifying std::env::args() works from Ruchy code
 //                Compare with flat builtin env_args() for backward compatibility
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test 1: `std::env::args()` returns process arguments (binary, script path, etc.)

@@ -18,7 +18,6 @@
 //
 // NOTE: Tests use i32 return types due to PARSER-084 (missing &'static str support)
 
-use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
 

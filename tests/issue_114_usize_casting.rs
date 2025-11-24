@@ -11,13 +11,12 @@
 // 3. Both operand orders: len() < count AND count > len()
 // 4. End-to-end: Full BENCH-008 compilation
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::io::Write;
 
 #[cfg(test)]
 mod property_tests {
-    use assert_cmd::Command;
+    
 
     #[test]
     #[ignore = "Run with: cargo test --test issue_114_usize_casting property_tests -- --ignored --nocapture"]

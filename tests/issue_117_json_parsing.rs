@@ -2,7 +2,6 @@
 // EXTREME TDD Protocol: RED → GREEN → REFACTOR → VALIDATE
 // GitHub Issue: https://github.com/paiml/ruchy/issues/117
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// RED PHASE: These tests WILL FAIL until JSON parsing is implemented

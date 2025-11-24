@@ -21,7 +21,6 @@
 //
 // Test naming convention: test_regression_083_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Basic format! macro (minimal reproduction from Issue #83)

@@ -6,7 +6,6 @@
 //!
 //! Test status: These tests MUST fail initially to prove we're testing the bug
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test case 1: Single mutable let statement

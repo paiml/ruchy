@@ -11,7 +11,6 @@
 // ⏸️ REFACTOR Phase: Clean up parser code if needed
 // ⏸️ VERIFY Phase: All tests pass, no regressions
 
-use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
 

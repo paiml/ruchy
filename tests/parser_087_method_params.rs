@@ -7,7 +7,6 @@
 // EXTREME TDD Protocol: RED → GREEN → REFACTOR
 // Complexity Target: ≤10 (MANDATORY)
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test 1: Two &str params + bool return - SHOULD WORK (baseline)

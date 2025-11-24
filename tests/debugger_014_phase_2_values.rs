@@ -8,7 +8,6 @@
 //!
 //! Test naming convention: `test_debugger_014_phase_2`_<feature>_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Trace function call with single argument value

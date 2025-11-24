@@ -3,7 +3,6 @@
 //
 // EXTREME TDD: RED → GREEN → REFACTOR → VALIDATE
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 #[test]

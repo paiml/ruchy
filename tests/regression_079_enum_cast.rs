@@ -7,7 +7,6 @@
 //
 // Test naming convention: test_regression_079_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Basic enum cast to i32 (simplest case from Issue #79)

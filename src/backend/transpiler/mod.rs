@@ -2559,7 +2559,7 @@ mod tests {
     // Test 22: contains_imports - with Import expression
     #[test]
     fn test_contains_imports_true() {
-        let transpiler = Transpiler::new();
+        let _transpiler = Transpiler::new();
         let import_expr = Expr {
             kind: ExprKind::Import {
                 module: "std::io".to_string(),
@@ -2583,7 +2583,7 @@ mod tests {
     // Test 24: contains_file_imports - with relative path
     #[test]
     fn test_contains_file_imports_relative() {
-        let transpiler = Transpiler::new();
+        let _transpiler = Transpiler::new();
         let file_import = Expr {
             kind: ExprKind::Import {
                 module: "./my_module".to_string(),

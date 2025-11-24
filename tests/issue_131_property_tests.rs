@@ -9,7 +9,6 @@
 // 4. Type preservation: Numbers, strings, booleans preserved
 // 5. Nested access: Deep object/array access doesn't crash
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use proptest::prelude::*;
 

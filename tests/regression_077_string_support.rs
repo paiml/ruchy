@@ -8,7 +8,6 @@
 // SCOPE: This test validates String::new() and String::from() work correctly
 // OUT OF SCOPE: impl methods (non-new), Option enum (separate issues)
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test Case 1: `String::new()` creates empty string

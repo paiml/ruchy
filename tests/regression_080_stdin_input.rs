@@ -8,7 +8,6 @@
 //! GitHub Issue: <https://github.com/paiml/ruchy/issues/80>
 //! Ticket: DEBUGGER-013
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::io::Write;
 

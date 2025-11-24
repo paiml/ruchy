@@ -6,7 +6,6 @@
 //!
 //! FIX: Add match arm for `ExprKind::MacroInvocation` in interpreter.
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test vec! macro with `MacroInvocation` variant (Issue #74 regression)

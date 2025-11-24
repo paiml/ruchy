@@ -6,7 +6,6 @@
 //
 // Test naming convention: test_property_runtime_092_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use proptest::prelude::*;
 

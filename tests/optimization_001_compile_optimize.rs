@@ -2,7 +2,6 @@
 // Tests for `ruchy compile --optimize <level>` command
 // EXTREME TDD: RED phase - These tests WILL FAIL initially
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

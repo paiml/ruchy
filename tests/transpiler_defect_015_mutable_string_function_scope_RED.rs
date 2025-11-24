@@ -34,7 +34,6 @@
 //! - GREEN: Fix `is_variable_mutated()` to detect function-scope mutations
 //! - REFACTOR: Property tests with 10K+ inputs
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::TempDir;
 

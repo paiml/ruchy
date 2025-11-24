@@ -29,7 +29,6 @@
 //
 // Test naming convention: test_regression_082_<scenario>
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test #1: Basic `chrono::Utc` import (minimal reproduction from Issue #82)

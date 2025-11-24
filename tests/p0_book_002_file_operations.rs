@@ -1,7 +1,4 @@
 #![allow(missing_docs)]
-/// P0-BOOK-002: File Operations TDD Tests
-/// These tests define the expected behavior for file I/O operations in transpiled code
-use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;

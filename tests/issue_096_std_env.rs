@@ -6,7 +6,6 @@
 //!
 //! These tests will FAIL initially (RED phase) until we implement `std::env` module.
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 /// Test basic `env::args()` access

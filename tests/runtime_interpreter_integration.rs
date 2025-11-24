@@ -6,7 +6,6 @@
 //! Approach: Execute example files through CLI to exercise interpreter execution paths.
 //! Each test verifies successful execution and expected output patterns.
 
-use assert_cmd::Command;
 use predicates::prelude::*;
 
 // ============================================================================

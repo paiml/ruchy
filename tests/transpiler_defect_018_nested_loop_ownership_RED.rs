@@ -27,7 +27,6 @@
 //
 // This test will FAIL until transpiler auto-clones values used in inner loops
 
-use assert_cmd::Command;
 use std::fs;
 use tempfile::TempDir;
 

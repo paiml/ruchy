@@ -21,7 +21,7 @@ struct Grammar {
     updated: String,
     meta: GrammarMeta,
     lexical: Lexical,
-    grammar: GrammarRules,
+    rules: GrammarRules,
     validation: Validation,
     thresholds: Thresholds,
 }
