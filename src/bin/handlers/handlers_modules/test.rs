@@ -438,13 +438,13 @@ mod tests {
 
         // Create a .ruchy file
         let ruchy_file = temp_dir.path().join("test.ruchy");
-        fs::write(&ruchy_file, "println(\"test\")").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-            ruchy_file.display()));
+        fs::write(&ruchy_file, "println(\"test\")")
+            .unwrap_or_else(|_| panic!("Failed to write test file: {}", ruchy_file.display()));
 
         // Create a non-ruchy file (should be ignored)
         let other_file = temp_dir.path().join("other.txt");
-        fs::write(&other_file, "not ruchy").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-            other_file.display()));
+        fs::write(&other_file, "not ruchy")
+            .unwrap_or_else(|_| panic!("Failed to write test file: {}", other_file.display()));
 
         let modification_time = get_latest_modification(temp_dir.path());
         // Should return a valid time

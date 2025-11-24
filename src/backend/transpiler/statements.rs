@@ -1403,8 +1403,7 @@ impl Transpiler {
                         .is_some_and(|e| Self::find_nested_array_access(param_name, e, visited))
             }
             // Assignments
-            ExprKind::Assign { target, value }
-            | ExprKind::CompoundAssign { target, value, .. } => {
+            ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
                 Self::find_nested_array_access(param_name, target, visited)
                     || Self::find_nested_array_access(param_name, value, visited)
             }

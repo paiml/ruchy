@@ -6,7 +6,6 @@
 //
 // This test will FAIL until tools are updated to track type declarations in scope
 
-
 /// RED TEST 1: ruchy lint should NOT report "undefined variable" for enum types
 #[test]
 fn test_tool_defect_001_01_lint_recognizes_enums_red() {

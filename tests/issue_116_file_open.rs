@@ -3,7 +3,6 @@
 //
 // EXTREME TDD: RED → GREEN → REFACTOR → VALIDATE
 
-
 #[test]
 fn test_issue_116_open_function_with_file_methods() {
     // RED: This test MUST fail - open() not recognized as builtin

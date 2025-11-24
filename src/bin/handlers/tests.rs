@@ -30,8 +30,8 @@ fn test_handle_eval_command_invalid_expr() {
 fn test_parse_ruchy_source_from_string() {
     let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
     let file_path = temp_dir.path().join("test.ruchy");
-    fs::write(&file_path, "2 + 2").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-        file_path.display()));
+    fs::write(&file_path, "2 + 2")
+        .unwrap_or_else(|_| panic!("Failed to write test file: {}", file_path.display()));
     let ast = parse_ruchy_source(&file_path).expect("parse_ruchy_source should succeed");
     assert!(matches!(
         ast.kind,
@@ -43,8 +43,8 @@ fn test_parse_ruchy_source_from_string() {
 fn test_parse_ruchy_source_from_file() {
     let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
     let file_path = temp_dir.path().join("test.ruchy");
-    fs::write(&file_path, "let x = 42").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-        file_path.display()));
+    fs::write(&file_path, "let x = 42")
+        .unwrap_or_else(|_| panic!("Failed to write test file: {}", file_path.display()));
 
     let ast = parse_ruchy_source(&file_path).expect("parse_ruchy_source should succeed");
     assert!(matches!(
@@ -58,8 +58,8 @@ fn test_read_source_from_file() {
     let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
     let file_path = temp_dir.path().join("test.ruchy");
     let content = "fun hello() { 42 }";
-    fs::write(&file_path, content).unwrap_or_else(|_| panic!("Failed to write test file: {}",
-        file_path.display()));
+    fs::write(&file_path, content)
+        .unwrap_or_else(|_| panic!("Failed to write test file: {}", file_path.display()));
 
     let result = read_source_file(&file_path, false).expect("read_source_file should succeed");
     assert_eq!(result, content);
@@ -131,11 +131,11 @@ fn test_write_transpiled_output_to_file() {
     let output_path = temp_dir.path().join("output.rs");
 
     // write_transpiled_output("let x = 42;", &output_path).unwrap(); // Function doesn't exist
-    fs::write(&output_path, "let x = 42;").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-        output_path.display())); // Direct file write for testing
+    fs::write(&output_path, "let x = 42;")
+        .unwrap_or_else(|_| panic!("Failed to write test file: {}", output_path.display())); // Direct file write for testing
 
-    let content = fs::read_to_string(&output_path).unwrap_or_else(|_| panic!("Failed to read output file: {}",
-        output_path.display()));
+    let content = fs::read_to_string(&output_path)
+        .unwrap_or_else(|_| panic!("Failed to read output file: {}", output_path.display()));
     assert_eq!(content, "let x = 42;");
 }
 
@@ -162,8 +162,8 @@ fn test_handle_run_command_basic() {
 fn test_handle_test_command_basic() {
     let temp_dir = TempDir::new().expect("Failed to create temporary test directory");
     let file_path = temp_dir.path().join("test.ruchy");
-    fs::write(&file_path, "test basic { assert(1 == 1) }").unwrap_or_else(|_| panic!("Failed to write test file: {}",
-        file_path.display()));
+    fs::write(&file_path, "test basic { assert(1 == 1) }")
+        .unwrap_or_else(|_| panic!("Failed to write test file: {}", file_path.display()));
 
     // This would need proper test runner setup
     // let result = handle_test_command(file_path.to_str().unwrap(), false, None, None, false);
