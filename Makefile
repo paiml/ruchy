@@ -988,6 +988,8 @@ test-fast:
 	@echo "   - Property test cases: 50 (reduced for speed)"
 	@echo "   - Threads: $$(nproc) parallel"
 	@echo "   - Test runner: cargo-nextest (or cargo test fallback)"
+	@mkdir -p .pmat-metrics
+	@date +%s%3N > .pmat-metrics/test-fast.start
 	@if command -v cargo-nextest >/dev/null 2>&1; then \
 		PROPTEST_CASES=50 RUST_TEST_THREADS=$$(nproc) cargo nextest run \
 			--workspace \
@@ -996,7 +998,9 @@ test-fast:
 	else \
 		PROPTEST_CASES=50 cargo test --workspace; \
 	fi
+	@./scripts/record-metric.sh test-fast
 	@echo "✓ Fast tests complete (target: <5 min)"
+	@cat .pmat-metrics/test-fast.result 2>/dev/null | jq -r '"⏱️  Duration: \(.duration_ms)ms | Tests: \(.tests // \"N/A\")"' 2>/dev/null || true
 
 # Pre-commit fast tests (MANDATORY: <30 seconds)
 # Minimal property test cases for rapid pre-commit validation
@@ -1773,3 +1777,67 @@ golden-traces: golden-traces-validate
 	@echo "   - golden_traces/control_flow_summary.txt"
 	@echo "   - golden_traces/algorithms_summary.txt"
 
+
+# ============================================================================
+# BUILD TIME BENCHMARKING (Reproducible Metrics)
+# ============================================================================
+# Pattern: Adapted from paiml-mcp-agent-toolkit bench-build-times
+# Purpose: Track build time improvements over time (BUILD-TIME-001, BUILD-TIME-002)
+
+.PHONY: bench-build-times bench-test-times metrics-show
+
+bench-build-times: ## Measure build times across configurations (~5-10 minutes)
+	@echo "⏱️  Benchmarking build times..."
+	@echo "📊 This will take 5-10 minutes (3 clean builds)"
+	@mkdir -p .pmat-metrics benchmarks/results
+	@# Test build (dev profile with BUILD-TIME-002 optimization)
+	@echo "1/3: Testing dev build (clean)..."
+	@cargo clean
+	@date +%s%3N > .pmat-metrics/build-dev.start
+	@time cargo build --workspace 2>&1 | tee benchmarks/results/build-dev.log
+	@./scripts/record-metric.sh build-dev || echo "Dev build: $$(date +%s%3N | awk -v start=$$(cat .pmat-metrics/build-dev.start) '{print ($$1 - start)}')ms"
+	@# Release build
+	@echo "2/3: Testing release build (clean)..."
+	@cargo clean
+	@date +%s%3N > .pmat-metrics/build-release.start
+	@time cargo build --release --workspace 2>&1 | tee benchmarks/results/build-release.log
+	@./scripts/record-metric.sh build-release || echo "Release build: $$(date +%s%3N | awk -v start=$$(cat .pmat-metrics/build-release.start) '{print ($$1 - start)}')ms"
+	@# Test compilation (test profile with BUILD-TIME-001 optimization)
+	@echo "3/3: Testing test compilation (clean)..."
+	@cargo clean --profile test
+	@date +%s%3N > .pmat-metrics/build-test.start
+	@time cargo test --no-run --workspace 2>&1 | tee benchmarks/results/build-test.log
+	@./scripts/record-metric.sh build-test || echo "Test build: $$(date +%s%3N | awk -v start=$$(cat .pmat-metrics/build-test.start) '{print ($$1 - start)}')ms"
+	@echo "✅ Build time benchmarks complete"
+	@echo "📊 Results saved to:"
+	@echo "   - .pmat-metrics/*.result (JSON)"
+	@echo "   - benchmarks/results/*.log (full logs)"
+
+bench-test-times: ## Measure test execution times
+	@echo "⏱️  Benchmarking test execution times..."
+	@$(MAKE) test-fast
+	@echo "✅ Test time benchmark complete"
+	@cat .pmat-metrics/test-fast.result 2>/dev/null | jq '.' || true
+
+metrics-show: ## Show current build/test metrics
+	@echo "📊 Current Build/Test Metrics:"
+	@echo ""
+	@if [ -f .pmat-metrics/test-fast.result ]; then \
+		echo "⚡ Test Fast:"; \
+		cat .pmat-metrics/test-fast.result | jq -r '"   Duration: \(.duration_ms)ms | Tests: \(.tests // \"N/A\") | \(.timestamp)"'; \
+		echo ""; \
+	fi
+	@if [ -f .pmat-metrics/build-dev.result ]; then \
+		echo "🔨 Dev Build:"; \
+		cat .pmat-metrics/build-dev.result | jq -r '"   Duration: \(.duration_ms)ms | \(.timestamp)"'; \
+		echo ""; \
+	fi
+	@if [ -f .pmat-metrics/build-test.result ]; then \
+		echo "🧪 Test Build:"; \
+		cat .pmat-metrics/build-test.result | jq -r '"   Duration: \(.duration_ms)ms | \(.timestamp)"'; \
+		echo ""; \
+	fi
+	@if [ -f .pmat-metrics/build-release.result ]; then \
+		echo "🚀 Release Build:"; \
+		cat .pmat-metrics/build-release.result | jq -r '"   Duration: \(.duration_ms)ms | Binary: \(.binary_size // \"N/A\") bytes | \(.timestamp)"'; \
+	fi

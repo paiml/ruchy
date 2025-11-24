@@ -81,3 +81,5 @@ docs/notebook/book/book/
 # PMAT TDG baseline and O(1) Quality Gates metrics
 .pmat/baseline.json
 .pmat-metrics/
+.pmat-metrics/
+benchmarks/results/
