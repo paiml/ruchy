@@ -245,12 +245,12 @@ fn calculate_implementation_percentage(grammar: &Grammar) -> f64 {
 
     // Count grammar components
     for components in [
-        &grammar.grammar.items,
-        &grammar.grammar.types,
-        &grammar.grammar.expressions,
-        &grammar.grammar.patterns,
-        &grammar.grammar.effects,
-        &grammar.grammar.macros,
+        &grammar.rules.items,
+        &grammar.rules.types,
+        &grammar.rules.expressions,
+        &grammar.rules.patterns,
+        &grammar.rules.effects,
+        &grammar.rules.macros,
     ] {
         total += components.len();
         implemented += components.values().filter(|c| c.implemented).count();
@@ -276,14 +276,14 @@ fn calculate_test_coverage_percentage(grammar: &Grammar) -> f64 {
     count += 5;
 
     // Grammar components coverage
-    total_coverage += f64::from(grammar.grammar.program.test_coverage);
+    total_coverage += f64::from(grammar.rules.program.test_coverage);
     count += 1;
 
     for components in [
-        &grammar.grammar.items,
-        &grammar.grammar.types,
-        &grammar.grammar.expressions,
-        &grammar.grammar.patterns,
+        &grammar.rules.items,
+        &grammar.rules.types,
+        &grammar.rules.expressions,
+        &grammar.rules.patterns,
     ] {
         for component in components.values() {
             total_coverage += f64::from(component.test_coverage);
@@ -318,7 +318,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
     let mut missing = Vec::new();
 
     // Check grammar items
-    for (name, component) in &grammar.grammar.items {
+    for (name, component) in &grammar.rules.items {
         if !component.implemented {
             missing.push(MissingComponent {
                 name: name.clone(),
@@ -331,7 +331,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
     }
 
     // Check expressions
-    for (name, component) in &grammar.grammar.expressions {
+    for (name, component) in &grammar.rules.expressions {
         if !component.implemented {
             missing.push(MissingComponent {
                 name: name.clone(),
@@ -344,7 +344,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
     }
 
     // Check effects
-    for (name, component) in &grammar.grammar.effects {
+    for (name, component) in &grammar.rules.effects {
         if !component.implemented {
             missing.push(MissingComponent {
                 name: name.clone(),
@@ -357,7 +357,7 @@ fn collect_missing_components(grammar: &Grammar) -> Vec<MissingComponent> {
     }
 
     // Check macros
-    for (name, component) in &grammar.grammar.macros {
+    for (name, component) in &grammar.rules.macros {
         if !component.implemented {
             missing.push(MissingComponent {
                 name: name.clone(),
@@ -439,7 +439,7 @@ fn calculate_category_report(category: &str, grammar: &Grammar) -> CategoryRepor
             ]
         }
         "grammar" => grammar
-            .grammar
+            .rules
             .items
             .iter()
             .map(|(name, comp)| ComponentStatus {
@@ -450,7 +450,7 @@ fn calculate_category_report(category: &str, grammar: &Grammar) -> CategoryRepor
             })
             .collect(),
         "expressions" => grammar
-            .grammar
+            .rules
             .expressions
             .iter()
             .map(|(name, comp)| ComponentStatus {
@@ -461,7 +461,7 @@ fn calculate_category_report(category: &str, grammar: &Grammar) -> CategoryRepor
             })
             .collect(),
         "patterns" => grammar
-            .grammar
+            .rules
             .patterns
             .iter()
             .map(|(name, comp)| ComponentStatus {
