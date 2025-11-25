@@ -1994,24 +1994,7 @@ mod tests {
             _ => panic!("Expected range expression"),
         }
     }
-    // Test disabled: Import AST structure pending redesign
-    // #[test]
-    // fn test_import_expression() {
-    //     let expr = Expr::new(
-    //         ExprKind::Import {
-    //             module: "std::collections".to_string(),
-    //             items: Some(vec!["HashMap".to_string(), "HashSet".to_string()]),
-    //         },
-    //         Span::new(0, 30),
-    //     );
-    //     match expr.kind {
-    //         ExprKind::Import { module, items } => {
-    //             assert_eq!(module, "std::collections");
-    //             assert!(items.is_some());
-    //         }
-    //         _ => panic!("Expected import expression"),
-    //     }
-    // }
+
     #[test]
     fn test_pipeline_expression() {
         let expr_start = Box::new(Expr::new(
@@ -2376,30 +2359,6 @@ mod tests {
         assert!(matches!(none_val.kind, ExprKind::None));
     }
 
-    // Test disabled: Pipeline operator enum variant pending
-    // #[test]
-    // fn test_pipeline_operator() {
-    //     // Test pipeline operator expression
-    //     let pipeline = Expr::new(
-    //         ExprKind::Binary {
-    //             left: Box::new(Expr::new(
-    //                 ExprKind::Literal(Literal::Integer(5, None)),
-    //                 Span::new(0, 1),
-    //             )),
-    //             op: BinaryOp::Pipeline,
-    //             right: Box::new(Expr::new(
-    //                 ExprKind::Identifier("double".to_string()),
-    //                 Span::new(5, 11),
-    //             )),
-    //         },
-    //         Span::new(0, 11),
-    //     );
-    //
-    //     if let ExprKind::Binary { op, .. } = pipeline.kind {
-    //         assert_eq!(op, BinaryOp::Pipeline);
-    //     }
-    // }
-
     #[test]
     fn test_destructuring_patterns() {
         // Test tuple and struct destructuring
@@ -2454,19 +2413,6 @@ mod tests {
             assert_eq!(name, "println");
         }
     }
-
-    // Test disabled: Import AST structure pending redesign
-    // #[test]
-    // fn test_import_export_statements() {
-    //     // Test import and export statements
-    //     let import = Expr::new(
-    //         ExprKind::Import {
-    //             module: "std::collections".to_string(),
-    //             items: Some(vec!["HashMap".to_string()]),
-    //         },
-    //         Span::new(0, 30),
-    //     );
-    // }
 
     #[test]
     fn test_decorator_attributes() {

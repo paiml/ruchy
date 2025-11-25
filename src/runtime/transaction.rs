@@ -577,22 +577,26 @@ mod tests {
         assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
         assert_eq!(state.bindings.get("y"), None);
     }
-    // SavePoint test implementation
-    // #[test]
-    // fn test_savepoint() {
-    //     let mut state = TransactionalState::new(1024 * 1024);
-    //
-    //     state.insert_binding("x".to_string(), Value::Integer(1), false);
-    //
-    //     {
-    //         let sp = state.savepoint().expect("operation should succeed in test");
-    //         state.insert_binding("x".to_string(), Value::Integer(2), false);
-    //         // SavePoint dropped here, automatic rollback
-    //     }
-    //
-    //     // Should be rolled back
-    //     assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
-    // }
+
+    #[test]
+    #[ignore = "SavePoint automatic rollback on drop needs implementation"]
+    fn test_savepoint() {
+        let mut state = TransactionalState::new(1024 * 1024);
+
+        state.insert_binding("x".to_string(), Value::Integer(1), false);
+
+        {
+            let _sp = state
+                .savepoint()
+                .expect("savepoint should succeed in test");
+            state.insert_binding("x".to_string(), Value::Integer(2), false);
+            // SavePoint dropped here, automatic rollback expected
+        }
+
+        // Should be rolled back
+        assert_eq!(state.bindings.get("x"), Some(&Value::Integer(1)));
+    }
+
     #[test]
     fn test_mvcc() {
         let mut mvcc = MVCC::new();
