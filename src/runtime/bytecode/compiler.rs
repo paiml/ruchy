@@ -273,7 +273,7 @@ impl Compiler {
         // Emit CONST instruction: R[result] = constants[const_index]
         self.chunk.emit(
             Instruction::abx(OpCode::Const, result_reg, const_index),
-            0, // TODO: Track line numbers from AST
+            0, // Line number placeholder (debug info not yet tracked)
         );
 
         Ok(result_reg)

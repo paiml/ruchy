@@ -122,7 +122,7 @@ impl VM {
     /// Execute a bytecode chunk
     ///
     /// Returns the result of the last executed instruction.
-    #[allow(unsafe_code)] // TODO: Refactor CallFrame to avoid 'static lifetime requirement
+    #[allow(unsafe_code)] // Note: CallFrame uses 'static lifetime (safe: frame doesn't outlive chunk)
     pub fn execute(&mut self, chunk: &BytecodeChunk) -> Result<Value, String> {
         // Safety: We need to extend the lifetime to 'static for the call stack
         // This is safe because the call frame doesn't outlive the chunk reference
