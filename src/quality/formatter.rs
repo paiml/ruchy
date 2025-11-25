@@ -1773,7 +1773,7 @@ mod tests {
 
     #[test]
     fn test_format_type_named() {
-        let formatter = Formatter::new();
+        let _formatter = Formatter::new();
         let type_kind = TypeKind::Named("String".to_string());
         let result = Formatter::format_type(&type_kind);
         assert_eq!(result, "String");
@@ -1781,7 +1781,7 @@ mod tests {
 
     #[test]
     fn test_format_type_fallback() {
-        let formatter = Formatter::new();
+        let _formatter = Formatter::new();
         let type_kind = TypeKind::List(Box::new(Type {
             kind: TypeKind::Named("Int".to_string()),
             span: Default::default(),

@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-012: Error Handling - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/12-error-handling/*.ruchy
 // Validates: LANG-COMP-012 Error Handling (Result, Option, try/catch, propagation)

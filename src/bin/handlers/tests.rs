@@ -89,7 +89,6 @@ fn test_determine_output_path_no_extension() {
     assert_eq!(output, Path::new("tests/generated_from_replays.rs"));
 }
 
-
 #[test]
 fn test_write_transpiled_output_to_file() {
     let temp_dir = TempDir::new().expect("Failed to create temporary test directory");

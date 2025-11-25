@@ -186,6 +186,8 @@ fun explicit_return(n) {
 #[test]
 #[ignore = "expensive: invokes rustc"]
 fn test_issue_114_end_to_end_compilation() {
+    use std::io::Write;
+
     // Test 8: End-to-end verification - transpile and compile
     let input = r#"
 fun string_concatenation(iterations) {
@@ -233,7 +235,6 @@ fun main() {
     );
 
     // Write to temp file and attempt compilation
-    use std::io::Write;
     let temp_file = std::env::temp_dir().join("issue_114_test.rs");
     let mut file = std::fs::File::create(&temp_file).unwrap();
     file.write_all(rust_code.as_bytes()).unwrap();

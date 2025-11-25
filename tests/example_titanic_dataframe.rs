@@ -245,7 +245,7 @@ mod property_tests {
     /// Property: Any valid `DataFrame` builder pattern should transpile without panicking
     #[test]
     fn property_dataframe_builder_never_panics() {
-        let test_cases = vec![
+        let test_cases = [
             // Single column
             r#"let df = DataFrame::new().column("a", [1]).build()"#,
             // Multiple columns

@@ -16,6 +16,7 @@ fn ruchy_cmd() -> Command {
 }
 
 /// Helper: Create temp file with content
+#[allow(dead_code)]
 fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::PathBuf {
     let path = dir.path().join(name);
     fs::write(&path, content).expect("Failed to write temp file");

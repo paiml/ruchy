@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![allow(deprecated)] // cargo_bin deprecation warning
 //! Integration tests for HTTP server watch mode (HTTP-002-A)
 //!
 //! Tests cover:
@@ -120,15 +121,14 @@ fn test_pid_file_replaces_stale_entry() {
 #[ignore = "Requires Unix signals - run with: cargo test -- --ignored"]
 #[cfg(unix)]
 fn test_graceful_shutdown_on_sigterm() {
+    use nix::sys::signal::{kill, Signal};
+    use nix::unistd::Pid;
+
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("index.html");
     fs::write(&test_file, "<h1>Test</h1>").unwrap();
 
     let pid_path = temp_dir.path().join("server.pid");
-
-    // Import signal handling at function start
-    use nix::sys::signal::{kill, Signal};
-    use nix::unistd::Pid;
 
     // Find ruchy binary path
     let binary_path = assert_cmd::cargo::cargo_bin("ruchy");
@@ -152,6 +152,7 @@ fn test_graceful_shutdown_on_sigterm() {
 
     // Send SIGTERM for graceful shutdown
 
+    #[allow(clippy::cast_possible_wrap)]
     let server_pid = child.id() as i32;
     kill(Pid::from_raw(server_pid), Signal::SIGTERM).expect("Failed to send SIGTERM");
 

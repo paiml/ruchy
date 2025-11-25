@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-011: Ranges - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/11-ranges/*.ruchy
 // Validates: LANG-COMP-011 Ranges (basic ranges, iteration, variables, patterns)

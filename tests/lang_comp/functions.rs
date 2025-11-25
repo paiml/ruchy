@@ -1,8 +1,8 @@
+#![allow(deprecated)]
 // LANG-COMP-004: Functions - Validation Tests with Traceability
 // Links to: examples/lang_comp/04-functions/*.ruchy
 // Validates: LANG-COMP-004 Functions (declaration, parameters, return values, closures)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
-
 #![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
 
 use assert_cmd::Command;

@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-008: Methods - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/08-methods/*.ruchy
 // Validates: LANG-COMP-008 Methods (string, array, integer, chaining)

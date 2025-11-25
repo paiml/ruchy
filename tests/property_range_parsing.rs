@@ -15,9 +15,7 @@
 #![allow(clippy::ignore_without_reason)] // Property tests run with --ignored flag
 #![allow(missing_docs)]
 #![allow(clippy::expect_used)]
-#![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
-#![allow(missing_docs)]
 
 use proptest::prelude::*;
 use ruchy::Parser;
@@ -48,6 +46,7 @@ fn arb_range_expr() -> impl Strategy<Value = String> {
 }
 
 /// Generate slice expressions with ranges
+#[allow(dead_code)]
 fn arb_slice_expr() -> impl Strategy<Value = String> {
     (arb_range_expr(),).prop_map(|(range,)| format!("arr[{range}]"))
 }

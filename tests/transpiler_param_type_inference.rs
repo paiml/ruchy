@@ -5,6 +5,7 @@
 //! Bug: Parameters default to `&str` regardless of usage context
 //! - Arrays used with indexing → Inferred as `&str` instead of array/Vec type
 //! - Integers used as indices → Inferred as `&str` instead of `i32`/`usize`
+//!
 //! Blocks: BENCH-002 (matrix multiplication benchmark)
 
 use ruchy::backend::Transpiler;

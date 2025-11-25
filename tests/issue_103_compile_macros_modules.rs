@@ -123,7 +123,7 @@ fn test_issue_103_compile_simple_import() {
     let temp = TempDir::new().unwrap();
 
     // Create module file
-    let module_file = create_temp_file(
+    let _module_file = create_temp_file(
         &temp,
         "math_utils.ruchy",
         r"

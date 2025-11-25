@@ -340,7 +340,7 @@ println!("{{}}", {var_name})
 
     /// Property: Compound assignments should not deadlock
     #[test]
-    #[ignore]
+    #[ignore = "Property test may be slow - run with --ignored"]
     fn prop_no_deadlock_compound_assignment() {
         proptest!(|(
             var_name in "[a-z]{3,8}",

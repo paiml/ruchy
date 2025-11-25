@@ -62,16 +62,14 @@ proptest! {
             .arg(script.path())
             .output();
 
-        match (output1, output2) {
-            (Ok(out1), Ok(out2)) => {
-                // If both succeed, outputs must be identical
-                if out1.status.success() && out2.status.success() {
-                    prop_assert_eq!(out1.stdout, out2.stdout,
-                        "Same input should produce identical output");
-                }
+        if let (Ok(out1), Ok(out2)) = (output1, output2) {
+            // If both succeed, outputs must be identical
+            if out1.status.success() && out2.status.success() {
+                prop_assert_eq!(out1.stdout, out2.stdout,
+                    "Same input should produce identical output");
             }
-            _ => {} // Accept execution failures for invalid code
         }
+        // Accept execution failures for invalid code
     }
 
     /// Property: Eval mode determinism

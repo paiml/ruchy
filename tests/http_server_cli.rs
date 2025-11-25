@@ -3,9 +3,8 @@
 #![allow(missing_docs)]
 // [HTTP-001] RED Phase: Write failing tests FIRST
 #![allow(clippy::similar_names)] // coop/coep are standard HTTP header abbreviations
-#![allow(missing_docs)]
 #![allow(clippy::zombie_processes)] // Test processes are explicitly killed in tests
-#![allow(missing_docs)]
+#![allow(deprecated)] // cargo_bin deprecation warning
 
 use assert_cmd::Command;
 use predicates::prelude::*;

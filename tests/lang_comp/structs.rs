@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-014: Structs - Validation Tests with Traceability
 // Links to: examples/lang_comp/14-structs/*.ruchy
 // Validates: LANG-COMP-014 Structs (definition, fields, methods, tuple structs)

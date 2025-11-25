@@ -431,7 +431,7 @@ fn test_jit_005_performance_iterative_sum() {
     {
         let mut compiler = JitCompiler::new().unwrap();
         let warmup_result = compiler.compile_and_execute(&ast);
-        assert_eq!(warmup_result.unwrap(), 500500, "sum(1..1000) = 500500");
+        assert_eq!(warmup_result.unwrap(), 500_500, "sum(1..1000) = 500500");
     }
 
     // Benchmark: 100 iterations
@@ -440,7 +440,7 @@ fn test_jit_005_performance_iterative_sum() {
     for _ in 0..iterations {
         let mut compiler = JitCompiler::new().unwrap();
         let result = compiler.compile_and_execute(&ast);
-        assert_eq!(result.unwrap(), 500500);
+        assert_eq!(result.unwrap(), 500_500);
     }
     let total_elapsed = start.elapsed();
     let avg_elapsed = total_elapsed / iterations;

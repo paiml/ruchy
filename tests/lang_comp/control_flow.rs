@@ -1,8 +1,8 @@
+#![allow(deprecated)]
 // LANG-COMP-003: Control Flow - Validation Tests with Traceability
 // Links to: examples/lang_comp/03-control-flow/*.ruchy
 // Validates: LANG-COMP-003 Control Flow (if, match, for, while, break/continue)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
-
 #![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
 
 use assert_cmd::Command;

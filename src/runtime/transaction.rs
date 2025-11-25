@@ -586,9 +586,7 @@ mod tests {
         state.insert_binding("x".to_string(), Value::Integer(1), false);
 
         {
-            let _sp = state
-                .savepoint()
-                .expect("savepoint should succeed in test");
+            let _sp = state.savepoint().expect("savepoint should succeed in test");
             state.insert_binding("x".to_string(), Value::Integer(2), false);
             // SavePoint dropped here, automatic rollback expected
         }

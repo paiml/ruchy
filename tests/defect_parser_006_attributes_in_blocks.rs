@@ -8,7 +8,7 @@ mod defect_parser_006_tests {
     use ruchy::frontend::parser::Parser;
 
     #[test]
-#[ignore = "BUG: Parser defect - attributes in blocks not working"]
+    #[ignore = "BUG: Parser defect - attributes in blocks not working"]
     fn test_defect_parser_006_attribute_in_macro_block() {
         // RED PHASE: This test SHOULD FAIL with current implementation
         // From interactive.paiml.com book - chapter2.md block 11
@@ -32,7 +32,7 @@ proptest! {
     }
 
     #[test]
-#[ignore = "BUG: Parser defect - attributes in blocks not working"]
+    #[ignore = "BUG: Parser defect - attributes in blocks not working"]
     fn test_defect_parser_006_multiple_attributes_in_block() {
         let input = r"
 proptest! {
@@ -59,7 +59,7 @@ proptest! {
     }
 
     #[test]
-#[ignore = "BUG: Parser defect - attributes in blocks not working"]
+    #[ignore = "BUG: Parser defect - attributes in blocks not working"]
     fn test_defect_parser_006_attribute_in_regular_block() {
         // Ensure attributes work inside any { } block, not just macros
         let input = r"
@@ -82,7 +82,7 @@ proptest! {
     }
 
     #[test]
-#[ignore = "BUG: Parser defect - attributes in blocks not working"]
+    #[ignore = "BUG: Parser defect - attributes in blocks not working"]
     fn test_defect_parser_006_top_level_attribute_still_works() {
         // Regression test - ensure top-level attributes still work
         let input = r"

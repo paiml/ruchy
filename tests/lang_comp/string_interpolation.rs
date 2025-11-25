@@ -1,8 +1,8 @@
+#![allow(deprecated)]
 // LANG-COMP-005: String Interpolation - Validation Tests with Traceability
 // Links to: examples/lang_comp/05-string-interpolation/*.ruchy
 // Validates: LANG-COMP-005 String Interpolation (basic, expressions, functions, nested)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
-
 #![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
 
 use assert_cmd::Command;

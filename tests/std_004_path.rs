@@ -308,12 +308,10 @@ mod property_tests {
         fn test_std_004_parent_idempotent(path in "/[a-z/]{1,50}") {
             // Property: parent(parent(x)) should equal parent(x) for paths with <=1 component
 
-            if let Ok(p1) = ruchy::stdlib::path::parent(&path) {
-                if let Some(parent1) = p1 {
-                    if let Ok(p2) = ruchy::stdlib::path::parent(&parent1) {
-                        // Both should succeed
-                        assert!(p2.is_some() || parent1 == "/");
-                    }
+            if let Ok(Some(parent1)) = ruchy::stdlib::path::parent(&path) {
+                if let Ok(p2) = ruchy::stdlib::path::parent(&parent1) {
+                    // Both should succeed
+                    assert!(p2.is_some() || parent1 == "/");
                 }
             }
         }

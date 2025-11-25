@@ -1,3 +1,8 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
 //! Property-Based Tests for `eval_builtin.rs`
 //!
 //! Target: `runtime/eval_builtin.rs` (32.24% → 60-65% coverage)
@@ -553,7 +558,9 @@ proptest! {
 
                     // First element should be index
                     if let Value::Integer(idx) = tuple[0] {
-                        prop_assert_eq!(idx, i as i64,
+                        #[allow(clippy::cast_possible_wrap)]
+                        let expected_idx = i as i64;
+                        prop_assert_eq!(idx, expected_idx,
                             "Index mismatch at position {}", i);
                     }
                 }
@@ -647,7 +654,7 @@ fn prop_is_nil_detection() {
     ];
 
     for value in non_nil_values {
-        let result = eval_builtin_function("__builtin_is_nil__", &[value.clone()]);
+        let result = eval_builtin_function("__builtin_is_nil__", std::slice::from_ref(&value));
         assert!(result.is_ok());
         if let Ok(Some(Value::Bool(is_nil))) = result {
             assert!(!is_nil, "is_nil({value:?}) should return false");
@@ -1092,7 +1099,8 @@ fn test_env_args_returns_array() {
     if let Ok(Some(Value::Array(args))) = result {
         // Array may be empty or contain arguments
         // Just verify it's an array (validates the function works)
-        assert!(args.len() >= 0, "env_args should return array");
+        // Reaching this point means env_args returned an Array (success)
+        let _ = args; // Use the value to verify we got it
     } else {
         panic!("env_args should return Array");
     }

@@ -780,6 +780,7 @@ impl Default for Linter {
     }
 }
 #[cfg(test)]
+#[allow(unused_variables)]
 mod tests {
     use super::*;
     use crate::frontend::ast::{
@@ -947,7 +948,7 @@ mod tests {
     // ========== Linter Construction Tests ==========
     #[test]
     fn test_linter_creation() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
         assert_eq!(linter.rules.len(), 8); // Default rules count
         assert!(!linter.strict_mode);
         assert_eq!(linter.max_complexity, 10);
@@ -1955,7 +1956,7 @@ mod property_tests_linter {
         /// Property: Auto-fix never produces longer strings for simple cases
         #[test]
         fn test_auto_fix_length_property(input in "[a-zA-Z0-9 ]{0,50}") {
-            let _linter = Linter::new();
+            let linter = Linter::new();
             let issues = vec![LintIssue {
                 line: 1,
                 column: 1,
@@ -2019,7 +2020,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_01_deeply_nested_scopes() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
         let complex_expr = create_complex_nested_expr();
         let result = linter.lint(&complex_expr, "nested code");
         assert!(result.is_ok());
@@ -2153,7 +2154,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_06_match_guard_variable_usage() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         let guard_expr = Expr::new(
             ExprKind::Binary {
@@ -2202,7 +2203,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_07_lambda_parameter_patterns() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         // Lambda with tuple destructuring parameter
         let tuple_param = Param {
@@ -2352,7 +2353,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_10_result_pattern_matching() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         let ok_arm = MatchArm {
             pattern: Pattern::Ok(Box::new(Pattern::Identifier("success".to_string()))),
@@ -2402,7 +2403,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_11_auto_fix_preserves_semantics() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         let test_cases = vec![
             ("let x = 42", "let x = 42"),       // No change for non-style issues
@@ -2633,7 +2634,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_19_error_recovery_malformed_ast() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         // Test with potentially problematic AST structures
         let empty_call = Expr::new(
@@ -2669,7 +2670,7 @@ mod sprint_44_tests {
 
     #[test]
     fn test_sprint_44_20_performance_characteristics() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         // Test that linter scales reasonably with input size
         let start_time = std::time::Instant::now();
@@ -2715,7 +2716,7 @@ mod sprint_44_tests {
     /// when variable is defined in one statement and used in next statement
     #[test]
     fn test_block_scope_variable_usage_across_statements() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         // Create AST for: let x = 42\nx
         // This should parse as Block([Let { name: "x", value: 42, body: Unit }, Identifier("x")])
@@ -2784,7 +2785,7 @@ mod sprint_44_tests {
     /// Property test: Block scope should maintain variables across statements
     #[test]
     fn test_block_scope_multiple_variables() {
-        let _linter = Linter::new();
+        let linter = Linter::new();
 
         // Create AST for: let x = 1\nlet y = 2\nx + y
         let let_x = Expr::new(

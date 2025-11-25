@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-009: Pattern Matching - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/09-pattern-matching/*.ruchy
 // Validates: LANG-COMP-009 Pattern Matching (literals, variables, tuples, destructuring)

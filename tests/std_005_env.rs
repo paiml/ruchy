@@ -139,25 +139,25 @@ fn test_std_005_get_all_vars() {
     let result = ruchy::stdlib::env::vars();
 
     assert!(result.is_ok(), "vars should succeed");
-    let vars = result.unwrap();
+    let env_vars = result.unwrap();
 
-    assert!(!vars.is_empty(), "vars must not be empty");
-    assert!(vars.len() > 2, "vars must contain multiple variables");
+    assert!(!env_vars.is_empty(), "vars must not be empty");
+    assert!(env_vars.len() > 2, "vars must contain multiple variables");
     assert!(
-        vars.contains_key(&var1),
+        env_vars.contains_key(&var1),
         "vars must contain test variable 1"
     );
     assert!(
-        vars.contains_key(&var2),
+        env_vars.contains_key(&var2),
         "vars must contain test variable 2"
     );
     assert_eq!(
-        vars.get(&var1),
+        env_vars.get(&var1),
         Some(&"value1".to_string()),
         "Value 1 must match"
     );
     assert_eq!(
-        vars.get(&var2),
+        env_vars.get(&var2),
         Some(&"value2".to_string()),
         "Value 2 must match"
     );

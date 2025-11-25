@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-010: Closures - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/10-closures/*.ruchy
 // Validates: LANG-COMP-010 Closures (basic closures, captures, returns, higher-order)

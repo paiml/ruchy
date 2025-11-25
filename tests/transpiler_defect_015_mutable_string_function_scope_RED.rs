@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 //! TRANSPILER-DEFECT-015: Mutable String Inference (Function Scope)
 //!
 //! **Issue**: Mutable string variables in function scope not detected as needing String type

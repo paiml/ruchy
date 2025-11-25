@@ -1,3 +1,8 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
 //! EXTREME TDD Coverage Tests for `stdlib::time` Module
 //!
 //! Target: 0% → 80% coverage (+72 lines)

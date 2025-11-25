@@ -5,7 +5,7 @@
 //! **Discovered**: 2025-10-13 (Book compatibility investigation)
 //! **Severity**: MEDIUM
 //!
-//! Expected: `"a,b,c".split(",")` should return ["a", "b", "c"] (Vec<String>)
+//! Expected: `"a,b,c".split(",")` should return `["a", "b", "c"]` (Vec<String>)
 //! Actual: Returns Split(SplitInternal { ... }) in transpiled code
 //!
 //! This test follows EXTREME TDD (RED → GREEN → REFACTOR)
