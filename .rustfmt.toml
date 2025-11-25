@@ -1,0 +1,9 @@
+# Rustfmt configuration
+# Skip files where proptest! macro causes formatting cycles
+ignore = [
+    "tests/issue_119_property_tests.rs",
+    "tests/issue_128_property_tests.rs",
+    "tests/issue_131_property_tests.rs",
+    "tests/property_enum_cast.rs",
+    "tests/wasm_memory_property_tests.rs",
+]
