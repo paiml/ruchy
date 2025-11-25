@@ -6,7 +6,6 @@
 #![allow(clippy::similar_names)] // formatter/formatted are acceptable in test code
 #![allow(missing_docs)]
 #![allow(clippy::ignore_without_reason)] // RED phase tests intentionally ignored
-#![allow(missing_docs)]
 
 use ruchy::frontend::parser::Parser;
 use ruchy::quality::formatter::Formatter;

@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     formatting_examples(&mut repl)?;
     print_vs_println_examples(&mut repl)?;
     control_flow_examples(&mut repl)?;
-    error_handling_examples(&mut repl)?;
+    error_handling_examples(&mut repl);
 
     println!("\n🎉 Function call examples completed!");
     println!("All function calls returned unit type '()' as expected.");
@@ -116,7 +116,7 @@ fn control_flow_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Erro
 }
 
 /// Error handling examples
-fn error_handling_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Error>> {
+fn error_handling_examples(repl: &mut Repl) {
     println!("\n⚠️  Error Handling:");
 
     println!("12. Unknown function (should error):");
@@ -124,6 +124,4 @@ fn error_handling_examples(repl: &mut Repl) -> Result<(), Box<dyn std::error::Er
         Ok(_) => println!("   Unexpected success!"),
         Err(e) => println!("   ✅ Correctly errored: {e}"),
     }
-
-    Ok(())
 }

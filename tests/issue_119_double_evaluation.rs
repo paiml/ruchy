@@ -3,8 +3,6 @@
 //
 // EXTREME TDD: RED → GREEN → REFACTOR → VALIDATE
 
-use predicates::prelude::*;
-
 #[test]
 fn test_issue_119_println_side_effects_evaluated_once() {
     // RED: This test MUST fail - println() evaluates arguments TWICE

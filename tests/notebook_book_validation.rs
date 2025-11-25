@@ -113,7 +113,7 @@ fn process_ruchy_code_start(line: &str, state: &mut ParserState) -> bool {
     false
 }
 
-/// Process code block end markers (``` not followed by ruchy)
+/// Process code block end markers (triple backticks not followed by ruchy)
 fn process_code_block_end(
     line: &str,
     state: &mut ParserState,

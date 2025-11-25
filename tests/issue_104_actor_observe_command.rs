@@ -357,7 +357,7 @@ fn test_issue_104_actor_observe_invalid_depth() {
 fn test_issue_104_actor_observe_with_running_program() {
     // Test observing actors from a running Ruchy program with actor system
     let temp = TempDir::new().unwrap();
-    let file = create_temp_file(
+    let _file = create_temp_file(
         &temp,
         "actors.ruchy",
         r#"

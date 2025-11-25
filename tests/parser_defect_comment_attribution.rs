@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![allow(clippy::needless_range_loop, clippy::manual_let_else)]
 // PARSER DEFECT: Standalone comments wrongly attributed as trailing comments
 // Toyota Way: Stop the line, fix root cause with Extreme TDD
 //

@@ -31,13 +31,47 @@ use ruchy::runtime::Value;
 fn valid_type_name() -> impl Strategy<Value = String> {
     "[A-Z][a-zA-Z0-9]{0,15}".prop_filter("Exclude Rust keywords", |name| {
         // List of common Rust keywords that would fail in type position
-        !matches!(name.as_str(),
-            "Ok" | "Err" | "Some" | "None" | "Box" | "Arc" | "Rc" |
-            "Vec" | "String" | "Option" | "Result" | "Self" | "Type" |
-            "Trait" | "Struct" | "Enum" | "Impl" | "Fn" | "For" | "If" |
-            "Else" | "Match" | "Loop" | "While" | "Break" | "Continue" |
-            "Return" | "Let" | "Mut" | "Ref" | "Use" | "Mod" | "Pub" |
-            "Crate" | "Super" | "Async" | "Await" | "Dyn" | "Const" | "Static"
+        !matches!(
+            name.as_str(),
+            "Ok" | "Err"
+                | "Some"
+                | "None"
+                | "Box"
+                | "Arc"
+                | "Rc"
+                | "Vec"
+                | "String"
+                | "Option"
+                | "Result"
+                | "Self"
+                | "Type"
+                | "Trait"
+                | "Struct"
+                | "Enum"
+                | "Impl"
+                | "Fn"
+                | "For"
+                | "If"
+                | "Else"
+                | "Match"
+                | "Loop"
+                | "While"
+                | "Break"
+                | "Continue"
+                | "Return"
+                | "Let"
+                | "Mut"
+                | "Ref"
+                | "Use"
+                | "Mod"
+                | "Pub"
+                | "Crate"
+                | "Super"
+                | "Async"
+                | "Await"
+                | "Dyn"
+                | "Const"
+                | "Static"
         )
     })
 }

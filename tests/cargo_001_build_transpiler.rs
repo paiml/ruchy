@@ -24,7 +24,8 @@ fn assert_rs_file_exists(dir: &TempDir, name: &str) -> String {
     let rs_path = dir.path().join(name.replace(".ruchy", ".rs"));
     assert!(
         rs_path.exists(),
-        "Expected transpiled .rs file to exist: {rs_path:?}"
+        "Expected transpiled .rs file to exist: {}",
+        rs_path.display()
     );
     fs::read_to_string(&rs_path).expect("Failed to read transpiled file")
 }

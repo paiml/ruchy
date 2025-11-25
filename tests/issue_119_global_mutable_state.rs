@@ -1,3 +1,4 @@
+#![allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 // Issue #119: Global mutable state not persisting across function calls
 // EXTREME TDD Protocol: RED → GREEN → REFACTOR → VALIDATE
 // Blocking: BENCH-002 (Matrix Multiplication)

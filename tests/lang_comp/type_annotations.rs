@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-007: Type Annotations - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/07-type-annotations/*.ruchy
 // Validates: LANG-COMP-007 Type Annotations (basic types, functions, collections, inference)

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! QUALITY-001: Method receiver preservation (&self, &mut self, self)
 //!
 //! BUG: Transpiler transforms &self → self, causing move errors

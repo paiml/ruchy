@@ -5,7 +5,6 @@
 //! Quality: Validates 30+ working examples, ensures no regressions
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use std::path::Path;
 

@@ -53,7 +53,7 @@ fun test(n) {{
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Pending implementation of collection.len() type inference"]
     fn property_all_collection_types_get_usize_cast() {
         // Property: Vec, String, and any .len() call should get usize casting
         let collection_types = vec![("[]", "vec![]"), (r#""""#, r#"String::from("")"#)];

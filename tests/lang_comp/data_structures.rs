@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-006: Data Structures - Validation Tests with 15-Tool Protocol
 // Links to: examples/lang_comp/06-data-structures/*.ruchy
 // Validates: LANG-COMP-006 Data Structures (arrays, tuples, hashmaps, structs)

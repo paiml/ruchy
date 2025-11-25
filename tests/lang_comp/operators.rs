@@ -1,8 +1,8 @@
+#![allow(deprecated)]
 // LANG-COMP-002: Operators - Validation Tests with Traceability
 // Links to: examples/lang_comp/02-operators/*.ruchy
 // Validates: LANG-COMP-002 Operators (arithmetic, comparison, logical, precedence)
 // EXTREME TDD Protocol: Tests use assert_cmd + mandatory naming convention
-
 #![allow(clippy::ignore_without_reason)] // LANG-COMP tests with known issues use ignore
 
 use assert_cmd::Command;

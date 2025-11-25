@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![allow(dead_code, clippy::needless_pass_by_value)]
 //! TRANSPILER-PROPERTY: Comprehensive Property-Based Test Suite
 //!
 //! **Purpose**: Prevent transpiler bugs through 10K+ randomized test cases

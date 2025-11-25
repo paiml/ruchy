@@ -157,11 +157,11 @@ fn test_tool_format_roundtrips_complete_grammar() {
     // Note: Comprehensive property-based roundtrip testing is in tests/property_roundtrip.rs
     // with 1,536+ test cases. This test verifies the basic mechanism works.
 
-    // Use a simpler example for basic roundtrip verification
-    let simple_code = "fun main() { println(\"test\") }";
-
     use ruchy::frontend::parser::Parser;
     use ruchy::quality::formatter::Formatter;
+
+    // Use a simpler example for basic roundtrip verification
+    let simple_code = "fun main() { println(\"test\") }";
 
     let ast1 = Parser::new(simple_code).parse().unwrap();
     let formatted = Formatter::new().format(&ast1);

@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-015: Enums - Validation Tests with Traceability
 // Links to: examples/lang_comp/15-enums/*.ruchy
 // Validates: LANG-COMP-015 Enums (definition, variants, matching, data)

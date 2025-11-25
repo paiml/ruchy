@@ -8560,7 +8560,7 @@ proptest! {
     /// **Test Iterations**: 5,000 (10x baseline, 100% of 5K target) ✅
     /// **Milestone**: TARGET ACHIEVED - Full 5K iterations
     #[test]
-    fn test_sqlite_302_property_valid_numbers(n in 0i64..1000000) {
+    fn test_sqlite_302_property_valid_numbers(n in 0i64..1_000_000) {
         let input = format!("{n}");
         let result = parse_str(&input);
 

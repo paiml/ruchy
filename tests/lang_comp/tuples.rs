@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // LANG-COMP-013: Tuples - Validation Tests with Traceability
 // Links to: examples/lang_comp/13-tuples/*.ruchy
 // Validates: LANG-COMP-013 Tuples (creation, indexing, destructuring, nested, functions)
