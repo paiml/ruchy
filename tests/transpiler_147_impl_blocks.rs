@@ -9,6 +9,7 @@ use ruchy::frontend::parser::Parser;
 
 /// Test 1: Basic impl block with pub fun
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_147_01_basic_impl_pub_fun() {
     let code = r#"
 pub struct Runtime {
@@ -62,6 +63,7 @@ impl Runtime {
 
 /// Test 2: Impl block with multiple pub methods
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_147_02_multiple_pub_methods() {
     let code = r"
 pub struct Calculator {
@@ -121,6 +123,7 @@ impl Calculator {
 
 /// Test 3: Impl block with mixed pub/private visibility
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_147_03_mixed_visibility() {
     let code = r"
 struct Counter {
@@ -185,6 +188,7 @@ impl Counter {
 
 /// Test 4: Impl block with self receivers
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_147_04_self_receivers() {
     let code = r"
 struct Point {

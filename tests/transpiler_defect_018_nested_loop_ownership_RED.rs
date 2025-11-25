@@ -32,6 +32,7 @@ use tempfile::TempDir;
 
 /// RED TEST: Nested loop with value used in inner loop body
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_defect_018_red_nested_loop_value_moved_in_inner_loop() {
     let temp_dir = TempDir::new().unwrap();
     let ruchy_file = temp_dir.path().join("nested_loop_ownership.ruchy");
@@ -132,6 +133,7 @@ fun main() {
 
 /// RED TEST 2: Simpler nested loop with function call
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_defect_018_red_simple_nested_loop_function_call() {
     let temp_dir = TempDir::new().unwrap();
     let ruchy_file = temp_dir.path().join("simple_nested.ruchy");

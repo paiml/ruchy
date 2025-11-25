@@ -141,6 +141,7 @@ println(result)
 }
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_issue_128_05_github_issue_exact_case() {
     // Exact case from GitHub Issue #128
 
@@ -248,6 +249,7 @@ println(result)
 }
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_issue_128_08_return_expression_with_recursion() {
     // RED: This test MUST fail - recursive functions with return statements
     // Bug: check_recursion() doesn't look inside Return expressions

@@ -302,6 +302,7 @@ fn property_nested_depth_1_to_5() {
 // ============================================================================
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn integration_compile_tuple_access() {
     // Full pipeline: transpile → compile → execute
     let code = r#"

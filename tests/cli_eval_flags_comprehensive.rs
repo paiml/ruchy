@@ -45,13 +45,14 @@ fn test_eval_long_form() {
 
 #[test]
 fn test_eval_format_text_default() {
-    // Default format is text, should not print anything for non-println statements
+    // [CLI-EVAL-001] Default format is text, eval results ARE printed (REPL behavior)
+    // This changed from CLI-UNIFY-003 which suppressed output
     ruchy_cmd()
         .arg("-e")
         .arg("2 + 2")
         .assert()
         .success()
-        .stdout(predicate::str::is_empty());
+        .stdout(predicate::str::contains("4"));
 }
 
 #[test]

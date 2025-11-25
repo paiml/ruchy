@@ -494,6 +494,7 @@ fn property_binary_operators() {
 // ============================================================================
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn integration_transpile_compile_execute() {
     let code = r#"
         fun factorial(n: i32) -> i32 {

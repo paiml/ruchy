@@ -82,6 +82,7 @@ fun main() {
 
 /// RED Test 3: Transpiled code must compile
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_009_03_output_compiles() {
     let code = r#"
 fun square(n: i32) -> i32 {

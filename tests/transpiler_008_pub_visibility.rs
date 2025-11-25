@@ -12,6 +12,7 @@ use ruchy::frontend::parser::Parser;
 
 /// Test 1: pub fun should become pub fn
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_008_01_pub_fun_preserved() {
     let code = r"
 pub struct Library {
@@ -156,6 +157,7 @@ impl Internal {
 
 /// Test 4: ruchy-lambda Calculator example (from TEST-RESULTS-v3.207.0.md)
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_008_04_calculator_pub_methods() {
     let code = r"
 pub struct Calculator {

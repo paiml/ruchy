@@ -1,4 +1,4 @@
-.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book tier1-on-save tier1-watch tier2-on-commit tier3-nightly certeza-help renacer-profile renacer-baseline renacer-anomaly test-with-profiling
+.PHONY: help all build test lint lint-scripts lint-make lint-bashrs format clean clean-coverage coverage coverage-full coverage-wasm-notebook prompt-coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart e2e-install e2e-install-deps wasm-build test-e2e test-e2e-ui test-e2e-debug test-e2e-headed wasm-quality-gate test-e2e-quick clean-e2e validate-book tier1-on-save tier1-watch tier2-on-commit tier3-nightly certeza-help renacer-profile renacer-baseline renacer-anomaly test-with-profiling
 
 # Default target
 help:
@@ -32,7 +32,8 @@ help:
 	@echo "  make clean       - Clean build artifacts"
 	@echo ""
 	@echo "Quality Commands:"
-	@echo "  make coverage    - Generate comprehensive coverage report (PROPTEST_CASES=100, bashrs pattern)"
+	@echo "  make coverage    - Fast coverage (excludes 51 rustc tests, ~5 min)"
+	@echo "  make coverage-full - Full coverage with rustc tests (~15 min)"
 	@echo "  make clean-coverage - Clean and generate fresh coverage report"
 	@echo "  make coverage-wasm-notebook - LLVM coverage for WASM & notebooks (>80% target, A+ TDG)"
 	@echo "  make coverage-quick - Quick coverage check for development"
@@ -479,10 +480,11 @@ clean-coverage:
 	@$(MAKE) coverage
 	@echo "✅ Fresh coverage report generated"
 
-# Generate comprehensive test coverage using cargo-llvm-cov (bashrs pattern - COVERAGE.md)
-# Note: Temporarily moves ~/.cargo/config.toml to avoid mold linker interference
+# Generate fast test coverage (excludes rustc compilation tests)
+# 51 tests marked #[ignore = "expensive: invokes rustc"] are skipped
+# Use `make coverage-full` to include them (slower, ~15 min)
 coverage:
-	@echo "📊 Running comprehensive test coverage analysis (target: <10 min)..."
+	@echo "📊 Running fast coverage analysis (excludes rustc tests)..."
 	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
 	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
@@ -492,8 +494,8 @@ coverage:
 	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@echo "   - Property test cases: 100 (reduced for speed)"
-	@echo "   - Test runner: cargo-nextest with workspace"
+	@echo "   - Property test cases: 100"
+	@echo "   - Excluded: 51 rustc compilation tests (use coverage-full to include)"
 	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-tests=warn --all-features --workspace
 	@echo "📊 Phase 2: Generating coverage reports..."
 	@cargo llvm-cov report --html --output-dir target/coverage/html
@@ -509,7 +511,29 @@ coverage:
 	@echo "- HTML report: target/coverage/html/index.html"
 	@echo "- LCOV file: target/coverage/lcov.info"
 	@echo "- Open HTML: make coverage-open"
-	@echo "- Property test cases: 100 (bashrs pattern for speed)"
+	@echo "- Excluded: 51 rustc tests (use 'make coverage-full' to include)"
+	@echo ""
+
+# Generate full test coverage INCLUDING rustc compilation tests (~15 min)
+# Runs all 51 ignored tests that invoke rustc for end-to-end validation
+coverage-full:
+	@echo "📊 Running FULL coverage analysis (including rustc tests)..."
+	@echo "⚠️  This includes 51 rustc compilation tests - expect ~15 min runtime"
+	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
+	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
+	@cargo llvm-cov clean --workspace
+	@mkdir -p target/coverage
+	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
+	@echo "🧪 Phase 1: Running ALL tests (including ignored rustc tests)..."
+	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --run-ignored all --no-tests=warn --all-features --workspace
+	@echo "📊 Phase 2: Generating coverage reports..."
+	@cargo llvm-cov report --html --output-dir target/coverage/html
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
+	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
+	@echo ""
+	@echo "📊 Full Coverage Summary:"
+	@echo "========================="
+	@cargo llvm-cov report --summary-only
 	@echo ""
 
 # Open coverage report in browser

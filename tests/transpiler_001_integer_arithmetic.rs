@@ -16,6 +16,7 @@ use ruchy::{Parser, Transpiler};
 
 /// Test 1: Basic integer addition
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_001_01_integer_addition() {
     let code = r"
 pub fn add(a: i32, b: i32) -> i32 {
@@ -144,6 +145,7 @@ pub fn divide(a: i32, b: i32) -> i32 {
 
 /// Test 5: Complex arithmetic expression
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_001_05_complex_arithmetic() {
     let code = r"
 pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
@@ -180,6 +182,7 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
 
 /// Test 6: Arithmetic in struct method
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_001_06_arithmetic_in_method() {
     let code = r"
 pub struct Counter {
@@ -231,6 +234,7 @@ impl Counter {
 /// Test 7: String concatenation - FIXED (TRANSPILER-004)
 /// Verifies that String + String uses format!() or proper borrowing
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_001_07_string_concat_uses_format() {
     let code = r"
 pub fn concat(a: String, b: String) -> String {
@@ -264,6 +268,7 @@ pub fn concat(a: String, b: String) -> String {
 /// Test 8: Assignment with arithmetic - FIXED (TRANSPILER-005)
 /// Verifies that mut keyword is preserved in parameter transpilation
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_001_08_assignment_with_arithmetic() {
     let code = r"
 pub fn increment_by(mut value: i32, amount: i32) -> i32 {

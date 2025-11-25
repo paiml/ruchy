@@ -215,6 +215,7 @@ fun main() {
 
 /// Compilation test: Transpiled code should compile with rustc
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_issue_113_transpiled_code_compiles() {
     use std::fs;
     use std::process::Command as StdCommand;
