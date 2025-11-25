@@ -84,3 +84,17 @@ docs/notebook/book/book/
 .pmat-metrics/
 benchmarks/results/
 coverage-improvement-report.json
+
+# Prevent future cruft
+*.rlib
+a.out
+test_*.ruchy
+debug_*
+*_SUMMARY*.md
+*_REPORT*.md
+*_STATE*.md
+PROJECT_STATUS*.md
+ERRATUM*.md
+*_ARCHIVED.md
+coverage-improvement-report.json
+dependency_cleanup_analysis.md
