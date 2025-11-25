@@ -488,8 +488,6 @@ coverage:
 	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
 	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
-	@echo "🧹 Cleaning old coverage data..."
-	@cargo llvm-cov clean --workspace
 	@mkdir -p target/coverage
 	@echo "⚙️  Temporarily disabling global cargo config (mold breaks coverage)..."
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
@@ -521,7 +519,6 @@ coverage-full:
 	@echo "⚠️  This includes 51 rustc compilation tests - expect ~15 min runtime"
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
 	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
-	@cargo llvm-cov clean --workspace
 	@mkdir -p target/coverage
 	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧪 Phase 1: Running ALL tests (including ignored rustc tests)..."
