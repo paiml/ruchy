@@ -196,7 +196,7 @@ fn markdown_to_html(markdown: &str) -> String {
 
     let parser = Parser::new_ext(markdown, options);
 
-    // Filter out raw HTML events for XSS prevention
+    // Filter out raw HTML events - escape any HTML for safe rendering
     let safe_parser = parser.filter_map(|event| match event {
         Event::Html(html_text) => {
             // Escape raw HTML instead of rendering it
