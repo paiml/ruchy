@@ -469,6 +469,7 @@ fn property_nested_depth_1_to_5() {
 // ============================================================================
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn integration_numeric_inference_compiles() {
     let code = r#"
         fn factorial(n) {

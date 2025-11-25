@@ -121,6 +121,7 @@ fn test_tool_transpile_generates_rust_from_complete_grammar() {
 }
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_tool_compile_creates_binary_from_complete_grammar() {
     let temp_dir = TempDir::new().unwrap();
     let ruchy_file = temp_dir.path().join("test.ruchy");

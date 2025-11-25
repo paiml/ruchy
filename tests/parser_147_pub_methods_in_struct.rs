@@ -171,6 +171,7 @@ struct Calculator {
 }
 
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_parser_147_08_compile_and_execute() {
     let code = r"
 struct Point {

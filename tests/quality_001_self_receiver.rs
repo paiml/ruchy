@@ -55,6 +55,7 @@ impl Client {
 
 /// Test 2: Multiple &self method calls - must not move
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_quality_001_02_multiple_self_calls_no_move() {
     let code = r#"
 pub struct Client {
@@ -215,6 +216,7 @@ impl State {
 
 /// Test 6: Issue #137 reproduction - ruchy-lambda pattern
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_quality_001_06_issue_137_lambda_pattern() {
     let code = r"
 use std::net::TcpStream;

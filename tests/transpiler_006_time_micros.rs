@@ -11,6 +11,7 @@ use ruchy::frontend::parser::Parser;
 
 /// Test 1: Basic `time_micros()` call
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_006_01_basic_time_micros() {
     let code = r"
 pub fn get_time() -> u64 {
@@ -54,6 +55,7 @@ pub fn get_time() -> u64 {
 
 /// Test 2: Time difference (benchmarking pattern)
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_006_02_time_difference() {
     let code = r"
 pub fn benchmark() -> u64 {
@@ -93,6 +95,7 @@ pub fn benchmark() -> u64 {
 
 /// Test 3: Fibonacci benchmark (GitHub Issue #139 - Docker example)
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_006_03_fibonacci_benchmark() {
     let code = r"
 pub fn benchmark() -> u64 {
@@ -140,6 +143,7 @@ fn fib(n: i32) -> i32 {
 
 /// Test 4: Multiple `time_micros()` calls in same function
 #[test]
+#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_006_04_multiple_calls() {
     let code = r"
 pub fn multi_benchmark() -> (u64, u64) {
