@@ -1180,38 +1180,6 @@ mod tests {
         assert_ne!(tx_id.0, another_tx.0);
     }
 
-    // #[test]
-    // fn test_shared_session_creation() {
-    //     // Multiple method errors - GlobalRegistry::is_empty, u32::load don't exist
-    //     let session = SharedSession::new();
-    //     assert!(session.globals.is_empty());
-    //     assert!(session.cell_cache.is_empty());
-    //     assert_eq!(session.execution_mode, ExecutionMode::Manual);
-    //     assert_eq!(session.memory_counter.load(Ordering::Relaxed), 0);
-    // }
-
-    // #[test]
-    // fn test_shared_session_execute() {
-    //     // Result type issues - response.success/value/error don't exist on Result type
-    //     let mut session = SharedSession::new();
-    //     let response = session.execute("cell_1", "let x = 42");
-    //     assert!(response.success);
-    //     assert!(!response.value.is_empty());
-    //     let response2 = session.execute("cell_2", "x");
-    //     assert!(response2.success || response2.error.is_some());
-    // }
-
-    // #[test]
-    // fn test_shared_session_clear() {
-    //     // SharedSession::clear method doesn't exist, globals.is_empty doesn't exist
-    //     let mut session = SharedSession::new();
-    //     session.execute("cell_1", "let x = 10");
-    //     session.execute("cell_2", "let y = 20");
-    //     session.clear();
-    //     assert!(session.globals.is_empty());
-    //     assert!(session.cell_cache.is_empty());
-    // }
-
     #[test]
     fn test_shared_session_mode_switching() {
         let mut session = SharedSession::new();
@@ -1227,34 +1195,6 @@ mod tests {
         session.set_execution_mode(ExecutionMode::Manual);
         assert_eq!(session.execution_mode, ExecutionMode::Manual);
     }
-
-    // #[test]
-    // fn test_shared_session_export() {
-    //     // SharedSession::export method doesn't exist
-    //     let mut session = SharedSession::new();
-    //     session.execute("cell_1", "let data = 100");
-    //     let export_data = session.export();
-    //     assert_eq!(export_data.version.major, 1);
-    //     assert_eq!(export_data.version.minor, 0);
-    //     assert!(!export_data.cell_cache.is_empty());
-    // }
-
-    // #[test]
-    // fn test_shared_session_import() {
-    //     // SharedSession::import method doesn't exist, u32::load doesn't exist
-    //     let mut session = SharedSession::new();
-    //     let import_data = SessionExportData {
-    //         version: SessionVersion::new(1, 0),
-    //         globals: serde_json::json!({"imported": true}),
-    //         cell_cache: HashMap::new(),
-    //         execution_mode: "Reactive".to_string(),
-    //         memory_counter: 50,
-    //         created_at: 1234567890,
-    //     };
-    //     let result = session.import(import_data);
-    //     assert!(result.is_ok());
-    //     assert_eq!(session.memory_counter.load(Ordering::Relaxed), 50);
-    // }
 
     #[test]
     fn test_def_id_uniqueness() {

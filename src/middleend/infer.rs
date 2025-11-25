@@ -2028,16 +2028,29 @@ mod tests {
         assert!(matches!(result, MonoType::Function(_, _)));
     }
 
-    // #[test]  // Disabled: Unary operation type inference needs implementation
-    // fn test_unary_operations() {
-    //     // Test negation
-    //     assert_eq!(infer_str("-5").unwrap(), MonoType::Int);
-    //     assert_eq!(infer_str("-3.15").unwrap(), MonoType::Float);
-    //
-    //     // Test logical not
-    //     assert_eq!(infer_str("!true").unwrap(), MonoType::Bool);
-    //     assert_eq!(infer_str("!false").unwrap(), MonoType::Bool);
-    // }
+    #[test]
+    #[ignore = "Unary operation type inference needs implementation"]
+    fn test_unary_operations() {
+        // Test negation
+        assert_eq!(
+            infer_str("-5").expect("type inference should succeed"),
+            MonoType::Int
+        );
+        assert_eq!(
+            infer_str("-3.15").expect("type inference should succeed"),
+            MonoType::Float
+        );
+
+        // Test logical not
+        assert_eq!(
+            infer_str("!true").expect("type inference should succeed"),
+            MonoType::Bool
+        );
+        assert_eq!(
+            infer_str("!false").expect("type inference should succeed"),
+            MonoType::Bool
+        );
+    }
 
     #[test]
     fn test_logical_operations() {
@@ -2121,11 +2134,15 @@ mod tests {
         assert_eq!(result, MonoType::Int);
     }
 
-    // #[test]  // Disabled: While loop type inference needs implementation
-    // fn test_while_loop() {
-    //     // While loops return unit
-    //     assert_eq!(infer_str("while false { 1 }").unwrap(), MonoType::Unit);
-    // }
+    #[test]
+    #[ignore = "While loop type inference needs implementation"]
+    fn test_while_loop() {
+        // While loops return unit
+        assert_eq!(
+            infer_str("while false { 1 }").expect("type inference should succeed"),
+            MonoType::Unit
+        );
+    }
 
     #[test]
     fn test_for_loop() {
