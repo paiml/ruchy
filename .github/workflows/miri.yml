@@ -1,0 +1,80 @@
+name: Miri Memory Safety
+
+on:
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # Allow manual triggers
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/runtime/arena.rs'
+      - 'src/runtime/bytecode/**'
+      - 'src/frontend/arena.rs'
+      - 'src/jit/**'
+      - '.github/workflows/miri.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+  MIRIFLAGS: -Zmiri-disable-isolation
+
+jobs:
+  miri:
+    name: Miri Unsafe Code Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly with Miri
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+
+      - name: Setup Miri
+        run: cargo miri setup
+
+      - name: Cache Miri build
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: miri
+          cache-targets: true
+
+      - name: Run Miri on arena tests
+        run: |
+          echo "Testing arena memory safety..."
+          cargo +nightly miri test --lib -- --test-threads=1 "arena" 2>&1 | tee miri-arena.log
+          echo "Arena tests completed"
+
+      - name: Run Miri on bytecode VM tests
+        run: |
+          echo "Testing bytecode VM memory safety..."
+          cargo +nightly miri test --lib -- --test-threads=1 "bytecode::vm" 2>&1 | tee miri-vm.log
+          echo "Bytecode VM tests completed"
+
+      - name: Upload Miri logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: miri-logs
+          path: |
+            miri-arena.log
+            miri-vm.log
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Miri Memory Safety Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Arena Module" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          grep -E "(test |ok|FAILED)" miri-arena.log | tail -20 >> $GITHUB_STEP_SUMMARY || echo "No results" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Bytecode VM" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          grep -E "(test |ok|FAILED)" miri-vm.log | tail -20 >> $GITHUB_STEP_SUMMARY || echo "No results" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
