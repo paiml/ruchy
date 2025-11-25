@@ -89,41 +89,6 @@ fn test_determine_output_path_no_extension() {
     assert_eq!(output, Path::new("tests/generated_from_replays.rs"));
 }
 
-// #[test]  // Commented out - format_transpilation_result function doesn't exist
-// fn test_format_transpilation_result_basic() {
-//     let result = format_transpilation_result(
-//         "let x = 42",
-//         "let x: i32 = 42;",
-//         false,
-//         false,
-//         "text"
-//     );
-//     assert!(result.contains("42"));
-// }
-
-// #[test]  // Commented out - format_transpilation_result function doesn't exist
-// fn test_format_transpilation_result_json() {
-//     let result = format_transpilation_result(
-//         "let x = 42",
-//         "let x: i32 = 42;",
-//         false,
-//         false,
-//         "json"
-//     );
-//     assert!(result.contains("\"success\":true"));
-// }
-
-// #[test]  // Commented out - format_transpilation_result function doesn't exist
-// fn test_format_transpilation_result_verbose() {
-//     let result = format_transpilation_result(
-//         "let x = 42",
-//         "let x: i32 = 42;",
-//         true,
-//         false,
-//         "text"
-//     );
-//     assert!(result.contains("let x: i32 = 42;"));
-// }
 
 #[test]
 fn test_write_transpiled_output_to_file() {
