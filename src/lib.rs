@@ -499,12 +499,6 @@ mod tests {
         let result = compile("Point { x: 10, y: 20 }").expect("operation should succeed in test");
         assert!(result.contains("Point"));
     }
-    // Test removed - try/catch operations removed in RUCHY-0834
-    // #[test]
-    // fn test_compile_try_operator() {
-    //     let result = compile("func()?").expect("operation should succeed in test");
-    //     assert!(result.contains("?"));
-    // }
     #[test]
     fn test_compile_await_expression() {
         let result = compile("async_func().await").expect("operation should succeed in test");

@@ -2312,12 +2312,15 @@ mod tests {
         assert!(result.is_ok() || result.is_err());
     }
 
-    // #[test]  // Disabled: Function type inference needs implementation
-    // fn test_return_statement() {
-    //     // Return statements have the Never type
-    //     assert_eq!(infer_str("fun test() { return 42 }").unwrap(),
-    //                MonoType::Function(Box::new(MonoType::Unit), Box::new(MonoType::Int)));
-    // }
+    #[test]
+    #[ignore = "Function type inference needs implementation"]
+    fn test_return_statement() {
+        // Return statements have the Never type
+        assert_eq!(
+            infer_str("fun test() { return 42 }").expect("type inference should succeed"),
+            MonoType::Function(Box::new(MonoType::Unit), Box::new(MonoType::Int))
+        );
+    }
 
     #[test]
     fn test_complex_nested_expression() {
