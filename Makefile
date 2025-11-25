@@ -483,10 +483,10 @@ clean-coverage:
 # Generate fast test coverage (excludes rustc compilation tests)
 # 51 tests marked #[ignore = "expensive: invokes rustc"] are skipped
 # Use `make coverage-full` to include them (slower, ~15 min)
-# coverage-quick: Fast coverage for dev iteration (~5 min)
-# - Only lib tests (skip integration tests)
+# coverage-quick: Fast coverage for dev iteration (~12 min)
+# - Only lib tests: 5,274 (vs 18K+ total)
 # - PROPTEST_CASES=10 (minimal property tests)
-# - Skip WASM tests
+# - Skip WASM and integration tests
 coverage-quick:
 	@echo "⚡ Running QUICK coverage (lib only, minimal proptests)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
