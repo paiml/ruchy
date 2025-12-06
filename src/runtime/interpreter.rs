@@ -6307,40 +6307,36 @@ impl Interpreter {
 
         // Process each expression in the module body
         for expr in &exprs {
-            match &expr.kind {
-                ExprKind::Function {
-                    name: fn_name,
-                    params,
-                    body: fn_body,
-                    is_pub,
-                    ..
-                } => {
-                    // Only export public functions (pub fun)
-                    if *is_pub {
-                        // Create a closure for this function
-                        // Params are (name, optional_default_value)
-                        let closure_params: Vec<(String, Option<Arc<Expr>>)> = params
-                            .iter()
-                            .map(|p| {
-                                let name = p.name().to_string();
-                                let default = p
-                                    .default_value
-                                    .as_ref()
-                                    .map(|d| Arc::new(d.as_ref().clone()));
-                                (name, default)
-                            })
-                            .collect();
-                        let closure = Value::Closure {
-                            params: closure_params,
-                            body: Arc::new(fn_body.as_ref().clone()),
-                            env: Rc::clone(self.env_stack.last().unwrap_or(&self.env_stack[0])),
-                        };
-                        module_namespace.insert(fn_name.clone(), closure);
-                    }
-                }
-                // Skip other expressions (let bindings, etc.) for now
-                _ => {}
+            // Only process public function definitions
+            if let ExprKind::Function {
+                name: fn_name,
+                params,
+                body: fn_body,
+                is_pub: true,
+                ..
+            } = &expr.kind
+            {
+                // Create a closure for this function
+                // Params are (name, optional_default_value)
+                let closure_params: Vec<(String, Option<Arc<Expr>>)> = params
+                    .iter()
+                    .map(|p| {
+                        let name = p.name(); // Returns String directly
+                        let default = p
+                            .default_value
+                            .as_ref()
+                            .map(|d| Arc::new(d.as_ref().clone()));
+                        (name, default)
+                    })
+                    .collect();
+                let closure = Value::Closure {
+                    params: closure_params,
+                    body: Arc::new(fn_body.as_ref().clone()),
+                    env: Rc::clone(self.env_stack.last().unwrap_or(&self.env_stack[0])),
+                };
+                module_namespace.insert(fn_name.clone(), closure);
             }
+            // Skip other expressions (let bindings, private functions, etc.)
         }
 
         // Register the module in the global environment
