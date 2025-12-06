@@ -4,7 +4,9 @@ pub mod build;
 mod commands;
 mod handlers_modules;
 pub mod new;
-use ruchy::frontend::ast::Expr;
+use ruchy::backend::module_resolver::ModuleResolver;
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
@@ -117,31 +119,63 @@ fn print_eval_error(e: &anyhow::Error, format: &str) {
 /// Returns error if file cannot be read, parsed, or executed
 pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = read_file_with_context(file)?;
-    // Use REPL to evaluate the file
-    let mut repl = create_repl()?;
-    match repl.eval(&source) {
-        Ok(_result) => {
-            // CLI-UNIFY-002: Don't print file evaluation results
-            // The user's code uses println() for output. We should NOT print the
-            // final value of file evaluation (that's REPL behavior, not script behavior).
-            // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
 
-            // After evaluating the file, check if main() function exists and call it
-            // (but also don't print main's return value - it's not a println)
-            // FIX Issue #81: Handle main() errors (panic!, undefined functions, etc.)
-            match repl.eval("main()") {
-                Ok(_) => Ok(()),
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    Err(e)
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Error: {e}");
-            Err(e)
+    // ISSUE-106: Parse and resolve modules before evaluation
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser
+        .parse()
+        .map_err(|e| anyhow::anyhow!("Syntax error: {e}"))?;
+
+    // Resolve module declarations (mod name;) and imports
+    let resolved_ast = resolve_modules_for_execution(file, ast)?;
+
+    // Use interpreter to evaluate the resolved AST
+    let mut interpreter = Interpreter::new();
+    interpreter
+        .eval_expr(&resolved_ast)
+        .map_err(|e| anyhow::anyhow!("Evaluation error: {e:?}"))?;
+
+    Ok(())
+}
+
+/// ISSUE-106: Resolve module declarations and imports for script execution
+fn resolve_modules_for_execution(source_path: &Path, ast: Expr) -> Result<Expr> {
+    // Check if AST contains any module declarations or imports that need resolution
+    fn needs_resolution(expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::ModuleDeclaration { .. } => true,
+            ExprKind::Module { .. } => true,
+            ExprKind::Import { .. } => true,
+            ExprKind::ImportAll { .. } => true,
+            ExprKind::ImportDefault { .. } => true,
+            ExprKind::Block(exprs) => exprs.iter().any(needs_resolution),
+            ExprKind::Function { body, .. } => needs_resolution(body),
+            ExprKind::Let { value, body, .. } => needs_resolution(value) || needs_resolution(body),
+            _ => false,
         }
     }
+
+    if !needs_resolution(&ast) {
+        return Ok(ast);
+    }
+
+    let mut resolver = ModuleResolver::new();
+
+    // Add the source file's directory to the module search path
+    if let Some(parent_dir) = source_path.parent() {
+        resolver.add_search_path(parent_dir);
+
+        // Also search in standard project layout directories
+        if let Some(project_root) = parent_dir.parent() {
+            resolver.add_search_path(project_root.join("src"));
+            resolver.add_search_path(project_root.join("lib"));
+            resolver.add_search_path(project_root.join("modules"));
+        }
+    }
+
+    resolver
+        .resolve_imports(ast)
+        .with_context(|| "Module resolution error")
 }
 /// Handle stdin/piped input - evaluate input from standard input
 ///

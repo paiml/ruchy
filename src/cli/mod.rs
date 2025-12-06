@@ -213,13 +213,16 @@ fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), Stri
     let mut parser = crate::frontend::parser::Parser::new(&source);
     let ast = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
 
+    // ISSUE-106: Resolve module declarations (mod name;) and imports before evaluation
+    let resolved_ast = resolve_modules_for_run(&path, ast)?;
+
     match vm_mode {
         VmMode::Ast => {
             // Use AST interpreter (default)
             let mut interpreter = crate::runtime::interpreter::Interpreter::new();
             interpreter
-                .eval_expr(&ast)
-                .map_err(|e| format!("Runtime error: {e:?}"))?;
+                .eval_expr(&resolved_ast)
+                .map_err(|e| format!("Evaluation error: {e:?}"))?;
         }
         VmMode::Bytecode => {
             // Use bytecode VM (experimental, faster)
@@ -227,7 +230,7 @@ fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), Stri
 
             let mut compiler = Compiler::new("main".to_string());
             compiler
-                .compile_expr(&ast)
+                .compile_expr(&resolved_ast)
                 .map_err(|e| format!("Compilation error: {e}"))?;
             let chunk = compiler.finalize();
 
@@ -239,6 +242,53 @@ fn execute_run(path: PathBuf, verbose: bool, vm_mode: VmMode) -> Result<(), Stri
     }
 
     Ok(())
+}
+
+/// ISSUE-106: Resolve module declarations and imports for the run command
+/// This enables `mod name;` and `use module` syntax when running scripts directly
+fn resolve_modules_for_run(
+    source_path: &Path,
+    ast: crate::frontend::ast::Expr,
+) -> Result<crate::frontend::ast::Expr, String> {
+    use crate::backend::module_resolver::ModuleResolver;
+    use crate::frontend::ast::ExprKind;
+
+    // Check if AST contains any module declarations or imports that need resolution
+    fn needs_resolution(expr: &crate::frontend::ast::Expr) -> bool {
+        match &expr.kind {
+            ExprKind::ModuleDeclaration { .. } => true,
+            ExprKind::Module { .. } => true,
+            ExprKind::Import { .. } => true,
+            ExprKind::ImportAll { .. } => true,
+            ExprKind::ImportDefault { .. } => true,
+            ExprKind::Block(exprs) => exprs.iter().any(needs_resolution),
+            ExprKind::Function { body, .. } => needs_resolution(body),
+            ExprKind::Let { value, body, .. } => needs_resolution(value) || needs_resolution(body),
+            _ => false,
+        }
+    }
+
+    if !needs_resolution(&ast) {
+        return Ok(ast);
+    }
+
+    let mut resolver = ModuleResolver::new();
+
+    // Add the source file's directory to the module search path
+    if let Some(parent_dir) = source_path.parent() {
+        resolver.add_search_path(parent_dir);
+
+        // Also search in standard project layout directories
+        if let Some(project_root) = parent_dir.parent() {
+            resolver.add_search_path(project_root.join("src"));
+            resolver.add_search_path(project_root.join("lib"));
+            resolver.add_search_path(project_root.join("modules"));
+        }
+    }
+
+    resolver
+        .resolve_imports(ast)
+        .map_err(|e| format!("Module resolution error: {e}"))
 }
 fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     use crate::quality::formatter::Formatter;

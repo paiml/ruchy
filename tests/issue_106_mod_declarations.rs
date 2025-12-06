@@ -27,7 +27,6 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> std::path::Path
 // ============================================================================
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_simple_mod_declaration() {
     let temp = TempDir::new().unwrap();
 
@@ -65,7 +64,6 @@ main()
 }
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_multiple_mod_declarations() {
     let temp = TempDir::new().unwrap();
 
@@ -116,7 +114,6 @@ main()
 }
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_nested_module_calls() {
     let temp = TempDir::new().unwrap();
 
@@ -164,7 +161,6 @@ main()
 // ============================================================================
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_compile_with_mod_declaration() {
     let temp = TempDir::new().unwrap();
 
@@ -210,7 +206,6 @@ main()
 }
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_compiled_binary_executes() {
     let temp = TempDir::new().unwrap();
 
@@ -264,7 +259,6 @@ main()
 // ============================================================================
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_missing_module_file() {
     let temp = TempDir::new().unwrap();
 
@@ -288,7 +282,6 @@ fun main() {
 }
 
 #[test]
-#[ignore = "RED PHASE: mod scanner; syntax not yet implemented"]
 fn test_issue_106_invalid_module_syntax() {
     let temp = TempDir::new().unwrap();
 
@@ -318,7 +311,11 @@ fun main() {
         .arg(main_file)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Syntax error").or(predicate::str::contains("Expected")));
+        .stderr(
+            predicate::str::contains("Syntax error")
+                .or(predicate::str::contains("Expected"))
+                .or(predicate::str::contains("Failed to parse module")),
+        );
 }
 
 // ============================================================================
@@ -326,7 +323,6 @@ fun main() {
 // ============================================================================
 
 #[test]
-#[ignore = "RED PHASE: inline mod syntax not yet implemented"]
 fn test_issue_106_inline_modules_still_work() {
     let temp = TempDir::new().unwrap();
 
@@ -357,7 +353,6 @@ main()
 }
 
 #[test]
-#[ignore = "RED PHASE: mixed mod syntax not yet implemented"]
 fn test_issue_106_mixed_inline_and_declaration() {
     let temp = TempDir::new().unwrap();
 
