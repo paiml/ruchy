@@ -807,8 +807,8 @@ pub enum ExprKind {
         name: String,
         args: Vec<Expr>,
     },
-    /// Vector repeat pattern: vec![value; count]
-    /// Issue #155: Separate from MacroInvocation to generate correct Rust syntax
+    /// Vector repeat pattern: `vec![value; count]`
+    /// Issue #155: Separate from `MacroInvocation` to generate correct Rust syntax
     VecRepeat {
         value: Box<Expr>,
         count: Box<Expr>,
