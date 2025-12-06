@@ -55,6 +55,25 @@ pub(in crate::frontend::parser) fn parse_literal_token(
                 span,
             ))
         }
+        // Issue #168: Hexadecimal literal support (0xFF, 0x1A2B, etc.)
+        Token::HexInteger(value_str) => {
+            state.tokens.advance();
+            // Parse hex value: strip 0x/0X prefix and optional type suffix
+            let without_prefix = &value_str[2..]; // Skip "0x" or "0X"
+            let (hex_part, type_suffix) =
+                if let Some(pos) = without_prefix.find(|c: char| matches!(c, 'i' | 'u')) {
+                    (&without_prefix[..pos], Some(without_prefix[pos..].to_string()))
+                } else {
+                    (without_prefix, None)
+                };
+            let value = i64::from_str_radix(hex_part, 16).map_err(|_| {
+                ParseError::new(format!("Invalid hexadecimal literal: {value_str}"), span)
+            })?;
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Integer(value, type_suffix)),
+                span,
+            ))
+        }
         Token::Float(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Float(*value)), span))

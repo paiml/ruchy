@@ -174,6 +174,23 @@ impl Transpiler {
         Ok(quote! { vec![#(#arg_tokens),*] })
     }
 
+    /// Transpile vec repeat pattern: vec![value; count]
+    ///
+    /// Issue #155: Generates correct Rust syntax with semicolon separator.
+    /// Complexity: <10 per Toyota Way requirement.
+    ///
+    /// # Example Usage
+    /// Transpiles `vec![0.0; n]` to Rust's `vec![0.0; n]` (with semicolon, not comma)
+    pub(in crate::backend::transpiler) fn transpile_vec_repeat(
+        &self,
+        value: &Expr,
+        count: &Expr,
+    ) -> Result<TokenStream> {
+        let value_tokens = self.transpile_expr(value)?;
+        let count_tokens = self.transpile_expr(count)?;
+        Ok(quote! { vec![#value_tokens; #count_tokens] })
+    }
+
     /// Transpile assert! macro
     ///
     /// Simple argument transpilation for basic assertions.

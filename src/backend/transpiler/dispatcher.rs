@@ -483,6 +483,8 @@ impl Transpiler {
             ExprKind::Export { expr, is_default } => Ok(Self::transpile_export(expr, *is_default)),
             ExprKind::ExportList { names } => Ok(Self::transpile_export_list(names)),
             ExprKind::ExportDefault { expr } => Ok(Self::transpile_export_default(expr)),
+            // Issue #155: Handle VecRepeat with correct semicolon syntax
+            ExprKind::VecRepeat { value, count } => self.transpile_vec_repeat(value, count),
             // ISSUE-103: Handle MacroInvocation for compilation support
             ExprKind::MacroInvocation { name, args } => self.transpile_macro(name, args),
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),

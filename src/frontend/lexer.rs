@@ -137,6 +137,12 @@ pub enum Token {
     HashComment(String),
 
     // Literals
+    // Issue #168: Hexadecimal literals (0x or 0X prefix)
+    #[regex(r"0[xX][0-9a-fA-F]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
+        let slice = lex.slice();
+        slice.to_string()
+    })]
+    HexInteger(String),
     #[regex(r"[0-9]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
         let slice = lex.slice();
         // Parse type suffix and numeric value separately - store as string to preserve suffix
