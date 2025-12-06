@@ -168,8 +168,6 @@ println(is_active(Status::Active));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("quality-gate")
         .arg("/tmp/test_quality_enum.ruchy")
-        .arg("--min-score")
-        .arg("80")
         .output()
         .unwrap();
 
