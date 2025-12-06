@@ -559,6 +559,8 @@ impl Transpiler {
     /// Check if an expression tree contains any file imports (local .ruchy files)
     fn contains_file_imports(expr: &Expr) -> bool {
         match &expr.kind {
+            // ISSUE-106 FIX: ModuleDeclaration (mod name;) needs file resolution
+            ExprKind::ModuleDeclaration { .. } => true,
             ExprKind::Import { module, .. }
             | ExprKind::ImportAll { module, .. }
             | ExprKind::ImportDefault { module, .. } => {

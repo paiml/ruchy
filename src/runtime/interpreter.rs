@@ -1695,6 +1695,14 @@ impl Interpreter {
                 // Future: Wrap in Future and integrate with async runtime
                 self.eval_expr(body)
             }
+            // ISSUE-106: Module expression - creates a namespace with exported functions
+            ExprKind::Module { name, body } => self.eval_module_expr(name, body),
+            // ISSUE-106: ModuleDeclaration should be resolved before evaluation
+            // If we reach here, module resolution wasn't performed
+            ExprKind::ModuleDeclaration { name } => Err(InterpreterError::RuntimeError(format!(
+                "Module '{}' not resolved. Use `ruchy compile` or ensure module file exists.",
+                name
+            ))),
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
@@ -6271,6 +6279,75 @@ impl Interpreter {
 
             Ok(Value::Object(Arc::new(class_instance)))
         }
+    }
+
+    /// ISSUE-106: Evaluate module expression
+    /// Creates a namespace object containing all functions defined in the module body
+    /// Complexity: 7
+    fn eval_module_expr(&mut self, name: &str, body: &Expr) -> Result<Value, InterpreterError> {
+        use std::collections::HashMap;
+        use std::sync::Arc;
+
+        // Create a new namespace object for the module
+        let mut module_namespace: HashMap<String, Value> = HashMap::new();
+
+        // Mark as module type
+        module_namespace.insert(
+            "__type".to_string(),
+            Value::from_string("Module".to_string()),
+        );
+        module_namespace.insert("__name".to_string(), Value::from_string(name.to_string()));
+
+        // Extract function definitions from the module body
+        // The body is typically a Block containing function definitions
+        let exprs = match &body.kind {
+            ExprKind::Block(exprs) => exprs.clone(),
+            _ => vec![body.clone()],
+        };
+
+        // Process each expression in the module body
+        for expr in &exprs {
+            match &expr.kind {
+                ExprKind::Function {
+                    name: fn_name,
+                    params,
+                    body: fn_body,
+                    is_pub,
+                    ..
+                } => {
+                    // Only export public functions (pub fun)
+                    if *is_pub {
+                        // Create a closure for this function
+                        // Params are (name, optional_default_value)
+                        let closure_params: Vec<(String, Option<Arc<Expr>>)> = params
+                            .iter()
+                            .map(|p| {
+                                let name = p.name().to_string();
+                                let default = p
+                                    .default_value
+                                    .as_ref()
+                                    .map(|d| Arc::new(d.as_ref().clone()));
+                                (name, default)
+                            })
+                            .collect();
+                        let closure = Value::Closure {
+                            params: closure_params,
+                            body: Arc::new(fn_body.as_ref().clone()),
+                            env: Rc::clone(self.env_stack.last().unwrap_or(&self.env_stack[0])),
+                        };
+                        module_namespace.insert(fn_name.clone(), closure);
+                    }
+                }
+                // Skip other expressions (let bindings, etc.) for now
+                _ => {}
+            }
+        }
+
+        // Register the module in the global environment
+        let module_value = Value::Object(Arc::new(module_namespace));
+        self.set_variable(name, module_value.clone());
+
+        Ok(module_value)
     }
 
     /// Evaluate class definition
