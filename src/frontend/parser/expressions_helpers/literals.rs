@@ -61,7 +61,7 @@ pub(in crate::frontend::parser) fn parse_literal_token(
             // Parse hex value: strip 0x/0X prefix and optional type suffix
             let without_prefix = &value_str[2..]; // Skip "0x" or "0X"
             let (hex_part, type_suffix) =
-                if let Some(pos) = without_prefix.find(|c: char| matches!(c, 'i' | 'u')) {
+                if let Some(pos) = without_prefix.find(['i', 'u']) {
                     (&without_prefix[..pos], Some(without_prefix[pos..].to_string()))
                 } else {
                     (without_prefix, None)

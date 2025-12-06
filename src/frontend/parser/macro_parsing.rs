@@ -172,9 +172,9 @@ fn parse_remaining_elements(state: &mut ParserState, first: Expr) -> Result<Vec<
     Ok(args)
 }
 
-/// Parse vec![] macro with special repeat pattern support
-/// PARSER-092: Support vec![expr; size] repeat pattern from Issue #137
-/// Issue #155: Use VecRepeat variant for semicolon syntax to generate correct Rust
+/// Parse `vec![]` macro with special repeat pattern support
+/// PARSER-092: Support `vec![expr; size]` repeat pattern from Issue #137
+/// Issue #155: Use `VecRepeat` variant for semicolon syntax to generate correct Rust
 pub fn parse_vec_macro(state: &mut ParserState) -> Result<Option<Expr>> {
     state.tokens.advance(); // consume !
 
