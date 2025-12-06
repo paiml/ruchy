@@ -7,7 +7,7 @@ use std::fs;
 use tempfile::tempdir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 #[test]
@@ -87,13 +87,11 @@ fun main() {
     // Methods should be in impl block
     assert!(
         output.contains("impl Point"),
-        "Expected impl Point block: {}",
-        output
+        "Expected impl Point block: {output}"
     );
     assert!(
         output.contains("pub fn new"),
-        "Expected pub fn new in impl: {}",
-        output
+        "Expected pub fn new in impl: {output}"
     );
 }
 

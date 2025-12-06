@@ -8,7 +8,7 @@ use std::fs;
 use tempfile::tempdir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
@@ -46,7 +46,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("25"), "Expected 25: {}", stdout);
+        assert!(stdout.contains("25"), "Expected 25: {stdout}");
     }
 
     #[test]
@@ -72,7 +72,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("11"), "Expected 11: {}", stdout);
+        assert!(stdout.contains("11"), "Expected 11: {stdout}");
     }
 
     #[test]
@@ -114,8 +114,8 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("-1"), "Should have -1: {}", stdout);
-        assert!(stdout.contains("0"), "Should have 0: {}", stdout);
+        assert!(stdout.contains("-1"), "Should have -1: {stdout}");
+        assert!(stdout.contains('0'), "Should have 0: {stdout}");
     }
 
     #[test]
@@ -145,7 +145,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("2"), "Expected 2: {}", stdout);
+        assert!(stdout.contains('2'), "Expected 2: {stdout}");
     }
 
     #[test]
@@ -172,7 +172,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("6"), "Expected 6: {}", stdout);
+        assert!(stdout.contains('6'), "Expected 6: {stdout}");
     }
 
     #[test]
@@ -199,7 +199,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("35"), "Expected 35: {}", stdout);
+        assert!(stdout.contains("35"), "Expected 35: {stdout}");
     }
 }
 
@@ -236,7 +236,7 @@ fun main() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         // (1+2) * (10-5) = 3 * 5 = 15
-        assert!(stdout.contains("15"), "Expected 15: {}", stdout);
+        assert!(stdout.contains("15"), "Expected 15: {stdout}");
     }
 
     #[test]
@@ -268,7 +268,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("120"), "Expected 120: {}", stdout);
+        assert!(stdout.contains("120"), "Expected 120: {stdout}");
     }
 
     #[test]
@@ -294,7 +294,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("Hello World!"), "Expected greeting: {}", stdout);
+        assert!(stdout.contains("Hello World!"), "Expected greeting: {stdout}");
     }
 
     #[test]
@@ -322,7 +322,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("false true"), "Expected 'false true': {}", stdout);
+        assert!(stdout.contains("false true"), "Expected 'false true': {stdout}");
     }
 
     #[test]
@@ -353,7 +353,7 @@ fun main() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         // 1+2+...+10 = 55
-        assert!(stdout.contains("55"), "Expected 55: {}", stdout);
+        assert!(stdout.contains("55"), "Expected 55: {stdout}");
     }
 
     #[test]
@@ -382,7 +382,7 @@ fun main() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         // 1*2*3*4 = 24
-        assert!(stdout.contains("24"), "Expected 24: {}", stdout);
+        assert!(stdout.contains("24"), "Expected 24: {stdout}");
     }
 }
 
@@ -417,7 +417,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("-5"), "Expected -5: {}", stdout);
+        assert!(stdout.contains("-5"), "Expected -5: {stdout}");
     }
 
     #[test]
@@ -444,7 +444,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("6.28"), "Expected ~6.28: {}", stdout);
+        assert!(stdout.contains("6.28"), "Expected ~6.28: {stdout}");
     }
 
     #[test]
@@ -472,7 +472,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("done"), "Expected 'done': {}", stdout);
+        assert!(stdout.contains("done"), "Expected 'done': {stdout}");
     }
 
     #[test]
@@ -506,7 +506,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("5"), "Expected 5: {}", stdout);
+        assert!(stdout.contains('5'), "Expected 5: {stdout}");
     }
 
     #[test]
@@ -544,7 +544,7 @@ fun main() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         // double(5)=10, triple(3)=9, add(10,9)=19
-        assert!(stdout.contains("19"), "Expected 19: {}", stdout);
+        assert!(stdout.contains("19"), "Expected 19: {stdout}");
     }
 }
 
@@ -577,7 +577,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("255"), "Expected 255: {}", stdout);
+        assert!(stdout.contains("255"), "Expected 255: {stdout}");
     }
 
     #[test]
@@ -602,7 +602,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("43981"), "Expected 43981: {}", stdout);
+        assert!(stdout.contains("43981"), "Expected 43981: {stdout}");
     }
 
     #[test]
@@ -627,7 +627,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("A"), "Expected A: {}", stdout);
+        assert!(stdout.contains('A'), "Expected A: {stdout}");
     }
 
     #[test]
@@ -652,8 +652,8 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("line1"), "Expected line1: {}", stdout);
-        assert!(stdout.contains("line2"), "Expected line2: {}", stdout);
+        assert!(stdout.contains("line1"), "Expected line1: {stdout}");
+        assert!(stdout.contains("line2"), "Expected line2: {stdout}");
     }
 
     #[test]
@@ -685,8 +685,7 @@ fun main() {
         // Should have semicolon, not comma
         assert!(
             output.contains("vec![0; 5]") || output.contains("vec![0i64; 5]"),
-            "Should have vec repeat with semicolon: {}",
-            output
+            "Should have vec repeat with semicolon: {output}"
         );
     }
 }
@@ -727,7 +726,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("55"), "Expected 55: {}", stdout);
+        assert!(stdout.contains("55"), "Expected 55: {stdout}");
     }
 
     #[test]
@@ -755,7 +754,7 @@ fun main() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         // double(double(3)) = double(6) = 12
-        assert!(stdout.contains("12"), "Expected 12: {}", stdout);
+        assert!(stdout.contains("12"), "Expected 12: {stdout}");
     }
 
     #[test]
@@ -793,7 +792,7 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("true"), "Should have true: {}", stdout);
-        assert!(stdout.contains("false"), "Should have false: {}", stdout);
+        assert!(stdout.contains("true"), "Should have true: {stdout}");
+        assert!(stdout.contains("false"), "Should have false: {stdout}");
     }
 }
