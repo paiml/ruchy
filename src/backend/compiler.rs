@@ -389,8 +389,10 @@ fn contains_module_declaration(ast: &crate::frontend::ast::Expr) -> bool {
 
     fn check_expr(expr: &crate::frontend::ast::Expr) -> bool {
         match &expr.kind {
+            // TRANSPILER-MODULE-001 FIX: Only match actual `mod name;` declarations
+            // DO NOT match regular `use module` imports - those are handled by transpiler's
+            // resolve_imports_with_context to avoid double-resolution causing duplicate braces
             ExprKind::ModuleDeclaration { .. } => true,
-            ExprKind::Import { module, .. } => !module.contains("::"), // File import (no ::)
             ExprKind::Block(exprs) => exprs.iter().any(check_expr),
             ExprKind::Function { body, .. } => check_expr(body),
             ExprKind::Let { value, body, .. } => check_expr(value) || check_expr(body),
