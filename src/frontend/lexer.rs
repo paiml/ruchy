@@ -113,7 +113,8 @@ fn lex_nested_block_comment(lex: &mut Lexer<Token>) -> Option<String> {
 }
 
 #[derive(Logos, Debug, PartialEq, Clone)]
-#[logos(skip r"[ \t\n\f]+")]
+// Issue #163: Include \r for Windows line ending (CRLF) support
+#[logos(skip r"[ \t\n\r\f]+")]
 pub enum Token {
     // Comments (NEW: Track instead of skip)
     // Preserve exact text including whitespace for perfect formatting
