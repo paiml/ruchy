@@ -986,10 +986,11 @@ Developer → Pre-commit fails → STOP
 | #163 | 4.1 | ✅ Fixed | Windows line endings |
 | #168 | 4.1 | ✅ Fixed | Hexadecimal support |
 | #141 | 3.4 | ✅ Fixed | Unnecessary braces |
-| #142 | 5.3 | Pending | BigO analysis |
+| #142 | 5.3 | ✅ Fixed | BigO exponential detection |
 | #123 | 4.1 | Pending | Recursion depth |
 | #103 | 11.1 | Documented | Module import bug (TRANSPILER-MODULE-001) |
 | #104 | 11.1 | ✅ Fixed | CLI flags updated |
+| #106 | 11.1 | Documented | mod scanner; syntax (RED phase tests) |
 | #107-#112 | 5.1 | Partial | Enum/struct recognition |
 | #131 | 6.1 | Pending | Cranelift JIT |
 | #126 | 6.2 | Pending | Inline expansion |
