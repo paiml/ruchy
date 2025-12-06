@@ -987,11 +987,11 @@ Developer → Pre-commit fails → STOP
 | #168 | 4.1 | ✅ Fixed | Hexadecimal support |
 | #141 | 3.4 | ✅ Fixed | Unnecessary braces |
 | #142 | 5.3 | ✅ Fixed | BigO exponential detection |
-| #123 | 4.1 | Pending | Recursion depth |
+| #123 | 4.1 | ✅ Fixed | Recursion limit increased to 1000 |
 | #103 | 11.1 | Documented | Module import bug (TRANSPILER-MODULE-001) |
 | #104 | 11.1 | ✅ Fixed | CLI flags updated |
 | #106 | 11.1 | Documented | mod scanner; syntax (RED phase tests) |
-| #107-#112 | 5.1 | Partial | Enum/struct recognition |
+| #107-#112 | 5.1 | ✅ Fixed | Enum/struct recognition in tools |
 | #131 | 6.1 | Pending | Cranelift JIT |
 | #126 | 6.2 | Pending | Inline expansion |
 | #122 | 6.3 | Pending | WASM optimizations |
