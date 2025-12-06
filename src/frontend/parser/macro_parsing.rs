@@ -174,6 +174,7 @@ fn parse_remaining_elements(state: &mut ParserState, first: Expr) -> Result<Vec<
 
 /// Parse vec![] macro with special repeat pattern support
 /// PARSER-092: Support vec![expr; size] repeat pattern from Issue #137
+/// Issue #155: Use VecRepeat variant for semicolon syntax to generate correct Rust
 pub fn parse_vec_macro(state: &mut ParserState) -> Result<Option<Expr>> {
     state.tokens.advance(); // consume !
 
@@ -193,23 +194,30 @@ pub fn parse_vec_macro(state: &mut ParserState) -> Result<Option<Expr>> {
     let first_expr = parse_expr_recursive(state)?;
 
     // Check if this is repeat pattern (vec![expr; size]) or element list (vec![a, b, c])
-    let args = match state.tokens.peek() {
+    match state.tokens.peek() {
         Some((Token::Semicolon, _)) => {
-            // Repeat pattern: vec![expr; size]
+            // Issue #155: Repeat pattern vec![expr; size] - use VecRepeat variant
             state.tokens.advance(); // consume ;
             let size_expr = parse_expr_recursive(state)?;
             state.tokens.expect(&Token::RightBracket)?;
-            vec![first_expr, size_expr]
+            Ok(Some(Expr::new(
+                ExprKind::VecRepeat {
+                    value: Box::new(first_expr),
+                    count: Box::new(size_expr),
+                },
+                Span::default(),
+            )))
         }
-        Some((Token::Comma, _)) => parse_remaining_elements(state, first_expr)?,
+        Some((Token::Comma, _)) => {
+            let args = parse_remaining_elements(state, first_expr)?;
+            Ok(Some(create_macro_expr("vec".to_string(), args)))
+        }
         Some((Token::RightBracket, _)) => {
             state.tokens.advance(); // consume ]
-            vec![first_expr]
+            Ok(Some(create_macro_expr("vec".to_string(), vec![first_expr])))
         }
         _ => bail!("Unexpected token in vec![] macro"),
-    };
-
-    Ok(Some(create_macro_expr("vec".to_string(), args)))
+    }
 }
 
 /// Create a macro invocation expression (complexity: 1)

@@ -1235,6 +1235,12 @@ impl Formatter {
                     .join(", ");
                 format!("{name}!({args_str})")
             }
+            // Issue #155: Format vec repeat pattern with semicolon
+            ExprKind::VecRepeat { value, count } => {
+                let value_str = self.format_expr(value, indent);
+                let count_str = self.format_expr(count, indent);
+                format!("vec![{value_str}; {count_str}]")
+            }
             ExprKind::DataFrame { columns } => {
                 let columns_str = columns
                     .iter()

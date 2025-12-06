@@ -19,8 +19,9 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
 
 fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        // Literals
+        // Literals (Issue #168: Added HexInteger for hex literal support)
         Token::Integer(_)
+        | Token::HexInteger(_)
         | Token::Float(_)
         | Token::String(_)
         | Token::RawString(_)
@@ -125,8 +126,9 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
 // All literal parsing moved to expressions_helpers/literals.rs module
 fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
-        // Basic literals - delegated to literals module
+        // Basic literals - delegated to literals module (Issue #168: Added HexInteger)
         Token::Integer(_)
+        | Token::HexInteger(_)
         | Token::Float(_)
         | Token::String(_)
         | Token::RawString(_)
