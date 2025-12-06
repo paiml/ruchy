@@ -2966,10 +2966,24 @@ impl Transpiler {
         }
     }
     /// Transpiles blocks
+    ///
+    /// Issue #141 (TRANSPILER-016): Smart brace handling
+    /// - Nested single-expression blocks are flattened to avoid `{ { expr } }`
+    /// - Blocks with let bindings or multiple statements keep proper structure
     pub fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
         if exprs.is_empty() {
             return Ok(quote! { {} });
         }
+
+        // Issue #141: Flatten nested single-expression blocks
+        // If we have a block containing only a single Block expression, flatten it
+        if exprs.len() == 1 {
+            if let ExprKind::Block(inner_exprs) = &exprs[0].kind {
+                // Recursively transpile the inner block (flattening nested blocks)
+                return self.transpile_block(inner_exprs);
+            }
+        }
+
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
