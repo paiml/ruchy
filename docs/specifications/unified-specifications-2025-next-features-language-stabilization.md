@@ -88,16 +88,16 @@ This specification consolidates ALL open tickets (31 GitHub issues + 6 roadmap i
 |-------|-------|
 | #167, #162, #150, #146, #127 | Web Quality Alerts (automated) |
 
-### 1.2 Roadmap Tickets (6 Pending)
+### 1.2 Roadmap Tickets (All Resolved)
 
-| ID | Title | Category |
-|----|-------|----------|
-| VM-001 | OpCode::Call (Function Invocation) | VM Coverage |
-| VM-002 | OpCode::For (Loop Iteration) | VM Coverage |
-| VM-003 | OpCode::MethodCall (Method Dispatch) | VM Coverage |
-| VM-004 | OpCode::Match (Pattern Matching) | VM Coverage |
-| VM-005 | OpCode::NewClosure (Closure Creation) | VM Coverage |
-| Issue #87 | Parser bug with complex enum matches | BLOCKED |
+| ID | Title | Category | Status |
+|----|-------|----------|--------|
+| VM-001 | OpCode::Call (Function Invocation) | VM Coverage | ✅ Fixed |
+| VM-002 | OpCode::For (Loop Iteration) | VM Coverage | ✅ Fixed |
+| VM-003 | OpCode::MethodCall (Method Dispatch) | VM Coverage | ✅ Fixed |
+| VM-004 | OpCode::Match (Pattern Matching) | VM Coverage | ✅ Fixed |
+| VM-005 | OpCode::NewClosure (Closure Creation) | VM Coverage | ✅ Fixed |
+| Issue #87 | Parser bug with complex enum matches | Parser | ✅ Fixed (2 tests passing) |
 
 ---
 
@@ -500,9 +500,9 @@ jobs:
 
 ### Phase 4: Polish (Week 7-8)
 
-- [ ] Documentation completeness
-- [ ] Beta graduation validation
-- [ ] Release preparation
+- [x] Documentation completeness ✅ (Cross-reference updated, all tickets resolved)
+- [x] Beta graduation validation ✅ (5099+ tests, 9 issue test suites passing)
+- [ ] Release preparation (pending version bump)
 
 ---
 
@@ -996,6 +996,7 @@ Developer → Pre-commit fails → STOP
 | #126 | 6.2 | ✅ Fixed | Inline expansion (40 tests) |
 | #122 | 6.3 | ✅ Fixed | WASM optimizations (366 tests) |
 | VM-001 to VM-005 | 4.2 | ✅ Fixed | VM coverage tests |
+| #87 | 1.2 | ✅ Fixed | Complex enum matches (2 tests passing) |
 
 ## Appendix C: New Section Summary
 
