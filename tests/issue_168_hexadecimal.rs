@@ -7,7 +7,7 @@ use std::fs;
 use tempfile::tempdir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
@@ -39,8 +39,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("255"),
-        "Expected 255 from 0xFF, got: {}",
-        stdout
+        "Expected 255 from 0xFF, got: {stdout}"
     );
 }
 
@@ -68,8 +67,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("255"),
-        "Expected 255 from 0xff, got: {}",
-        stdout
+        "Expected 255 from 0xff, got: {stdout}"
     );
 }
 
@@ -97,8 +95,7 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("6699"),
-        "Expected 6699 from 0x1A2B, got: {}",
-        stdout
+        "Expected 6699 from 0x1A2B, got: {stdout}"
     );
 }
 
@@ -129,8 +126,7 @@ fun main() {
     // 0x10 = 16, 0x20 = 32, sum = 48
     assert!(
         stdout.contains("48"),
-        "Expected 48 from 0x10 + 0x20, got: {}",
-        stdout
+        "Expected 48 from 0x10 + 0x20, got: {stdout}"
     );
 }
 
@@ -162,8 +158,7 @@ fun main() {
     // Should transpile hex to Rust hex or decimal
     assert!(
         output.contains("0xDEAD") || output.contains("57005"),
-        "Expected hex literal in output: {}",
-        output
+        "Expected hex literal in output: {output}"
     );
 }
 
@@ -194,7 +189,6 @@ fun main() {
     // 0x1234 & 0xFF = 0x34 = 52
     assert!(
         stdout.contains("52"),
-        "Expected 52 from 0x1234 & 0xFF, got: {}",
-        stdout
+        "Expected 52 from 0x1234 & 0xFF, got: {stdout}"
     );
 }

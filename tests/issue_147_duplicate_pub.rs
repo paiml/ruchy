@@ -9,7 +9,7 @@ use tempfile::tempdir;
 
 /// Helper to create ruchy command
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
@@ -47,13 +47,11 @@ fun main() {
     // Should have "pub fn", NOT "pub pub fn"
     assert!(
         output.contains("pub fn hello"),
-        "Expected 'pub fn hello', got: {}",
-        output
+        "Expected 'pub fn hello', got: {output}"
     );
     assert!(
         !output.contains("pub pub fn"),
-        "Should NOT contain 'pub pub fn': {}",
-        output
+        "Should NOT contain 'pub pub fn': {output}"
     );
 }
 
@@ -64,7 +62,7 @@ fn test_issue_147_02_pub_fun_in_impl() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 pub struct Counter {
     value: i32,
 }
@@ -83,7 +81,7 @@ fun main() {
     let mut c = Counter::new();
     c.increment();
 }
-"#,
+",
     )
     .unwrap();
 
@@ -100,8 +98,7 @@ fun main() {
     // Should have "pub fn new" and "pub fn increment", NOT "pub pub fn"
     assert!(
         !output.contains("pub pub fn"),
-        "Should NOT contain 'pub pub fn': {}",
-        output
+        "Should NOT contain 'pub pub fn': {output}"
     );
 }
 
@@ -166,8 +163,7 @@ fun main() {
     // helper should be "fn helper", not "pub fn helper"
     assert!(
         output.contains("fn helper") && !output.contains("pub fn helper"),
-        "helper should be private, got: {}",
-        output
+        "helper should be private, got: {output}"
     );
 }
 
@@ -208,13 +204,11 @@ fun main() {
     // public_api should be "pub fn", private_helper should be just "fn"
     assert!(
         output.contains("pub fn public_api"),
-        "Expected 'pub fn public_api': {}",
-        output
+        "Expected 'pub fn public_api': {output}"
     );
     assert!(
         !output.contains("pub pub fn"),
-        "Should NOT contain 'pub pub fn': {}",
-        output
+        "Should NOT contain 'pub pub fn': {output}"
     );
 }
 
@@ -262,7 +256,6 @@ fun main() {
     // Verify no duplicate pub
     assert!(
         !output.contains("pub pub"),
-        "Should NOT contain 'pub pub': {}",
-        output
+        "Should NOT contain 'pub pub': {output}"
     );
 }

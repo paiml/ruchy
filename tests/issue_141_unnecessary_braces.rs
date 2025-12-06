@@ -8,7 +8,7 @@ use std::fs;
 use tempfile::tempdir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
@@ -21,11 +21,11 @@ fn test_issue_141_01_single_expr_unwrapped() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun add(a: i64, b: i64) -> i64 {
     a + b
 }
-"#,
+",
     )
     .unwrap();
 
@@ -42,8 +42,7 @@ fun add(a: i64, b: i64) -> i64 {
     // Should NOT have {{ a + b }} double braces
     assert!(
         !output.contains("{ { a + b } }") && !output.contains("{{ a + b }}"),
-        "Should not have unnecessary nested braces: {}",
-        output
+        "Should not have unnecessary nested braces: {output}"
     );
 }
 
@@ -53,11 +52,11 @@ fn test_issue_141_02_single_return_value() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun get_answer() -> i64 {
     42
 }
-"#,
+",
     )
     .unwrap();
 
@@ -74,8 +73,7 @@ fun get_answer() -> i64 {
     // Should have clean function body with the return value
     assert!(
         output.contains("fn get_answer") && output.contains("42"),
-        "Should have function with return value: {}",
-        output
+        "Should have function with return value: {output}"
     );
 }
 
@@ -89,12 +87,12 @@ fn test_issue_141_03_let_binding_keeps_braces() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun compute() -> i64 {
     let x = 10;
     x * 2
 }
-"#,
+",
     )
     .unwrap();
 
@@ -111,8 +109,7 @@ fun compute() -> i64 {
     // Should have braces to contain let binding scope
     assert!(
         output.contains("let x") && output.contains("x * 2"),
-        "Should preserve let binding and expression: {}",
-        output
+        "Should preserve let binding and expression: {output}"
     );
 }
 
@@ -122,13 +119,13 @@ fn test_issue_141_04_multiple_statements_keep_braces() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun multi() -> i64 {
     let a = 1;
     let b = 2;
     a + b
 }
-"#,
+",
     )
     .unwrap();
 
@@ -145,8 +142,7 @@ fun multi() -> i64 {
     // Should have all statements in the body
     assert!(
         output.contains("let a") && output.contains("let b") && output.contains("a + b"),
-        "Should preserve all statements: {}",
-        output
+        "Should preserve all statements: {output}"
     );
 }
 
@@ -160,11 +156,11 @@ fn test_issue_141_05_if_expression_simple() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun check(x: i64) -> i64 {
     if x > 0 { 1 } else { 0 }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -181,8 +177,7 @@ fun check(x: i64) -> i64 {
     // Should have clean if expression without extra nesting
     assert!(
         output.contains("if") && output.contains("else"),
-        "Should have if/else: {}",
-        output
+        "Should have if/else: {output}"
     );
 }
 
@@ -192,7 +187,7 @@ fn test_issue_141_06_if_with_complex_branches() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun process(event: i64) -> i64 {
     if event > 100 {
         let x = event * 2;
@@ -201,7 +196,7 @@ fun process(event: i64) -> i64 {
         0
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -218,8 +213,7 @@ fun process(event: i64) -> i64 {
     // Complex branch should have braces (for let binding)
     assert!(
         output.contains("let x"),
-        "Should preserve let in branch: {}",
-        output
+        "Should preserve let in branch: {output}"
     );
 }
 
@@ -233,7 +227,7 @@ fn test_issue_141_07_match_simple_arms() {
     let file_path = dir.path().join("test.ruchy");
     fs::write(
         &file_path,
-        r#"
+        r"
 fun categorize(n: i64) -> i64 {
     match n {
         1 => 10,
@@ -241,7 +235,7 @@ fun categorize(n: i64) -> i64 {
         _ => 0,
     }
 }
-"#,
+",
     )
     .unwrap();
 
@@ -258,8 +252,7 @@ fun categorize(n: i64) -> i64 {
     // Match arms should be clean
     assert!(
         output.contains("match"),
-        "Should have match expression: {}",
-        output
+        "Should have match expression: {output}"
     );
 }
 
@@ -291,7 +284,6 @@ fun main() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("42"),
-        "Should output 42, got: {}",
-        stdout
+        "Should output 42, got: {stdout}"
     );
 }

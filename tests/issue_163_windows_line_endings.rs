@@ -7,7 +7,7 @@ use std::fs;
 use tempfile::tempdir;
 
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn test_issue_163_02_crlf_function_definition() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("5"),
+        stdout.contains('5'),
         "Should output 5: stdout={}, stderr={}",
         stdout,
         String::from_utf8_lossy(&output.stderr)
@@ -85,8 +85,7 @@ fn test_issue_163_03_crlf_transpile() {
     let output = fs::read_to_string(&output_path).unwrap();
     assert!(
         output.contains("fn main"),
-        "Should transpile CRLF file: {}",
-        output
+        "Should transpile CRLF file: {output}"
     );
 }
 
@@ -135,7 +134,7 @@ fn test_issue_163_05_mixed_line_endings() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("3"),
+        stdout.contains('3'),
         "Should handle mixed line endings: stdout={}, stderr={}",
         stdout,
         String::from_utf8_lossy(&output.stderr)

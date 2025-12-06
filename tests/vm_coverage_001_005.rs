@@ -1,11 +1,11 @@
 //! VM Coverage Tests: VM-001 through VM-005
 //!
 //! Tests for bytecode VM opcodes that use hybrid execution approach:
-//! - VM-001: OpCode::Call (function invocation)
-//! - VM-002: OpCode::For (loop iteration)
-//! - VM-003: OpCode::MethodCall (method dispatch)
-//! - VM-004: OpCode::Match (pattern matching)
-//! - VM-005: OpCode::NewClosure (closure creation)
+//! - VM-001: `OpCode::Call` (function invocation)
+//! - VM-002: `OpCode::For` (loop iteration)
+//! - VM-003: `OpCode::MethodCall` (method dispatch)
+//! - VM-004: `OpCode::Match` (pattern matching)
+//! - VM-005: `OpCode::NewClosure` (closure creation)
 //!
 //! These tests validate the bytecode VM's hybrid approach where complex
 //! operations delegate to the AST interpreter while maintaining correct
@@ -583,7 +583,7 @@ mod vm_integration {
 
     #[test]
     fn test_vm_integration_05_all_opcodes_combined() {
-        let code = r#"{
+        let code = r"{
             let factor = 2;
             let scale = |x| x * factor;
             let mut result = 0;
@@ -598,7 +598,7 @@ mod vm_integration {
             }
 
             result
-        }"#;
+        }";
         // scale(10) + scale(20) + scale(30) = 20 + 40 + 60 = 120
         assert_eq!(eval_code(code), "120");
     }
@@ -629,7 +629,7 @@ mod vm_property_tests {
             if nums.is_empty() {
                 return Ok(());
             }
-            let arr_str = format!("[{}]", nums.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
+            let arr_str = format!("[{}]", nums.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", "));
             let expected: i64 = nums.iter().sum();
             let code = format!(r"{{
                 let mut sum = 0;

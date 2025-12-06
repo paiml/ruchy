@@ -1,17 +1,16 @@
 //! EXTREME TDD Tests for Issue #155: vec! syntax (comma vs semicolon)
 //!
 //! Bug: Transpiler generates `vec![0f64, n]` instead of `vec![0f64; n]`
-//! Root cause: MacroInvocation doesn't distinguish repeat pattern from element list
-//! Fix: Add VecRepeat variant to AST and handle in transpiler
+//! Root cause: `MacroInvocation` doesn't distinguish repeat pattern from element list
+//! Fix: Add `VecRepeat` variant to AST and handle in transpiler
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use std::fs;
 use tempfile::tempdir;
 
 /// Helper to create ruchy command
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("Failed to find ruchy binary")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================
@@ -38,13 +37,11 @@ fn test_issue_155_01_vec_repeat_basic() {
     // MUST use semicolon, not comma
     assert!(
         output.contains("vec![0f64; 5]") || output.contains("vec![0.0; 5]"),
-        "Expected vec![0.0; 5] but got: {}",
-        output
+        "Expected vec![0.0; 5] but got: {output}"
     );
     assert!(
         !output.contains("vec![0f64, 5]") && !output.contains("vec![0.0, 5]"),
-        "Should NOT contain comma syntax: {}",
-        output
+        "Should NOT contain comma syntax: {output}"
     );
 }
 
@@ -72,8 +69,7 @@ fn test_issue_155_02_vec_repeat_with_variable() {
     // MUST use semicolon with variable
     assert!(
         output.contains("; n]") || output.contains("; n }"),
-        "Expected semicolon before variable n, but got: {}",
-        output
+        "Expected semicolon before variable n, but got: {output}"
     );
 }
 
@@ -101,8 +97,7 @@ fn test_issue_155_03_nested_vec_repeat() {
     // Both inner and outer must use semicolon
     assert!(
         output.contains("; n]") && output.contains("; m]"),
-        "Expected nested vec with semicolons, but got: {}",
-        output
+        "Expected nested vec with semicolons, but got: {output}"
     );
 }
 
@@ -126,8 +121,7 @@ fn test_issue_155_04_vec_element_list_still_works() {
     // MUST use commas for element list
     assert!(
         output.contains("vec![1, 2, 3]") || output.contains("vec![1i64, 2i64, 3i64]"),
-        "Expected vec![1, 2, 3] with commas, but got: {}",
-        output
+        "Expected vec![1, 2, 3] with commas, but got: {output}"
     );
 }
 
@@ -206,15 +200,13 @@ fun main() {
     // Verify correct syntax with semicolons
     assert!(
         output.contains("; n]") || output.contains("; size]"),
-        "Expected semicolon in vec repeat, but got: {}",
-        output
+        "Expected semicolon in vec repeat, but got: {output}"
     );
 
     // Should NOT have the buggy comma syntax
     assert!(
         !output.contains("vec![vec![0f64, n], n]") && !output.contains("vec![vec![0.0, n], n]"),
-        "Should NOT have comma syntax bug: {}",
-        output
+        "Should NOT have comma syntax bug: {output}"
     );
 }
 
@@ -237,8 +229,7 @@ fn test_issue_155_07_single_element_vec() {
     let output = fs::read_to_string(&output_path).unwrap();
     assert!(
         output.contains("vec![42]") || output.contains("vec![42i64]"),
-        "Single element vec should work: {}",
-        output
+        "Single element vec should work: {output}"
     );
 }
 
@@ -261,7 +252,6 @@ fn test_issue_155_08_empty_vec() {
     let output = fs::read_to_string(&output_path).unwrap();
     assert!(
         output.contains("vec![]") || output.contains("Vec::new()"),
-        "Empty vec should work: {}",
-        output
+        "Empty vec should work: {output}"
     );
 }
