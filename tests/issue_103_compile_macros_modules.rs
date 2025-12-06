@@ -119,7 +119,6 @@ println!("{}", msg)
 // ============================================================================
 
 #[test]
-#[ignore = "BUG: Transpiler generates invalid Rust for module imports"]
 fn test_issue_103_compile_simple_import() {
     let temp = TempDir::new().unwrap();
 
@@ -164,7 +163,6 @@ println!("Result: {}", result)
 }
 
 #[test]
-#[ignore = "BUG: Transpiler generates invalid Rust for module imports"]
 fn test_issue_103_compile_import_specific_functions() {
     let temp = TempDir::new().unwrap();
 

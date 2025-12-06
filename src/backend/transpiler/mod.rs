@@ -1533,11 +1533,13 @@ impl Transpiler {
         };
 
         let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
+        // TRANSPILER-MODULE-001 FIX: Modules must be declared BEFORE use statements
+        // that reference them. Reorder: modules -> imports -> functions -> main
         Ok(quote! {
             #use_statements
+            #(#modules)*
             #(#imports)*
             #(#globals)*
-            #(#modules)*
             #(#functions)*
             #main_tokens
         })
@@ -1574,11 +1576,13 @@ impl Transpiler {
         // Issue #132: No unsafe wrapping needed - LazyLock<Mutex<T>> is thread-safe
         let main_body = quote! { #(#statements)* };
 
+        // TRANSPILER-MODULE-001 FIX: Modules must be declared BEFORE use statements
+        // that reference them. Reorder: modules -> imports -> functions
         Ok(quote! {
             #use_statements
+            #(#modules)*
             #(#imports)*
             #(#globals)*
-            #(#modules)*
             #(#functions)*
             #user_main_function
             fn main() {
