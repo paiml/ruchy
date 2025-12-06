@@ -990,7 +990,7 @@ Developer → Pre-commit fails → STOP
 | #123 | 4.1 | ✅ Fixed | Recursion limit increased to 1000 |
 | #103 | 11.1 | ✅ Fixed | Module imports compile correctly (9 tests) |
 | #104 | 11.1 | ✅ Fixed | CLI flags updated |
-| #106 | 11.1 | Documented | mod scanner; syntax (RED phase tests) |
+| #106 | 11.1 | ✅ Fixed | mod scanner; syntax (9 tests passing) |
 | #107-#112 | 5.1 | ✅ Fixed | Enum/struct recognition in tools |
 | #131 | 6.1 | ✅ Fixed | Cranelift JIT implemented (40 tests) |
 | #126 | 6.2 | ✅ Fixed | Inline expansion (40 tests) |
