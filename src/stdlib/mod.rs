@@ -1,15 +1,34 @@
 //! Ruchy Standard Library (STD-XXX Series)
 //!
-//! Thin wrappers around proven Rust crates for Ruchy-friendly API.
+//! **Accelerated Computing First Data Science** - Six Pillars:
+//!
+//! | Pillar | Module | Purpose | Acceleration |
+//! |--------|--------|---------|--------------|
+//! | 1. Compute | `trueno_bridge` | SIMD tensor operations | AVX-512/NEON/CUDA |
+//! | 2. Data Loading | `alimentar_bridge` | Dataset loading, transforms | Zero-copy Arrow |
+//! | 3. Analytics | `dataframe` | Embedded analytics database | Vectorized execution |
+//! | 4. Learning | `aprender_bridge` | ML primitives | SIMD matmul |
+//! | 5. Visualization | `viz_bridge` | GPU/WASM charts | WebGPU |
+//! | 6. Interaction | `presentar_bridge` | WASM notebook widgets | WASM-native |
 //!
 //! # Design Philosophy
 //!
+//! - **Accelerated Computing First**: SIMD/GPU/WASM is the default execution model
 //! - **Zero Reinvention**: Leverage existing Rust ecosystem
 //! - **Thin Wrappers**: Minimal complexity, maximum reliability
 //! - **Ruchy-Friendly**: Clean API that feels natural in Ruchy code
 //! - **Toyota Way**: ≤10 complexity per function, comprehensive tests
+//! - **Batteries-Included**: Everything needed for data science out of the box
 //!
-//! # Modules
+//! # Core Modules (Six Pillars)
+//!
+//! - `trueno_bridge`: SIMD tensor operations (Pillar 1: Compute)
+//! - `alimentar_bridge`: Dataset loading and transforms (Pillar 2: Data Loading)
+//! - `aprender_bridge`: ML primitives (Pillar 4: Learning)
+//! - `viz_bridge`: GPU/WASM visualization (Pillar 5: Visualization)
+//! - `presentar_bridge`: WASM-native widgets (Pillar 6: Interaction)
+//!
+//! # Utility Modules
 //!
 //! - `fs`: File system operations (STD-001)
 //! - `http`: HTTP client operations (STD-002)
@@ -22,6 +41,15 @@
 //! - `logging`: Logging operations (STD-009)
 //! - `regex`: Regular expression operations (STD-010)
 
+// === Six Pillars Core (Accelerated Computing First Data Science) ===
+pub mod trueno_bridge;     // Pillar 1: SIMD Compute
+pub mod alimentar_bridge;  // Pillar 2: Data Loading
+pub mod aprender_bridge;   // Pillar 4: ML Primitives
+pub mod viz_bridge;        // Pillar 5: Visualization
+pub mod presentar_bridge;  // Pillar 6: WASM Widgets
+// Pillar 3 (trueno-db) exposed via dataframe module
+
+// === Utility Modules ===
 pub mod env;
 pub mod fs;
 pub mod json;
