@@ -118,7 +118,8 @@ fn test_file_operations_without_import() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
 
-    // Using file operations without import should fail gracefully
+    // read_file is now a builtin, so calling it without import should work
+    // But reading a nonexistent file should produce a proper runtime error
     let code = r#"
 let content = read_file("nonexistent.txt")
 "#;
@@ -129,7 +130,8 @@ let content = read_file("nonexistent.txt")
         .args(["run", file_path.to_str().unwrap()])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("cannot find function `read_file`"));
+        // Expect runtime error for file not found (not function not found)
+        .stderr(predicate::str::contains("No such file or directory"));
 }
 
 #[test]

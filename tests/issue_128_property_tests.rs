@@ -2,6 +2,7 @@
 //!
 //! EXTREME TDD: Property-based testing to verify fix robustness across 10K+ inputs
 
+use assert_cmd::cargo::cargo_bin;
 use proptest::prelude::*;
 use std::process::Command;
 
@@ -21,13 +22,13 @@ println(fib({n}))
 ");
 
                                                     // Run twice to verify determinism
-                                                    let output1 = Command::new("target/release/ruchy")
+                                                    let output1 = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
                                                         .expect("ruchy execution failed");
 
-                                                    let output2 = Command::new("target/release/ruchy")
+                                                    let output2 = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
@@ -71,7 +72,7 @@ fun max(x, y) {{
 println(max({a}, {b}))
 ");
 
-                                                    let output = Command::new("target/release/ruchy")
+                                                    let output = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
@@ -104,7 +105,7 @@ println(factorial({n}))
 ");
 
                                                     // Transpile to Rust
-                                                    let transpile_output = Command::new("target/release/ruchy")
+                                                    let transpile_output = Command::new(cargo_bin("ruchy"))
                                                         .arg("transpile")
                                                         .arg("-")
                                                         .stdin(std::process::Stdio::piped())
@@ -150,7 +151,7 @@ fun fib(n) {{
 println(fib({n}))
 ");
 
-                                                    let output = Command::new("target/release/ruchy")
+                                                    let output = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()

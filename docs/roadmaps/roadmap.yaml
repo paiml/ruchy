@@ -34,3 +34,99 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: Oracle-driven code quality improvements
+  github_issue: null
+  item_type: task
+  title: 'New task: Oracle-driven code quality improvements'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T11:40:36.944407236+00:00
+  updated: 2025-12-07T11:55:28.077901092+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Oracle training data expansion
+  github_issue: null
+  item_type: task
+  title: 'New task: Oracle training data expansion'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T11:56:03.382770646+00:00
+  updated: 2025-12-07T12:00:58.156656645+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Oracle-driven dead code elimination
+  github_issue: null
+  item_type: task
+  title: 'New task: Oracle-driven dead code elimination'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T12:06:37.176030920+00:00
+  updated: 2025-12-07T12:10:31.836539019+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Oracle integration with diagnostics
+  github_issue: null
+  item_type: task
+  title: 'New task: Oracle integration with diagnostics'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T12:11:07.239094784+00:00
+  updated: 2025-12-07T12:11:07.239094784+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Implement std::env module (Issue #96)'
+  github_issue: null
+  item_type: task
+  title: 'New task: Implement std::env module (Issue #96)'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T12:31:09.162509921+00:00
+  updated: 2025-12-07T12:31:09.162509921+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Ensure make test-fast passes in under 5 minutes
+  github_issue: null
+  item_type: task
+  title: 'New task: Ensure make test-fast passes in under 5 minutes'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T12:45:53.557478821+00:00
+  updated: 2025-12-07T12:45:53.557478821+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

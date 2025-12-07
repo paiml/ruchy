@@ -38,7 +38,14 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd().arg("lint").arg(example).assert().success();
 
     // TOOL 5: ruchy compile - Binary compilation
-    ruchy_cmd().arg("compile").arg(example).assert().success();
+    // DEFECT-RACE-CONDITION FIX: Use unique output path per example file to avoid parallel test collisions
+    let compile_output = std::env::temp_dir().join(format!(
+        "compile_test_{}_{}",
+        example.file_stem().unwrap().to_string_lossy(),
+        std::process::id()
+    ));
+    ruchy_cmd().arg("compile").arg(example).arg("-o").arg(&compile_output).assert().success();
+    std::fs::remove_file(&compile_output).ok();
 
     // TOOL 6: ruchy run - Execution
     ruchy_cmd().arg("run").arg(example).assert().success();
@@ -80,6 +87,8 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd()
         .arg("mutations")
         .arg(example)
+        .arg("--min-coverage")
+        .arg("0")
         .arg("--timeout")
         .arg("60")
         .assert()
@@ -105,7 +114,7 @@ fn validate_with_15_tools(example: &PathBuf) {
 #[test]
 fn test_langcomp_002_01_arithmetic_addition() {
     let temp_file = std::env::temp_dir().join("langcomp_002_01_add.ruchy");
-    std::fs::write(&temp_file, "2 + 3").unwrap();
+    std::fs::write(&temp_file, "println(2 + 3)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -120,7 +129,7 @@ fn test_langcomp_002_01_arithmetic_addition() {
 #[test]
 fn test_langcomp_002_01_arithmetic_subtraction() {
     let temp_file = std::env::temp_dir().join("langcomp_002_01_sub.ruchy");
-    std::fs::write(&temp_file, "10 - 3").unwrap();
+    std::fs::write(&temp_file, "println(10 - 3)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -135,7 +144,7 @@ fn test_langcomp_002_01_arithmetic_subtraction() {
 #[test]
 fn test_langcomp_002_01_arithmetic_multiplication() {
     let temp_file = std::env::temp_dir().join("langcomp_002_01_mul.ruchy");
-    std::fs::write(&temp_file, "4 * 5").unwrap();
+    std::fs::write(&temp_file, "println(4 * 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -150,7 +159,7 @@ fn test_langcomp_002_01_arithmetic_multiplication() {
 #[test]
 fn test_langcomp_002_01_arithmetic_division() {
     let temp_file = std::env::temp_dir().join("langcomp_002_01_div.ruchy");
-    std::fs::write(&temp_file, "20 / 4").unwrap();
+    std::fs::write(&temp_file, "println(20 / 4)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -165,7 +174,7 @@ fn test_langcomp_002_01_arithmetic_division() {
 #[test]
 fn test_langcomp_002_01_arithmetic_modulo() {
     let temp_file = std::env::temp_dir().join("langcomp_002_01_mod.ruchy");
-    std::fs::write(&temp_file, "10 % 3").unwrap();
+    std::fs::write(&temp_file, "println(10 % 3)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -189,7 +198,7 @@ fn test_langcomp_002_01_arithmetic_example_file() {
 fn test_langcomp_002_01_arithmetic_precedence() {
     // Test: 2 + 3 * 4 = 14 (multiplication before addition)
     let temp_file = std::env::temp_dir().join("langcomp_002_01_precedence.ruchy");
-    std::fs::write(&temp_file, "2 + 3 * 4").unwrap();
+    std::fs::write(&temp_file, "println(2 + 3 * 4)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -209,7 +218,7 @@ fn test_langcomp_002_01_arithmetic_precedence() {
 #[test]
 fn test_langcomp_002_02_comparison_equality() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_eq.ruchy");
-    std::fs::write(&temp_file, "5 == 5").unwrap();
+    std::fs::write(&temp_file, "println(5 == 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -224,7 +233,7 @@ fn test_langcomp_002_02_comparison_equality() {
 #[test]
 fn test_langcomp_002_02_comparison_inequality() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_neq.ruchy");
-    std::fs::write(&temp_file, "5 != 3").unwrap();
+    std::fs::write(&temp_file, "println(5 != 3)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -239,7 +248,7 @@ fn test_langcomp_002_02_comparison_inequality() {
 #[test]
 fn test_langcomp_002_02_comparison_less_than() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_lt.ruchy");
-    std::fs::write(&temp_file, "3 < 5").unwrap();
+    std::fs::write(&temp_file, "println(3 < 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -254,7 +263,7 @@ fn test_langcomp_002_02_comparison_less_than() {
 #[test]
 fn test_langcomp_002_02_comparison_greater_than() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_gt.ruchy");
-    std::fs::write(&temp_file, "7 > 5").unwrap();
+    std::fs::write(&temp_file, "println(7 > 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -269,7 +278,7 @@ fn test_langcomp_002_02_comparison_greater_than() {
 #[test]
 fn test_langcomp_002_02_comparison_less_than_or_equal() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_lte.ruchy");
-    std::fs::write(&temp_file, "5 <= 5").unwrap();
+    std::fs::write(&temp_file, "println(5 <= 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -284,7 +293,7 @@ fn test_langcomp_002_02_comparison_less_than_or_equal() {
 #[test]
 fn test_langcomp_002_02_comparison_greater_than_or_equal() {
     let temp_file = std::env::temp_dir().join("langcomp_002_02_gte.ruchy");
-    std::fs::write(&temp_file, "5 >= 5").unwrap();
+    std::fs::write(&temp_file, "println(5 >= 5)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -308,7 +317,7 @@ fn test_langcomp_002_02_comparison_example_file() {
 fn test_langcomp_002_02_comparison_and_logical_precedence() {
     // Test: comparison operators work in logical expressions
     let temp_file = std::env::temp_dir().join("langcomp_002_02_comp_logical.ruchy");
-    std::fs::write(&temp_file, "5 > 3 && 10 < 20").unwrap();
+    std::fs::write(&temp_file, "println(5 > 3 && 10 < 20)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -328,7 +337,7 @@ fn test_langcomp_002_02_comparison_and_logical_precedence() {
 #[test]
 fn test_langcomp_002_03_logical_and() {
     let temp_file = std::env::temp_dir().join("langcomp_002_03_and.ruchy");
-    std::fs::write(&temp_file, "true && true").unwrap();
+    std::fs::write(&temp_file, "println(true && true)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -343,7 +352,7 @@ fn test_langcomp_002_03_logical_and() {
 #[test]
 fn test_langcomp_002_03_logical_or() {
     let temp_file = std::env::temp_dir().join("langcomp_002_03_or.ruchy");
-    std::fs::write(&temp_file, "false || true").unwrap();
+    std::fs::write(&temp_file, "println(false || true)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -358,7 +367,7 @@ fn test_langcomp_002_03_logical_or() {
 #[test]
 fn test_langcomp_002_03_logical_not() {
     let temp_file = std::env::temp_dir().join("langcomp_002_03_not.ruchy");
-    std::fs::write(&temp_file, "!false").unwrap();
+    std::fs::write(&temp_file, "println(!false)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -387,7 +396,7 @@ fn test_langcomp_002_03_logical_example_file() {
 fn test_langcomp_002_04_precedence_multiplication_before_addition() {
     // Test: 2 + 3 * 4 = 14 (not 20)
     let temp_file = std::env::temp_dir().join("langcomp_002_04_precedence_mul.ruchy");
-    std::fs::write(&temp_file, "2 + 3 * 4").unwrap();
+    std::fs::write(&temp_file, "println(2 + 3 * 4)").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -403,7 +412,7 @@ fn test_langcomp_002_04_precedence_multiplication_before_addition() {
 fn test_langcomp_002_04_precedence_parentheses_override() {
     // Test: (2 + 3) * 4 = 20 (parentheses override precedence)
     let temp_file = std::env::temp_dir().join("langcomp_002_04_precedence_paren.ruchy");
-    std::fs::write(&temp_file, "(2 + 3) * 4").unwrap();
+    std::fs::write(&temp_file, "println((2 + 3) * 4)").unwrap();
 
     ruchy_cmd()
         .arg("run")

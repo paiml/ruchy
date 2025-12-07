@@ -2,4 +2,4 @@
 // Demonstrates: Let bindings with integers
 
 let x = 42
-x
+println(x)

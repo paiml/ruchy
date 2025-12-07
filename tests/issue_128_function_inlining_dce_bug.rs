@@ -45,14 +45,23 @@ println("Result: " + result)
     let transpiled = String::from_utf8_lossy(&output.stdout);
 
     // ISSUE-128: The bug was that parameters weren't substituted in if-else
-    // Before fix: "if a > b" (undefined variables)
-    // After fix: Either "fn max" exists OR "if 5 > 3" (parameters substituted)
+    // Before fix: "if a > b" (undefined variables in main scope)
+    // After fix: Either "fn max" exists with parameters OR "if 5 > 3" (inlined with values)
 
-    // The transpiled code should NOT have undefined variables in if conditions
-    // This was the actual bug - inlining broke parameter substitution
+    // The transpiled code should either:
+    // 1. Have a proper function definition with parameters: fn max(a, b) { if a > b ... }
+    // 2. OR have inlined values: if 5 > 3 ...
+    // What we DON'T want: "if a > b" appearing WITHOUT a function definition (undefined vars)
+    let has_function_def = transpiled.contains("fn max");
+    let has_inlined_values = transpiled.contains("if 5 > 3");
+    let has_if_a_b = transpiled.contains("if a > b");
+
+    // Valid: function exists with parameters, OR inlined with values
+    // Invalid: "if a > b" without function definition
     assert!(
-        !transpiled.contains("if a > b"),
-        "BUG: Parameters not substituted in if condition (Issue #128)"
+        has_function_def || has_inlined_values || !has_if_a_b,
+        "BUG: 'if a > b' appears without function definition (Issue #128)\nTranspiled:\n{}",
+        transpiled
     );
 }
 

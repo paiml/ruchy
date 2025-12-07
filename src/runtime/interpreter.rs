@@ -2656,24 +2656,28 @@ impl Interpreter {
         // Record type feedback for optimization
         self.record_variable_assignment_feedback(&name, &value);
 
-        // Search from innermost to outermost scope for existing variable
-        for env_ref in self.env_stack.iter().rev() {
-            // ISSUE-119: Use iter() not iter_mut()
-            if let std::collections::hash_map::Entry::Occupied(mut e) =
-                env_ref.borrow_mut().entry(name.clone())
-            {
-                // Found existing variable - mutate it in place
-                e.insert(value);
-                return;
+        // CLOSURE-REFCELL-FIX: First find which scope contains the variable (using read-only borrows)
+        // This avoids holding borrow_mut() during iteration which causes RefCell panics with closures
+        let mut found_idx: Option<usize> = None;
+        for (idx, env_ref) in self.env_stack.iter().enumerate().rev() {
+            // Use borrow() not borrow_mut() for the search phase
+            if env_ref.borrow().contains_key(&name) {
+                found_idx = Some(idx);
+                break;
             }
         }
 
-        // Variable doesn't exist in any scope - create new binding in current scope
-        let env_ref = self
-            .env_stack
-            .last()
-            .expect("Environment stack should never be empty");
-        env_ref.borrow_mut().insert(name, value); // ISSUE-119: Mutable borrow
+        // CLOSURE-REFCELL-FIX: Now mutate after all borrows are released
+        if let Some(idx) = found_idx {
+            self.env_stack[idx].borrow_mut().insert(name, value);
+        } else {
+            // Variable doesn't exist in any scope - create new binding in current scope
+            let env_ref = self
+                .env_stack
+                .last()
+                .expect("Environment stack should never be empty");
+            env_ref.borrow_mut().insert(name, value);
+        }
     }
 
     /// Push a new environment onto the stack
@@ -7958,17 +7962,19 @@ impl Interpreter {
             }
         }
 
+        // ISSUE-119 FIX: Evaluate args ONCE at the start to prevent double-evaluation
+        // This ensures that side-effects (like counter++) only happen once
+        let arg_vals: Vec<Value> = args
+            .iter()
+            .map(|arg| self.eval_expr(arg))
+            .collect::<Result<Vec<_>, _>>()?;
+
         // ISSUE-117: Check builtin functions BEFORE variable lookup
         // This ensures parse_json(), stringify_json(), open(), etc. work as functions
         if let ExprKind::Identifier(name) = &func.kind {
             // ISSUE-119 FIX: Convert name to builtin marker format (__builtin_NAME__)
             // to match eval_builtin::try_eval_io_function expectations
             let builtin_name = format!("__builtin_{}__", name);
-
-            // Try builtin function first
-            let arg_vals: Result<Vec<Value>, InterpreterError> =
-                args.iter().map(|arg| self.eval_expr(arg)).collect();
-            let arg_vals = arg_vals?;
 
             // RUNTIME-BUG-002: Propagate builtin function errors instead of falling back to Message objects
             match crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals) {
@@ -7987,11 +7993,7 @@ impl Interpreter {
             Err(InterpreterError::RuntimeError(msg)) if msg.starts_with("Undefined variable:") => {
                 // Check if this is an identifier that could be a message constructor
                 if let ExprKind::Identifier(name) = &func.kind {
-                    // Create a message object
-                    let arg_vals: Result<Vec<Value>, InterpreterError> =
-                        args.iter().map(|arg| self.eval_expr(arg)).collect();
-                    let arg_vals = arg_vals?;
-
+                    // Create a message object - args already evaluated above
                     let mut message = HashMap::new();
                     message.insert(
                         "__type".to_string(),
@@ -8007,9 +8009,7 @@ impl Interpreter {
             Err(e) => return Err(e),
         };
 
-        let arg_vals: Result<Vec<Value>, InterpreterError> =
-            args.iter().map(|arg| self.eval_expr(arg)).collect();
-        let arg_vals = arg_vals?;
+        // arg_vals already evaluated at the start - no need to re-evaluate
 
         // Special handling for enum variant construction with arguments (tuple variants)
         if let Value::EnumVariant {

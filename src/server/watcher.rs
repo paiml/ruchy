@@ -107,7 +107,8 @@ mod tests {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
 
-        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 200)
+        // Use longer debounce time for reliable testing under load
+        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 3000)
             .expect("operation should succeed in test");
 
         let test_file = watch_path.join("test.txt");
@@ -119,15 +120,20 @@ mod tests {
         thread::sleep(Duration::from_millis(50));
         fs::write(&test_file, "3").expect("operation should succeed in test");
 
-        thread::sleep(Duration::from_millis(100));
-
-        // First check should detect
-        let first = watcher.check_changes();
+        // Wait for events with retry - file system events can be slow under load
+        let mut first = None;
+        for _ in 0..20 {
+            thread::sleep(Duration::from_millis(100));
+            first = watcher.check_changes();
+            if first.is_some() {
+                break;
+            }
+        }
         assert!(first.is_some(), "First check should detect changes");
 
-        // Immediate second check should be debounced
+        // Immediate second check should be debounced (within 3000ms window)
         fs::write(&test_file, "4").expect("operation should succeed in test");
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(200)); // Wait for event
         let second = watcher.check_changes();
         assert!(second.is_none(), "Should debounce rapid changes");
     }

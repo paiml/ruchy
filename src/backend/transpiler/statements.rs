@@ -837,20 +837,35 @@ impl Transpiler {
         }
     }
 
-    /// Check if function body returns a string literal (ISSUE-103)
-    /// Handles direct literals and immutable Let bindings
+    /// Check if function body returns a string literal (ISSUE-103, ISSUE-114)
+    /// Handles direct literals, nested Let bindings, and string variable tracking
     fn returns_string_literal(body: &Expr) -> bool {
+        Self::returns_string_literal_with_vars(body, &std::collections::HashSet::new())
+    }
+
+    /// Internal helper that tracks string variables through nested let bindings
+    /// ISSUE-114 FIX: Handle patterns like `let s = "hello"; let n = 42; s`
+    fn returns_string_literal_with_vars(
+        body: &Expr,
+        string_vars: &std::collections::HashSet<String>,
+    ) -> bool {
         match &body.kind {
             ExprKind::Literal(Literal::String(_)) => true,
+            // ISSUE-114: Check if identifier is a known string variable
+            ExprKind::Identifier(name) => string_vars.contains(name),
             ExprKind::Block(exprs) if !exprs.is_empty() => {
+                // Track string vars through block expressions
+                let mut vars = string_vars.clone();
+                for expr in &exprs[..exprs.len().saturating_sub(1)] {
+                    Self::collect_string_vars(expr, &mut vars);
+                }
                 if let Some(last_expr) = exprs.last() {
-                    // Recursively check the last expression
-                    Self::returns_string_literal(last_expr)
+                    Self::returns_string_literal_with_vars(last_expr, &vars)
                 } else {
                     false
                 }
             }
-            // Let expression returning immutable string literal
+            // Let expression - track string bindings and check body
             ExprKind::Let {
                 name,
                 value,
@@ -858,14 +873,12 @@ impl Transpiler {
                 is_mutable,
                 ..
             } => {
+                let mut vars = string_vars.clone();
+                // Track immutable string literal bindings
                 if !is_mutable && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                    if let ExprKind::Identifier(ident) = &let_body.kind {
-                        if ident == name {
-                            return true;
-                        }
-                    }
+                    vars.insert(name.clone());
                 }
-                false
+                Self::returns_string_literal_with_vars(let_body, &vars)
             }
             // If expression - check if both branches return string literals
             ExprKind::If {
@@ -873,15 +886,32 @@ impl Transpiler {
                 else_branch,
                 ..
             } => {
-                let then_is_literal = Self::returns_string_literal(then_branch);
+                let then_is_literal = Self::returns_string_literal_with_vars(then_branch, string_vars);
                 let else_is_literal = else_branch
                     .as_ref()
-                    .is_some_and(|e| Self::returns_string_literal(e));
+                    .is_some_and(|e| Self::returns_string_literal_with_vars(e, string_vars));
                 then_is_literal && else_is_literal
             }
             // Return statement with string literal
-            ExprKind::Return { value: Some(val) } => Self::returns_string_literal(val),
+            ExprKind::Return { value: Some(val) } => {
+                Self::returns_string_literal_with_vars(val, string_vars)
+            }
             _ => false,
+        }
+    }
+
+    /// Helper: Collect string variable bindings from an expression
+    fn collect_string_vars(expr: &Expr, string_vars: &mut std::collections::HashSet<String>) {
+        if let ExprKind::Let {
+            name,
+            value,
+            is_mutable,
+            ..
+        } = &expr.kind
+        {
+            if !is_mutable && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
+                string_vars.insert(name.clone());
+            }
         }
     }
 
@@ -1276,13 +1306,20 @@ impl Transpiler {
     /// Infer parameter type based on usage in function body
     fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
         use super::type_inference::{
-            infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_function,
-            is_param_used_as_index, is_param_used_numerically, is_param_used_with_len,
+            infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_bool,
+            is_param_used_as_function, is_param_used_as_index, is_param_used_in_print_macro,
+            is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
         };
 
         // Check for function parameters first (higher-order functions)
         if is_param_used_as_function(&param.name(), body) {
             return quote! { impl Fn(i32) -> i32 };
+        }
+
+        // ISSUE-114 FIX: Check if parameter is used as boolean condition
+        // Must come before numeric checks since `if flag` is not numeric
+        if is_param_used_as_bool(&param.name(), body) {
+            return quote! { bool };
         }
 
         // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an array (indexed)
@@ -1328,8 +1365,19 @@ impl Transpiler {
             // Future: Add more types as needed (String, Vec<String>, etc.)
         }
 
-        // Default to &str for zero-cost string literals
-        quote! { &str }
+        // Check if parameter is used in string concatenation (e.g., "Hello " + name)
+        if is_param_used_in_string_concat(&param.name(), body) {
+            return quote! { &str };
+        }
+
+        // Check if parameter is used in print/format macros (e.g., println!("{}", msg))
+        if is_param_used_in_print_macro(&param.name(), body) {
+            return quote! { &str };
+        }
+
+        // ISSUE-114 FIX: Default to i32 for unused/untyped parameters
+        // This matches Ruchy's convention where numeric types are the default
+        quote! { i32 }
     }
 
     /// Helper to detect nested array access (2D arrays)
@@ -2475,6 +2523,10 @@ impl Transpiler {
                 return Ok(result);
             }
             if let Some(result) = self.try_transpile_http_function(base_name, args)? {
+                return Ok(result);
+            }
+            // TRUENO-001: Handle Trueno SIMD-accelerated numeric functions
+            if let Some(result) = self.try_transpile_trueno_function(base_name, args)? {
                 return Ok(result);
             }
             // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
@@ -4806,6 +4858,76 @@ impl Transpiler {
                         let m = 1u64 << 32;
                         ((seed.wrapping_mul(a).wrapping_add(c)) % m) as f64 / m as f64
                     }
+                }))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Handle Trueno SIMD-accelerated numeric functions (TRUENO-001)
+    ///
+    /// Per spec Section 5.1: Trueno primitives for SIMD-accelerated tensor operations.
+    /// These functions use Kahan summation and SIMD backends for numerical stability.
+    ///
+    /// # Supported Functions
+    /// - `trueno_sum(arr)` - Kahan-compensated summation (O(ε) error)
+    /// - `trueno_mean(arr)` - Mean using Kahan summation
+    /// - `trueno_variance(arr)` - Two-pass variance with Kahan
+    /// - `trueno_std_dev(arr)` - Standard deviation
+    /// - `trueno_dot(a, b)` - SIMD-accelerated dot product
+    ///
+    /// # Complexity
+    /// Cyclomatic complexity: 6
+    fn try_transpile_trueno_function(
+        &self,
+        base_name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "trueno_sum" => {
+                if args.len() != 1 {
+                    bail!("trueno_sum() expects exactly 1 argument (slice of f64)");
+                }
+                let arr = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    ruchy::stdlib::trueno_bridge::kahan_sum(&#arr)
+                }))
+            }
+            "trueno_mean" => {
+                if args.len() != 1 {
+                    bail!("trueno_mean() expects exactly 1 argument (slice of f64)");
+                }
+                let arr = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    ruchy::stdlib::trueno_bridge::mean(&#arr)
+                }))
+            }
+            "trueno_variance" => {
+                if args.len() != 1 {
+                    bail!("trueno_variance() expects exactly 1 argument (slice of f64)");
+                }
+                let arr = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    ruchy::stdlib::trueno_bridge::variance(&#arr)
+                }))
+            }
+            "trueno_std_dev" => {
+                if args.len() != 1 {
+                    bail!("trueno_std_dev() expects exactly 1 argument (slice of f64)");
+                }
+                let arr = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! {
+                    ruchy::stdlib::trueno_bridge::std_dev(&#arr)
+                }))
+            }
+            "trueno_dot" => {
+                if args.len() != 2 {
+                    bail!("trueno_dot() expects exactly 2 arguments (two slices)");
+                }
+                let a = self.transpile_expr(&args[0])?;
+                let b = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! {
+                    ruchy::stdlib::trueno_bridge::dot(&#a, &#b).expect("dot product failed")
                 }))
             }
             _ => Ok(None),
@@ -7206,6 +7328,88 @@ mod tests {
         );
         let list_expr = Expr::new(ExprKind::List(vec![elem1, elem2]), Span::default());
         assert!(transpiler.value_creates_vec(&list_expr));
+    }
+
+    // ========== TRUENO-001: Trueno SIMD Function Tests ==========
+
+    #[test]
+    fn test_trueno_sum_transpiles_to_kahan_sum() {
+        let mut transpiler = create_transpiler();
+        let code = "let arr = [1.0, 2.0, 3.0]; trueno_sum(arr)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
+        let rust_str = result.to_string();
+        assert!(
+            rust_str.contains("trueno_bridge") && rust_str.contains("kahan_sum"),
+            "trueno_sum should transpile to trueno_bridge::kahan_sum, got: {rust_str}"
+        );
+    }
+
+    #[test]
+    fn test_trueno_mean_transpiles_correctly() {
+        let mut transpiler = create_transpiler();
+        let code = "let data = [1.0, 2.0, 3.0, 4.0]; trueno_mean(data)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
+        let rust_str = result.to_string();
+        assert!(
+            rust_str.contains("trueno_bridge") && rust_str.contains("mean"),
+            "trueno_mean should transpile to trueno_bridge::mean, got: {rust_str}"
+        );
+    }
+
+    #[test]
+    fn test_trueno_variance_transpiles_correctly() {
+        let mut transpiler = create_transpiler();
+        let code = "let vals = [2.0, 4.0, 4.0, 4.0, 5.0]; trueno_variance(vals)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
+        let rust_str = result.to_string();
+        assert!(
+            rust_str.contains("trueno_bridge") && rust_str.contains("variance"),
+            "trueno_variance should transpile to trueno_bridge::variance, got: {rust_str}"
+        );
+    }
+
+    #[test]
+    fn test_trueno_std_dev_transpiles_correctly() {
+        let mut transpiler = create_transpiler();
+        let code = "let samples = [1.0, 2.0, 3.0]; trueno_std_dev(samples)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
+        let rust_str = result.to_string();
+        assert!(
+            rust_str.contains("trueno_bridge") && rust_str.contains("std_dev"),
+            "trueno_std_dev should transpile to trueno_bridge::std_dev, got: {rust_str}"
+        );
+    }
+
+    #[test]
+    fn test_trueno_dot_transpiles_correctly() {
+        let mut transpiler = create_transpiler();
+        let code = "let a = [1.0, 2.0, 3.0]; let b = [4.0, 5.0, 6.0]; trueno_dot(a, b)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler
+            .transpile(&ast)
+            .expect("transpile should succeed in test");
+        let rust_str = result.to_string();
+        assert!(
+            rust_str.contains("trueno_bridge") && rust_str.contains("dot"),
+            "trueno_dot should transpile to trueno_bridge::dot, got: {rust_str}"
+        );
     }
 }
 #[cfg(test)]

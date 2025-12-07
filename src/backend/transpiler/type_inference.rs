@@ -515,6 +515,102 @@ pub fn is_param_used_as_index(param_name: &str, expr: &Expr) -> bool {
     })
 }
 
+/// Check if parameter is used as a boolean condition (like `if param { ... }`)
+/// ISSUE-114 fix: Detect boolean parameter usage in conditions
+pub fn is_param_used_as_bool(param_name: &str, expr: &Expr) -> bool {
+    traverse_expr_for_check(expr, |e| {
+        // Check if param is directly used as if/while condition
+        match &e.kind {
+            ExprKind::If { condition, .. } | ExprKind::While { condition, .. } => {
+                // Direct identifier usage: if flag { ... }
+                if let ExprKind::Identifier(name) = &condition.kind {
+                    if name == param_name {
+                        return Some(true);
+                    }
+                }
+            }
+            // Check logical operations: if flag && other, if !flag
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Not,
+                operand,
+            } => {
+                if let ExprKind::Identifier(name) = &operand.kind {
+                    if name == param_name {
+                        return Some(true);
+                    }
+                }
+            }
+            ExprKind::Binary {
+                op: crate::frontend::ast::BinaryOp::And | crate::frontend::ast::BinaryOp::Or,
+                left,
+                right,
+            } => {
+                // Check if param is directly used in logical AND/OR
+                if let ExprKind::Identifier(name) = &left.kind {
+                    if name == param_name {
+                        return Some(true);
+                    }
+                }
+                if let ExprKind::Identifier(name) = &right.kind {
+                    if name == param_name {
+                        return Some(true);
+                    }
+                }
+            }
+            _ => {}
+        }
+        None // Continue traversal
+    })
+}
+
+/// Check if parameter is used in string concatenation (like `"Hello " + name`)
+/// Returns true when param is concatenated with a string literal using `+` operator
+pub fn is_param_used_in_string_concat(param_name: &str, expr: &Expr) -> bool {
+    traverse_expr_for_check(expr, |e| {
+        if let ExprKind::Binary {
+            op: BinaryOp::Add,
+            left,
+            right,
+        } = &e.kind
+        {
+            // Check if one side is string literal and other contains param
+            let left_is_string = is_string_literal(left);
+            let right_is_string = is_string_literal(right);
+
+            if left_is_string && contains_param(param_name, right) {
+                return Some(true);
+            }
+            if right_is_string && contains_param(param_name, left) {
+                return Some(true);
+            }
+        }
+        None // Continue traversal
+    })
+}
+
+/// Check if parameter is used in a print/format macro (println!, format!, etc.)
+/// ISSUE-103 FIX: Logging functions should have &str params when used in print macros
+pub fn is_param_used_in_print_macro(param_name: &str, expr: &Expr) -> bool {
+    traverse_expr_for_check(expr, |e| {
+        // Check if param is an argument to a print/format macro
+        if let ExprKind::MacroInvocation { name, args, .. } = &e.kind {
+            // Common print/format macros
+            if matches!(
+                name.as_str(),
+                "println" | "print" | "eprintln" | "eprint" | "format" | "write" | "writeln"
+            ) {
+                // Check if param is in the macro arguments (skip format string)
+                for arg in args.iter().skip(1) {
+                    if contains_param(param_name, arg) {
+                        return Some(true);
+                    }
+                }
+            }
+        }
+        None // Continue traversal
+    })
+}
+
 /// Infer parameter type based on usage patterns in function body
 /// TRANSPILER-PARAM-INFERENCE: Main orchestration function
 ///

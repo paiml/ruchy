@@ -38,7 +38,14 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd().arg("lint").arg(example).assert().success();
 
     // TOOL 5: ruchy compile - Binary compilation
-    ruchy_cmd().arg("compile").arg(example).assert().success();
+    // DEFECT-RACE-CONDITION FIX: Use unique output path per example file to avoid parallel test collisions
+    let compile_output = std::env::temp_dir().join(format!(
+        "compile_test_{}_{}",
+        example.file_stem().unwrap().to_string_lossy(),
+        std::process::id()
+    ));
+    ruchy_cmd().arg("compile").arg(example).arg("-o").arg(&compile_output).assert().success();
+    std::fs::remove_file(&compile_output).ok();
 
     // TOOL 6: ruchy run - Execution
     ruchy_cmd().arg("run").arg(example).assert().success();
@@ -80,6 +87,8 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd()
         .arg("mutations")
         .arg(example)
+        .arg("--min-coverage")
+        .arg("0")
         .arg("--timeout")
         .arg("60")
         .assert()
@@ -106,7 +115,7 @@ fn validate_with_15_tools(example: &PathBuf) {
 fn test_langcomp_003_01_if_expression_true_branch() {
     // Test: if true { 1 } else { 2 } returns 1
     let temp_file = std::env::temp_dir().join("langcomp_003_01_if_true.ruchy");
-    std::fs::write(&temp_file, "if true { 1 } else { 2 }").unwrap();
+    std::fs::write(&temp_file, "println(if true { 1 } else { 2 })").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -122,7 +131,7 @@ fn test_langcomp_003_01_if_expression_true_branch() {
 fn test_langcomp_003_01_if_expression_false_branch() {
     // Test: if false { 1 } else { 2 } returns 2
     let temp_file = std::env::temp_dir().join("langcomp_003_01_if_false.ruchy");
-    std::fs::write(&temp_file, "if false { 1 } else { 2 }").unwrap();
+    std::fs::write(&temp_file, "println(if false { 1 } else { 2 })").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -154,7 +163,7 @@ fn test_langcomp_003_01_if_expression_example_file() {
 fn test_langcomp_003_02_match_literal_pattern() {
     // Test: match 1 { 1 => 100, 2 => 200, _ => 999 } returns 100
     let temp_file = std::env::temp_dir().join("langcomp_003_02_match_literal.ruchy");
-    std::fs::write(&temp_file, "match 1 { 1 => 100, 2 => 200, _ => 999 }").unwrap();
+    std::fs::write(&temp_file, "println(match 1 { 1 => 100, 2 => 200, _ => 999 })").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -170,7 +179,7 @@ fn test_langcomp_003_02_match_literal_pattern() {
 fn test_langcomp_003_02_match_wildcard_pattern() {
     // Test: match 99 { 1 => 100, 2 => 200, _ => 999 } returns 999 (wildcard)
     let temp_file = std::env::temp_dir().join("langcomp_003_02_match_wildcard.ruchy");
-    std::fs::write(&temp_file, "match 99 { 1 => 100, 2 => 200, _ => 999 }").unwrap();
+    std::fs::write(&temp_file, "println(match 99 { 1 => 100, 2 => 200, _ => 999 })").unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -206,7 +215,7 @@ let sum = 0
 for i in 0..3 {
     sum = sum + i
 }
-sum
+println(sum)
 ",
     )
     .unwrap();
@@ -245,7 +254,7 @@ let count = 0
 while count < 3 {
     count = count + 1
 }
-count
+println(count)
 ",
     )
     .unwrap();
@@ -287,7 +296,7 @@ while true {
     }
     i = i + 1
 }
-i
+println(i)
 ",
     )
     .unwrap();

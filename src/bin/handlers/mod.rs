@@ -488,8 +488,16 @@ fn prepare_compilation(
         eprintln!("Temporary Rust file: {}", temp_source.path().display());
         eprintln!("Compiling and running...");
     }
-    // Create unique binary path using process ID for temporary compilation output
-    let binary_path = std::env::temp_dir().join(format!("ruchy_temp_bin_{}", std::process::id()));
+    // Create unique binary path using process ID + timestamp to avoid parallel test collisions
+    let unique_id = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let binary_path = std::env::temp_dir().join(format!(
+        "ruchy_temp_bin_{}_{}",
+        std::process::id(),
+        unique_id
+    ));
     Ok((temp_source, binary_path))
 }
 /// Compile Rust code using rustc (complexity: 5)
@@ -4674,13 +4682,18 @@ fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::pr
         // Step 1: Transpile .ruchy to .rs
         let transpiled = transpile_ruchy_file(path)?;
 
-        // Step 2: Create temporary Cargo project
+        // Step 2: Create temporary Cargo project with unique ID to avoid parallel test collisions
+        let unique_id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
         let temp_dir = std::env::temp_dir().join(format!(
-            "ruchy_mutations_{}",
+            "ruchy_mutations_{}_{}",
             path.file_stem()
                 .expect("Path should have a file stem")
                 .to_str()
-                .expect("File stem should be valid UTF-8")
+                .expect("File stem should be valid UTF-8"),
+            unique_id
         ));
         fs::create_dir_all(&temp_dir)?;
 
@@ -4824,7 +4837,37 @@ pub fn handle_mutations_command(
     // Run cargo mutants
     let output_result = run_cargo_mutants(path, timeout, verbose)?;
     let stdout = String::from_utf8_lossy(&output_result.stdout);
-    let success = output_result.status.success();
+    let cargo_success = output_result.status.success();
+
+    // Parse coverage from output if min_coverage is specified
+    // When min_coverage is 0, any result is acceptable (tool validation mode)
+    let coverage_ok = if min_coverage <= 0.0 {
+        true // Any coverage is acceptable when threshold is 0
+    } else {
+        // Parse actual coverage from stdout
+        // Look for patterns like "7 mutants tested: 3 caught, 4 missed"
+        let caught = stdout
+            .lines()
+            .find(|l| l.contains("mutants tested:"))
+            .and_then(|l| {
+                let parts: Vec<&str> = l.split_whitespace().collect();
+                let total_idx = parts.iter().position(|&p| p == "mutants")?;
+                let total: f64 = parts.get(total_idx - 1)?.parse().ok()?;
+                let caught_idx = parts.iter().position(|&p| p == "caught" || p == "caught,")?;
+                let caught: f64 = parts.get(caught_idx - 1)?.parse().ok()?;
+                Some((caught, total))
+            });
+
+        match caught {
+            Some((caught, total)) if total > 0.0 => {
+                let coverage = caught / total;
+                coverage >= min_coverage
+            }
+            _ => cargo_success, // Fall back to cargo exit code if parsing fails
+        }
+    };
+
+    let success = coverage_ok || cargo_success;
 
     // Generate report
     match format {
@@ -4832,8 +4875,8 @@ pub fn handle_mutations_command(
         _ => write_text_mutation_report(output, min_coverage, &stdout)?,
     }
 
-    // Return success/failure
-    if success {
+    // Return success/failure based on our threshold check
+    if coverage_ok {
         Ok(())
     } else {
         anyhow::bail!("Mutation tests failed or coverage below threshold")

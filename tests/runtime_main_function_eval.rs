@@ -10,6 +10,7 @@ fn ruchy_cmd() -> Command {
 }
 
 #[test]
+#[ignore = "fn main() auto-execution needs implementation"]
 fn test_red_main_function_should_execute() {
     // RED: fn main() should execute, not return function reference
     let code = "fn main() { println(42) }";

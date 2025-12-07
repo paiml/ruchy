@@ -233,5 +233,5 @@ let vec = Vec::<i32>::new()
         .arg(file_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Vec :: new"));
+        .stdout(predicate::str::contains("Vec::new"));
 }

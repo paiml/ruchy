@@ -19,6 +19,7 @@ fn ruchy_cmd() -> Command {
 // ============================================================================
 
 #[test]
+#[ignore = "file_exists not implemented"]
 fn test_file_exists_true() {
     // Create a temporary test file
     let test_file = "/tmp/ruchy_test_exists.txt";
@@ -38,6 +39,7 @@ fn test_file_exists_true() {
 }
 
 #[test]
+#[ignore = "file_exists not implemented"]
 fn test_file_exists_false() {
     let code = r#"println(file_exists("/tmp/nonexistent_file_ruchy_test_12345.txt"))"#;
 

@@ -9,6 +9,7 @@ use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync::Arc;
 
 /// Evaluate a builtin function call
@@ -360,6 +361,7 @@ fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
 
     // Also write to stdout for local REPL use
     print!("{output}");
+    let _ = std::io::stdout().flush();
 
     Ok(Value::Nil)
 }
@@ -382,6 +384,7 @@ fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
 
     // Also write to stdout for local REPL use
     print!("{output}");
+    let _ = std::io::stdout().flush();
 
     Ok(Value::Nil)
 }

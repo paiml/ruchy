@@ -42,12 +42,12 @@
 //! - `regex`: Regular expression operations (STD-010)
 
 // === Six Pillars Core (Accelerated Computing First Data Science) ===
-pub mod trueno_bridge;     // Pillar 1: SIMD Compute
-pub mod alimentar_bridge;  // Pillar 2: Data Loading
-pub mod aprender_bridge;   // Pillar 4: ML Primitives
-pub mod viz_bridge;        // Pillar 5: Visualization
-pub mod presentar_bridge;  // Pillar 6: WASM Widgets
-// Pillar 3 (trueno-db) exposed via dataframe module
+pub mod alimentar_bridge; // Pillar 2: Data Loading
+pub mod aprender_bridge; // Pillar 4: ML Primitives
+pub mod presentar_bridge;
+pub mod trueno_bridge; // Pillar 1: SIMD Compute
+pub mod viz_bridge; // Pillar 5: Visualization // Pillar 6: WASM Widgets
+                                               // Pillar 3 (trueno-db) exposed via dataframe module
 
 // === Utility Modules ===
 pub mod env;

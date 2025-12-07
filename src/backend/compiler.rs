@@ -485,7 +485,10 @@ fn compile_with_rustc(rust_code: &TokenStream, options: &CompileOptions) -> Resu
 
 /// Prepare temporary Rust file for compilation (complexity: 6)
 /// Handles model embedding via `include_bytes!` (issue #169)
-fn prepare_rust_file(rust_code: &TokenStream, options: &CompileOptions) -> Result<(TempDir, PathBuf)> {
+fn prepare_rust_file(
+    rust_code: &TokenStream,
+    options: &CompileOptions,
+) -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new().compile_context("create temporary directory")?;
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
@@ -782,7 +785,10 @@ mod tests {
 
     #[test]
     fn test_sanitize_model_name() {
-        assert_eq!(sanitize_model_name("model.safetensors"), "MODEL_SAFETENSORS");
+        assert_eq!(
+            sanitize_model_name("model.safetensors"),
+            "MODEL_SAFETENSORS"
+        );
         assert_eq!(sanitize_model_name("my-model_v2.gguf"), "MY_MODEL_V2_GGUF");
         assert_eq!(sanitize_model_name("123_numbers.bin"), "123_NUMBERS_BIN");
     }
@@ -797,11 +803,7 @@ mod tests {
         fs::write(&model_path, b"fake model data").expect("write model");
 
         let rust_code = "fn main() { println!(\"hello\"); }";
-        let result = generate_model_embedding_code(
-            rust_code,
-            &[model_path],
-            temp_dir.path(),
-        );
+        let result = generate_model_embedding_code(rust_code, &[model_path], temp_dir.path());
 
         assert!(result.is_ok());
         let code = result.expect("model embedding code");
@@ -826,11 +828,7 @@ mod tests {
         fs::write(&model2, b"model b data").expect("write model b");
 
         let rust_code = "fn main() {}";
-        let result = generate_model_embedding_code(
-            rust_code,
-            &[model1, model2],
-            temp_dir.path(),
-        );
+        let result = generate_model_embedding_code(rust_code, &[model1, model2], temp_dir.path());
 
         assert!(result.is_ok());
         let code = result.expect("model embedding code");
@@ -852,11 +850,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("create temp dir");
         let missing_model = temp_dir.path().join("nonexistent.bin");
 
-        let result = generate_model_embedding_code(
-            "fn main() {}",
-            &[missing_model],
-            temp_dir.path(),
-        );
+        let result =
+            generate_model_embedding_code("fn main() {}", &[missing_model], temp_dir.path());
 
         assert!(result.is_err());
         let err = result.expect_err("should fail");

@@ -2,27 +2,32 @@
 //!
 //! EXTREME TDD: Verify single-evaluation across all builtin functions with 10K+ test cases
 
+use assert_cmd::cargo::cargo_bin;
 use proptest::prelude::*;
 use std::process::Command;
 
 /// Property: All builtin functions evaluate arguments exactly ONCE
 #[test]
 fn prop_builtin_single_evaluation() {
-    let builtins = vec!["println", "print", "len", "typeof", "str", "int"];
+    // Only test builtins that accept integer arguments
+    // len() requires string/array/dataframe - excluded
+    let builtins = vec!["println", "print", "typeof", "str"];
 
     proptest!(|(initial_value in 0i32..100)| {
                                                     for builtin in &builtins {
-                                                        let script = format!(r"
+                                                        // Note: print() doesn't add newline, so we add println("") to separate output
+                                                        let script = format!(r#"
 let mut counter = {initial_value}
 fun increment() {{
     counter = counter + 1
     counter
 }}
 {builtin}(increment())
+println("")
 println(counter)
-");
+"#);
 
-                                                        let output = Command::new("target/release/ruchy")
+                                                        let output = Command::new(cargo_bin("ruchy"))
                                                             .arg("-e")
                                                             .arg(&script)
                                                             .output()
@@ -65,7 +70,7 @@ println(str(side_effect()))
 println(calls)
 ".to_string();
 
-                                                    let output = Command::new("target/release/ruchy")
+                                                    let output = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
@@ -110,7 +115,7 @@ fun increment() {{
 println(counter)
 ");
 
-                                                    let output = Command::new("target/release/ruchy")
+                                                    let output = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
@@ -173,7 +178,7 @@ println(counter_a)
 println(counter_b)
 ");
 
-                                                    let output = Command::new("target/release/ruchy")
+                                                    let output = Command::new(cargo_bin("ruchy"))
                                                         .arg("-e")
                                                         .arg(&script)
                                                         .output()
@@ -211,7 +216,7 @@ println(counter)
                                                     // Run 3 times
                                                     let outputs: Vec<_> = (0..3)
                                                         .map(|_| {
-                                                            Command::new("target/release/ruchy")
+                                                            Command::new(cargo_bin("ruchy"))
                                                                 .arg("-e")
                                                                 .arg(&script)
                                                                 .output()

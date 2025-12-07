@@ -9,7 +9,7 @@ fn add(a, b) {
     a + b
 }
 
-fn greet_person(name) {
+fn greet_person(name: String) {
     println(f"Hello, {name}!")
 }
 

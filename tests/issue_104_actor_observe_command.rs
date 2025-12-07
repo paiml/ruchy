@@ -61,10 +61,7 @@ fn test_issue_104_actor_observe_default() {
 #[test]
 fn test_issue_104_actor_observe_interval_default() {
     // Default duration is 0 (infinite), command runs successfully
-    ruchy_cmd()
-        .arg("actor:observe")
-        .assert()
-        .success();
+    ruchy_cmd().arg("actor:observe").assert().success();
 }
 
 #[test]
@@ -340,10 +337,7 @@ fn test_issue_104_actor_observe_invalid_interval() {
 #[ignore = "No --depth flag in current API"]
 fn test_issue_104_actor_observe_invalid_depth() {
     // Old --depth flag doesn't exist in current API
-    ruchy_cmd()
-        .arg("actor:observe")
-        .assert()
-        .success();
+    ruchy_cmd().arg("actor:observe").assert().success();
 }
 
 // ============================================================================
@@ -377,8 +371,5 @@ fun main() {
     );
 
     // actor:observe without --all (default shows all actors)
-    ruchy_cmd()
-        .arg("actor:observe")
-        .assert()
-        .success();
+    ruchy_cmd().arg("actor:observe").assert().success();
 }
