@@ -27,12 +27,14 @@ mod category;
 mod classifier;
 mod drift;
 mod features;
+mod metrics;
 mod patterns;
 
 pub use category::ErrorCategory;
 pub use classifier::{Classification, CompilationError, OracleError, OracleMetadata, RuchyOracle};
 pub use drift::{DriftDetector, DriftStatus};
 pub use features::{ErrorFeatures, FEATURE_COUNT};
+pub use metrics::OracleMetrics;
 pub use patterns::{FixPattern, FixSuggestion, PatternStore};
 
 /// Oracle configuration
