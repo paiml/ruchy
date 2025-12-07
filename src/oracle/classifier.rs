@@ -1,0 +1,639 @@
+//! Oracle Classifier using Random Forest
+//!
+//! ML-powered error classification with confidence scores.
+//!
+//! # References
+//! - [3] Breiman, L. (2001). "Random Forests." Machine Learning, 45(1), 5-32.
+//! - [10] Buitinck et al. (2013). Scikit-learn API design.
+
+use super::{ErrorCategory, ErrorFeatures, OracleConfig};
+use super::patterns::{FixSuggestion, PatternStore};
+use super::drift::DriftDetector;
+
+// Note: RandomForestClassifier will be integrated in Phase 2
+// For now we use k-NN like prediction and rule-based fallback
+
+/// Classification result from the Oracle
+#[derive(Debug, Clone)]
+pub struct Classification {
+    /// Predicted error category
+    pub category: ErrorCategory,
+
+    /// Confidence score (0.0 to 1.0)
+    pub confidence: f64,
+
+    /// Suggested fixes from pattern store
+    pub suggestions: Vec<FixSuggestion>,
+
+    /// Whether auto-fix is recommended
+    pub should_auto_fix: bool,
+}
+
+impl Classification {
+    /// Create a new classification result
+    #[must_use]
+    pub fn new(category: ErrorCategory, confidence: f64) -> Self {
+        Self {
+            category,
+            confidence,
+            suggestions: Vec::new(),
+            should_auto_fix: false,
+        }
+    }
+
+    /// Add suggestions from pattern store
+    pub fn with_suggestions(mut self, suggestions: Vec<FixSuggestion>) -> Self {
+        self.suggestions = suggestions;
+        self
+    }
+
+    /// Mark as auto-fixable based on confidence threshold
+    pub fn with_auto_fix(mut self, threshold: f64) -> Self {
+        self.should_auto_fix = self.confidence >= threshold
+            && !self.suggestions.is_empty();
+        self
+    }
+}
+
+/// Compilation error input for classification
+#[derive(Debug, Clone)]
+pub struct CompilationError {
+    /// Error code (e.g., "E0308")
+    pub code: Option<String>,
+
+    /// Error message text
+    pub message: String,
+
+    /// Source file path
+    pub file_path: Option<String>,
+
+    /// Line number
+    pub line: Option<u32>,
+
+    /// Column number
+    pub column: Option<u32>,
+}
+
+impl CompilationError {
+    /// Create a new compilation error
+    #[must_use]
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            code: None,
+            message: message.into(),
+            file_path: None,
+            line: None,
+            column: None,
+        }
+    }
+
+    /// Add error code
+    pub fn with_code(mut self, code: impl Into<String>) -> Self {
+        self.code = Some(code.into());
+        self
+    }
+
+    /// Add file path
+    pub fn with_file(mut self, path: impl Into<String>) -> Self {
+        self.file_path = Some(path.into());
+        self
+    }
+
+    /// Add location
+    pub fn with_location(mut self, line: u32, column: u32) -> Self {
+        self.line = Some(line);
+        self.column = Some(column);
+        self
+    }
+}
+
+/// Oracle metadata for training and versioning
+#[derive(Debug, Clone, Default)]
+pub struct OracleMetadata {
+    /// Training sample count
+    pub sample_count: usize,
+
+    /// Training accuracy
+    pub training_accuracy: f64,
+
+    /// Model version
+    pub version: String,
+
+    /// Training timestamp
+    pub trained_at: Option<String>,
+}
+
+/// Ruchy Oracle: ML-powered transpilation error classifier
+///
+/// Uses Random Forest classification with 73 features extracted from
+/// rustc error messages. Provides fix suggestions from pattern store.
+#[derive(Debug)]
+pub struct RuchyOracle {
+    /// Configuration
+    config: OracleConfig,
+
+    /// Training metadata
+    metadata: OracleMetadata,
+
+    /// Pattern store for fix suggestions
+    pattern_store: PatternStore,
+
+    /// Drift detector for model monitoring
+    drift_detector: DriftDetector,
+
+    /// Whether ML model is trained (false = use rule-based fallback)
+    is_trained: bool,
+
+    /// Training data: features
+    training_features: Vec<Vec<f32>>,
+
+    /// Training data: labels
+    training_labels: Vec<usize>,
+}
+
+impl RuchyOracle {
+    /// Create a new Oracle with default configuration
+    #[must_use]
+    pub fn new() -> Self {
+        Self::with_config(OracleConfig::default())
+    }
+
+    /// Create a new Oracle with custom configuration
+    #[must_use]
+    pub fn with_config(config: OracleConfig) -> Self {
+        Self {
+            config,
+            metadata: OracleMetadata::default(),
+            pattern_store: PatternStore::new(),
+            drift_detector: DriftDetector::new(),
+            is_trained: false,
+            training_features: Vec::new(),
+            training_labels: Vec::new(),
+        }
+    }
+
+    /// Load a pre-trained Oracle from .apr file
+    pub fn load(path: &std::path::Path) -> Result<Self, OracleError> {
+        // For now, return a new untrained Oracle
+        // Full implementation will load from SafeTensors format
+        if !path.exists() {
+            return Err(OracleError::ModelNotFound(path.to_path_buf()));
+        }
+        Ok(Self::new())
+    }
+
+    /// Load or train the Oracle
+    pub fn load_or_train() -> Result<Self, OracleError> {
+        let model_path = std::path::Path::new("oracle_model.apr");
+        if model_path.exists() {
+            Self::load(model_path)
+        } else {
+            let mut oracle = Self::new();
+            oracle.train_from_examples()?;
+            Ok(oracle)
+        }
+    }
+
+    /// Train the Oracle on labeled samples
+    pub fn train(&mut self, features: &[Vec<f32>], labels: &[usize]) -> Result<(), OracleError> {
+        if features.is_empty() {
+            return Err(OracleError::EmptyTrainingData);
+        }
+
+        if features.len() != labels.len() {
+            return Err(OracleError::MismatchedData {
+                features: features.len(),
+                labels: labels.len(),
+            });
+        }
+
+        // Store training data
+        self.training_features = features.to_vec();
+        self.training_labels = labels.to_vec();
+
+        // Update metadata
+        self.metadata.sample_count = features.len();
+        self.metadata.version = "1.0.0".to_string();
+        self.is_trained = true;
+
+        Ok(())
+    }
+
+    /// Train from examples/ directory
+    pub fn train_from_examples(&mut self) -> Result<(), OracleError> {
+        // Bootstrap with some synthetic labeled data
+        let samples = self.generate_bootstrap_samples();
+
+        let features: Vec<Vec<f32>> = samples.iter()
+            .map(|(msg, code, _)| {
+                ErrorFeatures::extract(msg, code.as_deref()).to_vec()
+            })
+            .collect();
+
+        let labels: Vec<usize> = samples.iter()
+            .map(|(_, _, cat)| cat.to_index())
+            .collect();
+
+        self.train(&features, &labels)
+    }
+
+    /// Generate bootstrap training samples
+    fn generate_bootstrap_samples(&self) -> Vec<(String, Option<String>, ErrorCategory)> {
+        vec![
+            // TypeMismatch samples
+            ("mismatched types: expected `i32`, found `String`".into(),
+             Some("E0308".into()), ErrorCategory::TypeMismatch),
+            ("expected `&str`, found `String`".into(),
+             Some("E0308".into()), ErrorCategory::TypeMismatch),
+            ("type mismatch: expected Vec<i32>".into(),
+             Some("E0271".into()), ErrorCategory::TypeMismatch),
+
+            // BorrowChecker samples
+            ("borrow of moved value: `x`".into(),
+             Some("E0382".into()), ErrorCategory::BorrowChecker),
+            ("cannot borrow `x` as mutable".into(),
+             Some("E0502".into()), ErrorCategory::BorrowChecker),
+            ("value moved here".into(),
+             Some("E0382".into()), ErrorCategory::BorrowChecker),
+
+            // LifetimeError samples
+            ("borrowed value does not live long enough".into(),
+             Some("E0597".into()), ErrorCategory::LifetimeError),
+            ("lifetime `'a` required".into(),
+             Some("E0621".into()), ErrorCategory::LifetimeError),
+
+            // TraitBound samples
+            ("the trait `Debug` is not implemented".into(),
+             Some("E0277".into()), ErrorCategory::TraitBound),
+            ("no method named `foo` found".into(),
+             Some("E0599".into()), ErrorCategory::TraitBound),
+
+            // MissingImport samples
+            ("cannot find type `HashMap` in this scope".into(),
+             Some("E0433".into()), ErrorCategory::MissingImport),
+            ("cannot find value `x` in this scope".into(),
+             Some("E0425".into()), ErrorCategory::MissingImport),
+
+            // MutabilityError samples
+            ("cannot borrow `x` as mutable, as it is not declared as mutable".into(),
+             Some("E0596".into()), ErrorCategory::MutabilityError),
+            ("cannot assign to `x`, as it is not declared as mutable".into(),
+             Some("E0594".into()), ErrorCategory::MutabilityError),
+
+            // SyntaxError samples
+            ("expected `;`, found `}`".into(),
+             Some("E0658".into()), ErrorCategory::SyntaxError),
+            ("this function takes 2 arguments but 1 was supplied".into(),
+             Some("E0061".into()), ErrorCategory::SyntaxError),
+        ]
+    }
+
+    /// Classify a compilation error
+    #[must_use]
+    pub fn classify(&self, error: &CompilationError) -> Classification {
+        // Extract features
+        let features = ErrorFeatures::extract(
+            &error.message,
+            error.code.as_deref(),
+        );
+
+        // Predict category
+        let (category, confidence) = if self.is_trained {
+            self.predict_with_model(&features)
+        } else {
+            self.predict_with_rules(&features)
+        };
+
+        // Get suggestions from pattern store
+        let suggestions = self.pattern_store.query(
+            category,
+            &error.message,
+            self.config.similarity_threshold,
+        );
+
+        Classification::new(category, confidence)
+            .with_suggestions(suggestions)
+            .with_auto_fix(self.config.confidence_threshold)
+    }
+
+    /// Predict using trained model
+    fn predict_with_model(&self, features: &ErrorFeatures) -> (ErrorCategory, f64) {
+        // Simple k-NN like prediction using training data
+        if self.training_features.is_empty() {
+            return self.predict_with_rules(features);
+        }
+
+        let query = features.to_vec();
+        let mut best_dist = f64::MAX;
+        let mut best_label = 0usize;
+
+        for (i, train_features) in self.training_features.iter().enumerate() {
+            let dist = euclidean_distance(&query, train_features);
+            if dist < best_dist {
+                best_dist = dist;
+                best_label = self.training_labels[i];
+            }
+        }
+
+        let category = ErrorCategory::from_index(best_label)
+            .unwrap_or(ErrorCategory::Other);
+
+        // Convert distance to confidence (closer = higher confidence)
+        let confidence = (1.0 / (1.0 + best_dist)).min(1.0);
+
+        (category, confidence)
+    }
+
+    /// Predict using rule-based fallback
+    fn predict_with_rules(&self, features: &ErrorFeatures) -> (ErrorCategory, f64) {
+        let category = features.predict_category_rules();
+        let confidence = if category == ErrorCategory::Other { 0.3 } else { 0.7 };
+        (category, confidence)
+    }
+
+    /// Check if model is trained
+    #[must_use]
+    pub fn is_trained(&self) -> bool {
+        self.is_trained
+    }
+
+    /// Get training metadata
+    #[must_use]
+    pub fn metadata(&self) -> &OracleMetadata {
+        &self.metadata
+    }
+
+    /// Get configuration
+    #[must_use]
+    pub fn config(&self) -> &OracleConfig {
+        &self.config
+    }
+
+    /// Update configuration
+    pub fn set_config(&mut self, config: OracleConfig) {
+        self.config = config;
+    }
+
+    /// Record classification result for drift detection
+    pub fn record_result(&mut self, predicted: ErrorCategory, actual: ErrorCategory) {
+        let correct = predicted == actual;
+        self.drift_detector.record(correct);
+    }
+}
+
+impl Default for RuchyOracle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Calculate Euclidean distance between two feature vectors
+fn euclidean_distance(a: &[f32], b: &[f32]) -> f64 {
+    if a.len() != b.len() {
+        return f64::MAX;
+    }
+
+    a.iter()
+        .zip(b.iter())
+        .map(|(x, y)| (f64::from(*x) - f64::from(*y)).powi(2))
+        .sum::<f64>()
+        .sqrt()
+}
+
+/// Oracle errors
+#[derive(Debug, Clone)]
+pub enum OracleError {
+    /// Model file not found
+    ModelNotFound(std::path::PathBuf),
+
+    /// Empty training data
+    EmptyTrainingData,
+
+    /// Mismatched features and labels
+    MismatchedData { features: usize, labels: usize },
+
+    /// IO error
+    IoError(String),
+
+    /// Training failed
+    TrainingFailed(String),
+}
+
+impl std::fmt::Display for OracleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OracleError::ModelNotFound(path) => {
+                write!(f, "Oracle model not found: {}", path.display())
+            }
+            OracleError::EmptyTrainingData => {
+                write!(f, "Cannot train on empty data")
+            }
+            OracleError::MismatchedData { features, labels } => {
+                write!(f, "Mismatched data: {features} features, {labels} labels")
+            }
+            OracleError::IoError(msg) => write!(f, "IO error: {msg}"),
+            OracleError::TrainingFailed(msg) => write!(f, "Training failed: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for OracleError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ============================================================================
+    // EXTREME TDD: Classifier Tests
+    // ============================================================================
+
+    #[test]
+    fn test_classification_new() {
+        let classification = Classification::new(ErrorCategory::TypeMismatch, 0.95);
+        assert_eq!(classification.category, ErrorCategory::TypeMismatch);
+        assert!((classification.confidence - 0.95).abs() < f64::EPSILON);
+        assert!(classification.suggestions.is_empty());
+        assert!(!classification.should_auto_fix);
+    }
+
+    #[test]
+    fn test_classification_with_auto_fix_above_threshold() {
+        let suggestions = vec![FixSuggestion::new("add .to_string()")];
+        let classification = Classification::new(ErrorCategory::TypeMismatch, 0.95)
+            .with_suggestions(suggestions)
+            .with_auto_fix(0.85);
+
+        assert!(classification.should_auto_fix);
+    }
+
+    #[test]
+    fn test_classification_with_auto_fix_below_threshold() {
+        let suggestions = vec![FixSuggestion::new("add .to_string()")];
+        let classification = Classification::new(ErrorCategory::TypeMismatch, 0.80)
+            .with_suggestions(suggestions)
+            .with_auto_fix(0.85);
+
+        assert!(!classification.should_auto_fix);
+    }
+
+    #[test]
+    fn test_classification_no_auto_fix_without_suggestions() {
+        let classification = Classification::new(ErrorCategory::TypeMismatch, 0.95)
+            .with_auto_fix(0.85);
+
+        assert!(!classification.should_auto_fix); // No suggestions
+    }
+
+    #[test]
+    fn test_compilation_error_new() {
+        let error = CompilationError::new("mismatched types");
+        assert_eq!(error.message, "mismatched types");
+        assert!(error.code.is_none());
+    }
+
+    #[test]
+    fn test_compilation_error_with_code() {
+        let error = CompilationError::new("mismatched types")
+            .with_code("E0308");
+        assert_eq!(error.code, Some("E0308".to_string()));
+    }
+
+    #[test]
+    fn test_compilation_error_with_location() {
+        let error = CompilationError::new("error")
+            .with_file("main.rs")
+            .with_location(10, 5);
+
+        assert_eq!(error.file_path, Some("main.rs".to_string()));
+        assert_eq!(error.line, Some(10));
+        assert_eq!(error.column, Some(5));
+    }
+
+    #[test]
+    fn test_oracle_new() {
+        let oracle = RuchyOracle::new();
+        assert!(!oracle.is_trained());
+        assert_eq!(oracle.metadata().sample_count, 0);
+    }
+
+    #[test]
+    fn test_oracle_with_config() {
+        let config = OracleConfig {
+            confidence_threshold: 0.90,
+            ..Default::default()
+        };
+        let oracle = RuchyOracle::with_config(config);
+        assert!((oracle.config().confidence_threshold - 0.90).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_oracle_train_empty_data() {
+        let mut oracle = RuchyOracle::new();
+        let result = oracle.train(&[], &[]);
+        assert!(matches!(result, Err(OracleError::EmptyTrainingData)));
+    }
+
+    #[test]
+    fn test_oracle_train_mismatched_data() {
+        let mut oracle = RuchyOracle::new();
+        let features = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
+        let labels = vec![0]; // Only 1 label for 2 features
+
+        let result = oracle.train(&features, &labels);
+        assert!(matches!(result, Err(OracleError::MismatchedData { .. })));
+    }
+
+    #[test]
+    fn test_oracle_train_success() {
+        let mut oracle = RuchyOracle::new();
+        let features = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
+        let labels = vec![0, 1];
+
+        let result = oracle.train(&features, &labels);
+        assert!(result.is_ok());
+        assert!(oracle.is_trained());
+        assert_eq!(oracle.metadata().sample_count, 2);
+    }
+
+    #[test]
+    fn test_oracle_classify_type_mismatch() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap training");
+
+        let error = CompilationError::new("mismatched types: expected `i32`, found `String`")
+            .with_code("E0308");
+
+        let classification = oracle.classify(&error);
+        assert_eq!(classification.category, ErrorCategory::TypeMismatch);
+        // Confidence depends on distance to nearest training sample
+        assert!(classification.confidence > 0.0);
+    }
+
+    #[test]
+    fn test_oracle_classify_borrow_checker() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap training");
+
+        let error = CompilationError::new("borrow of moved value")
+            .with_code("E0382");
+
+        let classification = oracle.classify(&error);
+        assert_eq!(classification.category, ErrorCategory::BorrowChecker);
+    }
+
+    #[test]
+    fn test_oracle_classify_untrained_fallback() {
+        let oracle = RuchyOracle::new(); // Not trained
+
+        let error = CompilationError::new("mismatched types")
+            .with_code("E0308");
+
+        let classification = oracle.classify(&error);
+        assert_eq!(classification.category, ErrorCategory::TypeMismatch);
+        // Rule-based gives 0.7 confidence for known categories
+        assert!((classification.confidence - 0.7).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_euclidean_distance_same() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![1.0, 2.0, 3.0];
+        assert!((euclidean_distance(&a, &b) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_euclidean_distance_different() {
+        let a = vec![0.0, 0.0];
+        let b = vec![3.0, 4.0];
+        assert!((euclidean_distance(&a, &b) - 5.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_euclidean_distance_different_lengths() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0, 2.0, 3.0];
+        assert_eq!(euclidean_distance(&a, &b), f64::MAX);
+    }
+
+    #[test]
+    fn test_oracle_error_display() {
+        let err = OracleError::EmptyTrainingData;
+        assert_eq!(format!("{err}"), "Cannot train on empty data");
+
+        let err = OracleError::MismatchedData { features: 10, labels: 5 };
+        assert!(format!("{err}").contains("10 features"));
+    }
+
+    #[test]
+    fn test_oracle_default() {
+        let oracle = RuchyOracle::default();
+        assert!(!oracle.is_trained());
+    }
+
+    #[test]
+    fn test_oracle_record_result() {
+        let mut oracle = RuchyOracle::new();
+        oracle.record_result(ErrorCategory::TypeMismatch, ErrorCategory::TypeMismatch);
+        // No panic = success
+    }
+}
