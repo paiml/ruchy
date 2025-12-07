@@ -638,11 +638,7 @@ pub fn handle_compile_command(
         );
         for model in &embed_models {
             let size = fs::metadata(model).map(|m| m.len()).unwrap_or(0);
-            println!(
-                "  {} ({} bytes)",
-                model.display(),
-                size
-            );
+            println!("  {} ({} bytes)", model.display(), size);
         }
     }
 
@@ -5103,6 +5099,86 @@ fn handle_fuzz_single_file(
             timeouts
         )
     }
+}
+
+/// Handle oracle command - classify compilation errors using ML
+///
+/// Uses aprender `RandomForestClassifier` to categorize rustc errors
+/// and suggest fixes from pattern database.
+///
+/// # Arguments
+/// * `error_message` - The compilation error message
+/// * `code` - Optional error code (e.g., "E0308")
+/// * `format` - Output format ("text" or "json")
+/// * `verbose` - Show confidence scores and details
+///
+/// # Returns
+/// * Classification result with category and suggestions
+pub fn handle_oracle_command(
+    error_message: &str,
+    code: Option<&str>,
+    format: &str,
+    verbose: bool,
+) -> Result<()> {
+    use ruchy::oracle::{CompilationError, RuchyOracle};
+
+    if verbose {
+        eprintln!("Classifying error: {}", error_message);
+        if let Some(c) = code {
+            eprintln!("Error code: {}", c);
+        }
+    }
+
+    // Create and train oracle
+    let mut oracle = RuchyOracle::new();
+    oracle.train_from_examples()?;
+
+    // Create compilation error
+    let mut error = CompilationError::new(error_message);
+    if let Some(c) = code {
+        error = error.with_code(c);
+    }
+
+    // Classify
+    let classification = oracle.classify(&error);
+
+    // Output result
+    if format == "json" {
+        let json = serde_json::json!({
+            "category": format!("{:?}", classification.category),
+            "confidence": classification.confidence,
+            "suggestions": classification.suggestions.iter().map(|s| {
+                serde_json::json!({
+                    "pattern_id": s.pattern_id,
+                    "description": s.description,
+                    "success_rate": s.success_rate,
+                })
+            }).collect::<Vec<_>>(),
+            "should_auto_fix": classification.should_auto_fix,
+        });
+        println!("{}", serde_json::to_string_pretty(&json)?);
+    } else {
+        println!("Category: {:?}", classification.category);
+        println!("Confidence: {:.2}%", classification.confidence * 100.0);
+
+        if !classification.suggestions.is_empty() {
+            println!("\nSuggested fixes:");
+            for (i, suggestion) in classification.suggestions.iter().enumerate() {
+                println!(
+                    "  {}. {} (success rate: {:.0}%)",
+                    i + 1,
+                    suggestion.description,
+                    suggestion.success_rate * 100.0
+                );
+            }
+        }
+
+        if classification.should_auto_fix {
+            println!("\n✓ Auto-fix recommended");
+        }
+    }
+
+    Ok(())
 }
 
 /// Handle publish command - publish a package to the Ruchy registry

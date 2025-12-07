@@ -1,17 +1,17 @@
-//! Oracle Classifier using Random Forest
+//! Oracle Classifier using `RandomForest` from aprender
 //!
 //! ML-powered error classification with confidence scores.
+//! Uses aprender's `RandomForestClassifier` for accurate predictions.
 //!
 //! # References
 //! - [3] Breiman, L. (2001). "Random Forests." Machine Learning, 45(1), 5-32.
 //! - [10] Buitinck et al. (2013). Scikit-learn API design.
 
-use super::{ErrorCategory, ErrorFeatures, OracleConfig};
-use super::patterns::{FixSuggestion, PatternStore};
+use aprender::prelude::Matrix;
+use aprender::tree::RandomForestClassifier;
 use super::drift::DriftDetector;
-
-// Note: RandomForestClassifier will be integrated in Phase 2
-// For now we use k-NN like prediction and rule-based fallback
+use super::patterns::{FixSuggestion, PatternStore};
+use super::{ErrorCategory, ErrorFeatures, OracleConfig};
 
 /// Classification result from the Oracle
 #[derive(Debug, Clone)]
@@ -125,9 +125,8 @@ pub struct OracleMetadata {
 
 /// Ruchy Oracle: ML-powered transpilation error classifier
 ///
-/// Uses Random Forest classification with 73 features extracted from
+/// Uses `RandomForestClassifier` from aprender with 73 features extracted from
 /// rustc error messages. Provides fix suggestions from pattern store.
-#[derive(Debug)]
 pub struct RuchyOracle {
     /// Configuration
     config: OracleConfig,
@@ -144,10 +143,13 @@ pub struct RuchyOracle {
     /// Whether ML model is trained (false = use rule-based fallback)
     is_trained: bool,
 
-    /// Training data: features
+    /// `RandomForest` classifier from aprender
+    classifier: Option<RandomForestClassifier>,
+
+    /// Training data: features (kept for k-NN fallback)
     training_features: Vec<Vec<f32>>,
 
-    /// Training data: labels
+    /// Training data: labels (kept for k-NN fallback)
     training_labels: Vec<usize>,
 }
 
@@ -167,6 +169,7 @@ impl RuchyOracle {
             pattern_store: PatternStore::new(),
             drift_detector: DriftDetector::new(),
             is_trained: false,
+            classifier: None,
             training_features: Vec::new(),
             training_labels: Vec::new(),
         }
@@ -207,13 +210,34 @@ impl RuchyOracle {
             });
         }
 
-        // Store training data
+        // Store training data for k-NN fallback
         self.training_features = features.to_vec();
         self.training_labels = labels.to_vec();
 
+        // Train RandomForestClassifier from aprender
+        let n_samples = features.len();
+        let n_features = features.first().map_or(0, Vec::len);
+
+        // Flatten features into row-major format for Matrix
+        let flat_features: Vec<f32> = features.iter().flatten().copied().collect();
+        let x = Matrix::from_vec(n_samples, n_features, flat_features)
+            .expect("feature dimensions should match");
+
+        // Create and train RandomForest
+        let mut rf = RandomForestClassifier::new(10) // 10 trees for small dataset
+            .with_max_depth(5)
+            .with_random_state(42);
+
+        if let Err(e) = rf.fit(&x, labels) {
+            // Fallback to k-NN if RF training fails
+            eprintln!("RandomForest training failed, using k-NN: {e}");
+        } else {
+            self.classifier = Some(rf);
+        }
+
         // Update metadata
         self.metadata.sample_count = features.len();
-        self.metadata.version = "1.0.0".to_string();
+        self.metadata.version = "2.0.0-rf".to_string();
         self.is_trained = true;
 
         Ok(())
@@ -273,6 +297,10 @@ impl RuchyOracle {
              Some("E0433".into()), ErrorCategory::MissingImport),
             ("cannot find value `x` in this scope".into(),
              Some("E0425".into()), ErrorCategory::MissingImport),
+            ("failed to resolve: use of undeclared type".into(),
+             Some("E0433".into()), ErrorCategory::MissingImport),
+            ("use of undeclared type or module".into(),
+             Some("E0412".into()), ErrorCategory::MissingImport),
 
             // MutabilityError samples
             ("cannot borrow `x` as mutable, as it is not declared as mutable".into(),
@@ -316,9 +344,43 @@ impl RuchyOracle {
             .with_auto_fix(self.config.confidence_threshold)
     }
 
-    /// Predict using trained model
+    /// Predict using trained `RandomForest` model (with k-NN fallback)
     fn predict_with_model(&self, features: &ErrorFeatures) -> (ErrorCategory, f64) {
-        // Simple k-NN like prediction using training data
+        // Try RandomForest first
+        if let Some(ref rf) = self.classifier {
+            let query = features.to_vec();
+            let n_features = query.len();
+            let x = match Matrix::from_vec(1, n_features, query) {
+                Ok(m) => m,
+                Err(_) => return self.predict_with_knn(features),
+            };
+
+            let predictions = rf.predict(&x);
+            if let Some(&label) = predictions.first() {
+                let category = ErrorCategory::from_index(label)
+                    .unwrap_or(ErrorCategory::Other);
+
+                // Get confidence from prediction probabilities
+                let proba = rf.predict_proba(&x);
+                // proba is Matrix<f32>, get first row's max probability
+                let confidence: f64 = if proba.shape().0 > 0 && proba.shape().1 > 0 {
+                    let row = proba.row(0);
+                    let max_idx = row.argmax();
+                    f64::from(row[max_idx])
+                } else {
+                    0.8
+                };
+
+                return (category, confidence);
+            }
+        }
+
+        // Fallback to k-NN if RandomForest unavailable
+        self.predict_with_knn(features)
+    }
+
+    /// Predict using k-NN fallback
+    fn predict_with_knn(&self, features: &ErrorFeatures) -> (ErrorCategory, f64) {
         if self.training_features.is_empty() {
             return self.predict_with_rules(features);
         }

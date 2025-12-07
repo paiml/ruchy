@@ -458,7 +458,7 @@ Based on depyler Oracle metrics:
 - [x] Implement k-NN classifier with rule-based fallback
 - [x] 117 unit tests passing
 - [x] 8 property tests (1000 cases each)
-- [ ] Integrate aprender RandomForestClassifier (deferred)
+- [x] Integrate aprender RandomForestClassifier (10 trees, depth 5)
 
 ### Phase 3: Pattern Library ✅ COMPLETE
 - [x] Define pattern format with regex matching
@@ -468,13 +468,13 @@ Based on depyler Oracle metrics:
 ### Phase 4: Integration ✅ COMPLETE
 - [x] Implement drift detection (ADWIN algorithm)
 - [x] 16 integration tests passing
-- [ ] Add `--oracle` flag to CLI (future work)
+- [x] Add `--oracle` CLI subcommand with JSON output
 
 ### Phase 5: Validation ✅ COMPLETE
-- [x] 117 unit + 16 integration = 133 tests
+- [x] 130 unit + 16 integration = 146 tests (including 13 metrics tests)
 - [x] 8 property tests with 1000 cases each
-- [ ] Mutation testing (future work)
-- [ ] ROI metrics collection (future work)
+- [x] Mutation testing on oracle module
+- [x] ROI metrics collection (OracleMetrics with time saved, costs avoided)
 
 ---
 

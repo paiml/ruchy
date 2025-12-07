@@ -25,9 +25,9 @@ use std::path::{Path, PathBuf};
 mod handlers;
 use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
-    handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
-    handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
-    handle_test_command, handle_transpile_command, VmMode,
+    handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_oracle_command,
+    handle_parse_command, handle_property_tests_command, handle_repl_command, handle_run_command,
+    handle_stdin_input, handle_test_command, handle_transpile_command, VmMode,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -844,6 +844,20 @@ enum Commands {
         #[arg(long)]
         verbose: bool,
     },
+    /// Classify a compilation error using ML-powered Oracle
+    Oracle {
+        /// The compilation error message to classify
+        error_message: String,
+        /// Optional error code (e.g., E0308)
+        #[arg(long)]
+        code: Option<String>,
+        /// Output format (text, json)
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Show verbose output with confidence scores
+        #[arg(long)]
+        verbose: bool,
+    },
 }
 fn main() -> Result<()> {
     // CLI-UNIFY-001: If no args provided, open REPL directly
@@ -1015,6 +1029,12 @@ fn handle_command_dispatch(
             output.as_deref(),
             verbose,
         ),
+        Some(Commands::Oracle {
+            error_message,
+            code,
+            format,
+            verbose,
+        }) => handle_oracle_command(&error_message, code.as_deref(), &format, verbose),
         Some(command) => handle_advanced_command(command),
     }
 }
