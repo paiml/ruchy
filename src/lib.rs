@@ -75,6 +75,7 @@ pub mod mcp;
 pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
+pub mod oracle;
 pub mod package;
 pub mod parser;
 pub mod performance_optimizations;
