@@ -313,6 +313,36 @@ impl RuchyOracle {
              Some("E0658".into()), ErrorCategory::SyntaxError),
             ("this function takes 2 arguments but 1 was supplied".into(),
              Some("E0061".into()), ErrorCategory::SyntaxError),
+
+            // Module resolution samples (MissingImport)
+            ("Module 'scanner' not resolved".into(),
+             None, ErrorCategory::MissingImport),
+            ("Failed to resolve module declaration".into(),
+             None, ErrorCategory::MissingImport),
+            ("Module 'utils' not found".into(),
+             None, ErrorCategory::MissingImport),
+            ("Failed to find module".into(),
+             None, ErrorCategory::MissingImport),
+
+            // Method not found samples (TraitBound)
+            ("no method named `resolve` found for struct".into(),
+             Some("E0599".into()), ErrorCategory::TraitBound),
+            ("no method named `len` found".into(),
+             Some("E0599".into()), ErrorCategory::TraitBound),
+            ("method not found in".into(),
+             Some("E0599".into()), ErrorCategory::TraitBound),
+
+            // Clippy lint samples (SyntaxError - style issues)
+            ("item in documentation is missing backticks".into(),
+             None, ErrorCategory::SyntaxError),
+            ("called `map(<f>).unwrap_or(<a>)` on an Option value".into(),
+             None, ErrorCategory::SyntaxError),
+            ("redundant closure".into(),
+             None, ErrorCategory::SyntaxError),
+            ("this function has too many arguments".into(),
+             None, ErrorCategory::SyntaxError),
+            ("this argument is passed by value, but not consumed".into(),
+             None, ErrorCategory::SyntaxError),
         ]
     }
 
