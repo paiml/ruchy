@@ -10319,7 +10319,7 @@ next_sprint:
 
   - id: VM-001
     title: "VM Coverage: Test OpCode::Call (Function Invocation)"
-    status: pending
+    status: resolved
     priority: medium
     category: vm_coverage
     severity: MEDIUM
@@ -10351,7 +10351,7 @@ next_sprint:
 
   - id: VM-002
     title: "VM Coverage: Test OpCode::For (Loop Iteration)"
-    status: pending
+    status: resolved
     priority: medium
     category: vm_coverage
     severity: MEDIUM
@@ -10383,7 +10383,7 @@ next_sprint:
 
   - id: VM-003
     title: "VM Coverage: Test OpCode::MethodCall (Method Dispatch)"
-    status: pending
+    status: resolved
     priority: medium
     category: vm_coverage
     severity: MEDIUM
@@ -10415,7 +10415,7 @@ next_sprint:
 
   - id: VM-004
     title: "VM Coverage: Test OpCode::Match (Pattern Matching)"
-    status: pending
+    status: resolved
     priority: medium
     category: vm_coverage
     severity: MEDIUM
@@ -10447,7 +10447,7 @@ next_sprint:
 
   - id: VM-005
     title: "VM Coverage: Test OpCode::NewClosure (Closure Creation)"
-    status: pending
+    status: resolved
     priority: medium
     category: vm_coverage
     severity: MEDIUM
