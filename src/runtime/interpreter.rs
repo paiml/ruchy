@@ -20,7 +20,8 @@ use super::eval_literal;
 use super::eval_method;
 use super::eval_operations;
 use crate::frontend::ast::{
-    BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, StringPart,
+    BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, MatchArm, Pattern,
+    StringPart,
 };
 use crate::frontend::Param;
 use smallvec::{smallvec, SmallVec};
@@ -1703,12 +1704,159 @@ impl Interpreter {
                 "Module '{}' not resolved. Use `ruchy compile` or ensure module file exists.",
                 name
             ))),
+            // If-let expression: if let pattern = expr { then } else { else }
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            } => {
+                let value = self.eval_expr(expr)?;
+                if let Some(bindings) = self.try_pattern_match(pattern, &value)? {
+                    // Pattern matched - bind variables and execute then_branch
+                    self.push_scope();
+                    for (name, val) in bindings {
+                        self.env_set(name, val);
+                    }
+                    let result = self.eval_expr(then_branch);
+                    self.pop_scope();
+                    result
+                } else if let Some(else_expr) = else_branch {
+                    // Pattern didn't match - execute else branch
+                    self.eval_expr(else_expr)
+                } else {
+                    // No match and no else branch - return nil
+                    Ok(Value::Nil)
+                }
+            }
+            // While-let expression: while let pattern = expr { body }
+            ExprKind::WhileLet {
+                label: _,
+                pattern,
+                expr,
+                body,
+            } => {
+                let mut last_value = Value::Nil;
+                loop {
+                    let value = self.eval_expr(expr)?;
+                    if let Some(bindings) = self.try_pattern_match(pattern, &value)? {
+                        // Pattern matched - bind variables and execute body
+                        self.push_scope();
+                        for (name, val) in bindings {
+                            self.env_set(name, val);
+                        }
+                        match self.eval_expr(body) {
+                            Ok(v) => last_value = v,
+                            Err(InterpreterError::Break(_, v)) => {
+                                self.pop_scope();
+                                return Ok(v);
+                            }
+                            Err(InterpreterError::Continue(_)) => {
+                                self.pop_scope();
+                                continue;
+                            }
+                            Err(e) => {
+                                self.pop_scope();
+                                return Err(e);
+                            }
+                        }
+                        self.pop_scope();
+                    } else {
+                        // Pattern didn't match - exit loop
+                        break;
+                    }
+                }
+                Ok(last_value)
+            }
+            // List comprehension: [expr for x in iter if cond]
+            ExprKind::ListComprehension { element, clauses } => {
+                self.eval_list_comprehension(element, clauses)
+            }
             _ => {
                 // Fallback for unimplemented expressions
                 Err(InterpreterError::RuntimeError(format!(
                     "Expression type not yet implemented: {expr_kind:?}"
                 )))
             }
+        }
+    }
+
+    /// Evaluate list comprehension: [expr for x in iter if cond]
+    /// Supports multiple clauses (nested loops) and optional conditions
+    /// Complexity: 8 (nested iteration with conditions)
+    fn eval_list_comprehension(
+        &mut self,
+        element: &Expr,
+        clauses: &[ComprehensionClause],
+    ) -> Result<Value, InterpreterError> {
+        let mut results = Vec::new();
+        self.eval_comprehension_clauses(&mut results, element, clauses, 0)?;
+        Ok(Value::Array(Arc::from(results)))
+    }
+
+    /// Recursively process comprehension clauses
+    fn eval_comprehension_clauses(
+        &mut self,
+        results: &mut Vec<Value>,
+        element: &Expr,
+        clauses: &[ComprehensionClause],
+        clause_idx: usize,
+    ) -> Result<(), InterpreterError> {
+        if clause_idx >= clauses.len() {
+            // All clauses processed, evaluate and collect element
+            results.push(self.eval_expr(element)?);
+            return Ok(());
+        }
+
+        let clause = &clauses[clause_idx];
+        let iterable = self.eval_expr(&clause.iterable)?;
+
+        self.push_scope();
+        match iterable {
+            Value::Array(ref arr) => {
+                for item in arr.iter() {
+                    self.env_set(clause.variable.clone(), item.clone());
+                    if !self.check_comprehension_condition(&clause.condition)? {
+                        continue;
+                    }
+                    self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
+                }
+            }
+            Value::Range {
+                ref start,
+                ref end,
+                inclusive,
+            } => {
+                let (start_val, end_val) = self.extract_range_bounds(start, end)?;
+                for i in self.create_range_iterator(start_val, end_val, inclusive) {
+                    self.env_set(clause.variable.clone(), Value::Integer(i));
+                    if !self.check_comprehension_condition(&clause.condition)? {
+                        continue;
+                    }
+                    self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
+                }
+            }
+            _ => {
+                self.pop_scope();
+                return Err(InterpreterError::TypeError(
+                    "List comprehension requires an iterable".to_string(),
+                ));
+            }
+        }
+        self.pop_scope();
+        Ok(())
+    }
+
+    /// Helper: Check comprehension condition
+    fn check_comprehension_condition(
+        &mut self,
+        condition: &Option<Box<Expr>>,
+    ) -> Result<bool, InterpreterError> {
+        if let Some(ref cond) = condition {
+            let cond_val = self.eval_expr(cond)?;
+            Ok(cond_val.is_truthy())
+        } else {
+            Ok(true)
         }
     }
 

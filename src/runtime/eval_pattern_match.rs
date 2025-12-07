@@ -117,19 +117,68 @@ fn try_match_list_pattern(
     eval_literal: &dyn Fn(&Literal) -> Value,
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
     if let Value::Array(array_values) = value {
-        if patterns.len() != array_values.len() {
-            return Ok(None);
-        }
+        // Check for rest pattern (..rest or ..)
+        let rest_pos = patterns.iter().position(|p| {
+            matches!(p, Pattern::Rest | Pattern::RestNamed(_))
+        });
 
-        let mut all_bindings = Vec::new();
-        for (pattern, val) in patterns.iter().zip(array_values.iter()) {
-            if let Some(bindings) = try_pattern_match(pattern, val, &eval_literal)? {
-                all_bindings.extend(bindings);
-            } else {
+        if let Some(rest_idx) = rest_pos {
+            // Handle rest pattern: [first, second, ..rest] = [1, 2, 3, 4, 5]
+            let before_rest = &patterns[..rest_idx];
+            let after_rest = &patterns[rest_idx + 1..];
+            let min_len = before_rest.len() + after_rest.len();
+
+            if array_values.len() < min_len {
+                return Ok(None); // Not enough elements
+            }
+
+            let mut all_bindings = Vec::new();
+
+            // Match patterns before rest
+            for (pattern, val) in before_rest.iter().zip(array_values.iter()) {
+                if let Some(bindings) = try_pattern_match(pattern, val, &eval_literal)? {
+                    all_bindings.extend(bindings);
+                } else {
+                    return Ok(None);
+                }
+            }
+
+            // Collect rest elements
+            let rest_end = array_values.len() - after_rest.len();
+            let rest_values: Vec<Value> = array_values[rest_idx..rest_end].to_vec();
+
+            // Bind rest pattern
+            if let Pattern::RestNamed(name) = &patterns[rest_idx] {
+                all_bindings.push((name.clone(), Value::Array(rest_values.into())));
+            }
+            // Pattern::Rest (unnamed) doesn't create a binding
+
+            // Match patterns after rest
+            for (pattern, val) in after_rest.iter().zip(array_values[rest_end..].iter()) {
+                if let Some(bindings) = try_pattern_match(pattern, val, &eval_literal)? {
+                    all_bindings.extend(bindings);
+                } else {
+                    return Ok(None);
+                }
+            }
+
+            Ok(Some(all_bindings))
+        } else {
+            // No rest pattern - exact length match required
+            if patterns.len() != array_values.len() {
                 return Ok(None);
             }
+
+            let mut all_bindings = Vec::new();
+            for (pattern, val) in patterns.iter().zip(array_values.iter()) {
+                if let Some(bindings) = try_pattern_match(pattern, val, &eval_literal)? {
+                    all_bindings.extend(bindings);
+                } else {
+                    return Ok(None);
+                }
+            }
+            Ok(Some(all_bindings))
         }
-        Ok(Some(all_bindings))
     } else {
         Ok(None)
     }
