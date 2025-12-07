@@ -8,6 +8,8 @@
 // 3. Alias equivalence: parse_json(s) = json_parse(s)
 // 4. Type preservation: Numbers, strings, booleans preserved
 // 5. Nested access: Deep object/array access doesn't crash
+//
+// NOTE: Ruchy uses double quotes for strings (single quotes are for characters)
 
 use predicates::prelude::*;
 use proptest::prelude::*;
@@ -22,9 +24,10 @@ fn prop_parse_json_roundtrip_objects() {
         name in "[a-zA-Z]{3,10}",
         value in 0i32..1000
     )| {
+        // Build the JSON string with proper escaping for Ruchy
         let script = format!(r#"
 fun main() {{
-    let original = '{{"name": "{name}", "value": {value}}}'
+    let original = "{{\"name\": \"{name}\", \"value\": {value}}}"
     let parsed = parse_json(original)
     let name = parsed["name"]
     let value = parsed["value"]
@@ -54,34 +57,34 @@ fun main() {{
 #[test]
 fn prop_parse_json_roundtrip_arrays() {
     proptest!(|(
-                                                    values in prop::collection::vec(0i32..100, 1..5)
-                                                )| {
-                                                    let json_array = format!("[{}]", values.iter()
-                                                        .map(std::string::ToString::to_string)
-                                                        .collect::<Vec<_>>()
-                                                        .join(", "));
+        values in prop::collection::vec(0i32..100, 1..5)
+    )| {
+        let json_array = format!("[{}]", values.iter()
+            .map(std::string::ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(", "));
 
-                                                    let script = format!(r"
+        let script = format!(r#"
 fun main() {{
-    let arr = parse_json('{json_array}')
+    let arr = parse_json("{json_array}")
     println(arr[0])
 }}
-");
+"#);
 
-                                                    let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
-                                                        .arg("-e")
-                                                        .arg(&script)
-                                                        .assert()
-                                                        .success()
-                                                        .get_output()
-                                                        .stdout
-                                                        .clone();
+        let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+            .arg("-e")
+            .arg(&script)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
 
-                                                    let output_str = String::from_utf8(output).unwrap().trim().to_string();
+        let output_str = String::from_utf8(output).unwrap().trim().to_string();
 
-                                                    // Property: First element matches
-                                                    prop_assert_eq!(output_str, values[0].to_string());
-                                                });
+        // Property: First element matches
+        prop_assert_eq!(output_str, values[0].to_string());
+    });
 }
 
 // ============================================================================
@@ -94,11 +97,10 @@ fn prop_parse_json_deterministic() {
         x in 0i32..1000,
         y in 0i32..1000
     )| {
-        let json_str = format!("{{\"x\": {x}, \"y\": {y}}}");
         let script = format!(r#"
 fun main() {{
-    let data1 = parse_json('{json_str}')
-    let data2 = parse_json('{json_str}')
+    let data1 = parse_json("{{\"x\": {x}, \"y\": {y}}}")
+    let data2 = parse_json("{{\"x\": {x}, \"y\": {y}}}")
     println(data1["x"])
     println(data2["x"])
 }}
@@ -132,18 +134,16 @@ fn prop_parse_json_json_parse_equivalent() {
         field in "[a-z]{3,8}",
         value in 0i32..1000
     )| {
-        let json_str = format!("{{\"{field}\" : {value}}}");
-
         let script_parse_json = format!(r#"
 fun main() {{
-    let data = parse_json('{json_str}')
+    let data = parse_json("{{\"{field}\": {value}}}")
     println(data["{field}"])
 }}
 "#);
 
         let script_json_parse = format!(r#"
 fun main() {{
-    let data = json_parse('{json_str}')
+    let data = json_parse("{{\"{field}\": {value}}}")
     println(data["{field}"])
 }}
 "#);
@@ -182,13 +182,9 @@ fn prop_parse_json_preserves_types() {
         text in "[a-zA-Z]{3,10}",
         flag in prop::bool::ANY
     )| {
-        let json_str = format!(
-            "{{\"number\": {num}, \"string\": \"{text}\", \"boolean\": {flag}}}"
-        );
-
         let script = format!(r#"
 fun main() {{
-    let data = parse_json('{json_str}')
+    let data = parse_json("{{\"number\": {num}, \"string\": \"{text}\", \"boolean\": {flag}}}")
     println(data["number"])
     println(data["string"])
     println(data["boolean"])
@@ -224,13 +220,9 @@ fn prop_parse_json_nested_access_no_crash() {
         depth1_val in 0i32..100,
         depth2_val in 0i32..100
     )| {
-        let json_str = format!(
-            "{{\"level1\": {{\"level2\": {{\"value\": {depth1_val}}}}}, \"array\": [{depth2_val}]}}"
-        );
-
         let script = format!(r#"
 fun main() {{
-    let data = parse_json('{json_str}')
+    let data = parse_json("{{\"level1\": {{\"level2\": {{\"value\": {depth1_val}}}}}, \"array\": [{depth2_val}]}}")
     println(data["level1"]["level2"]["value"])
     println(data["array"][0])
 }}
@@ -264,7 +256,7 @@ fn prop_parse_json_empty_cases() {
         // Empty object
         let script1 = r#"
 fun main() {
-    let data = parse_json('{}')
+    let data = parse_json("{}")
     println("empty_object")
 }
 "#;
@@ -278,7 +270,7 @@ fun main() {
         // Empty array
         let script2 = r#"
 fun main() {
-    let data = parse_json('[]')
+    let data = parse_json("[]")
     println("empty_array")
 }
 "#;

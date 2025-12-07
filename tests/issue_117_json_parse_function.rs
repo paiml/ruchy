@@ -8,6 +8,7 @@
 use predicates::prelude::*;
 
 #[test]
+#[ignore = "Issue #117: parse_json() not yet implemented"]
 fn test_issue_117_parse_json_simple_object() {
     // RED: This test WILL FAIL until parse_json() is registered as builtin
     let code = r#"
@@ -24,6 +25,7 @@ fn test_issue_117_parse_json_simple_object() {
 }
 
 #[test]
+#[ignore = "Issue #117: parse_json() not yet implemented"]
 fn test_issue_117_parse_json_array() {
     // RED: Array parsing
     let code = r"
@@ -40,6 +42,7 @@ fn test_issue_117_parse_json_array() {
 }
 
 #[test]
+#[ignore = "Issue #117: stringify_json() not yet implemented"]
 fn test_issue_117_stringify_json_object() {
     // RED: This test WILL FAIL until stringify_json() is registered
     let code = r#"
@@ -58,6 +61,7 @@ fn test_issue_117_stringify_json_object() {
 }
 
 #[test]
+#[ignore = "Issue #117: stringify_json() not yet implemented"]
 fn test_issue_117_stringify_json_array() {
     // RED: Array stringification
     let code = r"
@@ -75,6 +79,7 @@ fn test_issue_117_stringify_json_array() {
 }
 
 #[test]
+#[ignore = "Issue #117: JSON parsing not yet implemented"]
 fn test_issue_117_roundtrip() {
     // RED: parse → modify → stringify roundtrip
     let code = r#"
@@ -93,6 +98,7 @@ fn test_issue_117_roundtrip() {
 }
 
 #[test]
+#[ignore = "Issue #117: Nested array index access parsing bug"]
 fn test_issue_117_nested_object() {
     // RED: Nested object access (BENCH-009 pattern)
     let code = r#"

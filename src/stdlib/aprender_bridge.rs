@@ -46,19 +46,35 @@
 
 // Re-export core types from aprender prelude
 pub use aprender::prelude::{
-    // Estimators
-    DecisionTreeClassifier, DecisionTreeRegressor, ElasticNet, KMeans, Lasso, LinearRegression,
-    LogisticRegression, RandomForestRegressor, Ridge, DBSCAN,
-    // Preprocessing
-    MinMaxScaler, StandardScaler,
     // Metrics
-    mae, mse, r_squared, rmse,
-    // Traits
-    Estimator, Transformer, UnsupervisedEstimator,
-    // Primitives (from trueno)
-    Matrix, Vector,
+    mae,
+    mse,
+    r_squared,
+    rmse,
     // Optimizers
-    Adam, SGD,
+    Adam,
+    // Estimators
+    DecisionTreeClassifier,
+    DecisionTreeRegressor,
+    ElasticNet,
+    // Traits
+    Estimator,
+    KMeans,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    // Primitives (from trueno)
+    Matrix,
+    // Preprocessing
+    MinMaxScaler,
+    RandomForestRegressor,
+    Ridge,
+    StandardScaler,
+    Transformer,
+    UnsupervisedEstimator,
+    Vector,
+    DBSCAN,
+    SGD,
 };
 
 // PCA is in preprocessing, not prelude
@@ -69,7 +85,7 @@ pub use aprender::serialization::SafeTensorsMetadata;
 
 // Re-export quantization (GGUF-compatible Q8_0/Q4_0) - Issue #171
 pub use aprender::format::quantize::{
-    dequantize, quantize, quantization_mse, Q4_0Quantizer, Q8_0Quantizer, QuantType,
+    dequantize, quantization_mse, quantize, Q4_0Quantizer, Q8_0Quantizer, QuantType,
     QuantizationInfo, QuantizedBlock, Quantizer, BLOCK_SIZE,
 };
 
@@ -84,7 +100,7 @@ pub use aprender::hf_hub::{HfHubClient, HfHubError, PushOptions};
 
 // Re-export Ed25519 signing for model provenance (spec §12.3, §13.4)
 pub use aprender::format::{
-    save_signed, load_verified, SigningKey, VerifyingKey, SIGNATURE_SIZE, PUBLIC_KEY_SIZE,
+    load_verified, save_signed, SigningKey, VerifyingKey, PUBLIC_KEY_SIZE, SIGNATURE_SIZE,
 };
 
 /// Compute R² score for regression predictions.
@@ -298,7 +314,7 @@ mod tests {
     #[test]
     fn test_signing_constants_reexport() {
         // Verify Ed25519 constants are accessible
-        assert_eq!(SIGNATURE_SIZE, 64);  // Ed25519 signature is 64 bytes
+        assert_eq!(SIGNATURE_SIZE, 64); // Ed25519 signature is 64 bytes
         assert_eq!(PUBLIC_KEY_SIZE, 32); // Ed25519 public key is 32 bytes
     }
 

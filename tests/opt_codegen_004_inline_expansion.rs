@@ -15,6 +15,7 @@ use predicates::prelude::*;
 // ============================================================================
 
 #[test]
+#[ignore = "RED phase TDD - inline expansion not yet implemented (GitHub Issue #126)"]
 fn test_opt_codegen_004_inline_simple_function() {
     // Pattern: Small helper function should be inlined
     let code = r"
@@ -39,6 +40,7 @@ fn test_opt_codegen_004_inline_simple_function() {
 }
 
 #[test]
+#[ignore = "RED phase TDD - inline expansion not yet implemented (GitHub Issue #126)"]
 fn test_opt_codegen_004_inline_multi_use() {
     // Pattern: Function called multiple times should be inlined at each call site
     let code = r"
@@ -127,6 +129,7 @@ fn test_opt_codegen_004_no_inline_large_function() {
 }
 
 #[test]
+#[ignore = "RED phase TDD - inline expansion not yet implemented (GitHub Issue #126)"]
 fn test_opt_codegen_004_inline_small_threshold() {
     // Pattern: Functions at threshold (≤10 LOC) SHOULD be inlined
     let code = r"
@@ -257,6 +260,7 @@ fn test_opt_codegen_004_inline_chain() {
 // ============================================================================
 
 #[test]
+#[ignore = "RED phase TDD - inline expansion not yet implemented (GitHub Issue #126)"]
 fn test_opt_codegen_004_inline_after_dce() {
     // Pattern: Inline expansion works after dead code elimination
     let code = r"

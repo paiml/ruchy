@@ -43,9 +43,13 @@ fun main() {
     .unwrap();
 
     // Should transpile and compile successfully
+    // DEFECT-RACE-CONDITION FIX: Use unique output path to avoid parallel test collisions
+    let output_path = dir.path().join("output_binary");
     ruchy_cmd()
         .arg("compile")
         .arg(&file_path)
+        .arg("-o")
+        .arg(&output_path)
         .assert()
         .success();
 }
@@ -133,9 +137,13 @@ fun main() {
     )
     .unwrap();
 
+    // DEFECT-RACE-CONDITION FIX: Use unique output path to avoid parallel test collisions
+    let binary_path = dir.path().join("output_binary");
     ruchy_cmd()
         .arg("compile")
         .arg(&file_path)
+        .arg("-o")
+        .arg(&binary_path)
         .assert()
         .success();
 }

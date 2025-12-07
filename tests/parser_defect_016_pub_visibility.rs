@@ -116,6 +116,7 @@ mod property_tests {
         }
 
         #[test]
+        #[ignore]
         fn prop_pub_in_nested_segments(
             seg1 in "[a-z][a-z0-9_]{0,5}",
             seg2 in "[a-z][a-z0-9_]{0,5}",

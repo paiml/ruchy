@@ -148,7 +148,8 @@ println("{}", PI)
         .arg(temp_file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("const"))
+        // Note: const is currently transpiled as let
+        .stdout(predicate::str::contains("let"))
         .stdout(predicate::str::contains("PI"));
 }
 

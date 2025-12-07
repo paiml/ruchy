@@ -282,8 +282,5 @@ fun main() {
         .expect("Failed to execute");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("42"),
-        "Should output 42, got: {stdout}"
-    );
+    assert!(stdout.contains("42"), "Should output 42, got: {stdout}");
 }

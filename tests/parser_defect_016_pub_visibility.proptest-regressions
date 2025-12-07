@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 5907e0b6c4ba6fffeddc78ac3a6fb24ba26de65c3240e7a24c7f58516a366937 # shrinks to seg1 = "as", seg2 = "a", seg3 = "a"
+cc e170326120b77d2aa00c8c515d4627a4a0ee6040109df9c99f35f0c6c74c0932 # shrinks to seg1 = "df", seg2 = "a", seg3 = "a"

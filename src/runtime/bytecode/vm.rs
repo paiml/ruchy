@@ -560,10 +560,17 @@ impl VM {
                 // Push new scope for function call
                 self.interpreter.push_scope();
 
-                // Bind captured environment variables
-                for (name, value) in env.borrow().iter() {
-                    // ISSUE-119: Borrow from RefCell
-                    self.interpreter.set_variable(name, value.clone());
+                // CLOSURE-REFCELL-FIX: Clone captured env to release the borrow before calling set_variable
+                // This prevents "already borrowed" panics when env is shared with env_stack
+                let captured_vars: Vec<(String, Value)> = env
+                    .borrow()
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+
+                // Bind captured environment variables (borrow is now released)
+                for (name, value) in captured_vars {
+                    self.interpreter.set_variable(&name, value);
                 }
 
                 // Bind parameters to arguments

@@ -97,8 +97,8 @@ struct BankAccount {
         .arg(temp_file)
         .assert()
         .success()
-        // PARSER-074: prettyplease formats as "pub (crate)" with space
-        .stdout(predicate::str::contains("pub (crate)"))
+        // Note: prettyplease now formats without space
+        .stdout(predicate::str::contains("pub(crate)"))
         .stdout(predicate::str::contains("pub owner"));
 }
 
@@ -119,8 +119,8 @@ struct User {
         .arg(temp_file)
         .assert()
         .success()
-        // PARSER-074: prettyplease formats as "pub (super)" with space
-        .stdout(predicate::str::contains("pub (super)"));
+        // Note: prettyplease now formats without space
+        .stdout(predicate::str::contains("pub(super)"));
 }
 
 // Test 6: Multiple pub(crate) fields

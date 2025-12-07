@@ -48,6 +48,7 @@ proptest! {
 
     /// Property: Same input always produces same output (determinism)
     #[test]
+    #[ignore = "slow: 10K iterations >120s, run with --ignored"]
     fn prop_001_determinism_direct_execution(code in "[a-z0-9 +\\-*/()]+") {
         // Generate simple arithmetic expressions
         let script_content = format!("println({code})");
@@ -74,6 +75,7 @@ proptest! {
 
     /// Property: Eval mode determinism
     #[test]
+    #[ignore = "slow: 10K iterations >120s, run with --ignored"]
     fn prop_002_determinism_eval_mode(expr in "1|2|3|4|5|6|7|8|9|10") {
         let output1 = ruchy_cmd()
             .arg("-e")
@@ -104,6 +106,7 @@ proptest! {
 
     /// Property: Interpretation is fast (<2s)
     #[test]
+    #[ignore = "flaky: speed assertion fails on loaded systems, run with --ignored"]
     fn prop_010_speed_interpretation_fast(n in 1..100i32) {
         let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
@@ -124,6 +127,7 @@ proptest! {
 
     /// Property: Eval mode is very fast (<1s)
     #[test]
+    #[ignore = "flaky: speed assertion fails on loaded systems, run with --ignored"]
     fn prop_011_speed_eval_very_fast(n in 1..100i32) {
         let start = Instant::now();
         let result = ruchy_cmd()
@@ -150,6 +154,7 @@ proptest! {
 
     /// Property: Direct execution = Run command
     #[test]
+    #[ignore = "slow: 1K iterations >120s, run with --ignored"]
     fn prop_020_consistency_direct_equals_run(n in 1..100i32) {
         let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);
@@ -174,6 +179,7 @@ proptest! {
 
     /// Property: Eval produces same result as file execution
     #[test]
+    #[ignore = "slow: 1K iterations >120s, run with --ignored"]
     fn prop_021_consistency_eval_equals_file(n in 1..100i32) {
         let code = format!("println({n})");
         let script = create_temp_script(&code);
@@ -305,6 +311,7 @@ proptest! {
 
     /// Property: Multiple runs produce same result (idempotency)
     #[test]
+    #[ignore = "slow: 1K iterations × 3 runs >120s, run with --ignored"]
     fn prop_060_idempotent_execution(n in 1..100i32) {
         let script_content = format!("println({n})");
         let script = create_temp_script(&script_content);

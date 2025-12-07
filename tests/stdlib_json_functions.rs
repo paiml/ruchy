@@ -156,18 +156,19 @@ fun main() {{
 fn test_json_write() {
     let temp = temp_dir();
     let json_file = temp.path().join("output.json");
+    let json_file_escaped = json_file.display().to_string().replace("\\", "\\\\");
 
     let source = temp.path().join("test.ruchy");
+    // Use object literal instead of json_parse to avoid escaping complexity
     let code = format!(
         r#"
 fun main() {{
-    let json_str = "{{\\\"status\\\": \\\"ok\\\", \\\"code\\\": 200}}";
-    let obj = json_parse(json_str);
+    let obj = {{"status": "ok", "code": 200}};
     let result = json_write("{}", obj);
     println(result);
 }}
 "#,
-        json_file.display()
+        json_file_escaped
     );
 
     fs::write(&source, code).expect("Failed to write test file");

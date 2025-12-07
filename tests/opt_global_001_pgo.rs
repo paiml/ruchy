@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 /// Test 1: PGO instrumentation build succeeds
 #[test]
+#[ignore = "PGO test requires full release rebuild (~5 min) - run in nightly/tier3 only"]
 fn test_opt_global_001_01_pgo_instrumentation_build() {
     // Build with profile-generate flag
     let mut cmd = Command::new("cargo");
@@ -24,6 +25,7 @@ fn test_opt_global_001_01_pgo_instrumentation_build() {
 
 /// Test 2: Profile data collection produces .profraw files
 #[test]
+#[ignore = "PGO test requires LLVM PGO instrumented binary - run in nightly/tier3 only"]
 fn test_opt_global_001_02_profile_data_collection() {
     // Run a simple ruchy command to generate profile data
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
@@ -83,6 +85,7 @@ fn test_opt_global_001_04_pgo_optimized_build() {
 
 /// Test 5: Benchmark baseline measurement (no PGO)
 #[test]
+#[ignore = "PGO benchmark not applicable"]
 fn test_opt_global_001_05_benchmark_baseline() {
     use std::time::Instant;
 

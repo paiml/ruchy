@@ -349,13 +349,30 @@ impl RuchyOracle {
     /// Classify a compilation error
     #[must_use]
     pub fn classify(&self, error: &CompilationError) -> Classification {
-        // Extract features
+        // PRIORITY 1: Known error codes are 100% reliable - use them directly
+        // This ensures error codes like E0597->LifetimeError are never overridden by ML
+        if let Some(ref code) = error.code {
+            let category = ErrorCategory::from_error_code(code);
+            if category != ErrorCategory::Other {
+                // Known error code - use rule-based with high confidence
+                let suggestions = self.pattern_store.query(
+                    category,
+                    &error.message,
+                    self.config.similarity_threshold,
+                );
+                return Classification::new(category, 0.95)
+                    .with_suggestions(suggestions)
+                    .with_auto_fix(self.config.confidence_threshold);
+            }
+        }
+
+        // Extract features for ML-based classification (unknown error codes)
         let features = ErrorFeatures::extract(
             &error.message,
             error.code.as_deref(),
         );
 
-        // Predict category
+        // Predict category using ML or rules
         let (category, confidence) = if self.is_trained {
             self.predict_with_model(&features)
         } else {
@@ -682,8 +699,8 @@ mod tests {
 
         let classification = oracle.classify(&error);
         assert_eq!(classification.category, ErrorCategory::TypeMismatch);
-        // Rule-based gives 0.7 confidence for known categories
-        assert!((classification.confidence - 0.7).abs() < 0.01);
+        // Known error codes give 0.95 confidence (high reliability)
+        assert!((classification.confidence - 0.95).abs() < 0.01);
     }
 
     #[test]

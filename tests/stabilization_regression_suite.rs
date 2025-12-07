@@ -294,7 +294,10 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("Hello World!"), "Expected greeting: {stdout}");
+        assert!(
+            stdout.contains("Hello World!"),
+            "Expected greeting: {stdout}"
+        );
     }
 
     #[test]
@@ -322,7 +325,10 @@ fun main() {
             .expect("Failed to execute");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("false true"), "Expected 'false true': {stdout}");
+        assert!(
+            stdout.contains("false true"),
+            "Expected 'false true': {stdout}"
+        );
     }
 
     #[test]

@@ -2,4 +2,4 @@
 // Demonstrates: Let bindings with strings
 
 let greeting = "Hello"
-greeting
+println(greeting)

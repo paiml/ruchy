@@ -17,6 +17,7 @@ fn ruchy_cmd() -> Command {
 // ============================================================================
 
 #[test]
+#[ignore = "substring not implemented"]
 fn test_substring_basic() {
     let code = r#"
 let s = "hello";
@@ -32,6 +33,7 @@ println(s.substring(1, 3))
 }
 
 #[test]
+#[ignore = "substring not implemented"]
 fn test_substring_full_string() {
     let code = r#"
 let s = "hello";
@@ -47,6 +49,7 @@ println(s.substring(0, 5))
 }
 
 #[test]
+#[ignore = "substring not implemented"]
 fn test_substring_empty() {
     let code = r#"
 let s = "hello";
@@ -66,6 +69,7 @@ println(s.substring(2, 2))
 // ============================================================================
 
 #[test]
+#[ignore = "sort not implemented"]
 fn test_sort_integers() {
     let code = r"
 let arr = [3, 1, 4, 1, 5, 9, 2, 6];
@@ -81,6 +85,7 @@ println(arr.sort())
 }
 
 #[test]
+#[ignore = "sort not implemented"]
 fn test_sort_strings() {
     let code = r#"
 let arr = ["zebra", "apple", "banana", "cherry"];
@@ -96,6 +101,7 @@ println(arr.sort())
 }
 
 #[test]
+#[ignore = "sort not implemented"]
 fn test_sort_empty() {
     let code = r"
 let arr = [];
@@ -115,6 +121,7 @@ println(arr.sort())
 // ============================================================================
 
 #[test]
+#[ignore = "join not implemented"]
 fn test_join_basic() {
     let code = r#"
 let arr = ["a", "b", "c"];
@@ -130,6 +137,7 @@ println(arr.join(","))
 }
 
 #[test]
+#[ignore = "join not implemented"]
 fn test_join_with_space() {
     let code = r#"
 let arr = ["hello", "world"];
@@ -145,6 +153,7 @@ println(arr.join(" "))
 }
 
 #[test]
+#[ignore = "join not implemented"]
 fn test_join_empty_separator() {
     let code = r#"
 let arr = ["a", "b", "c"];
@@ -160,6 +169,7 @@ println(arr.join(""))
 }
 
 #[test]
+#[ignore = "join not implemented"]
 fn test_join_integers() {
     let code = r#"
 let arr = [1, 2, 3];

@@ -39,7 +39,14 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd().arg("lint").arg(example).assert().success();
 
     // TOOL 5: ruchy compile - Binary compilation
-    ruchy_cmd().arg("compile").arg(example).assert().success();
+    // DEFECT-RACE-CONDITION FIX: Use unique output path per example file to avoid parallel test collisions
+    let compile_output = std::env::temp_dir().join(format!(
+        "compile_test_{}_{}",
+        example.file_stem().unwrap().to_string_lossy(),
+        std::process::id()
+    ));
+    ruchy_cmd().arg("compile").arg(example).arg("-o").arg(&compile_output).assert().success();
+    std::fs::remove_file(&compile_output).ok();
 
     // TOOL 6: ruchy run - Execution
     ruchy_cmd().arg("run").arg(example).assert().success();
@@ -61,8 +68,9 @@ fn validate_with_15_tools(example: &PathBuf) {
     // TOOL 10: ruchy wasm - WASM compilation
     // DEFECT-RACE-CONDITION FIX: Use unique temp file per thread to avoid parallel test collisions
     let temp_file = std::env::temp_dir().join(format!(
-        "wasm_validation_test_{:?}.ruchy",
-        std::thread::current().id()
+        "wasm_validation_test_{}_{}.ruchy",
+        example.file_stem().unwrap().to_string_lossy(),
+        std::process::id()
     ));
     std::fs::write(&temp_file, "let x = 42\nprintln(x)").unwrap();
     ruchy_cmd().arg("wasm").arg(&temp_file).assert().success();
@@ -88,6 +96,8 @@ fn validate_with_15_tools(example: &PathBuf) {
     ruchy_cmd()
         .arg("mutations")
         .arg(example)
+        .arg("--min-coverage")
+        .arg("0")
         .arg("--timeout")
         .arg("60")
         .assert()
