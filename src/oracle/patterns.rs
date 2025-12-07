@@ -320,6 +320,65 @@ impl PatternStore {
                 .with_transformation("<'a>")
                 .with_success_rate(0.60),
         );
+
+        // SyntaxError patterns (Clippy lints)
+        self.add_pattern(
+            FixPattern::new("FIX-016", ErrorCategory::SyntaxError)
+                .with_error_pattern(r"item in documentation is missing backticks")
+                .with_description("Add backticks around type names in docs")
+                .with_transformation("`TypeName`")
+                .with_success_rate(0.99),
+        );
+
+        self.add_pattern(
+            FixPattern::new("FIX-017", ErrorCategory::SyntaxError)
+                .with_error_pattern(r"called `map\(<f>\)\.unwrap_or\(<a>\)`")
+                .with_description("Use map_or() instead of map().unwrap_or()")
+                .with_transformation(".map_or(default, |x| ...)")
+                .with_success_rate(0.95),
+        );
+
+        self.add_pattern(
+            FixPattern::new("FIX-018", ErrorCategory::SyntaxError)
+                .with_error_pattern(r"redundant closure")
+                .with_description("Replace closure with method reference")
+                .with_transformation("|x| x.method() → Type::method")
+                .with_success_rate(0.90),
+        );
+
+        // Module resolution patterns
+        self.add_pattern(
+            FixPattern::new("FIX-019", ErrorCategory::MissingImport)
+                .with_error_pattern(r"Module .* not resolved")
+                .with_description("Ensure module file exists in same directory")
+                .with_transformation("Create module.ruchy file")
+                .with_success_rate(0.85),
+        );
+
+        self.add_pattern(
+            FixPattern::new("FIX-020", ErrorCategory::MissingImport)
+                .with_error_pattern(r"Failed to resolve module declaration")
+                .with_description("Check module file path and name")
+                .with_transformation("mod name; requires name.ruchy file")
+                .with_success_rate(0.80),
+        );
+
+        // Method not found patterns
+        self.add_pattern(
+            FixPattern::new("FIX-021", ErrorCategory::TraitBound)
+                .with_error_pattern(r"no method named .* found for struct")
+                .with_description("Check method name or add impl block")
+                .with_transformation("impl StructName { fn method_name() {...} }")
+                .with_success_rate(0.75),
+        );
+
+        self.add_pattern(
+            FixPattern::new("FIX-022", ErrorCategory::TraitBound)
+                .with_error_pattern(r"method not found in")
+                .with_description("Import the trait or check method spelling")
+                .with_transformation("use TraitName;")
+                .with_success_rate(0.70),
+        );
     }
 
     /// Add a pattern to the store
