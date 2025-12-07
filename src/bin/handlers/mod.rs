@@ -4,7 +4,9 @@ pub mod build;
 mod commands;
 mod handlers_modules;
 pub mod new;
-use ruchy::frontend::ast::Expr;
+use ruchy::backend::module_resolver::ModuleResolver;
+use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
@@ -121,14 +123,31 @@ fn print_eval_error(e: &anyhow::Error, format: &str) {
 pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = read_file_with_context(file)?;
 
-    // CLI-UNIFY-002: Use REPL-based evaluation to match `ruchy run` behavior
-    // This ensures `ruchy script.ruchy` and `ruchy run script.ruchy` are identical
+    // ISSUE-106: Parse and check for module declarations
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser
+        .parse()
+        .map_err(|e| anyhow::anyhow!("Syntax error: {e}"))?;
+
+    // Check if we need module resolution
+    if needs_module_resolution(&ast) {
+        // Resolve module declarations (mod name;) and imports
+        let resolved_ast = resolve_modules_for_execution(file, ast)?;
+
+        // Use interpreter to evaluate the resolved AST
+        let mut interpreter = Interpreter::new();
+        interpreter
+            .eval_expr(&resolved_ast)
+            .map_err(|e| anyhow::anyhow!("Evaluation error: {e:?}"))?;
+        return Ok(());
+    }
+
+    // CLI-UNIFY-002: Use REPL-based evaluation for simple scripts
     let mut repl = create_repl()?;
 
     match repl.eval(&source) {
         Ok(_result) => {
             // After evaluating the file, call main() if it exists
-            // This matches `ruchy run` behavior (CLI-UNIFY-002)
             match repl.eval("main()") {
                 Ok(_) => Ok(()),
                 Err(e) => {
@@ -142,6 +161,44 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
             std::process::exit(1);
         }
     }
+}
+
+/// Check if AST contains module declarations that need resolution
+fn needs_module_resolution(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::ModuleDeclaration { .. } => true,
+        ExprKind::Module { .. } => true,
+        ExprKind::Import { .. } => true,
+        ExprKind::ImportAll { .. } => true,
+        ExprKind::ImportDefault { .. } => true,
+        ExprKind::Block(exprs) => exprs.iter().any(needs_module_resolution),
+        ExprKind::Function { body, .. } => needs_module_resolution(body),
+        ExprKind::Let { value, body, .. } => {
+            needs_module_resolution(value) || needs_module_resolution(body)
+        }
+        _ => false,
+    }
+}
+
+/// ISSUE-106: Resolve module declarations and imports for script execution
+fn resolve_modules_for_execution(source_path: &Path, ast: Expr) -> Result<Expr> {
+    let mut resolver = ModuleResolver::new();
+
+    // Add the source file's directory to the module search path
+    if let Some(parent_dir) = source_path.parent() {
+        resolver.add_search_path(parent_dir);
+
+        // Also search in standard project layout directories
+        if let Some(project_root) = parent_dir.parent() {
+            resolver.add_search_path(project_root.join("src"));
+            resolver.add_search_path(project_root.join("lib"));
+            resolver.add_search_path(project_root.join("modules"));
+        }
+    }
+
+    resolver
+        .resolve_imports(ast)
+        .map_err(|e| anyhow::anyhow!("Module resolution error: {e}"))
 }
 
 /// Handle stdin/piped input - evaluate input from standard input
