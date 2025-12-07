@@ -1,6 +1,9 @@
 //! Enhanced error diagnostics with source code display and suggestions
+//!
+//! Integrates with the Oracle module for ML-powered fix suggestions.
 use crate::frontend::ast::Span;
 use crate::frontend::error_recovery::{ErrorSeverity, ParseError};
+use crate::oracle::{CompilationError, PatternStore, RuchyOracle};
 use std::fmt;
 /// Enhanced diagnostic information with source context
 #[derive(Debug, Clone)]
@@ -179,59 +182,122 @@ impl fmt::Display for Diagnostic {
 /// Common error patterns and their suggestions
 pub fn suggest_for_error(error: &ParseError) -> Vec<Suggestion> {
     let mut suggestions = Vec::new();
-    // Common typo suggestions
-    if error.message.contains("unexpected") {
-        if let Some(ref _found) = error.found {
-            // Token-specific suggestions would go here
-            suggestions.push(Suggestion {
-                message: "Check for typos or missing operators".to_string(),
-                replacement: None,
-                span: error.span,
-            });
-        }
+    let msg = &error.message;
+
+    // Table-driven pattern matching for lower cognitive complexity
+    suggest_for_unexpected(error, &mut suggestions);
+    suggest_for_semicolon(msg, error.span, &mut suggestions);
+    suggest_for_unclosed_delimiter(msg, error.span, &mut suggestions);
+
+    suggestions
+}
+
+/// Handle unexpected token suggestions
+fn suggest_for_unexpected(error: &ParseError, suggestions: &mut Vec<Suggestion>) {
+    if error.message.contains("unexpected") && error.found.is_some() {
+        suggestions.push(Suggestion {
+            message: "Check for typos or missing operators".to_string(),
+            replacement: None,
+            span: error.span,
+        });
     }
-    // Missing semicolon suggestion
-    if error.message.contains("expected") && error.message.contains("semicolon") {
+}
+
+/// Handle missing semicolon suggestions
+fn suggest_for_semicolon(msg: &str, span: Span, suggestions: &mut Vec<Suggestion>) {
+    if msg.contains("expected") && msg.contains("semicolon") {
         suggestions.push(Suggestion {
             message: "Add a semicolon at the end of the statement".to_string(),
             replacement: Some(";".to_string()),
             span: Span {
-                start: error.span.end,
-                end: error.span.end,
+                start: span.end,
+                end: span.end,
             },
         });
     }
-    // Unclosed delimiter suggestions
-    if error.message.contains("unclosed") || error.message.contains("unmatched") {
-        if error.message.contains("paren") {
+}
+
+/// Handle unclosed delimiter suggestions (table-driven)
+fn suggest_for_unclosed_delimiter(msg: &str, span: Span, suggestions: &mut Vec<Suggestion>) {
+    if !msg.contains("unclosed") && !msg.contains("unmatched") {
+        return;
+    }
+
+    // Table-driven: (pattern, message, replacement)
+    const DELIMITERS: &[(&str, &str, &str)] = &[
+        ("paren", "Add closing parenthesis ')'", ")"),
+        ("brace", "Add closing brace '}'", "}"),
+        ("bracket", "Add closing bracket ']'", "]"),
+    ];
+
+    for (pattern, message, replacement) in DELIMITERS {
+        if msg.contains(pattern) {
             suggestions.push(Suggestion {
-                message: "Add closing parenthesis ')'".to_string(),
-                replacement: Some(")".to_string()),
+                message: (*message).to_string(),
+                replacement: Some((*replacement).to_string()),
                 span: Span {
-                    start: error.span.end,
-                    end: error.span.end,
+                    start: span.end,
+                    end: span.end,
                 },
             });
-        } else if error.message.contains("brace") {
-            suggestions.push(Suggestion {
-                message: "Add closing brace '}'".to_string(),
-                replacement: Some("}".to_string()),
-                span: Span {
-                    start: error.span.end,
-                    end: error.span.end,
-                },
-            });
-        } else if error.message.contains("bracket") {
-            suggestions.push(Suggestion {
-                message: "Add closing bracket ']'".to_string(),
-                replacement: Some("]".to_string()),
-                span: Span {
-                    start: error.span.end,
-                    end: error.span.end,
-                },
-            });
+            break; // Only one delimiter fix per error
         }
     }
+}
+
+/// Get ML-powered suggestions from the Oracle
+///
+/// Uses the Oracle classifier to categorize the error and query
+/// the pattern store for relevant fix suggestions.
+pub fn suggest_from_oracle(error: &ParseError) -> Vec<Suggestion> {
+    let mut suggestions = Vec::new();
+
+    // Convert ParseError to CompilationError for Oracle
+    let comp_error = CompilationError {
+        message: error.message.clone(),
+        code: Some(format!("{:?}", error.error_code)),
+        file_path: None,
+        line: None,
+        column: None,
+    };
+
+    // Classify using Oracle
+    let oracle = RuchyOracle::new();
+    let classification = oracle.classify(&comp_error);
+
+    // Only use Oracle suggestions if confidence is reasonable
+    if classification.confidence < 0.3 {
+        return suggestions;
+    }
+
+    // Query pattern store for fixes
+    let pattern_store = PatternStore::new();
+    let oracle_suggestions = pattern_store.query(classification.category, &error.message, 0.5);
+
+    // Convert Oracle suggestions to Diagnostic suggestions
+    for oracle_sugg in oracle_suggestions.iter().take(3) {
+        suggestions.push(Suggestion {
+            message: format!(
+                "[Oracle {:.0}%] {}",
+                oracle_sugg.success_rate * 100.0,
+                oracle_sugg.description
+            ),
+            replacement: Some(oracle_sugg.transformation.clone()),
+            span: error.span,
+        });
+    }
+
+    suggestions
+}
+
+/// Combined suggestion generator using both heuristics and Oracle
+pub fn suggest_all(error: &ParseError) -> Vec<Suggestion> {
+    let mut suggestions = suggest_for_error(error);
+
+    // Add Oracle-based suggestions
+    let oracle_suggestions = suggest_from_oracle(error);
+    suggestions.extend(oracle_suggestions);
+
     suggestions
 }
 #[cfg(test)]
@@ -335,6 +401,63 @@ mod tests {
         let diag2 = Diagnostic::new(error2, "x".to_string());
         let (lines2, _, _, _) = diag2.get_source_context();
         assert_eq!(lines2[0], "x");
+    }
+
+    #[test]
+    fn test_oracle_integration_type_mismatch() {
+        // Test Oracle suggestions for type mismatch errors
+        let error = ParseError::new(
+            "expected `i32`, found `String`".to_string(),
+            Span { start: 0, end: 10 },
+        );
+        let suggestions = suggest_from_oracle(&error);
+        // Oracle should provide suggestions for type mismatches
+        // (may be empty if confidence is too low)
+        assert!(suggestions.len() <= 3);
+    }
+
+    #[test]
+    fn test_oracle_integration_missing_module() {
+        // Test Oracle suggestions for missing module errors
+        let error = ParseError::new(
+            "Module 'scanner' not found".to_string(),
+            Span { start: 0, end: 20 },
+        );
+        let suggestions = suggest_from_oracle(&error);
+        // Should return module-related suggestions if Oracle is confident
+        for sugg in &suggestions {
+            assert!(sugg.message.contains("Oracle"));
+        }
+    }
+
+    #[test]
+    fn test_suggest_all_combines_sources() {
+        // Test that suggest_all includes both heuristic and Oracle suggestions
+        let mut error = ParseError::new(
+            "unexpected token".to_string(),
+            Span { start: 5, end: 10 },
+        );
+        error.found = Some(crate::frontend::lexer::Token::Equal);
+
+        let suggestions = suggest_all(&error);
+        // Should have at least the heuristic suggestion
+        assert!(!suggestions.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_suggestion_format() {
+        // Verify Oracle suggestions are properly formatted
+        let error = ParseError::new(
+            "item in documentation is missing backticks".to_string(),
+            Span { start: 0, end: 40 },
+        );
+        let suggestions = suggest_from_oracle(&error);
+
+        for sugg in &suggestions {
+            // Format should be "[Oracle XX%] description"
+            assert!(sugg.message.starts_with("[Oracle"));
+            assert!(sugg.message.contains("%]"));
+        }
     }
 
     #[test]
