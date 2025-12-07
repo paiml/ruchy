@@ -32,7 +32,8 @@ help:
 	@echo "  make clean       - Clean build artifacts"
 	@echo ""
 	@echo "Quality Commands:"
-	@echo "  make coverage    - Fast coverage (excludes 51 rustc tests, ~5 min)"
+	@echo "  make coverage-fast - FAST coverage (<5 min, CI target)"
+	@echo "  make coverage    - Standard coverage (~10 min)"
 	@echo "  make coverage-full - Full coverage with rustc tests (~15 min)"
 	@echo "  make clean-coverage - Clean and generate fresh coverage report"
 	@echo "  make coverage-wasm-notebook - LLVM coverage for WASM & notebooks (>80% target, A+ TDG)"
@@ -484,6 +485,26 @@ clean-coverage:
 # Generate fast test coverage (excludes rustc compilation tests)
 # 51 tests marked #[ignore = "expensive: invokes rustc"] are skipped
 # Use `make coverage-full` to include them (slower, ~15 min)
+# coverage-fast: Ultra-fast coverage for CI (<5 min target)
+# - Core modules only (frontend, backend, runtime, stdlib)
+# - Excludes: notebook, testing, oracle, bin tests
+# - PROPTEST_CASES=1 to minimize overhead
+# - No report generation (use coverage for full reports)
+coverage-fast:
+	@echo "⚡ Running FAST coverage (MANDATORY: <5 min)..."
+	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
+	@which cargo-nextest > /dev/null 2>&1 || cargo install cargo-nextest --locked
+	@mkdir -p target/coverage
+	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
+	@echo "   - Property test cases: 1 (minimal for speed)"
+	@echo "   - Core modules only (frontend, backend, runtime, stdlib)"
+	@env PROPTEST_CASES=1 cargo llvm-cov nextest --lib -p ruchy --no-tests=warn \
+		-E 'not test(~notebook) and not test(~testing::) and not test(~oracle) and not test(~property_tests) and not test(~harness)' \
+		2>&1 | tail -20
+	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
+	@echo ""
+	@echo "⚡ Fast coverage done (<5 min target). Use 'make coverage' for full reports."
+
 # coverage-quick: Fast coverage for dev iteration (~12 min)
 # - Only lib tests: 5,274 (vs 18K+ total)
 # - PROPTEST_CASES=10 (minimal property tests)
