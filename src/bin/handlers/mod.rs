@@ -4,9 +4,7 @@ pub mod build;
 mod commands;
 mod handlers_modules;
 pub mod new;
-use ruchy::backend::module_resolver::ModuleResolver;
-use ruchy::frontend::ast::{Expr, ExprKind};
-use ruchy::runtime::interpreter::Interpreter;
+use ruchy::frontend::ast::Expr;
 use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
@@ -65,6 +63,9 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str, trace: bool)
             // Preserves: prop_021_consistency_eval_equals_file (println behavior still consistent)
             if result != "nil" && !result.is_empty() {
                 println!("{result}");
+                // Ensure output is flushed for tests capturing stdout
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
             }
             Ok(())
         }
@@ -120,63 +121,29 @@ fn print_eval_error(e: &anyhow::Error, format: &str) {
 pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = read_file_with_context(file)?;
 
-    // ISSUE-106: Parse and resolve modules before evaluation
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser
-        .parse()
-        .map_err(|e| anyhow::anyhow!("Syntax error: {e}"))?;
+    // CLI-UNIFY-002: Use REPL-based evaluation to match `ruchy run` behavior
+    // This ensures `ruchy script.ruchy` and `ruchy run script.ruchy` are identical
+    let mut repl = create_repl()?;
 
-    // Resolve module declarations (mod name;) and imports
-    let resolved_ast = resolve_modules_for_execution(file, ast)?;
-
-    // Use interpreter to evaluate the resolved AST
-    let mut interpreter = Interpreter::new();
-    interpreter
-        .eval_expr(&resolved_ast)
-        .map_err(|e| anyhow::anyhow!("Evaluation error: {e:?}"))?;
-
-    Ok(())
-}
-
-/// ISSUE-106: Resolve module declarations and imports for script execution
-fn resolve_modules_for_execution(source_path: &Path, ast: Expr) -> Result<Expr> {
-    // Check if AST contains any module declarations or imports that need resolution
-    fn needs_resolution(expr: &Expr) -> bool {
-        match &expr.kind {
-            ExprKind::ModuleDeclaration { .. } => true,
-            ExprKind::Module { .. } => true,
-            ExprKind::Import { .. } => true,
-            ExprKind::ImportAll { .. } => true,
-            ExprKind::ImportDefault { .. } => true,
-            ExprKind::Block(exprs) => exprs.iter().any(needs_resolution),
-            ExprKind::Function { body, .. } => needs_resolution(body),
-            ExprKind::Let { value, body, .. } => needs_resolution(value) || needs_resolution(body),
-            _ => false,
+    match repl.eval(&source) {
+        Ok(_result) => {
+            // After evaluating the file, call main() if it exists
+            // This matches `ruchy run` behavior (CLI-UNIFY-002)
+            match repl.eval("main()") {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
         }
     }
-
-    if !needs_resolution(&ast) {
-        return Ok(ast);
-    }
-
-    let mut resolver = ModuleResolver::new();
-
-    // Add the source file's directory to the module search path
-    if let Some(parent_dir) = source_path.parent() {
-        resolver.add_search_path(parent_dir);
-
-        // Also search in standard project layout directories
-        if let Some(project_root) = parent_dir.parent() {
-            resolver.add_search_path(project_root.join("src"));
-            resolver.add_search_path(project_root.join("lib"));
-            resolver.add_search_path(project_root.join("modules"));
-        }
-    }
-
-    resolver
-        .resolve_imports(ast)
-        .with_context(|| "Module resolution error")
 }
+
 /// Handle stdin/piped input - evaluate input from standard input
 ///
 /// # Arguments
@@ -607,6 +574,7 @@ pub fn handle_compile_command(
     json_output: Option<&Path>,
     show_profile_info: bool,
     pgo: bool,
+    embed_models: Vec<PathBuf>,
 ) -> Result<()> {
     use colored::Colorize;
     use ruchy::backend::{compile_to_binary as backend_compile, CompileOptions};
@@ -661,6 +629,23 @@ pub fn handle_compile_command(
         }
     }
 
+    // Issue #169: Show embedded models information
+    if !embed_models.is_empty() {
+        println!(
+            "{} Embedding {} model file(s):",
+            "ℹ".bright_blue(),
+            embed_models.len()
+        );
+        for model in &embed_models {
+            let size = fs::metadata(model).map(|m| m.len()).unwrap_or(0);
+            println!(
+                "  {} ({} bytes)",
+                model.display(),
+                size
+            );
+        }
+    }
+
     // Verbose output: show all optimization flags
     if verbose && !rustc_flags.is_empty() {
         println!("{} Optimization flags:", "ℹ".bright_blue());
@@ -678,6 +663,7 @@ pub fn handle_compile_command(
         static_link,
         target: target,
         rustc_flags,
+        embed_models,
     };
 
     match backend_compile(file, &options) {
@@ -5341,6 +5327,7 @@ fn handle_pgo_compilation(
         static_link,
         target: target.clone(),
         rustc_flags: rustc_flags.clone(),
+        embed_models: Vec::new(),
     };
 
     backend_compile(file, &options_step1)?;
@@ -5396,6 +5383,7 @@ fn handle_pgo_compilation(
         static_link,
         target,
         rustc_flags,
+        embed_models: Vec::new(),
     };
 
     backend_compile(file, &options_step2)?;
