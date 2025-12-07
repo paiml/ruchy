@@ -219,19 +219,33 @@ mod property_tests {
     use super::*;
     use proptest::prelude::*;
 
-    // Generate valid module path: identifier(::identifier)*
+    /// Keywords that cannot be used as identifiers in import paths
+    const KEYWORDS: &[&str] = &[
+        "fn", "fun", "if", "else", "for", "while", "loop", "match", "return",
+        "let", "mut", "const", "pub", "mod", "use", "import", "from", "as",
+        "struct", "enum", "trait", "impl", "type", "self", "super", "crate",
+        "true", "false", "async", "await", "in", "where", "ref", "move",
+    ];
+
+    /// Check if a string is a keyword
+    fn is_keyword(s: &str) -> bool {
+        KEYWORDS.contains(&s)
+    }
+
+    // Generate valid module path: identifier(::identifier)* excluding keywords
     prop_compose! {
         fn arb_module_path()(
             parts in prop::collection::vec("[a-z][a-z0-9_]*", 1..5)
+                .prop_filter("no keywords", |parts| parts.iter().all(|p| !is_keyword(p)))
         ) -> String {
             parts.join("::")
         }
     }
 
-    // Generate valid identifier
+    // Generate valid identifier (not a keyword)
     prop_compose! {
         fn arb_identifier()(
-            name in "[a-z][a-z0-9_]*"
+            name in "[a-z][a-z0-9_]*".prop_filter("not a keyword", |s| !is_keyword(s))
         ) -> String {
             name
         }
@@ -251,6 +265,7 @@ mod property_tests {
         #[test]
         fn prop_import_statement_always_parses(
             parts in prop::collection::vec("[a-z][a-z0-9_]*", 1..5)
+                .prop_filter("no keywords", |parts| parts.iter().all(|p| !is_keyword(p)))
         ) {
             let module = parts.join(".");
             let source = format!("import {module}");
