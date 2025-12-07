@@ -11,15 +11,17 @@ use predicates::prelude::*;
 /// Test basic `env::args()` access
 /// Tests that the use `std::env` import works and `env::args()` returns program arguments
 #[test]
-#[ignore = "BUG: std::env not working"]
+#[ignore = "Needs string interpolation support for println"]
 fn test_issue_096_env_args_basic() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    let args = env::args();
-    println!("Args count: {}", args.len());
+    let args = env::args()
+    println("Args count:", args.len())
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_args_basic.ruchy");
@@ -40,18 +42,20 @@ fun main() {
 #[ignore = "Script argument passing not yet implemented in CLI"]
 fn test_issue_096_env_args_multiple() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    let args = env::args();
-    println!("Total args: {}", args.len());
+    let args = env::args()
+    println("Total args:", args.len())
 
-    let mut i = 0;
+    let mut i = 0
     while i < args.len() {
-        println!("Arg {}: {}", i, args[i]);
-        i = i + 1;
+        println("Arg:", i, args[i])
+        i = i + 1
     }
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_args_multiple.ruchy");
@@ -74,16 +78,18 @@ fun main() {
 #[test]
 fn test_issue_096_env_var_get() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
     // Set a test environment variable for this test
-    let result = env::var("RUCHY_TEST_VAR");
+    let result = env::var("RUCHY_TEST_VAR")
     match result {
-        Ok(value) => println!("Value: {}", value),
-        Err(_) => println!("Not found"),
+        Ok(value) => println("Value:", value),
+        Err(_) => println("Not found"),
     }
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_var_get.ruchy");
@@ -103,15 +109,17 @@ fun main() {
 #[test]
 fn test_issue_096_env_var_not_found() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    let result = env::var("RUCHY_NONEXISTENT_VAR_XYZ");
+    let result = env::var("RUCHY_NONEXISTENT_VAR_XYZ")
     match result {
-        Ok(value) => println!("Found: {}", value),
-        Err(_) => println!("Not found"),
+        Ok(value) => println("Found: ", value),
+        Err(_) => println("Not found"),
     }
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_var_not_found.ruchy");
@@ -131,17 +139,19 @@ fun main() {
 #[test]
 fn test_issue_096_env_args_nonempty() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    let args = env::args();
+    let args = env::args()
     if args.len() > 0 {
-        println!("Has args: yes");
-        println!("First arg exists: yes");
+        println("Has args: yes")
+        println("First arg exists: yes")
     } else {
-        println!("Has args: no");
+        println("Has args: no")
     }
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_args_nonempty.ruchy");
@@ -161,11 +171,13 @@ fun main() {
 #[test]
 fn test_issue_096_std_env_import() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    println!("Import successful");
+    println("Import successful")
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_std_env_import.ruchy");
@@ -184,16 +196,18 @@ fun main() {
 #[test]
 fn test_issue_096_env_var_common() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
     // Try to get a common env var that should exist
-    let home = env::var("HOME");
+    let home = env::var("HOME")
     match home {
-        Ok(_) => println!("HOME exists: yes"),
-        Err(_) => println!("HOME exists: no"),
+        Ok(_) => println("HOME exists: yes"),
+        Err(_) => println("HOME exists: no"),
     }
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_env_var_common.ruchy");
@@ -210,22 +224,24 @@ fun main() {
 
 /// Test real-world use case: CLI tool with argument parsing
 #[test]
-#[ignore = "BUG: std::env not working"]
+#[ignore = "Script argument passing not yet implemented in CLI"]
 fn test_issue_096_cli_tool_pattern() {
     let script = r#"
-use std::env;
+use std::env
 
 fun main() {
-    let args = env::args();
+    let args = env::args()
 
     if args.len() < 2 {
-        println!("Usage: program <command>");
-        return;
+        println("Usage: program <command>")
+        return
     }
 
-    println!("CLI tool started");
-    println!("Args received: {}", args.len());
+    println("CLI tool started")
+    println("Args received:", args.len())
 }
+
+main()
 "#;
 
     let temp_file = std::env::temp_dir().join("issue_096_cli_tool_pattern.ruchy");
