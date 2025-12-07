@@ -858,6 +858,42 @@ enum Commands {
         #[arg(long)]
         verbose: bool,
     },
+    /// Hunt Mode: Automated defect resolution using PDCA cycle (Issue #171)
+    Hunt {
+        /// Target directory to analyze
+        #[arg(default_value = "./examples")]
+        target: PathBuf,
+        /// Number of PDCA cycles to run
+        #[arg(short, long, default_value = "10")]
+        cycles: u32,
+        /// Show Andon dashboard (Toyota Way: visual management)
+        #[arg(long)]
+        andon: bool,
+        /// Export Hansei (lessons learned) report
+        #[arg(long)]
+        hansei_report: Option<PathBuf>,
+        /// Enable Five Whys root cause analysis
+        #[arg(long)]
+        five_whys: bool,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
+    /// Generate transpilation report with rich diagnostics
+    Report {
+        /// Target directory to analyze
+        #[arg(default_value = "./examples")]
+        target: PathBuf,
+        /// Output format (human, json, markdown, sarif)
+        #[arg(short, long, default_value = "human")]
+        format: String,
+        /// Output file (stdout if not specified)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
 }
 fn main() -> Result<()> {
     // CLI-UNIFY-001: If no args provided, open REPL directly
@@ -1035,6 +1071,20 @@ fn handle_command_dispatch(
             format,
             verbose,
         }) => handle_oracle_command(&error_message, code.as_deref(), &format, verbose),
+        Some(Commands::Hunt {
+            target,
+            cycles,
+            andon,
+            hansei_report,
+            five_whys,
+            verbose,
+        }) => handle_hunt_command(&target, cycles, andon, hansei_report.as_deref(), five_whys, verbose),
+        Some(Commands::Report {
+            target,
+            format,
+            output,
+            verbose,
+        }) => handle_report_command(&target, &format, output.as_deref(), verbose),
         Some(command) => handle_advanced_command(command),
     }
 }
@@ -1066,6 +1116,451 @@ fn handle_advanced_command(command: Commands) -> Result<()> {
     // Delegate to the existing handle_complex_command from cli module
     handle_complex_command(command)
 }
+
+/// Handle hunt command - automated defect resolution using PDCA cycle (Issue #171)
+fn handle_hunt_command(
+    target: &Path,
+    cycles: u32,
+    andon: bool,
+    hansei_report: Option<&Path>,
+    five_whys: bool,
+    verbose: bool,
+) -> Result<()> {
+    use colored::Colorize;
+    use ruchy::hunt_mode::{HuntConfig, HuntMode};
+
+    println!("{}", "🎯 Hunt Mode: Automated Defect Resolution".bold());
+    println!("   Target: {}", target.display());
+    println!("   PDCA Cycles: {}", cycles);
+    if five_whys {
+        println!("   Five Whys Analysis: enabled");
+    }
+    println!();
+
+    // Configure Hunt Mode
+    let config = HuntConfig {
+        max_cycles: cycles,
+        enable_five_whys: five_whys,
+        verbose,
+        ..Default::default()
+    };
+
+    let mut hunt = HuntMode::with_config(config);
+
+    // Scan for .ruchy files in target directory
+    let ruchy_files = scan_ruchy_files(target)?;
+    if ruchy_files.is_empty() {
+        println!("{}", "⚠ No .ruchy files found in target directory".yellow());
+        return Ok(());
+    }
+
+    println!("Found {} .ruchy files to analyze", ruchy_files.len());
+    println!();
+
+    // Run PDCA cycles
+    for cycle in 1..=cycles {
+        println!("{}", format!("━━━ PDCA Cycle {}/{} ━━━", cycle, cycles).cyan());
+
+        // Analyze each file
+        for file_path in &ruchy_files {
+            if verbose {
+                println!("  Analyzing: {}", file_path.display());
+            }
+
+            // Try to transpile and capture errors
+            match analyze_file_for_hunt(file_path) {
+                Ok(errors) => {
+                    for (code, message) in errors {
+                        hunt.add_error(&code, &message, Some(&file_path.to_string_lossy()), 1.0);
+                    }
+                }
+                Err(e) => {
+                    if verbose {
+                        eprintln!("    Error: {}", e);
+                    }
+                }
+            }
+        }
+
+        // Run one PDCA cycle
+        match hunt.run_cycle() {
+            Ok(outcome) => {
+                if verbose {
+                    println!("  Cycle outcome: {:?}", outcome);
+                }
+            }
+            Err(e) => {
+                eprintln!("  Cycle error: {}", e);
+            }
+        }
+
+        println!();
+    }
+
+    // Display Andon dashboard if requested
+    if andon {
+        display_andon_dashboard(&hunt);
+    }
+
+    // Export Hansei report if requested
+    if let Some(report_path) = hansei_report {
+        export_hansei_report(&hunt, report_path)?;
+        println!("{}", format!("📝 Hansei report exported to: {}", report_path.display()).green());
+    }
+
+    // Final summary
+    let metrics = hunt.kaizen_metrics();
+    println!("{}", "━━━ Hunt Mode Summary ━━━".bold());
+    println!("  Compilation Rate: {:.1}%", metrics.compilation_rate * 100.0);
+    println!("  Total Cycles: {}", metrics.total_cycles);
+    println!("  Cumulative Fixes: {}", metrics.cumulative_fixes);
+
+    Ok(())
+}
+
+/// Analyze a file for Hunt Mode errors
+fn analyze_file_for_hunt(file_path: &Path) -> Result<Vec<(String, String)>> {
+    use ruchy::{Parser as RuchyParser, Transpiler};
+
+    let source = fs::read_to_string(file_path)?;
+    let mut parser = RuchyParser::new(&source);
+    let ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            // Parser error
+            return Ok(vec![("PARSE".to_string(), e.to_string())]);
+        }
+    };
+
+    let mut transpiler = Transpiler::new();
+    match transpiler.transpile(&ast) {
+        Ok(_) => Ok(vec![]),
+        Err(e) => {
+            // Extract error code if possible
+            let error_str = e.to_string();
+            let code = if error_str.contains("E0") {
+                error_str
+                    .split_whitespace()
+                    .find(|s| s.starts_with("E0"))
+                    .unwrap_or("TRANSPILE")
+                    .to_string()
+            } else {
+                "TRANSPILE".to_string()
+            };
+            Ok(vec![(code, error_str)])
+        }
+    }
+}
+
+/// Scan for .ruchy files recursively
+fn scan_ruchy_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    if dir.is_file() {
+        if dir.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+            files.push(dir.to_path_buf());
+        }
+        return Ok(files);
+    }
+    if !dir.is_dir() {
+        return Ok(files);
+    }
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+            files.push(path);
+        } else if path.is_dir() {
+            files.extend(scan_ruchy_files(&path)?);
+        }
+    }
+    Ok(files)
+}
+
+/// Display Andon dashboard (Toyota Way: Visual Management)
+fn display_andon_dashboard(hunt: &ruchy::hunt_mode::HuntMode) {
+    use colored::Colorize;
+
+    let metrics = hunt.kaizen_metrics();
+    let status = hunt.andon_status();
+
+    println!();
+    println!("{}", "┌─────────────────────────────────────┐".bold());
+    println!("{}", "│       ANDON DASHBOARD               │".bold());
+    println!("{}", "├─────────────────────────────────────┤".bold());
+
+    // Status light
+    let status_line = match status {
+        ruchy::hunt_mode::AndonStatus::Green { .. } => "│  🟢 GREEN - All systems nominal     │".green(),
+        ruchy::hunt_mode::AndonStatus::Yellow { .. } => "│  🟡 YELLOW - Warnings present       │".yellow(),
+        ruchy::hunt_mode::AndonStatus::Red { .. } => "│  🔴 RED - Issues detected           │".red(),
+    };
+    println!("{}", status_line);
+
+    println!("{}", "├─────────────────────────────────────┤".bold());
+    println!("│  Compilation Rate: {:>6.1}%          │", metrics.compilation_rate * 100.0);
+    println!("│  Total Cycles:     {:>6}           │", metrics.total_cycles);
+    println!("│  Fixes Applied:    {:>6}           │", metrics.cumulative_fixes);
+    println!("{}", "└─────────────────────────────────────┘".bold());
+    println!();
+}
+
+/// Export Hansei (lessons learned) report
+fn export_hansei_report(hunt: &ruchy::hunt_mode::HuntMode, path: &Path) -> Result<()> {
+    let metrics = hunt.kaizen_metrics();
+    let report = format!(
+        r#"# Hansei Report (反省 - Lessons Learned)
+
+## Summary
+- **Total PDCA Cycles**: {}
+- **Final Compilation Rate**: {:.1}%
+- **Cumulative Fixes**: {}
+
+## Toyota Way Principles Applied
+- **Jidoka**: Automated quality inspection
+- **Kaizen**: Continuous improvement through PDCA
+- **Genchi Genbutsu**: Go and see the actual code
+- **Heijunka**: Level the workload by prioritizing high-impact fixes
+
+## Recommendations
+1. Focus on patterns with highest occurrence count
+2. Use Five Whys analysis for recurring errors
+3. Establish error prevention through better type inference
+
+---
+Generated by Ruchy Hunt Mode (Issue #171)
+"#,
+        metrics.total_cycles,
+        metrics.compilation_rate * 100.0,
+        metrics.cumulative_fixes
+    );
+
+    fs::write(path, report)?;
+    Ok(())
+}
+
+/// Handle report command - generate transpilation reports
+fn handle_report_command(
+    target: &Path,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+) -> Result<()> {
+    use colored::Colorize;
+    use ruchy::reporting::formats::{HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter};
+
+    println!("{}", "📊 Generating Transpilation Report".bold());
+    println!("   Target: {}", target.display());
+    println!("   Format: {}", format);
+    println!();
+
+    // Scan for .ruchy files
+    let ruchy_files = scan_ruchy_files(target)?;
+    if ruchy_files.is_empty() {
+        println!("{}", "⚠ No .ruchy files found".yellow());
+        return Ok(());
+    }
+
+    // Collect results
+    let mut results = Vec::new();
+    let mut success_count = 0;
+    let mut failure_count = 0;
+
+    for file_path in &ruchy_files {
+        if verbose {
+            println!("  Analyzing: {}", file_path.display());
+        }
+
+        match analyze_file_for_report(file_path) {
+            Ok(result) => {
+                if result.success {
+                    success_count += 1;
+                } else {
+                    failure_count += 1;
+                }
+                results.push(result);
+            }
+            Err(e) => {
+                failure_count += 1;
+                results.push(FileResult {
+                    path: file_path.clone(),
+                    success: false,
+                    error: Some(e.to_string()),
+                    warnings: vec![],
+                });
+            }
+        }
+    }
+
+    // Format output
+    let report_content = match format {
+        "json" => {
+            let formatter = JsonFormatter::pretty();
+            format_report_json(&results, &formatter)
+        }
+        "markdown" | "md" => {
+            let formatter = MarkdownFormatter::default();
+            format_report_markdown(&results, &formatter)
+        }
+        "sarif" => {
+            let formatter = SarifFormatter::default();
+            format_report_sarif(&results, &formatter)
+        }
+        _ => {
+            let formatter = HumanFormatter::default();
+            format_report_human(&results, &formatter)
+        }
+    };
+
+    // Output
+    if let Some(output_path) = output {
+        fs::write(output_path, &report_content)?;
+        println!("{}", format!("📝 Report written to: {}", output_path.display()).green());
+    } else {
+        println!("{}", report_content);
+    }
+
+    // Summary
+    println!();
+    println!("{}", "━━━ Report Summary ━━━".bold());
+    println!("  Total Files: {}", results.len());
+    println!("  {} Successful", format!("{}", success_count).green());
+    println!("  {} Failed", format!("{}", failure_count).red());
+
+    Ok(())
+}
+
+/// Result of analyzing a single file
+struct FileResult {
+    path: PathBuf,
+    success: bool,
+    error: Option<String>,
+    warnings: Vec<String>,
+}
+
+/// Analyze a file for the report
+fn analyze_file_for_report(file_path: &Path) -> Result<FileResult> {
+    use ruchy::{Parser as RuchyParser, Transpiler};
+
+    let source = fs::read_to_string(file_path)?;
+    let mut parser = RuchyParser::new(&source);
+    let ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            return Ok(FileResult {
+                path: file_path.to_path_buf(),
+                success: false,
+                error: Some(format!("Parse error: {}", e)),
+                warnings: vec![],
+            });
+        }
+    };
+
+    let mut transpiler = Transpiler::new();
+    match transpiler.transpile(&ast) {
+        Ok(_) => Ok(FileResult {
+            path: file_path.to_path_buf(),
+            success: true,
+            error: None,
+            warnings: vec![],
+        }),
+        Err(e) => Ok(FileResult {
+            path: file_path.to_path_buf(),
+            success: false,
+            error: Some(format!("Transpile error: {}", e)),
+            warnings: vec![],
+        }),
+    }
+}
+
+/// Format report as JSON
+fn format_report_json(results: &[FileResult], _formatter: &ruchy::reporting::formats::JsonFormatter) -> String {
+    let json = serde_json::json!({
+        "total": results.len(),
+        "success": results.iter().filter(|r| r.success).count(),
+        "failed": results.iter().filter(|r| !r.success).count(),
+        "files": results.iter().map(|r| {
+            serde_json::json!({
+                "path": r.path.display().to_string(),
+                "success": r.success,
+                "error": r.error,
+                "warnings": r.warnings
+            })
+        }).collect::<Vec<_>>()
+    });
+    serde_json::to_string_pretty(&json).unwrap_or_default()
+}
+
+/// Format report as Markdown
+fn format_report_markdown(results: &[FileResult], _formatter: &ruchy::reporting::formats::MarkdownFormatter) -> String {
+    let mut md = String::from("# Transpilation Report\n\n");
+    md.push_str(&format!("## Summary\n\n"));
+    md.push_str(&format!("- **Total Files**: {}\n", results.len()));
+    md.push_str(&format!("- **Successful**: {}\n", results.iter().filter(|r| r.success).count()));
+    md.push_str(&format!("- **Failed**: {}\n\n", results.iter().filter(|r| !r.success).count()));
+
+    md.push_str("## Results\n\n");
+    for result in results {
+        let status = if result.success { "✅" } else { "❌" };
+        md.push_str(&format!("### {} {}\n\n", status, result.path.display()));
+        if let Some(ref error) = result.error {
+            md.push_str(&format!("**Error**: {}\n\n", error));
+        }
+    }
+    md
+}
+
+/// Format report as SARIF
+fn format_report_sarif(results: &[FileResult], _formatter: &ruchy::reporting::formats::SarifFormatter) -> String {
+    let sarif = serde_json::json!({
+        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": "ruchy",
+                    "version": env!("CARGO_PKG_VERSION")
+                }
+            },
+            "results": results.iter().filter(|r| !r.success).map(|r| {
+                serde_json::json!({
+                    "ruleId": "TRANSPILE001",
+                    "level": "error",
+                    "message": {
+                        "text": r.error.as_deref().unwrap_or("Unknown error")
+                    },
+                    "locations": [{
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": r.path.display().to_string()
+                            }
+                        }
+                    }]
+                })
+            }).collect::<Vec<_>>()
+        }]
+    });
+    serde_json::to_string_pretty(&sarif).unwrap_or_default()
+}
+
+/// Format report as human-readable text
+fn format_report_human(results: &[FileResult], _formatter: &ruchy::reporting::formats::HumanFormatter) -> String {
+    let mut output = String::from("Transpilation Report\n");
+    output.push_str(&"=".repeat(40));
+    output.push('\n');
+    output.push_str(&format!("\nTotal: {} files\n", results.len()));
+    output.push_str(&format!("Success: {}\n", results.iter().filter(|r| r.success).count()));
+    output.push_str(&format!("Failed: {}\n\n", results.iter().filter(|r| !r.success).count()));
+
+    for result in results {
+        let status = if result.success { "[OK]" } else { "[FAIL]" };
+        output.push_str(&format!("{} {}\n", status, result.path.display()));
+        if let Some(ref error) = result.error {
+            output.push_str(&format!("     Error: {}\n", error));
+        }
+    }
+    output
+}
+
 fn run_file(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)?;
     // Use REPL to evaluate the file
