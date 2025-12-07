@@ -64,6 +64,7 @@ pub mod debugger;
 pub mod docs;
 pub mod error_recovery_enhanced;
 pub mod frontend;
+pub mod hunt_mode;
 #[cfg(feature = "jit")]
 pub mod jit;
 pub mod lints;
@@ -81,6 +82,7 @@ pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;
 pub mod quality;
+pub mod reporting;
 pub mod runtime;
 pub mod server;
 pub mod stdlib;
