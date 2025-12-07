@@ -147,6 +147,10 @@ enum Commands {
         /// Enable Profile-Guided Optimization (two-step build) (PERF-002 Phase 4)
         #[arg(long)]
         pgo: bool,
+        /// Embed ML model file(s) into the binary for zero-copy loading (issue #169)
+        /// Can be specified multiple times: --embed-model a.safetensors --embed-model b.gguf
+        #[arg(long = "embed-model", value_name = "FILE")]
+        embed_models: Vec<PathBuf>,
     },
     /// Check syntax without running
     Check {
@@ -934,6 +938,7 @@ fn handle_command_dispatch(
             json,
             show_profile_info,
             pgo,
+            embed_models,
         }) => handle_compile_command(
             &file,
             output,
@@ -946,6 +951,7 @@ fn handle_command_dispatch(
             json.as_deref(),
             show_profile_info,
             pgo,
+            embed_models,
         ),
         Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
         Some(Commands::Test {
@@ -1295,6 +1301,7 @@ mod tests {
             json: None,
             show_profile_info: false,
             pgo: false,
+            embed_models: Vec::new(),
         };
         let result = handle_advanced_command(command);
         assert!(result.is_ok());

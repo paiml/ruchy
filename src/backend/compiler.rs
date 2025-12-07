@@ -25,6 +25,9 @@ pub struct CompileOptions {
     pub target: Option<String>,
     /// Additional rustc flags
     pub rustc_flags: Vec<String>,
+    /// Model files to embed in the binary (issue #169)
+    /// Each path will be embedded via `include_bytes!` for zero-copy loading
+    pub embed_models: Vec<PathBuf>,
 }
 impl Default for CompileOptions {
     fn default() -> Self {
@@ -35,6 +38,7 @@ impl Default for CompileOptions {
             static_link: false,
             target: None,
             rustc_flags: Vec::new(),
+            embed_models: Vec::new(),
         }
     }
 }
@@ -53,6 +57,7 @@ impl Default for CompileOptions {
 ///     static_link: false,
 ///     target: None,
 ///     rustc_flags: Vec::new(),
+///     embed_models: Vec::new(),
 /// };
 ///
 /// let result = compile_to_binary(&PathBuf::from("program.ruchy"), &options);
@@ -430,9 +435,17 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
     let src_dir = project_dir.join("src");
     fs::create_dir(&src_dir).context("Failed to create src directory")?;
 
+    // Generate code with embedded models if specified (issue #169)
+    let rust_code_str = rust_code.to_string();
+    let final_code = if options.embed_models.is_empty() {
+        rust_code_str
+    } else {
+        generate_model_embedding_code(&rust_code_str, &options.embed_models, &src_dir)?
+    };
+
     // Write main.rs
     let main_file = src_dir.join("main.rs");
-    fs::write(&main_file, rust_code.to_string())?;
+    fs::write(&main_file, &final_code)?;
 
     // Write Cargo.toml
     let cargo_toml = project_dir.join("Cargo.toml");
@@ -463,23 +476,106 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
 
 /// Compile with rustc directly (for simple programs) (complexity: 5)
 fn compile_with_rustc(rust_code: &TokenStream, options: &CompileOptions) -> Result<PathBuf> {
-    let (_temp_dir, rust_file) = prepare_rust_file(rust_code)?;
+    let (_temp_dir, rust_file) = prepare_rust_file(rust_code, options)?;
     let cmd = build_rustc_command(&rust_file, options);
     execute_compilation(cmd)?;
     verify_output_exists(&options.output)?;
     Ok(options.output.clone())
 }
 
-/// Prepare temporary Rust file for compilation (complexity: 4)
-fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
+/// Prepare temporary Rust file for compilation (complexity: 6)
+/// Handles model embedding via `include_bytes!` (issue #169)
+fn prepare_rust_file(rust_code: &TokenStream, options: &CompileOptions) -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new().compile_context("create temporary directory")?;
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
+
+    // Generate model embedding code if models specified (issue #169)
+    let final_code = if options.embed_models.is_empty() {
+        rust_code_str
+    } else {
+        generate_model_embedding_code(&rust_code_str, &options.embed_models, temp_dir.path())?
+    };
+
     // Debug: Also write to /tmp/debug_rust_output.rs for inspection
-    fs::write("/tmp/debug_rust_output.rs", &rust_code_str)
+    fs::write("/tmp/debug_rust_output.rs", &final_code)
         .context("Failed to write debug Rust code")?;
-    fs::write(&rust_file, &rust_code_str).context("Failed to write Rust code to temporary file")?;
+    fs::write(&rust_file, &final_code).context("Failed to write Rust code to temporary file")?;
     Ok((temp_dir, rust_file))
+}
+
+/// Generate model embedding code with `include_bytes!` (issue #169)
+/// Copies model files to temp directory and generates static byte arrays
+fn generate_model_embedding_code(
+    rust_code: &str,
+    embed_models: &[PathBuf],
+    temp_dir: &Path,
+) -> Result<String> {
+    let mut model_statics = String::new();
+    let mut model_loader_fn = String::from(
+        "\n/// Get embedded model bytes by filename\n\
+         #[allow(dead_code)]\n\
+         pub fn get_embedded_model(name: &str) -> Option<&'static [u8]> {\n\
+         match name {\n",
+    );
+
+    for (i, model_path) in embed_models.iter().enumerate() {
+        // Validate model file exists
+        if !model_path.exists() {
+            bail!("Embedded model file not found: {}", model_path.display());
+        }
+
+        // Copy model to temp directory for include_bytes! access
+        let model_filename = model_path
+            .file_name()
+            .ok_or_else(|| anyhow::anyhow!("Invalid model path: {}", model_path.display()))?
+            .to_string_lossy();
+        let temp_model_path = temp_dir.join(&*model_filename);
+        fs::copy(model_path, &temp_model_path)
+            .with_context(|| format!("Failed to copy model: {}", model_path.display()))?;
+
+        // Generate static variable name from filename (sanitized)
+        let var_name = sanitize_model_name(&model_filename);
+
+        // Generate include_bytes! for this model
+        model_statics.push_str(&format!(
+            "/// Embedded model: {model_filename}\n\
+             static MODEL_{var_name}: &[u8] = include_bytes!(\"{model_filename}\");\n\n",
+        ));
+
+        // Add to loader function
+        model_loader_fn.push_str(&format!(
+            "    \"{model_filename}\" => Some(MODEL_{var_name}),\n",
+        ));
+
+        // Also add index-based access
+        model_loader_fn.push_str(&format!("    \"model_{i}\" => Some(MODEL_{var_name}),\n"));
+    }
+
+    model_loader_fn.push_str("    _ => None,\n}\n}\n");
+
+    // Prepend model statics and loader to the Rust code
+    Ok(format!(
+        "// === Embedded Models (ruchy compile --embed-model) ===\n\
+         {model_statics}\n\
+         {model_loader_fn}\n\
+         // === End Embedded Models ===\n\n\
+         {rust_code}",
+    ))
+}
+
+/// Sanitize model filename to valid Rust identifier (uppercase)
+fn sanitize_model_name(filename: &str) -> String {
+    filename
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_uppercase()
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
 /// Build rustc command with options (complexity: 7)
 fn build_rustc_command(rust_file: &Path, options: &CompileOptions) -> Command {
@@ -658,6 +754,7 @@ mod tests {
         assert!(!options.static_link);
         assert!(options.target.is_none());
         assert!(options.rustc_flags.is_empty());
+        assert!(options.embed_models.is_empty());
     }
 
     #[test]
@@ -669,6 +766,7 @@ mod tests {
             static_link: true,
             target: Some("x86_64-unknown-linux-musl".to_string()),
             rustc_flags: vec!["-C".to_string(), "lto=fat".to_string()],
+            embed_models: Vec::new(),
         };
 
         assert_eq!(options.output, PathBuf::from("my_binary"));
@@ -680,6 +778,89 @@ mod tests {
             Some("x86_64-unknown-linux-musl".to_string())
         );
         assert_eq!(options.rustc_flags.len(), 2);
+    }
+
+    #[test]
+    fn test_sanitize_model_name() {
+        assert_eq!(sanitize_model_name("model.safetensors"), "MODEL_SAFETENSORS");
+        assert_eq!(sanitize_model_name("my-model_v2.gguf"), "MY_MODEL_V2_GGUF");
+        assert_eq!(sanitize_model_name("123_numbers.bin"), "123_NUMBERS_BIN");
+    }
+
+    #[test]
+    fn test_generate_model_embedding_code() {
+        use tempfile::TempDir;
+
+        // Create a temp directory with a dummy model file
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let model_path = temp_dir.path().join("test_model.bin");
+        fs::write(&model_path, b"fake model data").expect("write model");
+
+        let rust_code = "fn main() { println!(\"hello\"); }";
+        let result = generate_model_embedding_code(
+            rust_code,
+            &[model_path],
+            temp_dir.path(),
+        );
+
+        assert!(result.is_ok());
+        let code = result.expect("model embedding code");
+
+        // Check that include_bytes! was generated
+        assert!(code.contains("include_bytes!"));
+        assert!(code.contains("MODEL_TEST_MODEL_BIN"));
+        assert!(code.contains("get_embedded_model"));
+        assert!(code.contains("test_model.bin"));
+        // Original code should be at the end
+        assert!(code.contains("fn main()"));
+    }
+
+    #[test]
+    fn test_generate_model_embedding_multiple_models() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let model1 = temp_dir.path().join("model_a.bin");
+        let model2 = temp_dir.path().join("model_b.bin");
+        fs::write(&model1, b"model a data").expect("write model a");
+        fs::write(&model2, b"model b data").expect("write model b");
+
+        let rust_code = "fn main() {}";
+        let result = generate_model_embedding_code(
+            rust_code,
+            &[model1, model2],
+            temp_dir.path(),
+        );
+
+        assert!(result.is_ok());
+        let code = result.expect("model embedding code");
+
+        // Check both models are embedded
+        assert!(code.contains("MODEL_MODEL_A_BIN"));
+        assert!(code.contains("MODEL_MODEL_B_BIN"));
+        assert!(code.contains("\"model_a.bin\""));
+        assert!(code.contains("\"model_b.bin\""));
+        // Index-based access
+        assert!(code.contains("\"model_0\""));
+        assert!(code.contains("\"model_1\""));
+    }
+
+    #[test]
+    fn test_generate_model_embedding_missing_file() {
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let missing_model = temp_dir.path().join("nonexistent.bin");
+
+        let result = generate_model_embedding_code(
+            "fn main() {}",
+            &[missing_model],
+            temp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.expect_err("should fail");
+        assert!(err.to_string().contains("not found"));
     }
 
     #[test]
@@ -717,7 +898,8 @@ mod tests {
     #[test]
     fn test_prepare_rust_file() {
         let rust_code = TokenStream::new();
-        let result = prepare_rust_file(&rust_code);
+        let options = CompileOptions::default();
+        let result = prepare_rust_file(&rust_code, &options);
         assert!(result.is_ok());
 
         if let Ok((_temp_dir, rust_file)) = result {
@@ -926,10 +1108,11 @@ mod tests {
     #[test]
     fn test_temp_file_creation_cleanup() {
         let rust_code = TokenStream::new();
+        let options = CompileOptions::default();
 
         // Test multiple temp file creations
         for _i in 0..5 {
-            let result = prepare_rust_file(&rust_code);
+            let result = prepare_rust_file(&rust_code, &options);
             assert!(result.is_ok());
 
             if let Ok((_temp_dir, rust_file)) = result {
@@ -1021,7 +1204,8 @@ mod tests {
     fn test_file_io_edge_cases() {
         // Test with empty token stream
         let empty_tokens = TokenStream::new();
-        let result = prepare_rust_file(&empty_tokens);
+        let options = CompileOptions::default();
+        let result = prepare_rust_file(&empty_tokens, &options);
         assert!(result.is_ok());
 
         if let Ok((_temp_dir, rust_file)) = result {
@@ -1069,6 +1253,7 @@ mod tests {
                 "-C".to_string(),
                 "panic=abort".to_string(),
             ],
+            embed_models: Vec::new(),
         };
 
         let rust_file = Path::new("/tmp/test.rs");
@@ -1088,6 +1273,7 @@ mod tests {
             static_link: false,
             target: Some("x86_64-unknown-linux-gnu".to_string()),
             rustc_flags: vec!["--verbose".to_string()],
+            embed_models: Vec::new(),
         };
 
         // Test Clone trait
