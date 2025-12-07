@@ -263,7 +263,7 @@ lexical:
       implemented: true
       test_coverage: 100
 
-grammar:
+rules:
   program:
     rule: "item*"
     description: "Top-level program structure"

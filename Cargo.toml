@@ -237,7 +237,10 @@ workspace = true
 default = ["batteries-included"]
 batteries-included = ["notebook", "wasm-compile", "http-client", "markdown", "repl", "watch-mode"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
+# DataFrame via trueno-db (default - uses Trueno SIMD backend)
 dataframe = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
+# Legacy polars compatibility layer (spec Section 4.2 - NOT default)
+polars-compat = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
 testing = ["proptest"]
 stub_tests = []  # Enable stub tests for incomplete features (development only)
 notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
@@ -254,6 +257,15 @@ watch-mode = ["dep:notify"]
 [dependencies]
 rand = "0.8"
 ruchyruchy = "1.10.0"  # TEMPORARY: Use published version to bypass local build errors
+
+# Sovereign AI Stack Core (REQUIRED) - trueno-aprender-stdlib-core-language-spec.md v2.0
+# Six Pillars of Batteries-Included Data Science:
+trueno = "0.7"           # Pillar 1: SIMD compute engine
+alimentar = "0.2"        # Pillar 2: Data loading, transforms, drift detection
+trueno-db = "0.3"        # Pillar 3: Embedded analytics database
+aprender = { version = "0.14", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
+trueno-viz = "0.1"       # Pillar 5: GPU/WASM visualization
+presentar = "0.1"        # Pillar 6: WASM-first notebook widgets
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
