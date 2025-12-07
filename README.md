@@ -1,11 +1,25 @@
-# Ruchy Programming Language
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
-[![Test Coverage](https://img.shields.io/badge/coverage-70.62%25-yellow.svg)](https://github.com/paiml/ruchy)
-[![Tests Passing](https://img.shields.io/badge/tests-3987%20passing-green.svg)](https://github.com/paiml/ruchy)
-[![Production Ready](https://img.shields.io/badge/production-NOT%20READY-red.svg)](docs/PRODUCTION-READINESS-ASSESSMENT.md)
+<p align="center">
+  <img src=".github/ruchy-hero.svg" alt="ruchy" width="800">
+</p>
+
+<h1 align="center">ruchy</h1>
+
+<p align="center">
+  <b>Modern Language for Data Science and Scientific Computing</b>
+</p>
+
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
+  <a href="https://crates.io/crates/ruchy"><img src="https://img.shields.io/crates/v/ruchy.svg" alt="Crates.io"></a>
+  <a href="https://github.com/paiml/ruchy"><img src="https://img.shields.io/badge/tests-3987%20passing-green.svg" alt="Tests"></a>
+  <a href="https://github.com/paiml/ruchy"><img src="https://img.shields.io/badge/coverage-70.62%25-yellow.svg" alt="Coverage"></a>
+</p>
+
+</div>
+
+---
 
 A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
 
