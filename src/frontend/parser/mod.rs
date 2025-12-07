@@ -427,6 +427,19 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
             if is_block_like_expression(&left) {
                 Ok(None) // Don't treat `(` as postfix call
             } else {
+                // PARSER-XXX FIX: Don't parse `(` as function call if it's on a new line
+                // This prevents: `let sum = a + b\n(sum, product)` from being parsed as
+                // `let sum = a + b(sum, product)` (calling b with tuple args).
+                // Instead it should be two separate statements.
+                // Extract span start before borrowing source
+                let paren_start = state.tokens.peek().map(|(_, s)| s.start);
+                if let Some(paren_pos) = paren_start {
+                    // Check if there's a significant gap (newline) between expr and (
+                    let source = state.tokens.source();
+                    if !is_on_same_line(source, left.span.end, paren_pos) {
+                        return Ok(None); // `(` is on new line, not a function call
+                    }
+                }
                 Ok(Some(functions::parse_call(state, left)?))
             }
         }
@@ -434,12 +447,15 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
             // PARSER-081 FIX: Don't treat `[` as array indexing after literals, struct literals, let statements, or standalone function calls
             // This prevents `let y = 2 [x, y]`, `let p = Point{...} [x]`, and `let result = foo() [1, 2]` from being parsed as indexing
             // PARSER-086: Extended to fix block-level let with function call followed by array literal
+            // PARSER-XXX: Extended to include Await and Try expressions
             if matches!(
                 left.kind,
                 ExprKind::Literal(_)
                     | ExprKind::StructLiteral { .. }
                     | ExprKind::Let { .. }
                     | ExprKind::Call { .. }
+                    | ExprKind::Await { .. }
+                    | ExprKind::Try { .. }
             ) {
                 Ok(None) // Not array indexing, `[...]` is a separate expression
             } else {
@@ -662,41 +678,10 @@ fn handle_decrement_operator(state: &mut ParserState, left: Expr) -> Result<Expr
 }
 /// Check if ? is for ternary operator (not try operator)
 fn is_ternary_operator(state: &mut ParserState) -> bool {
-    // Look ahead - if the next token after ? is not a postfix-able token,
-    // it's likely a ternary operator
-    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
-        // These tokens indicate postfix try operator (Issue #97)
-        // Binary operators after ? mean it's a try operator in an expression
-        // Example: get_number()? * 2 (try, then multiply)
-        !matches!(
-            next_token,
-            Token::Dot
-                | Token::Semicolon
-                | Token::RightParen
-                | Token::RightBracket
-                | Token::RightBrace
-                | Token::Comma
-                // Issue #97: Binary operators indicate try operator, not ternary
-                | Token::Plus
-                | Token::Minus
-                | Token::Star
-                | Token::Slash
-                | Token::Percent
-                | Token::Ampersand
-                | Token::Pipe
-                | Token::Caret
-                | Token::EqualEqual
-                | Token::NotEqual
-                | Token::Less
-                | Token::Greater
-                | Token::LessEqual
-                | Token::GreaterEqual
-                | Token::LeftShift
-                | Token::RightShift
-        )
-    } else {
-        false // At end of input, treat as try
-    }
+    // PARSER-XXX: Use same logic as is_try_operator_not_ternary
+    // Returns true if this IS a ternary operator (has `:` at same level)
+    // Returns false if this is a try operator (no `:` found)
+    !is_try_operator_not_ternary(state)
 }
 
 /// Handle try operator ?
@@ -886,16 +871,71 @@ fn is_valid_ternary_start(token: &Token, min_prec: i32, ternary_prec: i32) -> bo
     matches!(token, Token::Question) && min_prec <= ternary_prec
 }
 
-/// Check if this is a try operator rather than ternary (complexity: 3, cognitive: 3)
+/// Check if this is a try operator rather than ternary (complexity: 5, cognitive: 5)
+/// PARSER-XXX: Scan ahead to find `:` at same nesting level for ternary detection
+/// Returns true if this is definitely a try operator, false if it could be ternary
 fn is_try_operator_not_ternary(state: &mut ParserState) -> bool {
+    // First check: statement-starting keywords definitely indicate try
     if let Some((next_token, _)) = state.tokens.peek_nth(1) {
-        matches!(
+        if matches!(
             next_token,
-            Token::Dot | Token::Semicolon | Token::RightParen | Token::RightBracket
-        )
-    } else {
-        false
+            Token::Let
+                | Token::For
+                | Token::While
+                | Token::Match
+                | Token::Return
+                | Token::Fn
+                | Token::Fun
+                | Token::Loop
+                | Token::Continue
+                | Token::Break
+                | Token::Pub
+                | Token::Const
+                | Token::Static
+                | Token::Struct
+                | Token::Enum
+                | Token::Impl
+                | Token::Trait
+                | Token::Type
+                | Token::Use
+                | Token::Mod
+        ) {
+            return true;
+        }
     }
+
+    // Second check: scan ahead for `:` at same nesting level
+    // Ternary requires `? expr : expr` - the `:` must exist at same level
+    let pos = state.tokens.position();
+    state.tokens.advance(); // skip `?`
+
+    let mut depth = 0i32;
+    let mut found_colon = false;
+    let max_lookahead = 30;
+
+    for _ in 0..max_lookahead {
+        match state.tokens.advance() {
+            Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _)) => depth += 1,
+            Some((Token::RightParen | Token::RightBracket | Token::RightBrace, _)) => {
+                depth -= 1;
+                if depth < 0 {
+                    break; // Unbalanced - end of expression
+                }
+            }
+            Some((Token::Colon, _)) if depth == 0 => {
+                found_colon = true;
+                break;
+            }
+            Some((Token::Semicolon, _)) => break, // Statement end
+            None => break,                         // EOF
+            _ => {}
+        }
+    }
+
+    state.tokens.set_position(pos);
+
+    // If no colon found at depth 0, it's a try operator
+    !found_colon
 }
 
 /// Parse complete ternary expression (complexity: 3, cognitive: 3)

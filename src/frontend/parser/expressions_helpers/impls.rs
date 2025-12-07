@@ -39,15 +39,16 @@ use crate::frontend::parser::utils::{parse_params, parse_type, parse_type_parame
 use crate::frontend::parser::{ParserState, Result};
 
 /// Parse trait and type names: impl [Trait for] Type
+/// Handles generic types like Container<T> or Result<T, E>
 fn parse_impl_target(state: &mut ParserState) -> Result<(Option<String>, String)> {
-    let first_ident = expect_identifier(state)?;
+    let first_type = expect_type_name_with_generics(state)?;
 
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
         state.tokens.advance(); // consume 'for'
-        let type_name = expect_identifier(state)?;
-        Ok((Some(first_ident), type_name))
+        let type_name = expect_type_name_with_generics(state)?;
+        Ok((Some(first_type), type_name))
     } else {
-        Ok((None, first_ident))
+        Ok((None, first_type))
     }
 }
 
@@ -69,6 +70,23 @@ pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> 
 
     let mut methods = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
+        // PARSER-XXX: Skip comment tokens in impl blocks
+        while matches!(
+            state.tokens.peek(),
+            Some((
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::DocComment(_)
+                    | Token::HashComment(_),
+                _
+            ))
+        ) {
+            state.tokens.advance();
+        }
+        // Check again after skipping comments
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
+            break;
+        }
         methods.push(parse_impl_method(state)?);
     }
 
@@ -98,6 +116,80 @@ fn expect_identifier(state: &mut ParserState) -> Result<String> {
     }
 }
 
+/// Helper: Parse type name including optional generic arguments
+/// E.g., "Container" or "Container<T>" or "Result<T, E>"
+fn expect_type_name_with_generics(state: &mut ParserState) -> Result<String> {
+    let base = expect_identifier(state)?;
+
+    // Check for generic type arguments
+    if !matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        return Ok(base);
+    }
+
+    // Consume the generic arguments: <T, U, ...>
+    let mut result = base;
+    result.push('<');
+    state.tokens.advance(); // consume <
+
+    let mut depth = 1;
+    let mut first = true;
+    while depth > 0 {
+        match state.tokens.peek() {
+            Some((Token::Less, _)) => {
+                result.push('<');
+                depth += 1;
+                state.tokens.advance();
+            }
+            Some((Token::Greater, _)) => {
+                result.push('>');
+                depth -= 1;
+                state.tokens.advance();
+            }
+            Some((Token::RightShift, _)) => {
+                // >> is two > tokens
+                result.push_str(">>");
+                depth -= 2;
+                state.tokens.advance();
+                if depth < 0 {
+                    use crate::frontend::parser::bail;
+                    bail!("Mismatched >> in generic type");
+                }
+            }
+            Some((Token::Comma, _)) => {
+                result.push_str(", ");
+                state.tokens.advance();
+                first = true;
+            }
+            Some((Token::Identifier(name), _)) => {
+                if !first {
+                    result.push(' ');
+                }
+                result.push_str(name);
+                state.tokens.advance();
+                first = false;
+            }
+            Some((Token::Colon, _)) => {
+                result.push(':');
+                state.tokens.advance();
+            }
+            Some((Token::ColonColon, _)) => {
+                result.push_str("::");
+                state.tokens.advance();
+            }
+            Some((_, _)) => {
+                // Skip other tokens in generics (like &, mut, etc.)
+                state.tokens.advance();
+            }
+            None => {
+                use crate::frontend::parser::bail;
+                bail!("Unexpected end of file in generic type arguments");
+            }
+        }
+    }
+
+    Ok(result)
+}
+
 /// Parse single method in impl block
 ///
 /// Complexity: 6 (within Toyota Way limits)
@@ -110,8 +202,12 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
         false
     };
 
-    // Expect fun keyword
-    state.tokens.expect(&Token::Fun)?;
+    // PARSER-XXX: Accept both 'fun' and 'fn' in impl blocks for consistency
+    if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+        use crate::frontend::parser::bail;
+        bail!("Expected 'fun' or 'fn' keyword in impl method");
+    }
+    state.tokens.advance();
 
     // Method name
     let name = expect_identifier(state)?;

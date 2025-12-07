@@ -293,15 +293,22 @@ where
     F: FnMut(&Value, &[Value]) -> Result<Value, InterpreterError>,
 {
     validate_arg_count("reduce", args, 2)?;
-    if !matches!(&args[0], Value::Closure { .. }) {
+    // Support both orderings: reduce(init, func) or reduce(func, init)
+    let (initial, func) = if matches!(&args[1], Value::Closure { .. }) {
+        // reduce(init, func) - Rust-like fold syntax
+        (&args[0], &args[1])
+    } else if matches!(&args[0], Value::Closure { .. }) {
+        // reduce(func, init) - JavaScript-like syntax
+        (&args[1], &args[0])
+    } else {
         return Err(InterpreterError::RuntimeError(
-            "reduce expects a function and initial value".to_string(),
+            "reduce expects an initial value and a function".to_string(),
         ));
-    }
+    };
 
-    let mut accumulator = args[1].clone();
+    let mut accumulator = initial.clone();
     for item in arr.iter() {
-        accumulator = eval_function_call_value(&args[0], &[accumulator, item.clone()])?;
+        accumulator = eval_function_call_value(func, &[accumulator, item.clone()])?;
     }
     Ok(accumulator)
 }
