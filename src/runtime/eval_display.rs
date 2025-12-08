@@ -50,6 +50,7 @@ impl fmt::Display for Value {
             Value::HtmlDocument(_) => write!(f, "<HtmlDocument>"),
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlElement(_) => write!(f, "<HtmlElement>"),
+            Value::Atom(s) => write!(f, ":{s}"),
         }
     }
 }

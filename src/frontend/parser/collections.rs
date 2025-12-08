@@ -337,7 +337,8 @@ fn check_for_object_key_separator(state: &mut ParserState) -> bool {
 fn can_be_object_key(token: &Token) -> bool {
     matches!(
         token,
-        Token::Identifier(_) | Token::String(_) | Token::RawString(_)
+        // PARSER-082: Allow atoms as object keys
+        Token::Identifier(_) | Token::String(_) | Token::RawString(_) | Token::Atom(_)
     ) || control_flow_token_to_key(token).is_some()
         || declaration_token_to_key(token).is_some()
         || type_token_to_key(token).is_some()
@@ -464,6 +465,8 @@ fn token_to_object_key(token: &Token) -> Result<String> {
     match token {
         Token::Identifier(name) => Ok(name.clone()),
         Token::String(s) | Token::RawString(s) => Ok(s.clone()),
+        // PARSER-082: Allow atoms as object keys (for IaC-style configuration)
+        Token::Atom(s) => Ok(format!(":{s}")),
         // Allow reserved words as object keys - delegated to helper functions
         // Note: Token::Command removed (PARSER-089) - "command" now handled as Identifier
         // Note: Token::State removed (DEFECT-PARSER-001) - "state" now handled as Identifier
@@ -1901,6 +1904,35 @@ mod tests {
             result.is_ok(),
             "Nested arrays should parse (validates row data logic)"
         );
+    }
+
+    // PARSER-082: Atom as map key tests
+    #[test]
+    fn test_parser_082_atom_map_key_simple() {
+        let mut parser = Parser::new("{ :host => \"localhost\" }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Atom as map key should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_map_key_multiple() {
+        let mut parser = Parser::new("{ :host => \"localhost\", :port => 8080 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Multiple atom keys should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_map_key_with_colon() {
+        let mut parser = Parser::new("{ :status: :ok }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Atom key with colon separator should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_map_key_mixed() {
+        let mut parser = Parser::new("{ :name => \"test\", count: 42 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Mixed atom and identifier keys should parse");
     }
 }
 

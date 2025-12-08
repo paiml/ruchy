@@ -130,3 +130,243 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'PARSER-082: Atoms in match patterns and map keys'
+  github_issue: null
+  item_type: task
+  title: 'New task: PARSER-082: Atoms in match patterns and map keys'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T09:38:32.497593772+00:00
+  updated: 2025-12-08T12:00:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Implemented atoms in match patterns, map keys, and bracket access. 15 tests passing.
+- id: 'PARSER-082: Atom interning for O(1) performance'
+  github_issue: null
+  item_type: task
+  title: 'New task: PARSER-082: Atom interning for O(1) performance'
+  status: planned
+  priority: low
+  assigned_to: null
+  created: 2025-12-08T09:49:49.046931143+00:00
+  updated: 2025-12-08T12:00:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Deferred - current O(n) string comparison is adequate for most use cases.
+- id: 'Apex Hunt: PDCA Cycle - Diagnose Transpiler Failures'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Diagnose Transpiler Failures'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T16:32:34.069441627+00:00
+  updated: 2025-12-08T16:52:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Fixed DEFECT-018 - &str to String conversion in loop contexts. Commit 84e481ef.
+- id: 'Apex Hunt: PDCA Cycle 2 - Find Next Transpiler Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 2 - Find Next Transpiler Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T16:57:58.274356660+00:00
+  updated: 2025-12-08T16:57:58.274356660+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 3 - Next RED Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 3 - Next RED Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:04:09.449665899+00:00
+  updated: 2025-12-08T17:06:04.968899591+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 4 - Find New Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 4 - Find New Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:06:35.242328491+00:00
+  updated: 2025-12-08T17:09:04.057686195+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 5 - Next Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 5 - Next Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:09:35.307294749+00:00
+  updated: 2025-12-08T17:20:00.159057415+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 6 - Next RED Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 6 - Next RED Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:33:19.560449997+00:00
+  updated: 2025-12-08T17:38:45.842038944+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 7 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 7 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:39:54.559491875+00:00
+  updated: 2025-12-08T17:44:15.296984875+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 8 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 8 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T17:47:16.942214773+00:00
+  updated: 2025-12-08T18:04:16.391547620+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 9 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 9 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T18:05:31.694422272+00:00
+  updated: 2025-12-08T18:40:21.300619594+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 10 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 10 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T18:41:01.686477479+00:00
+  updated: 2025-12-08T18:45:28.011558956+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 11 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 11 - Find Defect'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T18:45:57.940497465+00:00
+  updated: 2025-12-08T18:45:57.940497465+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'ORACLE-CLI: Add train/save/status subcommands'
+  github_issue: null
+  item_type: task
+  title: 'New task: ORACLE-CLI: Add train/save/status subcommands'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T19:19:02.762505108+00:00
+  updated: 2025-12-08T20:04:56.333716696+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'ORACLE-002: Auto-train on transpilation errors'
+  github_issue: null
+  item_type: task
+  title: 'New task: ORACLE-002: Auto-train on transpilation errors'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T20:05:58.856116218+00:00
+  updated: 2025-12-08T20:05:58.856116218+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

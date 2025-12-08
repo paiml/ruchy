@@ -107,12 +107,26 @@ mod property_tests {
     use super::*;
     use proptest::prelude::*;
 
+    /// Keywords that cannot be used as identifiers
+    const KEYWORDS: &[&str] = &[
+        "fn", "fun", "if", "else", "for", "while", "loop", "match", "return",
+        "let", "mut", "const", "pub", "mod", "use", "import", "from", "as",
+        "struct", "enum", "trait", "impl", "type", "self", "super", "crate",
+        "true", "false", "async", "await", "in", "where", "ref", "move",
+        "df", "class", "try", "catch", "throw", "break", "continue", "None",
+        "Some", "Ok", "Err", "null", "Result", "Option",
+    ];
+
+    fn is_keyword(s: &str) -> bool {
+        KEYWORDS.contains(&s)
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         #[test]
         fn prop_use_keyword_segments(
-            seg1 in "[a-z][a-z0-9_]{0,8}",
+            seg1 in "[a-z][a-z0-9_]{0,8}".prop_filter("not a keyword", |s| !is_keyword(s)),
             keyword in prop::sample::select(vec!["module", "type", "fn", "const", "trait", "for", "match"])
         ) {
             let code = format!("use {seg1}::{keyword}");

@@ -127,14 +127,25 @@ where
             }
         }
         Value::Object(fields) => {
-            if let Value::String(key) = index_value {
-                fields.get(&*key).cloned().ok_or_else(|| {
-                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-                })
-            } else {
-                Err(InterpreterError::TypeError(
-                    "Object index must be a string".to_string(),
-                ))
+            match index_value {
+                Value::String(key) => {
+                    fields.get(&*key).cloned().ok_or_else(|| {
+                        InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+                    })
+                }
+                // PARSER-082: Support atom bracket access (e.g., config[:host])
+                // Atom keys are stored with ":" prefix in the object
+                Value::Atom(key) => {
+                    let atom_key = format!(":{key}");
+                    fields.get(&atom_key).cloned().ok_or_else(|| {
+                        InterpreterError::RuntimeError(format!(
+                            "Key ':{key}' not found in object"
+                        ))
+                    })
+                }
+                _ => Err(InterpreterError::TypeError(
+                    "Object index must be a string or atom".to_string(),
+                )),
             }
         }
         Value::String(s) => {
@@ -899,6 +910,102 @@ mod tests {
             |_| Ok(Value::Integer(0)),
         );
         assert!(result.is_err());
+    }
+
+    // ===== PARSER-082: ATOM BRACKET ACCESS TESTS =====
+
+    /// PARSER-082: Test atom bracket access on objects with atom keys
+    /// RED: This test should fail until we implement atom indexing
+    #[test]
+    fn test_parser082_atom_bracket_access_basic() {
+        // Object with atom key ":host" => "localhost"
+        let mut fields = HashMap::new();
+        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+        fields.insert(":port".to_string(), Value::Integer(8080));
+
+        let obj = Value::Object(Arc::new(fields));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Atom("host".to_string())),
+            Span::new(0, 5),
+        );
+
+        // Indexing with :host atom should find ":host" key
+        let result = eval_index_access(&obj, &index_expr, |_| {
+            Ok(Value::Atom("host".into()))
+        })
+        .expect("atom bracket access should succeed");
+        assert_eq!(result, Value::from_string("localhost".to_string()));
+    }
+
+    /// PARSER-082: Test atom bracket access finds correct value
+    #[test]
+    fn test_parser082_atom_bracket_access_port() {
+        let mut fields = HashMap::new();
+        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+        fields.insert(":port".to_string(), Value::Integer(8080));
+
+        let obj = Value::Object(Arc::new(fields));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Atom("port".to_string())),
+            Span::new(0, 5),
+        );
+
+        let result = eval_index_access(&obj, &index_expr, |_| {
+            Ok(Value::Atom("port".into()))
+        })
+        .expect("atom bracket access should succeed");
+        assert_eq!(result, Value::Integer(8080));
+    }
+
+    /// PARSER-082: Test atom bracket access with missing key returns error
+    #[test]
+    fn test_parser082_atom_bracket_access_missing_key() {
+        let mut fields = HashMap::new();
+        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+
+        let obj = Value::Object(Arc::new(fields));
+        let index_expr = Expr::new(
+            ExprKind::Literal(Literal::Atom("missing".to_string())),
+            Span::new(0, 7),
+        );
+
+        let result = eval_index_access(&obj, &index_expr, |_| {
+            Ok(Value::Atom("missing".into()))
+        });
+        assert!(result.is_err(), "missing atom key should return error");
+    }
+
+    /// PARSER-082: Test atom bracket access works with mixed keys
+    #[test]
+    fn test_parser082_atom_bracket_access_mixed_keys() {
+        // Object with both atom keys and string keys
+        let mut fields = HashMap::new();
+        fields.insert(":status".to_string(), Value::Atom("ok".into()));
+        fields.insert("name".to_string(), Value::from_string("test".to_string()));
+
+        let obj = Value::Object(Arc::new(fields));
+
+        // Access atom key with atom index
+        let atom_index = Expr::new(
+            ExprKind::Literal(Literal::Atom("status".to_string())),
+            Span::new(0, 7),
+        );
+        let atom_result = eval_index_access(&obj, &atom_index, |_| {
+            Ok(Value::Atom("status".into()))
+        })
+        .expect("atom bracket access should succeed");
+        assert_eq!(atom_result, Value::Atom("ok".into()));
+
+        // Access string key with string index still works
+        let string_index = Expr::new(
+            ExprKind::Literal(Literal::String("name".to_string())),
+            Span::new(0, 4),
+        );
+        let string_result = eval_index_access(&obj, &string_index, |_| {
+            Ok(Value::from_string("name".to_string()))
+        })
+        .expect("string bracket access should still work");
+        assert_eq!(string_result, Value::from_string("test".to_string()));
     }
 
     // ===== SLICE ACCESS EXTENDED TESTS =====

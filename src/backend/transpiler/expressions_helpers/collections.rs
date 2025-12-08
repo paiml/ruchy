@@ -193,7 +193,7 @@ impl Transpiler {
         let struct_name: TokenStream = if name.contains("::") {
             // Parse as path (e.g., Shape::Circle)
             let path: syn::Path = syn::parse_str(name)
-                .map_err(|e| anyhow::anyhow!("Invalid path '{}': {}", name, e))?;
+                .map_err(|e| anyhow::anyhow!("Invalid path '{name}': {e}"))?;
             quote! { #path }
         } else {
             // Simple identifier (e.g., Person)
@@ -203,18 +203,12 @@ impl Transpiler {
         let mut field_tokens = Vec::new();
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
-            // DEFECT-019 FIX: Add .to_string() for string literals in struct fields
-            // Rust does NOT auto-coerce &str to String - requires explicit conversion
-            // Most struct fields expecting strings are String type, not &str
-            let value_tokens = match &value.kind {
-                crate::frontend::ast::ExprKind::Literal(
-                    crate::frontend::ast::Literal::String(s),
-                ) => {
-                    // String literal -> add .to_string() for String fields
-                    quote! { #s.to_string() }
-                }
-                _ => self.transpile_expr(value)?,
-            };
+            // BOOK-COMPAT-001 FIX: Don't add .to_string() to string literals
+            // String literals work correctly for both &str and String fields:
+            // - For &'a str fields: "Alice" works directly
+            // - For String fields: Rust requires explicit .to_string() in source code
+            // This keeps the transpiler simple and the generated code idiomatic
+            let value_tokens = self.transpile_expr(value)?;
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
 

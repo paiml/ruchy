@@ -43,13 +43,15 @@ pub(in crate::frontend::parser) fn parse_break_token(
 ) -> Result<Expr> {
     state.tokens.advance();
 
-    // Optional label (lifetime syntax 'label)
-    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
-        let label = Some(name.clone());
-        state.tokens.advance();
-        label
-    } else {
-        None
+    // Optional label ('label or @label syntax)
+    // PARSER-081: Support both 'lifetime and @label syntax
+    let label = match state.tokens.peek() {
+        Some((Token::Lifetime(name) | Token::Label(name), _)) => {
+            let label = Some(name.clone());
+            state.tokens.advance();
+            label
+        }
+        _ => None,
     };
 
     // Skip comments before checking for terminators (PARSER-062 fix)
@@ -86,13 +88,15 @@ pub(in crate::frontend::parser) fn parse_continue_token(
 ) -> Result<Expr> {
     state.tokens.advance();
 
-    // Optional label (lifetime syntax 'label)
-    let label = if let Some((Token::Lifetime(name), _)) = state.tokens.peek() {
-        let label = Some(name.clone());
-        state.tokens.advance();
-        label
-    } else {
-        None
+    // Optional label ('label or @label syntax)
+    // PARSER-081: Support both 'lifetime and @label syntax
+    let label = match state.tokens.peek() {
+        Some((Token::Lifetime(name) | Token::Label(name), _)) => {
+            let label = Some(name.clone());
+            state.tokens.advance();
+            label
+        }
+        _ => None,
     };
 
     // Skip comments after continue statement (PARSER-062 fix)

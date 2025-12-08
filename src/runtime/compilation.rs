@@ -370,6 +370,7 @@ impl DirectThreadedInterpreter {
             Literal::Byte(b) => Value::Byte(*b),
             Literal::Unit => Value::Nil, // Unit maps to Nil
             Literal::Null => Value::Nil, // Null maps to Nil
+            Literal::Atom(s) => Value::Atom(s.clone()),
         }
     }
 

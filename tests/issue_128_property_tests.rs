@@ -2,6 +2,8 @@
 //!
 //! EXTREME TDD: Property-based testing to verify fix robustness across 10K+ inputs
 
+#![allow(deprecated)] // cargo_bin function is deprecated but still works
+
 use assert_cmd::cargo::cargo_bin;
 use proptest::prelude::*;
 use std::process::Command;

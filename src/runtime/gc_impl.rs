@@ -288,7 +288,8 @@ impl ConservativeGC {
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlDocument(_) => 128, // Estimated HTML document overhead
             #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlElement(_) => 64, // Estimated HTML element overhead
+            Value::HtmlElement(_) => 64,
+            Value::Atom(s) => std::mem::size_of::<Value>() + s.len(),
         }
     }
 

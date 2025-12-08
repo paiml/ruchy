@@ -842,7 +842,7 @@ fn parse_single_trait_bound(state: &mut ParserState) -> Result<Option<String>> {
         state.tokens.advance(); // consume comma
     }
 
-    Ok(Some(format!("{}: {}", type_param, traits)))
+    Ok(Some(format!("{type_param}: {traits}")))
 }
 
 /// Convert token to string for bound collection
@@ -854,7 +854,7 @@ fn token_to_string(token: &Token) -> String {
         Token::Greater => ">".to_string(),
         Token::Comma => ",".to_string(),
         Token::Lifetime(lt) => lt.clone(),
-        _ => format!("{:?}", token),
+        _ => format!("{token:?}"),
     }
 }
 

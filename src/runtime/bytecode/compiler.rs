@@ -265,6 +265,7 @@ impl Compiler {
             Literal::Unit | Literal::Null => Value::Nil,
             Literal::Char(c) => Value::from_string(c.to_string()),
             Literal::Byte(b) => Value::Integer(i64::from(*b)),
+            Literal::Atom(s) => Value::Atom(s.clone()),
         };
 
         let const_index = self.chunk.add_constant(value);
@@ -644,6 +645,7 @@ impl Compiler {
                         Literal::Unit | Literal::Null => Value::Nil,
                         Literal::Char(c) => Value::from_string(c.to_string()),
                         Literal::Byte(b) => Value::Integer(i64::from(*b)),
+                        Literal::Atom(s) => Value::Atom(s.clone()),
                     };
                     element_values.push(value);
                 }
@@ -707,6 +709,7 @@ impl Compiler {
                         Literal::Unit | Literal::Null => Value::Nil,
                         Literal::Char(c) => Value::from_string(c.to_string()),
                         Literal::Byte(b) => Value::Integer(i64::from(*b)),
+                        Literal::Atom(s) => Value::Atom(s.clone()),
                     };
                     element_values.push(value);
                 }
@@ -779,6 +782,7 @@ impl Compiler {
                             Literal::Unit | Literal::Null => Value::Nil,
                             Literal::Char(c) => Value::from_string(c.to_string()),
                             Literal::Byte(b) => Value::Integer(i64::from(*b)),
+                            Literal::Atom(s) => Value::Atom(s.clone()),
                         };
                         object_map.insert(key.clone(), val);
                     }

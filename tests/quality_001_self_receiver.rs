@@ -315,7 +315,7 @@ mod property_tests {
     proptest! {
         /// Property 1: &self methods always preserve immutable reference
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_immutable_self_preserved(
             struct_name in struct_name(),
             method_name in method_name(),
@@ -362,7 +362,7 @@ mod property_tests {
 
         /// Property 2: &mut self methods always preserve mutable reference
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_mutable_self_preserved(
             struct_name in struct_name(),
             method_name in method_name()
@@ -399,7 +399,7 @@ mod property_tests {
 
         /// Property 3: Owned self (consuming) methods always preserve ownership
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_owned_self_preserved(
             struct_name in struct_name(),
             method_name in method_name(),
@@ -451,7 +451,7 @@ mod property_tests {
 
         /// Property 4: Multiple &self calls don't cause ownership moves
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_multiple_immutable_self_calls(
             struct_name in struct_name(),
             getter_name in method_name(),
@@ -523,7 +523,7 @@ mod property_tests {
 
         /// Property 5: Mixed receiver types in same impl block
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_mixed_receivers(
             struct_name in struct_name(),
             getter in method_name(),

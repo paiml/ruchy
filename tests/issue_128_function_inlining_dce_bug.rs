@@ -60,8 +60,7 @@ println("Result: " + result)
     // Invalid: "if a > b" without function definition
     assert!(
         has_function_def || has_inlined_values || !has_if_a_b,
-        "BUG: 'if a > b' appears without function definition (Issue #128)\nTranspiled:\n{}",
-        transpiled
+        "BUG: 'if a > b' appears without function definition (Issue #128)\nTranspiled:\n{transpiled}"
     );
 }
 

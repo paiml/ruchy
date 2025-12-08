@@ -299,10 +299,11 @@ impl Formatter {
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Byte(b) => format!("b'{}'", *b as char),
-                crate::frontend::ast::Literal::Unit => "()".to_string(),
-                crate::frontend::ast::Literal::Null => "null".to_string(),
-            },
-            ExprKind::Identifier(name) => name.clone(),
+            crate::frontend::ast::Literal::Unit => "()".to_string(),
+            crate::frontend::ast::Literal::Null => "null".to_string(),
+            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
+        },
+        ExprKind::Identifier(name) => name.clone(),
             ExprKind::Let {
                 name, value, body, ..
             } => {
@@ -1433,12 +1434,11 @@ impl Formatter {
             Literal::Bool(b) => b.to_string(),
             Literal::Char(c) => format!("'{c}'"),
             Literal::Byte(b) => format!("{b}u8"),
-            Literal::Unit => "()".to_string(),
-            Literal::Null => "null".to_string(),
-        }
-    }
-
-    /// Format an enum variant (complexity: 3)
+                            crate::frontend::ast::Literal::Unit => "()".to_string(),
+                            crate::frontend::ast::Literal::Null => "null".to_string(),
+                            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
+                        }
+                    }    /// Format an enum variant (complexity: 3)
     fn format_enum_variant(&self, variant: &crate::frontend::ast::EnumVariant) -> String {
         use crate::frontend::ast::EnumVariantKind;
 

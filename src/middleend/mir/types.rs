@@ -168,6 +168,8 @@ pub enum Constant {
     String(String),
     /// Character literal
     Char(char),
+    /// Symbol/Atom literal
+    Symbol(String),
 }
 /// Binary operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -198,6 +200,8 @@ pub enum BinOp {
     NullCoalesce,
     // Actor operations
     Send,
+    // Containment check
+    In,
 }
 /// Unary operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

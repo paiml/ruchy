@@ -59,6 +59,7 @@ pub fn eval_literal(lit: &Literal) -> Value {
         Literal::Byte(b) => Value::Byte(*b),
         Literal::Unit => Value::Nil,
         Literal::Null => Value::Nil,
+        Literal::Atom(s) => Value::Atom(s.clone()),
     }
 }
 

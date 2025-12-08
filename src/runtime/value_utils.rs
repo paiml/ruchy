@@ -175,6 +175,7 @@ impl Value {
             Value::HtmlDocument(_) => "html_document",
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlElement(_) => "html_element",
+            Value::Atom(_) => "atom",
         }
     }
 

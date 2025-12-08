@@ -145,7 +145,7 @@ proptest! {
     ///
     /// Invariant: For all programs P, jit_eval(P) == jit_eval(P)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_is_deterministic(program in arb_simple_program()) {
         let parse_result = Parser::new(&program).parse();
         if parse_result.is_err() {
@@ -184,7 +184,7 @@ proptest! {
     ///
     /// Invariant: For all syntactically valid programs P, jit_compile(P) returns Ok(_) or Err(_)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_never_panics(program in arb_simple_program()) {
         let parse_result = Parser::new(&program).parse();
         if parse_result.is_err() {
@@ -215,7 +215,7 @@ proptest! {
     ///
     /// Invariant: For all a, b: jit_eval(a + b) == jit_eval(b + a)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_addition_commutative(a in 0i64..100, b in 0i64..100) {
         let program1 = format!("{a} + {b}");
         let program2 = format!("{b} + {a}");
@@ -236,7 +236,7 @@ proptest! {
     ///
     /// Invariant: For all a, b, c: (a * b) * c == a * (b * c)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_multiplication_associative(a in 1i64..20, b in 1i64..20, c in 1i64..20) {
         let program1 = format!("({a} * {b}) * {c}");
         let program2 = format!("{a} * ({b} * {c})");
@@ -257,7 +257,7 @@ proptest! {
     ///
     /// Invariant: For all a: a - 0 == a
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_subtraction_identity(a in 0i64..1000) {
         let program = format!("{a} - 0");
         let ast = Parser::new(&program).parse().unwrap();
@@ -278,7 +278,7 @@ proptest! {
     ///
     /// Invariant: For all a: a == a is true
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_equality_reflexive(a in 0i64..1000) {
         let program = format!("if {a} == {a} {{ 1 }} else {{ 0 }}");
         let ast = Parser::new(&program).parse().unwrap();
@@ -293,7 +293,7 @@ proptest! {
     ///
     /// Invariant: For all a, b, c: if a <= b and b <= c, then a <= c
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_jit_less_equal_transitive(a in 0i64..100, b in 100i64..200, c in 200i64..300) {
         // Ensure a <= b <= c by construction
         let program = format!(

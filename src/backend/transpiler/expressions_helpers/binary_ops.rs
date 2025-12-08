@@ -81,7 +81,7 @@ impl Transpiler {
             BinaryOp::Or => 10,
             BinaryOp::And => 20,
             BinaryOp::Equal | BinaryOp::NotEqual => 30,
-            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 40,
+            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual | BinaryOp::In => 40,
             BinaryOp::Add | BinaryOp::Subtract => 50,
             BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 60,
             BinaryOp::Power => 70,
@@ -96,7 +96,7 @@ impl Transpiler {
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
         use BinaryOp::{
             Add, And, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, Equal, Greater, GreaterEqual,
-            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, NullCoalesce, Or, Power,
+            In, LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, NullCoalesce, Or, Power,
             RightShift, Send, Subtract,
         };
         match op {
@@ -108,6 +108,8 @@ impl Transpiler {
             Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual | BinaryOp::Gt => {
                 Self::transpile_comparison_op(left, op, right)
             }
+            // Containment operations (Python-style 'in' operator)
+            In => quote! { #right.contains(&#left) },
             // Logical operations
             And | Or | NullCoalesce => Self::transpile_logical_op(left, op, right),
             // Bitwise operations

@@ -112,6 +112,13 @@ pub(in crate::frontend::parser) fn parse_literal_token(
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Bool(*value)), span))
         }
+        Token::Atom(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Atom(value.clone())),
+                span,
+            ))
+        }
         _ => bail!("Expected literal token, got: {token:?}"),
     }
 }
@@ -198,6 +205,13 @@ mod tests {
         let code = "true";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Bool literal should parse");
+    }
+
+    #[test]
+    fn test_atom_literal() {
+        let code = ":status";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Atom literal should parse");
     }
 
     #[test]

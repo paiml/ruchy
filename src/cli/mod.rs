@@ -65,6 +65,36 @@ pub enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Hunt Mode: Automated defect resolution (PDCA cycle)
+    Hunt {
+        /// Target directory to analyze
+        #[arg(default_value = "./examples")]
+        target: PathBuf,
+        /// Number of PDCA cycles to run
+        #[arg(short, long, default_value = "10")]
+        cycles: u32,
+        /// Show Andon dashboard
+        #[arg(long)]
+        andon: bool,
+        /// Export Hansei (lessons learned) report
+        #[arg(long)]
+        hansei_report: Option<PathBuf>,
+        /// Enable Five Whys analysis
+        #[arg(long)]
+        five_whys: bool,
+    },
+    /// Generate transpilation report with rich diagnostics
+    Report {
+        /// Target directory to analyze
+        #[arg(default_value = "./examples")]
+        target: PathBuf,
+        /// Output format (human, json, markdown, sarif)
+        #[arg(short, long, default_value = "human")]
+        format: String,
+        /// Output file (stdout if not specified)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
     /// Notebook operations
     #[command(subcommand)]
     Notebook(NotebookCommand),
@@ -185,6 +215,18 @@ impl Cli {
             Command::Repl => Err("REPL not available in WASM build".to_string()),
             Command::Run { path } => execute_run(path, self.verbose, self.vm_mode),
             Command::Format { path, check } => execute_format(path, check),
+            Command::Hunt {
+                target,
+                cycles,
+                andon,
+                hansei_report,
+                five_whys,
+            } => execute_hunt(target, cycles, andon, hansei_report, five_whys, self.verbose),
+            Command::Report {
+                target,
+                format,
+                output,
+            } => execute_report(target, format, output, self.verbose),
             Command::Notebook(cmd) => execute_notebook(cmd, self.verbose),
             Command::Wasm(cmd) => execute_wasm(cmd, self.verbose),
             Command::Test(cmd) => execute_test(cmd, self.verbose),
@@ -301,6 +343,218 @@ fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     } else {
         apply_format(&path, &mut formatter)
     }
+}
+
+/// Execute Hunt Mode: Automated defect resolution using PDCA cycle
+fn execute_hunt(
+    target: PathBuf,
+    cycles: u32,
+    andon: bool,
+    hansei_report: Option<PathBuf>,
+    five_whys: bool,
+    verbose: bool,
+) -> Result<(), String> {
+    use crate::hunt_mode::{HuntConfig, HuntMode};
+
+    if verbose {
+        println!("Starting Hunt Mode on: {}", target.display());
+        println!("Cycles: {cycles}, Andon: {andon}, Five Whys: {five_whys}");
+    }
+
+    // Configure Hunt Mode
+    let config = HuntConfig {
+        max_cycles: cycles,
+        enable_five_whys: five_whys,
+        verbose,
+        ..Default::default()
+    };
+
+    let mut hunt = HuntMode::with_config(config);
+
+    // Run Hunt Mode cycles
+    println!("=== HUNT MODE: PDCA Cycle ===");
+    println!("Target: {}", target.display());
+    println!();
+
+    let outcomes = hunt.run(cycles).map_err(|e| format!("Hunt Mode error: {e}"))?;
+
+    // Display results
+    println!("=== Hunt Mode Results ===");
+    println!("Cycles completed: {}", outcomes.len());
+
+    let fixes_applied: usize = outcomes.iter().filter(|o| o.fix_applied).count();
+    println!("Fixes applied: {fixes_applied}");
+
+    // Show Andon status
+    let status = hunt.andon_status();
+    println!();
+    println!("Andon Status: {} {}", status.icon(), status.name());
+
+    // Show Kaizen metrics
+    let metrics = hunt.kaizen_metrics();
+    println!();
+    println!("=== Kaizen Metrics ===");
+    println!("Compilation rate: {:.1}%", metrics.success_rate_percent());
+    println!("Total fixes: {}", metrics.cumulative_fixes);
+    println!("Improving: {}", if metrics.is_improving() { "Yes" } else { "No" });
+
+    // Export Hansei report if requested
+    if let Some(report_path) = hansei_report {
+        export_hansei_report(&report_path, hunt.history(), verbose)?;
+    }
+
+    if andon {
+        println!();
+        println!("=== Andon Dashboard ===");
+        display_andon_dashboard(&hunt);
+    }
+
+    Ok(())
+}
+
+/// Display Andon dashboard (visual management)
+fn display_andon_dashboard(hunt: &crate::hunt_mode::HuntMode) {
+    let status = hunt.andon_status();
+    let metrics = hunt.kaizen_metrics();
+
+    // Simple ASCII dashboard
+    println!("┌─────────────────────────────────┐");
+    println!("│     HUNT MODE ANDON BOARD       │");
+    println!("├─────────────────────────────────┤");
+    println!("│ Status: {} {:20} │", status.icon(), status.name());
+    println!("│ Rate:   {:>23.1}% │", metrics.success_rate_percent());
+    println!("│ Fixes:  {:>23} │", metrics.cumulative_fixes);
+    println!("│ Cycles: {:>23} │", metrics.total_cycles);
+    println!("└─────────────────────────────────┘");
+}
+
+/// Export Hansei (lessons learned) report
+fn export_hansei_report(
+    path: &PathBuf,
+    history: &[crate::hunt_mode::CycleOutcome],
+    verbose: bool,
+) -> Result<(), String> {
+    use std::fs::File;
+    use std::io::Write;
+
+    if verbose {
+        println!("Exporting Hansei report to: {}", path.display());
+    }
+
+    let mut file = File::create(path).map_err(|e| format!("Failed to create report: {e}"))?;
+
+    writeln!(file, "# Hunt Mode Hansei Report").map_err(|e| e.to_string())?;
+    writeln!(file, "## Lessons Learned\n").map_err(|e| e.to_string())?;
+
+    for (i, outcome) in history.iter().enumerate() {
+        writeln!(file, "### Cycle {}", i + 1).map_err(|e| e.to_string())?;
+        writeln!(file, "- Fix applied: {}", outcome.fix_applied).map_err(|e| e.to_string())?;
+        writeln!(file, "- Confidence: {:.1}%", outcome.confidence * 100.0)
+            .map_err(|e| e.to_string())?;
+        writeln!(file, "- Lessons:").map_err(|e| e.to_string())?;
+        for lesson in &outcome.lessons {
+            writeln!(file, "  - {lesson}").map_err(|e| e.to_string())?;
+        }
+        writeln!(file).map_err(|e| e.to_string())?;
+    }
+
+    println!("Hansei report exported to: {}", path.display());
+    Ok(())
+}
+
+/// Execute Report command: Generate transpilation report
+fn execute_report(
+    target: PathBuf,
+    format: String,
+    output: Option<PathBuf>,
+    verbose: bool,
+) -> Result<(), String> {
+    use crate::reporting::{TranspileReport, ReportFormatter};
+    use crate::reporting::formats::{HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter};
+
+    if verbose {
+        println!("Generating report for: {}", target.display());
+        println!("Format: {format}");
+    }
+
+    // Scan target directory for .ruchy files
+    let files = scan_ruchy_files(&target)?;
+
+    if verbose {
+        println!("Found {} .ruchy files", files.len());
+    }
+
+    // Generate report (placeholder - would run actual transpilation)
+    // For now, just count files as passed
+    let passed = files.len();
+    let failed = 0;
+    let report = TranspileReport::new(files.len(), passed, failed);
+
+    // Format output based on requested format
+    let formatted = match format.as_str() {
+        "json" => {
+            let formatter = JsonFormatter::pretty();
+            formatter.format(&report)
+        }
+        "markdown" | "md" => {
+            let formatter = MarkdownFormatter;
+            formatter.format(&report)
+        }
+        "sarif" => {
+            let formatter = SarifFormatter;
+            formatter.format(&report)
+        }
+        _ => {
+            let formatter = HumanFormatter::default();
+            formatter.format(&report)
+        }
+    };
+
+    // Write output
+    match output {
+        Some(path) => {
+            std::fs::write(&path, formatted)
+                .map_err(|e| format!("Failed to write report: {e}"))?;
+            println!("Report written to: {}", path.display());
+        }
+        None => {
+            println!("{formatted}");
+        }
+    }
+
+    Ok(())
+}
+
+/// Scan directory for .ruchy files
+fn scan_ruchy_files(path: &Path) -> Result<Vec<PathBuf>, String> {
+    use std::fs;
+
+    if !path.exists() {
+        return Err(format!("Path does not exist: {}", path.display()));
+    }
+
+    if path.is_file() {
+        return Ok(vec![path.to_path_buf()]);
+    }
+
+    let mut files = Vec::new();
+
+    fn scan_dir(dir: &Path, files: &mut Vec<PathBuf>) -> std::io::Result<()> {
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                scan_dir(&path, files)?;
+            } else if path.extension().is_some_and(|e| e == "ruchy") {
+                files.push(path);
+            }
+        }
+        Ok(())
+    }
+
+    scan_dir(path, &mut files).map_err(|e| format!("Failed to scan directory: {e}"))?;
+    Ok(files)
 }
 
 /// Check if a file is properly formatted

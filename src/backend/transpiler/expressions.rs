@@ -41,7 +41,11 @@ impl Transpiler {
             Literal::Char(c) => quote! { #c },
             Literal::Unit => quote! { () },
             Literal::Null => quote! { None },
-            _ => unreachable!(),
+            Literal::Atom(s) => {
+                // Atoms transpile to &'static str
+                quote! { #s }
+            }
+            _ => unreachable!("Unexpected literal in transpile_simple_literal"),
         }
     }
     fn transpile_integer(i: i64, type_suffix: Option<&str>) -> TokenStream {

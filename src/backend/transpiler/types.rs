@@ -245,7 +245,7 @@ impl Transpiler {
         type_params.iter().any(|p| p.starts_with('\''))
     }
 
-    /// DEFECT-021 FIX: Parse type parameter string to TokenStream
+    /// DEFECT-021 FIX: Parse type parameter string to `TokenStream`
     /// Handles both simple params ("T") and params with bounds ("T: Clone + Debug")
     fn parse_type_param_to_tokens(p: &str) -> TokenStream {
         if p.starts_with('\'') {
@@ -254,14 +254,15 @@ impl Transpiler {
             quote! { #lifetime }
         } else if p.contains(':') {
             // Type parameter with trait bounds (e.g., "T: Clone + Debug")
-            syn::parse_str::<syn::TypeParam>(p)
-                .map(|tp| quote! { #tp })
-                .unwrap_or_else(|_| {
+            syn::parse_str::<syn::TypeParam>(p).map_or_else(
+                |_| {
                     // Fallback: just use the name part
                     let name = p.split(':').next().unwrap_or(p).trim();
                     let ident = format_ident!("{}", name);
                     quote! { #ident }
-                })
+                },
+                |tp| quote! { #tp },
+            )
         } else {
             // Simple type parameter
             let ident = format_ident!("{}", p);

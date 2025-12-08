@@ -427,6 +427,9 @@ Enter expressions to evaluate them.
                 output.push_str("Type: HtmlElement\n");
                 output.push_str("(HTML element node)\n");
             }
+            Value::Atom(s) => {
+                output.push_str(&format!("Atom: :{s}\n"));
+            }
         }
 
         output
@@ -528,6 +531,7 @@ Enter expressions to evaluate them.
             Value::HtmlDocument(_) => 128, // Estimated HTML document overhead
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlElement(_) => 64, // Estimated HTML element overhead
+            Value::Atom(s) => std::mem::size_of::<Value>() + s.len(),
         }
     }
 
@@ -556,6 +560,7 @@ Enter expressions to evaluate them.
             Value::HtmlDocument(_) => "HtmlDocument",
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlElement(_) => "HtmlElement",
+            Value::Atom(_) => "Atom",
         }
     }
 }

@@ -145,7 +145,8 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         | BinaryOp::LessEqual
         | BinaryOp::Greater
         | BinaryOp::GreaterEqual
-        | BinaryOp::Gt => 8,
+        | BinaryOp::Gt
+        | BinaryOp::In => 8, // In is same precedence as comparison (used internally, not parsed from tokens)
         BinaryOp::LeftShift => 9,
         BinaryOp::RightShift => 9,
         BinaryOp::Add | BinaryOp::Subtract => 10,

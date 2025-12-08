@@ -156,7 +156,7 @@ fun main() {{
 fn test_json_write() {
     let temp = temp_dir();
     let json_file = temp.path().join("output.json");
-    let json_file_escaped = json_file.display().to_string().replace("\\", "\\\\");
+    let json_file_escaped = json_file.display().to_string().replace('\\', "\\\\");
 
     let source = temp.path().join("test.ruchy");
     // Use object literal instead of json_parse to avoid escaping complexity
@@ -164,11 +164,10 @@ fn test_json_write() {
         r#"
 fun main() {{
     let obj = {{"status": "ok", "code": 200}};
-    let result = json_write("{}", obj);
+    let result = json_write("{json_file_escaped}", obj);
     println(result);
 }}
-"#,
-        json_file_escaped
+"#
     );
 
     fs::write(&source, code).expect("Failed to write test file");

@@ -254,7 +254,7 @@ mod property_tests {
 
     /// Property test: Arithmetic commutativity
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn proptest_arithmetic_commutativity() {
         #[cfg(not(target_arch = "wasm32"))]
         {

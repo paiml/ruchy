@@ -772,7 +772,19 @@ fn create_slice_expr(object: Expr, start: Option<Box<Expr>>, end: Option<Box<Exp
     })
 }
 /// Try to parse struct literal
+///
+/// PARSER-018: Extended to handle both simple identifiers (`Point { x: 1 }`)
+/// and path expressions (`Shape::Circle { radius: 5.0 }`).
+///
+/// # Arguments
+/// * `state` - Parser state
+/// * `left` - The expression before the `{` (identifier or path)
+///
+/// # Returns
+/// * `Ok(Some(expr))` - Parsed struct literal
+/// * `Ok(None)` - Not a struct literal pattern
 fn try_parse_struct_literal(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
+    // Case 1: Simple identifier (Point { x: 1 })
     if let ExprKind::Identifier(name) = &left.kind {
         if name.chars().next().is_some_and(char::is_uppercase) {
             let name = name.clone();
@@ -780,7 +792,54 @@ fn try_parse_struct_literal(state: &mut ParserState, left: &Expr) -> Result<Opti
             return Ok(Some(types::parse_struct_literal(state, name, span)?));
         }
     }
+
+    // Case 2: Path expression (Shape::Circle { radius: 5.0 })
+    // DEFECT-018 FIX: Handle FieldAccess chain as struct literal path
+    if let Some(path) = extract_struct_literal_path(left) {
+        let span = left.span;
+        return Ok(Some(types::parse_struct_literal(state, path, span)?));
+    }
+
     Ok(None)
+}
+
+/// Extract path string from `FieldAccess` chain for struct literals
+///
+/// Converts expressions like `Shape::Circle` (`FieldAccess { object: Shape, field: Circle }`)
+/// into the string `"Shape::Circle"` for use as struct literal name.
+///
+/// # Returns
+/// * `Some(path)` - If the expression is a valid struct literal path ending in uppercase
+/// * `None` - If not a valid struct literal path pattern
+fn extract_struct_literal_path(expr: &Expr) -> Option<String> {
+    match &expr.kind {
+        // FieldAccess: Shape::Circle -> "Shape::Circle"
+        ExprKind::FieldAccess { object, field } => {
+            // Only treat as struct literal if field starts with uppercase (enum variant)
+            if !field.chars().next().is_some_and(char::is_uppercase) {
+                return None;
+            }
+
+            // Recursively extract path from object
+            let obj_path = extract_struct_literal_path_component(object)?;
+            Some(format!("{obj_path}::{field}"))
+        }
+        _ => None,
+    }
+}
+
+/// Extract path component from expression (helper for nested paths)
+///
+/// Handles both identifiers and nested `FieldAccess` for paths like `A::B::C`.
+fn extract_struct_literal_path_component(expr: &Expr) -> Option<String> {
+    match &expr.kind {
+        ExprKind::Identifier(name) => Some(name.clone()),
+        ExprKind::FieldAccess { object, field } => {
+            let obj_path = extract_struct_literal_path_component(object)?;
+            Some(format!("{obj_path}::{field}"))
+        }
+        _ => None,
+    }
 }
 /// Create post-increment expression
 fn create_post_increment(left: Expr) -> Expr {

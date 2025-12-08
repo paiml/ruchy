@@ -260,10 +260,11 @@ ruchyruchy = "1.10.0"  # TEMPORARY: Use published version to bypass local build 
 
 # Sovereign AI Stack Core (REQUIRED) - trueno-aprender-stdlib-core-language-spec.md v2.0
 # Six Pillars of Batteries-Included Data Science:
-trueno = "0.7"           # Pillar 1: SIMD compute engine
+trueno = "0.8"           # Pillar 1: SIMD compute engine
 alimentar = "0.2"        # Pillar 2: Data loading, transforms, drift detection
 trueno-db = "0.3"        # Pillar 3: Embedded analytics database
-aprender = { version = "0.14", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
+aprender = { version = "0.16", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
+entrenar = { version = "0.2", features = ["citl"] }  # CITL, distillation, Tarantula fault localization
 trueno-viz = "0.1"       # Pillar 5: GPU/WASM visualization
 presentar = "0.1"        # Pillar 6: WASM-first notebook widgets
 wasm-encoder = "0.207.0"

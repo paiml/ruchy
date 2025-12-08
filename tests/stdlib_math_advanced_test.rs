@@ -314,7 +314,7 @@ mod property_tests {
 
     /// Property: sin²(x) + cos²(x) = 1 (Pythagorean identity)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_pythagorean_identity() {
         use rand::Rng;
         let mut rng = rand::thread_rng();
@@ -345,7 +345,7 @@ println("sin²({{}}) + cos²({{}}) = {{}}, diff = {{}}", x, x, sum, diff)
 
     /// Property: log(a * b) = log(a) + log(b)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_logarithm_product_rule() {
         use rand::Rng;
         let mut rng = rand::thread_rng();
@@ -377,7 +377,7 @@ println("log({{}}) = {{}}, diff = {{}}", a * b, log_ab, diff)
 
     /// Property: `random()` returns values in [0.0, 1.0)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_random_in_range() {
         for iteration in 0..10000 {
             let code = r#"

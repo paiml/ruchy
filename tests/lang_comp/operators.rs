@@ -441,7 +441,7 @@ mod property_tests {
     use super::*;
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_002_property_addition_commutative() {
         // Property: a + b == b + a for all integers
         use proptest::prelude::*;
@@ -466,7 +466,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_002_property_comparison_never_crashes() {
         // Property: comparison operators never crash
         use proptest::prelude::*;
@@ -489,7 +489,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_002_property_double_negation_identity() {
         // Property: !!x == x for all booleans
         for b in [true, false] {
@@ -509,7 +509,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_002_property_multiplication_associative() {
         // Property: (a * b) * c == a * (b * c)
         for a in 1..5 {
@@ -542,7 +542,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_002_property_logical_and_short_circuit() {
         // Property: false && x never evaluates x
         let code = "false && true";
