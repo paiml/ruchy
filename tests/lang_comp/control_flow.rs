@@ -328,7 +328,7 @@ mod property_tests {
     use super::*;
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_003_property_if_else_always_returns_value() {
         // Property: if-else always returns a value (no case uncovered)
         for i in 0..100 {
@@ -348,7 +348,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_003_property_match_wildcard_never_fails() {
         // Property: match with wildcard always succeeds
         for i in 0..100 {
@@ -363,7 +363,7 @@ mod property_tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_003_property_for_loop_iterations_equal_range_size() {
         // Property: for loop runs exactly range.len() times
         for n in 1..10 {

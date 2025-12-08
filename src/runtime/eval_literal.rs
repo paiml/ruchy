@@ -21,6 +21,7 @@ pub fn eval_literal(lit: &Literal) -> Value {
         Literal::Byte(b) => Value::Byte(*b),
         Literal::Unit => Value::nil(),
         Literal::Null => Value::nil(),
+        Literal::Atom(s) => Value::Atom(s.clone()),
     }
 }
 
@@ -75,6 +76,18 @@ mod tests {
         let lit = Literal::Null;
         let value = eval_literal(&lit);
         assert_eq!(value, Value::nil());
+    }
+
+    #[test]
+    fn test_atom_literal() {
+        let lit = Literal::Atom("status".into());
+        let value = eval_literal(&lit);
+        // We can't easily construct Value::Atom directly here because it might not be exported or have a constructor helper
+        // But we can check it via matching or if PartialEq is implemented
+        match value {
+            Value::Atom(s) => assert_eq!(s, "status"),
+            _ => panic!("Expected Value::Atom"),
+        }
     }
 }
 

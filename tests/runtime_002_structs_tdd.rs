@@ -168,7 +168,7 @@ mod property_tests {
     /// Property test: Nested structs maintain correct values
     /// Validates: Nested struct instantiation and field access work for any integers
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_nested_structs_preserve_values() {
         proptest!(|(x: i32)| {
             let code = format!(
@@ -190,7 +190,7 @@ mod property_tests {
     /// Property test: Missing required field always produces error
     /// Validates: Error handling is consistent across all field names
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_missing_field_always_errors() {
         proptest!(|(x: i32)| {
             let code = format!(
@@ -209,7 +209,7 @@ mod property_tests {
     /// Property test: Invalid field access always produces error
     /// Validates: Error handling works for any struct instance
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_field_access_always_errors() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(
@@ -228,7 +228,7 @@ mod property_tests {
     /// Property test: Float fields work for any valid f64 values
     /// Validates: Struct field access works with floating point numbers
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_float_fields_work() {
         proptest!(|(x in -1000.0f64..1000.0f64, y in -1000.0f64..1000.0f64)| {
             let code = format!(

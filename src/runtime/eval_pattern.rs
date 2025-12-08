@@ -217,8 +217,9 @@ fn eval_pattern_literal(literal: &Literal) -> Result<Value, InterpreterError> {
         Literal::Bool(b) => Ok(Value::Bool(*b)),
         Literal::Char(c) => Ok(Value::from_string(c.to_string())),
         Literal::Byte(b) => Ok(Value::Byte(*b)),
-        Literal::Unit => Ok(Value::Nil),
-        Literal::Null => Ok(Value::Nil),
+        Literal::Unit => Ok(Value::nil()),
+        Literal::Null => Ok(Value::nil()),
+        Literal::Atom(s) => Ok(Value::Atom(s.clone())),
     }
 }
 

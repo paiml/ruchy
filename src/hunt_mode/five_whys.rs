@@ -71,7 +71,7 @@ pub struct RootCause {
     /// Preventive measure
     pub preventive_measure: String,
 
-    /// Affected component (e.g., "parser", "type_inference")
+    /// Affected component (e.g., "parser", "`type_inference`")
     pub component: String,
 
     /// Estimated fix complexity (1-10)

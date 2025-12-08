@@ -440,7 +440,7 @@ mod property_tests {
     use super::*;
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_005_property_interpolation_is_deterministic() {
         // Property: Same input always produces same output - must use println()
         for i in 1..20 {
@@ -464,7 +464,7 @@ println(f"Value: {{x}}")
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_005_property_expression_evaluation_in_interpolation() {
         // Property: f"{a + b}" equals println(a + b) for all a, b - must use println()
         for i in 1..10 {
@@ -494,7 +494,7 @@ println(f"Result: {{a + b}}")
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_005_property_multiple_interpolations_independent() {
         // Property: f"{a} {b}" equals concatenation of individual interpolations
         for i in 1..10 {

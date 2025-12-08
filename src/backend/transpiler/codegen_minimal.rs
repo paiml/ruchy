@@ -236,6 +236,7 @@ impl MinimalCodeGen {
             Literal::Byte(b) => Ok(format!("b'{}'", *b as char)),
             Literal::Unit => Ok("()".to_string()),
             Literal::Null => Ok("None".to_string()),
+            Literal::Atom(s) => Ok(format!(":{s}")),
         }
     }
     fn gen_binary_op(op: BinaryOp) -> &'static str {
@@ -262,6 +263,7 @@ impl MinimalCodeGen {
             BinaryOp::RightShift => ">>",
             BinaryOp::Power => "pow", // Will need function call wrapper
             BinaryOp::Send => "!",    // Actor message passing
+            BinaryOp::In => "in",     // Containment check (requires special handling)
         }
     }
     fn gen_unary_op(op: UnaryOp) -> &'static str {

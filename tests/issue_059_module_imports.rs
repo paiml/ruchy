@@ -225,6 +225,8 @@ mod property_tests {
         "let", "mut", "const", "pub", "mod", "use", "import", "from", "as",
         "struct", "enum", "trait", "impl", "type", "self", "super", "crate",
         "true", "false", "async", "await", "in", "where", "ref", "move",
+        "df", "class", "try", "catch", "throw", "break", "continue", "None",
+        "Some", "Ok", "Err", "null", "Result", "Option",
     ];
 
     /// Check if a string is a keyword

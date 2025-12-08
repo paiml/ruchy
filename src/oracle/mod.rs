@@ -51,6 +51,10 @@ mod patterns;
 pub mod persistence;
 pub mod transfer;
 pub mod hansei;
+pub mod andon;
+mod curriculum;
+mod distillation;
+mod training_loop;
 
 pub use category::ErrorCategory;
 pub use classifier::{Classification, CompilationError, OracleError, OracleMetadata, RuchyOracle};
@@ -60,6 +64,11 @@ pub use patterns::{FixPattern, FixSuggestion, PatternStore};
 pub use persistence::{ModelMetadata, ModelPaths, SerializedModel, APR_MAGIC, APR_VERSION};
 pub use transfer::{TransferLearner, TransferLearningConfig, TransferStatus};
 pub use hansei::{HanseiReport, HanseiIssue, Severity, Trend, CategoryStats};
+pub use curriculum::{CurriculumScheduler as RuchyCurriculumScheduler, CurriculumConfig};
+pub use distillation::{KnowledgeDistiller, DistillationConfig, SoftLabel};
+pub use training_loop::{TrainingLoop, TrainingLoopConfig, TrainingEvent, DisplayMode, RetrainReason};
+// Re-export our types with aliases
+pub use self::curriculum::CurriculumScheduler;
 
 // =============================================================================
 // MIGRATION: Re-export aprender::online types (Issue #174)
@@ -86,7 +95,7 @@ pub use aprender::online::corpus::{
 
 // Curriculum learning for progressive training difficulty
 pub use aprender::online::curriculum::{
-    CurriculumScheduler, LinearCurriculum, SelfPacedCurriculum, CurriculumTrainer,
+    CurriculumScheduler as AprenderCurriculumScheduler, LinearCurriculum, SelfPacedCurriculum, CurriculumTrainer,
 };
 
 // Online learning orchestration
@@ -437,6 +446,118 @@ impl CorpusCollector {
         }
 
         samples
+    }
+}
+
+// =============================================================================
+// FOUR-SOURCE CORPUS MERGER (§2.2 of spec)
+// =============================================================================
+
+/// Provenance tracking for merged corpus (Ruchy-specific extension)
+#[derive(Debug, Clone, Default)]
+pub struct RuchyCorpusProvenance {
+    /// Source names and their sample counts
+    pub sources: Vec<(String, usize)>,
+    /// Total samples before deduplication
+    pub total_before_dedup: usize,
+    /// Total samples after deduplication
+    pub total_after_dedup: usize,
+    /// Merge timestamp
+    pub merged_at: Option<String>,
+}
+
+impl RuchyCorpusProvenance {
+    /// Get count by source type
+    #[must_use]
+    pub fn count_by_source(&self, source: SampleSource) -> usize {
+        let source_name = source.to_string();
+        self.sources
+            .iter()
+            .filter(|(name, _)| name == &source_name)
+            .map(|(_, count)| count)
+            .sum()
+    }
+}
+
+/// Four-source corpus merger with provenance tracking
+///
+/// Merges samples from:
+/// 1. Synthetic (generated)
+/// 2. Ruchy (hand-crafted from tickets)
+/// 3. Examples (from examples/*.ruchy)
+/// 4. Production (runtime collection)
+#[derive(Debug, Default)]
+pub struct CorpusMergerWithProvenance {
+    sources: Vec<(String, Vec<Sample>, SampleSource)>,
+}
+
+impl CorpusMergerWithProvenance {
+    /// Create new merger
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add a source with samples
+    pub fn add_source(&mut self, name: &str, samples: Vec<Sample>, source_type: SampleSource) {
+        self.sources.push((name.to_string(), samples, source_type));
+    }
+
+    /// Get number of sources
+    #[must_use]
+    pub fn source_count(&self) -> usize {
+        self.sources.len()
+    }
+
+    /// Merge all sources with default seed
+    pub fn merge(&self) -> Result<(Corpus, RuchyCorpusProvenance), OracleError> {
+        self.merge_with_seed(42)
+    }
+
+    /// Merge all sources with specified seed for deterministic shuffle
+    pub fn merge_with_seed(&self, seed: u64) -> Result<(Corpus, RuchyCorpusProvenance), OracleError> {
+        let mut corpus = Corpus::new();
+        let mut provenance = RuchyCorpusProvenance::default();
+
+        let mut total_before = 0usize;
+
+        for (name, samples, source_type) in &self.sources {
+            let count_before = corpus.len();
+            for sample in samples {
+                let mut s = sample.clone();
+                s.source = *source_type;
+                corpus.add(s);
+            }
+            let count_added = corpus.len() - count_before;
+            total_before += samples.len();
+            provenance.sources.push((name.clone(), count_added));
+        }
+
+        provenance.total_before_dedup = total_before;
+        provenance.total_after_dedup = corpus.len();
+        provenance.merged_at = Some(chrono::Utc::now().to_rfc3339());
+
+        // Shuffle with seed
+        corpus.shuffle_with_seed(seed);
+
+        Ok((corpus, provenance))
+    }
+}
+
+impl Corpus {
+    /// Shuffle with specific seed
+    pub fn shuffle_with_seed(&mut self, seed: u64) {
+        let n = self.samples.len();
+        if n <= 1 {
+            return;
+        }
+
+        let mut rng_state = seed;
+        for i in (1..n).rev() {
+            rng_state = rng_state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            let j = (rng_state as usize) % (i + 1);
+            self.samples.swap(i, j);
+        }
     }
 }
 

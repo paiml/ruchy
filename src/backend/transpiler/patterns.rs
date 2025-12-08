@@ -69,11 +69,11 @@ impl Transpiler {
                         let byte_val = *b;
                         Ok(quote! { #byte_val })
                     }
-                    crate::frontend::ast::Literal::Unit => Ok(quote! { () }),
-                    crate::frontend::ast::Literal::Null => Ok(quote! { None }),
-                }
-            }
-            Pattern::Identifier(name) => {
+                                    crate::frontend::ast::Literal::Unit => Ok(quote! { () }),
+                                    crate::frontend::ast::Literal::Null => Ok(quote! { None }),
+                                    crate::frontend::ast::Literal::Atom(_) => Ok(quote! { todo!("Atom patterns") }),
+                                }
+                            }            Pattern::Identifier(name) => {
                 let ident = format_ident!("{}", name);
                 Ok(quote! { #ident })
             }

@@ -163,7 +163,7 @@ mod property_tests {
     // Property: All valid type names should parse in impl blocks
     proptest! {
         #[test]
-        #[ignore]
+        #[ignore = "Generic impl property test - run with --ignored"]
         fn prop_impl_with_arbitrary_type_names(
             type_name in "[A-Z][a-zA-Z0-9]{0,10}",
             trait_name in "[A-Z][a-zA-Z0-9]{0,10}"
@@ -179,7 +179,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore]
+        #[ignore = "Generic impl property test - run with --ignored"]
         fn prop_impl_with_generic_type_names(
             type_name in "[A-Z][a-zA-Z0-9]{0,10}",
             trait_name in "[A-Z][a-zA-Z0-9]{0,10}",
@@ -195,7 +195,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore]
+        #[ignore = "Keyword type property test - run with --ignored"]
         fn prop_keyword_types_as_impl_targets(
             keyword in prop::sample::select(vec!["Option", "Result", "Some", "None", "Ok", "Err"])
         ) {
@@ -222,7 +222,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore]
+        #[ignore = "Keyword method name property test - run with --ignored"]
         fn prop_keyword_method_names(
             keyword in prop::sample::select(vec!["from", "default"])
         ) {
@@ -236,7 +236,7 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore]
+        #[ignore = "Multiple generic params property test - run with --ignored"]
         fn prop_multiple_generic_params(
             num_params in 1usize..4usize
         ) {

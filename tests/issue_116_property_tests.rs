@@ -2,6 +2,8 @@
 //!
 //! EXTREME TDD: Verify File object behavior across various inputs
 
+#![allow(deprecated)] // cargo_bin function is deprecated but still works
+
 use assert_cmd::cargo::cargo_bin;
 use proptest::prelude::*;
 use std::fs::File;

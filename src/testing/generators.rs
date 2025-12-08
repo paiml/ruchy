@@ -505,7 +505,8 @@ mod tests {
                 | Literal::Unit
                 | Literal::Char(_)
                 | Literal::Byte(_)
-                | Literal::Null => {}
+                | Literal::Null
+                | Literal::Atom(_) => {}
             }
         }
     }
@@ -716,6 +717,9 @@ mod tests {
                 }
                 Literal::Null => {
                     found_variants.insert("Null");
+                }
+                Literal::Atom(_) => {
+                    found_variants.insert("Atom");
                 }
             }
         }
@@ -992,6 +996,7 @@ mod tests {
                 Literal::Byte(_) => {} // Byte literal not in test set
                 Literal::Unit => {}
                 Literal::Null => {}
+                Literal::Atom(_) => {} // Atom literal not in test set
             }
         }
     }

@@ -477,6 +477,8 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         (Value::Struct { fields: f1, .. }, Value::Struct { fields: f2, .. }) => {
             equal_objects(f1, f2)
         }
+        // Atoms - string equality (interned comparison)
+        (Value::Atom(a), Value::Atom(b)) => a == b,
         // Type mismatch
         _ => false,
     }

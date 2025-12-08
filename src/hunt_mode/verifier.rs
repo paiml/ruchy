@@ -271,7 +271,7 @@ impl AndonVerifier {
         if self.total_attempts == 0 {
             0.0
         } else {
-            self.verified_fixes.len() as f64 / self.total_attempts as f64
+            self.verified_fixes.len() as f64 / f64::from(self.total_attempts)
         }
     }
 

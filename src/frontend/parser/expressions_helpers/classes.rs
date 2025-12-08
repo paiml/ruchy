@@ -169,10 +169,19 @@ fn parse_class_member(
 }
 
 fn parse_member_decorators(state: &mut ParserState) -> Result<Vec<Decorator>> {
-    if matches!(state.tokens.peek(), Some((Token::At, _))) {
+    if is_decorator_start(state) {
         parse_decorators(state)
     } else {
         Ok(Vec::new())
+    }
+}
+
+/// Check if current token starts a decorator (@name or Label starting with @)
+fn is_decorator_start(state: &mut ParserState) -> bool {
+    match state.tokens.peek() {
+        Some((Token::At, _)) => true,
+        Some((Token::Label(label), _)) => label.starts_with('@'),
+        _ => false,
     }
 }
 
@@ -481,16 +490,28 @@ fn parse_decorator_args(state: &mut ParserState) -> Result<Vec<String>> {
 }
 
 /// Parse decorator: @Name or @Name("args", ...)
+/// Handles both `Token::At` + Identifier and `Token::Label("@name")`
 fn parse_decorator(state: &mut ParserState) -> Result<Decorator> {
-    state.tokens.expect(&Token::At)?;
-
     let name = match state.tokens.peek() {
-        Some((Token::Identifier(n), _)) => {
-            let name = n.clone();
+        // Handle Token::Label("@name") - common in class bodies
+        Some((Token::Label(label), _)) if label.starts_with('@') => {
+            let name = label.strip_prefix('@').unwrap_or(label).to_string();
             state.tokens.advance();
             name
         }
-        _ => bail!("Expected decorator name after '@'"),
+        // Handle Token::At followed by identifier
+        Some((Token::At, _)) => {
+            state.tokens.advance(); // consume @
+            match state.tokens.peek() {
+                Some((Token::Identifier(n), _)) => {
+                    let name = n.clone();
+                    state.tokens.advance();
+                    name
+                }
+                _ => bail!("Expected decorator name after '@'"),
+            }
+        }
+        _ => bail!("Expected '@' or decorator label"),
     };
 
     let args = parse_decorator_args(state)?;
@@ -504,7 +525,7 @@ pub(in crate::frontend::parser) fn parse_decorators(
 ) -> Result<Vec<Decorator>> {
     let mut decorators = Vec::new();
 
-    while matches!(state.tokens.peek(), Some((Token::At, _))) {
+    while is_decorator_start(state) {
         decorators.push(parse_decorator(state)?);
     }
 

@@ -29,6 +29,7 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Char(_)
         | Token::Byte(_)
         | Token::Bool(_)
+        | Token::Atom(_)
         | Token::Null
         | Token::None
         | Token::Some => parse_literal_prefix(state, token, span),
@@ -74,7 +75,8 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::For
         | Token::Try
         | Token::Loop
-        | Token::Lifetime(_) => parse_control_prefix(state, token, span),
+        | Token::Lifetime(_)
+        | Token::Label(_) => parse_control_prefix(state, token, span),
 
         // Data structures and definitions
         Token::Struct
@@ -135,7 +137,8 @@ fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Re
         | Token::FString(_)
         | Token::Char(_)
         | Token::Byte(_)
-        | Token::Bool(_) => expressions_helpers::literals::parse_literal_token(state, &token, span),
+        | Token::Bool(_)
+        | Token::Atom(_) => expressions_helpers::literals::parse_literal_token(state, &token, span),
 
         // Special literals also in literals module
         Token::Null => expressions_helpers::literals::parse_null(state, span),
@@ -193,8 +196,138 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
             parse_control_flow_token(state, token)
         }
         Token::Lifetime(label_name) => parse_loop_label(state, label_name),
+        // PARSER-081: @label syntax for labeled loops
+        // BUG-033: Distinguish between @label: (loop label) and @decorator (attribute)
+        // Check if next token (after Label) is Colon to decide
+        Token::Label(label_name) => {
+            state.tokens.advance(); // consume the Label token
+            // Peek at next token to determine: loop label vs decorator
+            if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                // @label: loop_keyword - this is a labeled loop
+                parse_loop_label(state, label_name)
+            } else {
+                // @decorator or @decorator(...) - this is a decorator/attribute
+                parse_label_as_decorator(state, label_name)
+            }
+        }
         _ => unreachable!(),
     }
+}
+
+/// BUG-033: Parse a Label token as a decorator when not followed by Colon
+///
+/// The lexer emits @identifier as `Token::Label("@identifier")`. When not followed
+/// by a Colon (indicating a loop label), we treat it as a decorator.
+fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Result<Expr> {
+    use crate::frontend::ast::{Attribute, Decorator};
+
+    // Get span for the first decorator
+    let first_span = state.tokens.peek().map_or(Span::new(0, 0), |(_, s)| *s);
+
+    // Extract the decorator name (strip the '@' prefix)
+    let name = label_name.strip_prefix('@').unwrap_or(&label_name).to_string();
+
+    // Parse optional arguments: @decorator("arg1", "arg2")
+    let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        parse_decorator_args_inline(state)?
+    } else {
+        Vec::new()
+    };
+
+    let mut attributes = vec![Attribute { name, args, span: first_span }];
+    let mut decorators = vec![];
+
+    // Parse any additional decorators (consecutive @decorator patterns)
+    while let Some((Token::Label(next_label), next_span)) = state.tokens.peek() {
+        let next_label = next_label.clone();
+        let next_span = *next_span;
+        state.tokens.advance();
+        // Check if this label is also a decorator (not followed by Colon)
+        if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            // This is a labeled loop - put back context and bail
+            bail!("Unexpected labeled loop after decorator");
+        }
+        let next_name = next_label.strip_prefix('@').unwrap_or(&next_label).to_string();
+        let next_args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            parse_decorator_args_inline(state)?
+        } else {
+            Vec::new()
+        };
+        attributes.push(Attribute { name: next_name.clone(), args: next_args.clone(), span: next_span });
+        decorators.push(Decorator { name: next_name, args: next_args });
+    }
+
+    // Also handle Token::At decorators that may follow
+    while let Some((Token::At, at_span)) = state.tokens.peek() {
+        let at_span = *at_span;
+        state.tokens.advance(); // consume @
+        let dec_name = match state.tokens.peek() {
+            Some((Token::Identifier(n), _)) => {
+                let name = n.clone();
+                state.tokens.advance();
+                name
+            }
+            _ => bail!("Expected identifier after '@'"),
+        };
+        let dec_args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            parse_decorator_args_inline(state)?
+        } else {
+            Vec::new()
+        };
+        attributes.push(Attribute { name: dec_name.clone(), args: dec_args.clone(), span: at_span });
+        decorators.push(Decorator { name: dec_name, args: dec_args });
+    }
+
+    // Now parse the decorated item (function, class, etc.)
+    let mut expr = parse_prefix(state)?;
+
+    // Apply attributes to the expression
+    expr.attributes.extend(attributes);
+
+    // For classes, also set the decorators field
+    if let ExprKind::Class { decorators: class_decorators, .. } = &mut expr.kind {
+        // Convert attributes to decorators for class
+        let first_dec = Decorator {
+            name: label_name.strip_prefix('@').unwrap_or(&label_name).to_string(),
+            args: if let Some(attr) = expr.attributes.first() {
+                attr.args.clone()
+            } else {
+                Vec::new()
+            },
+        };
+        let mut all_decorators = vec![first_dec];
+        all_decorators.extend(decorators);
+        *class_decorators = all_decorators;
+    }
+
+    Ok(expr)
+}
+
+/// Parse decorator arguments inline: ("arg1", "arg2", ...)
+fn parse_decorator_args_inline(state: &mut ParserState) -> Result<Vec<String>> {
+    state.tokens.advance(); // consume (
+    let mut args = Vec::new();
+
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        match state.tokens.peek() {
+            Some((Token::String(s), _)) => {
+                args.push(s.clone());
+                state.tokens.advance();
+            }
+            Some((Token::Identifier(id), _)) => {
+                args.push(id.clone());
+                state.tokens.advance();
+            }
+            _ => bail!("Expected string or identifier in decorator arguments"),
+        }
+        // Handle comma separator
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(args)
 }
 
 // Loop label parsing moved to expressions_helpers/loops.rs module

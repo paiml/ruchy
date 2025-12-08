@@ -343,7 +343,7 @@ mod property_tests {
     use super::*;
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_004_property_function_calls_are_deterministic() {
         // Property: Same input always produces same output - must use println()
         for i in 1..20 {
@@ -369,7 +369,7 @@ println(f"Result: {{double({i})}}")
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_004_property_nested_calls_work() {
         // Property: f(g(x)) works for all x - must use println()
         for i in 1..10 {
@@ -395,7 +395,7 @@ println(f"Result: {{square(double({i}))}}")
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn test_langcomp_004_property_parameter_count_matches() {
         // Property: Calling fn with wrong number of params fails gracefully
         let code = r"

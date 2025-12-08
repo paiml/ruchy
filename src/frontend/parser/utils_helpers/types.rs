@@ -53,11 +53,17 @@ fn parse_type_parameter_list(state: &mut ParserState) -> Result<Vec<String>> {
 }
 
 /// Try to parse a single type parameter (returns None if not present)
+/// DEFECT-028 FIX: Also handle lifetime parameters like 'a
 fn try_parse_type_parameter(state: &mut ParserState) -> Result<Option<String>> {
-    if matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
-        Ok(Some(parse_single_type_parameter(state)?))
-    } else {
-        Ok(None)
+    match state.tokens.peek() {
+        Some((Token::Identifier(_), _)) => Ok(Some(parse_single_type_parameter(state)?)),
+        Some((Token::Lifetime(lt), _)) => {
+            // Lifetime parameter like 'a
+            let lifetime = lt.clone();
+            state.tokens.advance();
+            Ok(Some(lifetime))
+        }
+        _ => Ok(None),
     }
 }
 
@@ -88,7 +94,7 @@ fn parse_single_type_parameter(state: &mut ParserState) -> Result<String> {
         state.tokens.advance();
         let bounds = collect_trait_bounds(state);
         if !bounds.is_empty() {
-            return Ok(format!("{}: {}", name, bounds));
+            return Ok(format!("{name}: {bounds}"));
         }
     }
 

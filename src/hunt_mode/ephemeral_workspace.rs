@@ -377,16 +377,15 @@ fn parse_cargo_json_errors(stdout: &str, stderr: &str) -> Vec<RustcError> {
                         .get("spans")
                         .and_then(|s| s.as_array())
                         .and_then(|arr| arr.first())
-                        .map(|span| {
+                        .map_or((None, None, None), |span| {
                             let f = span.get("file_name").and_then(|f| f.as_str()).map(String::from);
-                            let l = span.get("line_start").and_then(|l| l.as_u64()).map(|l| l as u32);
-                            let c = span.get("column_start").and_then(|c| c.as_u64()).map(|c| c as u32);
+                            let l = span.get("line_start").and_then(serde_json::Value::as_u64).map(|l| l as u32);
+                            let c = span.get("column_start").and_then(serde_json::Value::as_u64).map(|c| c as u32);
                             (f, l, c)
-                        })
-                        .unwrap_or((None, None, None));
+                        });
 
                     // Classify error as semantic vs dependency
-                    let is_semantic = is_semantic_error(&code, &message_text);
+                    let is_semantic = is_semantic_error(code.as_ref(), &message_text);
 
                     if !message_text.is_empty() {
                         errors.push(RustcError {
@@ -407,7 +406,7 @@ fn parse_cargo_json_errors(stdout: &str, stderr: &str) -> Vec<RustcError> {
 }
 
 /// Determine if error is semantic (true) or dependency-related (false)
-fn is_semantic_error(code: &Option<String>, message: &str) -> bool {
+fn is_semantic_error(code: Option<&String>, message: &str) -> bool {
     // Dependency errors
     if let Some(code) = code {
         if code == "E0432" || code == "E0433" {
@@ -581,19 +580,19 @@ mod tests {
     #[test]
     fn test_is_semantic_error_e0308() {
         let code = Some("E0308".to_string());
-        assert!(is_semantic_error(&code, "mismatched types"));
+        assert!(is_semantic_error(code.as_ref(), "mismatched types"));
     }
 
     #[test]
     fn test_is_semantic_error_e0432() {
         let code = Some("E0432".to_string());
-        assert!(!is_semantic_error(&code, "unresolved import"));
+        assert!(!is_semantic_error(code.as_ref(), "unresolved import"));
     }
 
     #[test]
     fn test_is_semantic_error_cant_find_crate() {
         let code: Option<String> = None;
-        assert!(!is_semantic_error(&code, "can't find crate `foo`"));
+        assert!(!is_semantic_error(code.as_ref(), "can't find crate `foo`"));
     }
 
     // ============================================================================

@@ -9,7 +9,7 @@
 //! Low-confidence fixes require human review.
 //!
 //! # References
-//! - [3] Le Goues et al. (2012). GenProg. IEEE TSE.
+//! - [3] Le Goues et al. (2012). `GenProg`. IEEE TSE.
 //! - [15] Ohno (1988). TPS. Jidoka principle.
 
 use super::isolator::ReproCase;
@@ -121,7 +121,7 @@ pub trait Mutator: std::fmt::Debug {
 pub struct TypeCoercionMutator;
 
 impl Mutator for TypeCoercionMutator {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "type_coercion"
     }
 
@@ -131,9 +131,9 @@ impl Mutator for TypeCoercionMutator {
 
     fn apply(&self, source: &str, _error_code: &str) -> Option<String> {
         // Simple heuristic: add .to_string() to string literals
-        if source.contains("\"") && source.contains("-> i32") {
-            Some(source.replace("\"", "").replace("-> i32", "-> String"))
-        } else if source.contains("\"") && source.contains("-> String") {
+        if source.contains('"') && source.contains("-> i32") {
+            Some(source.replace('"', "").replace("-> i32", "-> String"))
+        } else if source.contains('"') && source.contains("-> String") {
             // Already returns String, might need .to_string()
             Some(source.replace("-> String {", "-> String { return "))
         } else {
@@ -151,7 +151,7 @@ impl Mutator for TypeCoercionMutator {
 pub struct MethodAdditionMutator;
 
 impl Mutator for MethodAdditionMutator {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "method_addition"
     }
 
@@ -178,7 +178,7 @@ impl Mutator for MethodAdditionMutator {
 pub struct ImportAdditionMutator;
 
 impl Mutator for ImportAdditionMutator {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "import_addition"
     }
 

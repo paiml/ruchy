@@ -92,7 +92,7 @@ fn arb_simple_expr() -> impl Strategy<Value = String> {
 proptest! {
     /// Property: Parsing literals never panics
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_literals_parse_without_panic(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
         let result = std::panic::catch_unwind(|| {
@@ -103,7 +103,7 @@ proptest! {
 
     /// Property: Literal roundtrip preserves semantics
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_literal_roundtrip(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
 
@@ -135,7 +135,7 @@ proptest! {
 
     /// Property: Binary expression roundtrip
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_binary_roundtrip(expr in arb_binary_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 
@@ -162,7 +162,7 @@ proptest! {
 
     /// Property: Simple expression roundtrip (comprehensive)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_simple_expr_roundtrip(expr in arb_simple_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 
@@ -189,7 +189,7 @@ proptest! {
 
     /// Property: Formatting is deterministic
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_formatting_deterministic(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
 
@@ -221,7 +221,7 @@ proptest! {
 
     /// Property: Double roundtrip stabilizes
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_double_roundtrip_stabilizes(expr in arb_simple_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 

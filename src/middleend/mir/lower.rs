@@ -251,6 +251,7 @@ impl LoweringContext {
             Literal::Byte(b) => Constant::Int(i128::from(*b), Type::U8),
             Literal::Unit => Constant::Unit,
             Literal::Null => Constant::Unit, // Null represented as Unit in MIR
+            Literal::Atom(s) => Constant::Symbol(s.clone()),
         }
     }
     /// Lower binary operator
@@ -278,6 +279,7 @@ impl LoweringContext {
             AstBinOp::LeftShift => BinOp::Shl,
             AstBinOp::RightShift => BinOp::Shr,
             AstBinOp::Send => BinOp::Send,
+            AstBinOp::In => BinOp::In,
         }
     }
     /// Lower unary operator
@@ -382,7 +384,8 @@ impl LoweringContext {
             | AstBinOp::GreaterEqual
             | AstBinOp::Gt
             | AstBinOp::And
-            | AstBinOp::Or => Type::Bool,
+            | AstBinOp::Or
+            | AstBinOp::In => Type::Bool, // In returns boolean (membership test)
             AstBinOp::NullCoalesce => Type::I32, // For now, assume Int (could be improved)
             AstBinOp::Send => Type::Unit,        // Actor message passing returns unit
         }

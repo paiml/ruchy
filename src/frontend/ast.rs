@@ -850,6 +850,8 @@ pub enum Literal {
     Unit,
     /// A null value.
     Null,
+    /// An atom (interned identifier).
+    Atom(String),
 }
 impl Literal {
     /// Convert a REPL Value to a Literal (for synthetic expressions)
@@ -861,6 +863,7 @@ impl Literal {
             Value::String(s) => Literal::String(s.to_string()),
             Value::Bool(b) => Literal::Bool(*b),
             Value::Nil => Literal::Unit,
+            Value::Atom(s) => Literal::Atom(s.clone()),
             _ => Literal::Unit, // Fallback for complex types
         }
     }
@@ -915,6 +918,8 @@ pub enum BinaryOp {
     Greater,
     GreaterEqual,
     Gt, // Alias for Greater (for compatibility)
+    // Containment
+    In, // Membership test: element in collection (Python-style)
     // Logical
     And,
     Or,
@@ -1517,6 +1522,7 @@ impl fmt::Display for BinaryOp {
             Self::RightShift => write!(f, ">>"),
             Self::Gt => write!(f, ">"),
             Self::Send => write!(f, "!"),
+            Self::In => write!(f, "in"),
         }
     }
 }

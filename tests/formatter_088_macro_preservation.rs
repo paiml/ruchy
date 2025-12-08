@@ -213,7 +213,7 @@ mod property_tests {
 
         /// Property: vec! macro with any integer list is preserved
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_vec_macro_always_preserved(values: Vec<i32>) {
             let values_str = values.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
             let input = format!("vec![{values_str}]");

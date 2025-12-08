@@ -1726,14 +1726,15 @@ impl Transpiler {
                     quote! { #lifetime }
                 } else if p.contains(':') {
                     // DEFECT-021: Parse as TypeParam for proper trait bounds
-                    syn::parse_str::<syn::TypeParam>(p)
-                        .map(|tp| quote! { #tp })
-                        .unwrap_or_else(|_| {
+                    syn::parse_str::<syn::TypeParam>(p).map_or_else(
+                        |_| {
                             // Fallback: just use the name part
                             let name = p.split(':').next().unwrap_or(p).trim();
                             let ident = format_ident!("{}", name);
                             quote! { #ident }
-                        })
+                        },
+                        |tp| quote! { #tp },
+                    )
                 } else {
                     // Simple type parameter
                     let ident = format_ident!("{}", p);
@@ -2878,7 +2879,7 @@ impl Transpiler {
                 let obj_str = obj_tokens.to_string();
                 if obj_str.contains(". collect ::") || obj_str.contains(".collect::<") {
                     // Already has .collect(), don't add another one
-                    Ok(obj_tokens.clone())
+                    Ok(obj_tokens)
                 } else {
                     // Add .collect()
                     Ok(quote! { #obj_tokens.collect::<Vec<_>>() })
@@ -2891,7 +2892,7 @@ impl Transpiler {
         }
     }
     /// Handle iterator operations: map, filter, reduce
-    /// DEFECT-023 FIX: Check if receiver already has .iter() to avoid double iteration
+    /// DEFECT-023 FIX: Check if receiver already has `.iter()` to avoid double iteration
     fn transpile_iterator_methods(
         &self,
         obj_tokens: &TokenStream,

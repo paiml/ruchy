@@ -273,6 +273,7 @@ impl InferenceContext {
             Literal::Byte(_) => MonoType::Int, // Treat byte as int for now
             Literal::Unit => MonoType::Unit,
             Literal::Null => MonoType::Unit, // Treat null as unit type for now
+            Literal::Atom(_) => MonoType::String, // Atoms are typed as Strings for now
         }
     }
     fn infer_identifier(&mut self, name: &str) -> Result<MonoType> {
@@ -348,6 +349,11 @@ impl InferenceContext {
             BinaryOp::Send => {
                 // For now, return unit type for actor send
                 Ok(MonoType::Unit)
+            }
+            // Containment check (Python-style 'in' operator)
+            BinaryOp::In => {
+                // 'in' returns a boolean (membership test)
+                Ok(MonoType::Bool)
             }
         }
     }
@@ -1203,6 +1209,10 @@ impl InferenceContext {
             BinaryOp::Send => {
                 // Actor message passing: return unit type
                 Ok(MonoType::Unit)
+            }
+            BinaryOp::In => {
+                // Containment check returns boolean
+                Ok(MonoType::Bool)
             }
         }
     }

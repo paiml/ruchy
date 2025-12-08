@@ -73,6 +73,8 @@ pub enum Value {
     Byte(u8),
     /// Nil/null value
     Nil,
+    /// Atom value (interned identifier)
+    Atom(String),
     /// String value (reference-counted for efficiency, thread-safe)
     String(Arc<str>),
     /// Array of values
@@ -136,6 +138,7 @@ impl PartialEq for Value {
             (Value::Integer(a), Value::Integer(b)) => a == b,
             (Value::Float(a), Value::Float(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
+            (Value::Atom(a), Value::Atom(b)) => a == b,
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::Array(a), Value::Array(b)) => a == b,
             (Value::Tuple(a), Value::Tuple(b)) => a == b,
@@ -180,6 +183,7 @@ impl Value {
             Value::Bool(_) => TypeId::of::<bool>(),
             Value::Byte(_) => TypeId::of::<u8>(),
             Value::String(_) => TypeId::of::<String>(),
+            Value::Atom(_) => TypeId::of::<crate::frontend::lexer::Token>(), // Use Token as proxy type ID
             Value::Nil => TypeId::of::<()>(),
             Value::Array(_) => TypeId::of::<Vec<Value>>(),
             Value::Tuple(_) => TypeId::of::<(Value,)>(), // Generic tuple marker
@@ -1816,7 +1820,7 @@ impl Interpreter {
             Value::Array(ref arr) => {
                 for item in arr.iter() {
                     self.env_set(clause.variable.clone(), item.clone());
-                    if !self.check_comprehension_condition(&clause.condition)? {
+                    if !self.check_comprehension_condition(clause.condition.as_deref())? {
                         continue;
                     }
                     self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
@@ -1830,7 +1834,7 @@ impl Interpreter {
                 let (start_val, end_val) = self.extract_range_bounds(start, end)?;
                 for i in self.create_range_iterator(start_val, end_val, inclusive) {
                     self.env_set(clause.variable.clone(), Value::Integer(i));
-                    if !self.check_comprehension_condition(&clause.condition)? {
+                    if !self.check_comprehension_condition(clause.condition.as_deref())? {
                         continue;
                     }
                     self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
@@ -1850,9 +1854,9 @@ impl Interpreter {
     /// Helper: Check comprehension condition
     fn check_comprehension_condition(
         &mut self,
-        condition: &Option<Box<Expr>>,
+        condition: Option<&Expr>,
     ) -> Result<bool, InterpreterError> {
-        if let Some(ref cond) = condition {
+        if let Some(cond) = condition {
             let cond_val = self.eval_expr(cond)?;
             Ok(cond_val.is_truthy())
         } else {
@@ -2103,8 +2107,18 @@ impl Interpreter {
             ) => Self::slice_string(s, start, end, *inclusive),
             (Value::Tuple(ref tuple), Value::Integer(idx)) => Self::index_tuple(tuple, *idx),
             (Value::Object(ref fields), Value::String(ref key)) => Self::index_object(fields, key),
+            // PARSER-082: Support atom bracket access (e.g., config[:host])
+            (Value::Object(ref fields), Value::Atom(ref key)) => {
+                let atom_key = format!(":{}", key);
+                Self::index_object(fields, &atom_key)
+            }
             (Value::ObjectMut(ref cell), Value::String(ref key)) => {
                 Self::index_object_mut(cell, key)
+            }
+            // PARSER-082: Support atom bracket access for mutable objects
+            (Value::ObjectMut(ref cell), Value::Atom(ref key)) => {
+                let atom_key = format!(":{}", key);
+                Self::index_object_mut(cell, &atom_key)
             }
             (Value::DataFrame { columns }, Value::Integer(idx)) => {
                 Self::index_dataframe_row(columns, *idx)
@@ -2648,6 +2662,7 @@ impl Interpreter {
             Literal::Byte(b) => Value::Byte(*b),
             Literal::Unit => Value::nil(),
             Literal::Null => Value::nil(),
+            Literal::Atom(s) => Value::Atom(s.clone()),
         }
     }
 
@@ -3113,6 +3128,13 @@ impl Interpreter {
                     self.eval_expr(right)
                 }
             }
+            crate::frontend::ast::BinaryOp::In => {
+                // Containment check: element in collection
+                let element = self.eval_expr(left)?;
+                let collection = self.eval_expr(right)?;
+                let result = self.eval_contains(&element, &collection)?;
+                Ok(Value::Bool(result))
+            }
             _ => {
                 let left_val = self.eval_expr(left)?;
                 let right_val = self.eval_expr(right)?;
@@ -3124,6 +3146,41 @@ impl Interpreter {
 
                 Ok(result)
             }
+        }
+    }
+
+    /// Evaluate containment check (Python-style 'in' operator)
+    /// Supports: strings, arrays/lists, maps/dicts
+    fn eval_contains(&self, element: &Value, collection: &Value) -> Result<bool, InterpreterError> {
+        match collection {
+            // String contains: "substring" in "full string"
+            Value::String(s) => {
+                if let Value::String(substr) = element {
+                    Ok(s.contains(&**substr))
+                } else {
+                    Err(InterpreterError::RuntimeError(
+                        "String containment requires string element".to_string(),
+                    ))
+                }
+            }
+            // Array contains
+            Value::Array(items) => Ok(items.iter().any(|item| item == element)),
+            // Tuple contains
+            Value::Tuple(items) => Ok(items.iter().any(|item| item == element)),
+            // Object key contains (for maps/dicts)
+            Value::Object(map) => {
+                if let Value::String(key) = element {
+                    Ok(map.contains_key(&**key))
+                } else {
+                    // For non-string keys, check if any key equals the element
+                    let key_str = format!("{element}");
+                    Ok(map.contains_key(&key_str))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "'in' operator not supported for type {}",
+                collection.type_name()
+            ))),
         }
     }
 

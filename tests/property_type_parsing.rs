@@ -117,7 +117,7 @@ proptest! {
     ///
     /// Invariant: All primitive types parse without error
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_simple_types_parse(type_name in arb_simple_type_name()) {
         let code = format!("fun f(x: {type_name}) {{}}");
         let result = Parser::new(&code).parse();
@@ -131,7 +131,7 @@ proptest! {
     ///
     /// Invariant: &T and &mut T are valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_reference_types_parse(
         is_mut in any::<bool>(),
         inner_type in arb_simple_type_name()
@@ -151,7 +151,7 @@ proptest! {
     ///
     /// Invariant: Vec<T>, Option<T> are valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_generic_types_parse(
         container in prop_oneof![Just("Vec"), Just("Option"), Just("Result")],
         inner_type in arb_simple_type_name()
@@ -167,7 +167,7 @@ proptest! {
     ///
     /// Invariant: [T] is valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_list_types_parse(inner_type in arb_simple_type_name()) {
         let type_str = format!("[{inner_type}]");
         let code = format!("fun f(x: {type_str}) {{}}");
@@ -180,7 +180,7 @@ proptest! {
     ///
     /// Invariant: (T1, T2, ...) is valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_tuple_types_parse(
         types in prop::collection::vec(arb_simple_type_name(), 2..5)
     ) {
@@ -195,7 +195,7 @@ proptest! {
     ///
     /// Invariant: fn(T1, T2) -> T3 is valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_function_types_parse(
         param_types in prop::collection::vec(arb_simple_type_name(), 0..4),
         return_type in arb_simple_type_name()
@@ -211,7 +211,7 @@ proptest! {
     ///
     /// Invariant: std::vec::Vec is valid type syntax
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_qualified_types_parse(qualified in arb_qualified_type()) {
         let code = format!("fun f(x: {qualified}) {{}}");
         let result = Parser::new(&code).parse();
@@ -229,7 +229,7 @@ proptest! {
     ///
     /// Invariant: For all type strings t, parse(t) == parse(t)
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_type_parsing_deterministic(type_str in arb_type_expr()) {
         let code = format!("fun f(x: {type_str}) {{}}");
 
@@ -257,7 +257,7 @@ proptest! {
     ///
     /// Invariant: Parsing "Vec" creates valid AST
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_named_type_preservation(type_name in "[A-Z][a-zA-Z0-9]{0,10}") {
         let code = format!("fun f(x: {type_name}) {{}}");
 
@@ -272,7 +272,7 @@ proptest! {
     ///
     /// Invariant: &mut T has is_mut=true, &T has is_mut=false
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_reference_mutability_preservation(
         is_mut in any::<bool>(),
         inner_type in arb_simple_type_name()
@@ -294,7 +294,7 @@ proptest! {
     ///
     /// Invariant: Vec<i32> has generic_args containing i32
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_generic_preservation(
         container in prop_oneof![Just("Vec"), Just("Option")],
         inner_type in arb_simple_type_name()
@@ -318,7 +318,7 @@ proptest! {
     ///
     /// Invariant: Parser errors contain actionable information
     #[test]
-    #[ignore]
+    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_type_clear_errors(
         invalid_char in "[^a-zA-Z0-9_<>\\[\\]()&:, \\-]"
     ) {

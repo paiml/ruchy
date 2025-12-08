@@ -193,7 +193,7 @@ mod property_tests {
         }
 
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_ruchy_serve_handles_any_valid_directory(dir_name: String) {
             // Property: ruchy serve should handle any valid directory name
             let temp_dir = TempDir::new().unwrap();

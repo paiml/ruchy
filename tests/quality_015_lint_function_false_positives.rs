@@ -305,7 +305,7 @@ fun main() {{
 
     /// Property: Unused local variables ALWAYS flagged (regression check, 10K cases)
     #[test]
-    #[ignore]
+    #[ignore = "Long-running property test - run with --ignored"]
     fn test_quality_015_11_property_unused_locals_always_flagged(
         var_name in prop::string::string_regex("[a-z][a-z0-9_]{0,15}").expect("valid regex")
     ) {

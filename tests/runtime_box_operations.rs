@@ -202,7 +202,7 @@ mod property_tests {
         /// Property: Box::new() never panics for any valid integer
         /// Invariant: Box construction is total (works for all values)
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_box_new_never_panics(n in i64::MIN..i64::MAX) {
             let code = format!(
                 r"fn main() {{ let boxed = Box::new({n}); println(1); }}"
@@ -220,7 +220,7 @@ mod property_tests {
         /// Property: Nested Box operations preserve values
         /// Invariant: Multiple levels of Boxing are transparent
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_nested_box_preserves_values(n in 0i64..100i64) {
             let code = format!(
                 r"fn main() {{
@@ -243,7 +243,7 @@ mod property_tests {
         /// Property: Vec::new() always creates empty array
         /// Invariant: Vec::new() is deterministic (always [])
         #[test]
-        #[ignore]
+        #[ignore = "Test disabled - run with --ignored"]
         fn prop_vec_new_always_empty(_n in 0u32..10000u32) {
             let code = "fn main() { let v = Vec::new(); println(v); }";
 

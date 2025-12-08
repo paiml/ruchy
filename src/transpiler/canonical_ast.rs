@@ -181,6 +181,10 @@ impl AstNormalizer {
                     BinaryOp::Send => {
                         panic!("Actor operations not yet supported in core language")
                     }
+                    // Containment check - not yet in core language
+                    BinaryOp::In => {
+                        panic!("Containment 'in' operator not yet supported in core language")
+                    }
                 };
                 CoreExpr::Prim(prim, vec![l, r])
             }
@@ -315,7 +319,8 @@ impl AstNormalizer {
             Literal::Char(c) => CoreLiteral::Char(*c),
             Literal::Byte(b) => CoreLiteral::Integer(i64::from(*b)), // Represent byte as integer in canonical AST
             Literal::Unit => CoreLiteral::Unit,
-            Literal::Null => CoreLiteral::Unit, // Represent null as unit in canonical AST
+            Literal::Null => CoreLiteral::Unit,
+            Literal::Atom(_) => CoreLiteral::Unit, // TODO: Support atoms in canonical AST
         })
     }
 }

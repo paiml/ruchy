@@ -2,6 +2,8 @@
 //!
 //! EXTREME TDD: Verify single-evaluation across all builtin functions with 10K+ test cases
 
+#![allow(deprecated)] // cargo_bin function is deprecated but still works
+
 use assert_cmd::cargo::cargo_bin;
 use proptest::prelude::*;
 use std::process::Command;
