@@ -192,9 +192,18 @@ impl Transpiler {
         let mut field_tokens = Vec::new();
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
-            // TRANSPILER-001: Don't add .to_string() to string literals
-            // Let Rust handle type coercion - &str works for both &str and String fields
-            let value_tokens = self.transpile_expr(value)?;
+            // DEFECT-019 FIX: Add .to_string() for string literals in struct fields
+            // Rust does NOT auto-coerce &str to String - requires explicit conversion
+            // Most struct fields expecting strings are String type, not &str
+            let value_tokens = match &value.kind {
+                crate::frontend::ast::ExprKind::Literal(
+                    crate::frontend::ast::Literal::String(s),
+                ) => {
+                    // String literal -> add .to_string() for String fields
+                    quote! { #s.to_string() }
+                }
+                _ => self.transpile_expr(value)?,
+            };
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
 
