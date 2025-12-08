@@ -125,6 +125,10 @@ pub(crate) struct ParserState<'a> {
     /// PARSER-071: Flag to indicate we're parsing a match guard expression
     /// When true, `=>` and `->` should not be treated as lambda syntax
     pub in_guard_context: bool,
+    /// Flag to indicate we're parsing a let expression's value
+    /// When true, `in` should not be treated as a binary operator (containment)
+    /// so that `let x = value in body` parses correctly
+    pub in_let_value_context: bool,
 }
 impl<'a> ParserState<'a> {
     #[must_use]
@@ -136,6 +140,7 @@ impl<'a> ParserState<'a> {
             interner: StringInterner::new(),
             expr_cache: VecDeque::with_capacity(8),
             in_guard_context: false, // PARSER-071: Initialize guard context flag
+            in_let_value_context: false, // Initialize let-value context flag
         }
     }
     /// Get all errors encountered during parsing
@@ -806,6 +811,12 @@ fn try_binary_operators(
                 return Ok(None);
             }
         }
+    }
+
+    // Skip 'in' as binary operator when inside let-value context
+    // This ensures `let f = |x| x + 1 in f(5)` parses as let-in, not containment
+    if matches!(token, Token::In) && state.in_let_value_context {
+        return Ok(None);
     }
 
     if let Some(bin_op) = expressions::token_to_binary_op(token) {
