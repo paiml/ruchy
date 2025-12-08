@@ -5834,18 +5834,28 @@ impl Transpiler {
                     .map(|(i, arg)| {
                         let mut base_tokens = self.transpile_expr(arg)?;
 
-                        // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
-                        // to prevent "use of moved value" errors on subsequent iterations
-                        if self.in_loop_context.get()
-                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
-                        {
-                            base_tokens = quote! { #base_tokens.clone() };
-                        }
-
                         // Apply String/&str coercion if needed
                         if let Some(expected_type) = signature.param_types.get(i) {
+                            // DEFECT-018 FIX: For Identifier args in loops, use .to_string()
+                            // for String params (handles &str->String), or .clone() for others
+                            if self.in_loop_context.get()
+                                && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                            {
+                                if expected_type == "String" {
+                                    // Use .to_string() which handles both &str and String
+                                    return Ok(quote! { #base_tokens.to_string() });
+                                }
+                                base_tokens = quote! { #base_tokens.clone() };
+                            }
                             self.apply_string_coercion(arg, &base_tokens, expected_type)
                         } else {
+                            // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                            // to prevent "use of moved value" errors on subsequent iterations
+                            if self.in_loop_context.get()
+                                && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                            {
+                                base_tokens = quote! { #base_tokens.clone() };
+                            }
                             Ok(base_tokens)
                         }
                     })
@@ -5887,9 +5897,11 @@ impl Transpiler {
             }
             // Variable that might be &str to String parameter
             (ExprKind::Identifier(_), "String") => {
-                // For now, assume string variables are String type from auto-conversion
-                // This matches the existing behavior in transpile_let
-                Ok(tokens.clone())
+                // DEFECT-018 FIX: Use .to_string() which handles both:
+                // - &str -> String (converts)
+                // - String -> String (via Display trait, allocates but is correct)
+                // This is needed because Ruchy string literals default to &str
+                Ok(quote! { #tokens.to_string() })
             }
             // No coercion needed
             _ => Ok(tokens.clone()),
