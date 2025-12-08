@@ -188,7 +188,18 @@ impl Transpiler {
         fields: &[(String, Expr)],
         base: Option<&Expr>,
     ) -> Result<TokenStream> {
-        let struct_name = format_ident!("{}", name);
+        // DEFECT-020 FIX: Handle enum variant paths like Shape::Circle
+        // format_ident! only works for simple identifiers, not paths with ::
+        let struct_name: TokenStream = if name.contains("::") {
+            // Parse as path (e.g., Shape::Circle)
+            let path: syn::Path = syn::parse_str(name)
+                .map_err(|e| anyhow::anyhow!("Invalid path '{}': {}", name, e))?;
+            quote! { #path }
+        } else {
+            // Simple identifier (e.g., Person)
+            let ident = format_ident!("{}", name);
+            quote! { #ident }
+        };
         let mut field_tokens = Vec::new();
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
