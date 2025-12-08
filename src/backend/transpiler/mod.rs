@@ -163,6 +163,11 @@ pub struct Transpiler {
     ///
     /// Populated during initial analysis (before optimization) to preserve const attributes.
     pub const_vars: std::sync::RwLock<std::collections::HashSet<String>>,
+    /// DEFECT-024 FIX: Track variable types for Option/Result detection
+    ///
+    /// Maps variable names to their type strings (e.g., "Option<i32>", "Result<T, E>")
+    /// Used to detect Option/Result types when processing method chains.
+    pub variable_types: std::cell::RefCell<std::collections::HashMap<String, String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -193,6 +198,7 @@ impl Clone for Transpiler {
                     .expect("rwlock should not be poisoned")
                     .clone(),
             ),
+            variable_types: std::cell::RefCell::new(self.variable_types.borrow().clone()),
         }
     }
 }
@@ -218,6 +224,7 @@ impl Transpiler {
             current_function_return_type: std::cell::RefCell::new(None),
             global_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             const_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
+            variable_types: std::cell::RefCell::new(std::collections::HashMap::new()),
         }
     }
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
@@ -403,6 +410,16 @@ impl Transpiler {
         use crate::frontend::ast::TypeKind;
         match &ty.kind {
             TypeKind::Named(name) => name.clone(),
+            // DEFECT-024 FIX: Handle generic types like Option<i32>, Result<T, E>
+            TypeKind::Generic { base, params } => {
+                if params.is_empty() {
+                    base.clone()
+                } else {
+                    let param_strs: Vec<String> =
+                        params.iter().map(Self::type_to_string).collect();
+                    format!("{}<{}>", base, param_strs.join(", "))
+                }
+            }
             TypeKind::Reference { inner, .. } => format!("&{}", Self::type_to_string(inner)),
             _ => "Unknown".to_string(),
         }
