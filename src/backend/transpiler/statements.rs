@@ -2846,6 +2846,17 @@ impl Transpiler {
             "slice" | "concat" | "flatten" | "unique" | "join" => {
                 self.transpile_advanced_collection_methods(&obj_tokens, method, &arg_tokens)
             }
+            // DEFECT-023 FIX: Handle .collect() - skip if receiver already has .collect()
+            "collect" => {
+                let obj_str = obj_tokens.to_string();
+                if obj_str.contains(". collect ::") || obj_str.contains(".collect::<") {
+                    // Already has .collect(), don't add another one
+                    Ok(obj_tokens.clone())
+                } else {
+                    // Add .collect()
+                    Ok(quote! { #obj_tokens.collect::<Vec<_>>() })
+                }
+            }
             _ => {
                 // Regular method call
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
@@ -2853,24 +2864,44 @@ impl Transpiler {
         }
     }
     /// Handle iterator operations: map, filter, reduce
+    /// DEFECT-023 FIX: Check if receiver already has .iter() to avoid double iteration
     fn transpile_iterator_methods(
         &self,
         obj_tokens: &TokenStream,
         method: &str,
         arg_tokens: &[TokenStream],
     ) -> Result<TokenStream> {
+        // Check if receiver already ends with .iter() or .into_iter()
+        let obj_str = obj_tokens.to_string();
+        let already_iter = obj_str.ends_with(". iter ()")
+            || obj_str.ends_with(". into_iter ()")
+            || obj_str.contains(". iter ( )");
+
         match method {
             "map" => {
                 // vec.map(f) -> vec.iter().map(f).collect::<Vec<_>>()
-                Ok(quote! { #obj_tokens.iter().map(#(#arg_tokens),*).collect::<Vec<_>>() })
+                // DEFECT-023: Skip .iter() if receiver is already an iterator
+                if already_iter {
+                    Ok(quote! { #obj_tokens.map(#(#arg_tokens),*).collect::<Vec<_>>() })
+                } else {
+                    Ok(quote! { #obj_tokens.iter().map(#(#arg_tokens),*).collect::<Vec<_>>() })
+                }
             }
             "filter" => {
                 // vec.filter(f) -> vec.into_iter().filter(f).collect::<Vec<_>>()
-                Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() })
+                if already_iter {
+                    Ok(quote! { #obj_tokens.filter(#(#arg_tokens),*).collect::<Vec<_>>() })
+                } else {
+                    Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() })
+                }
             }
             "reduce" => {
                 // vec.reduce(f) -> vec.into_iter().reduce(f)
-                Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
+                if already_iter {
+                    Ok(quote! { #obj_tokens.reduce(#(#arg_tokens),*) })
+                } else {
+                    Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
+                }
             }
             _ => unreachable!("Non-iterator method passed to transpile_iterator_methods"),
         }
