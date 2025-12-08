@@ -502,10 +502,18 @@ fn parse_struct_rest_pattern(state: &mut ParserState) -> Result<bool> {
 fn parse_struct_field_pattern(
     state: &mut ParserState,
 ) -> Result<crate::frontend::ast::StructPatternField> {
-    let field_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        name.clone()
-    } else {
-        bail!("Expected identifier or '..' in struct pattern")
+    // PARSER-XXX: Keywords can be used as field names in struct patterns
+    let field_name = match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => name.clone(),
+        Some((Token::Type, _)) => "type".to_string(),
+        Some((Token::Use, _)) => "use".to_string(),
+        Some((Token::Mod, _)) => "mod".to_string(),
+        Some((Token::Async, _)) => "async".to_string(),
+        Some((Token::Await, _)) => "await".to_string(),
+        Some((Token::Self_, _)) => "self".to_string(),
+        Some((Token::Super, _)) => "super".to_string(),
+        Some((Token::Crate, _)) => "crate".to_string(),
+        _ => bail!("Expected identifier or '..' in struct pattern"),
     };
     state.tokens.advance();
 
@@ -549,12 +557,14 @@ pub(in crate::frontend::parser) fn parse_list_pattern(state: &mut ParserState) -
 }
 /// Parse a single element in a list pattern
 /// Extracted to reduce complexity of `parse_list_pattern`
+/// PARSER-XXX: Support both ..rest (two dots) and ...rest (three dots) syntax
 fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             parse_identifier_pattern_with_default(state, name)
         }
+        Some((Token::DotDot, _)) => parse_list_rest_pattern(state),
         Some((Token::DotDotDot, _)) => parse_rest_pattern(state),
         Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
         Some((Token::LeftBracket, _)) => parse_list_pattern(state),
@@ -842,7 +852,8 @@ pub(in crate::frontend::parser) fn parse_single_pattern(
         | Token::String(_)
         | Token::RawString(_)
         | Token::Char(_)
-        | Token::Bool(_) => parse_literal_pattern(state),
+        | Token::Bool(_)
+        | Token::Atom(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
         Token::Ok | Token::Err => parse_result_pattern(state),
         Token::Identifier(_) | Token::Result | Token::Var => {
@@ -850,6 +861,7 @@ pub(in crate::frontend::parser) fn parse_single_pattern(
         }
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
+        Token::LeftBrace => parse_struct_pattern(state),
         _ => bail!("Unexpected token in pattern: {token:?}"),
     }
 }
@@ -874,6 +886,7 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Char(c) => parse_char_literal_pattern(state, c)?,
         Token::Byte(b) => parse_simple_literal_pattern(state, Literal::Byte(b))?,
         Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
+        Token::Atom(s) => parse_simple_literal_pattern(state, Literal::Atom(s))?,
         _ => bail!("Expected literal pattern, got: {token:?}"),
     };
     Ok(pattern)
@@ -1090,7 +1103,8 @@ fn parse_match_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 /// Parse list pattern in match: [], [a], [a, b], [head, ...tail]
 /// Complexity: <8
-/// Parse rest pattern in list with .. (two dots): ..tail
+/// Parse rest pattern in list with .. (two dots): .. or ..tail
+/// DEFECT-029 FIX: Support anonymous rest pattern (..) without identifier
 /// Complexity: 3 (Toyota Way: <10 ✓)
 fn parse_list_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume ..
@@ -1099,7 +1113,8 @@ fn parse_list_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
         state.tokens.advance();
         Ok(Pattern::RestNamed(name))
     } else {
-        bail!("Expected identifier after .. in list pattern")
+        // DEFECT-029 FIX: Allow anonymous rest pattern (..) without identifier
+        Ok(Pattern::Rest)
     }
 }
 
@@ -1321,6 +1336,35 @@ mod tests {
         let code = "match x { Some(1) | Some(2) => true, _ => false }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Or pattern should parse");
+    }
+
+    // PARSER-082: Atom pattern tests
+    #[test]
+    fn test_parser_082_atom_pattern_simple() {
+        let code = "match x { :ok => true, :error => false }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Atom pattern :ok should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_pattern_with_wildcard() {
+        let code = "match status { :ok => handle_ok(), :error => handle_error(), _ => default() }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Atom patterns with wildcard should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_pattern_or() {
+        let code = "match x { :ok | :success => true, _ => false }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Or patterns with atoms should parse");
+    }
+
+    #[test]
+    fn test_parser_082_atom_pattern_in_tuple() {
+        let code = "match pair { (:ok, value) => value, (:error, msg) => panic(msg) }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Atom in tuple pattern should parse");
     }
 
     // Property tests
