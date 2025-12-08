@@ -83,13 +83,107 @@ fn parse_single_type_parameter(state: &mut ParserState) -> Result<String> {
     };
     state.tokens.advance();
 
-    // Skip trait bounds if present (T: Display + Clone)
+    // DEFECT-021 FIX: Preserve trait bounds (T: Display + Clone) instead of skipping them
     if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         state.tokens.advance();
-        skip_trait_bounds(state);
+        let bounds = collect_trait_bounds(state);
+        if !bounds.is_empty() {
+            return Ok(format!("{}: {}", name, bounds));
+        }
     }
 
     Ok(name)
+}
+
+/// Collect trait bounds as a string (e.g., "Clone + Debug")
+fn collect_trait_bounds(state: &mut ParserState) -> String {
+    let mut bounds = Vec::new();
+    let mut current_bound = String::new();
+
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            Token::Comma | Token::Greater => break,
+            Token::Plus => {
+                if !current_bound.is_empty() {
+                    bounds.push(current_bound.trim().to_string());
+                    current_bound = String::new();
+                }
+                state.tokens.advance();
+            }
+            Token::Identifier(id) => {
+                if !current_bound.is_empty() {
+                    current_bound.push(' ');
+                }
+                current_bound.push_str(id);
+                state.tokens.advance();
+            }
+            Token::ColonColon => {
+                current_bound.push_str("::");
+                state.tokens.advance();
+            }
+            Token::Less => {
+                // Handle generic bounds like Iterator<Item=T>
+                current_bound.push('<');
+                state.tokens.advance();
+                let nested = collect_nested_generic(state);
+                current_bound.push_str(&nested);
+                current_bound.push('>');
+            }
+            _ => {
+                state.tokens.advance();
+            }
+        }
+    }
+
+    if !current_bound.is_empty() {
+        bounds.push(current_bound.trim().to_string());
+    }
+
+    bounds.join(" + ")
+}
+
+/// Collect tokens inside a nested generic <...>
+fn collect_nested_generic(state: &mut ParserState) -> String {
+    let mut result = String::new();
+    let mut depth = 1;
+
+    while depth > 0 {
+        if let Some((token, _)) = state.tokens.peek() {
+            match token {
+                Token::Less => {
+                    result.push('<');
+                    depth += 1;
+                    state.tokens.advance();
+                }
+                Token::Greater => {
+                    depth -= 1;
+                    if depth > 0 {
+                        result.push('>');
+                    }
+                    state.tokens.advance();
+                }
+                Token::Identifier(id) => {
+                    result.push_str(id);
+                    state.tokens.advance();
+                }
+                Token::Comma => {
+                    result.push_str(", ");
+                    state.tokens.advance();
+                }
+                Token::Equal => {
+                    result.push('=');
+                    state.tokens.advance();
+                }
+                _ => {
+                    state.tokens.advance();
+                }
+            }
+        } else {
+            break;
+        }
+    }
+
+    result
 }
 
 fn skip_trait_bounds(state: &mut ParserState) {

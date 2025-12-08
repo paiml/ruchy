@@ -190,17 +190,7 @@ impl Transpiler {
         let struct_name = format_ident!("{}", name);
         let type_param_tokens: Vec<TokenStream> = type_params
             .iter()
-            .map(|p| {
-                if p.starts_with('\'') {
-                    // It's a lifetime parameter, use Lifetime type
-                    let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
-                    quote! { #lifetime }
-                } else {
-                    // It's a type parameter
-                    let ident = format_ident!("{}", p);
-                    quote! { #ident }
-                }
-            })
+            .map(|p| Self::parse_type_param_to_tokens(p))
             .collect();
 
         // Convert field types to tokens
@@ -253,6 +243,30 @@ impl Transpiler {
     /// Complexity: 1 (simple predicate)
     fn has_lifetime_params(&self, type_params: &[String]) -> bool {
         type_params.iter().any(|p| p.starts_with('\''))
+    }
+
+    /// DEFECT-021 FIX: Parse type parameter string to TokenStream
+    /// Handles both simple params ("T") and params with bounds ("T: Clone + Debug")
+    fn parse_type_param_to_tokens(p: &str) -> TokenStream {
+        if p.starts_with('\'') {
+            // Lifetime parameter
+            let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
+            quote! { #lifetime }
+        } else if p.contains(':') {
+            // Type parameter with trait bounds (e.g., "T: Clone + Debug")
+            syn::parse_str::<syn::TypeParam>(p)
+                .map(|tp| quote! { #tp })
+                .unwrap_or_else(|_| {
+                    // Fallback: just use the name part
+                    let name = p.split(':').next().unwrap_or(p).trim();
+                    let ident = format_ident!("{}", name);
+                    quote! { #ident }
+                })
+        } else {
+            // Simple type parameter
+            let ident = format_ident!("{}", p);
+            quote! { #ident }
+        }
     }
 
     /// Helper: Transpile type with explicit lifetime annotation for struct fields
@@ -311,17 +325,7 @@ impl Transpiler {
 
         let type_param_tokens: Vec<TokenStream> = effective_type_params
             .iter()
-            .map(|p| {
-                if p.starts_with('\'') {
-                    // It's a lifetime parameter, use Lifetime type
-                    let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());
-                    quote! { #lifetime }
-                } else {
-                    // It's a type parameter
-                    let ident = format_ident!("{}", p);
-                    quote! { #ident }
-                }
-            })
+            .map(|p| Self::parse_type_param_to_tokens(p))
             .collect();
         let field_tokens: Vec<TokenStream> = fields
             .iter()
@@ -773,7 +777,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let enum_name = format_ident!("{}", name);
         let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
         // Check if any variant has discriminant values
         let has_discriminants = variants.iter().any(|v| v.discriminant.is_some());
         let variant_tokens: Vec<TokenStream> = variants
@@ -925,7 +929,7 @@ impl Transpiler {
             .collect();
         let method_tokens = method_tokens?;
         let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
         let visibility = if is_pub {
             quote! { pub }
         } else {
@@ -1013,7 +1017,7 @@ impl Transpiler {
             .collect();
         let method_tokens = method_tokens?;
         let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
         if let Some(trait_name) = trait_name {
             let trait_ident = format_ident!("{}", trait_name);
             if type_params.is_empty() {
