@@ -512,6 +512,99 @@ impl RuchyOracle {
     pub fn reset_drift_detector(&mut self) {
         self.drift_detector.reset();
     }
+
+    // =========================================================================
+    // ORACLE-002: Auto-train methods
+    // =========================================================================
+
+    /// Record an error for corpus collection
+    pub fn record_error(&mut self, message: &str, category: ErrorCategory) {
+        let features = ErrorFeatures::extract(message, None);
+        self.training_features.push(features.to_vec());
+        self.training_labels.push(category.to_index());
+    }
+
+    /// Check if retraining is needed (threshold: 100 new samples)
+    #[must_use]
+    pub fn should_retrain(&self) -> bool {
+        const RETRAIN_THRESHOLD: usize = 100;
+        self.training_labels.len() > 30 + RETRAIN_THRESHOLD // 30 = bootstrap
+    }
+
+    /// Retrain the model with accumulated samples
+    pub fn retrain(&mut self) -> Result<(), OracleError> {
+        if self.training_features.is_empty() {
+            return Err(OracleError::EmptyTrainingData);
+        }
+        self.train(&self.training_features.clone(), &self.training_labels.clone())
+    }
+
+    /// Check if drift has been detected
+    #[must_use]
+    pub fn drift_detected(&self) -> bool {
+        matches!(
+            self.drift_detector.detected_change(),
+            aprender::online::drift::DriftStatus::Drift
+        )
+    }
+
+    /// Parse rustc error output into corpus samples
+    #[must_use]
+    pub fn parse_rustc_errors(stderr: &str) -> Vec<super::Sample> {
+        use super::{Sample, SampleSource};
+        use regex::Regex;
+
+        let error_re = Regex::new(r"error\[E(\d{4})\]:\s*(.+?)(?:\n|$)").unwrap();
+        let mut samples = Vec::new();
+
+        for cap in error_re.captures_iter(stderr) {
+            let code = format!("E{}", &cap[1]);
+            let message = format!("error[{}]: {}", code, &cap[2]);
+            let category = ErrorCategory::from_error_code(&code);
+            samples.push(Sample::new(message, Some(code), category)
+                .with_source(SampleSource::Production));
+        }
+
+        samples
+    }
+
+    /// Generate synthetic training samples
+    #[must_use]
+    pub fn generate_synthetic_samples(count: usize) -> Vec<super::Sample> {
+        use super::{Sample, SampleSource};
+
+        let templates = [
+            ("error[E0308]: mismatched types", "E0308", ErrorCategory::TypeMismatch),
+            ("error[E0271]: type mismatch resolving", "E0271", ErrorCategory::TypeMismatch),
+            ("error[E0382]: borrow of moved value", "E0382", ErrorCategory::BorrowChecker),
+            ("error[E0502]: cannot borrow as mutable", "E0502", ErrorCategory::BorrowChecker),
+            ("error[E0597]: borrowed value does not live long enough", "E0597", ErrorCategory::LifetimeError),
+            ("error[E0621]: explicit lifetime required", "E0621", ErrorCategory::LifetimeError),
+            ("error[E0277]: the trait bound is not satisfied", "E0277", ErrorCategory::TraitBound),
+            ("error[E0599]: no method named", "E0599", ErrorCategory::TraitBound),
+            ("error[E0433]: failed to resolve", "E0433", ErrorCategory::MissingImport),
+            ("error[E0412]: cannot find type", "E0412", ErrorCategory::MissingImport),
+            ("error[E0596]: cannot borrow as mutable", "E0596", ErrorCategory::MutabilityError),
+            ("error[E0594]: cannot assign to immutable", "E0594", ErrorCategory::MutabilityError),
+            ("error[E0658]: syntax error", "E0658", ErrorCategory::SyntaxError),
+            ("error[E0061]: wrong number of arguments", "E0061", ErrorCategory::SyntaxError),
+            ("error: unknown error", "", ErrorCategory::Other),
+            ("error: internal compiler error", "", ErrorCategory::Other),
+        ];
+
+        let per_template = count / templates.len();
+        let mut samples = Vec::with_capacity(count);
+
+        for (i, (msg, code, cat)) in templates.iter().cycle().take(count).enumerate() {
+            // Add variation to message
+            let varied_msg = format!("{} (variant {})", msg, i % (per_template.max(1)));
+            let code_opt = if code.is_empty() { None } else { Some((*code).to_string()) };
+            samples.push(Sample::new(varied_msg, code_opt, *cat)
+                .with_source(SampleSource::Synthetic));
+        }
+
+        samples
+    }
 }
 
 impl Default for RuchyOracle {
