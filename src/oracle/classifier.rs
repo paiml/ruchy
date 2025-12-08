@@ -5,11 +5,12 @@
 //!
 //! # References
 //! - [3] Breiman, L. (2001). "Random Forests." Machine Learning, 45(1), 5-32.
+//! - [4] Bifet & Gavalda (2007). "Learning from Time-Changing Data with Adaptive Windowing."
 //! - [10] Buitinck et al. (2013). Scikit-learn API design.
 
 use aprender::prelude::Matrix;
 use aprender::tree::RandomForestClassifier;
-use super::drift::DriftDetector;
+use aprender::online::drift::{DriftDetector, DriftDetectorFactory};
 use super::patterns::{FixSuggestion, PatternStore};
 use super::{ErrorCategory, ErrorFeatures, OracleConfig};
 
@@ -127,6 +128,8 @@ pub struct OracleMetadata {
 ///
 /// Uses `RandomForestClassifier` from aprender with 73 features extracted from
 /// rustc error messages. Provides fix suggestions from pattern store.
+///
+/// Uses `aprender::online::drift` for drift detection (ADWIN by default).
 pub struct RuchyOracle {
     /// Configuration
     config: OracleConfig,
@@ -137,8 +140,8 @@ pub struct RuchyOracle {
     /// Pattern store for fix suggestions
     pattern_store: PatternStore,
 
-    /// Drift detector for model monitoring
-    drift_detector: DriftDetector,
+    /// Drift detector for model monitoring (ADWIN from aprender)
+    drift_detector: Box<dyn DriftDetector>,
 
     /// Whether ML model is trained (false = use rule-based fallback)
     is_trained: bool,
@@ -167,7 +170,8 @@ impl RuchyOracle {
             config,
             metadata: OracleMetadata::default(),
             pattern_store: PatternStore::new(),
-            drift_detector: DriftDetector::new(),
+            // Use ADWIN from aprender (recommended for both sudden and gradual drift)
+            drift_detector: DriftDetectorFactory::recommended(),
             is_trained: false,
             classifier: None,
             training_features: Vec::new(),
@@ -484,9 +488,23 @@ impl RuchyOracle {
     }
 
     /// Record classification result for drift detection
+    ///
+    /// Uses `aprender::online::drift::DriftDetector::add_element(error: bool)`
+    /// where `error=true` indicates an incorrect prediction.
     pub fn record_result(&mut self, predicted: ErrorCategory, actual: ErrorCategory) {
-        let correct = predicted == actual;
-        self.drift_detector.record(correct);
+        let error = predicted != actual;
+        self.drift_detector.add_element(error);
+    }
+
+    /// Check current drift status
+    #[must_use]
+    pub fn drift_status(&self) -> aprender::online::drift::DriftStatus {
+        self.drift_detector.detected_change()
+    }
+
+    /// Reset drift detector after handling drift
+    pub fn reset_drift_detector(&mut self) {
+        self.drift_detector.reset();
     }
 }
 
