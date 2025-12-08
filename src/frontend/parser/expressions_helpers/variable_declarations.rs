@@ -59,8 +59,12 @@ pub(in crate::frontend::parser) fn parse_let_statement(state: &mut ParserState) 
     let type_annotation = parse_let_type_annotation(state)?;
     // Parse '=' token
     state.tokens.expect(&Token::Equal)?;
-    // Parse value expression
+    // Parse value expression, stopping at 'in' keyword for let-in expressions
+    // Set context flag so nested expressions (like lambda body) also stop at 'in'
+    let old_context = state.in_let_value_context;
+    state.in_let_value_context = true;
     let value = Box::new(parse_expr_recursive(state)?);
+    state.in_let_value_context = old_context;
 
     // Check for 'else' clause (let-else pattern)
     let else_block = parse_let_else_clause(state)?;

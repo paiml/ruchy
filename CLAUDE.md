@@ -23,9 +23,15 @@
 
 **SACRED RULE**: NEVER manually debug parser/transpiler bugs without using `ruchydbg` FIRST.
 
-**Rationale**: ruchydbg provides instant validation and isolation of bugs. Manual inspection wastes time.
+**Rationale**: ruchydbg provides ML-powered fault localization, Oracle classification, and Toyota Way visualization. Manual inspection wastes time.
 
 **Prerequisites**: `cargo install ruchydbg` and `cargo install renacer`
+
+**Capabilities** (v0.1.0+):
+- **SBFL**: 5 academic formulas (Tarantula, Ochiai, Jaccard, WongII, DStar)
+- **Oracle**: 8 error categories with suggested fixes + MoE domain experts
+- **Visualization**: Andon status (GREEN/YELLOW/RED), sparklines, grades (A+ to F)
+- **Export**: ASCII, JSON, SARIF 2.1.0, Markdown
 
 ### Mandatory Debugging Workflow with ruchydbg
 
@@ -74,6 +80,34 @@ ruchydbg trace /tmp/test_bug.ruchy --analyze
 ruchydbg run /tmp/test_bug.ruchy --timeout 5000 --trace
 ```
 
+### SBFL Fault Localization (For Test Failures)
+
+When tests fail, use SBFL to rank suspicious code locations:
+```bash
+# Analyze codebase with Ochiai formula (recommended)
+ruchydbg analyze ./src -f ochiai -o ascii
+
+# Compare formulas for different perspectives
+ruchydbg analyze ./src -f tarantula -o json
+ruchydbg analyze ./src -f dstar -o ascii
+
+# Generate detailed report
+ruchydbg report ./src -f markdown > debug_report.md
+```
+
+### Oracle Error Classification (For Compiler Errors)
+
+When encountering Rust compiler errors, classify and get fix suggestions:
+```bash
+# Classify error and get suggested fixes
+ruchydbg classify "error[E0308]: mismatched types"
+ruchydbg classify "error[E0382]: borrow of moved value" -o json
+
+# Common error categories:
+#   TypeMismatch, BorrowChecker, LifetimeError, TraitBound,
+#   MissingImport, MutabilityError, SyntaxError, Other
+```
+
 **Example Workflow (Parser Bug Investigation)**:
 ```
 PROBLEM: Parser fails with "Expected RightBrace, found Let"
@@ -94,7 +128,7 @@ PROBLEM: Parser fails with "Expected RightBrace, found Let"
 
 **Time Saved**: 30-60 minutes per bug investigation by using ruchydbg first
 
-**Reference**: See `../ruchyruchy/INTEGRATION_GUIDE.md` and `../ruchyruchy/DEBUGGING_GUIDE.md` for complete documentation.
+**Reference**: See `../ruchydbg/README.md` for complete documentation and examples.
 
 ### Syscall Tracing with renacer
 
@@ -197,7 +231,11 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
    - **RED**: Write 6-8 comprehensive failing tests covering all bug patterns (tests MUST fail initially)
    - **GREEN**: Minimal fix with ≤10 complexity helpers (make tests pass)
    - **REFACTOR**: Apply PMAT TDG (≥A-), fix all clippy warnings, zero SATD
-   - **VALIDATE**: Full end-to-end verification (transpile→compile→execute, ruchydbg, cargo run examples)
+   - **VALIDATE**: Full end-to-end verification:
+     - `ruchydbg analyze ./src -f ochiai` (verify GREEN status)
+     - `ruchydbg classify "error..."` (if compiler errors, get fix suggestions)
+     - transpile→compile→execute pipeline
+     - cargo run examples
 5. 🧪 **PROPERTY TESTS**: Verify invariants with 10K+ random inputs (if applicable)
 6. 🧬 **MUTATION TESTS**: Prove tests catch real bugs (cargo mutants --file, ≥75% CAUGHT/MISSED ratio)
 7. 🔍 **RUCHYDBG VALIDATION**: Timeout detection (--timeout 5000), type-aware tracing (--trace), no hangs
@@ -476,12 +514,13 @@ Closes: TICKET-ID
 
 **Lint Contract**: `cargo clippy --all-targets --all-features -- -D warnings`
 
-## Pre-Release Protocol (4 Gates)
+## Pre-Release Protocol (5 Gates)
 
 | Gate | What | Commands |
 |------|------|----------|
 | 0 | Smoke | `cargo test --release && cargo build --release` |
 | 1 | ruchydbg | `ruchydbg run --timeout 5000 --trace` on all examples |
+| 1b | SBFL | `ruchydbg analyze ./src -f ochiai -o ascii` (verify GREEN status) |
 | 2 | Property | `cargo test --test property_based_tests --release` (14K+ cases) |
 | 3 | Real-world | Re-transpile + `ruchy publish --dry-run` |
 | 4 | PMAT | `pmat tdg . --min-grade A- --fail-on-violation` |
