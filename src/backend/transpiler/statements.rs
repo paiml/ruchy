@@ -2208,7 +2208,17 @@ impl Transpiler {
                 inner,
                 lifetime: _,
             } => {
-                let inner_tokens = self.transpile_type(inner)?;
+                // DEFECT-028 FIX: Special case &str to avoid double reference
+                // transpile_type("str") returns "&str", so we must emit "str" directly here
+                let inner_tokens = if let TypeKind::Named(name) = &inner.kind {
+                    if name == "str" {
+                        quote! { str }
+                    } else {
+                        self.transpile_type(inner)?
+                    }
+                } else {
+                    self.transpile_type(inner)?
+                };
                 let mut_token = if *is_mut {
                     quote! { mut }
                 } else {
@@ -2273,8 +2283,10 @@ impl Transpiler {
         let needs_lifetime = self.needs_lifetime_parameter(params, return_type);
 
         // If lifetime needed, add 'a to type params and modify param/return types
+        // DEFECT-028 FIX: Check if type_params already contains a lifetime to avoid duplicates
+        let has_existing_lifetime = type_params.iter().any(|p| p.starts_with('\''));
         let mut modified_type_params = type_params.to_vec();
-        if needs_lifetime {
+        if needs_lifetime && !has_existing_lifetime {
             modified_type_params.insert(0, "'a".to_string());
         }
 
