@@ -717,14 +717,8 @@ impl Transpiler {
             }
 
             // Method calls on DataFrame instances (builder pattern)
-            ExprKind::MethodCall {
-                receiver, method, ..
-            } => {
-                matches!(
-                    method.as_str(),
-                    "column" | "build" | "rows" | "columns" | "height" | "width"
-                ) || Self::contains_dataframe(receiver)
-            }
+            // DEFECT-022 FIX: Only check receiver, removed generic "build" method heuristic
+            ExprKind::MethodCall { receiver, .. } => Self::contains_dataframe(receiver),
 
             // Type annotations with DataFrame
             ExprKind::Function { params, body, .. } => {
