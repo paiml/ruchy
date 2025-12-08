@@ -960,7 +960,10 @@ impl Transpiler {
         methods: &[ImplMethod],
         _is_pub: bool,
     ) -> Result<TokenStream> {
-        let type_ident = format_ident!("{}", for_type);
+        // DEFECT-027 FIX: Strip generic parameters from for_type if present
+        // e.g., "Container<T>" -> "Container"
+        let base_type = for_type.split('<').next().unwrap_or(for_type).trim();
+        let type_ident = format_ident!("{}", base_type);
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
