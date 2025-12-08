@@ -2289,6 +2289,15 @@ impl Transpiler {
             }
         }
 
+        // DEFECT-024 FIX: Track Option/Result-typed parameters for proper .map() transpilation
+        // This enables is_option_or_result_with_context() to detect Option/Result variables
+        for param in params {
+            let type_str = Transpiler::type_to_string(&param.ty);
+            if type_str.starts_with("Option") || type_str.starts_with("Result") {
+                self.register_variable_type(&param.name(), &type_str);
+            }
+        }
+
         let param_tokens = if needs_lifetime {
             self.generate_param_tokens_with_lifetime(params, body, name)?
         } else {
@@ -2791,8 +2800,14 @@ impl Transpiler {
         // Dispatch to specialized handlers based on method category
         match method {
             // Iterator operations (map, filter, reduce)
+            // DEFECT-024 FIX: Option/Result have their own .map()/.filter() - don't add .iter().collect()
             "map" | "filter" | "reduce" => {
-                self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
+                if self.is_option_or_result_with_context(object) {
+                    // Option/Result .map()/.filter() - use as-is without iterator pattern
+                    Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+                } else {
+                    self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
+                }
             }
             // HashMap/HashSet methods (contains_key, items, etc.)
             // TRANSPILER-002 FIX: Removed "get" from this list - it was adding .cloned() to ALL get() methods

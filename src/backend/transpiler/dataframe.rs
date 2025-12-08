@@ -365,6 +365,91 @@ impl Transpiler {
             _ => false,
         }
     }
+
+    /// DEFECT-024 FIX: Check if an expression is an Option or Result type.
+    /// Option/Result have their own .map() method that should NOT get .iter().collect() treatment.
+    pub fn is_option_or_result_expr(expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        match &expr.kind {
+            // Option constructors: Some(...) or None
+            ExprKind::Call { func, .. } => {
+                if let ExprKind::Identifier(name) = &func.kind {
+                    name == "Some"
+                } else {
+                    false
+                }
+            }
+            ExprKind::Identifier(name) => name == "None",
+            // Method chains with Option/Result-specific methods indicate Option/Result type
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
+                // These methods are specific to Option/Result types
+                let option_result_methods = [
+                    "unwrap",
+                    "unwrap_or",
+                    "unwrap_or_else",
+                    "unwrap_or_default",
+                    "expect",
+                    "ok",
+                    "err",
+                    "ok_or",
+                    "ok_or_else",
+                    "and_then",
+                    "or_else",
+                    "map_or",
+                    "map_or_else",
+                    "map_err",
+                    "is_some",
+                    "is_none",
+                    "is_ok",
+                    "is_err",
+                    "as_ref",
+                    "as_mut",
+                    "take",
+                    "replace",
+                    "transpose",
+                    "flatten",
+                ];
+                if option_result_methods.contains(&method.as_str()) {
+                    true
+                } else {
+                    // Recursively check receiver
+                    Self::is_option_or_result_expr(receiver)
+                }
+            }
+            _ => false,
+        }
+    }
+
+    /// DEFECT-024 FIX: Check if an expression is an Option or Result type using variable_types context.
+    /// This instance method can check the tracked variable types for identifiers.
+    pub fn is_option_or_result_with_context(&self, expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        match &expr.kind {
+            // Check identifier against tracked variable types
+            ExprKind::Identifier(name) => {
+                if name == "None" {
+                    return true;
+                }
+                // Check if variable type is Option or Result
+                if let Some(type_str) = self.variable_types.borrow().get(name) {
+                    type_str.starts_with("Option") || type_str.starts_with("Result")
+                } else {
+                    false
+                }
+            }
+            // Fall back to static analysis
+            _ => Self::is_option_or_result_expr(expr),
+        }
+    }
+
+    /// DEFECT-024 FIX: Register a variable's type for Option/Result detection.
+    pub fn register_variable_type(&self, name: &str, type_str: &str) {
+        self.variable_types
+            .borrow_mut()
+            .insert(name.to_string(), type_str.to_string());
+    }
 }
 #[cfg(test)]
 mod tests {
