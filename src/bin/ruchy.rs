@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 mod handlers;
 use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
-    handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_oracle_command,
+    handle_file_execution, handle_fuzz_command, handle_mutations_command,
     handle_parse_command, handle_property_tests_command, handle_repl_command, handle_run_command,
     handle_stdin_input, handle_test_command, handle_transpile_command, VmMode,
 };

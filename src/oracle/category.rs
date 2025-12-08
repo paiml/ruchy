@@ -7,13 +7,14 @@
 //! - [1] Rust Compiler Error Index (2024)
 //! - [8] Ko & Myers (2005). Error causation framework.
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Error categories for Rust compilation errors
 ///
 /// Based on rustc error code analysis and transpilation patterns.
 /// Each category maps to specific error codes and fix strategies.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum ErrorCategory {
     /// Type mismatch errors (E0308, E0271)
@@ -126,6 +127,18 @@ impl ErrorCategory {
     #[must_use]
     pub fn to_index(self) -> usize {
         self as usize
+    }
+
+    /// Convert to label for ML training (alias for `to_index`)
+    #[must_use]
+    pub fn to_label(self) -> usize {
+        self.to_index()
+    }
+
+    /// Create from label
+    #[must_use]
+    pub fn from_label(label: usize) -> Self {
+        Self::from_index(label).unwrap_or(Self::Other)
     }
 }
 
