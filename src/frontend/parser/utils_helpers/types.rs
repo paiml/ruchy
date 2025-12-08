@@ -224,16 +224,34 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     };
 
     // SPEC-001-H: Check for refined type (where clause)
+    // DEFECT-026 FIX: Distinguish refined types from generic bounds
+    // Refined type: `x: i32 where x > 0` (constraint is a comparison/boolean expression)
+    // Generic bounds: `fun foo<T>() -> T where T: Clone` (T: followed by trait name)
+    // If we see `where Identifier :`, it's likely generic bounds - leave for function parser
     if matches!(state.tokens.peek(), Some((Token::Where, _))) {
-        state.tokens.advance(); // consume 'where'
-        let constraint = crate::frontend::parser::parse_expr_recursive(state)?;
-        Ok(Type {
-            kind: TypeKind::Refined {
-                base: Box::new(base_type),
-                constraint: Box::new(constraint),
-            },
-            span,
-        })
+        // Peek ahead to check if this is generic bounds pattern (Identifier : Trait)
+        // peek_nth(1) = token after 'where' (should be identifier like T)
+        // peek_nth(2) = token after identifier (should be colon for generic bounds)
+        let is_generic_bounds = matches!(
+            (state.tokens.peek_nth(1), state.tokens.peek_nth(2)),
+            (Some((Token::Identifier(_), _)), Some((Token::Colon, _)))
+        );
+
+        if is_generic_bounds {
+            // Don't consume - let function parser handle generic bounds
+            Ok(base_type)
+        } else {
+            // Refined type constraint
+            state.tokens.advance(); // consume 'where'
+            let constraint = crate::frontend::parser::parse_expr_recursive(state)?;
+            Ok(Type {
+                kind: TypeKind::Refined {
+                    base: Box::new(base_type),
+                    constraint: Box::new(constraint),
+                },
+                span,
+            })
+        }
     } else {
         Ok(base_type)
     }

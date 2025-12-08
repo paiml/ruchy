@@ -194,7 +194,9 @@ pub enum Token {
         Some(s[2..s.len()-1].to_string())
     })]
     RawString(String),
-    #[regex(r"'([^'\\]|\\.)'", |lex| {
+    // Re-enabled - Char matches 'x' format
+    // Priority 7: highest among single-quote patterns to match 'a' before String
+    #[regex(r"'([^'\\]|\\.)'", priority = 7, callback = |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         if inner.len() == 1 {
@@ -359,7 +361,16 @@ pub enum Token {
     Static,
     #[token("mut")]
     Mut,
-    #[regex("'[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
+    // PARSER-081: @label syntax for labeled loops (replaces 'lifetime)
+    // Priority 3 ensures @label matches before standalone @ (Token::At used for decorators)
+    #[regex("@[a-zA-Z_][a-zA-Z0-9_]*", priority = 3, callback = |lex| lex.slice().to_string())]
+    Label(String),
+    // PARSER-082: Atoms (:symbol)
+    #[regex(r":[a-zA-Z_][a-zA-Z0-9_]*", priority = 3, callback = |lex| lex.slice()[1..].to_string())]
+    Atom(String),
+    // Deprecated: 'lifetime syntax - kept for backward compatibility during migration
+    // Priority 5 ensures 'lifetime matches before single-quoted string patterns
+    #[regex(r"'[a-zA-Z_][a-zA-Z0-9_]*", priority = 5, callback = |lex| lex.slice().to_string())]
     Lifetime(String),
     #[token("pub")]
     Pub,
@@ -679,22 +690,25 @@ impl<'a> TokenStream<'a> {
     }
 
     pub fn peek_nth(&mut self, n: usize) -> Option<(Token, Span)> {
-        // For simplicity, we'll only support peek_nth(1) by cloning the lexer
-        if n == 1 {
-            let saved_peeked = self.peeked.clone();
-            let saved_lexer = self.lexer.clone();
-            // Get first token
-            let _first = self.peek();
-            self.advance();
-            // Get second token
-            let result = self.peek().cloned();
-            // Restore state
-            self.lexer = saved_lexer;
-            self.peeked = saved_peeked;
-            result
-        } else {
-            None // Not supported for n > 1
+        // DEFECT-026 FIX: Support n=1 and n=2 for where clause lookahead
+        if n == 0 {
+            return self.peek().cloned();
         }
+        let saved_peeked = self.peeked.clone();
+        let saved_lexer = self.lexer.clone();
+
+        // Advance n times
+        for _ in 0..n {
+            let _ = self.peek();
+            self.advance();
+        }
+        // Get the nth token
+        let result = self.peek().cloned();
+
+        // Restore state
+        self.lexer = saved_lexer;
+        self.peeked = saved_peeked;
+        result
     }
     pub fn peek_nth_is_colon(&mut self, n: usize) -> bool {
         if n == 0 {
@@ -1201,6 +1215,56 @@ mod tests {
         assert_eq!(
             stream.next().map(|(t, _)| t),
             Some(Token::Lifetime("'inner".to_string()))
+        );
+    }
+
+    // =============================================================
+    // PARSER-081: @label syntax and single-quoted strings with spaces
+    // =============================================================
+
+    #[test]
+    fn test_parser_081_01_at_label_tokenizes_correctly() {
+        let mut stream = TokenStream::new("@outer");
+        let token = stream.next();
+        assert!(
+            matches!(token, Some((Token::Label(ref s), _)) if s == "@outer"),
+            "Expected Label(@outer), got {token:?}"
+        );
+    }
+
+    #[test]
+    fn test_parser_081_02_at_label_followed_by_colon() {
+        let mut stream = TokenStream::new("@outer:");
+        assert!(
+            matches!(stream.next(), Some((Token::Label(ref s), _)) if s == "@outer"),
+            "Label should tokenize before colon"
+        );
+        assert!(
+            matches!(stream.next(), Some((Token::Colon, _))),
+            "Colon should follow label"
+        );
+    }
+
+    #[test]
+    fn test_parser_082_atom_tokenization() {
+        let mut stream = TokenStream::new(":status :valid_id :_hidden");
+        
+        assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "status"));
+        assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "valid_id"));
+        assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "_hidden"));
+    }
+
+    #[test]
+    fn test_parser_081_04_double_quote_json_string() {
+        // JSON and complex strings should use double quotes
+        let input = r#"{"name": "Alice"}"#;
+        let mut stream = TokenStream::new(input);
+        // First token should be LeftBrace since it's parsed as separate tokens
+        // For JSON strings, users should use: let json = "{...}" (double quotes)
+        let token = stream.next();
+        assert!(
+            matches!(token, Some((Token::LeftBrace, _))),
+            "Double-quoted strings work for JSON, got {token:?}"
         );
     }
 
