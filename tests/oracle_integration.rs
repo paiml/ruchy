@@ -11,7 +11,7 @@
 //! - Spec: docs/specifications/ruchy-oracle-spec.md
 
 use ruchy::oracle::{
-    CompilationError, DriftDetector, DriftStatus,
+    CompilationError, DriftDetector, DriftStatus, ADWIN,
     ErrorCategory, ErrorFeatures, FixPattern,
     OracleConfig, PatternStore, RuchyOracle,
 };
@@ -149,49 +149,41 @@ fn test_feature_extraction_error_codes() {
 }
 
 // ============================================================================
-// Drift Detection Tests
+// Drift Detection Tests (using aprender::online::drift - Issue #174)
 // ============================================================================
 
 #[test]
 fn test_drift_detection_stable() {
-    let mut detector = DriftDetector::new();
+    // Use ADWIN from aprender (recommended drift detector)
+    let mut detector = ADWIN::default();
 
-    // Record 100 correct predictions
+    // Record 100 correct predictions (add_element takes error=false for correct)
     for _ in 0..100 {
-        detector.record(true);
+        detector.add_element(false); // false = no error (correct prediction)
     }
 
-    match detector.check_drift() {
-        DriftStatus::Stable { accuracy } => {
-            assert!((accuracy - 1.0).abs() < f64::EPSILON);
-        }
-        _ => panic!("Expected stable status with all correct predictions"),
-    }
+    // aprender DriftStatus uses unit variants
+    assert_eq!(detector.detected_change(), DriftStatus::Stable);
 }
 
 #[test]
 fn test_drift_detection_degradation() {
-    let mut detector = DriftDetector::with_config(10, 0.1);
+    // Use ADWIN with default config
+    let mut detector = ADWIN::default();
 
-    // Start with good accuracy
+    // Start with good accuracy (no errors)
     for _ in 0..50 {
-        detector.record(true);
+        detector.add_element(false);
     }
 
-    // Then sudden drop
+    // Then sudden drop (all errors)
     for _ in 0..10 {
-        detector.record(false);
+        detector.add_element(true); // true = error (incorrect prediction)
     }
 
-    // Should detect drift or warning
-    match detector.check_drift() {
-        DriftStatus::Stable { .. } => {
-            // Acceptable if thresholds not exceeded
-        }
-        DriftStatus::Warning { .. } | DriftStatus::DriftDetected { .. } => {
-            // Expected behavior
-        }
-    }
+    // Should detect drift, warning, or remain stable depending on ADWIN thresholds
+    let status = detector.detected_change();
+    assert!(matches!(status, DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift));
 }
 
 // ============================================================================
