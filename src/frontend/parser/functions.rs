@@ -32,10 +32,36 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
 pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1;
     let name = parse_function_name(state);
-    let type_params = parse_optional_type_params(state)?;
+    let mut type_params = parse_optional_type_params(state)?;
     let params = utils::parse_params(state)?;
     let return_type = parse_optional_return_type(state)?;
-    parse_optional_where_clause(state)?;
+    let where_bounds = parse_optional_where_clause(state)?;
+
+    // DEFECT-026 FIX: Merge where clause bounds into type_params
+    // E.g., type_params = ["T"], where_bounds = ["T: Clone"] → type_params = ["T: Clone"]
+    for bound in where_bounds {
+        // Extract type param name from bound (e.g., "T" from "T: Clone")
+        if let Some(colon_pos) = bound.find(':') {
+            let param_name = bound[..colon_pos].trim();
+            // Find and update matching type param, or add if not found
+            if let Some(existing) = type_params.iter_mut().find(|p| {
+                p.split(':').next().map(str::trim) == Some(param_name)
+            }) {
+                // Merge bounds: if existing has bounds, append; otherwise replace
+                if existing.contains(':') {
+                    // Already has bounds, append with +
+                    let new_bounds = bound[colon_pos + 1..].trim();
+                    existing.push_str(" + ");
+                    existing.push_str(new_bounds);
+                } else {
+                    *existing = bound;
+                }
+            } else {
+                // Type param not in list, add it (shouldn't normally happen)
+                type_params.push(bound);
+            }
+        }
+    }
 
     // PARSER-063: Skip comments before function body
     skip_comments(state);
@@ -86,12 +112,14 @@ fn parse_optional_return_type(state: &mut ParserState) -> Result<Option<Type>> {
     }
 }
 
-/// Parse optional where clause (complexity: 1)
-fn parse_optional_where_clause(state: &mut ParserState) -> Result<()> {
+/// Parse optional where clause and return bounds as strings (complexity: 1)
+/// DEFECT-026 FIX: Actually capture and return the where clause bounds
+fn parse_optional_where_clause(state: &mut ParserState) -> Result<Vec<String>> {
     if matches!(state.tokens.peek(), Some((Token::Where, _))) {
-        parse_where_clause(state)?;
+        parse_where_clause(state)
+    } else {
+        Ok(Vec::new())
     }
-    Ok(())
 }
 fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
     let mut params = Vec::new();
@@ -759,38 +787,75 @@ fn create_optional_field_access(receiver: Expr, field: String) -> Expr {
 }
 
 /// Parse where clause (e.g., where T: Display, U: Clone)
-/// For now, we parse and skip it as we don't enforce trait bounds yet
+/// DEFECT-026 FIX: Actually capture the bounds and return them
 /// # Errors
 /// Returns an error if parsing fails
-fn parse_where_clause(state: &mut ParserState) -> Result<()> {
+fn parse_where_clause(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.advance(); // consume 'where'
 
+    let mut bounds = Vec::new();
     // Parse trait bounds: T: Trait, U: Trait
-    while parse_single_trait_bound(state)? {
-        // Continue parsing bounds
+    while let Some(bound) = parse_single_trait_bound(state)? {
+        bounds.push(bound);
     }
 
-    Ok(())
+    Ok(bounds)
 }
 
-/// Parse a single trait bound (T: Trait) and return true if more bounds may follow
+/// Parse a single trait bound (T: Trait) and return the bound string if found
+/// DEFECT-026 FIX: Capture and return bound like "T: Clone + Debug"
 /// # Errors
 /// Returns an error if parsing fails
-fn parse_single_trait_bound(state: &mut ParserState) -> Result<bool> {
+fn parse_single_trait_bound(state: &mut ParserState) -> Result<Option<String>> {
     // Check for type parameter name
-    if !matches!(state.tokens.peek(), Some((Token::Identifier(_), _))) {
-        return Ok(false);
-    }
+    let type_param = match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => name.clone(),
+        _ => return Ok(None),
+    };
     state.tokens.advance(); // consume type param name
 
     // Expect colon
     if !matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-        return Ok(false);
+        return Ok(None);
     }
     state.tokens.advance(); // consume :
 
-    // Parse trait bound tokens until comma or left brace
-    consume_trait_bound_tokens(state)
+    // Collect trait bound tokens until comma or left brace
+    let mut traits = String::new();
+    while !is_trait_bound_end(state) {
+        if let Some((token, _)) = state.tokens.peek() {
+            if !traits.is_empty()
+                && !matches!(token, Token::Plus | Token::Less | Token::Greater)
+            {
+                traits.push(' ');
+            }
+            traits.push_str(&token_to_string(token));
+            state.tokens.advance();
+        } else {
+            break;
+        }
+    }
+
+    // Handle comma delimiter
+    let has_more = matches!(state.tokens.peek(), Some((Token::Comma, _)));
+    if has_more {
+        state.tokens.advance(); // consume comma
+    }
+
+    Ok(Some(format!("{}: {}", type_param, traits)))
+}
+
+/// Convert token to string for bound collection
+fn token_to_string(token: &Token) -> String {
+    match token {
+        Token::Identifier(s) => s.clone(),
+        Token::Plus => "+".to_string(),
+        Token::Less => "<".to_string(),
+        Token::Greater => ">".to_string(),
+        Token::Comma => ",".to_string(),
+        Token::Lifetime(lt) => lt.clone(),
+        _ => format!("{:?}", token),
+    }
 }
 
 /// Consume tokens that are part of a trait bound (complexity: 3, cognitive: 5)
