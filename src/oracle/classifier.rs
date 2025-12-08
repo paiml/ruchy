@@ -487,6 +487,12 @@ impl RuchyOracle {
         self.config = config;
     }
 
+    /// Get training data for persistence
+    #[must_use]
+    pub fn get_training_data(&self) -> (Vec<Vec<f32>>, Vec<usize>) {
+        (self.training_features.clone(), self.training_labels.clone())
+    }
+
     /// Record classification result for drift detection
     ///
     /// Uses `aprender::online::drift::DriftDetector::add_element(error: bool)`
