@@ -1713,6 +1713,7 @@ impl Transpiler {
         Ok(body_tokens)
     }
     /// Generate type parameter tokens with trait bound support
+    /// DEFECT-021 FIX: Properly handle trait bounds like "T: Clone + Debug"
     fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
         use proc_macro2::Span;
         use syn::Lifetime;
@@ -1724,8 +1725,15 @@ impl Transpiler {
                     let lifetime = Lifetime::new(p, Span::call_site());
                     quote! { #lifetime }
                 } else if p.contains(':') {
-                    // Complex trait bound - parse as TokenStream
-                    p.parse().unwrap_or_else(|_| quote! { T })
+                    // DEFECT-021: Parse as TypeParam for proper trait bounds
+                    syn::parse_str::<syn::TypeParam>(p)
+                        .map(|tp| quote! { #tp })
+                        .unwrap_or_else(|_| {
+                            // Fallback: just use the name part
+                            let name = p.split(':').next().unwrap_or(p).trim();
+                            let ident = format_ident!("{}", name);
+                            quote! { #ident }
+                        })
                 } else {
                     // Simple type parameter
                     let ident = format_ident!("{}", p);
