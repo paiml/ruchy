@@ -18,7 +18,6 @@ fn test_build_help() {
 }
 
 #[test]
-#[ignore = "slow: build command overhead >120s, run with --ignored"]
 fn test_build_no_cargo_toml() {
     // Build should fail without Cargo.toml
     ruchy_cmd().arg("build").assert().code(predicate::ne(2)); // Not a CLI error
