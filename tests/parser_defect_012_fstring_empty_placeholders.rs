@@ -57,7 +57,6 @@ fn test() {
 }
 
 #[test]
-#[ignore = "F-string in impl block not fully supported"]
 fn test_fstring_in_impl_block() {
     test_code(
         r#"
