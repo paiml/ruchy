@@ -92,8 +92,7 @@ fn arb_simple_expr() -> impl Strategy<Value = String> {
 proptest! {
     /// Property: Parsing literals never panics
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_literals_parse_without_panic(literal in arb_literal()) {
+        fn prop_literals_parse_without_panic(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
         let result = std::panic::catch_unwind(|| {
             Parser::new(&code).parse()
@@ -103,8 +102,7 @@ proptest! {
 
     /// Property: Literal roundtrip preserves semantics
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_literal_roundtrip(literal in arb_literal()) {
+        fn prop_literal_roundtrip(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
 
         // Parse original
@@ -135,8 +133,7 @@ proptest! {
 
     /// Property: Binary expression roundtrip
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_binary_roundtrip(expr in arb_binary_expr()) {
+        fn prop_binary_roundtrip(expr in arb_binary_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 
         let ast1 = Parser::new(&code).parse();
@@ -162,8 +159,7 @@ proptest! {
 
     /// Property: Simple expression roundtrip (comprehensive)
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_simple_expr_roundtrip(expr in arb_simple_expr()) {
+        fn prop_simple_expr_roundtrip(expr in arb_simple_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 
         let ast1 = Parser::new(&code).parse();
@@ -189,8 +185,7 @@ proptest! {
 
     /// Property: Formatting is deterministic
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_formatting_deterministic(literal in arb_literal()) {
+        fn prop_formatting_deterministic(literal in arb_literal()) {
         let code = format!("fun main() {{ {literal} }}");
 
         let ast = Parser::new(&code).parse();
@@ -221,8 +216,7 @@ proptest! {
 
     /// Property: Double roundtrip stabilizes
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
-    fn prop_double_roundtrip_stabilizes(expr in arb_simple_expr()) {
+        fn prop_double_roundtrip_stabilizes(expr in arb_simple_expr()) {
         let code = format!("fun main() {{ {expr} }}");
 
         // First roundtrip

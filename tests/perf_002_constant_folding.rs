@@ -107,7 +107,6 @@ fn test_perf_002a_fold_comparison_false() {
 // ============================================================================
 
 #[test]
-#[ignore = "TODO: Dead branch elimination not yet implemented (PERF-002-B)"]
 fn test_perf_002a_eliminate_dead_if_branch() {
     // Pattern: if false { ... } → eliminated entirely
     let code = r#"
@@ -131,7 +130,6 @@ fn test_perf_002a_eliminate_dead_if_branch() {
 // ============================================================================
 
 #[test]
-#[ignore = "Run with: cargo test --test perf_002_constant_folding -- --ignored"]
 fn property_constant_folding_preserves_semantics() {
     use proptest::prelude::*;
 
