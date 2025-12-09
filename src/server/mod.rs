@@ -179,7 +179,6 @@ mod tests {
     ///
     /// RED: This test should FAIL because `PidFile::new()` doesn't kill running processes
     #[test]
-    #[ignore = "Requires Unix signals - run with: cargo test -- --ignored"]
     fn test_pid_file_kills_running_process() {
         let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
         let pid_path = temp_dir.path().join("test.pid");
@@ -219,7 +218,6 @@ mod tests {
     ///
     /// RED: This test should FAIL because `PidFile::new()` is unimplemented
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_pid_file_always_valid() {
         use proptest::prelude::*;
 

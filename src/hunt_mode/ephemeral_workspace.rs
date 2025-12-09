@@ -698,7 +698,6 @@ mod tests {
     // ============================================================================
 
     #[test]
-    #[ignore = "Requires cargo to be installed"]
     fn test_ephemeral_workspace_check_valid_code() {
         let code = "pub fn add(a: i32, b: i32) -> i32 { a + b }";
         let workspace = EphemeralWorkspace::new("test", code).unwrap();
@@ -707,7 +706,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires cargo to be installed"]
     fn test_ephemeral_workspace_check_invalid_code() {
         let code = "pub fn add(a: i32, b: i32) -> String { a + b }"; // Type mismatch
         let workspace = EphemeralWorkspace::new("test", code).unwrap();
