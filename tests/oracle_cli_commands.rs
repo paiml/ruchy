@@ -15,7 +15,7 @@ use tempfile::TempDir;
 
 /// Helper to get ruchy command
 fn ruchy_cmd() -> Command {
-    Command::cargo_bin("ruchy").expect("ruchy binary should exist")
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
 // ============================================================================

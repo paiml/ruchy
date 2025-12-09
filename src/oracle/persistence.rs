@@ -442,7 +442,7 @@ mod tests {
         let labels = vec![0, 1];
 
         let model = SerializedModel::new(metadata)
-            .with_training_data(features.clone(), labels.clone());
+            .with_training_data(features, labels);
 
         assert_eq!(model.training_features.len(), 2);
         assert_eq!(model.training_labels.len(), 2);
@@ -466,7 +466,7 @@ mod tests {
         let labels = vec![0, 1, 2];
 
         let model = SerializedModel::new(metadata)
-            .with_training_data(features.clone(), labels.clone());
+            .with_training_data(features, labels.clone());
 
         // Save
         model.save(&temp_path).expect("save failed");

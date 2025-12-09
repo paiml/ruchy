@@ -325,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_sparkline_width_limit() {
-        let history: Vec<f64> = (0..100).map(|i| i as f64 / 100.0).collect();
+        let history: Vec<f64> = (0..100).map(|i| f64::from(i) / 100.0).collect();
         let sparkline = render_sparkline(&history, 5);
         assert_eq!(sparkline.chars().count(), 5);
     }

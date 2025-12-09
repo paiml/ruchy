@@ -285,8 +285,8 @@ mod tests {
         let soft_high = distiller_high.temperature_scale(&logits);
 
         // Higher temperature should produce more uniform distribution
-        let max_low = soft_low.iter().cloned().fold(0.0f64, f64::max);
-        let max_high = soft_high.iter().cloned().fold(0.0f64, f64::max);
+        let max_low = soft_low.iter().copied().fold(0.0f64, f64::max);
+        let max_high = soft_high.iter().copied().fold(0.0f64, f64::max);
         assert!(max_high < max_low);
     }
 
@@ -295,7 +295,7 @@ mod tests {
         let sample = Sample::new("test", Some("E0308".into()), ErrorCategory::TypeMismatch);
         let soft_targets = vec![0.9, 0.05, 0.02, 0.01, 0.01, 0.005, 0.004, 0.001];
 
-        let soft_label = SoftLabel::new(sample, soft_targets.clone());
+        let soft_label = SoftLabel::new(sample, soft_targets);
         assert_eq!(soft_label.soft_targets.len(), 8);
     }
 
