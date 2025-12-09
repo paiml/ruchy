@@ -75,7 +75,6 @@ fn test_fmt_no_let_statement_rewriting() {
 }
 
 #[test]
-#[ignore = "KNOWN BUG: Formatting is not idempotent - let statements change on re-format"]
 fn test_fmt_round_trip_idempotency() {
     // Round-trip validation: format(format(x)) == format(x)
     // Ensures formatting is stable and doesn't keep changing code

@@ -18,7 +18,6 @@ fn test_publish_help() {
 }
 
 #[test]
-#[ignore = "Publishing requires proper package setup and credentials"]
 fn test_publish_no_package() {
     ruchy_cmd().arg("publish").assert().failure();
 }

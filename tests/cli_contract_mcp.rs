@@ -18,7 +18,6 @@ fn test_mcp_help() {
 }
 
 #[test]
-#[ignore = "MCP server is long-running, requires special handling"]
 fn test_mcp_starts() {
     ruchy_cmd()
         .arg("mcp")

@@ -86,7 +86,6 @@ fn cli_notebook_validate_outputs_success_message() {
 // ============================================================================
 
 #[test]
-#[ignore = "Starts server, requires manual shutdown"]
 fn cli_notebook_custom_port() {
     ruchy_cmd()
         .arg("notebook")
@@ -121,7 +120,6 @@ fn cli_notebook_port_out_of_range() {
 // ============================================================================
 
 #[test]
-#[ignore = "Starts server"]
 fn cli_notebook_custom_host() {
     ruchy_cmd()
         .arg("notebook")
@@ -132,7 +130,6 @@ fn cli_notebook_custom_host() {
 }
 
 #[test]
-#[ignore = "Starts server"]
 fn cli_notebook_localhost_host() {
     ruchy_cmd()
         .arg("notebook")
@@ -147,7 +144,6 @@ fn cli_notebook_localhost_host() {
 // ============================================================================
 
 #[test]
-#[ignore = "Starts server and opens browser"]
 fn cli_notebook_open_browser_flag() {
     ruchy_cmd()
         .arg("notebook")
@@ -334,7 +330,6 @@ println(result2)
 }
 
 #[test]
-#[ignore = "REGRESSION: BUG-032 range() transpilation regressed - transpiles to 'range(10)' instead of '0..10', rustc fails"]
 fn cli_notebook_validate_with_loops() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
@@ -380,7 +375,6 @@ println(y)
 }
 
 #[test]
-#[ignore = "REGRESSION: BUG-032 range() transpilation regressed - transpiles to 'range(5)' instead of '0..5', rustc fails"]
 fn cli_notebook_validate_with_arrays() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
