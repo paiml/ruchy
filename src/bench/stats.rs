@@ -311,7 +311,6 @@ mod tests {
 
     /// Property test: Mean should be between min and max
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_mean_bounds() {
         use proptest::prelude::*;
 
@@ -329,7 +328,6 @@ mod tests {
 
     /// Property test: Median should be between min and max
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_median_bounds() {
         use proptest::prelude::*;
 
