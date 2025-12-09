@@ -519,7 +519,6 @@ fn test_pipeline_simple() {
 // ============================================================================
 
 #[test]
-#[ignore = "Parser feature gap: List comprehension syntax not yet implemented ([x * 2 for x in items])"]
 fn test_list_comprehension_simple() {
     let code = r"
         [x * 2 for x in [1, 2, 3, 4, 5]]
@@ -536,7 +535,6 @@ fn test_list_comprehension_simple() {
 }
 
 #[test]
-#[ignore = "Parser feature gap: List comprehension with filter not yet implemented"]
 fn test_list_comprehension_with_filter() {
     let code = r"
         [x for x in [1, 2, 3, 4, 5] if x > 2]
