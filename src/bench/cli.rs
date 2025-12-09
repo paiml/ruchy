@@ -163,7 +163,6 @@ mod tests {
 
     /// Property test: All successful iterations should be recorded
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_all_iterations_recorded() {
         use proptest::prelude::*;
 
