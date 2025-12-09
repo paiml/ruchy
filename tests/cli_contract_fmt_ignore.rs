@@ -169,7 +169,6 @@ fn bar(a, b) { a + b }",
     );
 }
 
-#[ignore = "RED phase TDD - formatter ignore directives not implemented yet. Sprint FORMATTER-004"]
 #[test]
 fn test_fmt_ignore_with_check_mode() {
     let temp_dir = setup_test_dir();
@@ -300,7 +299,6 @@ fn test_fmt_ignore_with_nested_expressions() {
     );
 }
 
-#[ignore = "RED phase TDD - formatter ignore directives not implemented yet. Sprint FORMATTER-004"]
 #[test]
 fn test_fmt_ignore_case_sensitivity() {
     let temp_dir = setup_test_dir();
