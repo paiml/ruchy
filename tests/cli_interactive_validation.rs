@@ -34,7 +34,6 @@ fn temp_dir() -> TempDir {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires terminal - run manually or in CI with PTY"]
 fn repl_interactive_arithmetic() {
     let binary = ruchy_binary();
 
@@ -79,7 +78,6 @@ fn repl_interactive_function_definition() {
 }
 
 #[test]
-#[ignore = "Requires terminal"]
 fn repl_interactive_error_recovery() {
     let binary = ruchy_binary();
     let mut repl = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
@@ -119,7 +117,6 @@ fn cli_run_command_executes_file() {
 }
 
 #[test]
-#[ignore = "BUG: ruchy -e returns empty output (EOF with expected: \"4\", got: \"\"). Same root cause as non_tty_omits_interactive_features."]
 fn cli_eval_flag_executes_inline() {
     let binary = ruchy_binary();
     let mut proc =
@@ -186,7 +183,6 @@ fn cli_handles_ctrl_c_gracefully() {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires PTY"]
 fn repl_detects_interactive_tty() {
     let binary = ruchy_binary();
     let mut proc = spawn(&binary, Some(5000)).expect("Failed to spawn REPL");
@@ -363,7 +359,6 @@ println(sum)
 }
 
 #[test]
-#[ignore = "Resource intensive"]
 fn cli_handles_memory_intensive_operations() {
     let binary = ruchy_binary();
     let output = std::process::Command::new(binary)

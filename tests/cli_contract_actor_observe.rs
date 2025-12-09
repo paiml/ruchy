@@ -18,7 +18,6 @@ fn test_actor_observe_help() {
 }
 
 #[test]
-#[ignore = "Actor observatory is long-running server"]
 fn test_actor_observe_starts() {
     ruchy_cmd()
         .arg("actor:observe")

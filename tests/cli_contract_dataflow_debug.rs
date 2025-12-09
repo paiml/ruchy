@@ -20,7 +20,6 @@ fn test_dataflow_debug_help() {
 }
 
 #[test]
-#[ignore = "dataflow:debug is interactive, doesn't accept file arguments"]
 fn test_dataflow_debug_missing_file() {
     ruchy_cmd()
         .arg("dataflow:debug")
