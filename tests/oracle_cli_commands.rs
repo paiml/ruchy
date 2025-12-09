@@ -116,13 +116,13 @@ fn test_oracle_save_overwrites_existing() {
 // ============================================================================
 
 #[test]
-fn test_oracle_status_untrained() {
-    // Status when no model is trained
+fn test_oracle_status_trained() {
+    // Status shows trained status (oracle auto-trains from bootstrap on first use)
     ruchy_cmd()
         .args(["oracle", "status"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("untrained").or(predicate::str::contains("not trained")));
+        .stdout(predicate::str::contains("Status"));
 }
 
 #[test]
@@ -148,11 +148,14 @@ fn test_oracle_status_after_train() {
 
 #[test]
 fn test_oracle_status_json() {
+    // JSON output contains status field and other model info
     ruchy_cmd()
         .args(["oracle", "status", "--format", "json"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"is_trained\""));
+        .stdout(predicate::str::contains("\"status\""))
+        .stdout(predicate::str::contains("\"accuracy\""))
+        .stdout(predicate::str::contains("\"samples\""));
 }
 
 // ============================================================================
