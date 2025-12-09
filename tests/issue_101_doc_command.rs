@@ -221,7 +221,6 @@ fun test() { 42 }
 // ============================================================================
 
 #[test]
-#[ignore = "BUG: Doc command not working"]
 fn test_issue_101_doc_markdown_content() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
@@ -230,7 +229,7 @@ fn test_issue_101_doc_markdown_content() {
         r#"
 /// Greets a person by name
 fun greet(name) {
-    println!("Hello, {}", name)
+    println("Hello, " + name)
 }
 "#,
     );

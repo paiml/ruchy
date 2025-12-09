@@ -198,18 +198,18 @@ impl<'a> ParserState<'a> {
         None
     }
 
-    /// Skip all comment tokens transparently
+    /// Skip non-doc comment tokens transparently
     /// This allows method chains and expressions to work with intervening comments
     /// PARSER-053: Fix for multi-line comments breaking method chains
+    /// PARSER-083: Doc comments are NOT skipped - they are preserved for attachment
     pub fn skip_comments(&mut self) {
         while let Some((token, _)) = self.tokens.peek() {
             match token {
-                Token::LineComment(_)
-                | Token::BlockComment(_)
-                | Token::DocComment(_)
-                | Token::HashComment(_) => {
+                Token::LineComment(_) | Token::BlockComment(_) | Token::HashComment(_) => {
                     self.tokens.advance();
                 }
+                // PARSER-083: Doc comments must be preserved for consume_leading_comments()
+                Token::DocComment(_) => break,
                 _ => break,
             }
         }
