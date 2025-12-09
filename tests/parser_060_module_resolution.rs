@@ -255,7 +255,6 @@ fn test_parser_060_04_import_simple_function() {
 }
 
 #[test]
-#[ignore = "PARSER-061: Known issue - imported parameterized functions in arithmetic expressions return objects instead of values. Root cause likely in interpreter's function call handling within binary operations, not import mechanism itself. File as separate bug (RUNTIME-XXX) for investigation."]
 fn test_parser_060_04_import_multiple_functions() {
     // Test: use utils::{add, sub} imports multiple functions
     let temp_dir = TempDir::new().unwrap();

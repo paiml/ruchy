@@ -482,3 +482,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: Error line numbers now included in error messages. F-string in impl block now fully supported. Un-ignored 2 tests (test_regression_087_error_messages_include_line_numbers, test_fstring_in_impl_block).
+- id: 'Apex Hunt: PDCA Cycle 18 - PARSER-061 import fix'
+  github_issue: null
+  item_type: task
+  title: 'Un-ignore PARSER-061 imported functions test'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T10:10:00.000000000+00:00
+  updated: 2025-12-09T10:15:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: PARSER-061 - Imported parameterized functions in arithmetic expressions now work correctly. Un-ignored test_parser_060_04_import_multiple_functions. All 20 module resolution tests passing.
