@@ -277,7 +277,6 @@ mod tests {
     // We test error paths with httpbin.org when available
 
     #[test]
-    #[ignore = "Requires network access"] // Requires network access
     fn test_get_success_with_httpbin() {
         let result = get("https://httpbin.org/get");
         if let Ok(response) = result {
@@ -291,7 +290,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires network access"] // Requires network access
     fn test_get_404_error() {
         let result = get("https://httpbin.org/status/404");
         assert!(result.is_err(), "404 status should return error");
@@ -306,7 +304,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires network access"] // Requires network access
     fn test_post_success_with_httpbin() {
         let body = r#"{"test": "data"}"#;
         let result = post("https://httpbin.org/post", body);
@@ -317,7 +314,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires network access"] // Requires network access
     fn test_put_success_with_httpbin() {
         let body = r#"{"test": "update"}"#;
         let result = put("https://httpbin.org/put", body);
@@ -328,7 +324,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires network access"] // Requires network access
     fn test_delete_success_with_httpbin() {
         let result = delete("https://httpbin.org/delete");
         if let Ok(response) = result {
