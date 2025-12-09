@@ -18,7 +18,6 @@ fn test_repl_help() {
 }
 
 #[test]
-#[ignore = "REPL is interactive, requires stdin interaction"]
 fn test_repl_starts() {
     // This would require rexpect for interactive testing
     // Ignored for now since REPL requires stdin interaction

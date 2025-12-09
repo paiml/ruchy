@@ -458,7 +458,6 @@ fn test_wasm_empty_file() {
 // ============================================================================
 
 #[test]
-#[ignore = "Deployment may require credentials/setup"]
 fn test_wasm_deploy_option() {
     let temp_dir = TempDir::new().unwrap();
     let output_file = temp_dir.path().join("deploy.wasm");
