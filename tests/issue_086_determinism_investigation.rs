@@ -10,7 +10,6 @@ use ruchy::runtime::replay::DeterministicRepl;
 use ruchy::runtime::Repl;
 
 #[test]
-#[ignore = "Diagnostic test - run manually to investigate Issue #86"]
 fn test_issue_086_diagnose_non_determinism() {
     use tempfile::TempDir;
 
@@ -82,7 +81,6 @@ fn test_issue_086_diagnose_non_determinism() {
 
 /// Run this test multiple times to check for non-determinism patterns
 #[test]
-#[ignore = "Run manually: cargo test issue_086_repeated --ignored -- --nocapture"]
 fn test_issue_086_repeated_runs() {
     use tempfile::TempDir;
 

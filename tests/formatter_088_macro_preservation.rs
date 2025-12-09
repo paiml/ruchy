@@ -190,7 +190,6 @@ mod property_tests {
         /// Property: Formatter NEVER transforms macro calls to macro definitions
         /// Invariant: If input contains `name!(`, output must also contain `name!(`
         #[test]
-        #[ignore = "Run with: cargo test --test formatter_088_macro_preservation property_tests -- --ignored"]
         fn prop_macro_calls_never_become_definitions(
             macro_name in "[a-z_][a-z0-9_]{0,20}",
             arg in 0..1000i32
@@ -213,7 +212,6 @@ mod property_tests {
 
         /// Property: vec! macro with any integer list is preserved
         #[test]
-        #[ignore = "Test disabled - run with --ignored"]
         fn prop_vec_macro_always_preserved(values: Vec<i32>) {
             let values_str = values.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
             let input = format!("vec![{values_str}]");
