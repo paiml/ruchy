@@ -869,7 +869,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires external coverage tools"]
     fn test_coverage_integration() {
         // Test that coverage collection doesn't panic
         let result = QualityGates::collect_coverage();
@@ -881,7 +880,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires external coverage tools"]
     fn test_collect_metrics() {
         let mut gates = QualityGates::new();
         let result = gates.collect_metrics();
@@ -890,7 +888,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires external coverage tools"]
     fn test_generate_coverage_report() {
         let gates = QualityGates::new();
         let result = gates.generate_coverage_report();
