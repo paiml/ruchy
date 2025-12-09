@@ -31,7 +31,6 @@ fn assert_rs_file_exists(dir: &TempDir, name: &str) -> String {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_single_file() {
     // CARGO-001: Test that transpile_all() can transpile a single .ruchy file
 
@@ -65,7 +64,6 @@ fn test_cargo_001_transpile_all_single_file() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_multiple_files() {
     // CARGO-001: Test that transpile_all() can handle multiple .ruchy files
 
@@ -95,7 +93,6 @@ fn test_cargo_001_transpile_all_multiple_files() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_nested_directories() {
     // CARGO-001: Test that transpile_all() handles nested directory structures
 
@@ -133,7 +130,6 @@ fn test_cargo_001_transpile_all_nested_directories() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_incremental_no_changes() {
     // CARGO-001: Test incremental compilation - unchanged files should not be retranspiled
 
@@ -185,7 +181,6 @@ fn test_cargo_001_transpile_all_incremental_no_changes() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_incremental_with_changes() {
     // CARGO-001: Test incremental compilation - changed files SHOULD be retranspiled
 
@@ -236,7 +231,6 @@ fn test_cargo_001_transpile_all_incremental_with_changes() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_syntax_error_reporting() {
     // CARGO-001: Test that syntax errors are reported clearly
 
@@ -269,7 +263,6 @@ fn test_cargo_001_transpile_all_syntax_error_reporting() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_001_transpile_all_empty_directory() {
     // CARGO-001: Test that empty directory is handled gracefully
 
@@ -297,8 +290,7 @@ mod property_tests {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         #[test]
-        #[ignore = "Run after implementation"]
-        fn test_cargo_001_transpile_all_never_panics(
+                fn test_cargo_001_transpile_all_never_panics(
             file_count in 1usize..10,
             file_name_seed in 0u64..1000
         ) {
