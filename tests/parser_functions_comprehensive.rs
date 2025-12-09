@@ -102,7 +102,6 @@ fn test_function_with_comments_before_body() {
 }
 
 #[test]
-#[ignore = "Where clause not fully supported"]
 fn test_function_with_where_clause() {
     // Test where clause parsing (currently skipped but should parse)
     let code = r"
@@ -589,7 +588,6 @@ fn edge_case_lambda_returning_lambda() {
 }
 
 #[test]
-#[ignore = "Default parameters not yet implemented in runtime"]
 fn edge_case_function_with_default_params() {
     let code = r#"
         fun greet(name: String = "World") {
