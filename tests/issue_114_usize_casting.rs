@@ -213,7 +213,6 @@ fun test_reversed(limit) {
 }
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_issue_114_usize_bench_008_end_to_end() {
     // Full BENCH-008: Transpile → Compile → Execute
     let input = r"
