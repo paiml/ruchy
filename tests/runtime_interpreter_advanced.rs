@@ -559,7 +559,6 @@ fn test_integration_calculator() {
 }
 
 #[test]
-#[ignore = "push() not implemented in eval_builtin.rs - returns Message object"]
 fn test_integration_filter_map_reduce() {
     ruchy_cmd()
         .arg("-e")
@@ -585,7 +584,6 @@ fn test_integration_filter_map_reduce() {
 }
 
 #[test]
-#[ignore = "push() not implemented in eval_builtin.rs - returns Message object"]
 fn test_integration_memoization_simulation() {
     ruchy_cmd()
         .arg("-e")
