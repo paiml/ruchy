@@ -169,7 +169,7 @@ error: aborting due to previous error
 
 #[test]
 fn test_oracle_collect_multiple_errors() {
-    let rustc_stderr = r#"
+    let rustc_stderr = r"
 error[E0308]: mismatched types
   --> src/main.rs:5:12
 
@@ -178,7 +178,7 @@ error[E0382]: borrow of moved value: `x`
 
 error[E0277]: the trait bound `String: Copy` is not satisfied
   --> src/main.rs:15:10
-"#;
+";
 
     let samples = RuchyOracle::parse_rustc_errors(rustc_stderr);
     assert_eq!(samples.len(), 3);
@@ -186,13 +186,13 @@ error[E0277]: the trait bound `String: Copy` is not satisfied
 
 #[test]
 fn test_oracle_ignores_warnings() {
-    let rustc_stderr = r#"
+    let rustc_stderr = r"
 warning: unused variable: `x`
   --> src/main.rs:5:9
 
 error[E0308]: mismatched types
   --> src/main.rs:10:12
-"#;
+";
 
     let samples = RuchyOracle::parse_rustc_errors(rustc_stderr);
     assert_eq!(samples.len(), 1); // Only the error, not warning
@@ -204,6 +204,8 @@ error[E0308]: mismatched types
 
 #[test]
 fn test_oracle_drift_detection_api_works() {
+    use ruchy::oracle::DriftStatus;
+
     let mut oracle = RuchyOracle::new();
     oracle.train_from_examples().expect("bootstrap");
 
@@ -217,7 +219,6 @@ fn test_oracle_drift_detection_api_works() {
 
     // Verify drift_status() returns a valid DriftStatus
     let status = oracle.drift_status();
-    use ruchy::oracle::DriftStatus;
     assert!(matches!(status, DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift));
 }
 
