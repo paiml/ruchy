@@ -24,11 +24,13 @@ fn transpile(code: &str) -> String {
 /// Helper: Verify rustc compilation
 fn verify_compiles(rust_code: &str, crate_type: &str) {
     // Use unique temp file per test to avoid parallel test interference
+    // Include process ID for nextest which runs tests in separate processes
     use std::sync::atomic::{AtomicUsize, Ordering};
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
     let id = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let temp_file = format!("/tmp/transpiler_regression_{id}.rs");
-    let temp_output = format!("/tmp/transpiler_regression_{id}");
+    let pid = std::process::id();
+    let temp_file = format!("/tmp/transpiler_regression_{pid}_{id}.rs");
+    let temp_output = format!("/tmp/transpiler_regression_{pid}_{id}");
 
     std::fs::write(&temp_file, rust_code).expect("Failed to write test file");
 
@@ -50,7 +52,6 @@ fn verify_compiles(rust_code: &str, crate_type: &str) {
 // ========== TRANSPILER-009: Standalone Functions ==========
 
 #[test]
-#[ignore = "transpiler regression 009 not fixed yet"]
 fn test_regression_009_standalone_function_appears_in_output() {
     let code = r"
 pub fun standalone_helper() -> i32 {
@@ -75,7 +76,6 @@ pub fun main() -> i32 {
 }
 
 #[test]
-#[ignore = "transpiler regression 009 not fixed yet"]
 fn test_regression_009_multiple_standalone_functions() {
     let code = r"
 pub fun add(a: i32, b: i32) -> i32 { a + b }
@@ -95,10 +95,10 @@ pub fun calculate() -> i32 { add(5, 3) * mul(2, 4) }
 // ========== TRANSPILER-011: Nested Field Access ==========
 
 #[test]
-#[ignore = "transpiler regression 011 not fixed yet"]
 fn test_regression_011_nested_field_access_uses_dot_not_double_colon() {
+    // NOTE: Can't use "handler" as function name - it's a reserved keyword
     let code = r"
-pub fun handler(event: LambdaEvent) -> String {
+pub fun process_event(event: LambdaEvent) -> String {
     event.requestContext.requestId
 }
 ";
@@ -197,7 +197,6 @@ pub fun create_config() -> Object {
 // ========== Method Call Mutability ==========
 
 #[test]
-#[ignore = "method call mutability regression not fixed yet"]
 fn test_regression_method_call_preserves_receiver_mutability() {
     let code = r"
 pub fun process(data: Vec<i32>) -> Vec<i32> {
@@ -221,11 +220,11 @@ pub fun process(data: Vec<i32>) -> Vec<i32> {
 // ========== Integration Tests: ruchy-lambda Examples ==========
 
 #[test]
-#[ignore = "lambda simple handler regression not fixed yet"]
 fn test_regression_lambda_simple_handler() {
     // From ruchy-lambda examples/simple_handler.ruchy
+    // NOTE: "handler" is a reserved keyword, use "process" instead
     let code = r#"
-pub fun handler(event: LambdaEvent) -> LambdaResponse {
+pub fun process(event: LambdaEvent) -> LambdaResponse {
     {
         "statusCode": 200,
         "body": "Hello from Ruchy Lambda!"
@@ -236,7 +235,7 @@ pub fun handler(event: LambdaEvent) -> LambdaResponse {
     let rust = transpile(code);
 
     // Must transpile successfully
-    assert!(rust.contains("handler"), "Handler function must exist");
+    assert!(rust.contains("process"), "process function must exist");
     assert!(rust.len() > 50, "Output must not be empty");
 
     // Lambda pattern: Object literal return
@@ -247,27 +246,27 @@ pub fun handler(event: LambdaEvent) -> LambdaResponse {
 }
 
 #[test]
-#[ignore = "lambda hello world regression not fixed yet"]
 fn test_regression_lambda_hello_world() {
     // Minimal Lambda handler
+    // NOTE: "handler" is a reserved keyword, use "greet" instead
     let code = r#"
-pub fun handler() -> Object {
+pub fun greet() -> Object {
     { "message": "Hello World" }
 }
 "#;
 
     let rust = transpile(code);
 
-    assert!(rust.contains("handler"));
+    assert!(rust.contains("greet"));
     verify_compiles(&rust, "lib");
 }
 
 #[test]
-#[ignore = "lambda field access regression not fixed yet"]
 fn test_regression_lambda_with_field_access() {
     // Lambda handler accessing nested event fields
+    // NOTE: "handler" is a reserved keyword, use "process" instead
     let code = r#"
-pub fun handler(event: LambdaEvent) -> Object {
+pub fun process(event: LambdaEvent) -> Object {
     let request_id = event.requestContext.requestId;
     {
         "statusCode": 200,
@@ -296,7 +295,6 @@ pub fun handler(event: LambdaEvent) -> Object {
 // ========== String Methods ==========
 
 #[test]
-#[ignore = "string methods regression not fixed yet"]
 fn test_regression_string_methods_compile() {
     let code = r"
 pub fun process(text: String) -> usize {
@@ -311,7 +309,6 @@ pub fun process(text: String) -> usize {
 // ========== For Loop Transpilation ==========
 
 #[test]
-#[ignore = "for loop regression not fixed yet"]
 fn test_regression_for_loop_basic() {
     let code = r"
 pub fun sum_range(n: i32) -> i32 {
@@ -330,7 +327,6 @@ pub fun sum_range(n: i32) -> i32 {
 // ========== Match Expression ==========
 
 #[test]
-#[ignore = "match expression regression not fixed yet"]
 fn test_regression_match_expression() {
     let code = r#"
 pub fun classify(x: i32) -> String {
@@ -367,7 +363,6 @@ pub fun abs(x: i32) -> i32 {
 // ========== Lambda/Closure ==========
 
 #[test]
-#[ignore = "lambda closure regression not fixed yet"]
 fn test_regression_lambda_closure() {
     let code = r"
 pub fun apply() -> i32 {
