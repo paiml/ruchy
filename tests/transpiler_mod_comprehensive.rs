@@ -288,7 +288,6 @@ fn test_module_names_std() {
 // ============================================================================
 
 #[test]
-#[ignore = "Async functions not yet fully implemented in runtime"]
 fn test_async_function() {
     let code = r"
         async fun fetch_data() {
@@ -494,7 +493,6 @@ fn property_binary_operators() {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn integration_transpile_compile_execute() {
     let code = r#"
         fun factorial(n: i32) -> i32 {

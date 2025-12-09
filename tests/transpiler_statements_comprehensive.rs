@@ -29,7 +29,6 @@ use std::process::Command;
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_let_immutable_simple() {
     let code = r#"
 pub fn test() {
@@ -145,7 +144,6 @@ pub fn test() {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_if_simple() {
     let code = r#"
 pub fn test(x: i32) -> String {
@@ -266,7 +264,6 @@ pub fn test(x: i32, y: i32) -> String {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_match_literal() {
     let code = r#"
 pub fn test(x: i32) -> String {
@@ -337,7 +334,6 @@ pub fn test(x: i32) -> String {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_for_range() {
     let code = r#"
 pub fn test() {
@@ -669,7 +665,6 @@ pub fn test() {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_integration_multiple_statements() {
     let code = r"
 pub fn calculate(x: i32) -> i32 {
