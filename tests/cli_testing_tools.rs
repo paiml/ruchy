@@ -7,7 +7,6 @@ use std::process::Command;
 
 /// RED PHASE TEST 1: property-tests command exists and runs
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_property_tests_command_exists() {
     let output = Command::new("cargo")
         .args(["run", "--bin", "ruchy", "--", "property-tests", "--help"])
@@ -58,7 +57,7 @@ fn test_property_tests_runs_on_lang_comp() {
 
 /// RED PHASE TEST 3: property-tests generates JSON report
 #[test]
-#[ignore = "Slow E2E test (22s): Runs full cargo run (compile+execute) - use 'make test-e2e'"]
+#[ignore = "Flaky: depends on lang_comp suite state"]
 fn test_property_tests_json_format() {
     let output = Command::new("cargo")
         .args([
@@ -91,7 +90,6 @@ fn test_property_tests_json_format() {
 
 /// RED PHASE TEST 4: mutations command exists and runs
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_mutations_command_exists() {
     let output = Command::new("cargo")
         .args(["run", "--bin", "ruchy", "--", "mutations", "--help"])
@@ -112,7 +110,6 @@ fn test_mutations_command_exists() {
 
 /// RED PHASE TEST 5: mutations runs on test file
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_mutations_runs_on_test_file() {
     let output = Command::new("cargo")
         .args([
@@ -140,7 +137,6 @@ fn test_mutations_runs_on_test_file() {
 
 /// RED PHASE TEST 6: mutations generates JSON report
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_mutations_json_format() {
     let output = Command::new("cargo")
         .args([
@@ -169,7 +165,6 @@ fn test_mutations_json_format() {
 
 /// RED PHASE TEST 7: fuzz command exists and runs
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_fuzz_command_exists() {
     let output = Command::new("cargo")
         .args(["run", "--bin", "ruchy", "--", "fuzz", "--help"])
@@ -190,7 +185,6 @@ fn test_fuzz_command_exists() {
 
 /// RED PHASE TEST 8: fuzz runs with small iteration count
 #[test]
-#[ignore = "slow: fuzz tests take >60s, run with --ignored"]
 fn test_fuzz_runs_with_iterations() {
     let output = Command::new("cargo")
         .args([
@@ -218,7 +212,6 @@ fn test_fuzz_runs_with_iterations() {
 
 /// RED PHASE TEST 9: fuzz generates JSON report
 #[test]
-#[ignore = "slow: fuzz tests take >60s, run with --ignored"]
 fn test_fuzz_json_format() {
     let output = Command::new("cargo")
         .args([
@@ -247,7 +240,6 @@ fn test_fuzz_json_format() {
 
 /// RED PHASE TEST 10: Verify all three commands exist in CLI
 #[test]
-#[ignore = "slow: cargo run overhead >120s, run with --ignored"]
 fn test_all_testing_commands_in_help() {
     let output = Command::new("cargo")
         .args(["run", "--bin", "ruchy", "--", "--help"])
