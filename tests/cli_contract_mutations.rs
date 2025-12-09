@@ -135,7 +135,6 @@ fn cli_mutations_text_format() {
 }
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_json_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "json_test.ruchy", "let x = 42\n");
@@ -164,7 +163,6 @@ fn cli_mutations_json_format() {
 // ============================================================================
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_custom_timeout() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "timeout_test.ruchy", "let x = 42\n");
@@ -197,7 +195,6 @@ fn cli_mutations_invalid_timeout_format() {
 // ============================================================================
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_output_to_file() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
@@ -220,7 +217,6 @@ fn cli_mutations_output_to_file() {
 // ============================================================================
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_min_coverage_threshold() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "coverage_test.ruchy", "let x = 42\n");
@@ -272,7 +268,6 @@ fn cli_mutations_reports_zero_mutants_for_syntax_error() {
 // ============================================================================
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
@@ -308,7 +303,6 @@ fn cli_mutations_empty_file_succeeds_with_zero_mutants() {
 }
 
 #[test]
-#[ignore = "Mutation testing takes too long"]
 fn cli_mutations_complex_program() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(
