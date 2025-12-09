@@ -1,10 +1,8 @@
 #![allow(missing_docs)]
-//! STDLIB-006: Array .`unique()` method
+//! STDLIB-006: Array `.unique()` method
 //!
-//! ROOT CAUSE: Missing array deduplication operation
-//! SOLUTION: Implement .`unique()` method using HashSet-based deduplication
-//!
-//! EXTREME TDD: RED → GREEN → REFACTOR
+//! Tests for array deduplication operation
+//! IMPLEMENTATION: Uses IndexSet-based deduplication preserving order
 
 use assert_cmd::Command;
 
@@ -13,11 +11,10 @@ fn ruchy_cmd() -> Command {
 }
 
 // ============================================================================
-// RED PHASE: .unique() tests (WILL FAIL)
+// GREEN PHASE: .unique() tests (NOW WORKING)
 // ============================================================================
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_basic() {
     let code = r"
 let arr = [1, 2, 1, 3, 2];
@@ -29,11 +26,10 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[1, 2, 3]\nnil\n");
+        .stdout("[1, 2, 3]\n");
 }
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_empty() {
     let code = r"
 let arr = [];
@@ -45,11 +41,10 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[]\nnil\n");
+        .stdout("[]\n");
 }
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_already_unique() {
     let code = r"
 let arr = [1, 2, 3];
@@ -61,11 +56,10 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[1, 2, 3]\nnil\n");
+        .stdout("[1, 2, 3]\n");
 }
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_all_duplicates() {
     let code = r"
 let arr = [5, 5, 5, 5];
@@ -77,11 +71,10 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[5]\nnil\n");
+        .stdout("[5]\n");
 }
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_strings() {
     let code = r#"
 let arr = ["a", "b", "a", "c", "b"];
@@ -93,11 +86,10 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[\"a\", \"b\", \"c\"]\nnil\n");
+        .stdout("[\"a\", \"b\", \"c\"]\n");
 }
 
 #[test]
-#[ignore = "unique not implemented"]
 fn test_unique_preserves_order() {
     let code = r"
 let arr = [3, 1, 4, 1, 5, 9, 2, 6, 5];
@@ -109,5 +101,5 @@ println(arr.unique())
         .arg(code)
         .assert()
         .success()
-        .stdout("[3, 1, 4, 5, 9, 2, 6]\nnil\n");
+        .stdout("[3, 1, 4, 5, 9, 2, 6]\n");
 }
