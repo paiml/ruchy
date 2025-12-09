@@ -59,7 +59,6 @@ fn arb_module_declaration() -> impl Strategy<Value = String> {
 proptest! {
     /// Property: Parser never panics on module declarations
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_parse_module_never_panics(module_decl in arb_module_declaration()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&module_decl).parse()
@@ -69,7 +68,6 @@ proptest! {
 
     /// Property: Parsing is deterministic
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_module_parsing_deterministic(module_decl in arb_module_declaration()) {
         let result1 = Parser::new(&module_decl).parse();
         let result2 = Parser::new(&module_decl).parse();
@@ -86,7 +84,6 @@ proptest! {
 
     /// Property: Module names are preserved
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_module_name_preserved(name in arb_module_name()) {
         let module_decl = format!("module {name} {{}}");
         let result = Parser::new(&module_decl).parse();
@@ -102,7 +99,6 @@ proptest! {
 
     /// Property: Empty modules parse successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_empty_module_parses(name in arb_module_name()) {
         let module_decl = format!("module {name} {{}}");
         let result = Parser::new(&module_decl).parse();
@@ -111,7 +107,6 @@ proptest! {
 
     /// Property: Module with single expression parses
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_single_expr_module_parses(
         name in arb_module_name(),
         expr in "(0i32..100i32)"
@@ -128,7 +123,6 @@ proptest! {
 
     /// Property: Invalid module declarations produce clear errors
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_module_clear_error(
         invalid_name in "[^a-zA-Z0-9_]+"
     ) {
