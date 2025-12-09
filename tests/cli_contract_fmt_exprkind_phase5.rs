@@ -139,7 +139,6 @@ fn test_fmt_reexport() {
 // ==================== Macro ====================
 
 #[test]
-#[ignore = "Parser doesn't support macro definitions yet - needs PARSER enhancement"]
 fn test_fmt_macro_definition() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("macro_def.ruchy");
@@ -159,7 +158,6 @@ fn test_fmt_macro_definition() {
 // ==================== MacroInvocation ====================
 
 #[test]
-#[ignore = "Parser confuses ! with lambda syntax - needs PARSER enhancement"]
 fn test_fmt_macro_invocation() {
     let temp_dir = setup_test_dir();
     let test_file = temp_dir.path().join("macro_call.ruchy");
