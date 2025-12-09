@@ -68,7 +68,6 @@ mod property_tests {
     proptest! {
                                                     /// Property: Any tuple with valid i32 values compiles to valid WASM
                                                     #[test]
-                                                    #[ignore = "Run explicitly: cargo test property_tests -- --ignored"]
                                                     fn prop_tuple_creation_always_valid(
                                                         a in -1000i32..1000,
                                                         b in -1000i32..1000,
@@ -92,7 +91,6 @@ fn main() {{
 
                                                     /// Property: Array with any valid i32 elements compiles to valid WASM
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_array_creation_always_valid(
                                                         elements in prop::collection::vec(-1000i32..1000, 1..10)
                                                     ) {
@@ -151,7 +149,6 @@ fn main() {{
 
                                                     /// Property: Array mutations at any valid index compile correctly
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_array_mutation_valid(
                                                         size in 1usize..10,
                                                         index in 0usize..9,
@@ -186,7 +183,6 @@ fn main() {{
 
                                                     /// Property: Struct with any field values compiles to valid WASM
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_struct_creation_valid(
                                                         x in -1000i32..1000,
                                                         y in -1000i32..1000
@@ -214,7 +210,6 @@ fn main() {{
 
                                                     /// Property: Struct field mutations compile correctly
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_struct_mutation_valid(
                                                         initial_x in -100i32..100,
                                                         initial_y in -100i32..100,
@@ -244,7 +239,6 @@ fn main() {{
 
                                                     /// Property: Nested tuples with any depth compile correctly
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_nested_tuple_valid(
                                                         a in -100i32..100,
                                                         b in -100i32..100,
@@ -269,7 +263,6 @@ fn main() {{
 
                                                     /// Property: Destructuring with any valid tuple compiles
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_destructuring_valid(
                                                         a in -1000i32..1000,
                                                         b in -1000i32..1000
@@ -293,7 +286,6 @@ fn main() {{
 
                                                     /// Property: Mixed data structures compile correctly
                                                     #[test]
-                                                    #[ignore = "Test disabled - run with --ignored"]
                                                     fn prop_mixed_structures_valid(
                                                         arr_val in -100i32..100,
                                                         tup_val in -100i32..100,
