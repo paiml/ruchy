@@ -29,20 +29,19 @@ println("Signal handler registered")
 }
 
 #[test]
-#[ignore = "Object literal parsing needs fixes - GitHub Issue TBD"]
 fn test_object_literal_parsing() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
 
-    // Check object literal with string keys (not yet working)
+    // Object literal with shorthand keys (identifier: value)
     let code = r#"
 let service_config = {
-    name: "web_server", 
-    command: "./server", 
+    name: "web_server",
+    command: "./server",
     port: 8080
 }
 println("Service: " + service_config.name)
-println("Port: " + service_config.port.to_s())
+println("Port: " + service_config.port.to_string())
 "#;
 
     fs::write(&file_path, code).unwrap();
@@ -101,20 +100,19 @@ for item in items {
 }
 
 #[test]
-#[ignore = "i64 type annotation not yet supported - GitHub Issue TBD"]
 fn test_function_parameter_parsing() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
 
-    // Check function with parameters (not yet working with "Expected RightParen, found Colon")
+    // Function with typed parameter and return value conversion
     let code = r#"
-fn format_size(bytes: i64) {
+fun format_size(bytes: i64) {
     if bytes < 1024 {
-        return bytes.to_s() + " B"
+        return bytes.to_string() + " B"
     } else if bytes < 1024 * 1024 {
-        return (bytes / 1024).to_s() + " KB"
+        return (bytes / 1024).to_string() + " KB"
     } else {
-        return (bytes / (1024 * 1024)).to_s() + " MB"
+        return (bytes / (1024 * 1024)).to_string() + " MB"
     }
 }
 
