@@ -26,7 +26,6 @@ mod property_tests {
     proptest! {
         /// PROPERTY: Line continuations with comments should parse successfully
         #[test]
-        #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_line_continuation_with_comment_parses(val1 in 1..100i32, val2 in 1..100i32) {
             let source = format!("let x = {val1} + {val2}\n    // comment\n    + {val1}");
             let mut parser = RuchyParser::new(&source);
@@ -37,7 +36,6 @@ mod property_tests {
 
         /// PROPERTY: Multiple line continuations should parse successfully
         #[test]
-        #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_multiple_line_continuations_parse(count in 2..5usize) {
             let mut source = "let x = 1".to_string();
             for i in 2..=count {
@@ -52,7 +50,6 @@ mod property_tests {
 
         /// PROPERTY: Line continuations with multiple comments should parse
         #[test]
-        #[ignore = "Property tests run with: cargo test property_tests -- --ignored"]
         fn prop_line_continuation_multiple_comments(val1 in 1..100i32, val2 in 1..100i32, val3 in 1..100i32) {
             let source = format!("let x = {val1}\n    // comment 1\n    + {val2}\n    // comment 2\n    + {val3}");
             let mut parser = RuchyParser::new(&source);
