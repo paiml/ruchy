@@ -62,7 +62,6 @@ println(f"Name: {name}, Age: {age}")
 }
 
 #[test]
-#[ignore = "Object literal syntax in pattern matching not yet implemented"]
 fn test_nested_pattern_matching() {
     let code = r#"
 let data = {users: [{name: "Bob", score: 85}, {name: "Carol", score: 92}]}
