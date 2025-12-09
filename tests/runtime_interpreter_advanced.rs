@@ -86,7 +86,6 @@ fn test_struct_definition() {
 }
 
 #[test]
-#[ignore = "Struct instantiation may not be fully implemented"]
 fn test_struct_instantiation() {
     ruchy_cmd()
         .arg("-e")
@@ -103,7 +102,6 @@ fn test_struct_instantiation() {
 }
 
 #[test]
-#[ignore = "Struct field access may not be fully implemented"]
 fn test_struct_field_mutation() {
     ruchy_cmd()
         .arg("-e")
@@ -179,7 +177,6 @@ fn test_array_method_len() {
 }
 
 #[test]
-#[ignore = "String methods may not be fully implemented"]
 fn test_string_method_to_uppercase() {
     ruchy_cmd()
         .arg("-e")
@@ -190,7 +187,6 @@ fn test_string_method_to_uppercase() {
 }
 
 #[test]
-#[ignore = "String methods may not be fully implemented"]
 fn test_string_method_split() {
     ruchy_cmd()
         .arg("-e")
