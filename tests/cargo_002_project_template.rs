@@ -29,7 +29,6 @@ fn read_file_in_project(project_dir: &Path, relative_path: &str) -> String {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_new_binary_project() {
     // CARGO-002: Test creating a new binary project with `ruchy new`
 
@@ -61,7 +60,6 @@ fn test_cargo_002_new_binary_project() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_new_library_project() {
     // CARGO-002: Test creating a new library project with `ruchy new --lib`
 
@@ -86,7 +84,6 @@ fn test_cargo_002_new_library_project() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_cargo_toml_has_build_dependencies() {
     // CARGO-002: Verify generated Cargo.toml includes ruchy as build dependency
 
@@ -123,7 +120,6 @@ fn test_cargo_002_cargo_toml_has_build_dependencies() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_build_rs_template_valid() {
     // CARGO-002: Verify generated build.rs is valid and calls transpile_all
 
@@ -160,7 +156,6 @@ fn test_cargo_002_build_rs_template_valid() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_main_ruchy_template_valid() {
     // CARGO-002: Verify generated main.ruchy is valid Ruchy code
 
@@ -191,7 +186,6 @@ fn test_cargo_002_main_ruchy_template_valid() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_readme_has_instructions() {
     // CARGO-002: Verify README.md has basic usage instructions
 
@@ -225,7 +219,6 @@ fn test_cargo_002_readme_has_instructions() {
 }
 
 #[test]
-#[ignore = "Will pass after v3.72 release with build_transpiler published"]
 fn test_cargo_002_created_project_can_build() {
     // CARGO-002: Verify the generated project can actually build
     //
@@ -278,7 +271,6 @@ fn test_cargo_002_created_project_can_build() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_error_on_invalid_name() {
     // CARGO-002: Test that invalid project names are rejected
 
@@ -302,7 +294,6 @@ fn test_cargo_002_error_on_invalid_name() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_error_on_existing_directory() {
     // CARGO-002: Test that existing directory causes error
 
@@ -325,7 +316,6 @@ fn test_cargo_002_error_on_existing_directory() {
 }
 
 #[test]
-#[ignore = "Will pass after implementation"]
 fn test_cargo_002_gitignore_includes_generated_rs() {
     // CARGO-002: Verify .gitignore includes generated .rs files
 
@@ -361,8 +351,7 @@ mod property_tests {
         #![proptest_config(ProptestConfig::with_cases(20))]
 
         #[test]
-        #[ignore = "Run after implementation"]
-        fn test_cargo_002_new_never_panics(
+                fn test_cargo_002_new_never_panics(
             name_len in 1usize..20,
             name_seed in 0u64..1000
         ) {
