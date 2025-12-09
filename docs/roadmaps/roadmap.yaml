@@ -118,18 +118,18 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: Ensure make test-fast passes in under 5 minutes'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2025-12-07T12:45:53.557478821+00:00
-  updated: 2025-12-07T12:45:53.557478821+00:00
+  updated: 2025-12-09T08:02:01.304725582+00:00
   spec: null
   acceptance_criteria: []
   phases: []
   subtasks: []
   estimated_effort: null
   labels: []
-  notes: null
+  notes: Fixed p0_critical_features slow tests (178s -> 0.04s each) by using binary directly instead of cargo run. Fixed sqlite_1066 failing test. Fixed test isolation issue with process IDs. All 11,371 tests pass in 49.5s execution time.
 - id: 'PARSER-082: Atoms in match patterns and map keys'
   github_issue: null
   item_type: task
@@ -326,18 +326,18 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: Apex Hunt: PDCA Cycle 11 - Find Defect'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2025-12-08T18:45:57.940497465+00:00
-  updated: 2025-12-08T18:45:57.940497465+00:00
+  updated: 2025-12-09T00:00:00.000000000+00:00
   spec: null
   acceptance_criteria: []
   phases: []
   subtasks: []
   estimated_effort: null
   labels: []
-  notes: null
+  notes: Fixed regression 011 - field access was working but test used reserved keyword 'handler'. Un-ignored 8 tests total (12 passing, 3 ignored for Object literal feature).
 - id: 'ORACLE-CLI: Add train/save/status subcommands'
   github_issue: null
   item_type: task
@@ -358,11 +358,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: ORACLE-002: Auto-train on transpilation errors'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2025-12-08T20:05:58.856116218+00:00
-  updated: 2025-12-08T20:05:58.856116218+00:00
+  updated: 2025-12-08T23:06:29.962536073+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -370,3 +370,67 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: ORACLE-004
+  github_issue: null
+  item_type: task
+  title: 'New task: ORACLE-004'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-08T21:50:44.035102250+00:00
+  updated: 2025-12-08T22:50:27.708525761+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 12 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 12 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T08:02:54.001766378+00:00
+  updated: 2025-12-09T08:17:41.064787968+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Fixed BUG-032 - range() function transpilation. range(end) now transpiles to (0..end), range(start, end) transpiles to (start..end). Un-ignored 2 notebook tests.
+- id: 'Apex Hunt: PDCA Cycle 13 - Find Defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 13 - Find Defect'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T08:18:28.270630597+00:00
+  updated: 2025-12-09T08:25:11.193038709+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Fixed Oracle persistence - status/classify now auto-load saved models from ruchy_oracle.apr. Added load_from_serialized() method. Full workflow now works train→save→status→classify.
+- id: 'Apex Hunt: PDCA Cycle 14 - PARSER-083'
+  github_issue: null
+  item_type: task
+  title: 'PARSER-083: Doc comment parsing fix'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T09:30:00.000000000+00:00
+  updated: 2025-12-09T09:35:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Fixed doc comment parsing - skip_comments() was discarding DocComment tokens before consume_leading_comments() could attach them. Changed skip_comments() to preserve doc comments. Un-ignored 1 test (test_issue_101_doc_markdown_content).
