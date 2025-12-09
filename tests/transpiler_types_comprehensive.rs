@@ -537,7 +537,6 @@ fn property_option_with_all_primitive_types() {
 // ============================================================================
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn integration_type_annotations_compile() {
     let code = r#"
         fun typed_function(x: int, y: float, s: String) -> bool {
