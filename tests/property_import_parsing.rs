@@ -58,7 +58,6 @@ proptest! {
     ///
     /// Invariant: For all valid import strings i, parse(i) returns Ok(_) or Err(_), never panics
     #[test]
-    #[ignore = "Run with: cargo test property_import -- --ignored --nocapture"]
     fn prop_parse_import_never_panics(import_stmt in arb_import_statement()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&import_stmt).parse()
@@ -72,7 +71,6 @@ proptest! {
     ///
     /// Invariant: All module paths are valid import syntax
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_simple_imports_parse(module_path in arb_module_path()) {
         let code = format!("import {module_path}");
         let result = Parser::new(&code).parse();
@@ -85,7 +83,6 @@ proptest! {
     ///
     /// Invariant: import module::* is valid syntax
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_wildcard_imports_parse(module_path in arb_module_path()) {
         let code = format!("import {module_path}::*");
         let result = Parser::new(&code).parse();
@@ -97,7 +94,6 @@ proptest! {
     ///
     /// Invariant: import module as alias is valid syntax
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_aliased_imports_parse(
         module_path in arb_module_path(),
         alias in arb_identifier()
@@ -118,7 +114,6 @@ proptest! {
     ///
     /// Invariant: For all import strings i, parse(i) == parse(i)
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_import_parsing_deterministic(import_stmt in arb_import_statement()) {
         let result1 = Parser::new(&import_stmt).parse();
         let result2 = Parser::new(&import_stmt).parse();
@@ -144,7 +139,6 @@ proptest! {
     ///
     /// Invariant: Parsing "import std::vec" preserves "std::vec"
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_module_path_preservation(module_path in arb_module_path()) {
         let code = format!("import {module_path}");
 
@@ -159,7 +153,6 @@ proptest! {
     ///
     /// Invariant: import foo as bar preserves "bar"
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_alias_preservation(
         module_path in arb_module_path(),
         alias in arb_identifier()
@@ -182,7 +175,6 @@ proptest! {
     ///
     /// Invariant: Parser errors contain actionable information
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_import_clear_errors(
         invalid_char in "[^a-zA-Z0-9_: \\*]"
     ) {

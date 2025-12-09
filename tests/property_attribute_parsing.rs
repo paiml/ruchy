@@ -67,7 +67,6 @@ fn arb_multiple_decorators() -> impl Strategy<Value = String> {
 proptest! {
     /// Property: Parser never panics on @-style decorator input
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_parse_at_decorator_never_panics(decorator in arb_at_decorator()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&decorator).parse()
@@ -77,7 +76,6 @@ proptest! {
 
     /// Property: Parser never panics on #[...] attribute input
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_parse_rust_attribute_never_panics(attr in arb_rust_attribute()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&attr).parse()
@@ -87,7 +85,6 @@ proptest! {
 
     /// Property: Parser never panics on multiple decorators
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_parse_multiple_decorators_never_panics(code in arb_multiple_decorators()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&code).parse()
@@ -97,7 +94,6 @@ proptest! {
 
     /// Property: Parsing is deterministic
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_decorator_parsing_deterministic(decorator in arb_at_decorator()) {
         let result1 = Parser::new(&decorator).parse();
         let result2 = Parser::new(&decorator).parse();
@@ -114,7 +110,6 @@ proptest! {
 
     /// Property: Decorator names are preserved
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_decorator_name_preservation(name in arb_decorator_name()) {
         let code = format!("@{name}\nfun test() {{}}");
         let result = Parser::new(&code).parse();
@@ -130,7 +125,6 @@ proptest! {
 
     /// Property: Invalid decorators produce clear errors
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_decorator_clear_errors(invalid_char in "[^a-zA-Z0-9_@#\\[\\](),\\s]") {
         let code = format!("@test{invalid_char}\nfun test() {{}}");
         let result = Parser::new(&code).parse();
