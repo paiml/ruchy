@@ -14,7 +14,6 @@ use ruchy::frontend::ast::{
 /// Property Test 1: Inline expansion is idempotent
 /// Invariant: inline(inline(expr)) = inline(expr)
 #[test]
-#[ignore = "Run with: cargo test property_inline_idempotent -- --ignored --nocapture"]
 fn property_inline_idempotent() {
     use proptest::prelude::*;
 
@@ -107,7 +106,6 @@ fn property_inline_idempotent() {
 /// Property Test 2: Recursive functions are never inlined
 /// Invariant: Function definition still exists after inlining
 #[test]
-#[ignore = "Run with: cargo test property_recursive_never_inlined -- --ignored --nocapture"]
 fn property_recursive_never_inlined() {
     use proptest::prelude::*;
 
@@ -187,7 +185,6 @@ fn property_recursive_never_inlined() {
 /// Property Test 3: Large functions (>10 LOC) are NOT inlined
 /// Invariant: Function call still exists after inlining
 #[test]
-#[ignore = "Run with: cargo test property_large_functions_not_inlined -- --ignored --nocapture"]
 fn property_large_functions_not_inlined() {
     use proptest::prelude::*;
 
