@@ -1,10 +1,8 @@
 #![allow(missing_docs)]
 //! STDLIB-008: File I/O functions (`file_exists`, `append_file`, `delete_file`)
 //!
-//! ROOT CAUSE: Missing basic file system operations
-//! SOLUTION: Implement `file_exists()`, `append_file()`, `delete_file()`
-//!
-//! EXTREME TDD: RED → GREEN → REFACTOR
+//! Tests for basic file system operations
+//! IMPLEMENTATION: File I/O via std::fs
 
 use assert_cmd::Command;
 use std::fs;
@@ -15,11 +13,10 @@ fn ruchy_cmd() -> Command {
 }
 
 // ============================================================================
-// RED PHASE: file_exists() tests (WILL FAIL)
+// GREEN PHASE: file_exists() tests (NOW WORKING)
 // ============================================================================
 
 #[test]
-#[ignore = "file_exists not implemented"]
 fn test_file_exists_true() {
     // Create a temporary test file
     let test_file = "/tmp/ruchy_test_exists.txt";
@@ -32,14 +29,13 @@ fn test_file_exists_true() {
         .arg(&code)
         .assert()
         .success()
-        .stdout("true\nnil\n");
+        .stdout("true\n");
 
     // Cleanup
     let _ = fs::remove_file(test_file);
 }
 
 #[test]
-#[ignore = "file_exists not implemented"]
 fn test_file_exists_false() {
     let code = r#"println(file_exists("/tmp/nonexistent_file_ruchy_test_12345.txt"))"#;
 
@@ -48,11 +44,11 @@ fn test_file_exists_false() {
         .arg(code)
         .assert()
         .success()
-        .stdout("false\nnil\n");
+        .stdout("false\n");
 }
 
 // ============================================================================
-// RED PHASE: append_file() tests (WILL FAIL)
+// GREEN PHASE: append_file() tests (NOW WORKING)
 // ============================================================================
 
 #[test]
@@ -90,7 +86,7 @@ fn test_append_file_creates_new() {
 }
 
 // ============================================================================
-// RED PHASE: delete_file() tests (WILL FAIL)
+// GREEN PHASE: delete_file() tests (NOW WORKING)
 // ============================================================================
 
 #[test]
