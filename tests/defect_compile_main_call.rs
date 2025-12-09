@@ -23,7 +23,6 @@ fn ruchy_cmd() -> Command {
 // ===========================================================================
 
 #[test]
-#[ignore = "Will pass after fix"]
 fn test_main_function_with_explicit_call_no_stack_overflow() {
     // DEFECT: This currently causes stack overflow in compiled binary
     // EXPECTED: Should work (either skip the call or warn)
@@ -104,7 +103,6 @@ fn test_main_function_without_explicit_call_works() {
 // ===========================================================================
 
 #[test]
-#[ignore = "Will pass after fix"]
 fn test_nested_main_call_in_function() {
     // Edge case: main() called from another function
 
@@ -177,7 +175,6 @@ fun main() {
 }
 
 #[test]
-#[ignore = "Will pass after fix"]
 fn test_multiple_main_calls() {
     // Edge case: multiple main() calls at module level
 
@@ -249,7 +246,6 @@ mod property_tests {
     // Property: Any function named main should compile and run without stack overflow
     proptest! {
         #[test]
-        #[ignore = "Expensive test - run manually with --ignored"]
         fn prop_main_function_never_stack_overflows(
             message in "Hello.*|Test.*|Output.*"
         ) {

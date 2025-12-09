@@ -284,7 +284,6 @@ let value = calc.result()
 }
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_method_receivers_all_styles() {
     // Test that all three receiver types work in all styles
     let code = r"
@@ -354,7 +353,6 @@ let w2 = w.duplicate()
 }
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_visibility_all_styles() {
     // Test pub and private methods in all styles
     let code = r"
