@@ -36,7 +36,6 @@ fn test_serve_help_shows_watch_flags() {
 }
 
 #[test]
-#[ignore = "Requires manual verification - run with: cargo test -- --ignored"]
 fn test_serve_with_watch_starts_successfully() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("index.html");
@@ -118,7 +117,6 @@ fn test_pid_file_replaces_stale_entry() {
 }
 
 #[test]
-#[ignore = "Requires Unix signals - run with: cargo test -- --ignored"]
 #[cfg(unix)]
 fn test_graceful_shutdown_on_sigterm() {
     use nix::sys::signal::{kill, Signal};
@@ -219,7 +217,6 @@ mod property_tests {
 
     proptest! {
         #[test]
-        #[ignore = "Property test - run with: cargo test -- --ignored"]
         fn prop_pid_file_always_contains_valid_pid(seed in any::<u32>()) {
             let temp_dir = TempDir::new().unwrap();
             let pid_path = temp_dir.path().join(format!("test_{seed}.pid"));
@@ -236,7 +233,6 @@ mod property_tests {
         }
 
         #[test]
-        #[ignore = "Property test - run with: cargo test -- --ignored"]
         fn prop_debounce_values_accepted(_debounce_ms in 0u64..10000u64) {
             // Verify that any reasonable debounce value is accepted
             // This is a CLI parameter validation test

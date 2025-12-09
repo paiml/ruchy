@@ -325,7 +325,6 @@ fn test_tuple_nested() {
 // ============================================================================
 
 #[test]
-#[ignore = "List comprehensions not yet fully implemented in runtime"]
 fn test_list_comprehension_basic() {
     ruchy_cmd()
         .arg("-e")
@@ -341,7 +340,6 @@ fn test_list_comprehension_basic() {
 }
 
 #[test]
-#[ignore = "List comprehensions with filters not yet implemented"]
 fn test_list_comprehension_with_filter() {
     ruchy_cmd()
         .arg("-e")
