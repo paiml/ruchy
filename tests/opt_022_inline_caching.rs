@@ -230,7 +230,6 @@ fun main() {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires method dispatch refactor for &mut self persistence"]
 fn test_opt_022_07_cache_invalidation_on_mutation() {
     // Mutating struct fields should invalidate caches appropriately
     let code = r#"
@@ -312,7 +311,6 @@ fun main() {
 // ============================================================================
 
 #[test]
-#[ignore = "Performance test - run manually"]
 fn test_opt_022_09_property_access_performance() {
     // Baseline: How fast is property access WITHOUT inline caching?
     // This establishes the performance to beat
@@ -351,7 +349,6 @@ fun main() {
 // ============================================================================
 
 #[test]
-#[ignore = "Requires cache statistics API"]
 fn test_opt_022_10_cache_statistics() {
     // System should track cache hit/miss statistics
     // Target: 85-95% hit rate
