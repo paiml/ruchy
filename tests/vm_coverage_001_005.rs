@@ -614,7 +614,6 @@ mod vm_property_tests {
 
     proptest! {
         #[test]
-        #[ignore = "Property tests run with --ignored flag"]
         fn prop_vm_001_call_never_panics(a in -100i64..100, b in -100i64..100) {
             let code = format!(r"{{
                 let add = |x, y| x + y;
@@ -624,7 +623,6 @@ mod vm_property_tests {
         }
 
         #[test]
-        #[ignore = "Property tests run with --ignored flag"]
         fn prop_vm_002_for_sum_correct(nums in prop::collection::vec(0i64..50, 0..5)) {
             if nums.is_empty() {
                 return Ok(());
@@ -643,7 +641,6 @@ mod vm_property_tests {
         }
 
         #[test]
-        #[ignore = "Property tests run with --ignored flag"]
         fn prop_vm_004_match_always_returns(x in 0i64..100) {
             let code = format!(r"{{
                 let val = {x};
@@ -660,7 +657,6 @@ mod vm_property_tests {
         }
 
         #[test]
-        #[ignore = "Property tests run with --ignored flag"]
         fn prop_vm_005_closure_captures_correctly(factor in 1i64..10, value in 1i64..100) {
             let code = format!(r"{{
                 let f = {factor};
