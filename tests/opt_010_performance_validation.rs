@@ -53,7 +53,6 @@ fn speedup_percentage(ast_time: u128, bytecode_time: u128) -> f64 {
 }
 
 #[test]
-#[ignore = "Performance test is flaky under parallel execution - run manually"]
 fn test_opt_010_arithmetic_speedup() {
     let workloads = vec![
         ("simple", "10 + 32", 10000),
@@ -78,7 +77,6 @@ fn test_opt_010_arithmetic_speedup() {
 }
 
 #[test]
-#[ignore = "Performance test is flaky under parallel execution - run manually"]
 fn test_opt_010_loop_speedup() {
     let workloads =
         vec![
@@ -110,7 +108,6 @@ fn test_opt_010_loop_speedup() {
 }
 
 #[test]
-#[ignore = "Performance test is flaky under parallel execution - run manually"]
 fn test_opt_010_comparison_speedup() {
     let workloads = vec![
         ("simple_eq", "42 == 42", 10000),
@@ -136,7 +133,6 @@ fn test_opt_010_comparison_speedup() {
 }
 
 #[test]
-#[ignore = "Performance test is flaky under parallel execution - run manually"]
 fn test_opt_010_control_flow_speedup() {
     let workloads = vec![
         ("if_true", "if true { 42 } else { 0 }", 10000),
@@ -207,7 +203,6 @@ fn test_opt_010_fibonacci_speedup() {
 }
 
 #[test]
-#[ignore = "Only run manually for detailed performance analysis"]
 fn test_opt_010_comprehensive_performance_report() {
     println!("\n=== OPT-010: Comprehensive Performance Report ===\n");
 
