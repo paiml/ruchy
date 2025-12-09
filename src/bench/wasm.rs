@@ -149,7 +149,6 @@ mod tests {
     ///
     /// RED: This test should FAIL because `benchmark_wasm()` is unimplemented
     #[test]
-    #[ignore = "Requires WASM test fixture - run with: cargo test -- --ignored"]
     #[cfg(feature = "notebook")]
     fn test_wasm_benchmark() {
         // Note: This requires a test WASM module

@@ -270,7 +270,6 @@ mod tests {
 
     /// Property test: Percentiles should be monotonically increasing
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_percentiles_monotonic() {
         use proptest::prelude::*;
 

@@ -279,7 +279,7 @@ mod tests {
     ///
     /// RED: This test should FAIL because `benchmark_http()` is unimplemented
     #[test]
-    #[ignore = "Requires internet connection - run with: cargo test -- --ignored"]
+    #[ignore = "Flaky: Depends on httpbin.org availability"]
     fn test_http_benchmark_get() {
         let results = benchmark_http(
             "https://httpbin.org/get",
@@ -302,7 +302,7 @@ mod tests {
 
     /// Test HTTP POST benchmark
     #[test]
-    #[ignore = "Requires internet connection - run with: cargo test -- --ignored"]
+    #[ignore = "Flaky: Depends on httpbin.org availability"]
     fn test_http_benchmark_post() {
         let results = benchmark_http(
             "https://httpbin.org/post",
