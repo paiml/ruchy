@@ -135,7 +135,6 @@ println("Created map")
 /// Test nested turbofish generics
 /// NOTE: Requires PARSER-070 (path expression turbofish) + Vec type implementation
 #[test]
-#[ignore = "PARSER-070: Path expression turbofish not yet implemented (Vec::<T>::new)"]
 fn test_parser_069_turbofish_nested_generics() {
     let code = r#"
 let vec = Vec::<Vec::<i32>>::new()
