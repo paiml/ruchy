@@ -184,7 +184,6 @@ fun explicit_return(n) {
 }
 
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_issue_114_end_to_end_compilation() {
     use std::io::Write;
 
