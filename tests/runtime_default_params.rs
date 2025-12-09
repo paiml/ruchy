@@ -90,7 +90,6 @@ fn test_default_param_too_many_args_still_error() {
 }
 
 #[test]
-#[ignore = "Default params in examples/02_functions needs update"]
 fn test_default_param_examples_02_functions() {
     // Test the actual example from 02_functions.ruchy
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
