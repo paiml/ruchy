@@ -12,7 +12,6 @@ use ruchy::frontend::parser::Parser;
 
 /// Test 1: `Calculator.add()` should NOT become `insert()`
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_transpiler_007_01_calculator_add_not_insert() {
     let code = r#"
 pub struct Calculator {
