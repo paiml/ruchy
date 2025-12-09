@@ -60,7 +60,6 @@ fn arb_expr_in_braces() -> impl Strategy<Value = String> {
 proptest! {
     /// Property: Parser never panics on interpolated string input
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_parse_interpolation_never_panics(s in arb_interpolated_string()) {
         let result = std::panic::catch_unwind(|| {
             Parser::new(&s).parse()
@@ -70,7 +69,6 @@ proptest! {
 
     /// Property: Parsing is deterministic
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_interpolation_parsing_deterministic(s in arb_interpolated_string()) {
         let result1 = Parser::new(&s).parse();
         let result2 = Parser::new(&s).parse();
@@ -87,7 +85,6 @@ proptest! {
 
     /// Property: Escaped braces are preserved
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_escaped_braces_preserved(text in "[a-z ]{1,20}") {
         let s = format!("f\"{{{{{text}}}}}\"");
         let result = Parser::new(&s).parse();
@@ -99,7 +96,6 @@ proptest! {
 
     /// Property: Valid expressions in braces parse
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_valid_expr_in_braces_parse(expr in arb_expr_in_braces()) {
         let s = format!("f\"{expr}\"");
         let result = Parser::new(&s).parse();
@@ -113,7 +109,6 @@ proptest! {
 
     /// Property: Interpolation count preserved
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_interpolation_count_matches(
         var1 in prop::string::string_regex("[a-z][a-z0-9_]{0,5}").expect("valid var"),
         var2 in prop::string::string_regex("[a-z][a-z0-9_]{0,5}").expect("valid var"),
@@ -133,7 +128,6 @@ proptest! {
 
     /// Property: Invalid interpolation produces clear error
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_interpolation_clear_error(
         invalid_char in "[^a-zA-Z0-9_{}()\\[\\].,;:'\" ]"
     ) {

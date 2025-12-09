@@ -75,7 +75,6 @@ proptest! {
     ///
     /// Invariant: For all integers a, b, the expression "a..b" parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_closed_ranges_parse(start in arb_int(), end in arb_int()) {
         let code = format!("fun test() {{ let r = {start}..{end}; }}");
         let result = Parser::new(&code).parse();
@@ -87,7 +86,6 @@ proptest! {
     ///
     /// Invariant: For all integers a, the expression "a.." parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_open_start_ranges_parse(start in arb_int()) {
         let code = format!("fun test() {{ let r = {start}..; }}");
         let result = Parser::new(&code).parse();
@@ -99,7 +97,6 @@ proptest! {
     ///
     /// Invariant: For all integers b, the expression "..b" parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_open_end_ranges_parse(end in arb_int()) {
         let code = format!("fun test() {{ let r = ..{end}; }}");
         let result = Parser::new(&code).parse();
@@ -111,7 +108,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, the expression "arr[r]" parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_slice_with_range_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ let arr = [1, 2, 3]; let slice = arr[{range_expr}]; }}");
         let result = Parser::new(&code).parse();
@@ -123,7 +119,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, the expression "s[r]" parses successfully when s is a string
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_string_slice_with_range_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ let s = \"hello\"; let slice = &s[{range_expr}]; }}");
         let result = Parser::new(&code).parse();
@@ -135,7 +130,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, "let x = r;" parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_range_in_let_statement_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ let x = {range_expr}; }}");
         let result = Parser::new(&code).parse();
@@ -147,7 +141,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, "func(r)" parses successfully
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_range_as_argument_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ func({range_expr}); }}");
         let result = Parser::new(&code).parse();
@@ -159,7 +152,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, ranges can appear in if block bodies
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_range_in_if_block_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ if true {{ let r = {range_expr}; }} }}");
         let result = Parser::new(&code).parse();
@@ -171,7 +163,6 @@ proptest! {
     ///
     /// Invariant: For all ranges r, ranges can appear in while loop bodies
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_range_in_while_loop_parses(range_expr in arb_range_expr()) {
         let code = format!("fun test() {{ while true {{ let r = {range_expr}; break; }} }}");
         let result = Parser::new(&code).parse();
@@ -183,7 +174,6 @@ proptest! {
     ///
     /// Invariant: Parsing multiple range expressions in sequence works
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_multiple_ranges_parse(r1 in arb_range_expr(), r2 in arb_range_expr()) {
         let code = format!("fun test() {{ let a = {r1}; let b = {r2}; }}");
         let result = Parser::new(&code).parse();
