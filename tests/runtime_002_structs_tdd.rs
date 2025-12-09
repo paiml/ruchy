@@ -61,7 +61,6 @@ fn test_runtime_002_struct_field_access_y() {
 
 /// Test 4: Struct value semantics (copy on assignment)
 #[test]
-#[ignore = "RED: Will fail until GREEN phase"]
 fn test_runtime_002_struct_value_semantics_copy() {
     ruchy_cmd()
         .arg("-e")
@@ -147,7 +146,6 @@ mod property_tests {
     /// Property test: Struct field access always returns the correct value
     /// Validates: Field access preserves values across any valid integers
     #[test]
-    #[ignore = "Run manually: cargo test property_tests -- --ignored --nocapture"]
     fn prop_struct_field_access_preserves_values() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(
@@ -168,7 +166,6 @@ mod property_tests {
     /// Property test: Nested structs maintain correct values
     /// Validates: Nested struct instantiation and field access work for any integers
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_nested_structs_preserve_values() {
         proptest!(|(x: i32)| {
             let code = format!(
@@ -190,7 +187,6 @@ mod property_tests {
     /// Property test: Missing required field always produces error
     /// Validates: Error handling is consistent across all field names
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_missing_field_always_errors() {
         proptest!(|(x: i32)| {
             let code = format!(
@@ -209,7 +205,6 @@ mod property_tests {
     /// Property test: Invalid field access always produces error
     /// Validates: Error handling works for any struct instance
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_invalid_field_access_always_errors() {
         proptest!(|(x: i32, y: i32)| {
             let code = format!(
@@ -228,7 +223,6 @@ mod property_tests {
     /// Property test: Float fields work for any valid f64 values
     /// Validates: Struct field access works with floating point numbers
     #[test]
-    #[ignore = "Test disabled - run with --ignored"]
     fn prop_float_fields_work() {
         proptest!(|(x in -1000.0f64..1000.0f64, y in -1000.0f64..1000.0f64)| {
             let code = format!(
