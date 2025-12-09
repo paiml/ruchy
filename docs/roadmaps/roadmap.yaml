@@ -434,3 +434,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: Fixed doc comment parsing - skip_comments() was discarding DocComment tokens before consume_leading_comments() could attach them. Changed skip_comments() to preserve doc comments. Un-ignored 1 test (test_issue_101_doc_markdown_content).
+- id: 'Apex Hunt: PDCA Cycle 15 - Lambda regression tests'
+  github_issue: null
+  item_type: task
+  title: 'Un-ignore Lambda object literal tests'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T09:40:00.000000000+00:00
+  updated: 2025-12-09T09:45:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Object literal return type feature is now implemented. Un-ignored 3 tests (test_regression_lambda_simple_handler, test_regression_lambda_hello_world, test_regression_lambda_with_field_access). All 15 regression suite tests now passing.
