@@ -19,10 +19,30 @@ fn run(code: &str) -> Result<String, String> {
     let tmp_file = format!("/tmp/p0_test_{}_{}.ruchy", std::process::id(), id);
     fs::write(&tmp_file, code).map_err(|e| e.to_string())?;
 
-    let output = Command::new("cargo")
-        .args(["run", "--release", "--bin", "ruchy", "--", "run", &tmp_file])
-        .output()
-        .map_err(|e| e.to_string())?;
+    // Use binary directly (built by test runner) - avoids cargo overhead
+    // Falls back to cargo run if binary not found
+    let binary_path = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(std::path::Path::to_path_buf))
+        .map(|p| p.join("ruchy"))
+        .filter(|p| p.exists())
+        .unwrap_or_else(|| std::path::PathBuf::from("target/debug/ruchy"));
+
+    let output = if binary_path.exists() {
+        Command::new(&binary_path)
+            .args(["run", &tmp_file])
+            .output()
+            .map_err(|e| e.to_string())?
+    } else {
+        // Fallback to cargo run
+        Command::new("cargo")
+            .args(["run", "--bin", "ruchy", "--", "run", &tmp_file])
+            .output()
+            .map_err(|e| e.to_string())?
+    };
+
+    // Clean up temp file
+    let _ = fs::remove_file(&tmp_file);
 
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())

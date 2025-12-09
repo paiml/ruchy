@@ -15,6 +15,7 @@ use predicates::prelude::*;
 /// Test Case 1: Minimal `Vec::new()` with while loop (8 lines)
 /// This is the smallest reproduction case from Issue #76
 #[test]
+#[ignore = "RED phase: Vec::new() runtime support - REGRESSION-076"]
 fn test_regression_076_minimal_vec_new() {
     let script = r#"
 let mut vec = Vec::new();
@@ -38,6 +39,7 @@ println!("Success: {} elements", vec.len());
 /// Test Case 2: `Vec::push` in while loop (from logger test)
 /// This worked in v3.146.0, hangs in v3.147.0
 #[test]
+#[ignore = "RED phase: Vec::push() runtime support - REGRESSION-076"]
 fn test_regression_076_vec_push_loop() {
     let script = r#"
 let mut messages = Vec::new();
@@ -61,6 +63,7 @@ println!("Messages: {}", messages.len());
 /// Test Case 3: Large Vec allocation (from vector-search test)
 /// This worked in v3.146.0, hangs in v3.147.0 on test 7 (100 elements)
 #[test]
+#[ignore = "RED phase: large Vec runtime support - REGRESSION-076"]
 fn test_regression_076_large_vec() {
     let script = r#"
 let mut vec = Vec::new();

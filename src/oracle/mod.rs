@@ -179,6 +179,18 @@ impl Sample {
         let target = vec![self.category.to_index() as f64];
         AprenderSample::with_weight(features, target, f64::from(self.difficulty))
     }
+
+    /// Convert to [`CompilationError`] for classification
+    #[must_use]
+    pub fn to_compilation_error(&self) -> CompilationError {
+        CompilationError {
+            code: self.error_code.clone(),
+            message: self.message.clone(),
+            file_path: None,
+            line: None,
+            column: None,
+        }
+    }
 }
 
 /// Source of training sample (backward compatible)
@@ -1204,7 +1216,7 @@ mod tests {
         let corpus = collector.collect();
 
         // Should generate synthetic samples
-        assert!(corpus.len() > 0);
+        assert!(!corpus.is_empty());
 
         // Check variety of categories
         let type_mismatch = corpus.filter_by_source(SampleSource::Synthetic);

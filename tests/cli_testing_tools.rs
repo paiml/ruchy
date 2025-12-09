@@ -185,6 +185,7 @@ fn test_fuzz_command_exists() {
 
 /// RED PHASE TEST 8: fuzz runs with small iteration count
 #[test]
+#[ignore = "SLOW: runs cargo run --bin ruchy (compiles) (~60s) - use make test-all"]
 fn test_fuzz_runs_with_iterations() {
     let output = Command::new("cargo")
         .args([
@@ -212,6 +213,7 @@ fn test_fuzz_runs_with_iterations() {
 
 /// RED PHASE TEST 9: fuzz generates JSON report
 #[test]
+#[ignore = "SLOW: runs cargo run --bin ruchy (compiles) (~60s) - use make test-all"]
 fn test_fuzz_json_format() {
     let output = Command::new("cargo")
         .args([

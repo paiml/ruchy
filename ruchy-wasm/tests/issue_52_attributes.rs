@@ -42,7 +42,7 @@ fn fibonacci(n) {
 
 #[wasm_bindgen_test]
 fn test_issue_52_multiple_attributes() {
-    let mut compiler = RuchyCompiler::new();
+    let compiler = RuchyCompiler::new();
 
     let code = r#"
 @memoize
@@ -58,7 +58,7 @@ fn test() {
 
 #[wasm_bindgen_test]
 fn test_issue_52_attribute_with_args() {
-    let mut compiler = RuchyCompiler::new();
+    let compiler = RuchyCompiler::new();
 
     let code = r#"
 @derive(Debug, Clone)

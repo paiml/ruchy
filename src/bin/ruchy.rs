@@ -101,7 +101,7 @@ enum Commands {
     Transpile {
         /// The file to transpile
         file: PathBuf,
-        /// Output file (defaults to stdout)
+        /// Output file (defaults to stdout, use "-o file.rs" to write to file)
         #[arg(short, long)]
         output: Option<PathBuf>,
         /// Use minimal codegen for self-hosting (direct Rust mapping, no optimization)
@@ -898,10 +898,16 @@ enum OracleCommands {
         /// Show verbose training progress
         #[arg(long)]
         verbose: bool,
+        /// Enable auto-training loop with continuous improvement (Spec §13)
+        #[arg(long)]
+        auto_train: bool,
+        /// Maximum iterations for auto-train (default: 50)
+        #[arg(long, default_value = "50")]
+        max_iterations: usize,
     },
     /// Save trained model to .apr file
     Save {
-        /// Path to save model (default: ruchy_oracle.apr)
+        /// Path to save model (default: `ruchy_oracle.apr`)
         path: Option<PathBuf>,
         /// Force overwrite existing file
         #[arg(long)]
@@ -1156,32 +1162,123 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
     }
 
     match command {
-        OracleCommands::Train { format, verbose } => {
+        OracleCommands::Train { format, verbose, auto_train, max_iterations } => {
             let mut oracle = RuchyOracle::new();
             oracle.train_from_examples()?;
 
-            // Store trained oracle
-            ORACLE.with(|o| *o.borrow_mut() = Some(oracle));
+            if auto_train {
+                // Use TrainingLoop for continuous improvement (Spec §13)
+                use ruchy::oracle::{TrainingLoop, TrainingLoopConfig, DisplayMode, TrainingEvent};
 
-            let samples = 30; // Bootstrap samples
-            let accuracy = 0.85; // Estimated
+                let display_mode = if verbose {
+                    DisplayMode::Verbose
+                } else {
+                    DisplayMode::Compact
+                };
 
-            if format == "json" {
-                println!(
-                    "{}",
-                    serde_json::json!({
-                        "status": "trained",
-                        "samples": samples,
-                        "accuracy": accuracy
-                    })
-                );
+                let config = TrainingLoopConfig {
+                    max_iterations,
+                    display_mode,
+                    ..Default::default()
+                };
+
+                let mut training_loop = TrainingLoop::with_config(oracle, config);
+
+                // Collect live samples from examples/*.ruchy (ORACLE-002, spec §13.3 Source 3)
+                // TODO: Re-enable when transpilation is faster
+                // let live_samples = collect_examples_samples();
+                // if !live_samples.is_empty() {
+                //     if verbose {
+                //         println!("📥 Collected {} samples from examples/*.ruchy", live_samples.len());
+                //     }
+                //     training_loop.add_live_samples(live_samples);
+                // }
+
+                if format == "json" {
+                    // Run silently and output JSON at end
+                    let mut events = Vec::new();
+                    loop {
+                        let event = training_loop.step();
+                        let done = matches!(
+                            event,
+                            TrainingEvent::Converged { .. }
+                            | TrainingEvent::MaxIterationsReached { .. }
+                            | TrainingEvent::Error { .. }
+                        );
+                        events.push(format!("{:?}", event));
+                        if done {
+                            break;
+                        }
+                    }
+                    let final_accuracy = training_loop.oracle().metadata().training_accuracy;
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "status": "complete",
+                            "iterations": training_loop.iteration(),
+                            "max_iterations": max_iterations,
+                            "accuracy": final_accuracy,
+                            "auto_train": true
+                        })
+                    );
+                } else {
+                    // Run with visual output
+                    println!("🔄 Starting auto-train loop (max {} iterations)...", max_iterations);
+                    loop {
+                        let event = training_loop.step();
+                        let output = training_loop.render();
+                        if !output.is_empty() {
+                            println!("{}", output);
+                        }
+
+                        match event {
+                            TrainingEvent::Converged { iteration, accuracy } => {
+                                println!("✅ Converged at iteration {} with {:.1}% accuracy", iteration, accuracy * 100.0);
+                                break;
+                            }
+                            TrainingEvent::MaxIterationsReached { accuracy } => {
+                                println!("⏹ Max iterations reached. Final accuracy: {:.1}%", accuracy * 100.0);
+                                break;
+                            }
+                            TrainingEvent::Error { message } => {
+                                eprintln!("❌ Error: {}", message);
+                                break;
+                            }
+                            TrainingEvent::RetrainingComplete { accuracy_before, accuracy_after } => {
+                                println!("🔄 Retrained: {:.1}% → {:.1}%", accuracy_before * 100.0, accuracy_after * 100.0);
+                            }
+                            TrainingEvent::CurriculumAdvanced { from, to } => {
+                                println!("📈 Curriculum advanced: {:?} → {:?}", from, to);
+                            }
+                            _ => {}
+                        }
+                    }
+                    println!("Done.");
+                }
             } else {
-                println!("Training complete!");
-                println!("  Samples: {samples}");
-                if verbose {
-                    println!("  Accuracy: {:.1}%", accuracy * 100.0);
-                    println!("  Categories: 8");
-                    println!("  Features: 73");
+                // Store trained oracle
+                ORACLE.with(|o| *o.borrow_mut() = Some(oracle));
+
+                let samples = 30; // Bootstrap samples
+                let accuracy = 0.85; // Estimated
+
+                if format == "json" {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "status": "trained",
+                            "samples": samples,
+                            "accuracy": accuracy
+                        })
+                    );
+                } else {
+                    println!("Training complete!");
+                    println!("  Samples: {samples}");
+                    if verbose {
+                        println!("  Accuracy: {:.1}%", accuracy * 100.0);
+                        println!("  Categories: 8");
+                        println!("  Features: 73");
+                    }
                 }
             }
             Ok(())
@@ -1192,10 +1289,9 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
             let mut oracle = RuchyOracle::new();
             oracle.train_from_examples()?;
 
+            // Default to project root for easier local development
             let save_path = path.unwrap_or_else(|| {
-                ModelPaths::default()
-                    .get_save_path()
-                    .unwrap_or_else(|_| PathBuf::from("ruchy_oracle.apr"))
+                ModelPaths::default().primary
             });
 
             // Get training data for persistence
@@ -1224,36 +1320,46 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
         }
 
         OracleCommands::Status { format } => {
-            let oracle = RuchyOracle::new();
-            let is_trained = oracle.is_trained();
+            // Check for persisted model at default paths
+            let paths = ModelPaths::default();
+            let found_model = paths.find_existing();
 
-            // Check for persisted model
-            let model_path = ModelPaths::default()
-                .get_save_path()
-                .unwrap_or_else(|_| PathBuf::from("ruchy_oracle.apr"));
-            let has_persisted = model_path.exists();
+            // Try to load model metadata if found
+            let model_info = found_model.as_ref().and_then(|path| {
+                SerializedModel::load(path).ok().map(|m| (path.clone(), m))
+            });
 
             if format == "json" {
-                println!(
-                    "{}",
-                    serde_json::json!({
-                        "is_trained": is_trained,
-                        "has_persisted_model": has_persisted,
-                        "model_path": model_path.to_string_lossy(),
-                    })
-                );
-            } else if is_trained || has_persisted {
-                println!("Oracle Status: trained");
-                println!("  Model path: {}", model_path.display());
-                if has_persisted {
-                    if let Ok(model) = SerializedModel::load(&model_path) {
-                        println!("  Samples: {}", model.metadata.training_samples);
-                        println!("  Accuracy: {:.1}%", model.metadata.accuracy * 100.0);
-                    }
+                if let Some((path, model)) = &model_info {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "status": "trained",
+                            "model_path": path.to_string_lossy(),
+                            "samples": model.metadata.training_samples,
+                            "accuracy": model.metadata.accuracy,
+                            "category_count": model.metadata.category_count,
+                        })
+                    );
+                } else {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "status": "not_trained",
+                            "default_path": paths.primary.to_string_lossy(),
+                        })
+                    );
                 }
+            } else if let Some((path, model)) = model_info {
+                println!("Oracle Status: trained");
+                println!("  Model path: {}", path.display());
+                println!("  Samples: {}", model.metadata.training_samples);
+                println!("  Accuracy: {:.1}%", model.metadata.accuracy * 100.0);
+                println!("  Categories: {}", model.metadata.category_count);
             } else {
                 println!("Oracle Status: not trained");
-                println!("  Run 'ruchy oracle train' to train the model");
+                println!("  Default path: {}", paths.primary.display());
+                println!("  Run 'ruchy oracle train && ruchy oracle save' to train and persist");
             }
             Ok(())
         }
@@ -1408,6 +1514,73 @@ fn analyze_file_for_hunt(file_path: &Path) -> Result<Vec<(String, String)>> {
             Ok(vec![(code, error_str)])
         }
     }
+}
+
+/// Collect samples from examples/*.ruchy transpilation errors (ORACLE-002)
+///
+/// Scans examples directory, transpiles each file, and converts any
+/// errors into labeled samples for Oracle training (spec §13.3 Source 3).
+///
+/// NOTE: Currently disabled due to potential hangs in transpilation.
+/// The infrastructure is in place and tested - enable when transpilation
+/// is more robust or add per-file timeouts.
+#[allow(dead_code)]
+fn collect_examples_samples() -> Vec<ruchy::oracle::Sample> {
+    use ruchy::oracle::{Sample, SampleSource, ErrorCategory};
+
+    let examples_dir = Path::new("examples");
+    if !examples_dir.exists() {
+        return Vec::new();
+    }
+
+    let mut samples = Vec::new();
+
+    // Scan for .ruchy files
+    let Ok(files) = scan_ruchy_files(examples_dir) else {
+        return Vec::new();
+    };
+
+    // Limit to first 10 files to prevent long collection times
+    let max_files = 10;
+    for file in files.into_iter().take(max_files) {
+        // Transpile and collect errors
+        if let Ok(errors) = analyze_file_for_hunt(&file) {
+            for (code, message) in errors {
+                // Map error code to category
+                let category = if code.starts_with("E0308") || code.starts_with("E0271") {
+                    ErrorCategory::TypeMismatch
+                } else if code.starts_with("E0382") || code.starts_with("E0502") || code.starts_with("E0503") {
+                    ErrorCategory::BorrowChecker
+                } else if code.starts_with("E0597") || code.starts_with("E0106") || code.starts_with("E0621") {
+                    ErrorCategory::LifetimeError
+                } else if code.starts_with("E0277") || code.starts_with("E0599") {
+                    ErrorCategory::TraitBound
+                } else if code.starts_with("E0425") || code.starts_with("E0433") || code.starts_with("E0412") {
+                    ErrorCategory::MissingImport
+                } else if code.starts_with("E0596") || code.starts_with("E0594") {
+                    ErrorCategory::MutabilityError
+                } else if code == "PARSE" || code.starts_with("E0061") {
+                    ErrorCategory::SyntaxError
+                } else {
+                    ErrorCategory::Other
+                };
+
+                let error_code = if code == "PARSE" || code == "TRANSPILE" {
+                    None
+                } else {
+                    Some(code)
+                };
+
+                samples.push(
+                    Sample::new(message, error_code, category)
+                        .with_source(SampleSource::Examples)
+                        .with_difficulty(0.7) // Real errors are harder than synthetic
+                );
+            }
+        }
+    }
+
+    samples
 }
 
 /// Scan for .ruchy files recursively

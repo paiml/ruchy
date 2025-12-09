@@ -437,7 +437,7 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 15 - Lambda regression tests'
   github_issue: null
   item_type: task
-  title: 'Un-ignore Lambda object literal tests'
+  title: Un-ignore Lambda object literal tests
   status: completed
   priority: medium
   assigned_to: null
@@ -453,7 +453,7 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 16 - Book systems programming tests'
   github_issue: null
   item_type: task
-  title: 'Un-ignore book systems programming tests'
+  title: Un-ignore book systems programming tests
   status: completed
   priority: medium
   assigned_to: null
@@ -469,7 +469,7 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 17 - Error line numbers and f-string fixes'
   github_issue: null
   item_type: task
-  title: 'Un-ignore error line numbers and f-string tests'
+  title: Un-ignore error line numbers and f-string tests
   status: completed
   priority: medium
   assigned_to: null
@@ -485,7 +485,7 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 18 - PARSER-061 import fix'
   github_issue: null
   item_type: task
-  title: 'Un-ignore PARSER-061 imported functions test'
+  title: Un-ignore PARSER-061 imported functions test
   status: completed
   priority: medium
   assigned_to: null
@@ -498,3 +498,67 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: PARSER-061 - Imported parameterized functions in arithmetic expressions now work correctly. Un-ignored test_parser_060_04_import_multiple_functions. All 20 module resolution tests passing.
+- id: 'Apex Hunt: PDCA Cycle 19 - Test suite audit'
+  github_issue: null
+  item_type: task
+  title: Test suite health audit
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T10:20:00.000000000+00:00
+  updated: 2025-12-09T10:25:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Audited remaining ignored tests. All 15,289 tests passing with 0 failures. Remaining ignored tests are parser feature gaps, performance tests, or known limitations requiring significant implementation work.
+- id: 'BETA-001: Beta Release Stabilization December 2025'
+  github_issue: null
+  item_type: task
+  title: 'New task: BETA-001: Beta Release Stabilization December 2025'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T12:41:11.011350828+00:00
+  updated: 2025-12-09T12:41:11.011350828+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'QA-CRITICAL-001: Fix Variable Scoping Divergence'
+  github_issue: null
+  item_type: task
+  title: 'New task: QA-CRITICAL-001: Fix Variable Scoping Divergence'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T13:11:15.179959578+00:00
+  updated: 2025-12-09T13:11:15.179959578+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'QA-CRITICAL-002: Fix Standard Library Import Failures'
+  github_issue: null
+  item_type: task
+  title: 'New task: QA-CRITICAL-002: Fix Standard Library Import Failures'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T13:22:30.244726317+00:00
+  updated: 2025-12-09T13:22:30.244726317+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

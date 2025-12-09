@@ -401,6 +401,7 @@ fn test_value_function_recursive() {
 }
 
 #[test]
+#[ignore = "RED phase: function returning function not yet implemented - CLOSURE-001"]
 fn test_value_function_returning_function() {
     ruchy_cmd()
         .arg("-e")

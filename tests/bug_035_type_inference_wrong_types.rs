@@ -43,10 +43,12 @@ fun read_file(path) {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    // Transpile and check generated Rust
+    // Transpile and check generated Rust (QA-049: use -o - to output to stdout)
     let output = ruchy_cmd()
         .arg("transpile")
         .arg(&source)
+        .arg("-o")
+        .arg("-")
         .assert()
         .success()
         .get_output()
@@ -77,10 +79,12 @@ fun get_args() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    // Transpile and check return type
+    // Transpile and check return type (QA-049: use -o - to output to stdout)
     let output = ruchy_cmd()
         .arg("transpile")
         .arg(&source)
+        .arg("-o")
+        .arg("-")
         .assert()
         .success()
         .get_output()
@@ -111,9 +115,12 @@ fun fetch_data(url) {
 
     fs::write(&source, code).expect("Failed to write test file");
 
+    // QA-049: use -o - to output to stdout
     let output = ruchy_cmd()
         .arg("transpile")
         .arg(&source)
+        .arg("-o")
+        .arg("-")
         .assert()
         .success()
         .get_output()
@@ -142,9 +149,12 @@ fun add(a, b) {
 
     fs::write(&source, code).expect("Failed to write test file");
 
+    // QA-049: use -o - to output to stdout
     let output = ruchy_cmd()
         .arg("transpile")
         .arg(&source)
+        .arg("-o")
+        .arg("-")
         .assert()
         .success()
         .get_output()

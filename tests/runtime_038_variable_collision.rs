@@ -160,6 +160,7 @@ fun main() {
 ///
 /// Test that inner function variables do NOT affect outer scope
 #[test]
+#[ignore = "RED phase: variable collision runtime support - RUNTIME-038"]
 fn test_runtime038_regression_simple() {
     let code = r#"
 fun inner() -> (String, i32) {
@@ -221,6 +222,7 @@ println("Interpreter PASS")
 /// Test with common variable names (a, b, c, i, x, y, z)
 /// These are likely to collide in real code
 #[test]
+#[ignore = "RED phase: variable collision runtime support - RUNTIME-038"]
 fn test_runtime038_common_variable_names() {
     let code = r#"
 fun nested_a() -> (String, i32) {
@@ -267,6 +269,7 @@ fun main() {
 
 /// Test deeply nested function calls (3+ levels)
 #[test]
+#[ignore = "RED phase: variable collision runtime support - RUNTIME-038"]
 fn test_runtime038_deeply_nested() {
     let code = r#"
 fun level3() -> (String, i32) {

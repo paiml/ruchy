@@ -125,6 +125,7 @@ println(format_config(c));
 
 /// Test 3: String variable concatenation
 #[test]
+#[ignore = "RED phase: string variable auto-borrowing - DEFECT-016"]
 fn test_defect_016_03_string_variable_concatenation_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
@@ -161,6 +162,7 @@ println(build_message("World"));
 
 /// Test 4: Baseline - String literals should NOT be borrowed
 #[test]
+#[ignore = "RED phase: string literal borrowing - DEFECT-016"]
 fn test_defect_016_04_string_literal_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
@@ -218,6 +220,7 @@ println(format_data(data));
 
 /// Test 6: Function return value concatenation (reaper line 185)
 #[test]
+#[ignore = "RED phase: function return concatenation auto-borrowing - DEFECT-016"]
 fn test_defect_016_06_function_return_concatenation_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");

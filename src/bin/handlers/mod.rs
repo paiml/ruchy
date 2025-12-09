@@ -256,8 +256,23 @@ pub fn handle_transpile_command(
     let source = read_source_file(file, verbose)?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_ast(&ast, minimal)?;
+    // Default to stdout for backwards compatibility (many tests expect stdout output)
+    // Use -o to specify file output explicitly
     write_output(&rust_code, output, verbose)?;
     Ok(())
+}
+
+/// Derive default output path from input file (QA-049)
+/// Changes .ruchy extension to .rs, or appends .rs if no .ruchy extension
+/// Returns None for stdin input ("-")
+/// Complexity: 3 (within Toyota Way limits)
+fn derive_default_output_path(file: &Path) -> Option<PathBuf> {
+    if file.as_os_str() == "-" {
+        return None; // stdin: output to stdout
+    }
+    let stem = file.file_stem()?;
+    let parent = file.parent().unwrap_or(Path::new("."));
+    Some(parent.join(format!("{}.rs", stem.to_string_lossy())))
 }
 /// Log transpilation start (complexity: 3)
 fn log_transpile_start(file: &Path, minimal: bool, verbose: bool) {
@@ -307,11 +322,17 @@ fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
     }
 }
 /// Write output to file or stdout (complexity: 5)
+/// Use "-" as output path to write to stdout explicitly
 fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result<()> {
     if let Some(output_path) = output {
-        write_file_with_context(output_path, rust_code.as_bytes())?;
-        if verbose {
-            eprintln!("Output written to: {}", output_path.display());
+        // QA-049: "-" means stdout, for explicit stdout output
+        if output_path.as_os_str() == "-" {
+            print!("{rust_code}");
+        } else {
+            write_file_with_context(output_path, rust_code.as_bytes())?;
+            if verbose {
+                eprintln!("Output written to: {}", output_path.display());
+            }
         }
     } else {
         print!("{rust_code}");
@@ -5220,7 +5241,7 @@ pub fn handle_oracle_command(
     format: &str,
     verbose: bool,
 ) -> Result<()> {
-    use ruchy::oracle::{CompilationError, RuchyOracle};
+    use ruchy::oracle::{CompilationError, ModelPaths, RuchyOracle, SerializedModel};
 
     if verbose {
         eprintln!("Classifying error: {}", error_message);
@@ -5229,9 +5250,21 @@ pub fn handle_oracle_command(
         }
     }
 
-    // Create and train oracle
+    // Try to load persisted model first, then fall back to training
     let mut oracle = RuchyOracle::new();
-    oracle.train_from_examples()?;
+    let paths = ModelPaths::default();
+    if let Some(model_path) = paths.find_existing() {
+        if let Ok(model) = SerializedModel::load(&model_path) {
+            if verbose {
+                eprintln!("Loaded model from: {}", model_path.display());
+            }
+            oracle.load_from_serialized(&model)?;
+        } else {
+            oracle.train_from_examples()?;
+        }
+    } else {
+        oracle.train_from_examples()?;
+    }
 
     // Create compilation error
     let mut error = CompilationError::new(error_message);

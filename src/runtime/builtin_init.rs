@@ -627,6 +627,70 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_env_var__".to_string()),
     );
 
+    // QA-065 FIX: Create std::math module with mathematical functions
+    // Uses existing __builtin_*__ patterns to reuse eval_builtin.rs implementations
+    let mut math_module = HashMap::new();
+    math_module.insert(
+        "sqrt".to_string(),
+        Value::from_string("__builtin_sqrt__".to_string()),
+    );
+    math_module.insert(
+        "sin".to_string(),
+        Value::from_string("__builtin_sin__".to_string()),
+    );
+    math_module.insert(
+        "cos".to_string(),
+        Value::from_string("__builtin_cos__".to_string()),
+    );
+    math_module.insert(
+        "tan".to_string(),
+        Value::from_string("__builtin_tan__".to_string()),
+    );
+    math_module.insert(
+        "pow".to_string(),
+        Value::from_string("__builtin_pow__".to_string()),
+    );
+    math_module.insert(
+        "abs".to_string(),
+        Value::from_string("__builtin_abs__".to_string()),
+    );
+    math_module.insert(
+        "floor".to_string(),
+        Value::from_string("__builtin_floor__".to_string()),
+    );
+    math_module.insert(
+        "ceil".to_string(),
+        Value::from_string("__builtin_ceil__".to_string()),
+    );
+    math_module.insert(
+        "log".to_string(),
+        Value::from_string("__builtin_log__".to_string()),
+    );
+    math_module.insert(
+        "log10".to_string(),
+        Value::from_string("__builtin_log10__".to_string()),
+    );
+    math_module.insert(
+        "exp".to_string(),
+        Value::from_string("__builtin_exp__".to_string()),
+    );
+    math_module.insert(
+        "random".to_string(),
+        Value::from_string("__builtin_random__".to_string()),
+    );
+    math_module.insert(
+        "min".to_string(),
+        Value::from_string("__builtin_min__".to_string()),
+    );
+    math_module.insert(
+        "max".to_string(),
+        Value::from_string("__builtin_max__".to_string()),
+    );
+    math_module.insert(
+        "round".to_string(),
+        Value::from_string("__builtin_round__".to_string()),
+    );
+
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
@@ -636,6 +700,7 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     );
     std_namespace.insert("fs".to_string(), Value::Object(Arc::new(fs_module)));
     std_namespace.insert("env".to_string(), Value::Object(Arc::new(env_module)));
+    std_namespace.insert("math".to_string(), Value::Object(Arc::new(math_module)));
 
     // Add std to global environment
     global_env.insert("std".to_string(), Value::Object(Arc::new(std_namespace)));

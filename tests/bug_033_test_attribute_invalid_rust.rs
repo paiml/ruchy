@@ -152,10 +152,12 @@ fun test_example() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
-    // Transpile and check output
+    // Transpile and check output (QA-049: use -o - to output to stdout)
     let output = ruchy_cmd()
         .arg("transpile")
         .arg(&source)
+        .arg("-o")
+        .arg("-")
         .assert()
         .success()
         .get_output()

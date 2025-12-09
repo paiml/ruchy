@@ -1,0 +1,31 @@
+// Basic variables
+let x = 42
+let y = 3.14
+let name = "Ruchy"
+
+// Control Flow
+if x > 40 {
+    print("x is big")
+} else {
+    print("x is small")
+}
+
+// Arrays & Maps
+let arr = [1, 2, 3]
+arr.push(4)
+print(f"Array len: {len(arr)}")
+
+// Functions & Lambdas
+fun add(a: i32, b: i32) -> i32 { a + b }
+let double = |n| n * 2
+
+print(f"Double add: {double(add(1, 2))}")
+
+// Structs (if supported in this version)
+struct Point { x: i32, y: i32 }
+let p = Point { x: 10, y: 20 }
+print(f"Point: {p.x}, {p.y}")
+
+// Enums
+enum Color { Red, Green, Blue }
+let c = Color::Red

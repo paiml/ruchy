@@ -174,8 +174,8 @@ fn try_eval_advanced_math_part2(
     }
 }
 
-/// Advanced math functions - Part 3 (logarithms and random) - STDLIB-002
-/// Complexity: 4 (within Toyota Way limits)
+/// Advanced math functions - Part 3 (logarithms, random, exp) - STDLIB-002, QA-065
+/// Complexity: 5 (within Toyota Way limits)
 fn try_eval_advanced_math_part3(
     name: &str,
     args: &[Value],
@@ -183,6 +183,7 @@ fn try_eval_advanced_math_part3(
     match name {
         "__builtin_log__" => Ok(Some(eval_log(args)?)),
         "__builtin_log10__" => Ok(Some(eval_log10(args)?)),
+        "__builtin_exp__" => Ok(Some(eval_exp(args)?)),
         "__builtin_random__" => Ok(Some(eval_random(args)?)),
         _ => Ok(None),
     }
@@ -611,6 +612,21 @@ fn eval_log10(args: &[Value]) -> Result<Value, InterpreterError> {
         Value::Float(f) => Ok(Value::Float(f.log10())),
         _ => Err(InterpreterError::RuntimeError(
             "log10() expects a number".to_string(),
+        )),
+    }
+}
+
+/// Exponential function (e^x) - QA-065
+///
+/// # Complexity
+/// Cyclomatic complexity: 3 (within Toyota Way limits)
+fn eval_exp(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("exp", args, 1)?;
+    match &args[0] {
+        Value::Integer(n) => Ok(Value::Float((*n as f64).exp())), // Wraps Rust f64::exp
+        Value::Float(f) => Ok(Value::Float(f.exp())),
+        _ => Err(InterpreterError::RuntimeError(
+            "exp() expects a number".to_string(),
         )),
     }
 }

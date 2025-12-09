@@ -127,19 +127,19 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_validate_valid_syntax() {
-        let mut compiler = RuchyCompiler::new();
+        let compiler = RuchyCompiler::new();
         assert!(compiler.validate("let x = 42"));
     }
 
     #[wasm_bindgen_test]
     fn test_validate_invalid_syntax() {
-        let mut compiler = RuchyCompiler::new();
+        let compiler = RuchyCompiler::new();
         assert!(!compiler.validate("let x = "));
     }
 
     #[wasm_bindgen_test]
     fn test_version() {
-        let mut compiler = RuchyCompiler::new();
+        let compiler = RuchyCompiler::new();
         assert!(!compiler.version().is_empty());
     }
 }
