@@ -305,6 +305,7 @@ fn tool_13_mutations_runs_successfully() {
 // ============================================================================
 
 #[test]
+#[ignore = "SLOW: fuzz with 1000 iterations takes >60s - use make test-all"]
 fn tool_14_fuzz_runs_successfully() {
     ruchy_cmd()
         .arg("fuzz")

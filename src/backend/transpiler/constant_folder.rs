@@ -89,14 +89,16 @@ pub fn fold_constants(expr: Expr) -> Expr {
             let folded_else = else_branch.map(|e| Box::new(fold_constants((*e).clone())));
 
             // If condition is constant boolean, eliminate dead branch
+            // QA-026 FIX: Preserve scope boundaries by wrapping in Block
             if let ExprKind::Literal(Literal::Bool(b)) = folded_cond.kind {
                 if b {
-                    // Condition is true: return then-branch
-                    return (*folded_then).clone();
+                    // Condition is true: return then-branch wrapped in block to preserve scope
+                    // This ensures `if true { let x = 20 }` becomes `{ let x = 20 }` not just `let x = 20`
+                    return Expr::new(ExprKind::Block(vec![(*folded_then).clone()]), expr.span);
                 }
                 if let Some(else_expr) = folded_else {
-                    // Condition is false: return else-branch
-                    return (*else_expr).clone();
+                    // Condition is false: return else-branch wrapped in block
+                    return Expr::new(ExprKind::Block(vec![(*else_expr).clone()]), expr.span);
                 }
                 // Condition is false, no else: return unit (empty block)
                 return Expr::new(ExprKind::Block(vec![]), expr.span);
@@ -685,14 +687,21 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
         }
 
         // Propagate in if expressions
+        // QA-026 FIX: Clone env for branches to prevent inner scope bindings from leaking
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
         } => {
+            // Condition uses outer env (no new scope)
             let cond_prop = Box::new(propagate_with_env((*condition).clone(), env));
-            let then_prop = Box::new(propagate_with_env((*then_branch).clone(), env));
-            let else_prop = else_branch.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
+            // Then/else branches get their own env copy - inner bindings don't leak out
+            let mut then_env = env.clone();
+            let then_prop = Box::new(propagate_with_env((*then_branch).clone(), &mut then_env));
+            let else_prop = else_branch.map(|e| {
+                let mut else_env = env.clone();
+                Box::new(propagate_with_env((*e).clone(), &mut else_env))
+            });
 
             let if_expr = Expr::new(
                 ExprKind::If {
@@ -708,10 +717,12 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
         }
 
         // Propagate in blocks
+        // QA-026 FIX: Blocks create new scope - clone env to prevent leaking
         ExprKind::Block(exprs) => {
+            let mut block_env = env.clone();
             let folded_exprs = exprs
                 .into_iter()
-                .map(|e| propagate_with_env(e, env))
+                .map(|e| propagate_with_env(e, &mut block_env))
                 .collect();
             Expr::new(ExprKind::Block(folded_exprs), expr.span)
         }
@@ -1293,10 +1304,17 @@ mod tests {
             Span::new(0, 0),
         );
         let folded = fold_constants(expr);
-        // Should eliminate else branch and return then branch
-        assert!(matches!(
-            folded.kind,
-            ExprKind::Literal(Literal::Integer(42, None))
-        ));
+        // QA-026 FIX: Now returns Block to preserve scope boundaries
+        // Should eliminate else branch and return then branch wrapped in block
+        match &folded.kind {
+            ExprKind::Block(exprs) => {
+                assert_eq!(exprs.len(), 1, "Block should contain exactly one expression");
+                assert!(matches!(
+                    exprs[0].kind,
+                    ExprKind::Literal(Literal::Integer(42, None))
+                ));
+            }
+            _ => panic!("Expected Block, got {:?}", folded.kind),
+        }
     }
 }

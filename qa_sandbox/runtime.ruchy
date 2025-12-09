@@ -1,0 +1,11 @@
+fun fib(n) {
+    if n <= 1 { n } else { fib(n-1) + fib(n-2) }
+}
+print(f"Fib 10: {fib(10)}")
+
+let outer = "outer"
+{
+    let outer = "inner"
+    print(f"Inside: {outer}")
+}
+print(f"Outside: {outer}")

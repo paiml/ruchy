@@ -1,0 +1,9 @@
+import std.math
+import std.fs
+import std.json
+
+print(f"Sqrt 16: {math.sqrt(16.0)}")
+
+// Check JSON (mocking if import fails, but testing syntax)
+let data = { "key": "value" }
+// print(json.stringify(data)) 

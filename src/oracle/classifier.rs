@@ -181,19 +181,37 @@ impl RuchyOracle {
 
     /// Load a pre-trained Oracle from .apr file
     pub fn load(path: &std::path::Path) -> Result<Self, OracleError> {
-        // For now, return a new untrained Oracle
-        // Full implementation will load from SafeTensors format
+        use crate::oracle::SerializedModel;
         if !path.exists() {
             return Err(OracleError::ModelNotFound(path.to_path_buf()));
         }
-        Ok(Self::new())
+        let model = SerializedModel::load(path)?;
+        let mut oracle = Self::new();
+        oracle.load_from_serialized(&model)?;
+        Ok(oracle)
+    }
+
+    /// Load from a [`SerializedModel`] (already loaded from disk)
+    pub fn load_from_serialized(
+        &mut self,
+        model: &crate::oracle::SerializedModel,
+    ) -> Result<(), OracleError> {
+        if model.training_features.is_empty() || model.training_labels.is_empty() {
+            return Err(OracleError::EmptyTrainingData);
+        }
+        // Re-train from the saved training data
+        self.train(&model.training_features, &model.training_labels)?;
+        // Restore metadata
+        self.metadata.training_accuracy = model.metadata.accuracy;
+        Ok(())
     }
 
     /// Load or train the Oracle
     pub fn load_or_train() -> Result<Self, OracleError> {
-        let model_path = std::path::Path::new("oracle_model.apr");
-        if model_path.exists() {
-            Self::load(model_path)
+        use crate::oracle::ModelPaths;
+        let paths = ModelPaths::default();
+        if let Some(model_path) = paths.find_existing() {
+            Self::load(&model_path)
         } else {
             let mut oracle = Self::new();
             oracle.train_from_examples()?;

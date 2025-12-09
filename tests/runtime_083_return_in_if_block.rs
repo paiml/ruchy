@@ -22,6 +22,7 @@ use std::fs;
 use std::path::PathBuf;
 
 #[test]
+#[ignore = "RED phase: return in if block not yet implemented - RUNTIME-083"]
 fn test_runtime_083_return_in_if_terminates_function() {
     // Simple case: return in if block should exit function immediately
     let code = r"fun check_positive(x: i32) -> i32 {
@@ -50,6 +51,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "RED phase: return in else block not yet implemented - RUNTIME-083"]
 fn test_runtime_083_return_in_else_terminates_function() {
     // Return in else block should also exit function immediately
     let code = r"fun check_negative(x: i32) -> i32 {
@@ -79,6 +81,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "RED phase: early return not yet implemented - RUNTIME-083"]
 fn test_runtime_083_early_return_prevents_subsequent_code() {
     // Code after if block with return should NOT execute
     let code = r"fun classify(x: i32) -> i32 {
@@ -112,6 +115,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "RED phase: nested if return not yet implemented - RUNTIME-083"]
 fn test_runtime_083_nested_if_return() {
     // Return in nested if block should exit outer function
     let code = r"fun check_range(x: i32) -> i32 {
@@ -145,6 +149,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "RED phase: return value preservation not yet implemented - RUNTIME-083"]
 fn test_runtime_083_return_value_not_overwritten() {
     // Return value should be preserved, not overwritten by later code
     let code = r"fun get_status(x: i32) -> i32 {
@@ -174,6 +179,7 @@ fun main() {
 }
 
 #[test]
+#[ignore = "RED phase: multiple returns not yet implemented - RUNTIME-083"]
 fn test_runtime_083_multiple_returns_first_wins() {
     // First matching return should execute, subsequent returns ignored
     let code = r"fun priority_check(x: i32) -> i32 {

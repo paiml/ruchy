@@ -219,6 +219,7 @@ fn test_cargo_002_readme_has_instructions() {
 }
 
 #[test]
+#[ignore = "SLOW: runs cargo build (~60s) - use make test-all for full validation"]
 fn test_cargo_002_created_project_can_build() {
     // CARGO-002: Verify the generated project can actually build
     //

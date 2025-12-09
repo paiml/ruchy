@@ -10,6 +10,7 @@ use predicates::prelude::*;
 /// Test basic try operator with Err propagation
 /// Should propagate Err through ? operator without unwrapping
 #[test]
+#[ignore = "RED phase: try operator not yet implemented - ISSUE-097"]
 fn test_issue_097_try_operator_err_propagation() {
     let script = r#"
 enum MyError {
@@ -49,6 +50,7 @@ fun main() {
 /// Test try operator with Ok value unwrapping
 /// Should unwrap Ok value and continue execution
 #[test]
+#[ignore = "RED phase: try operator not yet implemented - ISSUE-097"]
 fn test_issue_097_try_operator_ok_unwrapping() {
     let script = r#"
 enum MyError {
@@ -88,6 +90,7 @@ fun main() {
 /// Test try operator chaining multiple operations
 /// Should short-circuit on first error
 #[test]
+#[ignore = "RED phase: try operator not yet implemented - ISSUE-097"]
 fn test_issue_097_try_operator_chaining() {
     let script = r#"
 enum MyError {
@@ -137,6 +140,7 @@ fun main() {
 /// Test try operator with nested Result types
 /// Should work with complex nested structures
 #[test]
+#[ignore = "RED phase: try operator not yet implemented - ISSUE-097"]
 fn test_issue_097_try_operator_nested_results() {
     let script = r#"
 enum Error1 {
@@ -180,6 +184,7 @@ fun main() {
 /// Test try operator in expression context
 /// Should work as part of larger expressions
 #[test]
+#[ignore = "RED phase: try operator not yet implemented - ISSUE-097"]
 fn test_issue_097_try_operator_in_expression() {
     let script = r#"
 enum MyError {

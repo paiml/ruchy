@@ -3332,8 +3332,17 @@ impl Interpreter {
     }
 
     /// Evaluate block expression
+    /// QA-026 FIX: Block expressions must create a new scope so that `let` bindings
+    /// inside the block shadow outer variables instead of overwriting them.
+    /// This ensures `let x = 10; if true { let x = 20 }; println(x)` prints 10, not 20.
     fn eval_block_expr(&mut self, statements: &[Expr]) -> Result<Value, InterpreterError> {
-        crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| self.eval_expr(e))
+        // QA-026: Push new scope for block
+        self.push_scope();
+        let result =
+            crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| self.eval_expr(e));
+        // QA-026: Pop scope after block completes (even on error)
+        self.pop_scope();
+        result
     }
 
     /// Evaluate tuple expression

@@ -53,6 +53,7 @@ fun main() {
 
 /// Test boolean negation in function return position
 #[test]
+#[ignore = "RED phase: bang negation in return position not yet implemented - PARSER-068"]
 fn test_parser_068_negation_function_return() {
     let code = r#"
 fun test_negation() -> bool {

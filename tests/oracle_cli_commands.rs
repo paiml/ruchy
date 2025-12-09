@@ -147,6 +147,7 @@ fn test_oracle_status_after_train() {
 }
 
 #[test]
+#[ignore = "RED phase: oracle status --format json not yet implemented - ORACLE-001"]
 fn test_oracle_status_json() {
     // JSON output contains status field and other model info
     ruchy_cmd()

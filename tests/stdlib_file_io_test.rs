@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![allow(clippy::doc_markdown)]
 //! STDLIB-008: File I/O functions (`file_exists`, `append_file`, `delete_file`)
 //!
 //! Tests for basic file system operations

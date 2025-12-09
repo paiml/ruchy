@@ -5117,7 +5117,9 @@ impl Transpiler {
 
     /// Handle `range()` function - transpile to Rust range syntax
     ///
-    /// Converts `range(start, end)` to `(start..end)`
+    /// Converts:
+    /// - `range(end)` to `(0..end)`
+    /// - `range(start, end)` to `(start..end)`
     ///
     /// # Examples
     ///
@@ -5135,13 +5137,24 @@ impl Transpiler {
         base_name: &str,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
-        // Handle range(start, end) -> (start..end)
-        if base_name == "range" && args.len() == 2 {
-            let start = self.transpile_expr(&args[0])?;
-            let end = self.transpile_expr(&args[1])?;
-            return Ok(Some(quote! { (#start .. #end) }));
+        if base_name != "range" {
+            return Ok(None);
         }
-        Ok(None)
+
+        match args.len() {
+            // range(end) -> (0..end)
+            1 => {
+                let end = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (0 .. #end) }))
+            }
+            // range(start, end) -> (start..end)
+            2 => {
+                let start = self.transpile_expr(&args[0])?;
+                let end = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! { (#start .. #end) }))
+            }
+            _ => Ok(None),
+        }
     }
 
     /// Handle `DataFrame` functions (col)
