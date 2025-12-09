@@ -19,7 +19,6 @@ use tempfile::NamedTempFile;
 /// Test 1: Simple assignment doesn't deadlock
 /// Tests: counter = counter + 1
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_no_deadlock_simple_assignment() {
     let code = r#"
 let mut counter = 0
@@ -109,7 +108,6 @@ println!("{}", counter)
 /// Test 2: Compound assignment doesn't deadlock
 /// Tests: counter += 1
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_no_deadlock_compound_assignment() {
     let code = r#"
 let mut total = 0
@@ -188,7 +186,6 @@ println!("{}", total)
 /// Test 3: Multiple references don't deadlock
 /// Tests: result = global1 + global2
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_no_deadlock_multiple_globals() {
     let code = r#"
 let mut x = 10
@@ -273,7 +270,6 @@ mod property_tests {
     /// Property: Any global variable assignment should not deadlock
     /// Strategy: Generate random variable names and values
     #[test]
-    #[ignore = "Run with: cargo test property_tests -- --ignored --nocapture"]
     fn prop_no_deadlock_on_any_global_assignment() {
         proptest!(|(
             var_name in "[a-z]{3,8}",
@@ -340,7 +336,6 @@ println!("{{}}", {var_name})
 
     /// Property: Compound assignments should not deadlock
     #[test]
-    #[ignore = "Property test may be slow - run with --ignored"]
     fn prop_no_deadlock_compound_assignment() {
         proptest!(|(
             var_name in "[a-z]{3,8}",
@@ -446,7 +441,6 @@ compute()
 
 /// Test 5: Global assignment where value doesn't reference target (no deadlock risk)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_global_assignment_no_self_reference() {
     let code = r#"
 let mut result = 0
@@ -512,7 +506,6 @@ println!("{}", result)
 
 /// Test 6: Unary operator in self-referencing assignment
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_unary_in_self_reference() {
     let code = r#"
 let mut value = -10
@@ -616,7 +609,6 @@ process()
 
 /// Test 8: Multiple operations with self-reference
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_nested_binary_self_reference() {
     let code = r#"
 let mut num = 10
@@ -683,7 +675,6 @@ println!("{}", num)
 
 /// Test 9: Compound assignment with different operators
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_compound_different_operators() {
     let code = r#"
 let mut x = 10
@@ -751,7 +742,6 @@ println!("{}", x)
 
 // Test 10: Bitwise operators in self-reference (flags = flags & 0xFF)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_bitwise_operators_self_reference() {
     let code = r#"
 let mut flags = 255
@@ -815,7 +805,6 @@ println!("{}", flags)
 
 // Test 11: Comparison operators (status = status > 5)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_comparison_operators_self_reference() {
     let code = r#"
 let mut status = 10
@@ -879,7 +868,6 @@ println!("{}", status)
 
 // Test 12: Modulo operator (index = (index + 1) % 10)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_modulo_operator_self_reference() {
     let code = r#"
 let mut index = 9
@@ -943,7 +931,6 @@ println!("{}", index)
 
 // Test 13: Logical AND operator (result = result && true)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_logical_and_self_reference() {
     let code = r#"
 let mut result = true
@@ -1007,7 +994,6 @@ println!("{}", result)
 
 // Test 14: Shift operators (value = value << 1)
 #[test]
-#[ignore = "expensive: invokes rustc"]
 fn test_shift_operators_self_reference() {
     let code = r#"
 let mut value = 5
