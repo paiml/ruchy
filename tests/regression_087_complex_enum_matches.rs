@@ -240,7 +240,6 @@ fun main() {
 /// After fixing the parser state issue, we should also
 /// add line numbers to error messages for better debugging.
 #[test]
-#[ignore = "GREEN phase: Implement after fixing parser state"]
 fn test_regression_087_error_messages_include_line_numbers() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test_syntax_error.ruchy");

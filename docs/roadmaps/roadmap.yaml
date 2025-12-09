@@ -466,3 +466,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: Object literal parsing now works. Fixed to_s -> to_string method calls. Un-ignored 2 tests (test_object_literal_parsing, test_function_parameter_parsing). 6/8 tests now passing, 2 remain ignored for missing features (std::signal, process::current_pid).
+- id: 'Apex Hunt: PDCA Cycle 17 - Error line numbers and f-string fixes'
+  github_issue: null
+  item_type: task
+  title: 'Un-ignore error line numbers and f-string tests'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-09T10:00:00.000000000+00:00
+  updated: 2025-12-09T10:05:00.000000000+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Error line numbers now included in error messages. F-string in impl block now fully supported. Un-ignored 2 tests (test_regression_087_error_messages_include_line_numbers, test_fstring_in_impl_block).
