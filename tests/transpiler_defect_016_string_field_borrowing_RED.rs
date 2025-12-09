@@ -125,7 +125,6 @@ println(format_config(c));
 
 /// Test 3: String variable concatenation
 #[test]
-#[ignore = "transpiler defect 016 not fixed yet"]
 fn test_defect_016_03_string_variable_concatenation_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
@@ -162,7 +161,6 @@ println(build_message("World"));
 
 /// Test 4: Baseline - String literals should NOT be borrowed
 #[test]
-#[ignore = "transpiler defect 016 not fixed yet"]
 fn test_defect_016_04_string_literal_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
@@ -187,8 +185,9 @@ println(format_message());
 }
 
 /// Test 5: Baseline - Explicit .`to_string()` should work
+/// NOTE: Still fails due to struct init with &str literal (separate issue)
 #[test]
-#[ignore = "transpiler defect 016 not fixed yet"]
+#[ignore = "Struct initialization with &str literal needs .to_string() - separate issue"]
 fn test_defect_016_05_explicit_to_string_baseline() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
@@ -219,7 +218,6 @@ println(format_data(data));
 
 /// Test 6: Function return value concatenation (reaper line 185)
 #[test]
-#[ignore = "transpiler defect 016 not fixed yet"]
 fn test_defect_016_06_function_return_concatenation_red() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.ruchy");
