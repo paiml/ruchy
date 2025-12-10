@@ -264,7 +264,7 @@ trueno = "0.8"           # Pillar 1: SIMD compute engine
 alimentar = "0.2"        # Pillar 2: Data loading, transforms, drift detection
 trueno-db = "0.3"        # Pillar 3: Embedded analytics database
 aprender = { version = "0.16", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
-entrenar = { version = "0.2", features = ["citl"] }  # CITL, distillation, Tarantula fault localization
+entrenar = { version = "0.2.7", features = ["citl"] }  # CITL, distillation, Tarantula fault localization, audit logging (inference module always available)
 trueno-viz = "0.1"       # Pillar 5: GPU/WASM visualization
 presentar = "0.1"        # Pillar 6: WASM-first notebook widgets
 wasm-encoder = "0.207.0"

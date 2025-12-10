@@ -62,6 +62,7 @@ pub mod actor_concurrent;
 pub mod actor_runtime;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod async_runtime;
+pub mod audit; // Audit logging with entrenar integration
 pub mod bytecode; // OPT-001: Bytecode VM Foundation
 pub mod cache;
 #[cfg(not(target_arch = "wasm32"))]
@@ -177,6 +178,12 @@ pub use dataflow_debugger::{
 pub use dataflow_ui::{DataflowUI, UIConfig};
 // Export replay-to-test converter
 pub use replay_converter::{ConversionConfig, GeneratedTest, ReplayConverter, TestCategory};
+// Export audit logging (entrenar integration)
+pub use audit::{
+    hash_chain_collector, ring_collector, stream_collector, EvalType, HashChainAuditCollector,
+    ReplAuditCollector, ReplInputMode, ReplPath, RingAuditCollector, StreamAuditCollector,
+    StreamFormat,
+};
 
 #[cfg(test)]
 mod tests {
