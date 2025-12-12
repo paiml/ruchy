@@ -1,0 +1,74 @@
+version: '3.8'
+
+# Docker Compose configuration for reproducible Ruchy development
+# Ensures consistent build and test environments across machines
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - .:/build
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/build/target
+    environment:
+      - CARGO_HOME=/usr/local/cargo
+      - RUST_BACKTRACE=1
+      - RUCHY_SEED=42
+      - PROPTEST_SEED=12345678901234567890123456789012
+      - SOURCE_DATE_EPOCH=1704067200
+    working_dir: /build
+    command: cargo build --release
+
+  # Test runner
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - .:/build
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/build/target
+    environment:
+      - CARGO_HOME=/usr/local/cargo
+      - RUST_BACKTRACE=1
+      - RUCHY_SEED=42
+      - RUCHY_TEST_SEED=42
+      - PROPTEST_SEED=12345678901234567890123456789012
+    working_dir: /build
+    command: cargo test --release
+
+  # Benchmark runner
+  bench:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - .:/build
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/build/target
+    environment:
+      - CARGO_HOME=/usr/local/cargo
+      - RUCHY_SEED=42
+    working_dir: /build
+    command: cargo bench
+
+  # Production runtime
+  runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./examples:/examples:ro
+
+volumes:
+  cargo-cache:
+  target-cache:

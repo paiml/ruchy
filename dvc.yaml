@@ -1,0 +1,69 @@
+# DVC Pipeline for Ruchy Oracle Model Training
+# Ensures reproducible ML model training and versioning
+
+stages:
+  prepare_data:
+    cmd: cargo run --release --bin ruchy-oracle-train -- prepare-data
+    deps:
+      - src/oracle/
+      - data/raw/
+    outs:
+      - data/processed/train.parquet
+      - data/processed/test.parquet
+    params:
+      - .ruchy/reproducibility.toml:
+        - training.test_split_ratio
+        - training.train_seed
+
+  extract_features:
+    cmd: cargo run --release --bin ruchy-oracle-train -- extract-features
+    deps:
+      - data/processed/train.parquet
+      - src/oracle/features.rs
+    outs:
+      - data/features/train_features.parquet
+      - data/features/test_features.parquet
+    params:
+      - .ruchy/reproducibility.toml:
+        - oracle.model_version
+
+  train_model:
+    cmd: cargo run --release --bin ruchy-oracle-train -- train
+    deps:
+      - data/features/train_features.parquet
+      - src/oracle/training_loop.rs
+    outs:
+      - models/oracle_v${oracle.model_version}.bin
+    params:
+      - .ruchy/reproducibility.toml:
+        - training.train_seed
+        - training.cv_folds
+        - oracle.confidence_threshold
+    metrics:
+      - metrics/training_metrics.json:
+          cache: false
+
+  evaluate_model:
+    cmd: cargo run --release --bin ruchy-oracle-train -- evaluate
+    deps:
+      - models/oracle_v${oracle.model_version}.bin
+      - data/features/test_features.parquet
+    metrics:
+      - metrics/evaluation_metrics.json:
+          cache: false
+    plots:
+      - metrics/confusion_matrix.json:
+          x: predicted
+          y: actual
+      - metrics/precision_recall.json:
+          x: recall
+          y: precision
+
+  validate_reproducibility:
+    cmd: |
+      cargo run --release --bin ruchy-oracle-train -- validate \
+        --model models/oracle_v${oracle.model_version}.bin \
+        --expected-checksum ${oracle.model_checksum}
+    deps:
+      - models/oracle_v${oracle.model_version}.bin
+    always_changed: true

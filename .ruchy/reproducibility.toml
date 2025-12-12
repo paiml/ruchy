@@ -1,0 +1,49 @@
+# Ruchy Reproducibility Configuration
+# This file ensures deterministic and reproducible behavior across all runs
+
+[random_seeds]
+# Master seed for all random operations
+master_seed = 42
+
+# Component-specific seeds (derived from master for isolation)
+parser_seed = 42
+oracle_seed = 42
+fuzzer_seed = 42
+property_test_seed = 12345678901234567890123456789012
+
+# Proptest configuration
+proptest_cases = 100
+proptest_max_shrink_iters = 100
+
+[determinism]
+# Force deterministic mode for all components
+deterministic_mode = true
+
+# Disable parallel test execution for reproducibility
+parallel_tests = false
+
+# Use sorted iteration for hash maps in tests
+sorted_hash_iteration = true
+
+[oracle]
+# Oracle ML model configuration
+model_version = "v1.2.0"
+model_checksum = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+inference_deterministic = true
+confidence_threshold = 0.7
+
+[training]
+# Training reproducibility settings
+train_seed = 42
+validation_seed = 43
+test_seed = 44
+cv_folds = 5
+test_split_ratio = 0.2
+shuffle = true
+
+[benchmarks]
+# Benchmark reproducibility
+warmup_iterations = 3
+measurement_iterations = 10
+sample_size = 100
+confidence_level = 0.95

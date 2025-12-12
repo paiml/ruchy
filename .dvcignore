@@ -1,0 +1,29 @@
+# DVC ignore file
+# Files and directories to ignore when tracking with DVC
+
+# Build artifacts
+target/
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Test artifacts
+test_*
+debug_*

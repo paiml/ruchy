@@ -82,6 +82,7 @@ pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;
 pub mod quality;
+pub mod reproducibility;
 pub mod reporting;
 pub mod runtime;
 pub mod server;
