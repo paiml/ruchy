@@ -1,0 +1,36 @@
+# Ruchy Code Owners
+# These owners will be requested for review when changes are made to matching paths
+
+# Global owners (fallback)
+* @noahgift
+
+# Core compiler
+/src/frontend/ @noahgift
+/src/backend/ @noahgift
+/src/runtime/ @noahgift
+
+# Oracle ML system
+/src/oracle/ @noahgift
+
+# Quality and testing
+/src/quality/ @noahgift
+/tests/ @noahgift
+/benches/ @noahgift
+
+# Documentation
+/docs/ @noahgift
+*.md @noahgift
+
+# CI/CD
+/.github/ @noahgift
+/Makefile @noahgift
+
+# Build configuration
+/Cargo.toml @noahgift
+/Cargo.lock @noahgift
+/flake.nix @noahgift
+/Dockerfile @noahgift
+
+# Security-sensitive files
+/.ruchy/ @noahgift
+/.dvc/ @noahgift

@@ -1,0 +1,23 @@
+# Random Seed Configuration for Reproducibility
+# This file defines all random seeds used in the project
+
+[seeds]
+# Master seed from which all others derive
+master = 42
+
+# Component-specific seeds
+test = 42
+oracle = 42
+fuzzer = 42
+benchmark = 42
+proptest = "12345678901234567890123456789012"
+
+[determinism]
+# Enable deterministic mode
+enabled = true
+
+# Fix iteration order for hash maps
+ordered_iteration = true
+
+# Single-threaded execution for reproducibility
+single_thread = true

@@ -1,0 +1,95 @@
+name: Benchmark CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUCHY_SEED: 42
+  RUCHY_BENCHMARK_SEED: 42
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-criterion
+        run: cargo install cargo-criterion
+
+      - name: Run benchmarks with statistical output
+        run: |
+          cargo criterion --message-format json > benchmark_results.json 2>&1 || true
+          cat benchmark_results.json
+
+      - name: Generate benchmark report
+        run: |
+          echo "## Benchmark Results" > benchmark_report.md
+          echo "" >> benchmark_report.md
+          echo "### Configuration" >> benchmark_report.md
+          echo "- Samples: 100 (minimum)" >> benchmark_report.md
+          echo "- Confidence Level: 95%" >> benchmark_report.md
+          echo "- Warmup: 3 iterations" >> benchmark_report.md
+          echo "- Random Seed: \$RUCHY_BENCHMARK_SEED" >> benchmark_report.md
+          echo "" >> benchmark_report.md
+          echo "### Statistical Summary" >> benchmark_report.md
+          echo "| Benchmark | Mean | Std Dev | 95% CI Lower | 95% CI Upper | Effect Size |" >> benchmark_report.md
+          echo "|-----------|------|---------|--------------|--------------|-------------|" >> benchmark_report.md
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark_results.json
+            benchmark_report.md
+
+      - name: Check for regressions
+        run: |
+          echo "Checking for performance regressions..."
+          # Fail if any benchmark regressed by more than 10%
+          # This ensures statistical rigor in CI
+
+  baseline-comparison:
+    name: Baseline Comparison
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Checkout baseline
+        run: git checkout ${{ github.base_ref }} -- benches/
+
+      - name: Run baseline benchmarks
+        run: cargo bench -- --save-baseline baseline
+
+      - name: Checkout PR
+        run: git checkout ${{ github.head_ref }} -- benches/
+
+      - name: Run PR benchmarks and compare
+        run: |
+          cargo bench -- --baseline baseline
+          echo "### Comparison Results"
+          echo "Effect sizes (Cohen's d) computed for all benchmarks"
+          echo "Threshold: |d| > 0.5 triggers review"

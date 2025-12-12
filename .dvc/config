@@ -1,0 +1,9 @@
+[core]
+    remote = local
+    autostage = true
+
+[remote "local"]
+    url = /tmp/ruchy-dvc-cache
+
+['remote "s3"']
+    url = s3://ruchy-models/dvc

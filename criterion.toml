@@ -1,0 +1,40 @@
+# Criterion.rs configuration for reproducible benchmarks
+
+[benchmark]
+# Number of samples to collect
+sample_size = 100
+
+# Warmup time in seconds
+warm_up_time_s = 3.0
+
+# Measurement time in seconds
+measurement_time_s = 5.0
+
+# Confidence level for statistical analysis
+confidence_level = 0.95
+
+# Significance level for detecting changes
+significance_level = 0.05
+
+# Noise threshold (changes smaller than this are ignored)
+noise_threshold = 0.01
+
+# Number of resamples for bootstrap analysis
+nresamples = 100000
+
+[output]
+# Save baseline for comparison
+save_baseline = "main"
+
+# Generate HTML reports
+html_reports = true
+
+# Generate JSON output
+json_output = true
+
+[plotting]
+# Enable plotting
+enabled = true
+
+# Plot backend
+backend = "plotters"

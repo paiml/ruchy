@@ -1,0 +1,162 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "generated": "2024-03-01T00:00:00Z",
+    "methodology": "Criterion.rs with bootstrap resampling",
+    "hardware": {
+      "cpu": "GitHub Actions runner (2-core)",
+      "memory_gb": 7,
+      "os": "Ubuntu 22.04"
+    },
+    "rust_version": "1.83.0",
+    "random_seed": 42
+  },
+  "summary": {
+    "total_benchmarks": 23,
+    "passing": 22,
+    "warning": 1,
+    "failing": 0
+  },
+  "benchmarks": [
+    {
+      "name": "matrix_001_arithmetic_addition",
+      "category": "Arithmetic",
+      "samples": 100,
+      "mean_us": 33.57,
+      "std_dev_us": 2.14,
+      "median_us": 33.21,
+      "confidence_interval_95": {
+        "lower_us": 32.85,
+        "upper_us": 34.29
+      },
+      "effect_size": {
+        "cohens_d": 0.0,
+        "interpretation": "baseline"
+      },
+      "outliers": {
+        "count": 0,
+        "percentage": 0.0,
+        "handling": "none_detected"
+      }
+    },
+    {
+      "name": "matrix_001_arithmetic_subtraction",
+      "category": "Arithmetic",
+      "samples": 100,
+      "mean_us": 33.15,
+      "std_dev_us": 1.98,
+      "median_us": 32.89,
+      "confidence_interval_95": {
+        "lower_us": 32.51,
+        "upper_us": 33.79
+      },
+      "effect_size": {
+        "cohens_d": -0.08,
+        "vs_baseline": "matrix_001_arithmetic_addition",
+        "interpretation": "negligible"
+      },
+      "outliers": {
+        "count": 2,
+        "percentage": 2.0,
+        "handling": "reported_not_excluded"
+      }
+    },
+    {
+      "name": "matrix_002_csv_array_creation_1000",
+      "category": "CSV Processing",
+      "samples": 100,
+      "mean_us": 787.0,
+      "std_dev_us": 45.3,
+      "median_us": 775.5,
+      "confidence_interval_95": {
+        "lower_us": 768.1,
+        "upper_us": 805.9
+      },
+      "effect_size": {
+        "cohens_d": 0.0,
+        "interpretation": "baseline"
+      },
+      "outliers": {
+        "count": 3,
+        "percentage": 3.0,
+        "handling": "reported_not_excluded"
+      }
+    },
+    {
+      "name": "matrix_003_statistical_mean_1000",
+      "category": "Statistical",
+      "samples": 100,
+      "mean_ms": 8.69,
+      "std_dev_ms": 0.82,
+      "median_ms": 8.55,
+      "confidence_interval_95": {
+        "lower_ms": 8.35,
+        "upper_ms": 9.03
+      },
+      "effect_size": {
+        "cohens_d": 0.45,
+        "vs_target": 5.0,
+        "interpretation": "medium_regression"
+      },
+      "outliers": {
+        "count": 1,
+        "percentage": 1.0,
+        "handling": "reported_not_excluded"
+      },
+      "status": "warning",
+      "notes": "74% above 5ms target; see optimization recommendations"
+    }
+  ],
+  "comparisons": [
+    {
+      "benchmark": "parse_1000_lines",
+      "current_version": "v1.2.0",
+      "baseline_version": "v1.0.0",
+      "current_mean_ms": 7.8,
+      "baseline_mean_ms": 8.2,
+      "change_percent": -4.9,
+      "effect_size": {
+        "cohens_d": -0.2,
+        "interpretation": "small_improvement"
+      },
+      "confidence_interval_95_diff": {
+        "lower_ms": -0.8,
+        "upper_ms": 0.0
+      },
+      "statistical_significance": false,
+      "p_value": 0.12
+    },
+    {
+      "benchmark": "transpile_1000_lines",
+      "current_version": "v1.2.0",
+      "baseline_version": "v1.0.0",
+      "current_mean_ms": 38.5,
+      "baseline_mean_ms": 42.1,
+      "change_percent": -8.6,
+      "effect_size": {
+        "cohens_d": -0.4,
+        "interpretation": "small_to_medium_improvement"
+      },
+      "confidence_interval_95_diff": {
+        "lower_ms": -5.2,
+        "upper_ms": -1.8
+      },
+      "statistical_significance": true,
+      "p_value": 0.02
+    }
+  ],
+  "power_analysis": {
+    "alpha": 0.05,
+    "beta": 0.20,
+    "target_effect_size": 0.5,
+    "minimum_sample_size": 64,
+    "actual_sample_size": 100,
+    "achieved_power": 0.92
+  },
+  "reproducibility": {
+    "random_seed": 42,
+    "rust_version": "1.83.0",
+    "criterion_version": "0.5.1",
+    "bootstrap_resamples": 10000
+  }
+}

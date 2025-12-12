@@ -1,0 +1,33 @@
+# Proptest Configuration for Reproducibility
+# See: https://proptest-rs.github.io/proptest/proptest/index.html
+
+[general]
+# Number of test cases to generate per test
+cases = 100
+
+# Maximum iterations for shrinking
+max_shrink_iters = 100
+
+# Timeout per test in milliseconds
+timeout = 10000
+
+# Fork mode for crash handling
+fork = false
+
+# Verbose output
+verbose = 0
+
+[seed]
+# Fixed seed for reproducibility
+# Set via PROPTEST_SEED environment variable to override
+seed = "12345678901234567890123456789012"
+
+# Always use the fixed seed
+use_fixed_seed = true
+
+[regression]
+# Store regression cases
+store_regressions = true
+
+# Regression file location
+regression_file = ".proptest-regressions"
