@@ -283,12 +283,18 @@ impl std::error::Error for InterpreterError {}
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn test_display_integer() {
         let val = Value::Integer(42);
         assert_eq!(val.to_string(), "42");
+    }
+
+    #[test]
+    fn test_display_integer_negative() {
+        let val = Value::Integer(-100);
+        assert_eq!(val.to_string(), "-100");
     }
 
     #[test]
@@ -298,9 +304,21 @@ mod tests {
     }
 
     #[test]
+    fn test_display_float_whole_number() {
+        let val = Value::Float(5.0);
+        assert_eq!(val.to_string(), "5.0");
+    }
+
+    #[test]
     fn test_display_bool() {
         assert_eq!(Value::Bool(true).to_string(), "true");
         assert_eq!(Value::Bool(false).to_string(), "false");
+    }
+
+    #[test]
+    fn test_display_byte() {
+        let val = Value::Byte(255);
+        assert_eq!(val.to_string(), "255");
     }
 
     #[test]
@@ -325,12 +343,24 @@ mod tests {
     }
 
     #[test]
+    fn test_display_array_empty() {
+        let val = Value::Array(Arc::from(vec![]));
+        assert_eq!(val.to_string(), "[]");
+    }
+
+    #[test]
     fn test_display_tuple() {
         let val = Value::Tuple(Arc::from(vec![
             Value::Integer(1),
             Value::from_string("test".to_string()),
         ]));
         assert_eq!(val.to_string(), "(1, \"test\")");
+    }
+
+    #[test]
+    fn test_display_tuple_empty() {
+        let val = Value::Tuple(Arc::from(vec![]));
+        assert_eq!(val.to_string(), "()");
     }
 
     #[test]
@@ -342,6 +372,22 @@ mod tests {
         let display = val.to_string();
         assert!(display.contains("x: 10"));
         assert!(display.contains("y: 20"));
+    }
+
+    #[test]
+    fn test_display_object_empty() {
+        let obj = HashMap::new();
+        let val = Value::Object(Arc::new(obj));
+        assert_eq!(val.to_string(), "{}");
+    }
+
+    #[test]
+    fn test_display_object_mut() {
+        let mut obj = HashMap::new();
+        obj.insert("key".to_string(), Value::Integer(42));
+        let val = Value::ObjectMut(Arc::new(Mutex::new(obj)));
+        let display = val.to_string();
+        assert!(display.contains("key: 42"));
     }
 
     #[test]
@@ -362,6 +408,109 @@ mod tests {
     }
 
     #[test]
+    fn test_display_closure() {
+        let val = Value::Closure {
+            params: vec![],
+            body: Arc::new(crate::frontend::ast::Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                crate::frontend::ast::Span::default(),
+            )),
+            env: std::rc::Rc::new(std::cell::RefCell::new(HashMap::new())),
+        };
+        assert_eq!(val.to_string(), "<function>");
+    }
+
+    #[test]
+    fn test_display_builtin_function() {
+        let val = Value::BuiltinFunction("println".to_string());
+        assert_eq!(val.to_string(), "<builtin function: println>");
+    }
+
+    #[test]
+    fn test_display_atom() {
+        let val = Value::Atom("ok".to_string());
+        assert_eq!(val.to_string(), ":ok");
+    }
+
+    #[test]
+    fn test_display_enum_variant_no_data() {
+        let val = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        assert_eq!(val.to_string(), "None");
+    }
+
+    #[test]
+    fn test_display_enum_variant_with_data() {
+        let val = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        assert_eq!(val.to_string(), "Some(42)");
+    }
+
+    #[test]
+    fn test_display_enum_variant_empty_data() {
+        let val = Value::EnumVariant {
+            enum_name: "Test".to_string(),
+            variant_name: "Empty".to_string(),
+            data: Some(vec![]),
+        };
+        assert_eq!(val.to_string(), "Empty");
+    }
+
+    #[test]
+    fn test_display_struct() {
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), Value::from_string("test".to_string()));
+        fields.insert("age".to_string(), Value::Integer(25));
+        let val = Value::Struct {
+            name: "Person".to_string(),
+            fields: Arc::new(fields),
+        };
+        let display = val.to_string();
+        assert!(display.starts_with("Person {"));
+        assert!(display.contains("age: 25"));
+        assert!(display.contains("name: \"test\""));
+    }
+
+    #[test]
+    fn test_display_class() {
+        let mut fields = HashMap::new();
+        fields.insert("value".to_string(), Value::Integer(100));
+        let val = Value::Class {
+            class_name: "MyClass".to_string(),
+            fields: Arc::new(RwLock::new(fields)),
+            methods: Arc::new(HashMap::new()),
+        };
+        let display = val.to_string();
+        assert!(display.starts_with("MyClass {"));
+        assert!(display.contains("value: 100"));
+    }
+
+    #[test]
+    fn test_display_dataframe() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![Value::from_string("a".to_string())],
+            },
+        ];
+        let val = Value::DataFrame { columns };
+        let display = val.to_string();
+        assert!(display.contains("DataFrame with 2 columns"));
+        assert!(display.contains("id: 2 rows"));
+        assert!(display.contains("name: 1 rows"));
+    }
+
+    #[test]
     fn test_interpreter_error_display() {
         assert_eq!(
             InterpreterError::TypeError("invalid type".to_string()).to_string(),
@@ -371,5 +520,114 @@ mod tests {
             InterpreterError::DivisionByZero.to_string(),
             "Division by zero"
         );
+    }
+
+    #[test]
+    fn test_interpreter_error_runtime() {
+        assert_eq!(
+            InterpreterError::RuntimeError("something failed".to_string()).to_string(),
+            "Runtime error: something failed"
+        );
+    }
+
+    #[test]
+    fn test_interpreter_error_stack_overflow() {
+        assert_eq!(InterpreterError::StackOverflow.to_string(), "Stack overflow");
+    }
+
+    #[test]
+    fn test_interpreter_error_stack_underflow() {
+        assert_eq!(InterpreterError::StackUnderflow.to_string(), "Stack underflow");
+    }
+
+    #[test]
+    fn test_interpreter_error_invalid_instruction() {
+        assert_eq!(InterpreterError::InvalidInstruction.to_string(), "Invalid instruction");
+    }
+
+    #[test]
+    fn test_interpreter_error_index_out_of_bounds() {
+        assert_eq!(InterpreterError::IndexOutOfBounds.to_string(), "Index out of bounds");
+    }
+
+    #[test]
+    fn test_interpreter_error_break_with_label() {
+        let err = InterpreterError::Break(Some("outer".to_string()), Value::Nil);
+        assert_eq!(err.to_string(), "Break 'outer' outside of matching loop");
+    }
+
+    #[test]
+    fn test_interpreter_error_break_no_label() {
+        let err = InterpreterError::Break(None, Value::Nil);
+        assert_eq!(err.to_string(), "Break outside of loop");
+    }
+
+    #[test]
+    fn test_interpreter_error_continue_with_label() {
+        let err = InterpreterError::Continue(Some("inner".to_string()));
+        assert_eq!(err.to_string(), "Continue 'inner' outside of matching loop");
+    }
+
+    #[test]
+    fn test_interpreter_error_continue_no_label() {
+        let err = InterpreterError::Continue(None);
+        assert_eq!(err.to_string(), "Continue outside of loop");
+    }
+
+    #[test]
+    fn test_interpreter_error_return() {
+        let err = InterpreterError::Return(Value::Integer(5));
+        assert_eq!(err.to_string(), "Return outside of function");
+    }
+
+    #[test]
+    fn test_interpreter_error_throw() {
+        let err = InterpreterError::Throw(Value::from_string("error!".to_string()));
+        assert!(err.to_string().contains("Uncaught exception"));
+    }
+
+    #[test]
+    fn test_interpreter_error_assertion_failed() {
+        let err = InterpreterError::AssertionFailed("expected true".to_string());
+        assert_eq!(err.to_string(), "Assertion failed: expected true");
+    }
+
+    #[test]
+    fn test_interpreter_error_recursion_limit() {
+        let err = InterpreterError::RecursionLimitExceeded(1000, 500);
+        let display = err.to_string();
+        assert!(display.contains("Recursion limit exceeded"));
+        assert!(display.contains("1000"));
+        assert!(display.contains("500"));
+    }
+
+    #[test]
+    fn test_format_tuple_helper() {
+        let elements = vec![Value::Integer(1)];
+        let val = Value::Tuple(Arc::from(elements));
+        assert_eq!(val.to_string(), "(1)");
+    }
+
+    #[test]
+    fn test_format_nested_array() {
+        let inner = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let outer = Value::Array(Arc::from(vec![inner, Value::Integer(3)]));
+        assert_eq!(outer.to_string(), "[[1, 2], 3]");
+    }
+
+    #[test]
+    fn test_format_range_with_floats() {
+        let val = Value::Range {
+            start: Box::new(Value::Float(1.5)),
+            end: Box::new(Value::Float(3.5)),
+            inclusive: false,
+        };
+        assert_eq!(val.to_string(), "1.5..3.5");
+    }
+
+    #[test]
+    fn test_interpreter_error_is_error_trait() {
+        let err: &dyn std::error::Error = &InterpreterError::DivisionByZero;
+        assert!(err.to_string().contains("Division"));
     }
 }
