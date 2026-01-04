@@ -662,6 +662,307 @@ mod tests {
         // Module path detection might need more context
         // assert!(matches!(ctx, CompletionContext::ModulePath { .. }));
     }
+
+    #[test]
+    fn test_completion_kind_prefix() {
+        assert_eq!(CompletionKind::Variable.prefix(), "var");
+        assert_eq!(CompletionKind::Function.prefix(), "fn");
+        assert_eq!(CompletionKind::Method.prefix(), "method");
+        assert_eq!(CompletionKind::Keyword.prefix(), "keyword");
+        assert_eq!(CompletionKind::Type.prefix(), "type");
+        assert_eq!(CompletionKind::Module.prefix(), "mod");
+        assert_eq!(CompletionKind::Field.prefix(), "field");
+        assert_eq!(CompletionKind::Command.prefix(), "cmd");
+    }
+
+    #[test]
+    fn test_completion_kind_priority() {
+        assert_eq!(CompletionKind::Variable.priority(), 100);
+        assert_eq!(CompletionKind::Function.priority(), 90);
+        assert_eq!(CompletionKind::Method.priority(), 85);
+        assert_eq!(CompletionKind::Keyword.priority(), 80);
+        assert_eq!(CompletionKind::Field.priority(), 75);
+        assert_eq!(CompletionKind::Type.priority(), 70);
+        assert_eq!(CompletionKind::Module.priority(), 60);
+        assert_eq!(CompletionKind::Command.priority(), 50);
+    }
+
+    #[test]
+    fn test_completion_cache_operations() {
+        let mut cache = CompletionCache::new();
+
+        // Cache should be empty initially
+        assert!(cache.get("test", 0).is_none());
+
+        // Put and get
+        let candidates = vec![CompletionCandidate {
+            text: "test".to_string(),
+            display: "test".to_string(),
+            kind: CompletionKind::Variable,
+            doc: None,
+            priority: 100,
+        }];
+        cache.put("test".to_string(), 0, candidates.clone());
+        assert!(cache.get("test", 0).is_some());
+
+        // Clear
+        cache.clear();
+        assert!(cache.get("test", 0).is_none());
+    }
+
+    #[test]
+    fn test_completion_cache_eviction() {
+        let mut cache = CompletionCache::new();
+
+        // Fill cache beyond max_entries (100)
+        for i in 0..150 {
+            let candidates = vec![CompletionCandidate {
+                text: format!("test{i}"),
+                display: format!("test{i}"),
+                kind: CompletionKind::Variable,
+                doc: None,
+                priority: 100,
+            }];
+            cache.put(format!("input{i}"), i, candidates);
+        }
+
+        // Cache should have evicted some entries
+        assert!(cache.cache.len() < 150);
+    }
+
+    #[test]
+    fn test_infer_type_string() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.infer_type("\"hello\""), Some("String".to_string()));
+    }
+
+    #[test]
+    fn test_infer_type_list() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.infer_type("[1, 2, 3]"), Some("List".to_string()));
+    }
+
+    #[test]
+    fn test_infer_type_hashmap() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.infer_type("{a: 1}"), Some("HashMap".to_string()));
+    }
+
+    #[test]
+    fn test_infer_type_int() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.infer_type("42"), Some("Int".to_string()));
+    }
+
+    #[test]
+    fn test_infer_type_float() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.infer_type("3.14"), Some("Float".to_string()));
+    }
+
+    #[test]
+    fn test_infer_type_unknown() {
+        let engine = CompletionEngine::new();
+        assert!(engine.infer_type("unknown_thing").is_none());
+    }
+
+    #[test]
+    fn test_infer_type_known_variable() {
+        let mut engine = CompletionEngine::new();
+        engine.register_variable("my_var".to_string());
+        assert_eq!(engine.infer_type("my_var"), Some("Unknown".to_string()));
+    }
+
+    #[test]
+    fn test_extract_current_word() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.extract_current_word("hello"), "hello");
+        assert_eq!(engine.extract_current_word("foo.bar"), "bar");
+        assert_eq!(engine.extract_current_word("let x = test"), "test");
+        assert_eq!(engine.extract_current_word("func(arg"), "arg");
+    }
+
+    #[test]
+    fn test_get_command_doc() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.get_command_doc("help"), "Show help information");
+        assert_eq!(engine.get_command_doc("quit"), "Exit the REPL");
+        assert_eq!(engine.get_command_doc("exit"), "Exit the REPL");
+        assert_eq!(engine.get_command_doc("history"), "Show command history");
+        assert_eq!(engine.get_command_doc("clear"), "Clear the screen");
+        assert_eq!(engine.get_command_doc("reset"), "Reset REPL state");
+        assert_eq!(engine.get_command_doc("unknown"), "Command: unknown");
+    }
+
+    #[test]
+    fn test_register_function() {
+        let mut engine = CompletionEngine::new();
+        engine.register_function("my_func".to_string(), vec!["arg1".to_string(), "arg2".to_string()]);
+        let completions = engine.get_completions("my_", 3);
+        assert!(completions.iter().any(|c| c.text == "my_func"));
+    }
+
+    #[test]
+    fn test_register_type() {
+        let mut engine = CompletionEngine::new();
+        engine.register_type("MyType".to_string());
+        let completions = engine.get_completions("My", 2);
+        assert!(completions.iter().any(|c| c.text == "MyType"));
+    }
+
+    #[test]
+    fn test_register_methods() {
+        let mut engine = CompletionEngine::new();
+        engine.register_methods("MyType".to_string(), vec!["method1".to_string(), "method2".to_string()]);
+        // Methods require member access context to show
+    }
+
+    #[test]
+    fn test_member_completions_string() {
+        let engine = CompletionEngine::new();
+        let completions = engine.get_member_completions("String", "len");
+        assert!(completions.iter().any(|c| c.text == "len"));
+    }
+
+    #[test]
+    fn test_member_completions_list() {
+        let engine = CompletionEngine::new();
+        let completions = engine.get_member_completions("List", "pu");
+        assert!(completions.iter().any(|c| c.text == "push"));
+    }
+
+    #[test]
+    fn test_member_completions_hashmap() {
+        let engine = CompletionEngine::new();
+        let completions = engine.get_member_completions("HashMap", "ge");
+        assert!(completions.iter().any(|c| c.text == "get"));
+    }
+
+    #[test]
+    fn test_context_empty_line() {
+        let engine = CompletionEngine::new();
+        let ctx = engine.analyze_context("", 0);
+        assert!(matches!(ctx, CompletionContext::LineStart));
+    }
+
+    #[test]
+    fn test_context_whitespace_only() {
+        let engine = CompletionEngine::new();
+        let ctx = engine.analyze_context("   ", 3);
+        assert!(matches!(ctx, CompletionContext::LineStart));
+    }
+
+    #[test]
+    fn test_context_module_path() {
+        let engine = CompletionEngine::new();
+        let ctx = engine.analyze_context("std::io", 7);
+        assert!(matches!(ctx, CompletionContext::ModulePath { .. }));
+    }
+
+    #[test]
+    fn test_fuzzy_score_empty_pattern() {
+        let engine = CompletionEngine::new();
+        assert_eq!(engine.calculate_fuzzy_score("", "anything"), 0);
+    }
+
+    #[test]
+    fn test_default_trait() {
+        let engine = CompletionEngine::default();
+        assert!(!engine.keywords.is_empty());
+    }
+
+    #[test]
+    fn test_completion_cache_with_position() {
+        let mut engine = CompletionEngine::new();
+        engine.register_variable("test_var".to_string());
+
+        // First call should compute
+        let completions1 = engine.get_completions("test", 4);
+        // Second call should use cache
+        let completions2 = engine.get_completions("test", 4);
+
+        assert_eq!(completions1.len(), completions2.len());
+    }
+
+    #[test]
+    fn test_ruchy_completer_creation() {
+        let completer = RuchyCompleter::new();
+        assert!(!completer.builtins.is_empty());
+    }
+
+    #[test]
+    fn test_ruchy_completer_analyze_context_command() {
+        let completer = RuchyCompleter::new();
+        let ctx = completer.analyze_context(":help", 5);
+        assert!(matches!(ctx, CompletionContext::Command));
+    }
+
+    #[test]
+    fn test_ruchy_completer_analyze_context_member() {
+        let completer = RuchyCompleter::new();
+        let ctx = completer.analyze_context("obj.method", 10);
+        assert!(matches!(ctx, CompletionContext::MemberAccess { .. }));
+    }
+
+    #[test]
+    fn test_ruchy_completer_analyze_context_module() {
+        let completer = RuchyCompleter::new();
+        let ctx = completer.analyze_context("std::io", 7);
+        assert!(matches!(ctx, CompletionContext::ModulePath { .. }));
+    }
+
+    #[test]
+    fn test_ruchy_completer_analyze_context_expression() {
+        let completer = RuchyCompleter::new();
+        let ctx = completer.analyze_context("let x = 5", 9);
+        assert!(matches!(ctx, CompletionContext::Expression));
+    }
+
+    #[test]
+    fn test_ruchy_completer_find_word_start() {
+        let completer = RuchyCompleter::new();
+        assert_eq!(completer.find_word_start("hello", 5), 0);
+        assert_eq!(completer.find_word_start("let x", 5), 4);
+        assert_eq!(completer.find_word_start("a + b", 5), 4);
+    }
+
+    #[test]
+    fn test_ruchy_completer_get_basic_completions() {
+        let completer = RuchyCompleter::new();
+        let completions = completer.get_basic_completions("pr");
+        assert!(completions.contains(&"println".to_string()));
+        assert!(completions.contains(&"print".to_string()));
+    }
+
+    #[test]
+    fn test_ruchy_completer_convert_to_pairs() {
+        let completer = RuchyCompleter::new();
+        let completions = vec!["test".to_string()];
+        let pairs = completer.convert_to_pairs(completions);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs[0].display, "test");
+        assert_eq!(pairs[0].replacement, "test");
+    }
+
+    #[test]
+    fn test_ruchy_completer_create_hint() {
+        let completer = RuchyCompleter::new();
+        let hint = completer.create_hint(CompletionContext::MemberAccess {
+            object_type: "String".to_string(),
+        });
+        assert_eq!(hint, Some(" (method access)".to_string()));
+
+        let no_hint = completer.create_hint(CompletionContext::Expression);
+        assert!(no_hint.is_none());
+    }
+
+    #[test]
+    fn test_ruchy_completer_default() {
+        let completer = RuchyCompleter::default();
+        // Default uses derive, which initializes empty builtins
+        // Use new() for non-empty builtins
+        assert!(completer.cache.is_empty());
+    }
 }
 // TDG-compliant RuchyCompleter implementation (complexity ≤10 per method)
 /// Main completion struct for rustyline integration
