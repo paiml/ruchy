@@ -523,7 +523,7 @@ impl Transpiler {
         let body_tokens = self.transpile_expr(body)?;
 
         // Extract bound variables from pattern
-        let bound_vars = Self::extract_pattern_bindings(pattern);
+        let bound_vars = super::pattern_bindings::extract_pattern_bindings(pattern);
 
         if bound_vars.is_empty() {
             bail!("Let-else pattern must bind at least one variable");
@@ -561,60 +561,6 @@ impl Transpiler {
                     #body_tokens
                 }
             })
-        }
-    }
-
-    /// Extract variable bindings from a pattern
-    ///
-    /// # Complexity
-    /// Cyclomatic complexity: 7 (within ≤10 limit)
-    fn extract_pattern_bindings(pattern: &crate::frontend::ast::Pattern) -> Vec<String> {
-        use crate::frontend::ast::Pattern;
-
-        match pattern {
-            Pattern::Identifier(name) => vec![name.clone()],
-            Pattern::Tuple(patterns) | Pattern::List(patterns) => patterns
-                .iter()
-                .flat_map(Self::extract_pattern_bindings)
-                .collect(),
-            Pattern::TupleVariant { patterns, .. } => patterns
-                .iter()
-                .flat_map(Self::extract_pattern_bindings)
-                .collect(),
-            Pattern::Struct { fields, .. } => fields
-                .iter()
-                .flat_map(|field| {
-                    field
-                        .pattern
-                        .as_ref()
-                        .map_or_else(|| vec![field.name.clone()], Self::extract_pattern_bindings)
-                })
-                .collect(),
-            Pattern::RestNamed(name) => vec![name.clone()],
-            Pattern::Or(patterns) => {
-                // For Or patterns, all branches must bind the same variables
-                // Just extract from first pattern
-                patterns
-                    .first()
-                    .map(Self::extract_pattern_bindings)
-                    .unwrap_or_default()
-            }
-            Pattern::AtBinding { name, pattern } => {
-                let mut bindings = vec![name.clone()];
-                bindings.extend(Self::extract_pattern_bindings(pattern));
-                bindings
-            }
-            Pattern::WithDefault { pattern, .. } => Self::extract_pattern_bindings(pattern),
-            Pattern::Mut(pattern)
-            | Pattern::Ok(pattern)
-            | Pattern::Err(pattern)
-            | Pattern::Some(pattern) => Self::extract_pattern_bindings(pattern),
-            Pattern::None => vec![],
-            Pattern::Wildcard
-            | Pattern::Literal(_)
-            | Pattern::QualifiedName(_)
-            | Pattern::Rest
-            | Pattern::Range { .. } => vec![],
         }
     }
 
@@ -6639,38 +6585,7 @@ mod tests {
         assert!(super::mutation_detection::is_variable_mutated("x", &block_expr));
     }
 
-    // Test 5: extract_pattern_bindings - identifier pattern
-    #[test]
-    fn test_extract_pattern_bindings_identifier() {
-        use crate::frontend::ast::Pattern;
-        let pattern = Pattern::Identifier("x".to_string());
-        let bindings = Transpiler::extract_pattern_bindings(&pattern);
-        assert_eq!(bindings, vec!["x"]);
-    }
-
-    // Test 6: extract_pattern_bindings - tuple pattern
-    #[test]
-    fn test_extract_pattern_bindings_tuple() {
-        use crate::frontend::ast::Pattern;
-        let pattern = Pattern::Tuple(vec![
-            Pattern::Identifier("a".to_string()),
-            Pattern::Identifier("b".to_string()),
-            Pattern::Identifier("c".to_string()),
-        ]);
-        let bindings = Transpiler::extract_pattern_bindings(&pattern);
-        assert_eq!(bindings, vec!["a", "b", "c"]);
-    }
-
-    // Test 7: extract_pattern_bindings - wildcard pattern
-    #[test]
-    fn test_extract_pattern_bindings_wildcard() {
-        use crate::frontend::ast::Pattern;
-        let pattern = Pattern::Wildcard;
-        let bindings = Transpiler::extract_pattern_bindings(&pattern);
-        assert!(bindings.is_empty());
-    }
-
-    // Test 8: looks_like_numeric_function - arithmetic functions
+    // Test 5: looks_like_numeric_function - arithmetic functions
     #[test]
     fn test_looks_like_numeric_function_arithmetic() {
         let transpiler = create_transpiler();
