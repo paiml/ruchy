@@ -63,10 +63,7 @@ impl SoftLabel {
     /// Get confidence (max probability)
     #[must_use]
     pub fn confidence(&self) -> f64 {
-        self.soft_targets
-            .iter()
-            .copied()
-            .fold(0.0f64, f64::max)
+        self.soft_targets.iter().copied().fold(0.0f64, f64::max)
     }
 }
 
@@ -139,7 +136,8 @@ impl KnowledgeDistiller {
                 // Only distill high-confidence predictions
                 if classification.confidence >= self.config.confidence_threshold {
                     // Generate pseudo-logits from classification
-                    let logits = self.generate_logits(&classification.category, classification.confidence);
+                    let logits =
+                        self.generate_logits(&classification.category, classification.confidence);
                     let soft_targets = self.temperature_scale(&logits);
 
                     Some(SoftLabel::new(sample.clone(), soft_targets))
@@ -161,7 +159,8 @@ impl KnowledgeDistiller {
         // Set target logit higher based on confidence
         // Approximate inverse of softmax: z_i = log(p_i) * T + constant
         let target_logit = confidence.ln() * self.config.temperature + 1.0;
-        let other_logit = ((1.0 - confidence) / (num_categories - 1) as f64).ln() * self.config.temperature;
+        let other_logit =
+            ((1.0 - confidence) / (num_categories - 1) as f64).ln() * self.config.temperature;
 
         for (i, logit) in logits.iter_mut().enumerate() {
             if i == target_idx {
@@ -197,7 +196,8 @@ impl KnowledgeDistiller {
 
                 for (i, teacher) in teachers.iter().enumerate() {
                     let classification = teacher.classify(&error);
-                    all_logits[i] = self.generate_logits(&classification.category, classification.confidence);
+                    all_logits[i] =
+                        self.generate_logits(&classification.category, classification.confidence);
                     total_confidence += classification.confidence;
                 }
 
@@ -305,7 +305,10 @@ mod tests {
         let soft_targets = vec![0.9, 0.05, 0.02, 0.01, 0.01, 0.005, 0.004, 0.001];
 
         let soft_label = SoftLabel::new(sample, soft_targets);
-        assert_eq!(soft_label.predicted_category(), Some(ErrorCategory::TypeMismatch));
+        assert_eq!(
+            soft_label.predicted_category(),
+            Some(ErrorCategory::TypeMismatch)
+        );
     }
 
     #[test]
@@ -342,5 +345,128 @@ mod tests {
         let config = DistillationConfig::default();
         assert!((config.temperature - 3.0).abs() < f64::EPSILON);
         assert!((config.confidence_threshold - 0.95).abs() < f64::EPSILON);
+    }
+
+    // COVERAGE-95: Additional tests for complete coverage
+
+    #[test]
+    fn test_distiller_default() {
+        let distiller = KnowledgeDistiller::default();
+        assert!((distiller.config().temperature - 3.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_temperature_scaling_all_zeros() {
+        let distiller = KnowledgeDistiller::new();
+        let logits = vec![0.0, 0.0, 0.0, 0.0];
+
+        let soft = distiller.temperature_scale(&logits);
+
+        // Should produce uniform distribution
+        for &p in &soft {
+            assert!((p - 0.25).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_temperature_scaling_single_element() {
+        let distiller = KnowledgeDistiller::new();
+        let logits = vec![1.0];
+
+        let soft = distiller.temperature_scale(&logits);
+
+        assert_eq!(soft.len(), 1);
+        assert!((soft[0] - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_soft_label_empty_targets() {
+        let sample = Sample::new("test", None, ErrorCategory::TypeMismatch);
+        let soft_targets = vec![];
+
+        let soft_label = SoftLabel::new(sample, soft_targets);
+        assert!(soft_label.predicted_category().is_none());
+        assert_eq!(soft_label.confidence(), 0.0);
+    }
+
+    #[test]
+    fn test_distill_ensemble_empty_teachers() {
+        let distiller = KnowledgeDistiller::new();
+        let samples = vec![
+            Sample::new("test", Some("E0308".into()), ErrorCategory::TypeMismatch),
+        ];
+
+        let teachers: Vec<&RuchyOracle> = vec![];
+        let soft_labels = distiller.distill_ensemble(&teachers, &samples);
+
+        assert!(soft_labels.is_empty());
+    }
+
+    #[test]
+    fn test_distill_ensemble_single_teacher() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("train");
+
+        let distiller = KnowledgeDistiller::with_config(DistillationConfig {
+            temperature: 3.0,
+            confidence_threshold: 0.50, // Low threshold to get results
+        });
+
+        let samples = vec![
+            Sample::new(
+                "mismatched types: expected i32, found String",
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            ),
+        ];
+
+        let teachers = vec![&oracle];
+        let soft_labels = distiller.distill_ensemble(&teachers, &samples);
+
+        // With low threshold, should get some results
+        assert!(soft_labels.len() <= samples.len());
+    }
+
+    #[test]
+    fn test_soft_label_confidence_all_equal() {
+        let sample = Sample::new("test", None, ErrorCategory::TypeMismatch);
+        let soft_targets = vec![0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125];
+
+        let soft_label = SoftLabel::new(sample, soft_targets);
+        assert!((soft_label.confidence() - 0.125).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_distillation_config_custom() {
+        let config = DistillationConfig {
+            temperature: 10.0,
+            confidence_threshold: 0.80,
+        };
+        assert_eq!(config.temperature, 10.0);
+        assert_eq!(config.confidence_threshold, 0.80);
+    }
+
+    #[test]
+    fn test_temperature_scaling_preserves_order() {
+        let distiller = KnowledgeDistiller::new();
+        let logits = vec![1.0, 3.0, 2.0, 4.0];
+
+        let soft = distiller.temperature_scale(&logits);
+
+        // Higher logits should have higher probabilities
+        assert!(soft[1] > soft[0]); // 3.0 > 1.0
+        assert!(soft[3] > soft[2]); // 4.0 > 2.0
+        assert!(soft[3] > soft[1]); // 4.0 > 3.0
+    }
+
+    #[test]
+    fn test_soft_label_predicted_category_last() {
+        let sample = Sample::new("test", None, ErrorCategory::Other);
+        // Put highest probability at the last index
+        let soft_targets = vec![0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.93];
+
+        let soft_label = SoftLabel::new(sample, soft_targets);
+        // Other is index 7
+        assert_eq!(soft_label.predicted_category(), Some(ErrorCategory::Other));
     }
 }

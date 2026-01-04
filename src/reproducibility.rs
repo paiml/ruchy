@@ -20,7 +20,7 @@ use std::sync::LazyLock;
 /// Default seed for reproducibility (the answer to everything)
 pub const DEFAULT_SEED: u64 = 42;
 
-/// Global seed, configurable via RUCHY_SEED environment variable
+/// Global seed, configurable via `RUCHY_SEED` environment variable
 pub static GLOBAL_SEED: LazyLock<u64> = LazyLock::new(|| {
     std::env::var("RUCHY_SEED")
         .ok()
@@ -51,11 +51,9 @@ pub fn get_component_seed(component: &str) -> u64 {
 
 /// Get a seeded random number generator for a component.
 ///
-/// Uses ChaCha8 for high-quality, reproducible random numbers.
-#[cfg(feature = "rand")]
-pub fn get_rng(component: &str) -> rand_chacha::ChaCha8Rng {
-    use rand::SeedableRng;
-    rand_chacha::ChaCha8Rng::seed_from_u64(get_component_seed(component))
+/// Uses the global seed combined with component name for reproducibility.
+pub fn get_rng(component: &str) -> SimpleRng {
+    SimpleRng::new(get_component_seed(component))
 }
 
 /// Simple deterministic RNG for when rand crate is not available.
@@ -123,7 +121,10 @@ mod tests {
     fn test_component_seeds_differ() {
         let seed1 = get_component_seed("parser");
         let seed2 = get_component_seed("oracle");
-        assert_ne!(seed1, seed2, "Different components should have different seeds");
+        assert_ne!(
+            seed1, seed2,
+            "Different components should have different seeds"
+        );
     }
 
     #[test]

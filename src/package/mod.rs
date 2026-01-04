@@ -26,6 +26,7 @@ pub struct Package {
 }
 
 /// Package manifest
+#[derive(Debug)]
 pub struct Manifest {
     name: String,
     version: String,
@@ -561,5 +562,405 @@ json = "1.0.0""#;
         assert_eq!(manifest.dependencies().len(), 2);
         assert!(manifest.dependencies().contains_key("http"));
         assert!(manifest.dependencies().contains_key("json"));
+    }
+
+    // --- Coverage improvement tests ---
+
+    #[test]
+    fn test_package_manager_with_root() {
+        let root = std::path::PathBuf::from("/tmp/test_root");
+        let manager = PackageManager::with_root(&root);
+        assert!(manager.root.ends_with("test_root"));
+    }
+
+    #[test]
+    fn test_package_manager_default() {
+        let manager = PackageManager::default();
+        // Should work like new()
+        assert_eq!(manager.packages.len(), 0);
+    }
+
+    #[test]
+    fn test_add_dependency_and_package() {
+        let mut manager = PackageManager::new();
+        let dep = Dependency::new("my-dep", "1.0.0");
+        manager.add_dependency(dep);
+        assert_eq!(manager.dependencies.len(), 1);
+
+        let pkg = Package::new("my-pkg", "2.0.0");
+        manager.add_package(pkg);
+        assert_eq!(manager.packages.len(), 1);
+    }
+
+    #[test]
+    fn test_add_workspace_package() {
+        let mut manager = PackageManager::new();
+        let pkg = Package::new("workspace-pkg", "1.0.0");
+        manager.add_workspace_package(pkg);
+        assert_eq!(manager.packages.len(), 1);
+    }
+
+    #[test]
+    fn test_resolve_dependency() {
+        let mut manager = PackageManager::new();
+        let dep = Dependency::new("test-lib", "2.0.0");
+        let result = manager.resolve_dependency(&dep);
+        assert!(result.is_ok());
+        let pkg = result.unwrap();
+        assert_eq!(pkg.name(), "test-lib");
+    }
+
+    #[test]
+    fn test_resolve_all_empty() {
+        let manager = PackageManager::new();
+        let result = manager.resolve_all();
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_resolve_all_with_packages() {
+        let mut manager = PackageManager::new();
+        manager.add_package(Package::new("pkg1", "1.0.0"));
+        manager.add_package(Package::new("pkg2", "1.0.0"));
+        let result = manager.resolve_all();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_resolve_all_version_conflict() {
+        let mut manager = PackageManager::new();
+        manager.add_dependency(Dependency::new("conflicting", "1.0.0"));
+        manager.add_dependency(Dependency::new("conflicting", "2.0.0"));
+        let result = manager.resolve_all();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Version conflict"));
+    }
+
+    #[test]
+    fn test_resolve_all_circular_dependency() {
+        let mut manager = PackageManager::new();
+        let pkg_a = Package::new("a", "1.0.0").with_dependency(Dependency::new("b", "1.0.0"));
+        let pkg_b = Package::new("b", "1.0.0").with_dependency(Dependency::new("a", "1.0.0"));
+        manager.add_package(pkg_a);
+        manager.add_package(pkg_b);
+        let result = manager.resolve_all();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Circular"));
+    }
+
+    #[test]
+    fn test_resolve_all_transitive_deps() {
+        let mut manager = PackageManager::new();
+        // Add package 'a' that depends on 'b'
+        let pkg_a = Package::new("a", "1.0.0").with_dependency(Dependency::new("b", "1.0.0"));
+        manager.add_package(pkg_a);
+        let result = manager.resolve_all();
+        assert!(result.is_ok());
+        let pkgs = result.unwrap();
+        // Should include 'a', 'b', and transitive 'c'
+        assert!(pkgs.iter().any(|p| p.name() == "a"));
+        assert!(pkgs.iter().any(|p| p.name() == "b"));
+        assert!(pkgs.iter().any(|p| p.name() == "c"));
+    }
+
+    #[test]
+    fn test_install_package() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        let pkg = Package::new("installable", "1.0.0");
+        let result = manager.install_package(&pkg);
+        assert!(result.is_ok());
+        let pkg_path = temp_dir.path().join("packages/installable-1.0.0");
+        assert!(pkg_path.exists());
+    }
+
+    #[test]
+    fn test_install_from_manifest() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        let content = r#"name = "my-app"
+version = "1.0.0"
+
+[dependencies]
+http = "0.2.0""#;
+        let manifest = Manifest::from_str(content).unwrap();
+        let result = manager.install_from_manifest(&manifest);
+        assert!(result.is_ok());
+        let pkg_path = temp_dir.path().join("packages/http-0.2.0");
+        assert!(pkg_path.exists());
+    }
+
+    #[test]
+    fn test_update_package() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        // Create old version first
+        let old_path = temp_dir.path().join("packages/updatable-1.0.0");
+        std::fs::create_dir_all(&old_path).unwrap();
+        assert!(old_path.exists());
+
+        // Update to new version
+        let pkg = Package::new("updatable", "2.0.0");
+        let result = manager.update_package(&pkg);
+        assert!(result.is_ok());
+        // Old version should be removed
+        assert!(!old_path.exists());
+        // New version should be installed
+        let new_path = temp_dir.path().join("packages/updatable-2.0.0");
+        assert!(new_path.exists());
+    }
+
+    #[test]
+    fn test_remove_package() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        // Create package first
+        let pkg_path = temp_dir.path().join("packages/removable-1.0.0");
+        std::fs::create_dir_all(&pkg_path).unwrap();
+        assert!(pkg_path.exists());
+
+        // Remove it
+        let result = manager.remove_package("removable");
+        assert!(result.is_ok());
+        assert!(!pkg_path.exists());
+    }
+
+    #[test]
+    fn test_remove_package_not_exists() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        // Should succeed even if package doesn't exist
+        let result = manager.remove_package("nonexistent");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_generate_lockfile() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        let result = manager.generate_lockfile();
+        assert!(result.is_ok());
+        let lockfile = temp_dir.path().join("Ruchy.lock");
+        assert!(lockfile.exists());
+    }
+
+    #[test]
+    fn test_install_from_lockfile() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        // Create lockfile first
+        let lockfile = temp_dir.path().join("Ruchy.lock");
+        std::fs::write(&lockfile, "# Lockfile\nlib-a = 1.0.0\nlib-b = 2.0.0").unwrap();
+
+        let result = manager.install_from_lockfile();
+        assert!(result.is_ok());
+        assert!(temp_dir.path().join("packages/lib-a-1.0.0").exists());
+        assert!(temp_dir.path().join("packages/lib-b-2.0.0").exists());
+    }
+
+    #[test]
+    fn test_install_from_lockfile_no_lockfile() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        // Should succeed even without lockfile
+        let result = manager.install_from_lockfile();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_lockfile() {
+        let manager = PackageManager::new();
+        let result = manager.verify_lockfile();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_init_workspace() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        let result = manager.init_workspace("workspace manifest");
+        assert!(result.is_ok());
+        assert!(temp_dir.path().join("packages/lib-a").exists());
+        assert!(temp_dir.path().join("packages/lib-b").exists());
+        assert!(temp_dir.path().join("packages/app").exists());
+    }
+
+    #[test]
+    fn test_resolve_workspace() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let manager = PackageManager::with_root(temp_dir.path());
+        let result = manager.resolve_workspace();
+        assert!(result.is_ok());
+        assert!(temp_dir.path().join("packages/common-1.0.0").exists());
+    }
+
+    #[test]
+    fn test_package_with_author() {
+        let pkg = Package::new("authored", "1.0.0").with_author("Test Author");
+        assert_eq!(pkg.author, Some("Test Author".to_string()));
+    }
+
+    #[test]
+    fn test_package_with_description() {
+        let pkg = Package::new("described", "1.0.0").with_description("A great package");
+        assert_eq!(pkg.description, Some("A great package".to_string()));
+    }
+
+    #[test]
+    fn test_package_versions() {
+        let pkg = Package::new("versioned", "2.3.4");
+        let versions = pkg.versions();
+        assert_eq!(versions.len(), 1);
+        assert_eq!(versions[0], "2.3.4");
+    }
+
+    #[test]
+    fn test_manifest_missing_name() {
+        let content = "version = \"1.0.0\"";
+        let result = Manifest::from_str(content);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Missing required field: name"));
+    }
+
+    #[test]
+    fn test_manifest_various_names() {
+        let names = ["my-package", "app", "lib", "my-app"];
+        for name in names {
+            let content = format!(r#"name = "{name}"
+version = "0.1.0""#);
+            let result = Manifest::from_str(&content);
+            assert!(result.is_ok(), "Failed for name: {name}");
+            assert_eq!(result.unwrap().name(), name);
+        }
+    }
+
+    #[test]
+    fn test_manifest_version_variations() {
+        let content = r#"name = "my-package"
+version = "3.0.0""#;
+        let manifest = Manifest::from_str(content).unwrap();
+        assert_eq!(manifest.version(), "3.0.0");
+
+        // Default version
+        let content2 = r#"name = "my-package""#;
+        let manifest2 = Manifest::from_str(content2).unwrap();
+        assert_eq!(manifest2.version(), "1.0.0");
+    }
+
+    #[test]
+    fn test_manifest_with_dev_dependencies() {
+        let content = r#"name = "my-package"
+version = "0.1.0"
+
+[dev-dependencies]
+test-framework = "2.0.0"
+mock = "0.5.0""#;
+        let manifest = Manifest::from_str(content).unwrap();
+        assert_eq!(manifest.dev_dependencies().len(), 2);
+        assert!(manifest.dev_dependencies().contains_key("test-framework"));
+        assert!(manifest.dev_dependencies().contains_key("mock"));
+    }
+
+    #[test]
+    fn test_manifest_with_local_lib() {
+        let content = r#"name = "my-package"
+version = "0.1.0"
+
+[dependencies]
+local-lib = { path = "../local-lib" }"#;
+        let manifest = Manifest::from_str(content).unwrap();
+        assert!(manifest.dependencies().contains_key("local-lib"));
+    }
+
+    #[test]
+    fn test_manifest_accessors() {
+        let content = r#"name = "my-package"
+version = "0.1.0""#;
+        let manifest = Manifest::from_str(content).unwrap();
+        assert!(!manifest.authors().is_empty());
+        assert!(!manifest.description().is_empty());
+    }
+
+    #[test]
+    fn test_registry_default() {
+        let registry = Registry::default();
+        assert!(registry.url.contains("ruchy-lang.org"));
+        assert!(!registry.authenticated);
+    }
+
+    #[test]
+    fn test_registry_search_http() {
+        let registry = Registry::default();
+        let results = registry.search("http");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].name(), "http-client");
+    }
+
+    #[test]
+    fn test_registry_search_my_new_lib() {
+        let registry = Registry::default();
+        let results = registry.search("my-new-lib");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].name(), "my-new-lib");
+    }
+
+    #[test]
+    fn test_registry_search_not_found() {
+        let registry = Registry::default();
+        let results = registry.search("nonexistent-package");
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_registry_get_package_info_success() {
+        let registry = Registry::default();
+        let result = registry.get_package_info("json", None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().name(), "json");
+    }
+
+    #[test]
+    fn test_registry_get_package_info_not_found() {
+        let registry = Registry::default();
+        let result = registry.get_package_info("nonexistent", None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Package not found"));
+    }
+
+    #[test]
+    fn test_registry_fetch_package() {
+        let registry = Registry::default();
+        let result = registry.fetch_package("any-package", "1.2.3");
+        assert!(result.is_ok());
+        let pkg = result.unwrap();
+        assert_eq!(pkg.name(), "any-package");
+        assert_eq!(pkg.version(), "1.2.3");
+    }
+
+    #[test]
+    fn test_registry_publish() {
+        let mut registry = Registry::default();
+        let pkg = Package::new("published-pkg", "1.0.0");
+        let result = registry.publish(pkg);
+        assert!(result.is_ok());
+        assert!(registry.packages.contains_key("published-pkg"));
+    }
+
+    #[test]
+    fn test_dependency_clone() {
+        let dep = Dependency::new("cloneable-dep", "1.0.0");
+        let cloned = dep.clone();
+        assert_eq!(cloned.name, "cloneable-dep");
+        assert_eq!(cloned.version_req, "1.0.0");
+    }
+
+    #[test]
+    fn test_dependency_debug() {
+        let dep = Dependency::new("debuggable-dep", "2.0.0");
+        let debug_str = format!("{dep:?}");
+        assert!(debug_str.contains("debuggable-dep"));
+        assert!(debug_str.contains("2.0.0"));
     }
 }

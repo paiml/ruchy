@@ -526,6 +526,464 @@ mod tests {
         assert_eq!(recovery.error_count, 3);
         assert!(!recovery.should_continue());
     }
+
+    // Additional coverage tests for COVERAGE-95%
+
+    #[test]
+    fn test_missing_function_params() {
+        let mut recovery = ErrorRecovery::new();
+        let error = recovery.missing_function_params(
+            "my_func".to_string(),
+            SourceLocation {
+                line: 5,
+                column: 10,
+                file: Some("test.ruchy".to_string()),
+            },
+        );
+        assert_eq!(error.message, "expected function parameters");
+        assert_eq!(recovery.error_count, 1);
+        match &error.context {
+            ErrorContext::FunctionDecl { name, params, body } => {
+                assert_eq!(name.as_deref(), Some("my_func"));
+                assert!(params.is_none());
+                assert!(body.is_none());
+            }
+            _ => panic!("Expected FunctionDecl context"),
+        }
+    }
+
+    #[test]
+    fn test_missing_function_body() {
+        let mut recovery = ErrorRecovery::new();
+        let error = recovery.missing_function_body(
+            "my_func".to_string(),
+            vec![],
+            SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+        );
+        assert_eq!(error.message, "expected function body");
+        assert_eq!(recovery.error_count, 1);
+        match &error.recovery {
+            RecoveryStrategy::InsertToken(token) => {
+                assert!(token.contains("missing body"));
+            }
+            _ => panic!("Expected InsertToken strategy"),
+        }
+    }
+
+    #[test]
+    fn test_malformed_let_binding() {
+        let mut recovery = ErrorRecovery::new();
+        let error = recovery.malformed_let_binding(
+            Some("x".to_string()),
+            None,
+            SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+        );
+        assert_eq!(error.message, "malformed let binding");
+        assert!(matches!(error.recovery, RecoveryStrategy::PartialParse));
+    }
+
+    #[test]
+    fn test_incomplete_if_expr() {
+        let mut recovery = ErrorRecovery::new();
+        let error = recovery.incomplete_if_expr(
+            None,
+            None,
+            SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+        );
+        assert_eq!(error.message, "incomplete if expression");
+        assert!(matches!(error.recovery, RecoveryStrategy::DefaultValue));
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut recovery = ErrorRecovery::new();
+        recovery.missing_function_name(SourceLocation {
+            line: 1,
+            column: 1,
+            file: None,
+        });
+        assert_eq!(recovery.error_count, 1);
+        recovery.reset();
+        assert_eq!(recovery.error_count, 0);
+    }
+
+    #[test]
+    fn test_skip_until_sync_finds_token() {
+        let recovery = ErrorRecovery::new();
+        let tokens = vec!["x", "=", "5", ";", "y"];
+        let mut iter = tokens.iter().map(|s| *s);
+        let result = recovery.skip_until_sync(&mut iter);
+        assert_eq!(result, Some(";".to_string()));
+    }
+
+    #[test]
+    fn test_skip_until_sync_no_token() {
+        let recovery = ErrorRecovery::new();
+        let tokens = vec!["x", "=", "5"];
+        let mut iter = tokens.iter().map(|s| *s);
+        let result = recovery.skip_until_sync(&mut iter);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_skip_until_sync_fun_keyword() {
+        let recovery = ErrorRecovery::new();
+        let tokens = vec!["x", "y", "fun", "z"];
+        let mut iter = tokens.iter().map(|s| *s);
+        let result = recovery.skip_until_sync(&mut iter);
+        assert_eq!(result, Some("fun".to_string()));
+    }
+
+    #[test]
+    fn test_recovery_strategy_let_binding() {
+        let context = ErrorContext::LetBinding {
+            name: Some("x".to_string()),
+            value: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::SkipUntilSync));
+    }
+
+    #[test]
+    fn test_recovery_strategy_if_expression() {
+        let context = ErrorContext::IfExpression {
+            condition: None,
+            then_branch: None,
+            else_branch: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::DefaultValue));
+    }
+
+    #[test]
+    fn test_recovery_strategy_array_literal() {
+        let context = ErrorContext::ArrayLiteral {
+            elements: vec![],
+            error_at_index: 0,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::PartialParse));
+    }
+
+    #[test]
+    fn test_recovery_strategy_struct_literal() {
+        let context = ErrorContext::StructLiteral {
+            name: Some("Point".to_string()),
+            fields: vec![],
+            error_field: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::PartialParse));
+    }
+
+    #[test]
+    fn test_recovery_strategy_binary_op() {
+        let context = ErrorContext::BinaryOp {
+            left: None,
+            op: None,
+            right: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::PanicMode));
+    }
+
+    #[test]
+    fn test_recovery_strategy_function_decl_with_params() {
+        let context = ErrorContext::FunctionDecl {
+            name: Some("foo".to_string()),
+            params: None,
+            body: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::DefaultValue));
+    }
+
+    #[test]
+    fn test_recovery_strategy_function_decl_with_body_missing() {
+        let context = ErrorContext::FunctionDecl {
+            name: Some("foo".to_string()),
+            params: Some(vec![]),
+            body: None,
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        match strategy {
+            RecoveryStrategy::InsertToken(token) => assert!(token.contains("{")),
+            _ => panic!("Expected InsertToken strategy"),
+        }
+    }
+
+    #[test]
+    fn test_recovery_strategy_function_decl_complete() {
+        use crate::frontend::ast::Span;
+        let body_expr = Box::new(Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 0)));
+        let context = ErrorContext::FunctionDecl {
+            name: Some("foo".to_string()),
+            params: Some(vec![]),
+            body: Some(body_expr),
+        };
+        let strategy = RecoveryRules::select_strategy(&context);
+        assert!(matches!(strategy, RecoveryStrategy::PartialParse));
+    }
+
+    #[test]
+    fn test_synthesize_ast_function_decl() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::FunctionDecl {
+                name: None,
+                params: None,
+                body: None,
+            },
+            recovery: RecoveryStrategy::DefaultValue,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(ast.kind, ExprKind::Lambda { .. }));
+    }
+
+    #[test]
+    fn test_synthesize_ast_if_expression() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::IfExpression {
+                condition: None,
+                then_branch: None,
+                else_branch: None,
+            },
+            recovery: RecoveryStrategy::DefaultValue,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(ast.kind, ExprKind::If { .. }));
+    }
+
+    #[test]
+    fn test_synthesize_ast_array_literal() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::ArrayLiteral {
+                elements: vec![],
+                error_at_index: 0,
+            },
+            recovery: RecoveryStrategy::PartialParse,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(ast.kind, ExprKind::List(_)));
+    }
+
+    #[test]
+    fn test_synthesize_ast_binary_op_with_left() {
+        use crate::frontend::ast::Span;
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        ));
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::BinaryOp {
+                left: Some(left),
+                op: Some("+".to_string()),
+                right: None,
+            },
+            recovery: RecoveryStrategy::PanicMode,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(
+            ast.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
+    }
+
+    #[test]
+    fn test_synthesize_ast_binary_op_without_left() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::BinaryOp {
+                left: None,
+                op: None,
+                right: None,
+            },
+            recovery: RecoveryStrategy::PanicMode,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(ast.kind, ExprKind::Literal(Literal::Unit)));
+    }
+
+    #[test]
+    fn test_synthesize_ast_struct_literal_with_name() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::StructLiteral {
+                name: Some("Point".to_string()),
+                fields: vec![],
+                error_field: None,
+            },
+            recovery: RecoveryStrategy::PartialParse,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        match ast.kind {
+            ExprKind::StructLiteral { name, .. } => assert_eq!(name, "Point"),
+            _ => panic!("Expected StructLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_synthesize_ast_struct_literal_without_name() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::StructLiteral {
+                name: None,
+                fields: vec![],
+                error_field: None,
+            },
+            recovery: RecoveryStrategy::PartialParse,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        assert!(matches!(ast.kind, ExprKind::Literal(Literal::Unit)));
+    }
+
+    #[test]
+    fn test_synthesize_ast_let_binding_without_name() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::LetBinding {
+                name: None,
+                value: None,
+            },
+            recovery: RecoveryStrategy::DefaultValue,
+        };
+        let ast = RecoveryRules::synthesize_ast(&error);
+        match ast.kind {
+            ExprKind::Let { name, .. } => assert_eq!(name, "_error"),
+            _ => panic!("Expected Let expression"),
+        }
+    }
+
+    #[test]
+    fn test_expr_with_error_from_expr() {
+        use crate::frontend::ast::Span;
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let with_error: ExprWithError = expr.into();
+        assert!(matches!(with_error, ExprWithError::Valid(_)));
+    }
+
+    #[test]
+    fn test_expr_with_error_from_error_node() {
+        let error = ErrorNode {
+            message: "test".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::LetBinding {
+                name: None,
+                value: None,
+            },
+            recovery: RecoveryStrategy::DefaultValue,
+        };
+        let with_error: ExprWithError = error.into();
+        assert!(matches!(with_error, ExprWithError::Error(_)));
+    }
+
+    #[test]
+    fn test_source_location_with_file() {
+        let loc = SourceLocation {
+            line: 10,
+            column: 5,
+            file: Some("my_file.ruchy".to_string()),
+        };
+        assert_eq!(loc.line, 10);
+        assert_eq!(loc.column, 5);
+        assert_eq!(loc.file, Some("my_file.ruchy".to_string()));
+    }
+
+    #[test]
+    fn test_error_node_clone() {
+        let error = ErrorNode {
+            message: "test error".to_string(),
+            location: SourceLocation {
+                line: 1,
+                column: 1,
+                file: None,
+            },
+            context: ErrorContext::LetBinding {
+                name: Some("x".to_string()),
+                value: None,
+            },
+            recovery: RecoveryStrategy::DefaultValue,
+        };
+        let cloned = error.clone();
+        assert_eq!(cloned.message, error.message);
+    }
+
+    #[test]
+    fn test_recovery_strategy_debug() {
+        let strategy = RecoveryStrategy::PanicMode;
+        let debug_str = format!("{:?}", strategy);
+        assert!(debug_str.contains("PanicMode"));
+    }
+
+    #[test]
+    fn test_error_context_debug() {
+        let context = ErrorContext::BinaryOp {
+            left: None,
+            op: Some("+".to_string()),
+            right: None,
+        };
+        let debug_str = format!("{:?}", context);
+        assert!(debug_str.contains("BinaryOp"));
+    }
 }
 /* Commented out property tests to fix compilation
 #[cfg(test)]

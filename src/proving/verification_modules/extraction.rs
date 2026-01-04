@@ -181,3 +181,186 @@ fn format_method_call(receiver: &Expr, method: &str, args: &[Expr]) -> String {
         format!("{receiver_str}.{method}({args_str})")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
+
+    fn create_int_literal(n: i64) -> Expr {
+        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+    }
+
+    fn create_identifier(name: &str) -> Expr {
+        Expr::new(ExprKind::Identifier(name.to_string()), Span::default())
+    }
+
+    fn create_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
+        Expr::new(
+            ExprKind::Binary {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            Span::default(),
+        )
+    }
+
+    #[test]
+    fn test_extract_assertions_empty() {
+        let block = Expr::new(ExprKind::Block(vec![]), Span::default());
+        let assertions = extract_assertions_from_ast(&block);
+        assert!(assertions.is_empty());
+    }
+
+    #[test]
+    fn test_extract_assertions_from_call() {
+        let assert_call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(create_identifier("assert")),
+                args: vec![create_binary(
+                    BinaryOp::Equal,
+                    create_int_literal(1),
+                    create_int_literal(1),
+                )],
+            },
+            Span::default(),
+        );
+        let block = Expr::new(ExprKind::Block(vec![assert_call]), Span::default());
+        let assertions = extract_assertions_from_ast(&block);
+        assert_eq!(assertions.len(), 1);
+        assert!(assertions[0].contains("=="));
+    }
+
+    #[test]
+    fn test_expr_to_assertion_string_integer() {
+        let expr = create_int_literal(42);
+        assert_eq!(expr_to_assertion_string(&expr), "42");
+    }
+
+    #[test]
+    fn test_expr_to_assertion_string_identifier() {
+        let expr = create_identifier("x");
+        assert_eq!(expr_to_assertion_string(&expr), "x");
+    }
+
+    #[test]
+    fn test_expr_to_assertion_string_binary() {
+        let expr = create_binary(BinaryOp::Add, create_int_literal(1), create_int_literal(2));
+        assert_eq!(expr_to_assertion_string(&expr), "1 + 2");
+    }
+
+    #[test]
+    fn test_format_literal_float() {
+        let result = format_literal(&Literal::Float(3.14));
+        assert_eq!(result, "3.14");
+    }
+
+    #[test]
+    fn test_format_literal_string() {
+        let result = format_literal(&Literal::String("hello".to_string()));
+        assert_eq!(result, "\"hello\"");
+    }
+
+    #[test]
+    fn test_format_literal_bool() {
+        assert_eq!(format_literal(&Literal::Bool(true)), "true");
+        assert_eq!(format_literal(&Literal::Bool(false)), "false");
+    }
+
+    #[test]
+    fn test_binary_op_to_string() {
+        assert_eq!(binary_op_to_string(&BinaryOp::Add), "+");
+        assert_eq!(binary_op_to_string(&BinaryOp::Subtract), "-");
+        assert_eq!(binary_op_to_string(&BinaryOp::Multiply), "*");
+        assert_eq!(binary_op_to_string(&BinaryOp::Divide), "/");
+        assert_eq!(binary_op_to_string(&BinaryOp::Equal), "==");
+        assert_eq!(binary_op_to_string(&BinaryOp::NotEqual), "!=");
+        assert_eq!(binary_op_to_string(&BinaryOp::Greater), ">");
+        assert_eq!(binary_op_to_string(&BinaryOp::GreaterEqual), ">=");
+        assert_eq!(binary_op_to_string(&BinaryOp::Less), "<");
+        assert_eq!(binary_op_to_string(&BinaryOp::LessEqual), "<=");
+    }
+
+    #[test]
+    fn test_format_call() {
+        let func = create_identifier("foo");
+        let args = vec![create_int_literal(1), create_int_literal(2)];
+        let result = format_call(&func, &args);
+        assert_eq!(result, "foo(1, 2)");
+    }
+
+    #[test]
+    fn test_format_method_call_no_args() {
+        let receiver = create_identifier("obj");
+        let result = format_method_call(&receiver, "method", &[]);
+        assert_eq!(result, "obj.method()");
+    }
+
+    #[test]
+    fn test_format_method_call_with_args() {
+        let receiver = create_identifier("obj");
+        let args = vec![create_int_literal(1)];
+        let result = format_method_call(&receiver, "method", &args);
+        assert_eq!(result, "obj.method(1)");
+    }
+
+    #[test]
+    fn test_extract_from_let() {
+        let value = create_int_literal(42);
+        let body = create_int_literal(1);
+        let mut assertions = vec![];
+        extract_from_let(&value, &body, &mut assertions);
+        // No assertions in simple literals
+        assert!(assertions.is_empty());
+    }
+
+    #[test]
+    fn test_extract_from_if() {
+        let condition = create_identifier("true");
+        let then_branch = create_int_literal(1);
+        let else_branch = create_int_literal(2);
+        let mut assertions = vec![];
+        extract_from_if(&condition, &then_branch, Some(&else_branch), &mut assertions);
+        assert!(assertions.is_empty());
+    }
+
+    #[test]
+    fn test_extract_from_block() {
+        let exprs = vec![create_int_literal(1), create_int_literal(2)];
+        let mut assertions = vec![];
+        extract_from_block(&exprs, &mut assertions);
+        assert!(assertions.is_empty());
+    }
+
+    #[test]
+    fn test_is_assert_statement_true() {
+        let exprs = vec![
+            create_identifier("assert"),
+            create_int_literal(1),
+        ];
+        assert!(is_assert_statement(&exprs, 0));
+    }
+
+    #[test]
+    fn test_is_assert_statement_false() {
+        let exprs = vec![create_int_literal(1)];
+        assert!(!is_assert_statement(&exprs, 0));
+    }
+
+    #[test]
+    fn test_process_expression_at_index_non_assert() {
+        let exprs = vec![create_int_literal(1)];
+        let mut assertions = vec![];
+        let skip = process_expression_at_index(&exprs, 0, &mut assertions);
+        assert_eq!(skip, 1);
+    }
+
+    #[test]
+    fn test_expr_to_assertion_string_unknown() {
+        let expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::default());
+        let result = expr_to_assertion_string(&expr);
+        // Unit literal formats as "Unit" via Debug
+        assert!(!result.is_empty());
+    }
+}

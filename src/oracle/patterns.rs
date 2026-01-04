@@ -298,7 +298,9 @@ impl PatternStore {
 
         self.add_pattern(
             FixPattern::new("FIX-013", ErrorCategory::MutabilityError)
-                .with_error_pattern(r"cannot borrow .* as mutable, as it is not declared as mutable")
+                .with_error_pattern(
+                    r"cannot borrow .* as mutable, as it is not declared as mutable",
+                )
                 .with_description("Change let to let mut")
                 .with_transformation("let mut")
                 .with_success_rate(0.95),
@@ -384,10 +386,7 @@ impl PatternStore {
     /// Add a pattern to the store
     pub fn add_pattern(&mut self, pattern: FixPattern) {
         let category = pattern.category;
-        self.patterns
-            .entry(category)
-            .or_default()
-            .push(pattern);
+        self.patterns.entry(category).or_default().push(pattern);
         self.count += 1;
     }
 
@@ -403,10 +402,9 @@ impl PatternStore {
 
         if let Some(patterns) = self.patterns.get(&category) {
             for pattern in patterns {
-                if pattern.matches(error_message)
-                    && pattern.success_rate >= similarity_threshold {
-                        suggestions.push(pattern.to_suggestion());
-                    }
+                if pattern.matches(error_message) && pattern.success_rate >= similarity_threshold {
+                    suggestions.push(pattern.to_suggestion());
+                }
             }
         }
 
@@ -680,8 +678,7 @@ mod tests {
 
     #[test]
     fn test_fix_suggestion_clone() {
-        let suggestion = FixSuggestion::new("test")
-            .with_success_rate(0.9);
+        let suggestion = FixSuggestion::new("test").with_success_rate(0.9);
         let cloned = suggestion.clone();
         assert_eq!(suggestion.description, cloned.description);
         assert!((suggestion.success_rate - cloned.success_rate).abs() < f64::EPSILON);
@@ -689,8 +686,8 @@ mod tests {
 
     #[test]
     fn test_fix_pattern_clone() {
-        let pattern = FixPattern::new("FIX-001", ErrorCategory::TypeMismatch)
-            .with_success_rate(0.9);
+        let pattern =
+            FixPattern::new("FIX-001", ErrorCategory::TypeMismatch).with_success_rate(0.9);
         let cloned = pattern.clone();
         assert_eq!(pattern.id, cloned.id);
         assert_eq!(pattern.category, cloned.category);

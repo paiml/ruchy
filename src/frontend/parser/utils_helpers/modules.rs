@@ -115,3 +115,128 @@ fn create_module_body_expr(exprs: Vec<Expr>) -> Box<Expr> {
         Box::new(Expr::new(ExprKind::Block(exprs), Span { start: 0, end: 0 }))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_parse_module_empty() {
+        let mut parser = Parser::new("module MyModule {}");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            ExprKind::Module { name, .. } => {
+                assert_eq!(name, "MyModule");
+                // Empty module returns Unit literal body
+            }
+            _ => panic!("Expected module expression, got {:?}", expr.kind),
+        }
+    }
+
+    #[test]
+    fn test_parse_module_with_single_expression() {
+        let mut parser = Parser::new("module Math { 42 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            ExprKind::Module { name, .. } => {
+                assert_eq!(name, "Math");
+                // Body contains the expression
+            }
+            _ => panic!("Expected module expression, got {:?}", expr.kind),
+        }
+    }
+
+    #[test]
+    fn test_parse_module_with_multiple_expressions() {
+        let mut parser = Parser::new("module Utils { 1; 2; 3 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            ExprKind::Module { name, body } => {
+                assert_eq!(name, "Utils");
+                match &body.kind {
+                    ExprKind::Block(exprs) => assert_eq!(exprs.len(), 3),
+                    _ => panic!("Expected block in body, got {:?}", body.kind),
+                }
+            }
+            _ => panic!("Expected module expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_module_with_function() {
+        let mut parser = Parser::new("module MyModule { fn add(a, b) { a + b } }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            ExprKind::Module { name, .. } => {
+                assert_eq!(name, "MyModule");
+            }
+            _ => panic!("Expected module expression"),
+        }
+    }
+
+    #[test]
+    fn test_create_module_body_expr_single() {
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let result = create_module_body_expr(vec![expr]);
+        match result.kind {
+            ExprKind::Literal(Literal::Integer(n, _)) => assert_eq!(n, 42),
+            _ => panic!("Expected single expression"),
+        }
+    }
+
+    #[test]
+    fn test_create_module_body_expr_multiple() {
+        let expr1 = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
+        let expr2 = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::new(2, 3));
+        let result = create_module_body_expr(vec![expr1, expr2]);
+        match result.kind {
+            ExprKind::Block(exprs) => assert_eq!(exprs.len(), 2),
+            _ => panic!("Expected block expression"),
+        }
+    }
+
+    // Coverage-95 tests
+
+    #[test]
+    fn test_parse_module_with_semicolon_separator() {
+        let mut parser = Parser::new("module Data { 1; 2; 3 }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module_nested() {
+        let mut parser = Parser::new("module Outer { module Inner { 42 } }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module_with_let() {
+        let mut parser = Parser::new("module Config { let x = 5; let y = 10 }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module_with_struct() {
+        let mut parser = Parser::new("module Types { struct Point { x: i32, y: i32 } }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module_uppercase_name() {
+        let mut parser = Parser::new("module MY_MODULE { 42 }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module_mixed_statements() {
+        let mut parser = Parser::new("module Mix { let a = 1; fun f() { 2 }; 3 }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+}

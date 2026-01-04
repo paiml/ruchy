@@ -334,3 +334,175 @@ mod property_tests_instrumentation {
         }
     }
 }
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    // COVERAGE-95: Additional tests
+
+    #[test]
+    fn test_coverage_instrumentation_default() {
+        let coverage = CoverageInstrumentation::default();
+        assert!(coverage.executed_lines.is_empty());
+        assert!(coverage.executed_functions.is_empty());
+        assert!(coverage.executed_branches.is_empty());
+    }
+
+    #[test]
+    fn test_get_executed_lines_none() {
+        let coverage = CoverageInstrumentation::new();
+        assert!(coverage.get_executed_lines("nonexistent.rs").is_none());
+    }
+
+    #[test]
+    fn test_get_executed_functions_none() {
+        let coverage = CoverageInstrumentation::new();
+        assert!(coverage.get_executed_functions("nonexistent.rs").is_none());
+    }
+
+    #[test]
+    fn test_get_executed_branches_none() {
+        let coverage = CoverageInstrumentation::new();
+        assert!(coverage.get_executed_branches("nonexistent.rs").is_none());
+    }
+
+    #[test]
+    fn test_mark_line_executed_multiple_files() {
+        let mut coverage = CoverageInstrumentation::new();
+        coverage.mark_line_executed("file1.rs", 1);
+        coverage.mark_line_executed("file2.rs", 2);
+        coverage.mark_line_executed("file1.rs", 3);
+
+        let file1_lines = coverage.get_executed_lines("file1.rs").unwrap();
+        assert!(file1_lines.contains(&1));
+        assert!(file1_lines.contains(&3));
+        assert_eq!(file1_lines.len(), 2);
+
+        let file2_lines = coverage.get_executed_lines("file2.rs").unwrap();
+        assert!(file2_lines.contains(&2));
+    }
+
+    #[test]
+    fn test_mark_branch_executed_increments() {
+        let mut coverage = CoverageInstrumentation::new();
+        coverage.mark_branch_executed("test.rs", "branch_1");
+        coverage.mark_branch_executed("test.rs", "branch_1");
+        coverage.mark_branch_executed("test.rs", "branch_1");
+
+        let branches = coverage.get_executed_branches("test.rs").unwrap();
+        assert_eq!(branches.get("branch_1"), Some(&3));
+    }
+
+    #[test]
+    fn test_merge_branch_counts_accumulate() {
+        let mut coverage1 = CoverageInstrumentation::new();
+        coverage1.mark_branch_executed("test.rs", "branch_1");
+        coverage1.mark_branch_executed("test.rs", "branch_1");
+
+        let mut coverage2 = CoverageInstrumentation::new();
+        coverage2.mark_branch_executed("test.rs", "branch_1");
+        coverage2.mark_branch_executed("test.rs", "branch_2");
+
+        coverage1.merge(&coverage2);
+
+        let branches = coverage1.get_executed_branches("test.rs").unwrap();
+        assert_eq!(branches.get("branch_1"), Some(&3));
+        assert_eq!(branches.get("branch_2"), Some(&1));
+    }
+
+    #[test]
+    fn test_instrument_source_basic() {
+        let source = "let x = 5;\nprintln(x);";
+        let result = instrument_source(source, "test.ruchy").unwrap();
+        assert!(result.contains("Coverage instrumentation"));
+        assert!(result.contains("CoverageInstrumentation::new()"));
+    }
+
+    #[test]
+    fn test_instrument_source_empty_lines() {
+        let source = "\n\n// comment\n";
+        let result = instrument_source(source, "test.ruchy").unwrap();
+        assert!(result.contains("// comment"));
+    }
+
+    #[test]
+    fn test_instrument_source_function() {
+        let source = "fn main() { println(\"hello\"); }";
+        let result = instrument_source(source, "test.ruchy").unwrap();
+        assert!(result.contains("mark_function_executed"));
+    }
+
+    #[test]
+    fn test_instrument_source_fun_keyword() {
+        let source = "fun add(a, b) { a + b }";
+        let result = instrument_source(source, "test.ruchy").unwrap();
+        assert!(result.contains("mark_function_executed"));
+        assert!(result.contains("\"add\""));
+    }
+
+    #[test]
+    fn test_is_control_flow_statement_while() {
+        assert!(is_control_flow_statement("while x > 0 {"));
+    }
+
+    #[test]
+    fn test_is_control_flow_statement_for() {
+        assert!(is_control_flow_statement("for i in 0..10 {"));
+    }
+
+    #[test]
+    fn test_is_control_flow_statement_match() {
+        assert!(is_control_flow_statement("match x {"));
+    }
+
+    #[test]
+    fn test_is_declaration_statement_mod() {
+        assert!(is_declaration_statement("mod tests;"));
+    }
+
+    #[test]
+    fn test_is_declaration_statement_attribute() {
+        assert!(is_declaration_statement("#[derive(Debug)]"));
+    }
+
+    #[test]
+    fn test_is_block_start() {
+        assert!(is_block_start("impl Foo {"));
+        assert!(!is_block_start("let x = Foo {"));
+    }
+
+    #[test]
+    fn test_is_executable_statement_assert() {
+        assert!(is_executable_statement("assert!(x > 0);"));
+    }
+
+    #[test]
+    fn test_extract_function_name_short() {
+        assert_eq!(extract_function_name("fn"), "unknown");
+    }
+
+    #[test]
+    fn test_merge_empty() {
+        let mut coverage1 = CoverageInstrumentation::new();
+        let coverage2 = CoverageInstrumentation::new();
+        coverage1.merge(&coverage2);
+        assert!(coverage1.executed_lines.is_empty());
+    }
+
+    #[test]
+    fn test_merge_multiple_files() {
+        let mut coverage1 = CoverageInstrumentation::new();
+        coverage1.mark_line_executed("file1.rs", 1);
+
+        let mut coverage2 = CoverageInstrumentation::new();
+        coverage2.mark_line_executed("file2.rs", 1);
+        coverage2.mark_function_executed("file2.rs", "test");
+
+        coverage1.merge(&coverage2);
+
+        assert!(coverage1.get_executed_lines("file1.rs").is_some());
+        assert!(coverage1.get_executed_lines("file2.rs").is_some());
+        assert!(coverage1.get_executed_functions("file2.rs").is_some());
+    }
+}

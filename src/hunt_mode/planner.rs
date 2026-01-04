@@ -205,13 +205,7 @@ impl HuntPlanner {
     }
 
     /// Add error to clustering
-    pub fn add_error(
-        &mut self,
-        code: &str,
-        message: &str,
-        file: Option<&str>,
-        severity: f64,
-    ) {
+    pub fn add_error(&mut self, code: &str, message: &str, file: Option<&str>, severity: f64) {
         if let Some(cluster) = self.clusters.get_mut(code) {
             // Cluster exists, add occurrence
             cluster.add_occurrence(file);
@@ -235,16 +229,14 @@ impl HuntPlanner {
                 continue;
             }
 
-            let pattern = FailurePattern::new(
-                format!("PAT-{}", cluster.code),
-                &cluster.code,
-            )
-            .with_description(&cluster.representative)
-            .with_affected_count(cluster.count);
+            let pattern = FailurePattern::new(format!("PAT-{}", cluster.code), &cluster.code)
+                .with_description(&cluster.representative)
+                .with_affected_count(cluster.count);
 
             let priority = cluster.priority_score();
 
-            self.priority_queue.push(PrioritizedPattern { pattern, priority });
+            self.priority_queue
+                .push(PrioritizedPattern { pattern, priority });
         }
     }
 
@@ -365,37 +357,37 @@ mod tests {
 
     #[test]
     fn test_failure_pattern_with_description() {
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_description("Type mismatch error");
+        let pattern =
+            FailurePattern::new("PAT-001", "E0308").with_description("Type mismatch error");
         assert_eq!(pattern.description, "Type mismatch error");
     }
 
     #[test]
     fn test_failure_pattern_with_affected_count() {
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_affected_count(10);
+        let pattern = FailurePattern::new("PAT-001", "E0308").with_affected_count(10);
         assert_eq!(pattern.affected_count, 10);
     }
 
     #[test]
     fn test_failure_pattern_with_complexity() {
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_complexity(8);
+        let pattern = FailurePattern::new("PAT-001", "E0308").with_complexity(8);
         assert_eq!(pattern.complexity, 8);
     }
 
     #[test]
     fn test_failure_pattern_with_sample_code() {
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_sample_code("fn foo() {}");
+        let pattern = FailurePattern::new("PAT-001", "E0308").with_sample_code("fn foo() {}");
         assert_eq!(pattern.sample_code, Some("fn foo() {}".to_string()));
     }
 
     #[test]
     fn test_failure_pattern_with_sample_error() {
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_sample_error("expected i32, found String");
-        assert_eq!(pattern.sample_error, Some("expected i32, found String".to_string()));
+        let pattern =
+            FailurePattern::new("PAT-001", "E0308").with_sample_error("expected i32, found String");
+        assert_eq!(
+            pattern.sample_error,
+            Some("expected i32, found String".to_string())
+        );
     }
 
     // ============================================================================

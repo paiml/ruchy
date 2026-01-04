@@ -8,11 +8,11 @@
 //! - [4] Bifet & Gavalda (2007). "Learning from Time-Changing Data with Adaptive Windowing."
 //! - [10] Buitinck et al. (2013). Scikit-learn API design.
 
-use aprender::prelude::Matrix;
-use aprender::tree::RandomForestClassifier;
-use aprender::online::drift::{DriftDetector, DriftDetectorFactory};
 use super::patterns::{FixSuggestion, PatternStore};
 use super::{ErrorCategory, ErrorFeatures, OracleConfig};
+use aprender::online::drift::{DriftDetector, DriftDetectorFactory};
+use aprender::prelude::Matrix;
+use aprender::tree::RandomForestClassifier;
 
 /// Classification result from the Oracle
 #[derive(Debug, Clone)]
@@ -50,8 +50,7 @@ impl Classification {
 
     /// Mark as auto-fixable based on confidence threshold
     pub fn with_auto_fix(mut self, threshold: f64) -> Self {
-        self.should_auto_fix = self.confidence >= threshold
-            && !self.suggestions.is_empty();
+        self.should_auto_fix = self.confidence >= threshold && !self.suggestions.is_empty();
         self
     }
 }
@@ -270,15 +269,12 @@ impl RuchyOracle {
         // Bootstrap with some synthetic labeled data
         let samples = self.generate_bootstrap_samples();
 
-        let features: Vec<Vec<f32>> = samples.iter()
-            .map(|(msg, code, _)| {
-                ErrorFeatures::extract(msg, code.as_deref()).to_vec()
-            })
+        let features: Vec<Vec<f32>> = samples
+            .iter()
+            .map(|(msg, code, _)| ErrorFeatures::extract(msg, code.as_deref()).to_vec())
             .collect();
 
-        let labels: Vec<usize> = samples.iter()
-            .map(|(_, _, cat)| cat.to_index())
-            .collect();
+        let labels: Vec<usize> = samples.iter().map(|(_, _, cat)| cat.to_index()).collect();
 
         self.train(&features, &labels)
     }
@@ -287,84 +283,161 @@ impl RuchyOracle {
     fn generate_bootstrap_samples(&self) -> Vec<(String, Option<String>, ErrorCategory)> {
         vec![
             // TypeMismatch samples
-            ("mismatched types: expected `i32`, found `String`".into(),
-             Some("E0308".into()), ErrorCategory::TypeMismatch),
-            ("expected `&str`, found `String`".into(),
-             Some("E0308".into()), ErrorCategory::TypeMismatch),
-            ("type mismatch: expected Vec<i32>".into(),
-             Some("E0271".into()), ErrorCategory::TypeMismatch),
-
+            (
+                "mismatched types: expected `i32`, found `String`".into(),
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "expected `&str`, found `String`".into(),
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "type mismatch: expected Vec<i32>".into(),
+                Some("E0271".into()),
+                ErrorCategory::TypeMismatch,
+            ),
             // BorrowChecker samples
-            ("borrow of moved value: `x`".into(),
-             Some("E0382".into()), ErrorCategory::BorrowChecker),
-            ("cannot borrow `x` as mutable".into(),
-             Some("E0502".into()), ErrorCategory::BorrowChecker),
-            ("value moved here".into(),
-             Some("E0382".into()), ErrorCategory::BorrowChecker),
-
+            (
+                "borrow of moved value: `x`".into(),
+                Some("E0382".into()),
+                ErrorCategory::BorrowChecker,
+            ),
+            (
+                "cannot borrow `x` as mutable".into(),
+                Some("E0502".into()),
+                ErrorCategory::BorrowChecker,
+            ),
+            (
+                "value moved here".into(),
+                Some("E0382".into()),
+                ErrorCategory::BorrowChecker,
+            ),
             // LifetimeError samples
-            ("borrowed value does not live long enough".into(),
-             Some("E0597".into()), ErrorCategory::LifetimeError),
-            ("lifetime `'a` required".into(),
-             Some("E0621".into()), ErrorCategory::LifetimeError),
-
+            (
+                "borrowed value does not live long enough".into(),
+                Some("E0597".into()),
+                ErrorCategory::LifetimeError,
+            ),
+            (
+                "lifetime `'a` required".into(),
+                Some("E0621".into()),
+                ErrorCategory::LifetimeError,
+            ),
             // TraitBound samples
-            ("the trait `Debug` is not implemented".into(),
-             Some("E0277".into()), ErrorCategory::TraitBound),
-            ("no method named `foo` found".into(),
-             Some("E0599".into()), ErrorCategory::TraitBound),
-
+            (
+                "the trait `Debug` is not implemented".into(),
+                Some("E0277".into()),
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "no method named `foo` found".into(),
+                Some("E0599".into()),
+                ErrorCategory::TraitBound,
+            ),
             // MissingImport samples
-            ("cannot find type `HashMap` in this scope".into(),
-             Some("E0433".into()), ErrorCategory::MissingImport),
-            ("cannot find value `x` in this scope".into(),
-             Some("E0425".into()), ErrorCategory::MissingImport),
-            ("failed to resolve: use of undeclared type".into(),
-             Some("E0433".into()), ErrorCategory::MissingImport),
-            ("use of undeclared type or module".into(),
-             Some("E0412".into()), ErrorCategory::MissingImport),
-
+            (
+                "cannot find type `HashMap` in this scope".into(),
+                Some("E0433".into()),
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "cannot find value `x` in this scope".into(),
+                Some("E0425".into()),
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "failed to resolve: use of undeclared type".into(),
+                Some("E0433".into()),
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "use of undeclared type or module".into(),
+                Some("E0412".into()),
+                ErrorCategory::MissingImport,
+            ),
             // MutabilityError samples
-            ("cannot borrow `x` as mutable, as it is not declared as mutable".into(),
-             Some("E0596".into()), ErrorCategory::MutabilityError),
-            ("cannot assign to `x`, as it is not declared as mutable".into(),
-             Some("E0594".into()), ErrorCategory::MutabilityError),
-
+            (
+                "cannot borrow `x` as mutable, as it is not declared as mutable".into(),
+                Some("E0596".into()),
+                ErrorCategory::MutabilityError,
+            ),
+            (
+                "cannot assign to `x`, as it is not declared as mutable".into(),
+                Some("E0594".into()),
+                ErrorCategory::MutabilityError,
+            ),
             // SyntaxError samples
-            ("expected `;`, found `}`".into(),
-             Some("E0658".into()), ErrorCategory::SyntaxError),
-            ("this function takes 2 arguments but 1 was supplied".into(),
-             Some("E0061".into()), ErrorCategory::SyntaxError),
-
+            (
+                "expected `;`, found `}`".into(),
+                Some("E0658".into()),
+                ErrorCategory::SyntaxError,
+            ),
+            (
+                "this function takes 2 arguments but 1 was supplied".into(),
+                Some("E0061".into()),
+                ErrorCategory::SyntaxError,
+            ),
             // Module resolution samples (MissingImport)
-            ("Module 'scanner' not resolved".into(),
-             None, ErrorCategory::MissingImport),
-            ("Failed to resolve module declaration".into(),
-             None, ErrorCategory::MissingImport),
-            ("Module 'utils' not found".into(),
-             None, ErrorCategory::MissingImport),
-            ("Failed to find module".into(),
-             None, ErrorCategory::MissingImport),
-
+            (
+                "Module 'scanner' not resolved".into(),
+                None,
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "Failed to resolve module declaration".into(),
+                None,
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "Module 'utils' not found".into(),
+                None,
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "Failed to find module".into(),
+                None,
+                ErrorCategory::MissingImport,
+            ),
             // Method not found samples (TraitBound)
-            ("no method named `resolve` found for struct".into(),
-             Some("E0599".into()), ErrorCategory::TraitBound),
-            ("no method named `len` found".into(),
-             Some("E0599".into()), ErrorCategory::TraitBound),
-            ("method not found in".into(),
-             Some("E0599".into()), ErrorCategory::TraitBound),
-
+            (
+                "no method named `resolve` found for struct".into(),
+                Some("E0599".into()),
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "no method named `len` found".into(),
+                Some("E0599".into()),
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "method not found in".into(),
+                Some("E0599".into()),
+                ErrorCategory::TraitBound,
+            ),
             // Clippy lint samples (SyntaxError - style issues)
-            ("item in documentation is missing backticks".into(),
-             None, ErrorCategory::SyntaxError),
-            ("called `map(<f>).unwrap_or(<a>)` on an Option value".into(),
-             None, ErrorCategory::SyntaxError),
-            ("redundant closure".into(),
-             None, ErrorCategory::SyntaxError),
-            ("this function has too many arguments".into(),
-             None, ErrorCategory::SyntaxError),
-            ("this argument is passed by value, but not consumed".into(),
-             None, ErrorCategory::SyntaxError),
+            (
+                "item in documentation is missing backticks".into(),
+                None,
+                ErrorCategory::SyntaxError,
+            ),
+            (
+                "called `map(<f>).unwrap_or(<a>)` on an Option value".into(),
+                None,
+                ErrorCategory::SyntaxError,
+            ),
+            ("redundant closure".into(), None, ErrorCategory::SyntaxError),
+            (
+                "this function has too many arguments".into(),
+                None,
+                ErrorCategory::SyntaxError,
+            ),
+            (
+                "this argument is passed by value, but not consumed".into(),
+                None,
+                ErrorCategory::SyntaxError,
+            ),
         ]
     }
 
@@ -389,10 +462,7 @@ impl RuchyOracle {
         }
 
         // Extract features for ML-based classification (unknown error codes)
-        let features = ErrorFeatures::extract(
-            &error.message,
-            error.code.as_deref(),
-        );
+        let features = ErrorFeatures::extract(&error.message, error.code.as_deref());
 
         // Predict category using ML or rules
         let (category, confidence) = if self.is_trained {
@@ -402,11 +472,9 @@ impl RuchyOracle {
         };
 
         // Get suggestions from pattern store
-        let suggestions = self.pattern_store.query(
-            category,
-            &error.message,
-            self.config.similarity_threshold,
-        );
+        let suggestions =
+            self.pattern_store
+                .query(category, &error.message, self.config.similarity_threshold);
 
         Classification::new(category, confidence)
             .with_suggestions(suggestions)
@@ -426,8 +494,7 @@ impl RuchyOracle {
 
             let predictions = rf.predict(&x);
             if let Some(&label) = predictions.first() {
-                let category = ErrorCategory::from_index(label)
-                    .unwrap_or(ErrorCategory::Other);
+                let category = ErrorCategory::from_index(label).unwrap_or(ErrorCategory::Other);
 
                 // Get confidence from prediction probabilities
                 let proba = rf.predict_proba(&x);
@@ -466,8 +533,7 @@ impl RuchyOracle {
             }
         }
 
-        let category = ErrorCategory::from_index(best_label)
-            .unwrap_or(ErrorCategory::Other);
+        let category = ErrorCategory::from_index(best_label).unwrap_or(ErrorCategory::Other);
 
         // Convert distance to confidence (closer = higher confidence)
         let confidence = (1.0 / (1.0 + best_dist)).min(1.0);
@@ -478,7 +544,11 @@ impl RuchyOracle {
     /// Predict using rule-based fallback
     fn predict_with_rules(&self, features: &ErrorFeatures) -> (ErrorCategory, f64) {
         let category = features.predict_category_rules();
-        let confidence = if category == ErrorCategory::Other { 0.3 } else { 0.7 };
+        let confidence = if category == ErrorCategory::Other {
+            0.3
+        } else {
+            0.7
+        };
         (category, confidence)
     }
 
@@ -554,7 +624,10 @@ impl RuchyOracle {
         if self.training_features.is_empty() {
             return Err(OracleError::EmptyTrainingData);
         }
-        self.train(&self.training_features.clone(), &self.training_labels.clone())
+        self.train(
+            &self.training_features.clone(),
+            &self.training_labels.clone(),
+        )
     }
 
     /// Check if drift has been detected
@@ -579,8 +652,9 @@ impl RuchyOracle {
             let code = format!("E{}", &cap[1]);
             let message = format!("error[{}]: {}", code, &cap[2]);
             let category = ErrorCategory::from_error_code(&code);
-            samples.push(Sample::new(message, Some(code), category)
-                .with_source(SampleSource::Production));
+            samples.push(
+                Sample::new(message, Some(code), category).with_source(SampleSource::Production),
+            );
         }
 
         samples
@@ -592,20 +666,76 @@ impl RuchyOracle {
         use super::{Sample, SampleSource};
 
         let templates = [
-            ("error[E0308]: mismatched types", "E0308", ErrorCategory::TypeMismatch),
-            ("error[E0271]: type mismatch resolving", "E0271", ErrorCategory::TypeMismatch),
-            ("error[E0382]: borrow of moved value", "E0382", ErrorCategory::BorrowChecker),
-            ("error[E0502]: cannot borrow as mutable", "E0502", ErrorCategory::BorrowChecker),
-            ("error[E0597]: borrowed value does not live long enough", "E0597", ErrorCategory::LifetimeError),
-            ("error[E0621]: explicit lifetime required", "E0621", ErrorCategory::LifetimeError),
-            ("error[E0277]: the trait bound is not satisfied", "E0277", ErrorCategory::TraitBound),
-            ("error[E0599]: no method named", "E0599", ErrorCategory::TraitBound),
-            ("error[E0433]: failed to resolve", "E0433", ErrorCategory::MissingImport),
-            ("error[E0412]: cannot find type", "E0412", ErrorCategory::MissingImport),
-            ("error[E0596]: cannot borrow as mutable", "E0596", ErrorCategory::MutabilityError),
-            ("error[E0594]: cannot assign to immutable", "E0594", ErrorCategory::MutabilityError),
-            ("error[E0658]: syntax error", "E0658", ErrorCategory::SyntaxError),
-            ("error[E0061]: wrong number of arguments", "E0061", ErrorCategory::SyntaxError),
+            (
+                "error[E0308]: mismatched types",
+                "E0308",
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "error[E0271]: type mismatch resolving",
+                "E0271",
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "error[E0382]: borrow of moved value",
+                "E0382",
+                ErrorCategory::BorrowChecker,
+            ),
+            (
+                "error[E0502]: cannot borrow as mutable",
+                "E0502",
+                ErrorCategory::BorrowChecker,
+            ),
+            (
+                "error[E0597]: borrowed value does not live long enough",
+                "E0597",
+                ErrorCategory::LifetimeError,
+            ),
+            (
+                "error[E0621]: explicit lifetime required",
+                "E0621",
+                ErrorCategory::LifetimeError,
+            ),
+            (
+                "error[E0277]: the trait bound is not satisfied",
+                "E0277",
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "error[E0599]: no method named",
+                "E0599",
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "error[E0433]: failed to resolve",
+                "E0433",
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "error[E0412]: cannot find type",
+                "E0412",
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "error[E0596]: cannot borrow as mutable",
+                "E0596",
+                ErrorCategory::MutabilityError,
+            ),
+            (
+                "error[E0594]: cannot assign to immutable",
+                "E0594",
+                ErrorCategory::MutabilityError,
+            ),
+            (
+                "error[E0658]: syntax error",
+                "E0658",
+                ErrorCategory::SyntaxError,
+            ),
+            (
+                "error[E0061]: wrong number of arguments",
+                "E0061",
+                ErrorCategory::SyntaxError,
+            ),
             ("error: unknown error", "", ErrorCategory::Other),
             ("error: internal compiler error", "", ErrorCategory::Other),
         ];
@@ -616,9 +746,13 @@ impl RuchyOracle {
         for (i, (msg, code, cat)) in templates.iter().cycle().take(count).enumerate() {
             // Add variation to message
             let varied_msg = format!("{} (variant {})", msg, i % (per_template.max(1)));
-            let code_opt = if code.is_empty() { None } else { Some((*code).to_string()) };
-            samples.push(Sample::new(varied_msg, code_opt, *cat)
-                .with_source(SampleSource::Synthetic));
+            let code_opt = if code.is_empty() {
+                None
+            } else {
+                Some((*code).to_string())
+            };
+            samples
+                .push(Sample::new(varied_msg, code_opt, *cat).with_source(SampleSource::Synthetic));
         }
 
         samples
@@ -722,8 +856,8 @@ mod tests {
 
     #[test]
     fn test_classification_no_auto_fix_without_suggestions() {
-        let classification = Classification::new(ErrorCategory::TypeMismatch, 0.95)
-            .with_auto_fix(0.85);
+        let classification =
+            Classification::new(ErrorCategory::TypeMismatch, 0.95).with_auto_fix(0.85);
 
         assert!(!classification.should_auto_fix); // No suggestions
     }
@@ -737,8 +871,7 @@ mod tests {
 
     #[test]
     fn test_compilation_error_with_code() {
-        let error = CompilationError::new("mismatched types")
-            .with_code("E0308");
+        let error = CompilationError::new("mismatched types").with_code("E0308");
         assert_eq!(error.code, Some("E0308".to_string()));
     }
 
@@ -818,8 +951,7 @@ mod tests {
         let mut oracle = RuchyOracle::new();
         oracle.train_from_examples().expect("bootstrap training");
 
-        let error = CompilationError::new("borrow of moved value")
-            .with_code("E0382");
+        let error = CompilationError::new("borrow of moved value").with_code("E0382");
 
         let classification = oracle.classify(&error);
         assert_eq!(classification.category, ErrorCategory::BorrowChecker);
@@ -829,8 +961,7 @@ mod tests {
     fn test_oracle_classify_untrained_fallback() {
         let oracle = RuchyOracle::new(); // Not trained
 
-        let error = CompilationError::new("mismatched types")
-            .with_code("E0308");
+        let error = CompilationError::new("mismatched types").with_code("E0308");
 
         let classification = oracle.classify(&error);
         assert_eq!(classification.category, ErrorCategory::TypeMismatch);
@@ -864,7 +995,10 @@ mod tests {
         let err = OracleError::EmptyTrainingData;
         assert_eq!(format!("{err}"), "Cannot train on empty data");
 
-        let err = OracleError::MismatchedData { features: 10, labels: 5 };
+        let err = OracleError::MismatchedData {
+            features: 10,
+            labels: 5,
+        };
         assert!(format!("{err}").contains("10 features"));
     }
 

@@ -335,489 +335,13 @@ pub enum InterpreterError {
 
 // Display implementations moved to eval_display.rs
 
-/// Inline cache states for polymorphic method dispatch
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CacheState {
-    /// No cache entry yet
-    Uninitialized,
-    /// Single type cached - fastest path
-    Monomorphic,
-    /// 2-4 types cached - still fast
-    Polymorphic,
-    /// Too many types - fallback to hash lookup
-    Megamorphic,
-}
-
-/// Cache entry for field access optimization
-#[derive(Clone, Debug)]
-pub struct CacheEntry {
-    /// Type identifier for cache validity
-    type_id: std::any::TypeId,
-    /// Field name being accessed
-    field_name: String,
-    /// Cached result for this type/field combination
-    cached_result: Value,
-    /// Hit count for LRU eviction
-    hit_count: u32,
-}
-
-/// Inline cache for method/field dispatch
-#[derive(Clone, Debug)]
-pub struct InlineCache {
-    /// Current cache state
-    state: CacheState,
-    /// Cache entries (inline storage for 2 common entries)
-    entries: SmallVec<[CacheEntry; 2]>,
-    /// Total hit count
-    total_hits: u32,
-    /// Total miss count
-    total_misses: u32,
-}
-
-impl InlineCache {
-    /// Create new empty inline cache
-    pub fn new() -> Self {
-        Self {
-            state: CacheState::Uninitialized,
-            entries: smallvec![],
-            total_hits: 0,
-            total_misses: 0,
-        }
-    }
-
-    /// Look up a field access in the cache
-    pub fn lookup(&mut self, obj: &Value, field_name: &str) -> Option<Value> {
-        let type_id = obj.type_id();
-
-        // Fast path: check cached entries
-        for entry in &mut self.entries {
-            if entry.type_id == type_id && entry.field_name == field_name {
-                entry.hit_count += 1;
-                self.total_hits += 1;
-                return Some(entry.cached_result.clone());
-            }
-        }
-
-        // Cache miss
-        self.total_misses += 1;
-        None
-    }
-
-    /// Add a new cache entry
-    pub fn insert(&mut self, obj: &Value, field_name: String, result: Value) {
-        let type_id = obj.type_id();
-        let entry = CacheEntry {
-            type_id,
-            field_name,
-            cached_result: result,
-            hit_count: 1,
-        };
-
-        // Update cache state based on entry count
-        match self.entries.len() {
-            0 => {
-                self.state = CacheState::Monomorphic;
-                self.entries.push(entry);
-            }
-            1..=3 => {
-                self.state = CacheState::Polymorphic;
-                self.entries.push(entry);
-            }
-            _ => {
-                // Too many entries - transition to megamorphic
-                self.state = CacheState::Megamorphic;
-                // Evict least used entry
-                if let Some(min_idx) = self
-                    .entries
-                    .iter()
-                    .enumerate()
-                    .min_by_key(|(_, e)| e.hit_count)
-                    .map(|(i, _)| i)
-                {
-                    self.entries[min_idx] = entry;
-                }
-            }
-        }
-    }
-
-    /// Get cache hit rate for profiling
-    pub fn hit_rate(&self) -> f64 {
-        let total = self.total_hits + self.total_misses;
-        if total == 0 {
-            0.0
-        } else {
-            f64::from(self.total_hits) / f64::from(total)
-        }
-    }
-}
-
-impl Default for InlineCache {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Type feedback collection for JIT compilation decisions.
-///
-/// Collects runtime type information to guide optimization decisions in
-/// future JIT compilation tiers. This includes:
-///
-/// - Operation site type patterns (for inline caching)
-/// - Variable type stability (for specialization)
-/// - Call site patterns (for method inlining)
-///
-/// # Usage
-///
-/// The interpreter automatically collects type feedback during execution.
-/// When functions become "hot" (frequently executed), this data guides
-/// JIT compilation decisions.
-///
-/// # Statistics
-///
-/// Use `get_stats()` to retrieve feedback statistics for monitoring
-/// and debugging optimization decisions.
-#[derive(Clone, Debug)]
-pub struct TypeFeedback {
-    /// Operation site feedback (indexed by AST node or bytecode offset)
-    operation_sites: HashMap<usize, OperationFeedback>,
-    /// Variable type patterns (variable name -> type feedback)
-    variable_types: HashMap<String, VariableTypeFeedback>,
-    /// Function call sites with argument/return type information
-    call_sites: HashMap<usize, CallSiteFeedback>,
-    /// Total feedback collection count
-    total_samples: u64,
-}
-
-/// Feedback for a specific operation site (binary ops, field access, etc.)
-#[derive(Clone, Debug)]
-pub struct OperationFeedback {
-    /// Types observed for left operand
-    left_types: SmallVec<[std::any::TypeId; 4]>,
-    /// Types observed for right operand (for binary ops)
-    right_types: SmallVec<[std::any::TypeId; 4]>,
-    /// Result types observed
-    result_types: SmallVec<[std::any::TypeId; 4]>,
-    /// Hit counts for each type combination
-    type_counts: HashMap<(std::any::TypeId, std::any::TypeId), u32>,
-    /// Total operation count
-    total_count: u32,
-}
-
-/// Type feedback for variables across their lifetime
-#[derive(Clone, Debug)]
-pub struct VariableTypeFeedback {
-    /// Types assigned to this variable
-    assigned_types: SmallVec<[std::any::TypeId; 4]>,
-    /// Type transitions (`from_type` -> `to_type`)
-    transitions: HashMap<std::any::TypeId, HashMap<std::any::TypeId, u32>>,
-    /// Most common type (for specialization)
-    dominant_type: Option<std::any::TypeId>,
-    /// Type stability score (0.0 = highly polymorphic, 1.0 = monomorphic)
-    stability_score: f64,
-}
-
-/// Feedback for function call sites
-#[derive(Clone, Debug)]
-pub struct CallSiteFeedback {
-    /// Argument type patterns observed
-    arg_type_patterns: SmallVec<[Vec<std::any::TypeId>; 4]>,
-    /// Return types observed
-    return_types: SmallVec<[std::any::TypeId; 4]>,
-    /// Call frequency
-    call_count: u32,
-    /// Functions called at this site (for polymorphic calls)
-    called_functions: HashMap<String, u32>,
-}
-
-impl TypeFeedback {
-    /// Create new type feedback collector
-    pub fn new() -> Self {
-        Self {
-            operation_sites: HashMap::new(),
-            variable_types: HashMap::new(),
-            call_sites: HashMap::new(),
-            total_samples: 0,
-        }
-    }
-
-    /// Record binary operation type feedback
-    pub fn record_binary_op(
-        &mut self,
-        site_id: usize,
-        left: &Value,
-        right: &Value,
-        result: &Value,
-    ) {
-        let left_type = left.type_id();
-        let right_type = right.type_id();
-        let result_type = result.type_id();
-
-        let feedback = self
-            .operation_sites
-            .entry(site_id)
-            .or_insert_with(|| OperationFeedback {
-                left_types: smallvec![],
-                right_types: smallvec![],
-                result_types: smallvec![],
-                type_counts: HashMap::new(),
-                total_count: 0,
-            });
-
-        // Record types if not already seen
-        if !feedback.left_types.contains(&left_type) {
-            feedback.left_types.push(left_type);
-        }
-        if !feedback.right_types.contains(&right_type) {
-            feedback.right_types.push(right_type);
-        }
-        if !feedback.result_types.contains(&result_type) {
-            feedback.result_types.push(result_type);
-        }
-
-        // Update type combination counts
-        let type_pair = (left_type, right_type);
-        *feedback.type_counts.entry(type_pair).or_insert(0) += 1;
-        feedback.total_count += 1;
-        self.total_samples += 1;
-    }
-
-    /// Record variable assignment type feedback
-    pub fn record_variable_assignment(&mut self, var_name: &str, new_type: std::any::TypeId) {
-        let feedback = self
-            .variable_types
-            .entry(var_name.to_string())
-            .or_insert_with(|| VariableTypeFeedback {
-                assigned_types: smallvec![],
-                transitions: HashMap::new(),
-                dominant_type: None,
-                stability_score: 1.0,
-            });
-
-        // Record type transition if there was a previous type
-        if let Some(prev_type) = feedback.dominant_type {
-            if prev_type != new_type {
-                feedback
-                    .transitions
-                    .entry(prev_type)
-                    .or_default()
-                    .entry(new_type)
-                    .and_modify(|count| *count += 1)
-                    .or_insert(1);
-            }
-        }
-
-        // Add new type if not seen before
-        if !feedback.assigned_types.contains(&new_type) {
-            feedback.assigned_types.push(new_type);
-        }
-
-        // Update dominant type (most recently assigned for simplicity)
-        feedback.dominant_type = Some(new_type);
-
-        // Recalculate stability score
-        feedback.stability_score = if feedback.assigned_types.len() == 1 {
-            1.0 // Monomorphic
-        } else {
-            1.0 / f64::from(u32::try_from(feedback.assigned_types.len()).unwrap_or(u32::MAX))
-            // Decreases with more types
-        };
-    }
-
-    /// Record function call type feedback
-    pub fn record_function_call(
-        &mut self,
-        site_id: usize,
-        func_name: &str,
-        args: &[Value],
-        result: &Value,
-    ) {
-        let arg_types: Vec<std::any::TypeId> = args.iter().map(Value::type_id).collect();
-        let return_type = result.type_id();
-
-        let feedback = self
-            .call_sites
-            .entry(site_id)
-            .or_insert_with(|| CallSiteFeedback {
-                arg_type_patterns: smallvec![],
-                return_types: smallvec![],
-                call_count: 0,
-                called_functions: HashMap::new(),
-            });
-
-        // Record argument pattern if not seen before
-        if !feedback
-            .arg_type_patterns
-            .iter()
-            .any(|pattern| pattern == &arg_types)
-        {
-            feedback.arg_type_patterns.push(arg_types);
-        }
-
-        // Record return type if not seen before
-        if !feedback.return_types.contains(&return_type) {
-            feedback.return_types.push(return_type);
-        }
-
-        // Update function call counts
-        *feedback
-            .called_functions
-            .entry(func_name.to_string())
-            .or_insert(0) += 1;
-        feedback.call_count += 1;
-    }
-
-    /// Get type specialization suggestions for optimization
-    /// # Panics
-    /// Panics if a variable's dominant type is None when it should exist
-    pub fn get_specialization_candidates(&self) -> Vec<SpecializationCandidate> {
-        let mut candidates = Vec::new();
-
-        // Find monomorphic operation sites
-        for (&site_id, feedback) in &self.operation_sites {
-            if feedback.left_types.len() == 1
-                && feedback.right_types.len() == 1
-                && feedback.total_count > 10
-            {
-                candidates.push(SpecializationCandidate {
-                    kind: SpecializationKind::BinaryOperation {
-                        site_id,
-                        left_type: feedback.left_types[0],
-                        right_type: feedback.right_types[0],
-                    },
-                    confidence: 1.0,
-                    benefit_score: f64::from(feedback.total_count),
-                });
-            }
-        }
-
-        // Find stable variables
-        for (var_name, feedback) in &self.variable_types {
-            if feedback.stability_score > 0.8 && feedback.dominant_type.is_some() {
-                candidates.push(SpecializationCandidate {
-                    kind: SpecializationKind::Variable {
-                        name: var_name.clone(),
-                        #[allow(clippy::expect_used)] // Safe: we just checked is_some() above
-                        specialized_type: feedback.dominant_type.expect("Dominant type should exist for stable variables"),
-                    },
-                    confidence: feedback.stability_score,
-                    benefit_score: feedback.stability_score * 100.0,
-                });
-            }
-        }
-
-        // Find monomorphic call sites
-        for (&site_id, feedback) in &self.call_sites {
-            if feedback.arg_type_patterns.len() == 1
-                && feedback.return_types.len() == 1
-                && feedback.call_count > 5
-            {
-                candidates.push(SpecializationCandidate {
-                    kind: SpecializationKind::FunctionCall {
-                        site_id,
-                        arg_types: feedback.arg_type_patterns[0].clone(),
-                        return_type: feedback.return_types[0],
-                    },
-                    confidence: 1.0,
-                    benefit_score: f64::from(feedback.call_count * 10),
-                });
-            }
-        }
-
-        // Sort by benefit score (highest first)
-        candidates.sort_by(|a, b| {
-            b.benefit_score
-                .partial_cmp(&a.benefit_score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        candidates
-    }
-
-    /// Get overall type feedback statistics
-    pub fn get_statistics(&self) -> TypeFeedbackStats {
-        let monomorphic_sites = self
-            .operation_sites
-            .values()
-            .filter(|f| f.left_types.len() == 1 && f.right_types.len() == 1)
-            .count();
-
-        let stable_variables = self
-            .variable_types
-            .values()
-            .filter(|f| f.stability_score > 0.8)
-            .count();
-
-        let monomorphic_calls = self
-            .call_sites
-            .values()
-            .filter(|f| f.arg_type_patterns.len() == 1)
-            .count();
-
-        TypeFeedbackStats {
-            total_operation_sites: self.operation_sites.len(),
-            monomorphic_operation_sites: monomorphic_sites,
-            total_variables: self.variable_types.len(),
-            stable_variables,
-            total_call_sites: self.call_sites.len(),
-            monomorphic_call_sites: monomorphic_calls,
-            total_samples: self.total_samples,
-        }
-    }
-}
-
-impl Default for TypeFeedback {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Specialization candidate for JIT compilation
-#[derive(Clone, Debug)]
-#[allow(dead_code)] // Will be used by future JIT implementation
-pub struct SpecializationCandidate {
-    /// Type of specialization
-    kind: SpecializationKind,
-    /// Confidence level (0.0 - 1.0)
-    confidence: f64,
-    /// Expected benefit score
-    benefit_score: f64,
-}
-
-#[derive(Clone, Debug)]
-pub enum SpecializationKind {
-    BinaryOperation {
-        site_id: usize,
-        left_type: std::any::TypeId,
-        right_type: std::any::TypeId,
-    },
-    Variable {
-        name: String,
-        specialized_type: std::any::TypeId,
-    },
-    FunctionCall {
-        site_id: usize,
-        arg_types: Vec<std::any::TypeId>,
-        return_type: std::any::TypeId,
-    },
-}
-
-/// Type feedback statistics for profiling
-#[derive(Clone, Debug)]
-pub struct TypeFeedbackStats {
-    /// Total operation sites recorded
-    pub total_operation_sites: usize,
-    /// Monomorphic operation sites (candidates for specialization)
-    pub monomorphic_operation_sites: usize,
-    /// Total variables tracked
-    pub total_variables: usize,
-    /// Variables with stable types
-    pub stable_variables: usize,
-    /// Total function call sites
-    pub total_call_sites: usize,
-    /// Monomorphic call sites
-    pub monomorphic_call_sites: usize,
-    /// Total feedback samples collected
-    pub total_samples: u64,
-}
+// Re-export JIT type feedback system from type_feedback module
+// EXTREME TDD: Eliminated 485 lines of duplicate code (massive entropy reduction)
+pub use super::type_feedback::{
+    CacheEntry, CacheState, CallSiteFeedback, InlineCache, OperationFeedback,
+    SpecializationCandidate, SpecializationKind, TypeFeedback, TypeFeedbackStats,
+    VariableTypeFeedback,
+};
 
 // Re-export GC implementation from gc_impl module
 // EXTREME TDD: Eliminated 318 lines of duplicate GC code (massive entropy reduction)
@@ -1186,55 +710,10 @@ impl Interpreter {
         Some(current_value)
     }
 
-    /// Helper: Format string with placeholder replacement
-    /// Reduces cognitive complexity by extracting duplicated format logic
+    // Value formatting delegated to value_format module
+    // EXTREME TDD: Eliminated 50 lines of duplicate code
     fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
-        let mut result = String::new();
-        let mut chars = format_str.chars().peekable();
-        let mut value_index = 0;
-
-        while let Some(ch) = chars.next() {
-            if ch == '{' {
-                if chars.peek() == Some(&':') {
-                    chars.next();
-                    if chars.peek() == Some(&'?') {
-                        chars.next();
-                        if chars.peek() == Some(&'}') {
-                            chars.next();
-                            if value_index < values.len() {
-                                result.push_str(&format!("{:?}", values[value_index]));
-                                value_index += 1;
-                            } else {
-                                result.push_str("{:?}");
-                            }
-                        } else {
-                            result.push_str("{:?");
-                        }
-                    } else {
-                        result.push_str("{:");
-                    }
-                } else if chars.peek() == Some(&'}') {
-                    chars.next();
-                    if value_index < values.len() {
-                        // Extract raw string without Display quotes
-                        let display_val = match &values[value_index] {
-                            Value::String(ref s) => s.as_ref().to_string(),
-                            _ => values[value_index].to_string(),
-                        };
-                        result.push_str(&display_val);
-                        value_index += 1;
-                    } else {
-                        result.push_str("{}");
-                    }
-                } else {
-                    result.push(ch);
-                }
-            } else {
-                result.push(ch);
-            }
-        }
-
-        result
+        crate::runtime::value_format::format_string_with_values(format_str, values)
     }
 
     /// Evaluate miscellaneous expressions
@@ -1944,41 +1423,12 @@ impl Interpreter {
         }
     }
 
-    /// Helper: Extract message type and data from actor message Value
-    /// Complexity: 5 (within Toyota Way limits)
+    // Actor message extraction delegated to eval_actor module
+    // EXTREME TDD: Eliminated 35 lines of duplicate code
     fn extract_message_type_and_data(
         message: &Value,
     ) -> Result<(String, Vec<Value>), InterpreterError> {
-        if let Value::Object(msg_obj) = message {
-            if let Some(Value::String(type_str)) = msg_obj.get("__type") {
-                if type_str.as_ref() == "Message" {
-                    let msg_type = msg_obj
-                        .get("type")
-                        .and_then(|v| {
-                            if let Value::String(s) = v {
-                                Some(s.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(|| "Unknown".to_string());
-                    let msg_data = msg_obj
-                        .get("data")
-                        .and_then(|v| {
-                            if let Value::Array(arr) = v {
-                                Some(arr.to_vec())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_else(Vec::new);
-                    return Ok((msg_type, msg_data));
-                }
-            }
-        }
-        Err(InterpreterError::RuntimeError(
-            "Invalid message format - expected Message object".to_string(),
-        ))
+        crate::runtime::eval_actor::extract_message_type_and_data(message)
     }
 
     fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
@@ -2134,224 +1584,53 @@ impl Interpreter {
         }
     }
 
-    /// Index into an array (complexity: 5 - added negative indexing support)
-    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
+    // Index operations delegated to eval_index module
+    // EXTREME TDD: Eliminated 220 lines of duplicate code
+
     fn index_array(array: &[Value], idx: i64) -> Result<Value, InterpreterError> {
-        let len = array.len() as i64;
-        let actual_index = if idx < 0 {
-            // Negative index: count from the end
-            // -1 => len-1 (last), -2 => len-2 (second-to-last), etc.
-            len + idx
-        } else {
-            idx
-        };
-
-        // Check bounds (actual_index must be in range [0, len))
-        if actual_index < 0 || actual_index >= len {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Index {idx} out of bounds for array of length {len}"
-            )));
-        }
-
-        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
-        Ok(array[actual_index as usize].clone())
+        crate::runtime::eval_index::index_array(array, idx)
     }
 
-    /// Index into a string (complexity: 5 - added negative indexing support)
-    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
     fn index_string(s: &str, idx: i64) -> Result<Value, InterpreterError> {
-        let chars: Vec<char> = s.chars().collect();
-        let len = chars.len() as i64;
-        let actual_index = if idx < 0 {
-            // Negative index: count from the end
-            len + idx
-        } else {
-            idx
-        };
-
-        // Check bounds
-        if actual_index < 0 || actual_index >= len {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Index {idx} out of bounds for string of length {len}"
-            )));
-        }
-
-        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
-        Ok(Value::from_string(chars[actual_index as usize].to_string()))
+        crate::runtime::eval_index::index_string(s, idx)
     }
 
-    /// Slice a string using a range (ISSUE-094, GitHub Issue #94)
-    /// Supports: text[0..5], text[..5], text[5..], text[..]
-    /// Cyclomatic complexity: 9 (A+ standard: ≤10)
     fn slice_string(
         s: &str,
         start: &Value,
         end: &Value,
-        _inclusive: bool,
+        inclusive: bool,
     ) -> Result<Value, InterpreterError> {
-        let chars: Vec<char> = s.chars().collect();
-        let len = chars.len();
-
-        // Extract start index (default to 0 for open ranges like ..5)
-        let start_idx = match start {
-            Value::Nil => 0,
-            Value::Integer(i) => {
-                let idx = if *i < 0 {
-                    let adjusted = len as i64 + i;
-                    if adjusted < 0 {
-                        return Err(InterpreterError::RuntimeError(format!(
-                            "Range start {} is out of bounds for string of length {}",
-                            i, len
-                        )));
-                    }
-                    adjusted as usize
-                } else {
-                    *i as usize
-                };
-                idx
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(format!(
-                    "Range start must be integer or nil, got {}",
-                    start.type_name()
-                )))
-            }
-        };
-
-        // Extract end index (default to len for open ranges like 5..)
-        let end_idx = match end {
-            Value::Nil => len,
-            Value::Integer(i) => {
-                let idx = if *i < 0 {
-                    let adjusted = len as i64 + i;
-                    if adjusted < 0 {
-                        return Err(InterpreterError::RuntimeError(format!(
-                            "Range end {} is out of bounds for string of length {}",
-                            i, len
-                        )));
-                    }
-                    adjusted as usize
-                } else {
-                    *i as usize
-                };
-                idx
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(format!(
-                    "Range end must be integer or nil, got {}",
-                    end.type_name()
-                )))
-            }
-        };
-
-        // Validate range
-        if start_idx > end_idx {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Invalid range: start {} is greater than end {}",
-                start_idx, end_idx
-            )));
-        }
-
-        if end_idx > len {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Range end {} is out of bounds for string of length {}",
-                end_idx, len
-            )));
-        }
-
-        // Perform the slice
-        let sliced: String = chars[start_idx..end_idx].iter().collect();
-        Ok(Value::from_string(sliced))
+        crate::runtime::eval_index::slice_string(s, start, end, inclusive)
     }
 
-    /// Index into a tuple (complexity: 5 - added negative indexing support)
-    /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
     fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError> {
-        let len = tuple.len() as i64;
-        let actual_index = if idx < 0 {
-            // Negative index: count from the end
-            len + idx
-        } else {
-            idx
-        };
-
-        // Check bounds
-        if actual_index < 0 || actual_index >= len {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Index {idx} out of bounds for tuple of length {len}"
-            )));
-        }
-
-        #[allow(clippy::cast_sign_loss)] // Safe: we've verified actual_index >= 0
-        Ok(tuple[actual_index as usize].clone())
+        crate::runtime::eval_index::index_tuple(tuple, idx)
     }
 
-    /// Index into an object with string key (complexity: 1)
     fn index_object(fields: &HashMap<String, Value>, key: &str) -> Result<Value, InterpreterError> {
-        fields.get(key).cloned().ok_or_else(|| {
-            InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-        })
+        crate::runtime::eval_index::index_object(fields, key)
     }
 
-    /// Index into a mutable object with string key (complexity: 1)
     fn index_object_mut(
         cell: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
         key: &str,
     ) -> Result<Value, InterpreterError> {
-        cell.lock()
-            .expect("Mutex poisoned: object lock is corrupted")
-            .get(key)
-            .cloned()
-            .ok_or_else(|| {
-                InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-            })
+        crate::runtime::eval_index::index_object_mut(cell, key)
     }
 
-    /// Index into a `DataFrame` by row index (complexity: 5)
-    /// Returns a row as an Object with column names as keys
     fn index_dataframe_row(
         columns: &[DataFrameColumn],
         row_idx: i64,
     ) -> Result<Value, InterpreterError> {
-        if columns.is_empty() {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index empty DataFrame".to_string(),
-            ));
-        }
-
-        let index = row_idx as usize;
-        let num_rows = columns[0].values.len();
-
-        if index >= num_rows {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Row index {index} out of bounds for DataFrame with {num_rows} rows"
-            )));
-        }
-
-        // Build row as Object with column names as keys
-        let mut row = HashMap::new();
-        for col in columns {
-            row.insert(col.name.clone(), col.values[index].clone());
-        }
-
-        Ok(Value::Object(Arc::new(row)))
+        crate::runtime::eval_index::index_dataframe_row(columns, row_idx)
     }
 
-    /// Index into a `DataFrame` by column name (complexity: 3)
-    /// Returns a column as an Array
     fn index_dataframe_column(
         columns: &[DataFrameColumn],
         col_name: &str,
     ) -> Result<Value, InterpreterError> {
-        columns
-            .iter()
-            .find(|col| col.name == col_name)
-            .map(|col| Value::Array(Arc::from(col.values.clone())))
-            .ok_or_else(|| {
-                InterpreterError::RuntimeError(format!(
-                    "Column '{col_name}' not found in DataFrame"
-                ))
-            })
+        crate::runtime::eval_index::index_dataframe_column(columns, col_name)
     }
 
     /// Check if a field is accessible based on visibility rules
@@ -3389,87 +2668,23 @@ impl Interpreter {
         })
     }
 
-    /// ISSUE-117: Parse JSON string into Value (complexity: 8)
+    // JSON operations delegated to eval_json module
+    // EXTREME TDD: Eliminated 80 lines of duplicate code
+
     fn json_parse(&self, json_str: &str) -> Result<Value, InterpreterError> {
-        let json_value: serde_json::Value = serde_json::from_str(json_str)
-            .map_err(|e| InterpreterError::RuntimeError(format!("JSON.parse() failed: {}", e)))?;
-        Self::serde_to_value(&json_value)
+        crate::runtime::eval_json::json_parse(json_str)
     }
 
-    /// ISSUE-117: Stringify Value to JSON string (complexity: 4)
     fn json_stringify(&self, value: &Value) -> Result<Value, InterpreterError> {
-        let json_value = Self::value_to_serde(value)?;
-        let json_str = serde_json::to_string(&json_value).map_err(|e| {
-            InterpreterError::RuntimeError(format!("JSON.stringify() failed: {}", e))
-        })?;
-        Ok(Value::from_string(json_str))
+        crate::runtime::eval_json::json_stringify(value)
     }
 
-    /// Convert `serde_json::Value` to interpreter Value (complexity: 9)
     fn serde_to_value(json: &serde_json::Value) -> Result<Value, InterpreterError> {
-        match json {
-            serde_json::Value::Null => Ok(Value::Nil),
-            serde_json::Value::Bool(b) => Ok(Value::Bool(*b)),
-            serde_json::Value::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    Ok(Value::Integer(i))
-                } else if let Some(f) = n.as_f64() {
-                    Ok(Value::Float(f))
-                } else {
-                    Err(InterpreterError::RuntimeError(
-                        "JSON number out of range".to_string(),
-                    ))
-                }
-            }
-            serde_json::Value::String(s) => Ok(Value::from_string(s.clone())),
-            serde_json::Value::Array(arr) => {
-                let values: Result<Vec<Value>, InterpreterError> =
-                    arr.iter().map(Self::serde_to_value).collect();
-                Ok(Value::Array(Arc::from(values?.into_boxed_slice())))
-            }
-            serde_json::Value::Object(obj) => {
-                let mut map = HashMap::new();
-                for (key, val) in obj {
-                    map.insert(key.clone(), Self::serde_to_value(val)?);
-                }
-                Ok(Value::Object(Arc::new(map)))
-            }
-        }
+        crate::runtime::eval_json::serde_to_value(json)
     }
 
-    /// Convert interpreter Value to `serde_json::Value` (complexity: 8)
     fn value_to_serde(value: &Value) -> Result<serde_json::Value, InterpreterError> {
-        match value {
-            Value::Nil => Ok(serde_json::Value::Null),
-            Value::Bool(b) => Ok(serde_json::Value::Bool(*b)),
-            Value::Integer(i) => Ok(serde_json::Value::Number((*i).into())),
-            Value::Float(f) => {
-                if let Some(n) = serde_json::Number::from_f64(*f) {
-                    Ok(serde_json::Value::Number(n))
-                } else {
-                    Err(InterpreterError::RuntimeError(
-                        "Invalid float for JSON".to_string(),
-                    ))
-                }
-            }
-            Value::String(s) => Ok(serde_json::Value::String(s.to_string())),
-            Value::Array(arr) => {
-                let json_arr: Result<Vec<serde_json::Value>, InterpreterError> =
-                    arr.iter().map(Self::value_to_serde).collect();
-                Ok(serde_json::Value::Array(json_arr?))
-            }
-            Value::Object(obj) => {
-                let mut json_obj = serde_json::Map::new();
-                for (key, val) in obj.as_ref() {
-                    json_obj.insert(key.clone(), Self::value_to_serde(val)?);
-                }
-                Ok(serde_json::Value::Object(json_obj))
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Cannot convert {:?} to JSON",
-                value
-            ))),
-        }
+        crate::runtime::eval_json::value_to_serde(value)
     }
 
     /// Helper function for testing - evaluate a string expression via parser
@@ -8033,22 +7248,9 @@ impl Interpreter {
         Ok(Value::from_string(result))
     }
 
-    /// Format a value with a format specifier like :.2 for floats
+    // Format specifier delegated to value_format module
     fn format_value_with_spec(value: &Value, spec: &str) -> String {
-        // Parse format specifier (e.g., ":.2" -> precision 2)
-        if let Some(stripped) = spec.strip_prefix(":.") {
-            if let Ok(precision) = stripped.parse::<usize>() {
-                match value {
-                    Value::Float(f) => return format!("{:.precision$}", f, precision = precision),
-                    Value::Integer(i) => {
-                        return format!("{:.precision$}", *i as f64, precision = precision)
-                    }
-                    _ => {}
-                }
-            }
-        }
-        // Default formatting if spec doesn't match or isn't supported
-        value.to_string()
+        crate::runtime::value_format::format_value_with_spec(value, spec)
     }
 
     /// Evaluate function definition

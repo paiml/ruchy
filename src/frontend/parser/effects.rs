@@ -107,3 +107,148 @@ fn parse_handler_params(state: &mut ParserState) -> Result<Vec<Pattern>> {
         Ok(Vec::new())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::frontend::parser::Parser;
+
+    /// Helper to parse effect/handler code through the full parser
+    fn parse_code(code: &str) -> crate::frontend::parser::Result<crate::frontend::ast::Expr> {
+        Parser::new(code).parse()
+    }
+
+    // ==================== parse_effect tests ====================
+
+    #[test]
+    fn test_parse_effect_simple() {
+        let result = parse_code("effect Logger { log(msg: String) }");
+        assert!(result.is_ok(), "Failed to parse simple effect: {result:?}");
+    }
+
+    #[test]
+    fn test_parse_effect_multiple_operations() {
+        let result = parse_code("effect IO { read() -> String, write(data: String) }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse multi-op effect: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_effect_empty_operations() {
+        let result = parse_code("effect Empty { }");
+        assert!(result.is_ok(), "Failed to parse empty effect: {result:?}");
+    }
+
+    #[test]
+    fn test_parse_effect_with_return_type() {
+        let result = parse_code("effect State { get() -> i32, set(val: i32) }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse effect with return: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_effect_no_params() {
+        let result = parse_code("effect Simple { action() }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse effect without params: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_effect_multiple_params() {
+        let result = parse_code("effect Math { add(a: i32, b: i32) -> i32 }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse effect with multiple params: {result:?}"
+        );
+    }
+
+    // ==================== parse_handler tests ====================
+
+    #[test]
+    fn test_parse_handler_simple() {
+        let result = parse_code("handle computation with { log => println(\"logged\") }");
+        assert!(result.is_ok(), "Failed to parse simple handler: {result:?}");
+    }
+
+    #[test]
+    fn test_parse_handler_with_params() {
+        let result = parse_code("handle expr with { write(x) => print(x) }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse handler with params: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_handler_multiple() {
+        let result = parse_code("handle x with { get => 42, set(v) => v }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse multiple handlers: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_handler_empty() {
+        let result = parse_code("handle expr with { }");
+        assert!(result.is_ok(), "Failed to parse empty handler: {result:?}");
+    }
+
+    #[test]
+    fn test_parse_handler_multiple_params() {
+        let result = parse_code("handle x with { op(a, b, c) => a + b + c }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse multi-param handler: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_handler_complex_body() {
+        let result = parse_code("handle comp with { read => { let x = 42; x } }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse handler with block body: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_parse_handler_nested_expr() {
+        let result = parse_code("handle (1 + 2) with { op => 3 }");
+        assert!(
+            result.is_ok(),
+            "Failed to parse handler with nested expr: {result:?}"
+        );
+    }
+
+    // ==================== Error case tests ====================
+
+    #[test]
+    fn test_parse_effect_missing_name() {
+        let result = parse_code("effect { }");
+        assert!(result.is_err(), "Should fail on missing effect name");
+    }
+
+    #[test]
+    fn test_parse_effect_missing_brace() {
+        let result = parse_code("effect Logger log()");
+        assert!(result.is_err(), "Should fail on missing brace");
+    }
+
+    #[test]
+    fn test_parse_handler_missing_with() {
+        let result = parse_code("handle expr { }");
+        assert!(result.is_err(), "Should fail on missing 'with' keyword");
+    }
+
+    #[test]
+    fn test_parse_handler_missing_arrow() {
+        let result = parse_code("handle expr with { op body }");
+        assert!(result.is_err(), "Should fail on missing '=>'");
+    }
+}

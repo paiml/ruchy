@@ -220,7 +220,8 @@ impl PipelineExecution {
     /// Get failure stage as string
     #[must_use]
     pub fn failure_stage(&self) -> Option<String> {
-        self.failed_at.map(|p| format!("Phase {} ({})", p.number(), p.name()))
+        self.failed_at
+            .map(|p| format!("Phase {} ({})", p.number(), p.name()))
     }
 }
 
@@ -594,7 +595,8 @@ impl PipelineBuilder {
 
     /// Record failed phase
     pub fn fail(mut self, phase: Phase, error: impl Into<String>, duration: Duration) -> Self {
-        self.results.push(PhaseResult::failure(phase, error, duration));
+        self.results
+            .push(PhaseResult::failure(phase, error, duration));
         self
     }
 
@@ -693,7 +695,10 @@ mod tests {
     #[test]
     fn test_pipeline_execution_record() {
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::success(Phase::Parse, Duration::from_millis(100)));
+        exec.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(100),
+        ));
 
         assert_eq!(exec.phases.len(), 1);
         assert_eq!(exec.last_success, Some(Phase::Parse));
@@ -712,8 +717,15 @@ mod tests {
     #[test]
     fn test_pipeline_execution_failed() {
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
-        exec.record(PhaseResult::failure(Phase::TypeCheck, "type error", Duration::from_millis(5)));
+        exec.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
+        exec.record(PhaseResult::failure(
+            Phase::TypeCheck,
+            "type error",
+            Duration::from_millis(5),
+        ));
 
         assert!(!exec.all_passed());
         assert_eq!(exec.failed_at, Some(Phase::TypeCheck));
@@ -723,8 +735,14 @@ mod tests {
     #[test]
     fn test_pipeline_execution_completion() {
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
-        exec.record(PhaseResult::success(Phase::TypeCheck, Duration::from_millis(10)));
+        exec.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
+        exec.record(PhaseResult::success(
+            Phase::TypeCheck,
+            Duration::from_millis(10),
+        ));
         // 2 of 5 phases passed
 
         assert!((exec.completion_percent() - 40.0).abs() < 0.01);
@@ -733,7 +751,11 @@ mod tests {
     #[test]
     fn test_pipeline_execution_failure_stage() {
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::failure(Phase::Compile, "compile error", Duration::from_millis(10)));
+        exec.record(PhaseResult::failure(
+            Phase::Compile,
+            "compile error",
+            Duration::from_millis(10),
+        ));
 
         assert_eq!(exec.failure_stage(), Some("Phase 4 (Compile)".to_string()));
     }
@@ -752,8 +774,14 @@ mod tests {
     #[test]
     fn test_phase_statistics_record() {
         let mut stats = PhaseStatistics::new(Phase::Parse);
-        stats.record(&PhaseResult::success(Phase::Parse, Duration::from_millis(100)));
-        stats.record(&PhaseResult::success(Phase::Parse, Duration::from_millis(50)));
+        stats.record(&PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(100),
+        ));
+        stats.record(&PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(50),
+        ));
 
         assert_eq!(stats.total, 2);
         assert_eq!(stats.passed, 2);
@@ -762,9 +790,19 @@ mod tests {
     #[test]
     fn test_phase_statistics_pass_rate() {
         let mut stats = PhaseStatistics::new(Phase::Parse);
-        stats.record(&PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
-        stats.record(&PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
-        stats.record(&PhaseResult::failure(Phase::Parse, "error", Duration::from_millis(5)));
+        stats.record(&PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
+        stats.record(&PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
+        stats.record(&PhaseResult::failure(
+            Phase::Parse,
+            "error",
+            Duration::from_millis(5),
+        ));
 
         assert!((stats.pass_rate() - 66.67).abs() < 0.1);
     }
@@ -772,9 +810,21 @@ mod tests {
     #[test]
     fn test_phase_statistics_top_errors() {
         let mut stats = PhaseStatistics::new(Phase::Parse);
-        stats.record(&PhaseResult::failure(Phase::Parse, "error A", Duration::from_millis(5)));
-        stats.record(&PhaseResult::failure(Phase::Parse, "error A", Duration::from_millis(5)));
-        stats.record(&PhaseResult::failure(Phase::Parse, "error B", Duration::from_millis(5)));
+        stats.record(&PhaseResult::failure(
+            Phase::Parse,
+            "error A",
+            Duration::from_millis(5),
+        ));
+        stats.record(&PhaseResult::failure(
+            Phase::Parse,
+            "error A",
+            Duration::from_millis(5),
+        ));
+        stats.record(&PhaseResult::failure(
+            Phase::Parse,
+            "error B",
+            Duration::from_millis(5),
+        ));
 
         let top = stats.top_errors(2);
         assert_eq!(top[0].0, "error A");
@@ -795,7 +845,10 @@ mod tests {
     fn test_corpus_pipeline_record() {
         let mut pipeline = CorpusPipeline::new();
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
+        exec.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
 
         pipeline.record(exec);
         assert_eq!(pipeline.processed, 1);
@@ -814,8 +867,15 @@ mod tests {
 
         // Fails at compile
         let mut exec2 = PipelineExecution::new("fail.ruchy");
-        exec2.record(PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
-        exec2.record(PhaseResult::failure(Phase::TypeCheck, "error", Duration::from_millis(5)));
+        exec2.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
+        exec2.record(PhaseResult::failure(
+            Phase::TypeCheck,
+            "error",
+            Duration::from_millis(5),
+        ));
         pipeline.record(exec2);
 
         assert_eq!(pipeline.passing().len(), 1);
@@ -827,7 +887,11 @@ mod tests {
         let mut pipeline = CorpusPipeline::new();
 
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::failure(Phase::Compile, "error", Duration::from_millis(10)));
+        exec.record(PhaseResult::failure(
+            Phase::Compile,
+            "error",
+            Duration::from_millis(10),
+        ));
         pipeline.record(exec);
 
         assert_eq!(pipeline.failing_at(Phase::Compile).len(), 1);
@@ -849,7 +913,11 @@ mod tests {
 
         // 1 failing
         let mut exec = PipelineExecution::new("fail.ruchy");
-        exec.record(PhaseResult::failure(Phase::Parse, "error", Duration::from_millis(5)));
+        exec.record(PhaseResult::failure(
+            Phase::Parse,
+            "error",
+            Duration::from_millis(5),
+        ));
         pipeline.record(exec);
 
         assert!((pipeline.success_rate() - 66.67).abs() < 0.1);
@@ -860,12 +928,19 @@ mod tests {
         let mut pipeline = CorpusPipeline::new();
 
         let mut exec = PipelineExecution::new("critical.ruchy");
-        exec.record(PhaseResult::failure(Phase::Parse, "error", Duration::from_millis(5)));
+        exec.record(PhaseResult::failure(
+            Phase::Parse,
+            "error",
+            Duration::from_millis(5),
+        ));
         let exec = exec.with_priority(BlockerPriority::P0Critical);
         pipeline.record(exec);
 
         let by_priority = pipeline.by_priority();
-        assert_eq!(by_priority.get(&BlockerPriority::P0Critical).map(Vec::len), Some(1));
+        assert_eq!(
+            by_priority.get(&BlockerPriority::P0Critical).map(Vec::len),
+            Some(1)
+        );
     }
 
     #[test]
@@ -873,7 +948,10 @@ mod tests {
         let mut pipeline = CorpusPipeline::new();
 
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::success(Phase::Parse, Duration::from_millis(10)));
+        exec.record(PhaseResult::success(
+            Phase::Parse,
+            Duration::from_millis(10),
+        ));
         pipeline.record(exec);
 
         let output = pipeline.render_funnel(60);
@@ -886,7 +964,11 @@ mod tests {
         let mut pipeline = CorpusPipeline::new();
 
         let mut exec = PipelineExecution::new("test.ruchy");
-        exec.record(PhaseResult::failure(Phase::Parse, "error", Duration::from_millis(5)));
+        exec.record(PhaseResult::failure(
+            Phase::Parse,
+            "error",
+            Duration::from_millis(5),
+        ));
         let exec = exec.with_priority(BlockerPriority::P1High);
         pipeline.record(exec);
 
@@ -903,7 +985,11 @@ mod tests {
         let exec = PipelineBuilder::new("test.ruchy")
             .pass(Phase::Parse, Duration::from_millis(10))
             .pass(Phase::TypeCheck, Duration::from_millis(20))
-            .fail(Phase::Transpile, "transpile error", Duration::from_millis(5))
+            .fail(
+                Phase::Transpile,
+                "transpile error",
+                Duration::from_millis(5),
+            )
             .build();
 
         assert_eq!(exec.path, "test.ruchy");

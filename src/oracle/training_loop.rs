@@ -74,10 +74,7 @@ pub enum TrainingEvent {
     },
 
     /// Target accuracy reached
-    Converged {
-        iteration: usize,
-        accuracy: f64,
-    },
+    Converged { iteration: usize, accuracy: f64 },
 
     /// Retraining triggered (drift or threshold)
     RetrainingTriggered {
@@ -98,14 +95,10 @@ pub enum TrainingEvent {
     },
 
     /// Maximum iterations reached
-    MaxIterationsReached {
-        accuracy: f64,
-    },
+    MaxIterationsReached { accuracy: f64 },
 
     /// Error occurred
-    Error {
-        message: String,
-    },
+    Error { message: String },
 }
 
 /// Reason for retraining
@@ -197,109 +190,118 @@ impl TrainingLoop {
                 "expected `u32`, found `i64`",
                 Some("E0308".into()),
                 ErrorCategory::TypeMismatch,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - uses "type", "expected", "mismatch" keywords)
             Sample::new(
                 "type mismatch: expected String but found integer",
                 None,
                 ErrorCategory::TypeMismatch,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === BorrowChecker samples ===
             // With error code (rule-based path)
             Sample::new(
                 "cannot borrow `x` as mutable because it is also borrowed as immutable",
                 Some("E0502".into()),
                 ErrorCategory::BorrowChecker,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - uses "borrow", "move" keywords)
             Sample::new(
                 "cannot borrow value after move to another function",
                 None,
                 ErrorCategory::BorrowChecker,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === LifetimeError samples ===
             // With error code (rule-based path)
             Sample::new(
                 "borrowed value does not live long enough",
                 Some("E0597".into()),
                 ErrorCategory::LifetimeError,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - uses "lifetime" keyword)
             Sample::new(
                 "lifetime of reference outlives the data it points to",
                 None,
                 ErrorCategory::LifetimeError,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === TraitBound samples ===
             // With error code (rule-based path)
             Sample::new(
                 "the trait bound `MyType: Clone` is not satisfied",
                 Some("E0277".into()),
                 ErrorCategory::TraitBound,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - uses "trait", "impl" keywords)
             Sample::new(
                 "trait Clone is not implemented for this type",
                 None,
                 ErrorCategory::TraitBound,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === MissingImport samples ===
             // With error code (rule-based path)
             Sample::new(
                 "cannot find value `HashMap` in this scope",
                 Some("E0425".into()),
                 ErrorCategory::MissingImport,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - no specific keyword, tests generalization)
             Sample::new(
                 "unresolved import: module not found in crate",
                 None,
                 ErrorCategory::MissingImport,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === MutabilityError samples ===
             // With error code (rule-based path)
             Sample::new(
                 "cannot borrow `vec` as mutable, as it is not declared as mutable",
                 Some("E0596".into()),
                 ErrorCategory::MutabilityError,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // Without error code (ML path - uses "mut" keyword)
             Sample::new(
                 "requires mut binding but variable is immutable",
                 None,
                 ErrorCategory::MutabilityError,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === SyntaxError samples ===
             // Without error code (ML path)
             Sample::new(
                 "expected `;`, found `let`",
                 None,
                 ErrorCategory::SyntaxError,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             // With error code (rule-based path)
             Sample::new(
                 "this function takes 2 arguments but 3 arguments were supplied",
                 Some("E0061".into()),
                 ErrorCategory::SyntaxError,
-            ).with_source(SampleSource::Synthetic),
-
+            )
+            .with_source(SampleSource::Synthetic),
             // === Other samples (edge cases, no clear keywords) ===
             Sample::new(
                 "recursion limit reached while expanding the macro",
                 None,
                 ErrorCategory::Other,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
             Sample::new(
                 "internal compiler error: unexpected panic during compilation",
                 None,
                 ErrorCategory::Other,
-            ).with_source(SampleSource::Synthetic),
+            )
+            .with_source(SampleSource::Synthetic),
         ]
     }
 
@@ -430,7 +432,8 @@ impl TrainingLoop {
             }
 
             // Record result for drift detection
-            self.oracle.record_result(classification.category, sample.category);
+            self.oracle
+                .record_result(classification.category, sample.category);
 
             // Round-robin through holdout set
             self.holdout_index = (self.holdout_index + 1) % self.holdout_set.len();
@@ -815,7 +818,11 @@ mod tests {
         // After step, current_accuracy should match last history entry
         loop_runner.step();
         let current = loop_runner.current_accuracy();
-        let last_history = loop_runner.accuracy_history().last().copied().unwrap_or(0.0);
+        let last_history = loop_runner
+            .accuracy_history()
+            .last()
+            .copied()
+            .unwrap_or(0.0);
         assert!((current - last_history).abs() < f64::EPSILON);
     }
 
@@ -870,12 +877,10 @@ mod tests {
                 "custom error from examples",
                 Some("E0999".into()),
                 ErrorCategory::Other,
-            ).with_source(SampleSource::Examples),
-            Sample::new(
-                "another custom error",
-                None,
-                ErrorCategory::SyntaxError,
-            ).with_source(SampleSource::Examples),
+            )
+            .with_source(SampleSource::Examples),
+            Sample::new("another custom error", None, ErrorCategory::SyntaxError)
+                .with_source(SampleSource::Examples),
         ];
 
         loop_runner.add_live_samples(live_samples);
@@ -892,13 +897,12 @@ mod tests {
         let mut loop_runner = TrainingLoop::new(oracle);
 
         // Add live sample with known error code
-        let live_samples = vec![
-            Sample::new(
-                "expected type `String`, found `i32`",
-                Some("E0308".into()),
-                ErrorCategory::TypeMismatch,
-            ).with_source(SampleSource::Examples),
-        ];
+        let live_samples = vec![Sample::new(
+            "expected type `String`, found `i32`",
+            Some("E0308".into()),
+            ErrorCategory::TypeMismatch,
+        )
+        .with_source(SampleSource::Examples)];
         loop_runner.add_live_samples(live_samples);
 
         // Run enough steps to evaluate all samples including the new one

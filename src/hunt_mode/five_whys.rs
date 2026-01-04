@@ -207,33 +207,27 @@ impl FiveWhysAnalyzer {
         vec![
             ErrorPattern {
                 code: "E0308".to_string(),
-                root_causes: vec![
-                    (
-                        "Type mismatch in return".to_string(),
-                        "Return type inference not checking context".to_string(),
-                        "Update type_inference.rs to check return type".to_string(),
-                    ),
-                ],
+                root_causes: vec![(
+                    "Type mismatch in return".to_string(),
+                    "Return type inference not checking context".to_string(),
+                    "Update type_inference.rs to check return type".to_string(),
+                )],
             },
             ErrorPattern {
                 code: "E0599".to_string(),
-                root_causes: vec![
-                    (
-                        "Method not found on type".to_string(),
-                        "Method mapping missing for type".to_string(),
-                        "Add method mapping to method_resolver.rs".to_string(),
-                    ),
-                ],
+                root_causes: vec![(
+                    "Method not found on type".to_string(),
+                    "Method mapping missing for type".to_string(),
+                    "Add method mapping to method_resolver.rs".to_string(),
+                )],
             },
             ErrorPattern {
                 code: "E0432".to_string(),
-                root_causes: vec![
-                    (
-                        "Unresolved import".to_string(),
-                        "Missing dependency or incorrect module path".to_string(),
-                        "Add dependency to Cargo.toml or fix import path".to_string(),
-                    ),
-                ],
+                root_causes: vec![(
+                    "Unresolved import".to_string(),
+                    "Missing dependency or incorrect module path".to_string(),
+                    "Add dependency to Cargo.toml or fix import path".to_string(),
+                )],
             },
         ]
     }
@@ -251,32 +245,39 @@ impl FiveWhysAnalyzer {
         if let Some(pattern) = pattern {
             if let Some((why_chain, root_cause, fix)) = pattern.root_causes.first() {
                 // Why 1: What error occurred?
-                chain.add_why(Why::new(1, format!("Error {error_code} occurred"))
-                    .with_deeper_cause(why_chain));
+                chain.add_why(
+                    Why::new(1, format!("Error {error_code} occurred"))
+                        .with_deeper_cause(why_chain),
+                );
 
                 // Why 2: Why did this error occur?
-                chain.add_why(Why::new(2, why_chain.clone())
-                    .with_deeper_cause("Code generation issue"));
+                chain.add_why(
+                    Why::new(2, why_chain.clone()).with_deeper_cause("Code generation issue"),
+                );
 
                 // Why 3: Why is there a code generation issue?
-                chain.add_why(Why::new(3, "Code generation doesn't handle this case")
-                    .with_deeper_cause("Missing pattern in transpiler"));
+                chain.add_why(
+                    Why::new(3, "Code generation doesn't handle this case")
+                        .with_deeper_cause("Missing pattern in transpiler"),
+                );
 
                 // Why 4: Why is the pattern missing?
-                chain.add_why(Why::new(4, "Pattern not implemented")
-                    .with_deeper_cause(root_cause));
+                chain.add_why(Why::new(4, "Pattern not implemented").with_deeper_cause(root_cause));
 
                 // Why 5: Root cause
-                chain.add_why(Why::new(5, root_cause.clone())
-                    .as_root_cause(fix));
+                chain.add_why(Why::new(5, root_cause.clone()).as_root_cause(fix));
             }
         } else {
             // Generic analysis
-            chain.add_why(Why::new(1, format!("Error {error_code} occurred"))
-                .with_deeper_cause("Unknown error pattern"));
+            chain.add_why(
+                Why::new(1, format!("Error {error_code} occurred"))
+                    .with_deeper_cause("Unknown error pattern"),
+            );
 
-            chain.add_why(Why::new(2, "Unknown error pattern")
-                .as_root_cause("Investigate and add pattern to analyzer"));
+            chain.add_why(
+                Why::new(2, "Unknown error pattern")
+                    .as_root_cause("Investigate and add pattern to analyzer"),
+            );
         }
 
         chain
@@ -320,16 +321,14 @@ mod tests {
 
     #[test]
     fn test_why_as_root_cause() {
-        let why = Why::new(5, "Root cause found")
-            .as_root_cause("Fix the bug");
+        let why = Why::new(5, "Root cause found").as_root_cause("Fix the bug");
         assert!(why.is_root_cause);
         assert_eq!(why.preventive_measure, Some("Fix the bug".to_string()));
     }
 
     #[test]
     fn test_why_with_deeper_cause() {
-        let why = Why::new(1, "Surface issue")
-            .with_deeper_cause("Deeper problem");
+        let why = Why::new(1, "Surface issue").with_deeper_cause("Deeper problem");
         assert_eq!(why.deeper_cause, Some("Deeper problem".to_string()));
     }
 
@@ -346,15 +345,13 @@ mod tests {
 
     #[test]
     fn test_root_cause_with_component() {
-        let cause = RootCause::new("Bug", "Fix")
-            .with_component("parser");
+        let cause = RootCause::new("Bug", "Fix").with_component("parser");
         assert_eq!(cause.component, "parser");
     }
 
     #[test]
     fn test_root_cause_with_complexity() {
-        let cause = RootCause::new("Bug", "Fix")
-            .with_complexity(8);
+        let cause = RootCause::new("Bug", "Fix").with_complexity(8);
         assert_eq!(cause.complexity, 8);
     }
 

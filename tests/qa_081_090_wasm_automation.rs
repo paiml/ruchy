@@ -42,7 +42,7 @@ fn test_qa_081_wasm_compilation() {
 
     let (success, _, stderr) = run_wasm(
         r#"fn main() { print("Hello WASM") }"#,
-        &["-o", output_path.to_str().unwrap()]
+        &["-o", output_path.to_str().unwrap()],
     );
 
     assert!(success, "WASM compilation should succeed: {stderr}");
@@ -51,18 +51,23 @@ fn test_qa_081_wasm_compilation() {
     // Verify file is valid WASM (starts with WASM magic bytes: \0asm)
     let bytes = fs::read(&output_path).expect("read wasm file");
     assert!(bytes.len() >= 4, "WASM file too small");
-    assert_eq!(&bytes[0..4], b"\0asm", "WASM file should have correct magic bytes");
+    assert_eq!(
+        &bytes[0..4],
+        b"\0asm",
+        "WASM file should have correct magic bytes"
+    );
 }
 
 /// QA-081: WASM Compilation - Different targets
 #[test]
 fn test_qa_081_wasm_targets() {
     for target in &["wasm32", "wasi", "browser", "nodejs"] {
-        let (success, _, stderr) = run_wasm(
-            r#"fn main() { print("Test") }"#,
-            &["--target", target]
+        let (success, _, stderr) =
+            run_wasm(r#"fn main() { print("Test") }"#, &["--target", target]);
+        assert!(
+            success,
+            "WASM compilation should succeed for target {target}: {stderr}"
         );
-        assert!(success, "WASM compilation should succeed for target {target}: {stderr}");
     }
 }
 
@@ -74,7 +79,7 @@ fn test_qa_083_wasm_size() {
 
     let (success, _, stderr) = run_wasm(
         r#"fn main() { print("Hello World") }"#,
-        &["-o", output_path.to_str().unwrap()]
+        &["-o", output_path.to_str().unwrap()],
     );
 
     assert!(success, "WASM compilation should succeed: {stderr}");
@@ -107,7 +112,7 @@ fn main() {
     print(arr)
 }
 "#,
-        &[]
+        &[],
     );
 
     assert!(success, "WASM should handle arrays: {stderr}");
@@ -131,7 +136,7 @@ fn main() {
     print(result)
 }
 "#,
-        &[]
+        &[],
     );
 
     assert!(success, "WASM should compile fibonacci: {stderr}");
@@ -147,7 +152,7 @@ fn main() {
     print("Sync function")
 }
 "#,
-        &[]
+        &[],
     );
 
     assert!(success, "Basic WASM compilation should work: {stderr}");
@@ -157,10 +162,7 @@ fn main() {
 #[test]
 fn test_qa_090_wasm_error_handling() {
     // Test that syntax errors are caught
-    let (success, _, stderr) = run_wasm(
-        r#"fn main() { this is invalid syntax"#,
-        &[]
-    );
+    let (success, _, stderr) = run_wasm(r#"fn main() { this is invalid syntax"#, &[]);
 
     assert!(!success, "Invalid code should fail to compile");
     assert!(!stderr.is_empty(), "Error message should be provided");
@@ -170,21 +172,19 @@ fn test_qa_090_wasm_error_handling() {
 #[test]
 fn test_qa_wasm_optimization_levels() {
     for opt in &["none", "O1", "O2", "O3", "Os", "Oz"] {
-        let (success, _, stderr) = run_wasm(
-            r#"fn main() { print("Test") }"#,
-            &["--opt-level", opt]
+        let (success, _, stderr) =
+            run_wasm(r#"fn main() { print("Test") }"#, &["--opt-level", opt]);
+        assert!(
+            success,
+            "WASM should compile with opt-level {opt}: {stderr}"
         );
-        assert!(success, "WASM should compile with opt-level {opt}: {stderr}");
     }
 }
 
 /// QA-081: WIT interface generation
 #[test]
 fn test_qa_081_wit_generation() {
-    let (success, _, stderr) = run_wasm(
-        r#"fn main() { print("Hello") }"#,
-        &["--wit"]
-    );
+    let (success, _, stderr) = run_wasm(r#"fn main() { print("Hello") }"#, &["--wit"]);
 
     assert!(success, "WIT generation should succeed: {stderr}");
 }
@@ -194,8 +194,11 @@ fn test_qa_081_wit_generation() {
 fn test_qa_081_component_model() {
     let (success, _, stderr) = run_wasm(
         r#"fn main() { print("Hello") }"#,
-        &["--component-model", "--name", "test-component"]
+        &["--component-model", "--name", "test-component"],
     );
 
-    assert!(success, "Component model compilation should succeed: {stderr}");
+    assert!(
+        success,
+        "Component model compilation should succeed: {stderr}"
+    );
 }

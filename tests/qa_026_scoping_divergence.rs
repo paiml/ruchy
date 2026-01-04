@@ -56,7 +56,9 @@ print(x)
     // The outer print MUST NOT use the inner value
     // This is the critical assertion - outer x should be 10, not 20
     let lines: Vec<&str> = result.lines().collect();
-    let last_print_line = lines.iter().rev()
+    let last_print_line = lines
+        .iter()
+        .rev()
         .find(|l| l.contains("print!"))
         .expect("must have print statement");
 
@@ -68,7 +70,8 @@ print(x)
     );
 
     // Also verify inner print uses 20
-    let inner_print = lines.iter()
+    let inner_print = lines
+        .iter()
         .find(|l| l.contains("print!") && l.contains("20"))
         .is_some();
     assert!(

@@ -2408,18 +2408,23 @@ mod tests {
             std::env::current_dir().expect("builtin function should succeed in test");
 
         // Change to temp directory
+        // Note: On macOS, temp_dir may be /var/folders/... but canonicalizes to /private/var/folders/...
         let temp_dir = std::env::temp_dir();
+        let temp_dir_canonical = temp_dir
+            .canonicalize()
+            .unwrap_or_else(|_| temp_dir.clone());
         let result = builtin_env_set_current_dir(&[Value::from_string(
             temp_dir.to_string_lossy().to_string(),
         )])
         .expect("operation should succeed in test");
         assert_eq!(result, Value::Nil);
 
-        // Verify it changed
-        assert_eq!(
-            std::env::current_dir().expect("should get current dir in test"),
-            temp_dir
-        );
+        // Verify it changed (compare canonical paths to handle macOS symlinks)
+        let current = std::env::current_dir()
+            .expect("should get current dir in test")
+            .canonicalize()
+            .expect("should canonicalize in test");
+        assert_eq!(current, temp_dir_canonical);
 
         // Restore original directory
         std::env::set_current_dir(&original_dir).expect("builtin function should succeed in test");

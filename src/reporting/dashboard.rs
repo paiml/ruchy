@@ -3,7 +3,9 @@
 //! Tracks iterative fix attempts during auto-fix mode, visualizing
 //! progress toward successful transpilation.
 
-use crate::reporting::ascii::{boxed_header, detect_trend, progress_bar, sparkline, TrendDirection};
+use crate::reporting::ascii::{
+    boxed_header, detect_trend, progress_bar, sparkline, TrendDirection,
+};
 
 /// Fix attempt result
 #[derive(Debug, Clone)]
@@ -294,7 +296,11 @@ impl ConvergenceDashboard {
             self.state.icon(),
             self.state.label(),
             if self.is_converged() {
-                format!("{} errors after {} iterations", self.current_errors(), self.iterations.len())
+                format!(
+                    "{} errors after {} iterations",
+                    self.current_errors(),
+                    self.iterations.len()
+                )
             } else {
                 format!("{} errors remaining", self.current_errors())
             }
@@ -310,7 +316,11 @@ impl ConvergenceDashboard {
                 self.current_errors(),
                 if self.is_converged() { "✓" } else { "..." }
             ));
-            lines.push(format!("Trend:    {} ({})", sparkline(&timeline), trend.label()));
+            lines.push(format!(
+                "Trend:    {} ({})",
+                sparkline(&timeline),
+                trend.label()
+            ));
         }
 
         // Progress bar
@@ -322,7 +332,11 @@ impl ConvergenceDashboard {
 
         // Iterations detail
         if !self.iterations.is_empty() {
-            lines.push(format!("\n{}Iterations{}", "─".repeat(3), "─".repeat(width - 13)));
+            lines.push(format!(
+                "\n{}Iterations{}",
+                "─".repeat(3),
+                "─".repeat(width - 13)
+            ));
         }
 
         for iteration in &self.iterations {
@@ -334,7 +348,11 @@ impl ConvergenceDashboard {
                 "  Errors: {} → {} ({}{}) {}",
                 iteration.errors_before,
                 iteration.errors_after,
-                if iteration.error_delta() >= 0 { "+" } else { "" },
+                if iteration.error_delta() >= 0 {
+                    "+"
+                } else {
+                    ""
+                },
                 iteration.error_delta(),
                 iteration.direction_indicator()
             ));

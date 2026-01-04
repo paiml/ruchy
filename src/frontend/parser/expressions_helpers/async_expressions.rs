@@ -282,6 +282,56 @@ mod tests {
         );
     }
 
+    // Coverage-95 tests
+    #[test]
+    fn test_async_fn_keyword() {
+        let code = "async fn fetch() { await get_data() }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Async with fn keyword should parse");
+    }
+
+    #[test]
+    fn test_async_block_simple() {
+        let code = "async { 42 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Simple async block should parse");
+    }
+
+    #[test]
+    fn test_async_block_multiple_statements() {
+        let code = "async { let x = 1; let y = 2; x + y }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Async block with statements should parse");
+    }
+
+    #[test]
+    fn test_async_function_with_type_params() {
+        let code = "async fun fetch<T>() { await get() }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Async function with type params should parse");
+    }
+
+    #[test]
+    fn test_async_function_anonymous() {
+        let code = "async fun() { 42 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Anonymous async function should parse");
+    }
+
+    #[test]
+    fn test_async_function_params() {
+        let code = "async fun process(x: i32, y: i32) { x + y }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Async function with params should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_body_block() {
+        let code = "async |x| { let y = x + 1; y }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Async lambda with block body should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {

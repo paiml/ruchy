@@ -76,6 +76,7 @@ pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
 pub mod value_utils;
 // Decomposed interpreter modules
 pub mod builtin_init; // EXTREME TDD: Builtin functions initialization
+pub mod eval_actor; // EXTREME TDD: Actor operations extracted for 100% coverage
 pub mod builtins;
 pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
 pub mod eval_array;
@@ -88,6 +89,8 @@ pub mod eval_display;
 pub mod eval_expr;
 pub mod eval_func;
 pub mod eval_function;
+pub mod eval_index; // EXTREME TDD: Index operations extracted for 100% coverage
+pub mod eval_json; // EXTREME TDD: JSON operations extracted for 100% coverage
 pub mod eval_html_methods; // HTTP-002-D: HTML parsing method support
 pub mod eval_literal;
 pub mod eval_loops;
@@ -101,6 +104,8 @@ pub mod eval_string_interpolation;
 pub mod eval_string_methods;
 pub mod eval_try_catch; // EXTREME TDD: Try/catch error handling
 pub mod gc;
+pub mod type_feedback; // EXTREME TDD: JIT type feedback system (extracted from interpreter.rs)
+pub mod value_format; // EXTREME TDD: Value formatting utilities (extracted from interpreter.rs)
 pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
 pub mod validation;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors

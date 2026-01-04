@@ -64,10 +64,7 @@ fn test_oracle_save_default_path() {
     let model_path = temp_dir.path().join("ruchy_oracle.apr");
 
     // Train and save to default location
-    ruchy_cmd()
-        .args(["oracle", "train"])
-        .assert()
-        .success();
+    ruchy_cmd().args(["oracle", "train"]).assert().success();
 
     ruchy_cmd()
         .args(["oracle", "save", model_path.to_str().unwrap()])
@@ -184,7 +181,13 @@ fn test_oracle_classify_with_code() {
 #[test]
 fn test_oracle_classify_json() {
     ruchy_cmd()
-        .args(["oracle", "classify", "borrow of moved value", "--format", "json"])
+        .args([
+            "oracle",
+            "classify",
+            "borrow of moved value",
+            "--format",
+            "json",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("\"category\""));
@@ -231,10 +234,7 @@ fn test_oracle_train_save_load_classify_roundtrip() {
     let model_path = temp_dir.path().join("roundtrip.apr");
 
     // Train
-    ruchy_cmd()
-        .args(["oracle", "train"])
-        .assert()
-        .success();
+    ruchy_cmd().args(["oracle", "train"]).assert().success();
 
     // Save
     ruchy_cmd()

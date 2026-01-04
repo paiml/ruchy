@@ -59,9 +59,9 @@ impl AndonStatus {
     #[must_use]
     pub fn color_code(&self) -> &'static str {
         match self {
-            AndonStatus::Green => "\x1b[32m",   // Green
-            AndonStatus::Yellow => "\x1b[33m",  // Yellow
-            AndonStatus::Red => "\x1b[31m",     // Red
+            AndonStatus::Green => "\x1b[32m",  // Green
+            AndonStatus::Yellow => "\x1b[33m", // Yellow
+            AndonStatus::Red => "\x1b[31m",    // Red
         }
     }
 

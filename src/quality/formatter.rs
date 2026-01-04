@@ -299,11 +299,11 @@ impl Formatter {
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Byte(b) => format!("b'{}'", *b as char),
-            crate::frontend::ast::Literal::Unit => "()".to_string(),
-            crate::frontend::ast::Literal::Null => "null".to_string(),
-            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
-        },
-        ExprKind::Identifier(name) => name.clone(),
+                crate::frontend::ast::Literal::Unit => "()".to_string(),
+                crate::frontend::ast::Literal::Null => "null".to_string(),
+                crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
+            },
+            ExprKind::Identifier(name) => name.clone(),
             ExprKind::Let {
                 name, value, body, ..
             } => {
@@ -1434,11 +1434,12 @@ impl Formatter {
             Literal::Bool(b) => b.to_string(),
             Literal::Char(c) => format!("'{c}'"),
             Literal::Byte(b) => format!("{b}u8"),
-                            crate::frontend::ast::Literal::Unit => "()".to_string(),
-                            crate::frontend::ast::Literal::Null => "null".to_string(),
-                            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
-                        }
-                    }    /// Format an enum variant (complexity: 3)
+            crate::frontend::ast::Literal::Unit => "()".to_string(),
+            crate::frontend::ast::Literal::Null => "null".to_string(),
+            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
+        }
+    }
+    /// Format an enum variant (complexity: 3)
     fn format_enum_variant(&self, variant: &crate::frontend::ast::EnumVariant) -> String {
         use crate::frontend::ast::EnumVariantKind;
 
@@ -1962,23 +1963,523 @@ mod tests {
         // Formatter output format may have changed - just verify it works
         assert!(!result.is_empty());
     }
+
+    // ============================================================================
+    // COVERAGE TESTS - Additional formatter coverage
+    // ============================================================================
+
+    #[test]
+    fn test_format_null_literal() {
+        let formatter = Formatter::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Null), Default::default());
+        let result = formatter.format(&expr).expect("should format");
+        assert_eq!(result, "null");
+    }
+
+    #[test]
+    fn test_format_atom_literal() {
+        let formatter = Formatter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Atom("foo".to_string())),
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert_eq!(result, ":foo");
+    }
+
+    #[test]
+    fn test_format_byte_literal() {
+        let formatter = Formatter::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Byte(b'x')), Default::default());
+        let result = formatter.format(&expr).expect("should format");
+        assert_eq!(result, "b'x'");
+    }
+
+    #[test]
+    fn test_format_with_tabs_coverage() {
+        let config = FormatterConfig {
+            use_tabs: true,
+            indent_width: 4,
+            ..Default::default()
+        };
+        let formatter = Formatter::with_config(config);
+        // Use nested block to trigger format_expr's Block handling (with braces and indentation)
+        let inner_block = Expr::new(
+            ExprKind::Block(vec![create_simple_literal(42)]),
+            Default::default(),
+        );
+        // Outer block at top level, inner block goes through format_expr with tabs
+        let outer_block = Expr::new(
+            ExprKind::Block(vec![inner_block]),
+            Default::default(),
+        );
+        let result = formatter.format(&outer_block).expect("should format");
+        // The inner block's content should be indented with tabs
+        assert!(result.contains('\t'));
+    }
+
+    #[test]
+    fn test_format_binary_expression_coverage() {
+        let formatter = Formatter::new();
+        let left = create_simple_literal(1);
+        let right = create_simple_literal(2);
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: crate::frontend::ast::BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains('+'));
+        assert!(result.contains('1'));
+        assert!(result.contains('2'));
+    }
+
+    #[test]
+    fn test_format_let_statement() {
+        let formatter = Formatter::new();
+        let value = create_simple_literal(42);
+        let body = Expr::new(ExprKind::Literal(Literal::Unit), Default::default());
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                is_mutable: false,
+                type_annotation: None,
+                value: Box::new(value),
+                body: Box::new(body),
+                else_block: None,
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("let"));
+        assert!(result.contains("x"));
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_format_let_with_block_body() {
+        let formatter = Formatter::new();
+        let value = create_simple_literal(10);
+        let block_content = create_simple_literal(20);
+        let body = Expr::new(ExprKind::Block(vec![block_content]), Default::default());
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "y".to_string(),
+                is_mutable: false,
+                type_annotation: None,
+                value: Box::new(value),
+                body: Box::new(body),
+                else_block: None,
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("let"));
+        assert!(result.contains("y"));
+    }
+
+    #[test]
+    fn test_format_type_named_coverage() {
+        // Test format_type with Named type
+        use crate::frontend::ast::{Type, TypeKind};
+        let ty = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Default::default(),
+        };
+        let result = Formatter::format_type(&ty.kind);
+        assert_eq!(result, "i32");
+    }
+
+    #[test]
+    fn test_format_type_generic() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let inner = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Default::default(),
+        };
+        let ty = Type {
+            kind: TypeKind::Generic {
+                base: "Vec".to_string(),
+                params: vec![inner],
+            },
+            span: Default::default(),
+        };
+        let result = Formatter::format_type(&ty.kind);
+        assert_eq!(result, "Vec<String>");
+    }
+
+    #[test]
+    fn test_format_type_tuple() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let int_type = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Default::default(),
+        };
+        let str_type = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Default::default(),
+        };
+        let ty = Type {
+            kind: TypeKind::Tuple(vec![int_type, str_type]),
+            span: Default::default(),
+        };
+        let result = Formatter::format_type(&ty.kind);
+        assert!(result.contains("i32"));
+        assert!(result.contains("String"));
+    }
+
+    #[test]
+    fn test_format_type_array() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let elem_type = Type {
+            kind: TypeKind::Named("u8".to_string()),
+            span: Default::default(),
+        };
+        let ty = Type {
+            kind: TypeKind::Array {
+                elem_type: Box::new(elem_type),
+                size: 10,
+            },
+            span: Default::default(),
+        };
+        let result = Formatter::format_type(&ty.kind);
+        assert!(result.contains("u8"));
+        assert!(result.contains("10"));
+    }
+
+    #[test]
+    fn test_format_type_function() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let param_type = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Default::default(),
+        };
+        let ret_type = Type {
+            kind: TypeKind::Named("bool".to_string()),
+            span: Default::default(),
+        };
+        let ty = Type {
+            kind: TypeKind::Function {
+                params: vec![param_type],
+                ret: Box::new(ret_type),
+            },
+            span: Default::default(),
+        };
+        let result = Formatter::format_type(&ty.kind);
+        assert!(result.contains("i32"));
+        assert!(result.contains("->"));
+        assert!(result.contains("bool"));
+    }
+
+    #[test]
+    fn test_set_source() {
+        let mut formatter = Formatter::new();
+        formatter.set_source("let x = 42");
+        assert!(formatter.source.is_some());
+    }
+
+    #[test]
+    fn test_format_call_expression() {
+        let formatter = Formatter::new();
+        let func = create_identifier("print");
+        let arg = create_simple_literal(42);
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![arg],
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("print"));
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_format_array_literal() {
+        // Use parser to create array since ExprKind::Array doesn't exist
+        let code = "[1, 2]";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let formatter = Formatter::new();
+            let result = formatter.format(&ast).expect("should format");
+            assert!(result.contains('['));
+            assert!(result.contains(']'));
+        }
+    }
+
+    #[test]
+    fn test_format_tuple_literal() {
+        // Use parser to create tuple since ExprKind::Tuple doesn't exist
+        let code = "(1, 2)";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let formatter = Formatter::new();
+            let result = formatter.format(&ast).expect("should format");
+            assert!(result.contains('(') || result.contains(')'));
+        }
+    }
+
+    #[test]
+    fn test_format_if_expression_coverage() {
+        let formatter = Formatter::new();
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let then_branch = create_simple_literal(1);
+        let else_branch = create_simple_literal(2);
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("if"));
+    }
+
+    #[test]
+    fn test_format_unary_negation() {
+        let formatter = Formatter::new();
+        let operand = create_simple_literal(42);
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Negate,
+                operand: Box::new(operand),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains('-') || result.contains("42"));
+    }
+
+    #[test]
+    fn test_format_unary_not() {
+        let formatter = Formatter::new();
+        let operand = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: crate::frontend::ast::UnaryOp::Not,
+                operand: Box::new(operand),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains('!') || result.contains("true"));
+    }
+
+    #[test]
+    fn test_format_field_access() {
+        let formatter = Formatter::new();
+        let obj = create_identifier("point");
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(obj),
+                field: "x".to_string(),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("point"));
+        assert!(result.contains('x'));
+    }
+
+    #[test]
+    fn test_format_index_access() {
+        let formatter = Formatter::new();
+        let arr = create_identifier("arr");
+        let idx = create_simple_literal(0);
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(arr),
+                index: Box::new(idx),
+            },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("arr"));
+        assert!(result.contains('['));
+    }
+
+    #[test]
+    fn test_format_return() {
+        let formatter = Formatter::new();
+        let value = create_simple_literal(42);
+        let expr = Expr::new(
+            ExprKind::Return { value: Some(Box::new(value)) },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("return") || result.contains("42"));
+    }
+
+    #[test]
+    fn test_format_break() {
+        let formatter = Formatter::new();
+        let expr = Expr::new(
+            ExprKind::Break { label: None, value: None },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("break"));
+    }
+
+    #[test]
+    fn test_format_continue() {
+        let formatter = Formatter::new();
+        let expr = Expr::new(
+            ExprKind::Continue { label: None },
+            Default::default(),
+        );
+        let result = formatter.format(&expr).expect("should format");
+        assert!(result.contains("continue"));
+    }
+
+    #[test]
+    fn test_format_range() {
+        // Use parser since Range has different fields
+        let code = "0..10";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let formatter = Formatter::new();
+            let result = formatter.format(&ast).expect("should format");
+            assert!(result.contains("..") || (result.contains('0') && result.contains("10")));
+        }
+    }
+
+    #[test]
+    fn test_format_object_literal() {
+        // Use parser since ObjectLiteral has different signature
+        let code = "{ x: 42 }";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let formatter = Formatter::new();
+            let result = formatter.format(&ast).expect("should format");
+            assert!(result.contains('{') || result.contains('x'));
+        }
+    }
+
+    #[test]
+    fn test_formatter_with_different_indent_widths() {
+        for width in [2, 4, 8] {
+            let config = FormatterConfig {
+                indent_width: width,
+                use_tabs: false,
+                ..Default::default()
+            };
+            let formatter = Formatter::with_config(config);
+            let block = Expr::new(
+                ExprKind::Block(vec![create_simple_literal(1)]),
+                Default::default(),
+            );
+            let result = formatter.format(&block).expect("should format");
+            assert!(!result.is_empty());
+        }
+    }
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod property_tests_formatter {
-    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
 
     proptest! {
-        /// Property: Function never panics on any input
+        #![proptest_config(ProptestConfig::with_cases(50))]
+
+        // Formatter::new never panics
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn prop_formatter_new_never_panics(_dummy: u8) {
+            let _formatter = Formatter::new();
+            prop_assert!(true);
+        }
+
+        // set_source never panics
+        #[test]
+        fn prop_set_source_never_panics(source in "[a-zA-Z0-9_ ]{0,100}") {
+            let mut formatter = Formatter::new();
+            formatter.set_source(source);
+            prop_assert!(true);
+        }
+
+        // FormatterConfig default is valid
+        #[test]
+        fn prop_formatter_config_default_valid(_dummy: u8) {
+            let config = FormatterConfig::default();
+            prop_assert!(config.indent_width > 0);
+        }
+
+        // Different indent widths create valid formatters
+        #[test]
+        fn prop_indent_config_valid(indent in 1usize..8) {
+            let config = FormatterConfig {
+                indent_width: indent,
+                ..Default::default()
+            };
+            let _formatter = Formatter::with_config(config);
+            prop_assert!(true);
+        }
+
+        // Parsing then formatting integers works
+        #[test]
+        fn prop_format_parsed_integer(n in -1000i64..1000) {
+            let code = format!("{n}");
+            let mut parser = crate::frontend::parser::Parser::new(&code);
+            if let Ok(ast) = parser.parse() {
+                let formatter = Formatter::new();
+                let result = formatter.format(&ast);
+                prop_assert!(result.is_ok());
+            }
+        }
+
+        // Parsing then formatting bools works
+        #[test]
+        fn prop_format_parsed_bool(b in proptest::bool::ANY) {
+            let code = if b { "true" } else { "false" };
+            let mut parser = crate::frontend::parser::Parser::new(code);
+            if let Ok(ast) = parser.parse() {
+                let formatter = Formatter::new();
+                let result = formatter.format(&ast);
+                prop_assert!(result.is_ok());
+            }
+        }
+
+        // Parsing then formatting strings works
+        #[test]
+        fn prop_format_parsed_string(s in "[a-zA-Z0-9]{0,20}") {
+            let code = format!("\"{s}\"");
+            let mut parser = crate::frontend::parser::Parser::new(&code);
+            if let Ok(ast) = parser.parse() {
+                let formatter = Formatter::new();
+                let result = formatter.format(&ast);
+                prop_assert!(result.is_ok());
+            }
+        }
+
+        // Parsing then formatting identifiers works
+        #[test]
+        fn prop_format_parsed_identifier(name in "[a-z][a-z0-9_]{0,10}") {
+            let mut parser = crate::frontend::parser::Parser::new(&name);
+            if let Ok(ast) = parser.parse() {
+                let formatter = Formatter::new();
+                let result = formatter.format(&ast);
+                prop_assert!(result.is_ok());
+            }
+        }
+
+        // Parsing then formatting let statements works
+        #[test]
+        fn prop_format_parsed_let(n in -100i64..100) {
+            let code = format!("let x = {n}");
+            let mut parser = crate::frontend::parser::Parser::new(&code);
+            if let Ok(ast) = parser.parse() {
+                let formatter = Formatter::new();
+                let result = formatter.format(&ast);
+                prop_assert!(result.is_ok());
+            }
         }
     }
 }

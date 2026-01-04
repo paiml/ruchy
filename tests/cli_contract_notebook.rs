@@ -144,6 +144,7 @@ fn cli_notebook_localhost_host() {
 // ============================================================================
 
 #[test]
+#[ignore = "Opens browser - slow test, run in tier3-nightly"]
 fn cli_notebook_open_browser_flag() {
     ruchy_cmd()
         .arg("notebook")

@@ -1248,7 +1248,7 @@ mod tests {
     #[test]
     fn test_parser_082_atom_tokenization() {
         let mut stream = TokenStream::new(":status :valid_id :_hidden");
-        
+
         assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "status"));
         assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "valid_id"));
         assert!(matches!(stream.next(), Some((Token::Atom(s), _)) if s == "_hidden"));

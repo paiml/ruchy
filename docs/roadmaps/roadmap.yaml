@@ -562,3 +562,243 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'COVERAGE-95: Achieve 95% test coverage like bashrs'
+  github_issue: null
+  item_type: task
+  title: 'New task: COVERAGE-95: Achieve 95% test coverage like bashrs'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-15T16:12:21.394121937+00:00
+  updated: 2025-12-15T16:12:21.394121937+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Achieve 95% test coverage following bashrs pattern
+  github_issue: null
+  item_type: task
+  title: 'New task: Achieve 95% test coverage following bashrs pattern'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-15T17:21:36.511765739+00:00
+  updated: 2025-12-15T17:21:36.511765739+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - COVERAGE-95%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - COVERAGE-95%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-01T02:04:55.720887763+00:00
+  updated: 2026-01-03T23:31:12.774152905+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - COVERAGE-95% Phase 2'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - COVERAGE-95% Phase 2'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-01T09:49:53.652931618+00:00
+  updated: 2026-01-01T09:49:53.652931618+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage to 95%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage to 95%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-01T20:03:09.678461546+00:00
+  updated: 2026-01-02T09:34:32.623111268+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - FEATURE-IMPL-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - FEATURE-IMPL-001'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-01T20:13:55.523244507+00:00
+  updated: 2026-01-01T21:20:33.532184767+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - COVERAGE-95-SPRINT2'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - COVERAGE-95-SPRINT2'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-01T21:31:33.753946474+00:00
+  updated: 2026-01-01T21:31:33.753946474+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - COVERAGE-95PCT'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - COVERAGE-95PCT'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-03T23:35:30.180350455+00:00
+  updated: 2026-01-03T23:35:30.180350455+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: Coverage Push to 95% - COVERAGE-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: Coverage Push to 95% - COVERAGE-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T02:33:03.250937921+00:00
+  updated: 2026-01-04T08:12:24.693453632+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Coverage Push Phase 2 - COVERAGE-002
+  github_issue: null
+  item_type: task
+  title: 'New task: Coverage Push Phase 2 - COVERAGE-002'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T03:06:19.202655545+00:00
+  updated: 2026-01-04T03:06:19.202655545+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage 95%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage 95%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T08:22:21.107737959+00:00
+  updated: 2026-01-04T08:22:21.107737959+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage 95% via notebook consolidation'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage 95% via notebook consolidation'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T11:36:02.899790812+00:00
+  updated: 2026-01-04T11:36:02.899790812+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage 95% via eval_builtin.rs'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage 95% via eval_builtin.rs'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T11:53:28.969768494+00:00
+  updated: 2026-01-04T11:53:28.969768494+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Coverage improvement: 80.49% → 95%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Coverage improvement: 80.49% → 95%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T12:58:14.315796992+00:00
+  updated: 2026-01-04T12:58:14.315796992+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Break up large files for 95% coverage
+  github_issue: null
+  item_type: task
+  title: 'New task: Break up large files for 95% coverage'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-04T13:20:23.035875038+00:00
+  updated: 2026-01-04T13:20:23.035875038+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

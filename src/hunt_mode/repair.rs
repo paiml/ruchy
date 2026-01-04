@@ -334,36 +334,31 @@ mod tests {
 
     #[test]
     fn test_fix_with_description() {
-        let fix = Fix::new("FIX-001", "PAT-001")
-            .with_description("Test fix");
+        let fix = Fix::new("FIX-001", "PAT-001").with_description("Test fix");
         assert_eq!(fix.description, "Test fix");
     }
 
     #[test]
     fn test_fix_with_rust_output() {
-        let fix = Fix::new("FIX-001", "PAT-001")
-            .with_rust_output("fn test() {}");
+        let fix = Fix::new("FIX-001", "PAT-001").with_rust_output("fn test() {}");
         assert_eq!(fix.rust_output, "fn test() {}");
     }
 
     #[test]
     fn test_fix_with_confidence() {
-        let fix = Fix::new("FIX-001", "PAT-001")
-            .with_confidence(0.95);
+        let fix = Fix::new("FIX-001", "PAT-001").with_confidence(0.95);
         assert!((fix.confidence - 0.95).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_fix_with_transformation() {
-        let fix = Fix::new("FIX-001", "PAT-001")
-            .with_transformation("type_coercion");
+        let fix = Fix::new("FIX-001", "PAT-001").with_transformation("type_coercion");
         assert_eq!(fix.transformation, "type_coercion");
     }
 
     #[test]
     fn test_fix_is_high_confidence() {
-        let fix = Fix::new("FIX-001", "PAT-001")
-            .with_confidence(0.9);
+        let fix = Fix::new("FIX-001", "PAT-001").with_confidence(0.9);
         assert!(fix.is_high_confidence(0.85));
         assert!(!fix.is_high_confidence(0.95));
     }
@@ -480,15 +475,13 @@ mod tests {
 
     #[test]
     fn test_jidoka_repair_engine_with_quality_threshold() {
-        let engine = JidokaRepairEngine::new()
-            .with_quality_threshold(0.90);
+        let engine = JidokaRepairEngine::new().with_quality_threshold(0.90);
         assert!((engine.quality_threshold - 0.90).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_jidoka_repair_engine_with_human_review_threshold() {
-        let engine = JidokaRepairEngine::new()
-            .with_human_review_threshold(0.60);
+        let engine = JidokaRepairEngine::new().with_human_review_threshold(0.60);
         assert!((engine.human_review_threshold - 0.60).abs() < f64::EPSILON);
     }
 

@@ -266,7 +266,13 @@ impl TransferLearner {
     }
 
     /// Record training epoch result
-    pub fn record_epoch(&mut self, epoch: usize, train_loss: f64, val_loss: f64, val_accuracy: f64) {
+    pub fn record_epoch(
+        &mut self,
+        epoch: usize,
+        train_loss: f64,
+        val_loss: f64,
+        val_accuracy: f64,
+    ) {
         self.history.push((train_loss, val_loss));
 
         // Update status
@@ -341,8 +347,7 @@ mod tests {
 
     #[test]
     fn test_transfer_config_with_pretrained() {
-        let config = TransferLearningConfig::new()
-            .with_pretrained("/path/to/model.apr");
+        let config = TransferLearningConfig::new().with_pretrained("/path/to/model.apr");
         assert_eq!(
             config.pretrained_model,
             Some(PathBuf::from("/path/to/model.apr"))
@@ -351,15 +356,13 @@ mod tests {
 
     #[test]
     fn test_transfer_config_with_learning_rate() {
-        let config = TransferLearningConfig::new()
-            .with_learning_rate(0.0001);
+        let config = TransferLearningConfig::new().with_learning_rate(0.0001);
         assert!((config.fine_tune_lr - 0.0001).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_transfer_config_with_feature_extraction_only() {
-        let config = TransferLearningConfig::new()
-            .with_feature_extraction_only(true);
+        let config = TransferLearningConfig::new().with_feature_extraction_only(true);
         assert!(config.feature_extraction_only);
     }
 
@@ -374,40 +377,34 @@ mod tests {
 
     #[test]
     fn test_transfer_config_with_epochs() {
-        let config = TransferLearningConfig::new()
-            .with_epochs(20);
+        let config = TransferLearningConfig::new().with_epochs(20);
         assert_eq!(config.fine_tune_epochs, 20);
     }
 
     #[test]
     fn test_transfer_config_with_batch_size() {
-        let config = TransferLearningConfig::new()
-            .with_batch_size(64);
+        let config = TransferLearningConfig::new().with_batch_size(64);
         assert_eq!(config.batch_size, 64);
     }
 
     #[test]
     fn test_transfer_config_with_early_stopping() {
-        let config = TransferLearningConfig::new()
-            .with_early_stopping(5);
+        let config = TransferLearningConfig::new().with_early_stopping(5);
         assert_eq!(config.early_stopping_patience, 5);
     }
 
     #[test]
     fn test_transfer_config_with_validation_split() {
-        let config = TransferLearningConfig::new()
-            .with_validation_split(0.3);
+        let config = TransferLearningConfig::new().with_validation_split(0.3);
         assert!((config.validation_split - 0.3).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_transfer_config_validation_split_clamped() {
-        let config = TransferLearningConfig::new()
-            .with_validation_split(0.8);
+        let config = TransferLearningConfig::new().with_validation_split(0.8);
         assert!((config.validation_split - 0.5).abs() < f64::EPSILON);
 
-        let config2 = TransferLearningConfig::new()
-            .with_validation_split(-0.1);
+        let config2 = TransferLearningConfig::new().with_validation_split(-0.1);
         assert!((config2.validation_split - 0.0).abs() < f64::EPSILON);
     }
 
@@ -416,8 +413,7 @@ mod tests {
         let config1 = TransferLearningConfig::new();
         assert!(!config1.is_configured());
 
-        let config2 = TransferLearningConfig::new()
-            .with_pretrained("/path/to/model.apr");
+        let config2 = TransferLearningConfig::new().with_pretrained("/path/to/model.apr");
         assert!(config2.is_configured());
     }
 
@@ -497,8 +493,7 @@ mod tests {
 
     #[test]
     fn test_transfer_learner_load_pretrained_not_found() {
-        let config = TransferLearningConfig::new()
-            .with_pretrained("/nonexistent/model.apr");
+        let config = TransferLearningConfig::new().with_pretrained("/nonexistent/model.apr");
         let mut learner = TransferLearner::new(config);
 
         let result = learner.load_pretrained();
@@ -521,8 +516,7 @@ mod tests {
 
     #[test]
     fn test_transfer_learner_should_early_stop() {
-        let config = TransferLearningConfig::new()
-            .with_early_stopping(2);
+        let config = TransferLearningConfig::new().with_early_stopping(2);
         let mut learner = TransferLearner::new(config);
 
         // First epoch - improvement
@@ -547,7 +541,11 @@ mod tests {
         learner.mark_complete(0.95);
 
         assert!(learner.status().is_complete());
-        if let TransferStatus::Complete { accuracy, epochs_trained } = learner.status() {
+        if let TransferStatus::Complete {
+            accuracy,
+            epochs_trained,
+        } = learner.status()
+        {
             assert!((*accuracy - 0.95).abs() < f64::EPSILON);
             assert_eq!(*epochs_trained, 1);
         }

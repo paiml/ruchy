@@ -201,7 +201,7 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
         // Check if next token (after Label) is Colon to decide
         Token::Label(label_name) => {
             state.tokens.advance(); // consume the Label token
-            // Peek at next token to determine: loop label vs decorator
+                                    // Peek at next token to determine: loop label vs decorator
             if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
                 // @label: loop_keyword - this is a labeled loop
                 parse_loop_label(state, label_name)
@@ -225,7 +225,10 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
     let first_span = state.tokens.peek().map_or(Span::new(0, 0), |(_, s)| *s);
 
     // Extract the decorator name (strip the '@' prefix)
-    let name = label_name.strip_prefix('@').unwrap_or(&label_name).to_string();
+    let name = label_name
+        .strip_prefix('@')
+        .unwrap_or(&label_name)
+        .to_string();
 
     // Parse optional arguments: @decorator("arg1", "arg2")
     let args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -234,7 +237,11 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
         Vec::new()
     };
 
-    let mut attributes = vec![Attribute { name, args, span: first_span }];
+    let mut attributes = vec![Attribute {
+        name,
+        args,
+        span: first_span,
+    }];
     let mut decorators = vec![];
 
     // Parse any additional decorators (consecutive @decorator patterns)
@@ -247,14 +254,24 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
             // This is a labeled loop - put back context and bail
             bail!("Unexpected labeled loop after decorator");
         }
-        let next_name = next_label.strip_prefix('@').unwrap_or(&next_label).to_string();
+        let next_name = next_label
+            .strip_prefix('@')
+            .unwrap_or(&next_label)
+            .to_string();
         let next_args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             parse_decorator_args_inline(state)?
         } else {
             Vec::new()
         };
-        attributes.push(Attribute { name: next_name.clone(), args: next_args.clone(), span: next_span });
-        decorators.push(Decorator { name: next_name, args: next_args });
+        attributes.push(Attribute {
+            name: next_name.clone(),
+            args: next_args.clone(),
+            span: next_span,
+        });
+        decorators.push(Decorator {
+            name: next_name,
+            args: next_args,
+        });
     }
 
     // Also handle Token::At decorators that may follow
@@ -274,8 +291,15 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
         } else {
             Vec::new()
         };
-        attributes.push(Attribute { name: dec_name.clone(), args: dec_args.clone(), span: at_span });
-        decorators.push(Decorator { name: dec_name, args: dec_args });
+        attributes.push(Attribute {
+            name: dec_name.clone(),
+            args: dec_args.clone(),
+            span: at_span,
+        });
+        decorators.push(Decorator {
+            name: dec_name,
+            args: dec_args,
+        });
     }
 
     // Now parse the decorated item (function, class, etc.)
@@ -285,10 +309,17 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
     expr.attributes.extend(attributes);
 
     // For classes, also set the decorators field
-    if let ExprKind::Class { decorators: class_decorators, .. } = &mut expr.kind {
+    if let ExprKind::Class {
+        decorators: class_decorators,
+        ..
+    } = &mut expr.kind
+    {
         // Convert attributes to decorators for class
         let first_dec = Decorator {
-            name: label_name.strip_prefix('@').unwrap_or(&label_name).to_string(),
+            name: label_name
+                .strip_prefix('@')
+                .unwrap_or(&label_name)
+                .to_string(),
             args: if let Some(attr) = expr.attributes.first() {
                 attr.args.clone()
             } else {

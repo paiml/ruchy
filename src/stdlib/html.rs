@@ -472,4 +472,132 @@ mod tests {
             let _ = HtmlDocument::parse(&html_str);
         });
     }
+
+    // COVERAGE-95: Additional tests
+
+    #[test]
+    fn test_select_by_id() {
+        let html = HtmlDocument::parse("<div id='main'>Content</div>");
+        let elements = html.select("#main").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_select_by_attribute() {
+        let html = HtmlDocument::parse("<input type='text' name='field'>");
+        let elements = html.select("[type]").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_select_by_attribute_value() {
+        let html = HtmlDocument::parse("<input type='text'><input type='checkbox'>");
+        let elements = html.select("[type=text]").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_select_by_attribute_value_quoted() {
+        let html = HtmlDocument::parse("<input data-test='value'>");
+        let elements = html.select("[data-test='value']").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_query_selector_all() {
+        let html = HtmlDocument::parse("<p>1</p><p>2</p>");
+        let elements = html.query_selector_all("p").expect("should parse");
+        assert_eq!(elements.len(), 2);
+    }
+
+    #[test]
+    fn test_descendant_selector() {
+        let html = HtmlDocument::parse("<div><span><p>Nested</p></span></div>");
+        let elements = html.select("div p").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_select_article_tag() {
+        let html = HtmlDocument::parse("<article>Content</article>");
+        let elem = html.query_selector("article").expect("should parse").unwrap();
+        assert!(elem.text().contains("Content"));
+    }
+
+    #[test]
+    fn test_element_html() {
+        let html = HtmlDocument::parse("<div><span>Inner</span></div>");
+        let elem = html.query_selector("div").expect("should parse").unwrap();
+        let inner = elem.html();
+        assert!(inner.contains("span"));
+        assert!(inner.contains("Inner"));
+    }
+
+    #[test]
+    fn test_element_multiple_classes() {
+        let html = HtmlDocument::parse("<div class='a b c'>Test</div>");
+        let elements = html.select(".b").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_debug_impl_document() {
+        let html = HtmlDocument::parse("<div>Test</div>");
+        let debug_str = format!("{:?}", html);
+        assert_eq!(debug_str, "HtmlDocument");
+    }
+
+    #[test]
+    fn test_debug_impl_element() {
+        let html = HtmlDocument::parse("<div>Test</div>");
+        let elem = html.query_selector("div").expect("should parse").unwrap();
+        let debug_str = format!("{:?}", elem);
+        assert_eq!(debug_str, "HtmlElement");
+    }
+
+    #[test]
+    fn test_nested_text_extraction() {
+        let html = HtmlDocument::parse("<div>Hello <b>World</b>!</div>");
+        let elem = html.query_selector("div").expect("should parse").unwrap();
+        let text = elem.text();
+        assert!(text.contains("Hello"));
+        assert!(text.contains("World"));
+    }
+
+    #[test]
+    fn test_select_no_match() {
+        let html = HtmlDocument::parse("<div>Test</div>");
+        let elements = html.select("nonexistent").expect("should parse");
+        assert!(elements.is_empty());
+    }
+
+    #[test]
+    fn test_select_whitespace_in_selector() {
+        let html = HtmlDocument::parse("<div><p>Test</p></div>");
+        let elements = html.select(" p ").expect("should parse");
+        assert_eq!(elements.len(), 1);
+    }
+
+    #[test]
+    fn test_html_clone() {
+        let html = HtmlDocument::parse("<div>Test</div>");
+        let _cloned = html.clone();
+        // Should compile and work without panicking
+    }
+
+    #[test]
+    fn test_element_clone() {
+        let html = HtmlDocument::parse("<div>Test</div>");
+        let elem = html.query_selector("div").expect("should parse").unwrap();
+        let _cloned = elem.clone();
+        // Should compile and work without panicking
+    }
+
+    #[test]
+    fn test_attr_missing_on_text_node() {
+        let html = HtmlDocument::parse("<div>Just text</div>");
+        let elem = html.query_selector("div").expect("should parse").unwrap();
+        // Getting non-existent attribute returns None
+        assert!(elem.attr("data-nonexistent").is_none());
+    }
 }

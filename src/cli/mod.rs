@@ -221,7 +221,14 @@ impl Cli {
                 andon,
                 hansei_report,
                 five_whys,
-            } => execute_hunt(target, cycles, andon, hansei_report, five_whys, self.verbose),
+            } => execute_hunt(
+                target,
+                cycles,
+                andon,
+                hansei_report,
+                five_whys,
+                self.verbose,
+            ),
             Command::Report {
                 target,
                 format,
@@ -376,7 +383,9 @@ fn execute_hunt(
     println!("Target: {}", target.display());
     println!();
 
-    let outcomes = hunt.run(cycles).map_err(|e| format!("Hunt Mode error: {e}"))?;
+    let outcomes = hunt
+        .run(cycles)
+        .map_err(|e| format!("Hunt Mode error: {e}"))?;
 
     // Display results
     println!("=== Hunt Mode Results ===");
@@ -396,7 +405,10 @@ fn execute_hunt(
     println!("=== Kaizen Metrics ===");
     println!("Compilation rate: {:.1}%", metrics.success_rate_percent());
     println!("Total fixes: {}", metrics.cumulative_fixes);
-    println!("Improving: {}", if metrics.is_improving() { "Yes" } else { "No" });
+    println!(
+        "Improving: {}",
+        if metrics.is_improving() { "Yes" } else { "No" }
+    );
 
     // Export Hansei report if requested
     if let Some(report_path) = hansei_report {
@@ -469,8 +481,10 @@ fn execute_report(
     output: Option<PathBuf>,
     verbose: bool,
 ) -> Result<(), String> {
-    use crate::reporting::{TranspileReport, ReportFormatter};
-    use crate::reporting::formats::{HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter};
+    use crate::reporting::formats::{
+        HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter,
+    };
+    use crate::reporting::{ReportFormatter, TranspileReport};
 
     if verbose {
         println!("Generating report for: {}", target.display());
@@ -513,8 +527,7 @@ fn execute_report(
     // Write output
     match output {
         Some(path) => {
-            std::fs::write(&path, formatted)
-                .map_err(|e| format!("Failed to write report: {e}"))?;
+            std::fs::write(&path, formatted).map_err(|e| format!("Failed to write report: {e}"))?;
             println!("Report written to: {}", path.display());
         }
         None => {
@@ -1248,23 +1261,337 @@ mod tests {
             assert_eq!(result.unwrap_err(), "WASM compilation feature not enabled");
         }
     }
+
+    // COVERAGE: Tests for parse_source
+    #[test]
+    fn test_parse_source_valid() {
+        let result = parse_source("let x = 5");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_source_invalid() {
+        let result = parse_source("let x = ");
+        assert!(result.is_err());
+    }
+
+    // COVERAGE: Tests for get_start_directory
+    #[test]
+    fn test_get_start_directory_file() {
+        let path = PathBuf::from("/home/user/test.ruchy");
+        let result = get_start_directory(&path);
+        // For non-existent file, returns the path as-is since is_file() returns false
+        assert!(result.as_os_str().len() > 0);
+    }
+
+    #[test]
+    fn test_get_start_directory_dir() {
+        let path = PathBuf::from("/tmp");
+        let result = get_start_directory(&path);
+        assert_eq!(result, PathBuf::from("/tmp"));
+    }
+
+    // COVERAGE: Tests for find_config_in_ancestors
+    #[test]
+    fn test_find_config_in_ancestors_not_found() {
+        let result = find_config_in_ancestors(Path::new("/nonexistent/path"));
+        // Returns default config when not found
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Tests for scan_ruchy_files
+    #[test]
+    fn test_scan_ruchy_files_nonexistent() {
+        let result = scan_ruchy_files(Path::new("/nonexistent/path"));
+        assert!(result.is_err());
+    }
+
+    // COVERAGE: Tests for VmMode
+    #[test]
+    fn test_vm_mode_default() {
+        let mode = VmMode::default();
+        // Default depends on env var, so just check it's one of the valid variants
+        assert!(matches!(mode, VmMode::Ast | VmMode::Bytecode));
+    }
+
+    #[test]
+    fn test_vm_mode_variants() {
+        let _ = VmMode::Ast;
+        let _ = VmMode::Bytecode;
+        // Both variants are valid
+    }
+
+    // COVERAGE: Tests for Command variants
+    #[test]
+    fn test_command_hunt_variant() {
+        let cmd = Command::Hunt {
+            target: PathBuf::from("test.ruchy"),
+            cycles: 5,
+            andon: true,
+            five_whys: true,
+            hansei_report: None,
+        };
+        if let Command::Hunt { cycles, andon, five_whys, .. } = cmd {
+            assert_eq!(cycles, 5);
+            assert!(andon);
+            assert!(five_whys);
+        } else {
+            panic!("Expected Hunt command");
+        }
+    }
+
+    #[test]
+    fn test_command_report_variant() {
+        let cmd = Command::Report {
+            target: PathBuf::from("test.ruchy"),
+            format: "json".to_string(),
+            output: None,
+        };
+        if let Command::Report { target, format, output } = cmd {
+            assert_eq!(target, PathBuf::from("test.ruchy"));
+            assert_eq!(format, "json");
+            assert!(output.is_none());
+        } else {
+            panic!("Expected Report command");
+        }
+    }
+
+    // COVERAGE: Tests for Cli execute method error paths
+    #[test]
+    fn test_cli_execute_run_nonexistent() {
+        let cli = Cli {
+            verbose: false,
+            quiet: false,
+            vm_mode: VmMode::default(),
+            command: Command::Run { path: PathBuf::from("nonexistent.ruchy") },
+        };
+        let result = cli.execute();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cli_execute_format_nonexistent() {
+        let cli = Cli {
+            verbose: false,
+            quiet: false,
+            vm_mode: VmMode::default(),
+            command: Command::Format {
+                path: PathBuf::from("nonexistent.ruchy"),
+                check: true,
+            },
+        };
+        let result = cli.execute();
+        assert!(result.is_err());
+    }
+
+    // COVERAGE: Tests for WasmCommand variants
+    #[test]
+    fn test_wasm_command_validate_variant() {
+        let cmd = WasmCommand::Validate {
+            module: PathBuf::from("test.wasm"),
+        };
+        if let WasmCommand::Validate { module } = cmd {
+            assert_eq!(module, PathBuf::from("test.wasm"));
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn test_execute_wasm_compile_no_output() {
+        let cmd = WasmCommand::Compile {
+            input: PathBuf::from("nonexistent.ruchy"),
+            output: None,
+            optimize: false,
+            validate: false,
+        };
+        let result = execute_wasm(cmd, false);
+        assert!(result.is_err());
+    }
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod property_tests_mod {
-    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+
+    // Strategy for generating valid VmMode values
+    fn arb_vm_mode() -> impl Strategy<Value = VmMode> {
+        prop_oneof![Just(VmMode::Ast), Just(VmMode::Bytecode),]
+    }
 
     proptest! {
-        /// Property: Function never panics on any input
+        #![proptest_config(ProptestConfig::with_cases(50))]
+
+        // VmMode default is always valid
         #[test]
-        fn test_execute_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn prop_vm_mode_default_valid(_dummy: u8) {
+            let mode = VmMode::default();
+            prop_assert!(mode == VmMode::Ast || mode == VmMode::Bytecode);
+        }
+
+        // VmMode is cloneable and equality works
+        #[test]
+        fn prop_vm_mode_clone_eq(mode in arb_vm_mode()) {
+            let copied = mode; // VmMode implements Copy
+            prop_assert_eq!(mode, copied);
+        }
+
+        // PathBuf from valid strings never panics
+        #[test]
+        fn prop_pathbuf_from_string(s in "[a-zA-Z0-9_./]{0,50}") {
+            let path = PathBuf::from(&s);
+            prop_assert!(path.to_str().is_some());
+        }
+
+        // format_file_error always returns Some for valid paths
+        #[test]
+        fn prop_format_file_error_returns_string(
+            path in "[a-zA-Z0-9_./]{1,30}",
+            msg in "[a-zA-Z0-9 ]{1,50}"
+        ) {
+            let result = format_file_error(&msg, Path::new(&path));
+            prop_assert!(!result.is_empty());
+            prop_assert!(result.contains(&path) || result.contains(&msg));
+        }
+
+        // Port numbers in valid range
+        #[test]
+        fn prop_valid_port_range(port in 1u16..=65535) {
+            // Any port in u16 range should be parseable
+            let port_str = port.to_string();
+            let parsed: u16 = port_str.parse().expect("valid port");
+            prop_assert_eq!(port, parsed);
+        }
+
+        // Host strings roundtrip
+        #[test]
+        fn prop_host_roundtrip(host in "[a-zA-Z0-9.-]{1,50}") {
+            let host_clone = host.clone();
+            prop_assert_eq!(host, host_clone);
+        }
+
+        // NotebookCommand variants can be created
+        #[test]
+        fn prop_notebook_serve_creation(port in 1u16..=65535) {
+            let cmd = NotebookCommand::Serve {
+                port,
+                host: "127.0.0.1".to_string(),
+                pid_file: None,
+            };
+            match cmd {
+                NotebookCommand::Serve { port: p, .. } => prop_assert_eq!(p, port),
+                _ => prop_assert!(false, "Expected Serve variant"),
+            }
+        }
+
+        // NotebookCommand Test variant
+        #[test]
+        fn prop_notebook_test_creation(coverage in proptest::bool::ANY) {
+            let cmd = NotebookCommand::Test {
+                path: PathBuf::from("test.ipynb"),
+                coverage,
+                format: "text".to_string(),
+            };
+            match cmd {
+                NotebookCommand::Test { coverage: c, .. } => prop_assert_eq!(c, coverage),
+                _ => prop_assert!(false, "Expected Test variant"),
+            }
+        }
+
+        // NotebookCommand Convert variant
+        #[test]
+        fn prop_notebook_convert_creation(fmt in "html|markdown|script") {
+            let cmd = NotebookCommand::Convert {
+                input: PathBuf::from("in.ipynb"),
+                output: PathBuf::from("out.html"),
+                format: fmt.clone(),
+            };
+            match cmd {
+                NotebookCommand::Convert { format: f, .. } => prop_assert_eq!(f, fmt),
+                _ => prop_assert!(false, "Expected Convert variant"),
+            }
+        }
+
+        // WasmCommand Compile variant
+        #[test]
+        fn prop_wasm_compile_creation(optimize in proptest::bool::ANY) {
+            let cmd = WasmCommand::Compile {
+                input: PathBuf::from("main.ruchy"),
+                output: Some(PathBuf::from("out.wasm")),
+                optimize,
+                validate: true,
+            };
+            match cmd {
+                WasmCommand::Compile { optimize: o, .. } => prop_assert_eq!(o, optimize),
+                _ => prop_assert!(false, "Expected Compile variant"),
+            }
+        }
+
+        // WasmCommand Run variant
+        #[test]
+        fn prop_wasm_run_creation(num_args in 0usize..5) {
+            let args: Vec<String> = (0..num_args).map(|i| format!("arg{i}")).collect();
+            let cmd = WasmCommand::Run {
+                module: PathBuf::from("module.wasm"),
+                args,
+            };
+            match cmd {
+                WasmCommand::Run { args: a, .. } => prop_assert_eq!(a.len(), num_args),
+                WasmCommand::Compile { .. } | WasmCommand::Validate { .. } => {
+                    prop_assert!(false, "Expected Run variant");
+                }
+            }
+        }
+
+        // TestCommand Run variant
+        #[test]
+        fn prop_test_run_creation(coverage in proptest::bool::ANY, parallel in proptest::bool::ANY) {
+            let cmd = TestCommand::Run {
+                path: PathBuf::from("tests"),
+                coverage,
+                parallel,
+                filter: None,
+            };
+            match cmd {
+                TestCommand::Run { coverage: c, parallel: p, .. } => {
+                    prop_assert_eq!(c, coverage);
+                    prop_assert_eq!(p, parallel);
+                }
+                TestCommand::Report { .. } => prop_assert!(false, "Expected Run variant"),
+            }
+        }
+
+        // TestCommand Report variant
+        #[test]
+        fn prop_test_report_creation(fmt in "json|html|junit") {
+            let cmd = TestCommand::Report {
+                format: fmt.clone(),
+                output: None,
+            };
+            match cmd {
+                TestCommand::Report { format: f, .. } => prop_assert_eq!(f, fmt),
+                TestCommand::Run { .. } => prop_assert!(false, "Expected Report variant"),
+            }
+        }
+
+        // Hunt command cycles validation
+        #[test]
+        fn prop_hunt_cycles_non_negative(cycles in 0u32..100) {
+            // Hunt command with cycles - verify cycles is usable
+            let andon = cycles % 2 == 0;
+            let five_whys = cycles % 3 == 0;
+            prop_assert!(cycles < 100);
+            prop_assert_eq!(andon, cycles % 2 == 0);
+            prop_assert_eq!(five_whys, cycles % 3 == 0);
+        }
+
+        // Report format validation
+        #[test]
+        fn prop_report_format_valid(fmt in "human|json|markdown|sarif") {
+            let valid_formats = ["human", "json", "markdown", "sarif"];
+            prop_assert!(valid_formats.contains(&fmt.as_str()));
         }
     }
 }

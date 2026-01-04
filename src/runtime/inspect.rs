@@ -436,6 +436,360 @@ mod tests {
         assert!(visited.contains(0x9000));
     }
 }
+// COVERAGE-95: Additional tests for complete coverage
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    #[test]
+    fn test_inspector_default() {
+        let inspector = Inspector::default();
+        assert_eq!(inspector.depth, 0);
+        assert_eq!(inspector.max_depth, 10);
+        assert_eq!(inspector.budget, 10000);
+    }
+
+    #[test]
+    fn test_inspector_with_style() {
+        let style = InspectStyle {
+            max_elements: 5,
+            max_string_len: 50,
+            use_colors: true,
+            indent: "    ".to_string(),
+        };
+        let inspector = Inspector::with_style(style);
+        assert_eq!(inspector.style.max_elements, 5);
+        assert!(inspector.style.use_colors);
+    }
+
+    #[test]
+    fn test_inspector_exit() {
+        let mut inspector = Inspector::new();
+        inspector.depth = 5;
+        inspector.exit();
+        assert_eq!(inspector.depth, 4);
+        inspector.exit();
+        assert_eq!(inspector.depth, 3);
+    }
+
+    #[test]
+    fn test_inspector_exit_at_zero() {
+        let mut inspector = Inspector::new();
+        inspector.depth = 0;
+        inspector.exit();
+        assert_eq!(inspector.depth, 0); // Should not underflow
+    }
+
+    #[test]
+    fn test_inspector_has_budget() {
+        let mut inspector = Inspector::new();
+        assert!(inspector.has_budget());
+        inspector.budget = 0;
+        assert!(!inspector.has_budget());
+    }
+
+    #[test]
+    fn test_inspector_consume_budget() {
+        let mut inspector = Inspector::new();
+        let initial = inspector.budget;
+        inspector.consume_budget(100);
+        assert_eq!(inspector.budget, initial - 100);
+    }
+
+    #[test]
+    fn test_inspector_consume_budget_saturating() {
+        let mut inspector = Inspector::new();
+        inspector.budget = 50;
+        inspector.consume_budget(100);
+        assert_eq!(inspector.budget, 0); // Should saturate at 0
+    }
+
+    #[test]
+    fn test_inspector_depth() {
+        let mut inspector = Inspector::new();
+        assert_eq!(inspector.depth(), 0);
+        inspector.depth = 5;
+        assert_eq!(inspector.depth(), 5);
+    }
+
+    #[test]
+    fn test_inspector_at_max_depth() {
+        let mut inspector = Inspector::new();
+        assert!(!inspector.at_max_depth());
+        inspector.depth = 10;
+        assert!(inspector.at_max_depth());
+        inspector.depth = 15;
+        assert!(inspector.at_max_depth());
+    }
+
+    #[test]
+    fn test_inspector_enter() {
+        let mut inspector = Inspector::new();
+        let val = 42i32;
+        assert!(inspector.enter(&val));
+        assert_eq!(inspector.depth, 1);
+        // Second enter with same address should fail
+        assert!(!inspector.enter(&val));
+    }
+
+    #[test]
+    fn test_inspector_write_str() {
+        let mut inspector = Inspector::new();
+        use std::fmt::Write;
+        write!(inspector, "hello").unwrap();
+        assert_eq!(inspector.output, "hello");
+    }
+
+    #[test]
+    fn test_inspect_style_default() {
+        let style = InspectStyle::default();
+        assert_eq!(style.max_elements, 10);
+        assert_eq!(style.max_string_len, 100);
+        assert!(!style.use_colors);
+        assert_eq!(style.indent, "  ");
+    }
+
+    #[test]
+    fn test_inspect_style_clone() {
+        let style = InspectStyle {
+            max_elements: 20,
+            max_string_len: 200,
+            use_colors: true,
+            indent: "----".to_string(),
+        };
+        let cloned = style.clone();
+        assert_eq!(cloned.max_elements, 20);
+        assert!(cloned.use_colors);
+    }
+
+    #[test]
+    fn test_inspect_i64() {
+        let mut inspector = Inspector::new();
+        42i64.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("42"));
+    }
+
+    #[test]
+    fn test_inspect_f64() {
+        let mut inspector = Inspector::new();
+        3.14f64.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("3.14"));
+    }
+
+    #[test]
+    fn test_inspect_bool() {
+        let mut inspector = Inspector::new();
+        true.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("true"));
+    }
+
+    #[test]
+    fn test_inspect_string() {
+        let mut inspector = Inspector::new();
+        "hello".to_string().inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("\"hello\""));
+    }
+
+    #[test]
+    fn test_inspect_string_truncation() {
+        let mut inspector = Inspector::new();
+        inspector.style.max_string_len = 5;
+        "hello world".to_string().inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("..."));
+        assert!(inspector.output.contains("chars"));
+    }
+
+    #[test]
+    fn test_inspect_str() {
+        let mut inspector = Inspector::new();
+        "test".inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("\"test\""));
+    }
+
+    #[test]
+    fn test_inspect_str_truncation() {
+        let mut inspector = Inspector::new();
+        inspector.style.max_string_len = 3;
+        "abcdefghij".inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("..."));
+    }
+
+    #[test]
+    fn test_inspect_option_some() {
+        let mut inspector = Inspector::new();
+        let opt = Some(42i32);
+        Inspect::inspect(&opt, &mut inspector).unwrap();
+        assert!(inspector.output.contains("Some(42)"));
+    }
+
+    #[test]
+    fn test_inspect_option_none() {
+        let mut inspector = Inspector::new();
+        let opt: Option<i32> = None;
+        Inspect::inspect(&opt, &mut inspector).unwrap();
+        assert_eq!(inspector.output, "None");
+    }
+
+    #[test]
+    fn test_inspect_result_ok() {
+        let mut inspector = Inspector::new();
+        let res: Result<i32, &str> = Ok(42);
+        Inspect::inspect(&res, &mut inspector).unwrap();
+        assert!(inspector.output.contains("Ok(42)"));
+    }
+
+    #[test]
+    fn test_inspect_result_err() {
+        let mut inspector = Inspector::new();
+        let res: Result<i32, &str> = Err("error");
+        Inspect::inspect(&res, &mut inspector).unwrap();
+        assert!(inspector.output.contains("Err("));
+        assert!(inspector.output.contains("error"));
+    }
+
+    #[test]
+    fn test_inspect_vec_at_max_depth() {
+        let mut inspector = Inspector::new();
+        inspector.depth = 10; // At max_depth
+        let vec = vec![1, 2, 3];
+        vec.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("3 elements"));
+    }
+
+    #[test]
+    fn test_inspect_vec_truncation() {
+        let mut inspector = Inspector::new();
+        inspector.style.max_elements = 2;
+        let vec = vec![1, 2, 3, 4, 5];
+        vec.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("...3 more"));
+    }
+
+    #[test]
+    fn test_inspect_hashmap() {
+        let mut inspector = Inspector::new();
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), 42i32);
+        map.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("key"));
+        assert!(inspector.output.contains("42"));
+    }
+
+    #[test]
+    fn test_inspect_hashmap_at_max_depth() {
+        let mut inspector = Inspector::new();
+        inspector.depth = 10;
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), 1i32);
+        map.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("1 entries"));
+    }
+
+    #[test]
+    fn test_inspect_hashmap_truncation() {
+        let mut inspector = Inspector::new();
+        inspector.style.max_elements = 1;
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), 1i32);
+        map.insert("b".to_string(), 2i32);
+        map.insert("c".to_string(), 3i32);
+        map.inspect(&mut inspector).unwrap();
+        assert!(inspector.output.contains("more"));
+    }
+
+    #[test]
+    fn test_display_form_atomic() {
+        let form = DisplayForm::Atomic("42".to_string());
+        let _ = format!("{:?}", form);
+    }
+
+    #[test]
+    fn test_display_form_composite() {
+        let form = DisplayForm::Composite(CompositeForm {
+            opener: "[",
+            elements: vec![(None, DisplayForm::Atomic("1".to_string()))],
+            closer: "]",
+            elided: None,
+        });
+        let cloned = form.clone();
+        let _ = format!("{:?}", cloned);
+    }
+
+    #[test]
+    fn test_display_form_reference() {
+        let form = DisplayForm::Reference(0x1000, Box::new(DisplayForm::Atomic("val".to_string())));
+        let cloned = form.clone();
+        let _ = format!("{:?}", cloned);
+    }
+
+    #[test]
+    fn test_display_form_opaque() {
+        let form = DisplayForm::Opaque(OpaqueHandle {
+            type_name: "Function".to_string(),
+            id: Some("foo".to_string()),
+        });
+        let cloned = form.clone();
+        let _ = format!("{:?}", cloned);
+    }
+
+    #[test]
+    fn test_opaque_handle_clone() {
+        let handle = OpaqueHandle {
+            type_name: "Thread".to_string(),
+            id: None,
+        };
+        let cloned = handle.clone();
+        assert_eq!(cloned.type_name, "Thread");
+        assert!(cloned.id.is_none());
+    }
+
+    #[test]
+    fn test_composite_form_clone() {
+        let form = CompositeForm {
+            opener: "{",
+            elements: vec![
+                (Some("key".to_string()), DisplayForm::Atomic("value".to_string())),
+            ],
+            closer: "}",
+            elided: Some(5),
+        };
+        let cloned = form.clone();
+        assert_eq!(cloned.opener, "{");
+        assert_eq!(cloned.elided, Some(5));
+    }
+
+    #[test]
+    fn test_visit_set_contains_overflow() {
+        let mut visited = VisitSet::new();
+        // Fill to overflow
+        for i in 0..12 {
+            visited.insert(i * 100);
+        }
+        // Check all are accessible
+        for i in 0..12 {
+            assert!(visited.contains(i * 100));
+        }
+        assert!(!visited.contains(9999));
+    }
+
+    #[test]
+    fn test_inspect_depth_trait() {
+        let val = 42i32;
+        assert_eq!(val.inspect_depth(), 1);
+    }
+
+    #[test]
+    fn test_inspector_budget_exhaustion() {
+        let mut inspector = Inspector::new();
+        inspector.budget = 5;
+        let vec: Vec<i32> = (0..100).collect();
+        vec.inspect(&mut inspector).unwrap();
+        // Should have stopped early due to budget
+        assert!(inspector.output.contains("..."));
+    }
+}
+
 #[cfg(test)]
 mod property_tests_inspect {
     use proptest::proptest;

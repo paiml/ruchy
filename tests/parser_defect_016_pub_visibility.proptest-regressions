@@ -8,3 +8,4 @@ cc 5907e0b6c4ba6fffeddc78ac3a6fb24ba26de65c3240e7a24c7f58516a366937 # shrinks to
 cc e170326120b77d2aa00c8c515d4627a4a0ee6040109df9c99f35f0c6c74c0932 # shrinks to seg1 = "df", seg2 = "a", seg3 = "a"
 cc 79ee90c258c8b3936f42553b48da0785d97628ed0fb13a4620dd27df64c15966 # shrinks to segment = "ccc73"
 cc ad3559087a457f67fa7ddb2318b3c3496016d658759fad9dbfb8495d30f0b4d5 # shrinks to segment = "yo_96ar_bz"
+cc 2a1d15bd42b94cb2ad2676615f4f9259adade7c66c03d34fdd4cd73056864526 # shrinks to segment = "fn_0q_5pzy"

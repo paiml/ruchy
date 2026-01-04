@@ -415,8 +415,7 @@ impl Transpiler {
                 if params.is_empty() {
                     base.clone()
                 } else {
-                    let param_strs: Vec<String> =
-                        params.iter().map(Self::type_to_string).collect();
+                    let param_strs: Vec<String> = params.iter().map(Self::type_to_string).collect();
                     format!("{}<{}>", base, param_strs.join(", "))
                 }
             }

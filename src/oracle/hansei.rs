@@ -128,7 +128,9 @@ impl HanseiReport {
 
         // Sort categories by accuracy (lowest first for attention)
         categories.sort_by(|a, b| {
-            a.accuracy.partial_cmp(&b.accuracy).unwrap_or(std::cmp::Ordering::Equal)
+            a.accuracy
+                .partial_cmp(&b.accuracy)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Overall trend
@@ -160,7 +162,10 @@ impl HanseiReport {
     /// Get issues by severity
     #[must_use]
     pub fn issues_by_severity(&self, severity: Severity) -> Vec<&HanseiIssue> {
-        self.issues.iter().filter(|i| i.severity == severity).collect()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == severity)
+            .collect()
     }
 }
 
@@ -187,7 +192,10 @@ mod tests {
 
         let report = HanseiReport::generate(&metrics, &drift, &categories);
         // Drift detection should flag as needing attention
-        assert!(report.issues.iter().any(|i| matches!(i.severity, Severity::Error)));
+        assert!(report
+            .issues
+            .iter()
+            .any(|i| matches!(i.severity, Severity::Error)));
     }
 
     #[test]
@@ -198,7 +206,10 @@ mod tests {
 
         let report = HanseiReport::generate(&metrics, &drift, &categories);
         // Warning should show warning severity
-        assert!(report.issues.iter().any(|i| matches!(i.severity, Severity::Warning)));
+        assert!(report
+            .issues
+            .iter()
+            .any(|i| matches!(i.severity, Severity::Warning)));
     }
 
     #[test]
@@ -212,5 +223,176 @@ mod tests {
     fn test_trend_variants() {
         assert_eq!(Trend::Improving, Trend::Improving);
         assert_ne!(Trend::Improving, Trend::Degrading);
+    }
+
+    // COVERAGE-95: Additional tests for complete coverage
+
+    #[test]
+    fn test_issues_by_severity_empty() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let categories = HashMap::new();
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        let critical_issues = report.issues_by_severity(Severity::Critical);
+        assert!(critical_issues.is_empty());
+    }
+
+    #[test]
+    fn test_issues_by_severity_warning() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Warning;
+        let categories = HashMap::new();
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        let warnings = report.issues_by_severity(Severity::Warning);
+        assert!(!warnings.is_empty());
+    }
+
+    #[test]
+    fn test_issues_by_severity_error() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Drift;
+        let categories = HashMap::new();
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        let errors = report.issues_by_severity(Severity::Error);
+        assert!(!errors.is_empty());
+    }
+
+    #[test]
+    fn test_category_stats_low_accuracy() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let mut categories = HashMap::new();
+        categories.insert(ErrorCategory::TypeMismatch, (0.70, 10));
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        assert!(!report.categories.is_empty());
+        // Low accuracy should generate a warning
+        assert!(report
+            .issues
+            .iter()
+            .any(|i| matches!(i.severity, Severity::Warning)));
+    }
+
+    #[test]
+    fn test_category_stats_high_accuracy() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let mut categories = HashMap::new();
+        categories.insert(ErrorCategory::BorrowChecker, (0.95, 100));
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        assert!(!report.categories.is_empty());
+        assert_eq!(report.categories[0].trend, Trend::Improving);
+    }
+
+    #[test]
+    fn test_category_stats_medium_accuracy() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let mut categories = HashMap::new();
+        categories.insert(ErrorCategory::LifetimeError, (0.85, 50));
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        assert!(!report.categories.is_empty());
+        assert_eq!(report.categories[0].trend, Trend::Stable);
+    }
+
+    #[test]
+    fn test_hansei_issue_fields() {
+        let issue = HanseiIssue {
+            severity: Severity::Warning,
+            category: Some(ErrorCategory::TypeMismatch),
+            message: "Test message".to_string(),
+            recommendation: "Test recommendation".to_string(),
+        };
+        assert_eq!(issue.severity, Severity::Warning);
+        assert!(issue.category.is_some());
+        assert!(!issue.message.is_empty());
+        assert!(!issue.recommendation.is_empty());
+    }
+
+    #[test]
+    fn test_hansei_issue_no_category() {
+        let issue = HanseiIssue {
+            severity: Severity::Info,
+            category: None,
+            message: "Info message".to_string(),
+            recommendation: "No action needed".to_string(),
+        };
+        assert_eq!(issue.severity, Severity::Info);
+        assert!(issue.category.is_none());
+    }
+
+    #[test]
+    fn test_category_stats_degrading_trend() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let mut categories = HashMap::new();
+        categories.insert(ErrorCategory::SyntaxError, (0.60, 30));
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        assert!(!report.categories.is_empty());
+        assert_eq!(report.categories[0].trend, Trend::Degrading);
+    }
+
+    #[test]
+    fn test_multiple_categories_sorted() {
+        let metrics = OracleMetrics::default();
+        let drift = DriftStatus::Stable;
+        let mut categories = HashMap::new();
+        categories.insert(ErrorCategory::TypeMismatch, (0.95, 100));
+        categories.insert(ErrorCategory::BorrowChecker, (0.60, 50));
+        categories.insert(ErrorCategory::LifetimeError, (0.85, 75));
+
+        let report = HanseiReport::generate(&metrics, &drift, &categories);
+        assert_eq!(report.categories.len(), 3);
+        // Should be sorted by accuracy (lowest first)
+        assert!(report.categories[0].accuracy <= report.categories[1].accuracy);
+        assert!(report.categories[1].accuracy <= report.categories[2].accuracy);
+    }
+
+    #[test]
+    fn test_trend_all_variants() {
+        assert_eq!(Trend::Oscillating, Trend::Oscillating);
+        assert_eq!(Trend::Stable, Trend::Stable);
+        let trends = [
+            Trend::Improving,
+            Trend::Stable,
+            Trend::Degrading,
+            Trend::Oscillating,
+        ];
+        for (i, t1) in trends.iter().enumerate() {
+            for (j, t2) in trends.iter().enumerate() {
+                if i == j {
+                    assert_eq!(t1, t2);
+                } else {
+                    assert_ne!(t1, t2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_severity_all_comparisons() {
+        let severities = [
+            Severity::Info,
+            Severity::Warning,
+            Severity::Error,
+            Severity::Critical,
+        ];
+        for (i, s1) in severities.iter().enumerate() {
+            for (j, s2) in severities.iter().enumerate() {
+                if i < j {
+                    assert!(s1 < s2);
+                } else if i > j {
+                    assert!(s1 > s2);
+                } else {
+                    assert_eq!(s1, s2);
+                }
+            }
+        }
     }
 }

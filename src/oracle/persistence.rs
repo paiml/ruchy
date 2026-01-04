@@ -196,11 +196,7 @@ impl SerializedModel {
     }
 
     /// Set training data for persistence
-    pub fn with_training_data(
-        mut self,
-        features: Vec<Vec<f32>>,
-        labels: Vec<usize>,
-    ) -> Self {
+    pub fn with_training_data(mut self, features: Vec<Vec<f32>>, labels: Vec<usize>) -> Self {
         self.training_features = features;
         self.training_labels = labels;
         self.metadata.training_samples = self.training_labels.len();
@@ -267,7 +263,9 @@ impl SerializedModel {
             .write_all(&self.weights)
             .map_err(|e| OracleError::IoError(e.to_string()))?;
 
-        writer.flush().map_err(|e| OracleError::IoError(e.to_string()))?;
+        writer
+            .flush()
+            .map_err(|e| OracleError::IoError(e.to_string()))?;
 
         Ok(())
     }
@@ -316,8 +314,8 @@ impl SerializedModel {
             .read_exact(&mut metadata_json)
             .map_err(|e| OracleError::IoError(e.to_string()))?;
 
-        let metadata: ModelMetadata =
-            serde_json::from_slice(&metadata_json).map_err(|e| OracleError::IoError(e.to_string()))?;
+        let metadata: ModelMetadata = serde_json::from_slice(&metadata_json)
+            .map_err(|e| OracleError::IoError(e.to_string()))?;
 
         // Read training data
         let mut training_len_bytes = [0u8; 4];
@@ -331,8 +329,8 @@ impl SerializedModel {
             .read_exact(&mut training_json)
             .map_err(|e| OracleError::IoError(e.to_string()))?;
 
-        let training_data: TrainingDataBlob =
-            serde_json::from_slice(&training_json).map_err(|e| OracleError::IoError(e.to_string()))?;
+        let training_data: TrainingDataBlob = serde_json::from_slice(&training_json)
+            .map_err(|e| OracleError::IoError(e.to_string()))?;
 
         // Read weights
         let mut weights_len_bytes = [0u8; 4];
@@ -382,16 +380,14 @@ mod tests {
 
     #[test]
     fn test_model_metadata_with_training_stats() {
-        let metadata = ModelMetadata::new("test")
-            .with_training_stats(1000, 0.95);
+        let metadata = ModelMetadata::new("test").with_training_stats(1000, 0.95);
         assert_eq!(metadata.training_samples, 1000);
         assert!((metadata.accuracy - 0.95).abs() < f64::EPSILON);
     }
 
     #[test]
     fn test_model_metadata_with_tree_params() {
-        let metadata = ModelMetadata::new("test")
-            .with_tree_params(50, 8);
+        let metadata = ModelMetadata::new("test").with_tree_params(50, 8);
         assert_eq!(metadata.tree_count, 50);
         assert_eq!(metadata.max_depth, 8);
     }
@@ -441,8 +437,7 @@ mod tests {
         let features = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
         let labels = vec![0, 1];
 
-        let model = SerializedModel::new(metadata)
-            .with_training_data(features, labels);
+        let model = SerializedModel::new(metadata).with_training_data(features, labels);
 
         assert_eq!(model.training_features.len(), 2);
         assert_eq!(model.training_labels.len(), 2);
@@ -465,8 +460,7 @@ mod tests {
         ];
         let labels = vec![0, 1, 2];
 
-        let model = SerializedModel::new(metadata)
-            .with_training_data(features, labels.clone());
+        let model = SerializedModel::new(metadata).with_training_data(features, labels.clone());
 
         // Save
         model.save(&temp_path).expect("save failed");

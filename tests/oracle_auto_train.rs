@@ -5,9 +5,7 @@
 //! # Spec Reference
 //! - docs/specifications/dynamic-mlops-training-ruchy-oracle-spec.md §2.2
 
-use ruchy::oracle::{
-    Corpus, ErrorCategory, Sample, SampleSource, RuchyOracle,
-};
+use ruchy::oracle::{Corpus, ErrorCategory, RuchyOracle, Sample, SampleSource};
 
 // ============================================================================
 // Corpus collection tests
@@ -27,7 +25,8 @@ fn test_corpus_add_sample() {
         "error[E0308]: mismatched types",
         Some("E0308".to_string()),
         ErrorCategory::TypeMismatch,
-    ).with_source(SampleSource::Production);
+    )
+    .with_source(SampleSource::Production);
     corpus.add(sample);
     assert_eq!(corpus.len(), 1);
 }
@@ -41,12 +40,14 @@ fn test_corpus_deduplicates_by_hash() {
         "error[E0308]: mismatched types",
         Some("E0308".to_string()),
         ErrorCategory::TypeMismatch,
-    ).with_source(SampleSource::Production);
+    )
+    .with_source(SampleSource::Production);
     let sample2 = Sample::new(
         "error[E0308]: mismatched types",
         Some("E0308".to_string()),
         ErrorCategory::TypeMismatch,
-    ).with_source(SampleSource::Production);
+    )
+    .with_source(SampleSource::Production);
 
     corpus.add(sample1);
     corpus.add(sample2);
@@ -58,16 +59,22 @@ fn test_corpus_deduplicates_by_hash() {
 #[test]
 fn test_corpus_to_training_data() {
     let mut corpus = Corpus::new();
-    corpus.add(Sample::new(
-        "error[E0308]: mismatched types",
-        Some("E0308".to_string()),
-        ErrorCategory::TypeMismatch,
-    ).with_source(SampleSource::Synthetic));
-    corpus.add(Sample::new(
-        "error[E0382]: borrow of moved value",
-        Some("E0382".to_string()),
-        ErrorCategory::BorrowChecker,
-    ).with_source(SampleSource::Synthetic));
+    corpus.add(
+        Sample::new(
+            "error[E0308]: mismatched types",
+            Some("E0308".to_string()),
+            ErrorCategory::TypeMismatch,
+        )
+        .with_source(SampleSource::Synthetic),
+    );
+    corpus.add(
+        Sample::new(
+            "error[E0382]: borrow of moved value",
+            Some("E0382".to_string()),
+            ErrorCategory::BorrowChecker,
+        )
+        .with_source(SampleSource::Synthetic),
+    );
 
     let (features, labels) = corpus.to_training_data();
     assert_eq!(features.len(), 2);
@@ -77,16 +84,22 @@ fn test_corpus_to_training_data() {
 #[test]
 fn test_corpus_filter_by_source() {
     let mut corpus = Corpus::new();
-    corpus.add(Sample::new(
-        "synthetic error 1",
-        Some("E0308".to_string()),
-        ErrorCategory::TypeMismatch,
-    ).with_source(SampleSource::Synthetic));
-    corpus.add(Sample::new(
-        "production error 1",
-        Some("E0382".to_string()),
-        ErrorCategory::BorrowChecker,
-    ).with_source(SampleSource::Production));
+    corpus.add(
+        Sample::new(
+            "synthetic error 1",
+            Some("E0308".to_string()),
+            ErrorCategory::TypeMismatch,
+        )
+        .with_source(SampleSource::Synthetic),
+    );
+    corpus.add(
+        Sample::new(
+            "production error 1",
+            Some("E0382".to_string()),
+            ErrorCategory::BorrowChecker,
+        )
+        .with_source(SampleSource::Production),
+    );
 
     let synthetic = corpus.filter_by_source(SampleSource::Synthetic);
     assert_eq!(synthetic.len(), 1);
@@ -133,9 +146,18 @@ fn test_oracle_auto_retrain_improves_accuracy() {
     let initial_accuracy = oracle.metadata().training_accuracy;
 
     // Add diverse training samples
-    oracle.record_error("error[E0308]: mismatched types", ErrorCategory::TypeMismatch);
-    oracle.record_error("error[E0382]: borrow of moved value", ErrorCategory::BorrowChecker);
-    oracle.record_error("error[E0277]: trait bound not satisfied", ErrorCategory::TraitBound);
+    oracle.record_error(
+        "error[E0308]: mismatched types",
+        ErrorCategory::TypeMismatch,
+    );
+    oracle.record_error(
+        "error[E0382]: borrow of moved value",
+        ErrorCategory::BorrowChecker,
+    );
+    oracle.record_error(
+        "error[E0277]: trait bound not satisfied",
+        ErrorCategory::TraitBound,
+    );
 
     // Trigger retrain
     oracle.retrain().expect("retrain");
@@ -219,7 +241,10 @@ fn test_oracle_drift_detection_api_works() {
 
     // Verify drift_status() returns a valid DriftStatus
     let status = oracle.drift_status();
-    assert!(matches!(status, DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift));
+    assert!(matches!(
+        status,
+        DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift
+    ));
 }
 
 #[test]
@@ -245,9 +270,7 @@ fn test_generate_synthetic_samples() {
     assert_eq!(samples.len(), 100);
 
     // Should have diverse categories
-    let categories: std::collections::HashSet<_> = samples.iter()
-        .map(|s| s.category)
-        .collect();
+    let categories: std::collections::HashSet<_> = samples.iter().map(|s| s.category).collect();
     assert!(categories.len() >= 4); // At least 4 different categories
 }
 

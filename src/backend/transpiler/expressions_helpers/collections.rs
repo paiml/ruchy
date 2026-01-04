@@ -192,8 +192,8 @@ impl Transpiler {
         // format_ident! only works for simple identifiers, not paths with ::
         let struct_name: TokenStream = if name.contains("::") {
             // Parse as path (e.g., Shape::Circle)
-            let path: syn::Path = syn::parse_str(name)
-                .map_err(|e| anyhow::anyhow!("Invalid path '{name}': {e}"))?;
+            let path: syn::Path =
+                syn::parse_str(name).map_err(|e| anyhow::anyhow!("Invalid path '{name}': {e}"))?;
             quote! { #path }
         } else {
             // Simple identifier (e.g., Person)

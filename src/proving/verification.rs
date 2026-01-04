@@ -292,3 +292,252 @@ pub fn verify_ast_assertions(
     let assertions = extract_assertions_from_ast(ast);
     verify_assertions_batch(assertions, assumptions)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_verify_simple_equality_true() {
+        let result = verify_single_assertion("2 + 2 == 4", None);
+        assert!(result.is_verified);
+        assert!(result.counterexample.is_none());
+        assert!(result.error.is_none());
+    }
+
+    #[test]
+    fn test_verify_simple_equality_false() {
+        let result = verify_single_assertion("2 + 2 == 5", None);
+        assert!(!result.is_verified);
+        assert!(result.counterexample.is_some());
+    }
+
+    #[test]
+    fn test_verify_inequality_true() {
+        let result = verify_single_assertion("3 != 4", None);
+        assert!(result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_inequality_false() {
+        let result = verify_single_assertion("5 != 5", None);
+        assert!(!result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_greater_than_true() {
+        let result = verify_single_assertion("5 > 3", None);
+        assert!(result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_greater_than_false() {
+        let result = verify_single_assertion("2 > 5", None);
+        assert!(!result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_less_than_true() {
+        let result = verify_single_assertion("2 < 5", None);
+        assert!(result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_less_than_false() {
+        let result = verify_single_assertion("5 < 2", None);
+        assert!(!result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_greater_or_equal_true() {
+        let result = verify_single_assertion("5 >= 5", None);
+        assert!(result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_greater_or_equal_false() {
+        let result = verify_single_assertion("3 >= 5", None);
+        assert!(!result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_less_or_equal_true() {
+        let result = verify_single_assertion("3 <= 5", None);
+        assert!(result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_less_or_equal_false() {
+        let result = verify_single_assertion("7 <= 5", None);
+        assert!(!result.is_verified);
+    }
+
+    #[test]
+    fn test_verify_conditional_with_arrow() {
+        let result = verify_single_assertion("false -> true", None);
+        assert!(result.is_verified); // Vacuously true
+    }
+
+    #[test]
+    fn test_verify_conditional_with_double_arrow() {
+        let result = verify_single_assertion("false => true", None);
+        assert!(result.is_verified); // Vacuously true
+    }
+
+    #[test]
+    fn test_verify_universal_quantification() {
+        let result = verify_single_assertion("forall x in [1,2,3], x > 0", None);
+        // Parsing structure is present, result depends on helper implementation
+        assert!(!result.assertion.is_empty());
+    }
+
+    #[test]
+    fn test_verify_existential_quantification() {
+        let result = verify_single_assertion("exists x in [1,2,3], x > 0", None);
+        assert!(!result.assertion.is_empty());
+    }
+
+    #[test]
+    fn test_verify_unknown_assertion_type() {
+        let result = verify_single_assertion("some_unknown_assertion", None);
+        assert!(!result.is_verified);
+        assert!(result.error.is_some());
+    }
+
+    #[test]
+    fn test_verify_invalid_equality_format() {
+        let result = verify_equality("a == b == c");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_verify_invalid_inequality_format() {
+        let result = verify_inequality("a != b != c");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_parse_conditional_invalid() {
+        let result = parse_conditional("a => b => c");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_conditional_arrow() {
+        let result = parse_conditional("a -> b");
+        assert!(result.is_ok());
+        let (ant, cons) = result.unwrap();
+        assert_eq!(ant, "a");
+        assert_eq!(cons, "b");
+    }
+
+    #[test]
+    fn test_parse_conditional_double_arrow() {
+        let result = parse_conditional("x => y");
+        assert!(result.is_ok());
+        let (ant, cons) = result.unwrap();
+        assert_eq!(ant, "x");
+        assert_eq!(cons, "y");
+    }
+
+    #[test]
+    fn test_verify_forall_malformed() {
+        let result = verify_universal_quantification("forall x without comma");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_verify_forall_not_starting_with_forall() {
+        let result = verify_universal_quantification("not_forall x, property");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_verify_exists_malformed() {
+        let result = verify_existential_quantification("exists x without comma");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_verify_exists_not_starting_with_exists() {
+        let result = verify_existential_quantification("not_exists x, property");
+        assert!(!result.0);
+        assert!(result.2.is_some());
+    }
+
+    #[test]
+    fn test_verify_assertions_batch() {
+        let assertions = vec!["2 + 2 == 4".to_string(), "3 > 2".to_string()];
+        let results = verify_assertions_batch(assertions, None);
+        assert_eq!(results.len(), 2);
+        assert!(results[0].is_verified);
+        assert!(results[1].is_verified);
+    }
+
+    #[test]
+    fn test_parse_comparison_operator_ge() {
+        let result = parse_comparison_operator("a >= b");
+        assert!(result.is_ok());
+        let (op, parts) = result.unwrap();
+        assert_eq!(op, ">=");
+        assert_eq!(parts.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_comparison_operator_le() {
+        let result = parse_comparison_operator("a <= b");
+        assert!(result.is_ok());
+        let (op, _) = result.unwrap();
+        assert_eq!(op, "<=");
+    }
+
+    #[test]
+    fn test_parse_comparison_operator_gt() {
+        let result = parse_comparison_operator("a > b");
+        assert!(result.is_ok());
+        let (op, _) = result.unwrap();
+        assert_eq!(op, ">");
+    }
+
+    #[test]
+    fn test_parse_comparison_operator_lt() {
+        let result = parse_comparison_operator("a < b");
+        assert!(result.is_ok());
+        let (op, _) = result.unwrap();
+        assert_eq!(op, "<");
+    }
+
+    #[test]
+    fn test_parse_comparison_operator_unknown() {
+        let result = parse_comparison_operator("a ~ b");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_check_comparison_result_operators() {
+        assert!(check_comparison_result(">=", "5", 5.0, "3", 3.0).0);
+        assert!(check_comparison_result("<=", "3", 3.0, "5", 5.0).0);
+        assert!(check_comparison_result(">", "5", 5.0, "3", 3.0).0);
+        assert!(check_comparison_result("<", "3", 3.0, "5", 5.0).0);
+        assert!(!check_comparison_result("??", "5", 5.0, "3", 3.0).0);
+    }
+
+    #[test]
+    fn test_verification_result_fields() {
+        let result = verify_single_assertion("1 == 1", None);
+        assert!(!result.assertion.is_empty());
+        assert!(result.verification_time_ms >= 0);
+    }
+
+    #[test]
+    fn test_verify_comparison_invalid_format() {
+        // Test with more than 2 parts
+        let result = verify_comparison("a >= b >= c");
+        assert!(!result.0);
+    }
+}

@@ -191,8 +191,8 @@ mod tests {
 
     #[test]
     fn test_error_entry_with_sample() {
-        let entry = ErrorEntry::new("E0308", 5)
-            .with_sample("mismatched types: expected i32, found String");
+        let entry =
+            ErrorEntry::new("E0308", 5).with_sample("mismatched types: expected i32, found String");
         assert_eq!(entry.samples.len(), 1);
     }
 

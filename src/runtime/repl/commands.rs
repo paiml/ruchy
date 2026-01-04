@@ -574,6 +574,9 @@ impl Default for CommandRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::Value;
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn test_command_registry_creation() {
@@ -642,5 +645,935 @@ mod tests {
         }
 
         assert!(matches!(state.get_mode(), ReplMode::Debug));
+    }
+
+    // CommandResult tests
+    #[test]
+    fn test_command_result_debug() {
+        let exit = CommandResult::Exit;
+        assert!(format!("{:?}", exit).contains("Exit"));
+
+        let success = CommandResult::Success("test".to_string());
+        assert!(format!("{:?}", success).contains("Success"));
+
+        let mode_change = CommandResult::ModeChange(ReplMode::Normal);
+        assert!(format!("{:?}", mode_change).contains("ModeChange"));
+
+        let silent = CommandResult::Silent;
+        assert!(format!("{:?}", silent).contains("Silent"));
+    }
+
+    #[test]
+    fn test_command_result_clone() {
+        let exit = CommandResult::Exit;
+        let _exit2 = exit.clone();
+
+        let success = CommandResult::Success("test".to_string());
+        let success2 = success.clone();
+        assert!(matches!(success2, CommandResult::Success(s) if s == "test"));
+
+        let silent = CommandResult::Silent;
+        let _silent2 = silent.clone();
+    }
+
+    // Help command aliases
+    #[test]
+    fn test_help_command_alias_h() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":h", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(_)));
+    }
+
+    // Exit command aliases
+    #[test]
+    fn test_exit_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":exit", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Exit));
+    }
+
+    #[test]
+    fn test_q_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":q", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Exit));
+    }
+
+    // Clear command
+    #[test]
+    fn test_clear_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        state.add_to_history("test command".to_string());
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":clear", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("cleared")));
+    }
+
+    // Reset command
+    #[test]
+    fn test_reset_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        state.set_variable("x".to_string(), Value::Integer(42));
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":reset", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("reset")));
+    }
+
+    // Type command - no args
+    #[test]
+    fn test_type_command_no_args() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":type", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
+    }
+
+    // Type command - no evaluator
+    #[test]
+    fn test_type_command_no_evaluator() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["42"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":type", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available")));
+    }
+
+    // Inspect command - no args
+    #[test]
+    fn test_inspect_command_no_args() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":inspect", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
+    }
+
+    // Inspect command - no evaluator
+    #[test]
+    fn test_inspect_command_no_evaluator() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["42"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":inspect", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available")));
+    }
+
+    // AST command - no args
+    #[test]
+    fn test_ast_command_no_args() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":ast", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
+    }
+
+    // AST command - valid expression
+    #[test]
+    fn test_ast_command_valid_expr() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["1", "+", "2"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":ast", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(_)));
+    }
+
+    // AST command - invalid expression
+    #[test]
+    fn test_ast_command_invalid_expr() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["{{{"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":ast", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("error") || s.contains("Error")));
+    }
+
+    // Mode commands - all modes
+    #[test]
+    fn test_mode_command_normal() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["normal"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::ModeChange(ReplMode::Normal)));
+    }
+
+    #[test]
+    fn test_mode_command_ast() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["ast"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::ModeChange(ReplMode::Ast)));
+    }
+
+    #[test]
+    fn test_mode_command_transpile() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["transpile"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::ModeChange(ReplMode::Transpile)));
+    }
+
+    #[test]
+    fn test_mode_command_unknown() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec!["invalid"],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Unknown mode")));
+    }
+
+    #[test]
+    fn test_mode_command_no_args() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Current mode")));
+    }
+
+    // History command
+    #[test]
+    fn test_history_command_empty() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":history", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("No history")));
+    }
+
+    #[test]
+    fn test_history_command_with_items() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        state.add_to_history("let x = 1".to_string());
+        state.add_to_history("let y = 2".to_string());
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":history", &mut context).expect("should succeed");
+        if let CommandResult::Success(s) = result {
+            assert!(s.contains("1:"));
+            assert!(s.contains("let x = 1"));
+        } else {
+            panic!("Expected Success");
+        }
+    }
+
+    // Vars command
+    #[test]
+    fn test_vars_command_empty() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":vars", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("No variables")));
+    }
+
+    #[test]
+    fn test_vars_command_with_items() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        state.set_variable("x".to_string(), Value::Integer(42));
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":vars", &mut context).expect("should succeed");
+        if let CommandResult::Success(s) = result {
+            assert!(s.contains("x"));
+        } else {
+            panic!("Expected Success");
+        }
+    }
+
+    // Env command
+    #[test]
+    fn test_env_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":env", &mut context).expect("should succeed");
+        if let CommandResult::Success(s) = result {
+            assert!(s.contains("REPL Environment"));
+            assert!(s.contains("Mode:"));
+            assert!(s.contains("Variables"));
+            assert!(s.contains("History"));
+        } else {
+            panic!("Expected Success");
+        }
+    }
+
+    #[test]
+    fn test_env_command_with_data() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        state.set_variable("x".to_string(), Value::Integer(42));
+        state.add_to_history("let x = 42".to_string());
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":env", &mut context).expect("should succeed");
+        if let CommandResult::Success(s) = result {
+            assert!(s.contains("x: Integer"));
+        } else {
+            panic!("Expected Success");
+        }
+    }
+
+    // Unknown command
+    #[test]
+    fn test_unknown_command() {
+        let registry = CommandRegistry::new();
+        let mut state = ReplState::new();
+        let mut context = CommandContext {
+            evaluator: None,
+            args: vec![],
+            state: &mut state,
+        };
+
+        let result = registry.execute(":unknown", &mut context).expect("should succeed");
+        assert!(matches!(result, CommandResult::Success(s) if s.contains("Unknown command")));
+    }
+
+    // available_commands test
+    #[test]
+    fn test_available_commands() {
+        let registry = CommandRegistry::new();
+        let commands = registry.available_commands();
+        assert!(commands.contains(&":help"));
+        assert!(commands.contains(&":h"));
+        assert!(commands.contains(&":quit"));
+        assert!(commands.contains(&":exit"));
+        assert!(commands.contains(&":q"));
+        assert!(commands.contains(&":clear"));
+        assert!(commands.contains(&":reset"));
+        assert!(commands.contains(&":mode"));
+        assert!(commands.contains(&":history"));
+        assert!(commands.contains(&":vars"));
+        assert!(commands.contains(&":env"));
+        assert!(commands.contains(&":type"));
+        assert!(commands.contains(&":inspect"));
+        assert!(commands.contains(&":ast"));
+    }
+
+    // Default impl
+    #[test]
+    fn test_command_registry_default() {
+        let registry = CommandRegistry::default();
+        let commands = registry.available_commands();
+        assert!(!commands.is_empty());
+    }
+
+    // CommandRegistry Debug
+    #[test]
+    fn test_command_registry_debug() {
+        let registry = CommandRegistry::new();
+        let debug = format!("{:?}", registry);
+        assert!(debug.contains("CommandRegistry"));
+    }
+
+    // value_type_name tests
+    #[test]
+    fn test_value_type_name_integer() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Integer(42)), "Integer");
+    }
+
+    #[test]
+    fn test_value_type_name_float() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Float(3.14)), "Float");
+    }
+
+    #[test]
+    fn test_value_type_name_bool() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Bool(true)), "Bool");
+    }
+
+    #[test]
+    fn test_value_type_name_byte() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Byte(65)), "Byte");
+    }
+
+    #[test]
+    fn test_value_type_name_nil() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Nil), "Nil");
+    }
+
+    #[test]
+    fn test_value_type_name_string() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::String("test".into())), "String");
+    }
+
+    #[test]
+    fn test_value_type_name_array() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Array(vec![].into())), "Array");
+    }
+
+    #[test]
+    fn test_value_type_name_tuple() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Tuple(vec![].into())), "Tuple");
+    }
+
+    #[test]
+    fn test_value_type_name_object() {
+        let map = HashMap::new();
+        assert_eq!(CommandRegistry::value_type_name(&Value::Object(Arc::new(map))), "Object");
+    }
+
+    #[test]
+    fn test_value_type_name_object_mut() {
+        let map = HashMap::new();
+        assert_eq!(CommandRegistry::value_type_name(&Value::ObjectMut(Arc::new(Mutex::new(map)))), "Object");
+    }
+
+    #[test]
+    fn test_value_type_name_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        assert_eq!(CommandRegistry::value_type_name(&range), "Range");
+    }
+
+    #[test]
+    fn test_value_type_name_enum_variant() {
+        let variant = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: None,
+        };
+        assert_eq!(CommandRegistry::value_type_name(&variant), "Enum");
+    }
+
+    #[test]
+    fn test_value_type_name_builtin_function() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::BuiltinFunction("print".to_string())), "BuiltinFunction");
+    }
+
+    #[test]
+    fn test_value_type_name_struct() {
+        let s = Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(HashMap::new()),
+        };
+        assert_eq!(CommandRegistry::value_type_name(&s), "Struct");
+    }
+
+    #[test]
+    fn test_value_type_name_class() {
+        let c = Value::Class {
+            class_name: "MyClass".to_string(),
+            fields: Arc::new(RwLock::new(HashMap::new())),
+            methods: Arc::new(HashMap::new()),
+        };
+        assert_eq!(CommandRegistry::value_type_name(&c), "Class");
+    }
+
+    #[test]
+    fn test_value_type_name_atom() {
+        assert_eq!(CommandRegistry::value_type_name(&Value::Atom("ok".to_string())), "Atom");
+    }
+
+    // estimate_value_memory tests
+    #[test]
+    fn test_estimate_value_memory_integer() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Integer(42));
+        assert_eq!(size, std::mem::size_of::<i64>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_float() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Float(3.14));
+        assert_eq!(size, std::mem::size_of::<f64>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_bool() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Bool(true));
+        assert_eq!(size, std::mem::size_of::<bool>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_byte() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Byte(65));
+        assert_eq!(size, std::mem::size_of::<u8>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_nil() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Nil);
+        assert_eq!(size, 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_string() {
+        let expected = std::mem::size_of::<String>() + 5;
+        let size = CommandRegistry::estimate_value_memory(&Value::String("hello".into()));
+        assert_eq!(size, expected);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let size = CommandRegistry::estimate_value_memory(&arr);
+        assert!(size > std::mem::size_of::<Vec<Value>>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_tuple() {
+        let tuple = Value::Tuple(vec![Value::Integer(1)].into());
+        let size = CommandRegistry::estimate_value_memory(&tuple);
+        assert!(size > std::mem::size_of::<Vec<Value>>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_object() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::Integer(1));
+        let obj = Value::Object(Arc::new(map));
+        let size = CommandRegistry::estimate_value_memory(&obj);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_object_mut() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::Integer(1));
+        let obj = Value::ObjectMut(Arc::new(Mutex::new(map)));
+        let size = CommandRegistry::estimate_value_memory(&obj);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        let size = CommandRegistry::estimate_value_memory(&range);
+        assert!(size >= std::mem::size_of::<bool>() + 2 * std::mem::size_of::<i64>());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_enum_variant() {
+        let variant = Value::EnumVariant {
+            enum_name: "Opt".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        let size = CommandRegistry::estimate_value_memory(&variant);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_enum_variant_no_data() {
+        let variant = Value::EnumVariant {
+            enum_name: "Opt".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        let size = CommandRegistry::estimate_value_memory(&variant);
+        assert!(size >= "None".len());
+    }
+
+    #[test]
+    fn test_estimate_value_memory_builtin_function() {
+        let size = CommandRegistry::estimate_value_memory(&Value::BuiltinFunction("print".to_string()));
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_struct() {
+        let s = Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(HashMap::new()),
+        };
+        let size = CommandRegistry::estimate_value_memory(&s);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_class() {
+        let c = Value::Class {
+            class_name: "Cls".to_string(),
+            fields: Arc::new(RwLock::new(HashMap::new())),
+            methods: Arc::new(HashMap::new()),
+        };
+        let size = CommandRegistry::estimate_value_memory(&c);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_estimate_value_memory_atom() {
+        let size = CommandRegistry::estimate_value_memory(&Value::Atom("ok".to_string()));
+        assert!(size > 0);
+    }
+
+    // inspect_value tests
+    #[test]
+    fn test_inspect_value_integer() {
+        let output = CommandRegistry::inspect_value(&Value::Integer(42));
+        assert!(output.contains("Type: Integer"));
+        assert!(output.contains("Value: 42"));
+    }
+
+    #[test]
+    fn test_inspect_value_float() {
+        let output = CommandRegistry::inspect_value(&Value::Float(3.14));
+        assert!(output.contains("Type: Float"));
+        assert!(output.contains("3.14"));
+    }
+
+    #[test]
+    fn test_inspect_value_bool() {
+        let output = CommandRegistry::inspect_value(&Value::Bool(true));
+        assert!(output.contains("Type: Bool"));
+        assert!(output.contains("true"));
+    }
+
+    #[test]
+    fn test_inspect_value_byte() {
+        let output = CommandRegistry::inspect_value(&Value::Byte(65));
+        assert!(output.contains("Type: Byte"));
+        assert!(output.contains("65"));
+        assert!(output.contains("Character:"));
+    }
+
+    #[test]
+    fn test_inspect_value_string() {
+        let output = CommandRegistry::inspect_value(&Value::String("hello".into()));
+        assert!(output.contains("Type: String"));
+        assert!(output.contains("hello"));
+        assert!(output.contains("Length: 5"));
+    }
+
+    #[test]
+    fn test_inspect_value_nil() {
+        let output = CommandRegistry::inspect_value(&Value::Nil);
+        assert!(output.contains("Type: Nil"));
+        assert!(output.contains("nil"));
+    }
+
+    #[test]
+    fn test_inspect_value_array_small() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let output = CommandRegistry::inspect_value(&arr);
+        assert!(output.contains("Type: Array"));
+        assert!(output.contains("Length: 2"));
+        assert!(output.contains("[0]:"));
+        assert!(output.contains("[1]:"));
+    }
+
+    #[test]
+    fn test_inspect_value_array_large() {
+        let items: Vec<Value> = (0..15).map(Value::Integer).collect();
+        let arr = Value::Array(items.into());
+        let output = CommandRegistry::inspect_value(&arr);
+        assert!(output.contains("Length: 15"));
+        assert!(output.contains("... and 5 more"));
+    }
+
+    #[test]
+    fn test_inspect_value_tuple() {
+        let tuple = Value::Tuple(vec![Value::Integer(1), Value::String("a".into())].into());
+        let output = CommandRegistry::inspect_value(&tuple);
+        assert!(output.contains("Type: Tuple"));
+        assert!(output.contains("Length: 2"));
+    }
+
+    #[test]
+    fn test_inspect_value_object() {
+        let mut map = HashMap::new();
+        map.insert("x".to_string(), Value::Integer(1));
+        let obj = Value::Object(Arc::new(map));
+        let output = CommandRegistry::inspect_value(&obj);
+        assert!(output.contains("Type: Object"));
+        assert!(output.contains("Fields: 1"));
+        assert!(output.contains("x:"));
+    }
+
+    #[test]
+    fn test_inspect_value_object_mut() {
+        let mut map = HashMap::new();
+        map.insert("y".to_string(), Value::Integer(2));
+        let obj = Value::ObjectMut(Arc::new(Mutex::new(map)));
+        let output = CommandRegistry::inspect_value(&obj);
+        assert!(output.contains("Fields: 1"));
+        assert!(output.contains("y:"));
+    }
+
+    #[test]
+    fn test_inspect_value_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: true,
+        };
+        let output = CommandRegistry::inspect_value(&range);
+        assert!(output.contains("Type: Range"));
+        assert!(output.contains("Start:"));
+        assert!(output.contains("End:"));
+        assert!(output.contains("Inclusive: true"));
+    }
+
+    #[test]
+    fn test_inspect_value_enum_variant() {
+        let variant = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        let output = CommandRegistry::inspect_value(&variant);
+        assert!(output.contains("Type: Enum"));
+        assert!(output.contains("Variant: None"));
+    }
+
+    #[test]
+    fn test_inspect_value_builtin_function() {
+        let output = CommandRegistry::inspect_value(&Value::BuiltinFunction("print".to_string()));
+        assert!(output.contains("Type: BuiltinFunction"));
+        assert!(output.contains("builtin: print"));
+    }
+
+    #[test]
+    fn test_inspect_value_struct() {
+        let mut fields = HashMap::new();
+        fields.insert("x".to_string(), Value::Integer(10));
+        let s = Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(fields),
+        };
+        let output = CommandRegistry::inspect_value(&s);
+        assert!(output.contains("Type: Struct"));
+        assert!(output.contains("Struct: Point"));
+        assert!(output.contains("Fields: 1"));
+    }
+
+    #[test]
+    fn test_inspect_value_class() {
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), Value::String("test".into()));
+        let c = Value::Class {
+            class_name: "MyClass".to_string(),
+            fields: Arc::new(RwLock::new(fields)),
+            methods: Arc::new(HashMap::new()),
+        };
+        let output = CommandRegistry::inspect_value(&c);
+        assert!(output.contains("Type: Class"));
+        assert!(output.contains("Class: MyClass"));
+        assert!(output.contains("Fields: 1"));
+        assert!(output.contains("Methods: 0"));
+    }
+
+    #[test]
+    fn test_inspect_value_atom() {
+        let output = CommandRegistry::inspect_value(&Value::Atom("ok".to_string()));
+        assert!(output.contains("Type: Atom"));
+        assert!(output.contains(":ok"));
+    }
+
+    #[test]
+    fn test_inspect_value_dataframe() {
+        use crate::runtime::DataFrameColumn;
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+        ];
+        let df = Value::DataFrame { columns };
+        let output = CommandRegistry::inspect_value(&df);
+        assert!(output.contains("Columns: 1"));
+        assert!(output.contains("Rows: 2"));
+    }
+
+    #[test]
+    fn test_inspect_value_closure() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let closure = Value::Closure {
+            params: vec![("x".to_string(), None)],
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            env: Rc::new(RefCell::new(HashMap::new())),
+        };
+        let output = CommandRegistry::inspect_value(&closure);
+        assert!(output.contains("Type: Function"));
+        assert!(output.contains("<function>"));
+    }
+
+    // estimate_value_memory for closure
+    #[test]
+    fn test_estimate_value_memory_closure() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let closure = Value::Closure {
+            params: vec![("x".to_string(), None)],
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            env: Rc::new(RefCell::new(HashMap::new())),
+        };
+        let size = CommandRegistry::estimate_value_memory(&closure);
+        assert!(size >= 1 + 128); // "x".len() + 128 base overhead
+    }
+
+    // estimate_value_memory for dataframe
+    #[test]
+    fn test_estimate_value_memory_dataframe() {
+        use crate::runtime::DataFrameColumn;
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+        ];
+        let df = Value::DataFrame { columns };
+        let size = CommandRegistry::estimate_value_memory(&df);
+        assert!(size > 0);
+    }
+
+    // value_type_name for dataframe
+    #[test]
+    fn test_value_type_name_dataframe() {
+        let df = Value::DataFrame { columns: vec![] };
+        assert_eq!(CommandRegistry::value_type_name(&df), "DataFrame");
+    }
+
+    // value_type_name for closure
+    #[test]
+    fn test_value_type_name_closure() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let closure = Value::Closure {
+            params: vec![],
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            env: Rc::new(RefCell::new(HashMap::new())),
+        };
+        assert_eq!(CommandRegistry::value_type_name(&closure), "Function");
     }
 }

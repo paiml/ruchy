@@ -120,3 +120,91 @@ fn parse_rust_style_attributes(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_parse_at_decorator_simple() {
+        let mut parser = Parser::new("@deprecated fn foo() { 42 }");
+        let expr = parser.parse().unwrap();
+        // Decorator should be attached to function - attrs are on expr, not inside kind
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { name, .. } => {
+                assert_eq!(name, "foo");
+                assert_eq!(expr.attributes.len(), 1);
+                assert_eq!(expr.attributes[0].name, "deprecated");
+            }
+            _ => panic!("Expected function definition with decorator"),
+        }
+    }
+
+    #[test]
+    fn test_parse_at_decorator_with_args() {
+        let mut parser = Parser::new("@test(\"unit\") fn bar() { 1 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes.len(), 1);
+                assert_eq!(expr.attributes[0].name, "test");
+                assert_eq!(expr.attributes[0].args, vec!["unit".to_string()]);
+            }
+            _ => panic!("Expected function definition with decorator"),
+        }
+    }
+
+    #[test]
+    fn test_parse_at_decorator_multiple_args() {
+        let mut parser = Parser::new("@config(\"key\", \"value\") fn baz() { 0 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes.len(), 1);
+                assert_eq!(expr.attributes[0].args.len(), 2);
+                assert_eq!(expr.attributes[0].args[0], "key");
+                assert_eq!(expr.attributes[0].args[1], "value");
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_multiple_decorators() {
+        let mut parser = Parser::new("@deprecated @inline fn qux() { 42 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes.len(), 2);
+                assert_eq!(expr.attributes[0].name, "deprecated");
+                assert_eq!(expr.attributes[1].name, "inline");
+            }
+            _ => panic!("Expected function definition with decorators"),
+        }
+    }
+
+    #[test]
+    fn test_parse_decorator_with_identifier_arg() {
+        let mut parser = Parser::new("@route(my_method) fn process_request() { 1 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes[0].name, "route");
+                assert_eq!(expr.attributes[0].args, vec!["my_method".to_string()]);
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
+
+    #[test]
+    fn test_no_decorators() {
+        let mut parser = Parser::new("fn simple() { 42 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert!(expr.attributes.is_empty());
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
+}

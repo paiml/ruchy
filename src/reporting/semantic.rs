@@ -63,10 +63,25 @@ impl SemanticTag {
     #[must_use]
     pub fn all() -> &'static [SemanticTag] {
         &[
-            Self::Async, Self::Generics, Self::Closures, Self::Traits, Self::Lifetimes,
-            Self::ErrorHandling, Self::Macros, Self::Collections, Self::Iterators,
-            Self::PatternMatch, Self::Concurrency, Self::Ffi, Self::StdLib, Self::Io,
-            Self::Strings, Self::Numerics, Self::ControlFlow, Self::DataTypes, Self::Modules,
+            Self::Async,
+            Self::Generics,
+            Self::Closures,
+            Self::Traits,
+            Self::Lifetimes,
+            Self::ErrorHandling,
+            Self::Macros,
+            Self::Collections,
+            Self::Iterators,
+            Self::PatternMatch,
+            Self::Concurrency,
+            Self::Ffi,
+            Self::StdLib,
+            Self::Io,
+            Self::Strings,
+            Self::Numerics,
+            Self::ControlFlow,
+            Self::DataTypes,
+            Self::Modules,
             Self::Testing,
         ]
     }
@@ -80,7 +95,9 @@ impl SemanticTag {
             "closures" | "closure" | "lambda" => Some(Self::Closures),
             "traits" | "trait" => Some(Self::Traits),
             "lifetimes" | "lifetime" | "borrow" => Some(Self::Lifetimes),
-            "error" | "errors" | "error_handling" | "result" | "option" => Some(Self::ErrorHandling),
+            "error" | "errors" | "error_handling" | "result" | "option" => {
+                Some(Self::ErrorHandling)
+            }
             "macros" | "macro" => Some(Self::Macros),
             "collections" | "collection" | "vec" | "hashmap" => Some(Self::Collections),
             "iterators" | "iterator" | "iter" => Some(Self::Iterators),
@@ -135,10 +152,27 @@ impl SemanticTag {
             Self::Closures => &["|", "move |", "|| {", "fn("],
             Self::Traits => &["trait ", "impl ", "dyn ", "Box<dyn"],
             Self::Lifetimes => &["'a", "'static", "&'", "lifetime"],
-            Self::ErrorHandling => &["Result<", "Option<", "?", "unwrap(", "expect(", "Ok(", "Err(", "Some(", "None"],
+            Self::ErrorHandling => &[
+                "Result<", "Option<", "?", "unwrap(", "expect(", "Ok(", "Err(", "Some(", "None",
+            ],
             Self::Macros => &["macro_rules!", "!", "#["],
-            Self::Collections => &["Vec<", "HashMap<", "HashSet<", "BTreeMap<", "VecDeque<", "vec![", "hashmap!"],
-            Self::Iterators => &[".iter()", ".into_iter()", ".map(", ".filter(", ".collect(", ".fold("],
+            Self::Collections => &[
+                "Vec<",
+                "HashMap<",
+                "HashSet<",
+                "BTreeMap<",
+                "VecDeque<",
+                "vec![",
+                "hashmap!",
+            ],
+            Self::Iterators => &[
+                ".iter()",
+                ".into_iter()",
+                ".map(",
+                ".filter(",
+                ".collect(",
+                ".fold(",
+            ],
             Self::PatternMatch => &["match ", "if let ", "while let ", "=>"],
             Self::Concurrency => &["thread::", "spawn(", "Mutex<", "RwLock<", "Arc<", "mpsc::"],
             Self::Ffi => &["unsafe ", "extern ", "#[no_mangle]", "*const", "*mut"],
@@ -146,7 +180,9 @@ impl SemanticTag {
             Self::Io => &["File::", "Read", "Write", "BufReader", "stdin(", "stdout("],
             Self::Strings => &["String::", "str::", "format!", "to_string(", "&str"],
             Self::Numerics => &["i32", "i64", "u32", "f64", "usize", "+", "-", "*", "/"],
-            Self::ControlFlow => &["if ", "else ", "for ", "while ", "loop ", "break", "continue", "return"],
+            Self::ControlFlow => &[
+                "if ", "else ", "for ", "while ", "loop ", "break", "continue", "return",
+            ],
             Self::DataTypes => &["struct ", "enum ", "type "],
             Self::Modules => &["mod ", "pub mod", "use ", "crate::"],
             Self::Testing => &["#[test]", "#[cfg(test)]", "assert!", "assert_eq!", "test_"],
@@ -251,10 +287,7 @@ impl TaggedFile {
     pub fn tag_summary(&self) -> String {
         let mut tags: Vec<_> = self.tags.iter().collect();
         tags.sort_by_key(|t| t.name());
-        tags.iter()
-            .map(|t| t.name())
-            .collect::<Vec<_>>()
-            .join(", ")
+        tags.iter().map(|t| t.name()).collect::<Vec<_>>().join(", ")
     }
 }
 
@@ -453,9 +486,17 @@ impl TagStatistics {
         self.file_count = self.files.len();
 
         // Update average confidence
-        let total_confidence: f64 = self.files.iter()
+        let total_confidence: f64 = self
+            .files
+            .iter()
             .enumerate()
-            .map(|(i, _)| if i == self.files.len() - 1 { confidence } else { self.avg_confidence })
+            .map(|(i, _)| {
+                if i == self.files.len() - 1 {
+                    confidence
+                } else {
+                    self.avg_confidence
+                }
+            })
             .sum();
         self.avg_confidence = total_confidence / self.file_count as f64;
     }
@@ -552,8 +593,14 @@ mod tests {
     fn test_semantic_tag_from_str() {
         assert_eq!(SemanticTag::from_str("async"), Some(SemanticTag::Async));
         assert_eq!(SemanticTag::from_str("ASYNC"), Some(SemanticTag::Async));
-        assert_eq!(SemanticTag::from_str("generics"), Some(SemanticTag::Generics));
-        assert_eq!(SemanticTag::from_str("closure"), Some(SemanticTag::Closures));
+        assert_eq!(
+            SemanticTag::from_str("generics"),
+            Some(SemanticTag::Generics)
+        );
+        assert_eq!(
+            SemanticTag::from_str("closure"),
+            Some(SemanticTag::Closures)
+        );
         assert_eq!(SemanticTag::from_str("unknown"), None);
     }
 
@@ -573,7 +620,9 @@ mod tests {
 
     #[test]
     fn test_semantic_tag_complexity() {
-        assert!(SemanticTag::Lifetimes.complexity_weight() > SemanticTag::Strings.complexity_weight());
+        assert!(
+            SemanticTag::Lifetimes.complexity_weight() > SemanticTag::Strings.complexity_weight()
+        );
         assert!(SemanticTag::Ffi.complexity_weight() >= 10);
         assert!(SemanticTag::Numerics.complexity_weight() <= 3);
     }

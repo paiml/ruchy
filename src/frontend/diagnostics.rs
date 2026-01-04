@@ -433,10 +433,7 @@ mod tests {
     #[test]
     fn test_suggest_all_combines_sources() {
         // Test that suggest_all includes both heuristic and Oracle suggestions
-        let mut error = ParseError::new(
-            "unexpected token".to_string(),
-            Span { start: 5, end: 10 },
-        );
+        let mut error = ParseError::new("unexpected token".to_string(), Span { start: 5, end: 10 });
         error.found = Some(crate::frontend::lexer::Token::Equal);
 
         let suggestions = suggest_all(&error);

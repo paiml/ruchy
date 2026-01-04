@@ -222,7 +222,11 @@ impl SbflRanking {
             .collect();
 
         // Sort by score descending
-        scores.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scores.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         // Assign ranks
         for (i, score) in scores.iter_mut().enumerate() {
@@ -439,7 +443,7 @@ mod tests {
     #[test]
     fn test_ranking_order() {
         let locations = vec![
-            ("low".to_string(), SpectrumData::new(100, 0, 0, 10)),  // Low suspicion
+            ("low".to_string(), SpectrumData::new(100, 0, 0, 10)), // Low suspicion
             ("high".to_string(), SpectrumData::new(0, 10, 100, 0)), // High suspicion
         ];
 

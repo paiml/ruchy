@@ -204,11 +204,7 @@ impl ParetoAnalysis {
         }
 
         // Find vital few (covering 80%)
-        let vital_few_count = clusters
-            .iter()
-            .take_while(|c| c.cumulative <= 80.0)
-            .count()
-            + 1; // Include the one that crosses 80%
+        let vital_few_count = clusters.iter().take_while(|c| c.cumulative <= 80.0).count() + 1; // Include the one that crosses 80%
 
         let clusters_len = clusters.len();
         let vital_few_count = vital_few_count.min(clusters_len);
@@ -481,15 +477,15 @@ mod tests {
         counts2.insert("E0308".to_string(), 3);
         counts2.insert("E0382".to_string(), 3);
         counts2.insert("E0999".to_string(), 94); // filler: 94% but only if > 20 count...
-        // Actually 94/100 = 94% which is > 20%, so it's P0
+                                                 // Actually 94/100 = 94% which is > 20%, so it's P0
 
         // Let's use counts where no error is critical
         let mut counts3 = HashMap::new();
-        counts3.insert("E0308".to_string(), 3);  // 3% and <10 = P3
-        counts3.insert("E0382".to_string(), 3);  // 3% and <10 = P3
-        counts3.insert("E0425".to_string(), 4);  // 4% and <10 = P3
-        // Total = 10, each is 30-40% but all <10 occurrences
-        // 3/10 = 30% > 20% = P0! Need larger total
+        counts3.insert("E0308".to_string(), 3); // 3% and <10 = P3
+        counts3.insert("E0382".to_string(), 3); // 3% and <10 = P3
+        counts3.insert("E0425".to_string(), 4); // 4% and <10 = P3
+                                                // Total = 10, each is 30-40% but all <10 occurrences
+                                                // 3/10 = 30% > 20% = P0! Need larger total
 
         // Use 100 total with small individual counts
         let mut counts4 = HashMap::new();
