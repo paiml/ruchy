@@ -351,14 +351,41 @@ fn determine_self_type(params: &[crate::frontend::ast::Param]) -> SelfType {
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::frontend::parser::Parser;
+
+    // Helper to parse code
+    fn parse(code: &str) -> Result<Expr> {
+        let mut parser = Parser::new(code);
+        parser.parse()
+    }
+
+    // Helper to extract block expressions
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ===== parse_struct_variant tests =====
 
     #[test]
     fn test_named_struct() {
         let code = "struct Point { x: f64, y: f64 }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Named struct should parse");
+    }
+
+    #[test]
+    fn test_named_struct_fields() {
+        let expr = parse("struct Point { x: i32, y: i32 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Struct { name, fields, .. } = &exprs[0].kind {
+                assert_eq!(name, "Point");
+                assert_eq!(fields.len(), 2);
+            }
+        }
     }
 
     #[test]
@@ -369,11 +396,64 @@ mod tests {
     }
 
     #[test]
+    fn test_tuple_struct_fields() {
+        let expr = parse("struct Pair(i32, i32)").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::TupleStruct { name, fields, .. } = &exprs[0].kind {
+                assert_eq!(name, "Pair");
+                assert_eq!(fields.len(), 2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_tuple_struct_single_field() {
+        let expr = parse("struct Wrapper(String)").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::TupleStruct { fields, .. } = &exprs[0].kind {
+                assert_eq!(fields.len(), 1);
+            }
+        }
+    }
+
+    #[test]
     fn test_unit_struct() {
         let code = "struct Marker";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Unit struct should parse");
     }
+
+    #[test]
+    fn test_unit_struct_empty_fields() {
+        let expr = parse("struct Empty").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Struct { fields, .. } = &exprs[0].kind {
+                assert!(fields.is_empty());
+            }
+        }
+    }
+
+    // ===== parse_struct_name tests =====
+
+    #[test]
+    fn test_struct_name_simple() {
+        let result = parse("struct Foo { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_name_with_numbers() {
+        let result = parse("struct Point2D { x: i32, y: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_name_snake_case() {
+        let result = parse("struct my_struct { value: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Generic struct tests =====
 
     #[test]
     fn test_generic_struct() {
@@ -383,11 +463,66 @@ mod tests {
     }
 
     #[test]
+    fn test_generic_struct_type_params() {
+        let expr = parse("struct Box<T> { inner: T }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Struct { type_params, .. } = &exprs[0].kind {
+                assert_eq!(type_params.len(), 1);
+                assert_eq!(type_params[0], "T");
+            }
+        }
+    }
+
+    #[test]
+    fn test_generic_struct_multiple_params() {
+        let expr = parse("struct Pair<K, V> { key: K, value: V }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Struct { type_params, .. } = &exprs[0].kind {
+                assert_eq!(type_params.len(), 2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_generic_tuple_struct() {
+        let result = parse("struct Wrapper<T>(T)");
+        assert!(result.is_ok());
+    }
+
+    // ===== Field visibility tests =====
+
+    #[test]
     fn test_pub_field() {
         let code = "struct Point { pub x: f64, y: f64 }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Struct with pub field should parse");
     }
+
+    #[test]
+    fn test_pub_crate_field() {
+        let result = parse("struct Data { pub(crate) value: i32 }");
+        assert!(result.is_ok(), "Struct with pub(crate) field should parse");
+    }
+
+    #[test]
+    fn test_pub_super_field() {
+        let result = parse("struct Data { pub(super) value: i32 }");
+        assert!(result.is_ok(), "Struct with pub(super) field should parse");
+    }
+
+    #[test]
+    fn test_private_field() {
+        let result = parse("struct Secret { private data: String }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mixed_visibility_fields() {
+        let result = parse("struct Mixed { pub a: i32, private b: i32, c: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Mutable field tests =====
 
     #[test]
     fn test_mut_field() {
@@ -397,9 +532,205 @@ mod tests {
     }
 
     #[test]
+    fn test_pub_mut_field() {
+        let result = parse("struct Counter { pub mut count: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mixed_mutability() {
+        let result = parse("struct State { mut counter: i32, readonly: String }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Default value tests =====
+
+    #[test]
     fn test_field_with_default() {
         let code = "struct Config { timeout: i32 = 30 }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Struct with default value should parse");
+    }
+
+    #[test]
+    fn test_field_with_string_default() {
+        let result = parse("struct Config { name: String = \"default\" }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_field_with_expression_default() {
+        let result = parse("struct Config { value: i32 = 10 + 20 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_multiple_fields_with_defaults() {
+        let result = parse("struct Config { a: i32 = 1, b: i32 = 2, c: i32 = 3 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Struct with methods tests (PARSER-147) =====
+
+    #[test]
+    fn test_struct_with_method() {
+        let result = parse("struct Counter { count: i32, fun inc(&mut self) { self.count = self.count + 1 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_with_pub_method() {
+        let result = parse("struct Counter { count: i32, pub fun get(&self) -> i32 { self.count } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_with_static_method() {
+        let result = parse("struct Point { x: i32, y: i32, fun new(x: i32, y: i32) -> Point { Point { x: x, y: y } } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_with_multiple_methods() {
+        let result = parse("struct Counter { count: i32, fun inc(&mut self) { } fun dec(&mut self) { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Field types tests =====
+
+    #[test]
+    fn test_field_with_array_type() {
+        let result = parse("struct Data { items: Vec<i32> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_field_with_option_type() {
+        let result = parse("struct Config { value: Option<String> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_field_with_result_type() {
+        let result = parse("struct Response { result: Result<Data, Error> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_field_with_reference_type() {
+        let result = parse("struct View { data: &str }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_field_with_tuple_type() {
+        let result = parse("struct Pair { value: (i32, i32) }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Comment handling tests (DEFECT-PARSER-007) =====
+
+    #[test]
+    fn test_struct_with_line_comments() {
+        let result = parse("struct Point {\n  // x coordinate\n  x: i32,\n  // y coordinate\n  y: i32\n}");
+        assert!(result.is_ok(), "Struct with line comments should parse");
+    }
+
+    #[test]
+    fn test_struct_with_inline_comment() {
+        let result = parse("struct Point { x: i32, // inline comment\n y: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Edge cases =====
+
+    #[test]
+    fn test_empty_struct_braces() {
+        let result = parse("struct Empty { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_single_field_struct() {
+        let expr = parse("struct Single { value: i32 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Struct { fields, .. } = &exprs[0].kind {
+                assert_eq!(fields.len(), 1);
+            }
+        }
+    }
+
+    #[test]
+    fn test_trailing_comma() {
+        let result = parse("struct Point { x: i32, y: i32, }");
+        assert!(result.is_ok(), "Trailing comma should be allowed");
+    }
+
+    #[test]
+    fn test_tuple_struct_trailing_comma() {
+        let result = parse("struct Rgb(u8, u8, u8,)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_empty() {
+        let result = parse("struct Unit()");
+        assert!(result.is_ok());
+    }
+
+    // ===== determine_self_type tests =====
+
+    #[test]
+    fn test_method_with_self() {
+        let result = parse("struct Foo { fun bar(self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_method_with_ref_self() {
+        let result = parse("struct Foo { fun bar(&self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_method_with_mut_ref_self() {
+        let result = parse("struct Foo { fun bar(&mut self) { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex struct tests =====
+
+    #[test]
+    fn test_complex_struct() {
+        let code = r#"
+struct User {
+    pub id: i64,
+    pub(crate) name: String,
+    private password_hash: String,
+    mut login_count: i32 = 0,
+
+    fun new(name: String) -> User {
+        User { id: 0, name: name, password_hash: "", login_count: 0 }
+    }
+
+    pub fun get_name(&self) -> String {
+        self.name
+    }
+}
+"#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Complex struct should parse");
+    }
+
+    #[test]
+    fn test_nested_generic_struct() {
+        let result = parse("struct Tree<T> { value: T, children: Vec<Tree<T>> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_with_fn_keyword() {
+        let result = parse("struct Foo { fn bar(&self) { } }");
+        assert!(result.is_ok(), "'fn' should work like 'fun'");
     }
 }
