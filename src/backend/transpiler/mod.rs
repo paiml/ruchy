@@ -51,6 +51,7 @@ mod expressions;
 mod method_call_refactored;
 mod patterns;
 mod result_type;
+pub mod return_type_helpers;
 mod statements;
 #[cfg(test)]
 mod tests_compound_assignment;
