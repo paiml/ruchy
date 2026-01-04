@@ -1191,61 +1191,6 @@ impl Transpiler {
         })
     }
 
-    /// Determines if a function needs explicit lifetime parameter
-    /// Returns true if:
-    /// - Function has 2+ reference parameters AND
-    /// - Function returns a reference type
-    fn needs_lifetime_parameter(&self, params: &[Param], return_type: Option<&Type>) -> bool {
-        // Count parameters with reference types
-        let ref_param_count = params
-            .iter()
-            .filter(|p| self.is_reference_type(&p.ty))
-            .count();
-
-        // Check if return type is a reference
-        let returns_reference = return_type.is_some_and(|rt| self.is_reference_type(rt));
-
-        // Need lifetime if 2+ ref params and ref return
-        ref_param_count >= 2 && returns_reference
-    }
-
-    /// Check if a type is a reference type (&T, &str, &[T], etc.)
-    fn is_reference_type(&self, ty: &Type) -> bool {
-        use crate::frontend::ast::TypeKind;
-        matches!(ty.kind, TypeKind::Reference { .. })
-    }
-
-    /// DEFECT-012: Check if a type is String
-    fn is_string_type(&self, ty: &Type) -> bool {
-        use crate::frontend::ast::TypeKind;
-        matches!(&ty.kind, TypeKind::Named(name) if name == "String")
-    }
-
-    /// DEFECT-012/013: Check if expression body needs .`to_string()` conversion
-    fn body_needs_string_conversion(body: &Expr) -> bool {
-        match &body.kind {
-            ExprKind::Literal(Literal::String(_)) => true,
-            ExprKind::Identifier(_) => true, // Could be &str variable
-            ExprKind::IndexAccess { .. } => true, // DEFECT-013: Vec/array indexing may return &str
-            // DEFECT-016-C: Match expressions may have string literal arms
-            ExprKind::Match { arms, .. } => {
-                // Check if any arm has a string literal body
-                arms.iter()
-                    .any(|arm| matches!(&arm.body.kind, ExprKind::Literal(Literal::String(_))))
-            }
-            ExprKind::Block(exprs) if !exprs.is_empty() => Self::body_needs_string_conversion(
-                exprs
-                    .last()
-                    .expect("exprs is non-empty due to guard condition"),
-            ),
-            ExprKind::Let { body, .. } => {
-                // Let expressions have the return value in their body field
-                Self::body_needs_string_conversion(body)
-            }
-            _ => false,
-        }
-    }
-
     /// Helper: Transpile match expression with string literal arm conversion
     /// Reduces cognitive complexity by extracting duplicated match arm handling
     fn transpile_match_with_string_arms(
@@ -1566,7 +1511,7 @@ impl Transpiler {
         let fn_name = format_ident!("{}", name);
 
         // Check if we need to add lifetime parameter
-        let needs_lifetime = self.needs_lifetime_parameter(params, return_type);
+        let needs_lifetime = super::type_analysis::needs_lifetime_parameter(params, return_type);
 
         // If lifetime needed, add 'a to type params and modify param/return types
         // DEFECT-028 FIX: Check if type_params already contains a lifetime to avoid duplicates
@@ -1616,7 +1561,7 @@ impl Transpiler {
 
         // DEFECT-012 FIX: Generate body tokens with special handling for String return type
         let body_tokens = if let Some(ret_type) = effective_return_type {
-            if self.is_string_type(ret_type) && Self::body_needs_string_conversion(body) {
+            if super::type_analysis::is_string_type(ret_type) && super::type_analysis::body_needs_string_conversion(body) {
                 self.generate_body_tokens_with_string_conversion(body, is_async)?
             } else {
                 self.generate_body_tokens(body, is_async)?
@@ -7918,13 +7863,12 @@ mod property_tests_statements {
             span: Span::default(),
             is_mutable: false,
         }];
-        assert!(!transpiler.needs_lifetime_parameter(&params, None));
+        assert!(!super::type_analysis::needs_lifetime_parameter(&params, None));
     }
 
     // Test 116: needs_lifetime_parameter - 2+ ref params and ref return
     #[test]
     fn test_needs_lifetime_parameter_requires_lifetime() {
-        let transpiler = Transpiler::new();
         let ref_type = Type {
             kind: TypeKind::Reference {
                 is_mut: false,
@@ -7953,13 +7897,12 @@ mod property_tests_statements {
             },
         ];
         let return_type = Some(&ref_type);
-        assert!(transpiler.needs_lifetime_parameter(&params, return_type));
+        assert!(super::type_analysis::needs_lifetime_parameter(&params, return_type));
     }
 
     // Test 117: is_reference_type - detects reference
     #[test]
     fn test_is_reference_type_true() {
-        let transpiler = Transpiler::new();
         let ref_ty = Type {
             kind: TypeKind::Reference {
                 is_mut: false,
@@ -7971,40 +7914,37 @@ mod property_tests_statements {
             },
             span: Span::default(),
         };
-        assert!(transpiler.is_reference_type(&ref_ty));
+        assert!(super::type_analysis::is_reference_type(&ref_ty));
     }
 
     // Test 118: is_reference_type - non-reference type
     #[test]
     fn test_is_reference_type_false() {
-        let transpiler = Transpiler::new();
         let named_ty = Type {
             kind: TypeKind::Named("String".to_string()),
             span: Span::default(),
         };
-        assert!(!transpiler.is_reference_type(&named_ty));
+        assert!(!super::type_analysis::is_reference_type(&named_ty));
     }
 
     // Test 119: is_string_type - detects String
     #[test]
     fn test_is_string_type_true() {
-        let transpiler = Transpiler::new();
         let string_ty = Type {
             kind: TypeKind::Named("String".to_string()),
             span: Span::default(),
         };
-        assert!(transpiler.is_string_type(&string_ty));
+        assert!(super::type_analysis::is_string_type(&string_ty));
     }
 
     // Test 120: is_string_type - non-String type
     #[test]
     fn test_is_string_type_false() {
-        let transpiler = Transpiler::new();
         let int_ty = Type {
             kind: TypeKind::Named("i32".to_string()),
             span: Span::default(),
         };
-        assert!(!transpiler.is_string_type(&int_ty));
+        assert!(!super::type_analysis::is_string_type(&int_ty));
     }
 
     // Test 121: body_needs_string_conversion - string literal
@@ -8014,14 +7954,14 @@ mod property_tests_statements {
             ExprKind::Literal(Literal::String("hello".to_string())),
             Span::default(),
         );
-        assert!(Transpiler::body_needs_string_conversion(&body));
+        assert!(super::type_analysis::body_needs_string_conversion(&body));
     }
 
     // Test 122: body_needs_string_conversion - identifier
     #[test]
     fn test_body_needs_string_conversion_identifier() {
         let body = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
-        assert!(Transpiler::body_needs_string_conversion(&body));
+        assert!(super::type_analysis::body_needs_string_conversion(&body));
     }
 
     // Test 123: body_needs_string_conversion - integer literal
@@ -8031,7 +7971,7 @@ mod property_tests_statements {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        assert!(!Transpiler::body_needs_string_conversion(&body));
+        assert!(!super::type_analysis::body_needs_string_conversion(&body));
     }
 
     // Test 124: transpile_iterator_methods - map
