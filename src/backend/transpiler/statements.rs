@@ -4,11 +4,17 @@
 #![allow(clippy::collapsible_else_if)]
 use super::*;
 use crate::frontend::ast::{
-    BinaryOp, CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp,
+    CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp,
 };
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+
+use super::return_type_helpers::{
+    expr_is_string, returns_boolean, returns_object_literal, returns_string, returns_string_literal,
+    returns_vec,
+};
+
 impl Transpiler {
     /// Checks if a variable is mutated (reassigned or modified) in an expression tree
     fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
@@ -837,469 +843,16 @@ impl Transpiler {
         }
     }
 
-    /// Check if function body returns a string literal (ISSUE-103, ISSUE-114)
-    /// Handles direct literals, nested Let bindings, and string variable tracking
-    fn returns_string_literal(body: &Expr) -> bool {
-        Self::returns_string_literal_with_vars(body, &std::collections::HashSet::new())
-    }
-
-    /// Internal helper that tracks string variables through nested let bindings
-    /// ISSUE-114 FIX: Handle patterns like `let s = "hello"; let n = 42; s`
-    fn returns_string_literal_with_vars(
-        body: &Expr,
-        string_vars: &std::collections::HashSet<String>,
-    ) -> bool {
-        match &body.kind {
-            ExprKind::Literal(Literal::String(_)) => true,
-            // ISSUE-114: Check if identifier is a known string variable
-            ExprKind::Identifier(name) => string_vars.contains(name),
-            ExprKind::Block(exprs) if !exprs.is_empty() => {
-                // Track string vars through block expressions
-                let mut vars = string_vars.clone();
-                for expr in &exprs[..exprs.len().saturating_sub(1)] {
-                    Self::collect_string_vars(expr, &mut vars);
-                }
-                if let Some(last_expr) = exprs.last() {
-                    Self::returns_string_literal_with_vars(last_expr, &vars)
-                } else {
-                    false
-                }
-            }
-            // Let expression - track string bindings and check body
-            ExprKind::Let {
-                name,
-                value,
-                body: let_body,
-                is_mutable,
-                ..
-            } => {
-                let mut vars = string_vars.clone();
-                // Track immutable string literal bindings
-                if !is_mutable && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                    vars.insert(name.clone());
-                }
-                Self::returns_string_literal_with_vars(let_body, &vars)
-            }
-            // If expression - check if both branches return string literals
-            ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                let then_is_literal =
-                    Self::returns_string_literal_with_vars(then_branch, string_vars);
-                let else_is_literal = else_branch
-                    .as_ref()
-                    .is_some_and(|e| Self::returns_string_literal_with_vars(e, string_vars));
-                then_is_literal && else_is_literal
-            }
-            // Return statement with string literal
-            ExprKind::Return { value: Some(val) } => {
-                Self::returns_string_literal_with_vars(val, string_vars)
-            }
-            _ => false,
-        }
-    }
-
-    /// Helper: Collect string variable bindings from an expression
-    fn collect_string_vars(expr: &Expr, string_vars: &mut std::collections::HashSet<String>) {
-        if let ExprKind::Let {
-            name,
-            value,
-            is_mutable,
-            ..
-        } = &expr.kind
-        {
-            if !is_mutable && matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                string_vars.insert(name.clone());
-            }
-        }
-    }
-
-    /// Check if function body returns a boolean value (ISSUE-113)
-    /// Detects: true, false, comparison expressions, return statements with booleans
-    /// TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
-    /// Returns `TokenStream` for return type if body returns a parameter value
-    /// Complexity: 9 (handles blocks, lets, identifiers, variable tracing)
+    /// Infer return type from parameter types
+    /// Delegates to return_type_helpers module
     fn infer_return_type_from_params(
         &self,
         body: &Expr,
         params: &[Param],
     ) -> Result<Option<proc_macro2::TokenStream>> {
-        use quote::quote;
-        use std::collections::HashMap;
-
-        // Build a map of variable -> parameter type by tracing let bindings
-        let mut var_to_param: HashMap<String, &Type> = HashMap::new();
-
-        // Helper: check if identifier is a parameter
-        let is_param = |name: &str| -> Option<&Type> {
-            params.iter().find(|p| p.name() == name).map(|p| &p.ty)
-        };
-
-        // Trace variable assignments in body
-        Self::trace_param_assignments(body, &mut var_to_param, params);
-
-        // Extract final expression from body (handle nested Let/Block structures)
-        let final_expr = Self::get_final_expression(body);
-
-        if let Some(expr) = final_expr {
-            if let ExprKind::Identifier(name) = &expr.kind {
-                // Check if it's directly a parameter
-                if let Some(param_type) = is_param(name) {
-                    let type_tokens = self.transpile_type(param_type)?;
-                    return Ok(Some(quote! { -> #type_tokens }));
-                }
-
-                // Check if it's a variable that was assigned from a parameter
-                if let Some(&param_type) = var_to_param.get(name) {
-                    let type_tokens = self.transpile_type(param_type)?;
-                    return Ok(Some(quote! { -> #type_tokens }));
-                }
-            }
-        }
-
-        Ok(None)
-    }
-
-    /// Helper: Get the actual final expression, drilling through Let/Block wrappers
-    /// Complexity: 3 (simple recursive pattern matching)
-    fn get_final_expression(expr: &Expr) -> Option<&Expr> {
-        match &expr.kind {
-            ExprKind::Block(exprs) => exprs.last().and_then(Self::get_final_expression),
-            ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-                Self::get_final_expression(body)
-            }
-            _ => Some(expr),
-        }
-    }
-
-    /// Helper: Trace variable assignments to find which vars hold parameter values
-    /// Complexity: 6 (recursive traversal with simple matching)
-    fn trace_param_assignments<'a>(
-        expr: &Expr,
-        var_to_param: &mut std::collections::HashMap<String, &'a Type>,
-        params: &'a [Param],
-    ) {
-        match &expr.kind {
-            ExprKind::Block(exprs) => {
-                for e in exprs {
-                    Self::trace_param_assignments(e, var_to_param, params);
-                }
-            }
-            ExprKind::Let {
-                name, value, body, ..
-            } => {
-                // Check if value is a parameter (direct assignment)
-                if let ExprKind::Identifier(value_name) = &value.kind {
-                    if let Some(param) = params.iter().find(|p| &p.name() == value_name) {
-                        var_to_param.insert(name.clone(), &param.ty);
-                    }
-                }
-                // TRANSPILER-TYPE-INFER-EXPR: Check if value is an expression involving parameters
-                else if let Some(inferred_type) = Self::infer_expr_type_from_params(value, params)
-                {
-                    var_to_param.insert(name.clone(), inferred_type);
-                }
-                Self::trace_param_assignments(body, var_to_param, params);
-            }
-            _ => {}
-        }
-    }
-
-    /// TRANSPILER-TYPE-INFER-EXPR: Infer type of expressions involving parameters
-    /// Recursively analyzes expressions to find parameter types
-    /// For Binary expressions, returns the type of the parameter operand
-    /// Complexity: 6 (recursive with 3 match arms)
-    fn infer_expr_type_from_params<'a>(expr: &Expr, params: &'a [Param]) -> Option<&'a Type> {
-        match &expr.kind {
-            // If expression is an identifier, check if it's a parameter
-            ExprKind::Identifier(name) => params.iter().find(|p| &p.name() == name).map(|p| &p.ty),
-            // For binary operations, recursively check operands
-            // If either operand is a parameter, assume result has that type
-            // (Works for numeric operations: f64 * f64 = f64, i32 + i32 = i32, etc.)
-            ExprKind::Binary { left, right, .. } => Self::infer_expr_type_from_params(left, params)
-                .or_else(|| Self::infer_expr_type_from_params(right, params)),
-            _ => None,
-        }
-    }
-
-    fn returns_boolean(body: &Expr) -> bool {
-        match &body.kind {
-            // Direct boolean literals
-            ExprKind::Literal(Literal::Bool(_)) => true,
-
-            // Comparison operators return bool
-            ExprKind::Binary { op, .. } => matches!(
-                op,
-                BinaryOp::Less
-                    | BinaryOp::Greater
-                    | BinaryOp::LessEqual
-                    | BinaryOp::GreaterEqual
-                    | BinaryOp::Equal
-                    | BinaryOp::NotEqual
-                    | BinaryOp::And
-                    | BinaryOp::Or
-            ),
-
-            // Return statement with boolean value
-            ExprKind::Return { value: Some(val) } => Self::returns_boolean(val),
-
-            // Block - check last expression AND all return statements
-            ExprKind::Block(exprs) => {
-                // Check if any expression is a return with boolean
-                let has_boolean_return = exprs.iter().any(|e| {
-                    matches!(&e.kind, ExprKind::Return { value: Some(val) }
-                        if matches!(&val.kind, ExprKind::Literal(Literal::Bool(_))))
-                });
-
-                // Check last expression
-                let last_is_boolean = exprs.last().is_some_and(Self::returns_boolean);
-
-                has_boolean_return || last_is_boolean
-            }
-
-            // If expression - check both branches
-            ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                Self::returns_boolean(then_branch)
-                    || else_branch
-                        .as_ref()
-                        .is_some_and(|e| Self::returns_boolean(e))
-            }
-
-            // Unary not operator on boolean
-            ExprKind::Unary {
-                op: UnaryOp::Not, ..
-            } => true,
-
-            _ => false,
-        }
-    }
-
-    /// Check if function body returns a Vec/array (ISSUE-113)
-    /// Detects: [], `array.push()`, array literals, vec! macro
-    fn returns_vec(&self, body: &Expr) -> bool {
-        match &body.kind {
-            // Array literal []
-            ExprKind::List(_) => true,
-
-            // vec! macro invocation
-            ExprKind::MacroInvocation { name, .. } if name == "vec!" => true,
-
-            // Return statement with vec
-            ExprKind::Return { value: Some(val) } => self.returns_vec(val),
-
-            // Block - check last expression
-            ExprKind::Block(exprs) => {
-                exprs.last().is_some_and(|e| {
-                    // Last expression is array literal
-                    matches!(&e.kind, ExprKind::List(_))
-                    // OR last expression is identifier that was created from array
-                    || self.expr_creates_or_returns_vec(e, exprs)
-                })
-            }
-
-            // Identifier - check if it was assigned from array
-            ExprKind::Identifier(name) => {
-                // This is a simplification - we'd need full dataflow analysis
-                // For now, we can't determine this without context
-                // Return false here, rely on block analysis above
-                _ = name;
-                false
-            }
-
-            _ => false,
-        }
-    }
-
-    /// TRANSPILER-013: Check if expression returns an object literal (transpiled to `BTreeMap`)
-    /// Used to infer return type annotation for functions
-    fn returns_object_literal(body: &Expr) -> bool {
-        match &body.kind {
-            // Direct object literal { key: value, ... }
-            ExprKind::ObjectLiteral { .. } => true,
-
-            // Return statement with object literal
-            ExprKind::Return { value: Some(val) } => Self::returns_object_literal(val),
-
-            // Block - check last expression
-            ExprKind::Block(exprs) => exprs.last().is_some_and(Self::returns_object_literal),
-
-            // If expression - both branches return object literal
-            ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                let then_is_object = Self::returns_object_literal(then_branch);
-                let else_is_object = else_branch
-                    .as_ref()
-                    .is_some_and(|e| Self::returns_object_literal(e));
-                then_is_object && else_is_object
-            }
-
-            // Let expression - body returns object literal
-            ExprKind::Let { body: let_body, .. } | ExprKind::LetPattern { body: let_body, .. } => {
-                Self::returns_object_literal(let_body)
-            }
-
-            _ => false,
-        }
-    }
-
-    /// Check if function body returns an owned String (ISSUE-114)
-    /// Detects: string concatenation, string variables, string mutations
-    /// Note: This is for owned String, not &'static str (use `returns_string_literal` for that)
-    fn returns_string(&self, body: &Expr) -> bool {
-        match &body.kind {
-            // String concatenation with + operator returns owned String
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                left,
-                right,
-            } => {
-                // If either side is a string, result is String
-                self.expr_is_string(left) || self.expr_is_string(right)
-            }
-
-            // Return statement with string
-            ExprKind::Return { value: Some(val) } => self.returns_string(val),
-
-            // Block - check last expression
-            ExprKind::Block(exprs) => {
-                if let Some(last) = exprs.last() {
-                    // If last expression is an identifier, check if it was bound to a mutable string
-                    if let ExprKind::Identifier(name) = &last.kind {
-                        // Search for mutable Let binding with string value
-                        for expr in exprs {
-                            if let ExprKind::Let {
-                                name: let_name,
-                                value,
-                                is_mutable,
-                                ..
-                            } = &expr.kind
-                            {
-                                if let_name == name && *is_mutable {
-                                    // Check if initial value is string
-                                    if matches!(&value.kind, ExprKind::Literal(Literal::String(_)))
-                                    {
-                                        return true; // Mutable string variable returned
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // Otherwise recursively check
-                    self.returns_string(last)
-                } else {
-                    false
-                }
-            }
-
-            // Let expression - check if the variable is used in string operations
-            ExprKind::Let {
-                name,
-                value,
-                body: let_body,
-                is_mutable,
-                ..
-            } => {
-                let value_is_string = matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
-
-                // If mutable string variable that's returned, it's likely being mutated (String)
-                // If immutable string variable, it's just a binding (&'static str handled elsewhere)
-                if let ExprKind::Identifier(ident) = &let_body.kind {
-                    if ident == name && value_is_string && *is_mutable {
-                        return true; // mut string variables return String
-                    }
-                }
-
-                // Check if the body contains string operations
-                self.returns_string(let_body)
-            }
-
-            // Identifier - can't determine without context
-            // This will be caught by the Let case above if it's a let-bound variable
-            ExprKind::Identifier(_) => false,
-
-            // If expression - check both branches
-            ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                self.returns_string(then_branch)
-                    || else_branch.as_ref().is_some_and(|e| self.returns_string(e))
-            }
-
-            _ => false,
-        }
-    }
-
-    /// Check if expression evaluates to a string
-    fn expr_is_string(&self, expr: &Expr) -> bool {
-        matches!(
-            &expr.kind,
-            ExprKind::Literal(Literal::String(_))
-                | ExprKind::Binary {
-                    op: BinaryOp::Add,
-                    ..
-                }
-                | ExprKind::StringInterpolation { .. }
-        )
-    }
-
-    /// Check if identifier in block was assigned a string value
-    fn identifier_is_string(&self, name: &str, block_exprs: &[Expr]) -> bool {
-        // Search for let binding that creates string
-        for e in block_exprs {
-            if let ExprKind::Let {
-                name: let_name,
-                value,
-                ..
-            } = &e.kind
-            {
-                if let_name == name {
-                    // Check if initial value is string literal
-                    if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                        return true;
-                    }
-                }
-            }
-            // Check for reassignment with string concatenation
-            if let ExprKind::Assign { target, value, .. } = &e.kind {
-                if let ExprKind::Identifier(ident) = &target.kind {
-                    if ident == name && self.expr_is_string(value) {
-                        return true;
-                    }
-                }
-            }
-        }
-        false
-    }
-
-    /// Helper: Check if expression in a block creates or returns a Vec
-    fn expr_creates_or_returns_vec(&self, expr: &Expr, block_exprs: &[Expr]) -> bool {
-        if let ExprKind::Identifier(name) = &expr.kind {
-            // Search backwards for let binding that creates array
-            for e in block_exprs.iter().rev() {
-                if let ExprKind::Let {
-                    name: let_name,
-                    value,
-                    ..
-                } = &e.kind
-                {
-                    if let_name == name && matches!(&value.kind, ExprKind::List(_)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        false
+        super::return_type_helpers::infer_return_type_from_params(body, params, |ty| {
+            self.transpile_type(ty)
+        })
     }
 
     /// Transpiles function definitions
@@ -1547,23 +1100,23 @@ impl Transpiler {
                 _ => Ok(quote! { -> i32 }), // Fallback for unknown types
             }
         // ISSUE-113 FIX: Check for boolean return type BEFORE numeric fallback
-        } else if Self::returns_boolean(body) {
+        } else if returns_boolean(body) {
             Ok(quote! { -> bool })
         // ISSUE-113 FIX: Check for Vec return type BEFORE numeric fallback
-        } else if self.returns_vec(body) {
+        } else if returns_vec(body) {
             Ok(quote! { -> Vec<i32> })
         // ISSUE-114 FIX: Check for owned String return BEFORE string literal check
         // String concatenation, mutations, and string variables return owned String
-        } else if self.returns_string(body) {
+        } else if returns_string(body) {
             Ok(quote! { -> String })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
-        } else if Self::returns_string_literal(body) {
+        } else if returns_string_literal(body) {
             // ISSUE-103: String literals have 'static lifetime
             Ok(quote! { -> &'static str })
         // TRANSPILER-013 FIX: Check for object literal BEFORE numeric fallback
         // Object literals transpile to BTreeMap, not i32
-        } else if Self::returns_object_literal(body) {
+        } else if returns_object_literal(body) {
             Ok(quote! { -> std::collections::BTreeMap<String, String> })
         // TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
         // Functions returning parameter values should use parameter's type, not default to i32
@@ -2251,7 +1804,7 @@ impl Transpiler {
             Ok(quote! { -> impl Fn(i32) -> i32 })
         } else if self.looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
-        } else if Self::returns_string_literal(body) {
+        } else if returns_string_literal(body) {
             // ISSUE-103: Detect string literal returns (with lifetime)
             Ok(quote! { -> &'a str })
         } else if self.has_non_unit_expression(body) {
@@ -7311,7 +6864,7 @@ mod tests {
             ExprKind::Literal(Literal::String("hello".to_string())),
             Span::default(),
         );
-        assert!(Transpiler::returns_string_literal(&string_expr));
+        assert!(returns_string_literal(&string_expr));
     }
 
     // Test 16: returns_string_literal - in block
@@ -7323,7 +6876,7 @@ mod tests {
             Span::default(),
         );
         let block_expr = Expr::new(ExprKind::Block(vec![string_expr]), Span::default());
-        assert!(Transpiler::returns_string_literal(&block_expr));
+        assert!(returns_string_literal(&block_expr));
     }
 
     // Test 17: returns_boolean - comparison operator
@@ -7346,7 +6899,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::returns_boolean(&comparison_expr));
+        assert!(returns_boolean(&comparison_expr));
     }
 
     // Test 18: returns_boolean - unary not operator
@@ -7361,7 +6914,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::returns_boolean(&not_expr));
+        assert!(returns_boolean(&not_expr));
     }
 
     // Test 19: returns_vec - array literal
@@ -7382,7 +6935,7 @@ mod tests {
             ]),
             Span::default(),
         );
-        assert!(transpiler.returns_vec(&array_expr));
+        assert!(returns_vec(&array_expr));
     }
 
     // Test 20: returns_string - string concatenation
@@ -7406,7 +6959,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(transpiler.returns_string(&concat_expr));
+        assert!(returns_string(&concat_expr));
     }
 
     // Test 20: value_creates_vec - array literal creates vec
@@ -7512,6 +7065,7 @@ mod tests {
 mod property_tests_statements {
     use super::*;
     use crate::frontend::parser::Parser;
+    use crate::BinaryOp;
 
     #[test]
     fn test_transpile_if_comprehensive() {
@@ -8903,7 +8457,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::returns_boolean(&body));
+        assert!(returns_boolean(&body));
     }
 
     // Test 133: returns_boolean - with comparison
@@ -8932,7 +8486,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::returns_boolean(&body));
+        assert!(returns_boolean(&body));
     }
 
     // Test 134: returns_string_literal - with string
@@ -8945,7 +8499,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::returns_string_literal(&body));
+        assert!(returns_string_literal(&body));
     }
 
     // Test 135: returns_string_literal - with non-string
@@ -8958,7 +8512,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!Transpiler::returns_string_literal(&body));
+        assert!(!returns_string_literal(&body));
     }
 
     // Test 136: returns_vec - with vec macro
@@ -8975,7 +8529,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.returns_vec(&body));
+        assert!(returns_vec(&body));
     }
 
     // Test 137: returns_vec - with list literal
@@ -8995,7 +8549,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.returns_vec(&body));
+        assert!(returns_vec(&body));
     }
 
     // Test 138: returns_object_literal - with object
@@ -9008,7 +8562,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::returns_object_literal(&body));
+        assert!(returns_object_literal(&body));
     }
 
     // Test 139: returns_object_literal - with non-object
@@ -9021,7 +8575,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!Transpiler::returns_object_literal(&body));
+        assert!(!returns_object_literal(&body));
     }
 
     // Test 140: expr_is_string - with string literal
@@ -9035,7 +8589,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.expr_is_string(&expr));
+        assert!(expr_is_string(&expr));
     }
 
     // Test 141: expr_is_string - with interpolation
@@ -9049,7 +8603,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.expr_is_string(&expr));
+        assert!(expr_is_string(&expr));
     }
 
     // Test 142: has_non_unit_expression - with non-unit
