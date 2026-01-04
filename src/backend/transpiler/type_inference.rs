@@ -4,6 +4,12 @@
 //! parameters and expressions are used in function bodies.
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 
+// Re-export functions from builtin_type_inference for backwards compatibility
+pub use super::builtin_type_inference::{
+    get_builtin_param_type, get_builtin_return_type, infer_param_type_from_builtin_usage,
+    infer_return_type_from_builtin_call, is_string_literal,
+};
+
 /// Generic AST traversal for parameter usage checks.
 ///
 /// The `check` closure returns:
@@ -315,151 +321,6 @@ fn contains_param(param_name: &str, expr: &Expr) -> bool {
         ExprKind::Block(exprs) => exprs.iter().any(|e| contains_param(param_name, e)),
         ExprKind::Call { func, args } => check_call_contains_param(param_name, func, args),
         _ => false,
-    }
-}
-/// Helper to check if an expression is a string literal
-fn is_string_literal(expr: &Expr) -> bool {
-    matches!(&expr.kind, ExprKind::Literal(Literal::String(_)))
-}
-
-/// Get return type for built-in function
-/// Complexity: 1 (single match)
-fn get_builtin_return_type(func_name: &str) -> Option<&'static str> {
-    match func_name {
-        "fs_read" | "env_var" | "env_current_dir" | "http_get" | "http_post" | "http_put"
-        | "http_delete" | "json_stringify" | "path_extension" | "path_filename" | "path_parent" => {
-            Some("String")
-        }
-        "env_args" => Some("Vec<String>"),
-        "fs_exists" => Some("bool"),
-        "println" | "print" | "eprintln" | "eprint" => Some("()"),
-        _ => None,
-    }
-}
-
-/// Check function call for return type
-/// Complexity: 2 (pattern match + function call)
-fn check_call_for_return_type(func: &Expr) -> Option<&'static str> {
-    if let ExprKind::Identifier(func_name) = &func.kind {
-        get_builtin_return_type(func_name)
-    } else {
-        None
-    }
-}
-
-/// Infer return type from built-in function calls in expression
-/// Returns `Some(return_type)` if expression calls a built-in with known signature
-/// Returns None if no built-in call detected
-pub fn infer_return_type_from_builtin_call(expr: &Expr) -> Option<&'static str> {
-    match &expr.kind {
-        ExprKind::Call { func, .. } => check_call_for_return_type(func),
-        // ISSUE-103 FIX: Handle macro invocations (println!, format!, etc.)
-        ExprKind::MacroInvocation { name, .. } => get_builtin_return_type(name),
-        ExprKind::Block(exprs) => exprs.last().and_then(infer_return_type_from_builtin_call),
-        ExprKind::If { then_branch, .. } => infer_return_type_from_builtin_call(then_branch),
-        ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-            infer_return_type_from_builtin_call(body)
-        }
-        _ => None,
-    }
-}
-
-/// Get parameter type hint from built-in function signature
-/// Complexity: 1 (single return, pattern match)
-fn get_builtin_param_type(func_name: &str, arg_idx: usize) -> Option<&'static str> {
-    match (func_name, arg_idx) {
-        // File system functions: paths are &str
-        (
-            "fs_read" | "fs_write" | "fs_exists" | "fs_remove" | "fs_metadata" | "fs_create_dir"
-            | "fs_read_dir",
-            0,
-        )
-        | ("fs_copy" | "fs_rename", 0 | 1) => Some("&str"),
-
-        // HTTP functions: URLs are &str
-        ("http_get" | "http_post" | "http_put" | "http_delete", 0) => Some("&str"),
-
-        // Environment/Path/JSON/Regex: strings are &str
-        ("env_var" | "env_set_var" | "json_parse" | "regex_new", 0)
-        | ("path_join" | "path_extension" | "path_filename" | "path_parent", 0 | 1)
-        | ("regex_is_match" | "regex_find" | "regex_replace", 1) => Some("&str"),
-
-        // Output/logging: generic (keep default)
-        _ => None,
-    }
-}
-
-/// Find parameter in argument list
-/// Complexity: 2 (single loop, early return)
-fn find_param_in_args(param_name: &str, func_name: &str, args: &[Expr]) -> Option<&'static str> {
-    for (arg_idx, arg) in args.iter().enumerate() {
-        if let ExprKind::Identifier(arg_name) = &arg.kind {
-            if arg_name == param_name {
-                return get_builtin_param_type(func_name, arg_idx);
-            }
-        }
-    }
-    None
-}
-
-/// Check recursively in nested arguments
-/// Complexity: 1 (single loop with function call)
-fn check_nested_args(param_name: &str, args: &[Expr]) -> Option<&'static str> {
-    args.iter()
-        .find_map(|arg| infer_param_type_from_builtin_usage(param_name, arg))
-}
-
-/// Check a single function call for param type
-/// Complexity: 2 (two branches)
-fn check_call_for_param_type(param_name: &str, func: &Expr, args: &[Expr]) -> Option<&'static str> {
-    if let ExprKind::Identifier(func_name) = &func.kind {
-        if let Some(ty) = find_param_in_args(param_name, func_name, args) {
-            return Some(ty);
-        }
-    }
-    check_nested_args(param_name, args)
-}
-
-/// Check if expression in let bindings
-/// Complexity: 1 (single pattern match)
-fn check_let_bindings(param_name: &str, value: &Expr, body: &Expr) -> Option<&'static str> {
-    infer_param_type_from_builtin_usage(param_name, value)
-        .or_else(|| infer_param_type_from_builtin_usage(param_name, body))
-}
-
-/// Check if expression  in branches
-/// Complexity: 1 (chained `or_else`)
-fn check_if_branches(
-    param_name: &str,
-    condition: &Expr,
-    then_branch: &Expr,
-    else_branch: Option<&Expr>,
-) -> Option<&'static str> {
-    infer_param_type_from_builtin_usage(param_name, condition)
-        .or_else(|| infer_param_type_from_builtin_usage(param_name, then_branch))
-        .or_else(|| else_branch.and_then(|e| infer_param_type_from_builtin_usage(param_name, e)))
-}
-
-pub fn infer_param_type_from_builtin_usage(param_name: &str, expr: &Expr) -> Option<&'static str> {
-    match &expr.kind {
-        ExprKind::Call { func, args } => check_call_for_param_type(param_name, func, args),
-        ExprKind::Block(exprs) => exprs
-            .iter()
-            .find_map(|e| infer_param_type_from_builtin_usage(param_name, e)),
-        ExprKind::If {
-            condition,
-            then_branch,
-            else_branch,
-        } => check_if_branches(param_name, condition, then_branch, else_branch.as_deref()),
-        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
-            check_let_bindings(param_name, value, body)
-        }
-        ExprKind::Binary { left, right, .. } => {
-            infer_param_type_from_builtin_usage(param_name, left)
-                .or_else(|| infer_param_type_from_builtin_usage(param_name, right))
-        }
-        ExprKind::Unary { operand, .. } => infer_param_type_from_builtin_usage(param_name, operand),
-        _ => None,
     }
 }
 
