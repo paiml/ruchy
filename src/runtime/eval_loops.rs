@@ -424,4 +424,129 @@ mod tests {
         assert!(is_truthy(&Value::Float(1.0)));
         assert!(is_truthy(&Value::from_string("test".to_string())));
     }
+
+    #[test]
+    fn test_eval_loop_with_break() {
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+
+        let result = eval_loop(&body, |_expr| {
+            *iterations.borrow_mut() += 1;
+            if *iterations.borrow() >= 5 {
+                Err(InterpreterError::Break(None, Value::Integer(100)))
+            } else {
+                Ok(Value::Integer(42))
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Integer(100)); // Break value
+        assert_eq!(*iterations.borrow(), 5);
+    }
+
+    #[test]
+    fn test_for_loop_invalid_iterable() {
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop(
+            "x",
+            None,
+            Value::Integer(42), // Not iterable
+            &body,
+            |_name, _val| {},
+            |_expr| Ok(Value::Integer(10)),
+        );
+
+        assert!(result.is_err());
+        match result {
+            Err(InterpreterError::TypeError(msg)) => {
+                assert!(msg.contains("iterable"));
+            }
+            _ => panic!("Expected TypeError"),
+        }
+    }
+
+    #[test]
+    fn test_for_loop_range_invalid_start() {
+        let range = Value::Range {
+            start: Box::new(Value::from_string("not a number".to_string())),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop("x", None, range, &body, |_name, _val| {}, |_expr| {
+            Ok(Value::Integer(10))
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_for_loop_range_invalid_end() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Bool(true)),
+            inclusive: false,
+        };
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop("x", None, range, &body, |_name, _val| {}, |_expr| {
+            Ok(Value::Integer(10))
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_for_loop_empty_array() {
+        let arr = Value::Array(Arc::from(vec![]));
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
+            Ok(Value::Integer(10))
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Nil); // Empty array returns Nil
+    }
+
+    #[test]
+    fn test_while_loop_false_condition() {
+        let condition = make_literal_expr(0);
+        let body = make_literal_expr(42);
+
+        let result = eval_while_loop(&condition, &body, |expr| {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(0, None))) {
+                Ok(Value::Bool(false)) // Condition is false immediately
+            } else {
+                Ok(Value::Integer(42))
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Nil); // Never executed body
+    }
+
+    #[test]
+    fn test_is_truthy_empty_string() {
+        // Empty strings are truthy (non-nil values are truthy)
+        assert!(is_truthy(&Value::from_string("".to_string())));
+    }
+
+    #[test]
+    fn test_is_truthy_array() {
+        let empty_arr = Value::Array(Arc::from(vec![]));
+        let non_empty_arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+
+        // All arrays are truthy (non-nil values are truthy)
+        assert!(is_truthy(&empty_arr));
+        assert!(is_truthy(&non_empty_arr));
+    }
+
+    #[test]
+    fn test_is_truthy_float_nan() {
+        // NaN is falsy
+        assert!(!is_truthy(&Value::Float(f64::NAN)));
+    }
 }
