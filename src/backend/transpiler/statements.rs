@@ -3172,28 +3172,15 @@ impl Transpiler {
     }
     /// Generate `read_file` function
     fn generate_read_file_function() -> TokenStream {
-        quote! {
-            fn read_file(filename: String) -> String {
-                fs::read_to_string(filename).unwrap_or_else(|e| panic!("Failed to read file: {}", e))
-            }
-        }
+        super::import_helpers::generate_read_file_function()
     }
-    /// Generate `write_file` function  
+    /// Generate `write_file` function
     fn generate_write_file_function() -> TokenStream {
-        quote! {
-            fn write_file(filename: String, content: String) {
-                fs::write(filename, content).unwrap_or_else(|e| panic!("Failed to write file: {}", e));
-            }
-        }
+        super::import_helpers::generate_write_file_function()
     }
     /// Generate all file operation functions
     fn generate_all_file_operations() -> TokenStream {
-        let read_func = Self::generate_read_file_function();
-        let write_func = Self::generate_write_file_function();
-        quote! {
-            #read_func
-            #write_func
-        }
+        super::import_helpers::generate_all_file_operations()
     }
     /// Handle `std::fs` imports with path-based syntax (import `std::fs::read_file`)
     fn transpile_std_fs_import_with_path(
