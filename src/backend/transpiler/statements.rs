@@ -16,98 +16,6 @@ use super::return_type_helpers::{
 };
 
 impl Transpiler {
-    /// Checks if a variable is mutated (reassigned or modified) in an expression tree
-    fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
-        use crate::frontend::ast::ExprKind;
-        match &expr.kind {
-            // Direct assignment to the variable
-            ExprKind::Assign { target, value: _ } => {
-                if let ExprKind::Identifier(var_name) = &target.kind {
-                    if var_name == name {
-                        return true;
-                    }
-                }
-                false
-            }
-            // Compound assignment (+=, -=, etc.)
-            ExprKind::CompoundAssign {
-                target, value: _, ..
-            } => {
-                if let ExprKind::Identifier(var_name) = &target.kind {
-                    if var_name == name {
-                        return true;
-                    }
-                }
-                false
-            }
-            // Pre/Post increment/decrement
-            ExprKind::PreIncrement { target }
-            | ExprKind::PostIncrement { target }
-            | ExprKind::PreDecrement { target }
-            | ExprKind::PostDecrement { target } => {
-                if let ExprKind::Identifier(var_name) = &target.kind {
-                    if var_name == name {
-                        return true;
-                    }
-                }
-                false
-            }
-            // Check in blocks
-            ExprKind::Block(exprs) => exprs.iter().any(|e| Self::is_variable_mutated(name, e)),
-            // Check in if branches
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                Self::is_variable_mutated(name, condition)
-                    || Self::is_variable_mutated(name, then_branch)
-                    || else_branch
-                        .as_ref()
-                        .is_some_and(|e| Self::is_variable_mutated(name, e))
-            }
-            // Check in while loops
-            ExprKind::While {
-                condition, body, ..
-            } => {
-                Self::is_variable_mutated(name, condition) || Self::is_variable_mutated(name, body)
-            }
-            // Check in for loops
-            ExprKind::For { body, .. } => Self::is_variable_mutated(name, body),
-            // Check in match expressions
-            ExprKind::Match { expr, arms } => {
-                Self::is_variable_mutated(name, expr)
-                    || arms
-                        .iter()
-                        .any(|arm| Self::is_variable_mutated(name, &arm.body))
-            }
-            // Check in nested let expressions
-            ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-                Self::is_variable_mutated(name, body)
-            }
-            // Check in function bodies
-            ExprKind::Function { body, .. } => Self::is_variable_mutated(name, body),
-            // Check in lambda bodies
-            ExprKind::Lambda { body, .. } => Self::is_variable_mutated(name, body),
-            // Check binary operations
-            ExprKind::Binary { left, right, .. } => {
-                Self::is_variable_mutated(name, left) || Self::is_variable_mutated(name, right)
-            }
-            // Check unary operations
-            ExprKind::Unary { operand, .. } => Self::is_variable_mutated(name, operand),
-            // Check function/method calls
-            ExprKind::Call { func, args } => {
-                Self::is_variable_mutated(name, func)
-                    || args.iter().any(|a| Self::is_variable_mutated(name, a))
-            }
-            ExprKind::MethodCall { receiver, args, .. } => {
-                Self::is_variable_mutated(name, receiver)
-                    || args.iter().any(|a| Self::is_variable_mutated(name, a))
-            }
-            // Other expressions don't contain mutations
-            _ => false,
-        }
-    }
     /// Transpiles if expressions
     pub fn transpile_if(
         &self,
@@ -209,7 +117,7 @@ impl Transpiler {
         let name_ident = format_ident!("{}", safe_name);
         // Auto-detect mutability: check if variable is in the mutable_vars set or is reassigned in body
         let effective_mutability =
-            is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
+            is_mutable || self.mutable_vars.contains(name) || super::mutation_detection::is_variable_mutated(name, body);
         // Convert string literals to String type at variable declaration time
         // This ensures string variables are String, not &str, making function calls work
         // TRANSPILER-007: Detect empty list literals that need type hints
@@ -403,7 +311,7 @@ impl Transpiler {
             quote! { const }
         } else if is_mutable
             || self.mutable_vars.contains(name)
-            || Self::is_variable_mutated(name, body)
+            || super::mutation_detection::is_variable_mutated(name, body)
         {
             quote! { let mut }
         } else {
@@ -412,7 +320,7 @@ impl Transpiler {
 
         // Check if this is a mutable variable
         let is_mutable_var =
-            is_mutable || self.mutable_vars.contains(name) || Self::is_variable_mutated(name, body);
+            is_mutable || self.mutable_vars.contains(name) || super::mutation_detection::is_variable_mutated(name, body);
 
         // DEFECT-001 FIX: Auto-convert string literals to String when type annotation is String
         // DEFECT-010 FIX: Also auto-convert string literals to String for mutable variables (no annotation)
@@ -1612,7 +1520,7 @@ impl Transpiler {
                         // DEFECT-015 FIX: Check if this is a mutable variable for string literal detection
                         let is_mutable_var = *is_mutable
                             || self.mutable_vars.contains(name.as_str())
-                            || Self::is_variable_mutated(name, let_body);
+                            || super::mutation_detection::is_variable_mutated(name, let_body);
 
                         // DEFECT-015 FIX: Auto-convert string literals to String for mutable variables
                         let value_tokens = match (&value.kind, type_annotation) {
@@ -5864,8 +5772,8 @@ mod tests {
             },
             Span { start: 0, end: 0 },
         );
-        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &assign_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &assign_expr));
     }
 
     #[test]
@@ -5999,8 +5907,8 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
-        assert!(!Transpiler::is_variable_mutated("z", &assign_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &assign_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("z", &assign_expr));
 
         // Test compound assignment
         let compound_expr = Expr::new(
@@ -6011,8 +5919,8 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        assert!(Transpiler::is_variable_mutated("count", &compound_expr));
-        assert!(!Transpiler::is_variable_mutated("other", &compound_expr));
+        assert!(super::mutation_detection::is_variable_mutated("count", &compound_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("other", &compound_expr));
 
         // Test pre-increment
         let pre_inc = Expr::new(
@@ -6021,7 +5929,7 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        assert!(Transpiler::is_variable_mutated("i", &pre_inc));
+        assert!(super::mutation_detection::is_variable_mutated("i", &pre_inc));
 
         // Test post-increment
         let post_inc = Expr::new(
@@ -6030,15 +5938,15 @@ mod tests {
             },
             Span::new(0, 1),
         );
-        assert!(Transpiler::is_variable_mutated("j", &post_inc));
+        assert!(super::mutation_detection::is_variable_mutated("j", &post_inc));
 
         // Test in block
         let block = Expr::new(
             ExprKind::Block(vec![assign_expr, make_ident("other")]),
             Span::new(0, 1),
         );
-        assert!(Transpiler::is_variable_mutated("x", &block));
-        assert!(!Transpiler::is_variable_mutated("other", &block));
+        assert!(super::mutation_detection::is_variable_mutated("x", &block));
+        assert!(!super::mutation_detection::is_variable_mutated("other", &block));
     }
 
     #[test]
@@ -6143,14 +6051,14 @@ mod tests {
         let ast = parser.parse().expect("Failed to parse");
 
         // Variable should be detected as mutated
-        let is_mutated = Transpiler::is_variable_mutated("x", &ast);
+        let is_mutated = super::mutation_detection::is_variable_mutated("x", &ast);
         assert!(is_mutated);
 
         // Test non-mutated variable
         let code2 = "let y = 5; y + 10";
         let mut parser2 = Parser::new(code2);
         let ast2 = parser2.parse().expect("Failed to parse");
-        let is_mutated2 = Transpiler::is_variable_mutated("y", &ast2);
+        let is_mutated2 = super::mutation_detection::is_variable_mutated("y", &ast2);
         assert!(!is_mutated2);
     }
 
@@ -6456,8 +6364,8 @@ mod tests {
         ));
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
 
-        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &assign_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &assign_expr));
     }
 
     #[test]
@@ -6482,8 +6390,8 @@ mod tests {
             Span::default(),
         );
 
-        assert!(Transpiler::is_variable_mutated("x", &compound_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &compound_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &compound_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &compound_expr));
     }
 
     #[test]
@@ -6502,7 +6410,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::is_variable_mutated("x", &pre_inc));
+        assert!(super::mutation_detection::is_variable_mutated("x", &pre_inc));
 
         // Test post-increment: x++
         let post_inc = Expr::new(
@@ -6511,7 +6419,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::is_variable_mutated("x", &post_inc));
+        assert!(super::mutation_detection::is_variable_mutated("x", &post_inc));
 
         // Test pre-decrement: --x
         let pre_dec = Expr::new(
@@ -6520,11 +6428,11 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::is_variable_mutated("x", &pre_dec));
+        assert!(super::mutation_detection::is_variable_mutated("x", &pre_dec));
 
         // Test post-decrement: x--
         let post_dec = Expr::new(ExprKind::PostDecrement { target }, Span::default());
-        assert!(Transpiler::is_variable_mutated("x", &post_dec));
+        assert!(super::mutation_detection::is_variable_mutated("x", &post_dec));
     }
 
     #[test]
@@ -6543,8 +6451,8 @@ mod tests {
         let assign_expr = Expr::new(ExprKind::Assign { target, value }, Span::default());
         let block_expr = Expr::new(ExprKind::Block(vec![assign_expr]), Span::default());
 
-        assert!(Transpiler::is_variable_mutated("x", &block_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &block_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &block_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &block_expr));
     }
 
     #[test]
@@ -6576,8 +6484,8 @@ mod tests {
             Span::default(),
         );
 
-        assert!(Transpiler::is_variable_mutated("x", &if_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &if_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &if_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &if_expr));
     }
 
     #[test]
@@ -6608,8 +6516,8 @@ mod tests {
             Span::default(),
         );
 
-        assert!(Transpiler::is_variable_mutated("x", &binary_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &binary_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &binary_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &binary_expr));
     }
 
     #[test]
@@ -6693,8 +6601,8 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &assign_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &assign_expr));
     }
 
     // Test 3: is_variable_mutated - pre-increment
@@ -6708,7 +6616,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(Transpiler::is_variable_mutated("i", &inc_expr));
+        assert!(super::mutation_detection::is_variable_mutated("i", &inc_expr));
     }
 
     // Test 4: is_variable_mutated - block with nested mutation
@@ -6728,7 +6636,7 @@ mod tests {
             Span::default(),
         );
         let block_expr = Expr::new(ExprKind::Block(vec![assign_expr]), Span::default());
-        assert!(Transpiler::is_variable_mutated("x", &block_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &block_expr));
     }
 
     // Test 5: extract_pattern_bindings - identifier pattern
@@ -7689,8 +7597,8 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
-        assert!(!Transpiler::is_variable_mutated("y", &assign_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &assign_expr));
+        assert!(!super::mutation_detection::is_variable_mutated("y", &assign_expr));
     }
 
     // Test 102: is_variable_mutated with CompoundAssign
@@ -7720,7 +7628,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("counter", &compound_expr));
+        assert!(super::mutation_detection::is_variable_mutated("counter", &compound_expr));
     }
 
     // Test 103: is_variable_mutated with PreIncrement
@@ -7742,7 +7650,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("i", &inc_expr));
+        assert!(super::mutation_detection::is_variable_mutated("i", &inc_expr));
     }
 
     // Test 104: is_variable_mutated with PostDecrement
@@ -7764,7 +7672,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("value", &dec_expr));
+        assert!(super::mutation_detection::is_variable_mutated("value", &dec_expr));
     }
 
     // Test 105: is_variable_mutated in Block
@@ -7799,7 +7707,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("x", &block_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &block_expr));
     }
 
     // Test 106: is_variable_mutated in If condition
@@ -7844,7 +7752,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("flag", &if_expr));
+        assert!(super::mutation_detection::is_variable_mutated("flag", &if_expr));
     }
 
     // Test 107: is_variable_mutated in While body
@@ -7882,7 +7790,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("count", &while_expr));
+        assert!(super::mutation_detection::is_variable_mutated("count", &while_expr));
     }
 
     // Test 108: is_variable_mutated in For body
@@ -7929,7 +7837,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("sum", &for_expr));
+        assert!(super::mutation_detection::is_variable_mutated("sum", &for_expr));
     }
 
     // Test 109: is_variable_mutated in Match arm
@@ -7979,7 +7887,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("result", &match_expr));
+        assert!(super::mutation_detection::is_variable_mutated("result", &match_expr));
     }
 
     // Test 110: is_variable_mutated in nested Let
@@ -8020,7 +7928,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("x", &let_expr));
+        assert!(super::mutation_detection::is_variable_mutated("x", &let_expr));
     }
 
     // Test 111: is_variable_mutated in Binary expression
@@ -8065,7 +7973,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("a", &binary_expr));
+        assert!(super::mutation_detection::is_variable_mutated("a", &binary_expr));
     }
 
     // Test 112: is_variable_mutated in Unary expression
@@ -8096,7 +8004,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("val", &unary_expr));
+        assert!(super::mutation_detection::is_variable_mutated("val", &unary_expr));
     }
 
     // Test 113: is_variable_mutated in Call arguments
@@ -8140,7 +8048,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("arg", &call_expr));
+        assert!(super::mutation_detection::is_variable_mutated("arg", &call_expr));
     }
 
     // Test 114: is_variable_mutated in MethodCall receiver
@@ -8179,7 +8087,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(Transpiler::is_variable_mutated("obj", &method_expr));
+        assert!(super::mutation_detection::is_variable_mutated("obj", &method_expr));
     }
 
     // Test 115: is_variable_mutated returns false for immutable access
@@ -8192,7 +8100,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!Transpiler::is_variable_mutated("x", &literal));
+        assert!(!super::mutation_detection::is_variable_mutated("x", &literal));
 
         let ident = Expr {
             kind: ExprKind::Identifier("x".to_string()),
@@ -8201,7 +8109,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!Transpiler::is_variable_mutated("x", &ident));
+        assert!(!super::mutation_detection::is_variable_mutated("x", &ident));
     }
 
     // Test 115: needs_lifetime_parameter - no ref params
