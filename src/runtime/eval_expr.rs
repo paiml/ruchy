@@ -383,4 +383,269 @@ mod tests {
             _ => panic!("Expected array value"),
         }
     }
+
+    #[test]
+    fn test_is_assignment_expr() {
+        let assign_expr = ExprKind::Assign {
+            target: Box::new(make_literal_expr(Literal::Integer(1, None))),
+            value: Box::new(make_literal_expr(Literal::Integer(2, None))),
+        };
+        assert!(is_assignment_expr(&assign_expr));
+
+        let literal_expr = ExprKind::Literal(Literal::Integer(42, None));
+        assert!(!is_assignment_expr(&literal_expr));
+    }
+
+    #[test]
+    fn test_eval_return_expr_with_value() {
+        let value_expr = make_literal_expr(Literal::Integer(42, None));
+        let result = eval_return_expr(Some(&value_expr), |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        });
+
+        match result {
+            Err(InterpreterError::Return(Value::Integer(42))) => {}
+            _ => panic!("Expected Return error with integer 42"),
+        }
+    }
+
+    #[test]
+    fn test_eval_return_expr_without_value() {
+        let result = eval_return_expr(None, |_| Ok(Value::Nil));
+
+        match result {
+            Err(InterpreterError::Return(Value::Nil)) => {}
+            _ => panic!("Expected Return error with Nil"),
+        }
+    }
+
+    #[test]
+    fn test_eval_array_init_expr() {
+        let value_expr = make_literal_expr(Literal::Integer(0, None));
+        let size_expr = make_literal_expr(Literal::Integer(3, None));
+
+        let result = eval_array_init_expr(&value_expr, &size_expr, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert_eq!(arr[0], Value::Integer(0));
+                assert_eq!(arr[1], Value::Integer(0));
+                assert_eq!(arr[2], Value::Integer(0));
+            }
+            _ => panic!("Expected array value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_array_init_expr_invalid_size() {
+        let value_expr = make_literal_expr(Literal::Integer(0, None));
+        let size_expr = make_literal_expr(Literal::String("not a number".to_string()));
+
+        let result = eval_array_init_expr(&value_expr, &size_expr, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
+            _ => Ok(Value::Nil),
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_block_expr() {
+        let statements = vec![
+            make_literal_expr(Literal::Integer(1, None)),
+            make_literal_expr(Literal::Integer(2, None)),
+            make_literal_expr(Literal::Integer(3, None)),
+        ];
+
+        let result = eval_block_expr(&statements, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        assert_eq!(result, Value::Integer(3)); // Returns last expression
+    }
+
+    #[test]
+    fn test_eval_block_expr_empty() {
+        let statements: Vec<Expr> = vec![];
+        let result = eval_block_expr(&statements, |_| Ok(Value::Nil)).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_tuple_expr() {
+        let elements = vec![
+            make_literal_expr(Literal::Integer(1, None)),
+            make_literal_expr(Literal::Bool(true)),
+        ];
+
+        let result = eval_tuple_expr(&elements, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        match result {
+            Value::Tuple(arr) => {
+                assert_eq!(arr.len(), 2);
+                assert_eq!(arr[0], Value::Integer(1));
+                assert_eq!(arr[1], Value::Bool(true));
+            }
+            _ => panic!("Expected tuple value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_range_expr() {
+        let start = make_literal_expr(Literal::Integer(1, None));
+        let end = make_literal_expr(Literal::Integer(10, None));
+
+        let result = eval_range_expr(&start, &end, false, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        match result {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
+                assert_eq!(*start, Value::Integer(1));
+                assert_eq!(*end, Value::Integer(10));
+                assert!(!inclusive);
+            }
+            _ => panic!("Expected range value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_range_expr_inclusive() {
+        let start = make_literal_expr(Literal::Integer(0, None));
+        let end = make_literal_expr(Literal::Integer(5, None));
+
+        let result = eval_range_expr(&start, &end, true, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        match result {
+            Value::Range { inclusive, .. } => {
+                assert!(inclusive);
+            }
+            _ => panic!("Expected range value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_range_expr_invalid_bounds() {
+        let start = make_literal_expr(Literal::String("a".to_string()));
+        let end = make_literal_expr(Literal::Integer(10, None));
+
+        let result = eval_range_expr(&start, &end, false, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
+            _ => Ok(Value::Nil),
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_literal_char() {
+        assert_eq!(
+            eval_literal(&Literal::Char('x')),
+            Value::from_string("x".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_literal_byte() {
+        assert_eq!(eval_literal(&Literal::Byte(255)), Value::Byte(255));
+    }
+
+    #[test]
+    fn test_eval_literal_atom() {
+        let result = eval_literal(&Literal::Atom("ok".to_string()));
+        match result {
+            Value::Atom(s) => assert_eq!(s, "ok"),
+            _ => panic!("Expected atom value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_if_expr_false_no_else() {
+        let condition = make_literal_expr(Literal::Bool(false));
+        let then_branch = make_literal_expr(Literal::Integer(1, None));
+
+        let result = eval_if_expr(&condition, &then_branch, None, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_if_expr_false_with_else() {
+        let condition = make_literal_expr(Literal::Bool(false));
+        let then_branch = make_literal_expr(Literal::Integer(1, None));
+        let else_branch = make_literal_expr(Literal::Integer(2, None));
+
+        let result = eval_if_expr(
+            &condition,
+            &then_branch,
+            Some(&else_branch),
+            |expr| match &expr.kind {
+                ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
+                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+                _ => Ok(Value::Nil),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_is_control_flow_ternary() {
+        let ternary_expr = ExprKind::Ternary {
+            condition: Box::new(make_literal_expr(Literal::Bool(true))),
+            true_expr: Box::new(make_literal_expr(Literal::Integer(1, None))),
+            false_expr: Box::new(make_literal_expr(Literal::Integer(2, None))),
+        };
+        assert!(is_control_flow_expr(&ternary_expr));
+    }
+
+    #[test]
+    fn test_is_control_flow_match() {
+        let match_expr = ExprKind::Match {
+            expr: Box::new(make_literal_expr(Literal::Integer(1, None))),
+            arms: vec![],
+        };
+        assert!(is_control_flow_expr(&match_expr));
+    }
+
+    #[test]
+    fn test_is_data_structure_range() {
+        let range_expr = ExprKind::Range {
+            start: Box::new(make_literal_expr(Literal::Integer(0, None))),
+            end: Box::new(make_literal_expr(Literal::Integer(10, None))),
+            inclusive: false,
+        };
+        assert!(is_data_structure_expr(&range_expr));
+    }
 }
