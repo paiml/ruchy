@@ -173,7 +173,7 @@ impl Transpiler {
                         statements.push(quote! { #expr_tokens; });
                     } else {
                         // Last expression - check if it's void
-                        if self.is_void_expression(expr) {
+                        if super::function_analysis::is_void_expression(expr) {
                             statements.push(quote! { #expr_tokens; });
                         } else {
                             statements.push(expr_tokens);
@@ -574,129 +574,6 @@ impl Transpiler {
         matches!(expr.kind, crate::frontend::ast::ExprKind::List(_))
     }
 
-    /// Check if function name suggests numeric operations
-    fn looks_like_numeric_function(&self, name: &str) -> bool {
-        matches!(
-            name,
-            // Basic arithmetic
-            "add" | "subtract" | "multiply" | "divide" | "sum" | "product" |
-            "min" | "max" | "abs" | "sqrt" | "pow" | "mod" | "gcd" | "lcm" |
-            "factorial" | "fibonacci" | "prime" | "even" | "odd" | "square" | "cube" |
-            "double" | "triple" | "quadruple" |
-
-            // Trigonometric functions
-            "sin" | "cos" | "tan" | "asin" | "acos" | "atan" | "atan2" |
-            "sinh" | "cosh" | "tanh" | "asinh" | "acosh" | "atanh" |
-
-            // Exponential and logarithmic functions
-            "exp" | "exp2" | "ln" | "log" | "log2" | "log10" |
-
-            // Power and root functions
-            "cbrt" | "powf" | "powi" |
-
-            // Sign and comparison functions
-            "signum" | "copysign" |
-
-            // Rounding and truncation functions
-            "floor" | "ceil" | "round" | "trunc" | "fract" |
-
-            // Range functions
-            "clamp" |
-
-            // Conversion functions
-            "to_degrees" | "to_radians"
-        )
-    }
-    /// Check if expression is a void/unit function call
-    fn is_void_function_call(&self, expr: &Expr) -> bool {
-        match &expr.kind {
-            crate::frontend::ast::ExprKind::Call { func, .. } => {
-                if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
-                    // Comprehensive list of void functions
-                    matches!(
-                        name.as_str(),
-                        // Output functions
-                        "println" | "print" | "eprintln" | "eprint" |
-                        // Debug functions
-                        "dbg" | "debug" | "trace" | "info" | "warn" | "error" |
-                        // Control flow functions
-                        "panic" | "assert" | "assert_eq" | "assert_ne" |
-                        "todo" | "unimplemented" | "unreachable"
-                    )
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        }
-    }
-    /// Check if an expression is void (returns unit/nothing)
-    fn is_void_expression(&self, expr: &Expr) -> bool {
-        match &expr.kind {
-            // Unit literal is void
-            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => true,
-            // Void function calls
-            crate::frontend::ast::ExprKind::Call { .. } if self.is_void_function_call(expr) => true,
-            // ISSUE-103 FIX: Check macro invocations (println!, etc.)
-            crate::frontend::ast::ExprKind::MacroInvocation { name, .. }
-                if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") =>
-            {
-                true
-            }
-            // Assignments are void
-            crate::frontend::ast::ExprKind::Assign { .. }
-            | crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
-            // Loops are void
-            crate::frontend::ast::ExprKind::While { .. }
-            | crate::frontend::ast::ExprKind::For { .. } => true,
-            // Let bindings - check the body expression
-            crate::frontend::ast::ExprKind::Let { body, .. } => self.is_void_expression(body),
-            // Block - check last expression
-            crate::frontend::ast::ExprKind::Block(exprs) => {
-                exprs.last().is_none_or(|e| self.is_void_expression(e))
-            }
-            // If expression - both branches must be void
-            crate::frontend::ast::ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                self.is_void_expression(then_branch)
-                    && else_branch
-                        .as_ref()
-                        .is_none_or(|e| self.is_void_expression(e))
-            }
-            // Match expression - all arms must be void
-            crate::frontend::ast::ExprKind::Match { arms, .. } => {
-                arms.iter().all(|arm| self.is_void_expression(&arm.body))
-            }
-            // Return without value is void
-            crate::frontend::ast::ExprKind::Return { value } if value.is_none() => true,
-            // Everything else produces a value
-            _ => false,
-        }
-    }
-    /// Check if expression has a non-unit value (i.e., returns something meaningful)
-    fn has_non_unit_expression(&self, body: &Expr) -> bool {
-        !self.is_void_expression(body)
-    }
-
-    /// Check if function body returns a closure (Lambda expression)
-    fn returns_closure(&self, body: &Expr) -> bool {
-        match &body.kind {
-            ExprKind::Lambda { .. } => true,
-            ExprKind::Block(exprs) if !exprs.is_empty() => {
-                // Check if last expression in block is a lambda
-                if let Some(last_expr) = exprs.last() {
-                    matches!(last_expr.kind, ExprKind::Lambda { .. })
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        }
-    }
-
     /// Infer return type from parameter types
     /// Delegates to return_type_helpers module
     fn infer_return_type_from_params(
@@ -759,7 +636,7 @@ impl Transpiler {
 
         // Check if used numerically
         if is_param_used_numerically(&param.name(), body)
-            || self.looks_like_numeric_function(func_name)
+            || super::function_analysis::looks_like_numeric_function(func_name)
         {
             return quote! { i32 };
         }
@@ -932,7 +809,7 @@ impl Transpiler {
             Ok(quote! { -> #ty_tokens })
         } else if name == "main" {
             Ok(quote! {})
-        } else if self.returns_closure(body) {
+        } else if super::function_analysis::returns_closure(body) {
             // Functions returning closures need `impl Fn` return type annotation.
             // Without this, Rust cannot infer the closure signature.
             Ok(quote! { -> impl Fn(i32) -> i32 })
@@ -963,7 +840,7 @@ impl Transpiler {
         // String concatenation, mutations, and string variables return owned String
         } else if returns_string(body) {
             Ok(quote! { -> String })
-        } else if self.looks_like_numeric_function(name) {
+        } else if super::function_analysis::looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if returns_string_literal(body) {
             // ISSUE-103: String literals have 'static lifetime
@@ -976,7 +853,7 @@ impl Transpiler {
         // Functions returning parameter values should use parameter's type, not default to i32
         } else if let Some(return_ty) = self.infer_return_type_from_params(body, params)? {
             Ok(return_ty)
-        } else if self.has_non_unit_expression(body) {
+        } else if super::function_analysis::has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
             Ok(quote! {})
@@ -1089,7 +966,7 @@ impl Transpiler {
                                 }
                             } else {
                                 // Last statement - check if it's void
-                                if self.is_void_expression(expr) {
+                                if super::function_analysis::is_void_expression(expr) {
                                     // Void expressions should have semicolons
                                     if is_let {
                                         // Let already has semicolon
@@ -1652,16 +1529,16 @@ impl Transpiler {
             Ok(quote! { -> #ty_tokens })
         } else if name == "main" {
             Ok(quote! {})
-        } else if self.returns_closure(body) {
+        } else if super::function_analysis::returns_closure(body) {
             // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
             // Functions returning closures should have `impl Fn` return type
             Ok(quote! { -> impl Fn(i32) -> i32 })
-        } else if self.looks_like_numeric_function(name) {
+        } else if super::function_analysis::looks_like_numeric_function(name) {
             Ok(quote! { -> i32 })
         } else if returns_string_literal(body) {
             // ISSUE-103: Detect string literal returns (with lifetime)
             Ok(quote! { -> &'a str })
-        } else if self.has_non_unit_expression(body) {
+        } else if super::function_analysis::has_non_unit_expression(body) {
             Ok(quote! { -> i32 })
         } else {
             Ok(quote! {})
@@ -6471,25 +6348,25 @@ mod tests {
         let transpiler = create_transpiler();
 
         // Test mathematical functions
-        assert!(transpiler.looks_like_numeric_function("sin"));
-        assert!(transpiler.looks_like_numeric_function("cos"));
-        assert!(transpiler.looks_like_numeric_function("tan"));
-        assert!(transpiler.looks_like_numeric_function("sqrt"));
-        assert!(transpiler.looks_like_numeric_function("abs"));
-        assert!(transpiler.looks_like_numeric_function("floor"));
-        assert!(transpiler.looks_like_numeric_function("ceil"));
-        assert!(transpiler.looks_like_numeric_function("round"));
-        assert!(transpiler.looks_like_numeric_function("pow"));
-        assert!(transpiler.looks_like_numeric_function("log"));
-        assert!(transpiler.looks_like_numeric_function("exp"));
-        assert!(transpiler.looks_like_numeric_function("min"));
-        assert!(transpiler.looks_like_numeric_function("max"));
+        assert!(super::function_analysis::looks_like_numeric_function("sin"));
+        assert!(super::function_analysis::looks_like_numeric_function("cos"));
+        assert!(super::function_analysis::looks_like_numeric_function("tan"));
+        assert!(super::function_analysis::looks_like_numeric_function("sqrt"));
+        assert!(super::function_analysis::looks_like_numeric_function("abs"));
+        assert!(super::function_analysis::looks_like_numeric_function("floor"));
+        assert!(super::function_analysis::looks_like_numeric_function("ceil"));
+        assert!(super::function_analysis::looks_like_numeric_function("round"));
+        assert!(super::function_analysis::looks_like_numeric_function("pow"));
+        assert!(super::function_analysis::looks_like_numeric_function("log"));
+        assert!(super::function_analysis::looks_like_numeric_function("exp"));
+        assert!(super::function_analysis::looks_like_numeric_function("min"));
+        assert!(super::function_analysis::looks_like_numeric_function("max"));
 
         // Test non-numeric functions
-        assert!(!transpiler.looks_like_numeric_function("println"));
-        assert!(!transpiler.looks_like_numeric_function("assert"));
-        assert!(!transpiler.looks_like_numeric_function("custom_function"));
-        assert!(!transpiler.looks_like_numeric_function(""));
+        assert!(!super::function_analysis::looks_like_numeric_function("println"));
+        assert!(!super::function_analysis::looks_like_numeric_function("assert"));
+        assert!(!super::function_analysis::looks_like_numeric_function("custom_function"));
+        assert!(!super::function_analysis::looks_like_numeric_function(""));
     }
 
     #[test]
@@ -6589,21 +6466,21 @@ mod tests {
     #[test]
     fn test_looks_like_numeric_function_arithmetic() {
         let transpiler = create_transpiler();
-        assert!(transpiler.looks_like_numeric_function("add"));
-        assert!(transpiler.looks_like_numeric_function("multiply"));
-        assert!(transpiler.looks_like_numeric_function("sqrt"));
-        assert!(transpiler.looks_like_numeric_function("pow"));
-        assert!(!transpiler.looks_like_numeric_function("concat"));
+        assert!(super::function_analysis::looks_like_numeric_function("add"));
+        assert!(super::function_analysis::looks_like_numeric_function("multiply"));
+        assert!(super::function_analysis::looks_like_numeric_function("sqrt"));
+        assert!(super::function_analysis::looks_like_numeric_function("pow"));
+        assert!(!super::function_analysis::looks_like_numeric_function("concat"));
     }
 
     // Test 9: looks_like_numeric_function - trigonometric functions
     #[test]
     fn test_looks_like_numeric_function_trig() {
         let transpiler = create_transpiler();
-        assert!(transpiler.looks_like_numeric_function("sin"));
-        assert!(transpiler.looks_like_numeric_function("cos"));
-        assert!(transpiler.looks_like_numeric_function("atan2"));
-        assert!(!transpiler.looks_like_numeric_function("uppercase"));
+        assert!(super::function_analysis::looks_like_numeric_function("sin"));
+        assert!(super::function_analysis::looks_like_numeric_function("cos"));
+        assert!(super::function_analysis::looks_like_numeric_function("atan2"));
+        assert!(!super::function_analysis::looks_like_numeric_function("uppercase"));
     }
 
     // Test 10: is_void_function_call - println function
@@ -6619,7 +6496,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(transpiler.is_void_function_call(&call_expr));
+        assert!(super::function_analysis::is_void_function_call(&call_expr));
     }
 
     // Test 11: is_void_function_call - assert function
@@ -6635,7 +6512,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(transpiler.is_void_function_call(&call_expr));
+        assert!(super::function_analysis::is_void_function_call(&call_expr));
     }
 
     // Test 12: is_void_expression - unit literal
@@ -6644,7 +6521,7 @@ mod tests {
         use crate::frontend::ast::{Expr, ExprKind, Span};
         let transpiler = create_transpiler();
         let unit_expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::default());
-        assert!(transpiler.is_void_expression(&unit_expr));
+        assert!(super::function_analysis::is_void_expression(&unit_expr));
     }
 
     // Test 13: is_void_expression - assignment expression
@@ -6664,7 +6541,7 @@ mod tests {
             },
             Span::default(),
         );
-        assert!(transpiler.is_void_expression(&assign_expr));
+        assert!(super::function_analysis::is_void_expression(&assign_expr));
     }
 
     // Test 14: returns_closure - non-closure returns false
@@ -6676,7 +6553,7 @@ mod tests {
             ExprKind::Literal(Literal::Integer(42, None)),
             Span::default(),
         );
-        assert!(!transpiler.returns_closure(&int_expr));
+        assert!(!super::function_analysis::returns_closure(&int_expr));
     }
 
     // Test 15: returns_string_literal - direct string literal
@@ -7199,10 +7076,10 @@ mod property_tests_statements {
         assert!(transpiler.value_creates_vec(&vec_expr));
 
         // Test looks_like_numeric_function
-        assert!(transpiler.looks_like_numeric_function("sqrt"));
-        assert!(transpiler.looks_like_numeric_function("pow"));
-        assert!(transpiler.looks_like_numeric_function("abs"));
-        assert!(!transpiler.looks_like_numeric_function("println"));
+        assert!(super::function_analysis::looks_like_numeric_function("sqrt"));
+        assert!(super::function_analysis::looks_like_numeric_function("pow"));
+        assert!(super::function_analysis::looks_like_numeric_function("abs"));
+        assert!(!super::function_analysis::looks_like_numeric_function("println"));
     }
 
     #[test]
@@ -7314,8 +7191,8 @@ mod property_tests_statements {
         // Test all helper methods with various inputs
 
         // Test basic transpiler functionality
-        assert!(transpiler.looks_like_numeric_function("sqrt"));
-        assert!(!transpiler.looks_like_numeric_function("println"));
+        assert!(super::function_analysis::looks_like_numeric_function("sqrt"));
+        assert!(!super::function_analysis::looks_like_numeric_function("println"));
 
         // Test various numeric function names
         let numeric_functions = vec![
@@ -7359,7 +7236,7 @@ mod property_tests_statements {
         ];
 
         for func in numeric_functions {
-            assert!(transpiler.looks_like_numeric_function(func));
+            assert!(super::function_analysis::looks_like_numeric_function(func));
         }
 
         let non_numeric_functions = vec![
@@ -7387,7 +7264,7 @@ mod property_tests_statements {
         ];
 
         for func in non_numeric_functions {
-            assert!(!transpiler.looks_like_numeric_function(func));
+            assert!(!super::function_analysis::looks_like_numeric_function(func));
         }
 
         // Test pattern needs slice with various patterns
@@ -8257,17 +8134,17 @@ mod property_tests_statements {
     #[test]
     fn test_looks_like_numeric_function_true() {
         let transpiler = Transpiler::new();
-        assert!(transpiler.looks_like_numeric_function("abs"));
-        assert!(transpiler.looks_like_numeric_function("sqrt"));
-        assert!(transpiler.looks_like_numeric_function("pow"));
+        assert!(super::function_analysis::looks_like_numeric_function("abs"));
+        assert!(super::function_analysis::looks_like_numeric_function("sqrt"));
+        assert!(super::function_analysis::looks_like_numeric_function("pow"));
     }
 
     // Test 131: looks_like_numeric_function - with non-numeric names
     #[test]
     fn test_looks_like_numeric_function_false() {
         let transpiler = Transpiler::new();
-        assert!(!transpiler.looks_like_numeric_function("print"));
-        assert!(!transpiler.looks_like_numeric_function("hello"));
+        assert!(!super::function_analysis::looks_like_numeric_function("print"));
+        assert!(!super::function_analysis::looks_like_numeric_function("hello"));
     }
 
     // Test 132: returns_boolean - with boolean literal
@@ -8440,7 +8317,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.has_non_unit_expression(&body));
+        assert!(super::function_analysis::has_non_unit_expression(&body));
     }
 
     // Test 143: has_non_unit_expression - with unit
@@ -8454,7 +8331,7 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(!transpiler.has_non_unit_expression(&body));
+        assert!(!super::function_analysis::has_non_unit_expression(&body));
     }
 
     // Test 144: is_void_expression - with unit literal
@@ -8468,6 +8345,6 @@ mod property_tests_statements {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        assert!(transpiler.is_void_expression(&expr));
+        assert!(super::function_analysis::is_void_expression(&expr));
     }
 }
