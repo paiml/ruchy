@@ -43,53 +43,7 @@ pub fn parse_ruchy_code(source: &str) -> Result<crate::frontend::ast::Expr> {
         .parse()
         .map_err(|e| anyhow::anyhow!("Parse error: {e:?}"))
 }
-/// Standard pattern for success response creation  
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::utils::common_patterns::create_success_response;
-///
-/// let result = create_success_response(());
-/// assert_eq!(result, Ok(()));
-/// ```
-#[cfg(feature = "notebook")]
-pub fn create_success_response(
-    value: String,
-    cell_id: String,
-    execution_time: f64,
-) -> crate::wasm::shared_session::ExecuteResponse {
-    crate::wasm::shared_session::ExecuteResponse {
-        success: true,
-        cell_id,
-        value: value.clone(),
-        result: value,
-        error: None,
-        execution_time_ms: execution_time,
-    }
-}
-/// Standard pattern for error response creation
-/// # Examples
-///
-/// ```ignore
-/// use ruchy::utils::common_patterns::create_error_response;
-///
-/// let result = create_error_response(());
-/// assert_eq!(result, Ok(()));
-/// ```
-#[cfg(feature = "notebook")]
-pub fn create_error_response(
-    error: String,
-    cell_id: String,
-) -> crate::wasm::shared_session::ExecuteResponse {
-    crate::wasm::shared_session::ExecuteResponse {
-        success: false,
-        cell_id,
-        value: String::new(),
-        result: String::new(),
-        error: Some(error),
-        execution_time_ms: 0.0,
-    }
-}
+// WASM notebook response functions removed - using Pure Rust notebook module instead
 /// Format a module operation error
 /// # Examples
 ///
@@ -794,27 +748,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_create_success_response() {
-        let response = create_success_response("value".to_string(), "cell_1".to_string(), 100.5);
-        assert!(response.success);
-        assert_eq!(response.cell_id, "cell_1");
-        assert_eq!(response.value, "value");
-        assert_eq!(response.result, "value");
-        assert!(response.error.is_none());
-        assert_eq!(response.execution_time_ms, 100.5);
-    }
-
-    #[test]
-    fn test_create_error_response() {
-        let response = create_error_response("error message".to_string(), "cell_2".to_string());
-        assert!(!response.success);
-        assert_eq!(response.cell_id, "cell_2");
-        assert!(response.value.is_empty());
-        assert!(response.result.is_empty());
-        assert_eq!(response.error, Some("error message".to_string()));
-        assert_eq!(response.execution_time_ms, 0.0);
-    }
+    // WASM response tests removed - using Pure Rust notebook module instead
 
     #[test]
     fn test_format_module_error() {

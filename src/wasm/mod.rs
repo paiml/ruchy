@@ -5,12 +5,10 @@
 pub mod component;
 pub mod demo_converter;
 pub mod deployment;
-#[cfg(feature = "notebook")]
-pub mod notebook;
+// notebook module removed - use src/notebook/ Pure Rust version instead
 pub mod portability;
 pub mod repl;
-#[cfg(feature = "notebook")]
-pub mod shared_session;
+// shared_session module removed - use src/notebook/ Pure Rust version instead
 pub mod wit;
 
 pub use component::{ComponentBuilder, ComponentConfig, WasmComponent};
@@ -19,12 +17,10 @@ pub use demo_converter::{
     NotebookCell as DemoNotebookCell,
 };
 pub use deployment::{Deployer, DeploymentConfig, DeploymentTarget};
-#[cfg(feature = "notebook")]
-pub use notebook::{CellOutput, CellType, Notebook, NotebookCell, NotebookRuntime};
+// notebook exports removed - use ruchy::notebook module instead
 pub use portability::{PortabilityAnalyzer, PortabilityReport, PortabilityScore};
 pub use repl::{ReplOutput, TimingInfo, WasmRepl};
-#[cfg(feature = "notebook")]
-pub use shared_session::{DefId, ExecuteResponse, ExecutionMode, GlobalRegistry, SharedSession};
+// shared_session exports removed - use ruchy::notebook module instead
 pub use wit::{InterfaceDefinition, WitGenerator, WitInterface};
 
 use crate::frontend::ast::{Expr, ExprKind, Literal};

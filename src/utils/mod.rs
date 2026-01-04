@@ -56,30 +56,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_create_success_response() {
-        let response =
-            create_success_response("result_value".to_string(), "cell_123".to_string(), 123.45);
-
-        assert!(response.success);
-        assert_eq!(response.cell_id, "cell_123");
-        assert_eq!(response.value, "result_value");
-        assert_eq!(response.result, "result_value");
-        assert_eq!(response.error, None);
-        assert_eq!(response.execution_time_ms, 123.45);
-    }
-
-    #[test]
-    fn test_create_error_response() {
-        let response = create_error_response("error message".to_string(), "cell_456".to_string());
-
-        assert!(!response.success);
-        assert_eq!(response.cell_id, "cell_456");
-        assert_eq!(response.value, "");
-        assert_eq!(response.result, "");
-        assert_eq!(response.error, Some("error message".to_string()));
-        assert_eq!(response.execution_time_ms, 0.0);
-    }
+    // WASM response tests removed - using Pure Rust notebook module instead
 
     #[test]
     fn test_format_version_info() {
@@ -133,10 +110,6 @@ mod tests {
     fn test_empty_string_handling() {
         let error = format_module_error("", "");
         assert_eq!(error, "Failed to  module ''");
-
-        let response = create_success_response(String::new(), String::new(), 0.0);
-        assert_eq!(response.value, "");
-        assert_eq!(response.cell_id, "");
     }
 
     #[test]
@@ -147,15 +120,6 @@ mod tests {
         let path = Path::new("file with spaces.ruchy");
         let error = format_file_error("parse", path);
         assert!(error.contains("file with spaces.ruchy"));
-    }
-
-    #[test]
-    fn test_large_values_in_response() {
-        let large_string = "x".repeat(10000);
-        let response =
-            create_success_response(large_string.clone(), "cell".to_string(), 999_999.99);
-        assert_eq!(response.value.len(), 10000);
-        assert_eq!(response.result, large_string);
     }
 
     #[test]
@@ -188,23 +152,5 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_response_consistency() {
-        let value = "test_value".to_string();
-        let response = create_success_response(value.clone(), "id".to_string(), 100.0);
-
-        // value and result should be the same for success
-        assert_eq!(response.value, response.result);
-        assert_eq!(response.value, value);
-    }
-
-    #[test]
-    fn test_error_response_empty_fields() {
-        let response = create_error_response("error".to_string(), "id".to_string());
-
-        // value and result should be empty for errors
-        assert!(response.value.is_empty());
-        assert!(response.result.is_empty());
-        assert!(!response.success);
-    }
+    // WASM response consistency tests removed - using Pure Rust notebook module instead
 }
