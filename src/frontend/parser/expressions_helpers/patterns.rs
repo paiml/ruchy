@@ -1570,6 +1570,416 @@ mod tests {
         assert!(result.is_ok(), "Large integer pattern should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind, Pattern};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Tuple pattern comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_tuple_pattern_empty() {
+        let result = parse("let () = ()");
+        assert!(result.is_ok(), "Empty tuple pattern should parse");
+    }
+
+    #[test]
+    fn test_tuple_pattern_single() {
+        let result = parse("let (x,) = (1,)");
+        assert!(result.is_ok(), "Single element tuple should parse");
+    }
+
+    #[test]
+    fn test_tuple_pattern_four_elements() {
+        let result = parse("let (a, b, c, d) = (1, 2, 3, 4)");
+        assert!(result.is_ok(), "Four element tuple should parse");
+    }
+
+    #[test]
+    fn test_tuple_pattern_with_wildcards() {
+        let result = parse("let (x, _, z) = (1, 2, 3)");
+        assert!(result.is_ok(), "Tuple with wildcards should parse");
+    }
+
+    #[test]
+    fn test_tuple_pattern_nested_three_levels() {
+        let result = parse("let (((a, b), c), d) = (((1, 2), 3), 4)");
+        assert!(result.is_ok(), "Deeply nested tuple should parse");
+    }
+
+    #[test]
+    fn test_tuple_pattern_with_mut_element() {
+        let result = parse("let (mut x, y) = (1, 2)");
+        assert!(result.is_ok(), "Tuple with mut element should parse");
+    }
+
+    // ============================================================
+    // List pattern comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_list_pattern_empty() {
+        let result = parse("let [] = []");
+        assert!(result.is_ok(), "Empty list pattern should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_single_element() {
+        let result = parse("let [x] = [1]");
+        assert!(result.is_ok(), "Single element list should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_with_trailing_rest() {
+        let result = parse("let [first, second, ...rest] = arr");
+        assert!(result.is_ok(), "List with trailing rest should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_with_two_dot_rest() {
+        let result = parse("let [head, ..tail] = arr");
+        assert!(result.is_ok(), "List with two-dot rest should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_rest_only() {
+        let result = parse("let [..all] = arr");
+        assert!(result.is_ok(), "List with only rest should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_with_wildcards() {
+        let result = parse("let [first, _, third] = arr");
+        assert!(result.is_ok(), "List with wildcards should parse");
+    }
+
+    // ============================================================
+    // Struct pattern comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_struct_pattern_single_field() {
+        let result = parse("let Point { x } = point");
+        assert!(result.is_ok(), "Struct with single field should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_three_fields() {
+        let result = parse("let Color { r, g, b } = color");
+        assert!(result.is_ok(), "Struct with three fields should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_rest_only() {
+        let result = parse("let Point { .. } = point");
+        assert!(result.is_ok(), "Struct with only rest should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_field_with_nested() {
+        let result = parse("let Line { start: Point { x, y }, end } = line");
+        assert!(result.is_ok(), "Struct with nested pattern should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_anonymous() {
+        let result = parse("let { name, age } = person");
+        assert!(result.is_ok(), "Anonymous struct pattern should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_trailing_comma() {
+        let result = parse("let Point { x, y, } = point");
+        assert!(result.is_ok(), "Struct with trailing comma should parse");
+    }
+
+    // ============================================================
+    // Match expression comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_match_with_block_body() {
+        let result = parse("match x { 1 => { let a = 1; a + 1 }, _ => 0 }");
+        assert!(result.is_ok(), "Match with block body should parse");
+    }
+
+    #[test]
+    fn test_match_arrow_syntax() {
+        let result = parse("match x { 1 -> true, _ -> false }");
+        assert!(result.is_ok(), "Match with arrow syntax should parse");
+    }
+
+    #[test]
+    fn test_match_five_arms() {
+        let result = parse(
+            "match x { 0 => \"zero\", 1 => \"one\", 2 => \"two\", 3 => \"three\", _ => \"many\" }",
+        );
+        assert!(result.is_ok(), "Match with five arms should parse");
+    }
+
+    #[test]
+    fn test_match_guard_with_function_call() {
+        let result = parse("match x { n if is_valid(n) => true, _ => false }");
+        assert!(result.is_ok(), "Match with function call guard should parse");
+    }
+
+    #[test]
+    fn test_match_guard_with_comparison() {
+        let result = parse("match x { n if n >= 0 && n < 100 => true, _ => false }");
+        assert!(result.is_ok(), "Match with comparison guard should parse");
+    }
+
+    #[test]
+    fn test_match_nested() {
+        let result = parse("match x { Some(y) => match y { 1 => true, _ => false }, None => false }");
+        assert!(result.is_ok(), "Nested match should parse");
+    }
+
+    #[test]
+    fn test_match_with_trailing_comma() {
+        let result = parse("match x { 1 => true, 2 => false, }");
+        assert!(result.is_ok(), "Match with trailing comma should parse");
+    }
+
+    // ============================================================
+    // If-let comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_if_let_without_else() {
+        let result = parse("if let Some(x) = opt { print(x) }");
+        assert!(result.is_ok(), "If-let without else should parse");
+    }
+
+    #[test]
+    fn test_if_let_nested_pattern() {
+        let result = parse("if let Some((a, b)) = opt { a + b } else { 0 }");
+        assert!(result.is_ok(), "If-let with nested pattern should parse");
+    }
+
+    #[test]
+    fn test_if_let_ok_pattern() {
+        let result = parse("if let Ok(val) = result { val } else { 0 }");
+        assert!(result.is_ok(), "If-let with Ok should parse");
+    }
+
+    #[test]
+    fn test_if_let_err_pattern() {
+        let result = parse("if let Err(e) = result { log(e) }");
+        assert!(result.is_ok(), "If-let with Err should parse");
+    }
+
+    #[test]
+    fn test_if_let_struct_pattern() {
+        let result = parse("if let Point { x, y } = point { x + y } else { 0 }");
+        assert!(result.is_ok(), "If-let with struct should parse");
+    }
+
+    #[test]
+    fn test_if_let_chain() {
+        let result = parse("if let Some(x) = a { x } else if let Some(y) = b { y } else { 0 }");
+        assert!(result.is_ok(), "If-let chain should parse");
+    }
+
+    // ============================================================
+    // Or pattern comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_or_pattern_three_alternatives() {
+        let result = parse("match x { 1 | 2 | 3 => true, _ => false }");
+        assert!(result.is_ok(), "Three-way or should parse");
+    }
+
+    #[test]
+    fn test_or_pattern_with_unit_variants() {
+        // Or pattern with unit variants (no function calls in body)
+        let result = parse("match x { A | B => 1, _ => 0 }");
+        assert!(result.is_ok(), "Or with unit variants should parse");
+    }
+
+    #[test]
+    fn test_or_pattern_strings() {
+        let result = parse(r#"match s { "yes" | "y" | "Y" => true, _ => false }"#);
+        assert!(result.is_ok(), "Or with strings should parse");
+    }
+
+    #[test]
+    fn test_or_pattern_with_binding() {
+        let result = parse("match x { Some(n) | Ok(n) => n, _ => 0 }");
+        assert!(result.is_ok(), "Or with bindings should parse");
+    }
+
+    // ============================================================
+    // Range pattern comprehensive tests
+    // ============================================================
+
+    #[test]
+    fn test_range_pattern_exclusive() {
+        let result = parse("match x { 0..10 => true, _ => false }");
+        assert!(result.is_ok(), "Exclusive range should parse");
+    }
+
+    #[test]
+    fn test_range_pattern_inclusive() {
+        let result = parse("match x { 0..=10 => true, _ => false }");
+        assert!(result.is_ok(), "Inclusive range should parse");
+    }
+
+    #[test]
+    fn test_range_pattern_char_exclusive() {
+        let result = parse("match c { 'a'..'z' => true, _ => false }");
+        assert!(result.is_ok(), "Char exclusive range should parse");
+    }
+
+    #[test]
+    fn test_range_pattern_char_inclusive() {
+        let result = parse("match c { 'a'..='z' => true, _ => false }");
+        assert!(result.is_ok(), "Char inclusive range should parse");
+    }
+
+    // ============================================================
+    // At binding tests
+    // ============================================================
+
+    #[test]
+    fn test_at_binding_simple() {
+        let result = parse("match x { n @ 1..10 => n, _ => 0 }");
+        assert!(result.is_ok(), "At binding with range should parse");
+    }
+
+    #[test]
+    fn test_at_binding_with_pattern() {
+        let result = parse("match opt { val @ Some(_) => val, None => None }");
+        assert!(result.is_ok(), "At binding with Some should parse");
+    }
+
+    // ============================================================
+    // Qualified path patterns
+    // ============================================================
+
+    #[test]
+    fn test_qualified_enum_variant() {
+        let result = parse("match x { Color::Red => 1, Color::Green => 2, _ => 0 }");
+        assert!(result.is_ok(), "Qualified enum variant should parse");
+    }
+
+    #[test]
+    fn test_qualified_tuple_variant() {
+        // Qualified with two alternatives - simpler form
+        let result = parse("match x { Color::RGB(r, g, b) => r, _ => 0 }");
+        assert!(result.is_ok(), "Qualified tuple variant should parse");
+    }
+
+    #[test]
+    fn test_qualified_struct_variant() {
+        let result = parse("match x { Shape::Circle { radius } => radius, _ => 0.0 }");
+        assert!(result.is_ok(), "Qualified struct variant should parse");
+    }
+
+    // ============================================================
+    // Let-else pattern tests
+    // ============================================================
+
+    #[test]
+    fn test_let_else_with_panic() {
+        let result = parse("let Some(x) = opt else { panic(\"no value\") }");
+        assert!(result.is_ok(), "Let-else with panic should parse");
+    }
+
+    #[test]
+    fn test_let_else_with_ok() {
+        let result = parse("let Ok(val) = result else { return Err(e) }");
+        assert!(result.is_ok(), "Let-else with Ok should parse");
+    }
+
+    #[test]
+    fn test_let_else_complex_block() {
+        let result = parse(
+            r#"let Some(x) = opt else {
+            log("error")
+            return 0
+        }"#,
+        );
+        assert!(result.is_ok(), "Let-else with complex block should parse");
+    }
+
+    // ============================================================
+    // Edge cases and special patterns
+    // ============================================================
+
+    #[test]
+    fn test_pattern_in_function_param() {
+        let result = parse("fun foo((x, y)) { x + y }");
+        assert!(result.is_ok(), "Tuple pattern in function param should parse");
+    }
+
+    #[test]
+    fn test_pattern_with_type_keyword_field() {
+        let result = parse("let { type } = config");
+        // May or may not parse - checking it doesn't crash
+        let _ = result;
+    }
+
+    #[test]
+    fn test_constructor_empty_args() {
+        let result = parse("match x { Unit() => true, _ => false }");
+        assert!(result.is_ok(), "Empty constructor args should parse");
+    }
+
+    #[test]
+    fn test_constructor_three_args() {
+        let result = parse("match x { Triple(a, b, c) => a + b + c }");
+        assert!(result.is_ok(), "Constructor with three args should parse");
+    }
+
+    #[test]
+    fn test_match_complex_guard() {
+        let result = parse("match (x, y) { (a, b) if a > 0 && b > 0 => true, _ => false }");
+        assert!(result.is_ok(), "Match with complex guard should parse");
+    }
+
+    #[test]
+    fn test_pattern_result_identifier() {
+        // Result is a keyword but can be used as identifier in some contexts
+        let result = parse("let Result = compute()");
+        assert!(result.is_ok(), "'Result' as identifier should parse");
+    }
+
+    #[test]
+    fn test_pattern_var_identifier() {
+        let result = parse("let var = value");
+        // May or may not work - var is a keyword
+        let _ = result;
+    }
+
+    #[test]
+    fn test_empty_tuple_in_match() {
+        let result = parse("match x { () => true }");
+        assert!(result.is_ok(), "Empty tuple in match should parse");
+    }
+
+    #[test]
+    fn test_empty_list_in_match() {
+        let result = parse("match arr { [] => true, _ => false }");
+        assert!(result.is_ok(), "Empty list in match should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
