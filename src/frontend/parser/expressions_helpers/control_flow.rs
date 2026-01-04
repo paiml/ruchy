@@ -169,8 +169,194 @@ pub(in crate::frontend::parser) fn parse_throw_token(
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::frontend::parser::Parser;
+
+    // Helper to parse code and return the parsed expression
+    fn parse(code: &str) -> Result<Expr> {
+        let mut parser = Parser::new(code);
+        parser.parse()
+    }
+
+    // Helper to extract block expressions
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // Helper to extract function body
+    fn get_function_body(expr: &Expr) -> Option<&Expr> {
+        if let Some(exprs) = get_block_exprs(expr) {
+            if let Some(func) = exprs.first() {
+                if let ExprKind::Function { body, .. } = &func.kind {
+                    return Some(body.as_ref());
+                }
+            }
+        }
+        None
+    }
+
+    // ===== parse_break_token tests =====
+
+    #[test]
+    fn test_bare_break() {
+        let expr = parse("loop { break }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Loop { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Break { label, value } = &inner[0].kind {
+                        assert!(label.is_none());
+                        assert!(value.is_none());
+                    } else {
+                        panic!("Expected Break expression");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_with_value() {
+        let expr = parse("loop { break 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Loop { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Break { value, .. } = &inner[0].kind {
+                        assert!(value.is_some());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_with_string_value() {
+        let expr = parse("loop { break \"done\" }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Loop { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Break { value, .. } = &inner[0].kind {
+                        assert!(value.is_some());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_with_expression() {
+        let expr = parse("loop { break x + 1 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Loop { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Break { value, .. } = &inner[0].kind {
+                        assert!(value.is_some());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_with_label_in_while() {
+        let expr = parse("'outer: while true { break 'outer }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::While { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Break { label, .. } = &inner[0].kind {
+                        assert!(label.is_some());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_followed_by_semicolon() {
+        let expr = parse("loop { break; x }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Loop { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    assert!(matches!(&inner[0].kind, ExprKind::Break { .. }));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_break_followed_by_right_brace() {
+        let result = parse("loop { if true { break } }");
+        assert!(result.is_ok(), "Break followed by }} should parse");
+    }
+
+    // ===== parse_continue_token tests =====
+
+    #[test]
+    fn test_bare_continue() {
+        let expr = parse("while true { continue }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::While { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Continue { label } = &inner[0].kind {
+                        assert!(label.is_none());
+                    } else {
+                        panic!("Expected Continue expression");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_continue_no_label() {
+        let code = "while true { continue }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Continue should parse successfully");
+    }
+
+    #[test]
+    fn test_continue_with_label() {
+        let expr = parse("'outer: while true { continue 'outer }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::While { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    if let ExprKind::Continue { label } = &inner[0].kind {
+                        assert!(label.is_some());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_continue_in_for_loop() {
+        let expr = parse("for x in xs { continue }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::For { body, .. } = &exprs[0].kind {
+                if let ExprKind::Block(inner) = &body.kind {
+                    assert!(matches!(&inner[0].kind, ExprKind::Continue { .. }));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_continue_followed_by_semicolon() {
+        let result = parse("loop { continue; x }");
+        assert!(result.is_ok(), "Continue followed by semicolon should parse");
+    }
+
+    #[test]
+    fn test_continue_in_nested_loop() {
+        let expr = parse("'outer: while true { while false { continue 'outer } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::While { .. }));
+        }
+    }
+
+    // ===== parse_return_token tests =====
 
     #[test]
     fn test_bare_return() {
@@ -190,6 +376,131 @@ mod tests {
     }
 
     #[test]
+    fn test_return_value_none() {
+        let expr = parse("fun f() { return }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_value_some() {
+        let expr = parse("fun f() { return 42 }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_with_string() {
+        let expr = parse("fun f() { return \"hello\" }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_with_expression() {
+        let expr = parse("fun f(x) { return x * 2 }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_followed_by_semicolon() {
+        let expr = parse("fun f() { return; 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    #[test]
+    fn test_return_followed_by_right_brace() {
+        let result = parse("fun f() { if true { return } }");
+        assert!(result.is_ok(), "Return followed by }} should parse");
+    }
+
+    #[test]
+    fn test_return_in_if_else() {
+        let expr = parse("fun f(x) { if x { return 1 } else { return 2 } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    #[test]
+    fn test_early_return() {
+        let expr = parse("fun f(x) { if x < 0 { return } x * 2 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    // ===== parse_throw_token tests =====
+
+    #[test]
+    fn test_throw_expression() {
+        let code = "fun f() { throw \"error\" }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Throw should parse successfully");
+    }
+
+    #[test]
+    fn test_throw_with_string() {
+        let expr = parse("fun f() { throw \"error\" }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            assert!(matches!(&body.kind, ExprKind::Throw { .. }));
+        }
+    }
+
+    #[test]
+    fn test_throw_with_variable() {
+        let expr = parse("fun f(e) { throw e }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Throw { expr } = &body.kind {
+                assert!(matches!(&expr.kind, ExprKind::Identifier(_)));
+            }
+        }
+    }
+
+    #[test]
+    fn test_throw_with_call() {
+        let expr = parse("fun f() { throw Error(\"oops\") }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Throw { expr } = &body.kind {
+                assert!(matches!(&expr.kind, ExprKind::Call { .. }));
+            }
+        }
+    }
+
+    #[test]
+    fn test_throw_with_struct_literal() {
+        let expr = parse("fun f() { throw MyError { msg: \"oops\" } }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            assert!(matches!(&body.kind, ExprKind::Throw { .. }));
+        }
+    }
+
+    #[test]
+    fn test_throw_in_conditional() {
+        let expr = parse("fun f(x) { if x < 0 { throw \"negative\" } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    // ===== Edge cases and integration tests =====
+
+    #[test]
     #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Parser architecture issue - statements with lifetime tokens in for loops
     fn test_break_with_label() {
         // Root cause: Parser gets confused when lifetime token appears in statement position within for loop
@@ -201,16 +512,68 @@ mod tests {
     }
 
     #[test]
-    fn test_continue_no_label() {
-        let code = "while true { continue }";
-        let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Continue should parse successfully");
+    fn test_nested_loops_with_control_flow() {
+        let result = parse("'a: while true { 'b: while false { break 'a } }");
+        assert!(result.is_ok(), "Nested loops with break should parse");
     }
 
     #[test]
-    fn test_throw_expression() {
-        let code = "fun f() { throw \"error\" }";
-        let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Throw should parse successfully");
+    fn test_control_flow_in_match_arm() {
+        let result = parse("fun f(x) { match x { 1 => return 1, _ => 0 } }");
+        assert!(result.is_ok(), "Control flow in match arm should parse");
+    }
+
+    #[test]
+    fn test_control_flow_in_lambda() {
+        let expr = parse("|x| { if x < 0 { return } x }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Lambda { .. }));
+        }
+    }
+
+    #[test]
+    fn test_multiple_returns() {
+        let expr = parse("fun f(a, b) { if a { return 1 } if b { return 2 } 3 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    #[test]
+    fn test_break_continue_in_same_loop() {
+        let expr = parse("while true { if x { break } else { continue } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::While { .. }));
+        }
+    }
+
+    #[test]
+    fn test_return_tuple() {
+        let expr = parse("fun f() { return (1, 2, 3) }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_list() {
+        let expr = parse("fun f() { return [1, 2, 3] }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_throw_binary_expression() {
+        let expr = parse("fun f() { throw a + b }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Throw { expr } = &body.kind {
+                assert!(matches!(&expr.kind, ExprKind::Binary { .. }));
+            }
+        }
     }
 }
