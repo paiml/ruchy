@@ -3,6 +3,7 @@ pub mod engine;
 pub mod execution;
 pub mod html;
 pub mod persistence;
+pub mod runtime; // Pure Rust NotebookRuntime - probador validated
 pub mod server;
 #[cfg(feature = "notebook")]
 pub mod testing;
@@ -14,6 +15,7 @@ pub use engine::NotebookEngine;
 pub use execution::CellExecutionResult;
 pub use html::{html_escape, HtmlFormatter};
 pub use persistence::{Checkpoint, TransactionResult};
+pub use runtime::NotebookRuntime; // Pure Rust runtime
 pub use server::start_server;
 pub use types::{Cell, CellType, Notebook, NotebookMetadata}; // NOTEBOOK-009
 pub use wasm::{NotebookPerformance, NotebookWasm};
