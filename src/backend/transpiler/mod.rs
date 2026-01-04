@@ -55,6 +55,7 @@ pub mod return_type_helpers;
 mod statements;
 pub mod builtin_type_inference;
 pub mod mutation_detection;
+pub mod pattern_bindings;
 #[cfg(test)]
 mod tests_compound_assignment;
 mod type_conversion_refactored;
