@@ -58,6 +58,7 @@ pub mod mutation_detection;
 pub mod pattern_bindings;
 pub mod function_analysis;
 pub mod type_analysis;
+pub mod import_helpers;
 #[cfg(test)]
 mod tests_compound_assignment;
 mod type_conversion_refactored;
