@@ -532,6 +532,606 @@ mod tests {
         assert!(result.is_ok(), "Var with type should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind, Pattern};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Let statement tests
+    // ============================================================
+
+    #[test]
+    fn test_let_creates_let_expr_kind() {
+        let expr = parse("let x = 42").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Let { .. }),
+                "let should produce ExprKind::Let"
+            );
+        }
+    }
+
+    #[test]
+    fn test_let_name_is_captured() {
+        let expr = parse("let foo = 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let { name, .. } = &exprs[0].kind {
+                assert_eq!(name, "foo", "Let name should be 'foo'");
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_mut_sets_is_mutable_true() {
+        let expr = parse("let mut x = 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let { is_mutable, .. } = &exprs[0].kind {
+                assert!(*is_mutable, "let mut should set is_mutable=true");
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_without_mut_is_immutable() {
+        let expr = parse("let x = 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let { is_mutable, .. } = &exprs[0].kind {
+                assert!(!*is_mutable, "let without mut should set is_mutable=false");
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_with_string_value() {
+        let code = r#"let name = "Alice""#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Let with string value should parse");
+    }
+
+    #[test]
+    fn test_let_with_boolean_value() {
+        let result = parse("let flag = true");
+        assert!(result.is_ok(), "Let with boolean value should parse");
+    }
+
+    #[test]
+    fn test_let_with_float_value() {
+        let result = parse("let pi = 3.14");
+        assert!(result.is_ok(), "Let with float value should parse");
+    }
+
+    #[test]
+    fn test_let_with_array_value() {
+        let result = parse("let arr = [1, 2, 3]");
+        assert!(result.is_ok(), "Let with array value should parse");
+    }
+
+    #[test]
+    fn test_let_with_expression_value() {
+        let result = parse("let sum = 1 + 2 + 3");
+        assert!(result.is_ok(), "Let with expression value should parse");
+    }
+
+    #[test]
+    fn test_let_with_function_call_value() {
+        let result = parse("let result = foo(1, 2)");
+        assert!(result.is_ok(), "Let with function call value should parse");
+    }
+
+    #[test]
+    fn test_let_with_lambda_value() {
+        let result = parse("let f = |x| x * 2");
+        assert!(result.is_ok(), "Let with lambda value should parse");
+    }
+
+    // ============================================================
+    // Type annotation tests
+    // ============================================================
+
+    #[test]
+    fn test_let_type_annotation_i32() {
+        let expr = parse("let x: i32 = 42").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let {
+                type_annotation, ..
+            } = &exprs[0].kind
+            {
+                assert!(
+                    type_annotation.is_some(),
+                    "Type annotation should be present"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_type_annotation_string() {
+        let result = parse(r#"let s: String = "hello""#);
+        assert!(result.is_ok(), "Let with String type should parse");
+    }
+
+    #[test]
+    fn test_let_type_annotation_bool() {
+        let result = parse("let b: bool = false");
+        assert!(result.is_ok(), "Let with bool type should parse");
+    }
+
+    #[test]
+    fn test_let_type_annotation_f64() {
+        let result = parse("let f: f64 = 3.14");
+        assert!(result.is_ok(), "Let with f64 type should parse");
+    }
+
+    #[test]
+    fn test_let_type_annotation_vec() {
+        let result = parse("let v: Vec<i32> = [1, 2, 3]");
+        assert!(result.is_ok(), "Let with Vec type should parse");
+    }
+
+    #[test]
+    fn test_let_type_annotation_option() {
+        let result = parse("let opt: Option<i32> = Some(42)");
+        assert!(result.is_ok(), "Let with Option type should parse");
+    }
+
+    #[test]
+    fn test_let_mut_with_type_annotation() {
+        let result = parse("let mut count: i32 = 0");
+        assert!(result.is_ok(), "Let mut with type should parse");
+    }
+
+    // ============================================================
+    // Let-in expression tests
+    // ============================================================
+
+    #[test]
+    fn test_let_in_simple() {
+        let expr = parse("let x = 1 in x + 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let { body, .. } = &exprs[0].kind {
+                assert!(
+                    !matches!(body.kind, ExprKind::Literal(_)),
+                    "Body should not be unit literal"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_in_nested() {
+        let result = parse("let x = 1 in let y = 2 in x + y");
+        assert!(result.is_ok(), "Nested let-in should parse");
+    }
+
+    #[test]
+    fn test_let_in_with_function_call() {
+        let result = parse("let x = 1 in foo(x)");
+        assert!(result.is_ok(), "Let-in with function call should parse");
+    }
+
+    #[test]
+    fn test_let_in_with_lambda() {
+        let result = parse("let f = |x| x in f(1)");
+        assert!(result.is_ok(), "Let-in with lambda should parse");
+    }
+
+    #[test]
+    fn test_let_in_with_block() {
+        let result = parse("let x = 1 in { x + 1 }");
+        assert!(result.is_ok(), "Let-in with block body should parse");
+    }
+
+    // ============================================================
+    // Let-else pattern tests
+    // ============================================================
+
+    #[test]
+    fn test_let_else_with_some() {
+        let result = parse("let Some(x) = opt else { return }");
+        assert!(result.is_ok(), "Let-else with Some should parse");
+    }
+
+    #[test]
+    fn test_let_else_with_ok() {
+        let result = parse("let Ok(val) = result else { return }");
+        assert!(result.is_ok(), "Let-else with Ok should parse");
+    }
+
+    #[test]
+    fn test_let_else_with_err() {
+        let result = parse("let Err(e) = result else { return }");
+        assert!(result.is_ok(), "Let-else with Err should parse");
+    }
+
+    #[test]
+    fn test_let_else_produces_let_pattern() {
+        let expr = parse("let Some(x) = opt else { return }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::LetPattern { .. }),
+                "Let-else should produce LetPattern"
+            );
+        }
+    }
+
+    #[test]
+    fn test_let_else_has_else_block() {
+        let expr = parse("let Some(x) = opt else { panic() }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::LetPattern { else_block, .. } = &exprs[0].kind {
+                assert!(else_block.is_some(), "else_block should be Some");
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_else_complex_block() {
+        let result = parse(
+            r#"let Some(x) = opt else {
+            println("error")
+            return
+        }"#,
+        );
+        assert!(result.is_ok(), "Let-else with complex block should parse");
+    }
+
+    // ============================================================
+    // Pattern variant tests (Some, Ok, Err, None)
+    // ============================================================
+
+    #[test]
+    fn test_let_some_pattern() {
+        let expr = parse("let Some(value) = opt else { return }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::LetPattern { pattern, .. } = &exprs[0].kind {
+                assert!(
+                    matches!(pattern, Pattern::Some(_)),
+                    "Should produce Some pattern"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_ok_pattern() {
+        let expr = parse("let Ok(value) = res else { return }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::LetPattern { pattern, .. } = &exprs[0].kind {
+                assert!(
+                    matches!(pattern, Pattern::Ok(_)),
+                    "Should produce Ok pattern"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_err_pattern() {
+        let expr = parse("let Err(e) = res else { return }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::LetPattern { pattern, .. } = &exprs[0].kind {
+                assert!(
+                    matches!(pattern, Pattern::Err(_)),
+                    "Should produce Err pattern"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_none_pattern() {
+        let result = parse("let None = opt else { return }");
+        assert!(result.is_ok(), "Let with None pattern should parse");
+    }
+
+    // ============================================================
+    // Tuple destructuring tests
+    // ============================================================
+
+    #[test]
+    fn test_let_tuple_two_elements() {
+        let result = parse("let (a, b) = (1, 2)");
+        assert!(result.is_ok(), "Tuple with 2 elements should parse");
+    }
+
+    #[test]
+    fn test_let_tuple_three_elements() {
+        let result = parse("let (x, y, z) = (1, 2, 3)");
+        assert!(result.is_ok(), "Tuple with 3 elements should parse");
+    }
+
+    #[test]
+    fn test_let_tuple_nested() {
+        let result = parse("let ((a, b), c) = ((1, 2), 3)");
+        assert!(result.is_ok(), "Nested tuple should parse");
+    }
+
+    #[test]
+    fn test_let_tuple_produces_let_pattern() {
+        let expr = parse("let (x, y) = (1, 2)").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::LetPattern { .. }),
+                "Tuple destructuring should produce LetPattern"
+            );
+        }
+    }
+
+    #[test]
+    fn test_let_tuple_with_type() {
+        let result = parse("let (x, y): (i32, i32) = (1, 2)");
+        assert!(result.is_ok(), "Tuple with type annotation should parse");
+    }
+
+    #[test]
+    fn test_let_mut_tuple() {
+        let result = parse("let mut (x, y) = (1, 2)");
+        assert!(result.is_ok(), "Mutable tuple destructuring should parse");
+    }
+
+    // ============================================================
+    // List destructuring tests
+    // ============================================================
+
+    #[test]
+    fn test_let_list_destructure() {
+        let result = parse("let [a, b] = [1, 2]");
+        assert!(result.is_ok(), "List destructuring should parse");
+    }
+
+    #[test]
+    fn test_let_list_three_elements() {
+        let result = parse("let [x, y, z] = [1, 2, 3]");
+        assert!(result.is_ok(), "List with 3 elements should parse");
+    }
+
+    #[test]
+    fn test_let_list_produces_let_pattern() {
+        let expr = parse("let [a, b] = arr").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::LetPattern { .. }),
+                "List destructuring should produce LetPattern"
+            );
+        }
+    }
+
+    // ============================================================
+    // Struct destructuring tests
+    // ============================================================
+
+    #[test]
+    fn test_let_struct_destructure() {
+        let result = parse("let Point { x, y } = point");
+        assert!(result.is_ok(), "Struct destructuring should parse");
+    }
+
+    #[test]
+    fn test_let_struct_destructure_brace_only() {
+        let result = parse("let { name, age } = person");
+        assert!(result.is_ok(), "Brace-only struct destructuring should parse");
+    }
+
+    #[test]
+    fn test_let_struct_destructure_produces_let_pattern() {
+        let expr = parse("let Point { x, y } = p").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::LetPattern { .. }),
+                "Struct destructuring should produce LetPattern"
+            );
+        }
+    }
+
+    // ============================================================
+    // Special identifier tests
+    // ============================================================
+
+    #[test]
+    fn test_let_underscore_pattern() {
+        let result = parse("let _ = something()");
+        assert!(result.is_ok(), "Underscore pattern should parse");
+    }
+
+    #[test]
+    fn test_let_df_identifier() {
+        let result = parse("let df = load_data()");
+        assert!(result.is_ok(), "'df' identifier should parse");
+    }
+
+    #[test]
+    fn test_let_default_identifier() {
+        let result = parse("let default = get_default()");
+        assert!(result.is_ok(), "'default' identifier should parse");
+    }
+
+    #[test]
+    fn test_let_final_identifier() {
+        let result = parse("let final = compute_final()");
+        assert!(result.is_ok(), "'final' identifier should parse");
+    }
+
+    #[test]
+    fn test_let_result_identifier() {
+        let result = parse("let Result = compute()");
+        assert!(result.is_ok(), "'Result' identifier should parse");
+    }
+
+    // ============================================================
+    // Var statement tests
+    // ============================================================
+
+    #[test]
+    fn test_var_is_always_mutable() {
+        let expr = parse("var x = 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Let { is_mutable, .. } = &exprs[0].kind {
+                assert!(*is_mutable, "var should always be mutable");
+            }
+        }
+    }
+
+    #[test]
+    fn test_var_with_string_value() {
+        let result = parse(r#"var name = "Bob""#);
+        assert!(result.is_ok(), "Var with string should parse");
+    }
+
+    #[test]
+    fn test_var_with_array() {
+        let result = parse("var arr = [1, 2, 3]");
+        assert!(result.is_ok(), "Var with array should parse");
+    }
+
+    #[test]
+    fn test_var_tuple_destructure() {
+        let result = parse("var (x, y) = (1, 2)");
+        assert!(result.is_ok(), "Var tuple destructuring should parse");
+    }
+
+    #[test]
+    fn test_var_list_destructure() {
+        let result = parse("var [a, b] = [1, 2]");
+        assert!(result.is_ok(), "Var list destructuring should parse");
+    }
+
+    #[test]
+    fn test_var_df_identifier() {
+        let result = parse("var df = load_dataframe()");
+        assert!(result.is_ok(), "Var with 'df' should parse");
+    }
+
+    #[test]
+    fn test_var_underscore() {
+        let result = parse("var _ = ignored()");
+        assert!(result.is_ok(), "Var with underscore should parse");
+    }
+
+    #[test]
+    fn test_var_type_i64() {
+        let result = parse("var big: i64 = 1000000");
+        assert!(result.is_ok(), "Var with i64 type should parse");
+    }
+
+    #[test]
+    fn test_var_type_vec_string() {
+        let result = parse(r#"var names: Vec<String> = ["a", "b"]"#);
+        assert!(result.is_ok(), "Var with Vec<String> type should parse");
+    }
+
+    // ============================================================
+    // Custom variant patterns (enum variants)
+    // ============================================================
+
+    #[test]
+    fn test_let_custom_variant_single() {
+        let result = parse("let Color(r) = c else { return }");
+        assert!(result.is_ok(), "Custom variant with single element should parse");
+    }
+
+    #[test]
+    fn test_let_custom_variant_multiple() {
+        let result = parse("let Point(x, y) = p else { return }");
+        assert!(result.is_ok(), "Custom variant with multiple elements should parse");
+    }
+
+    #[test]
+    fn test_let_custom_variant_produces_tuple_variant() {
+        let expr = parse("let Color(r, g, b) = c else { return }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::LetPattern { pattern, .. } = &exprs[0].kind {
+                assert!(
+                    matches!(pattern, Pattern::TupleVariant { .. }),
+                    "Should produce TupleVariant pattern"
+                );
+            }
+        }
+    }
+
+    // ============================================================
+    // Edge cases and complex expressions
+    // ============================================================
+
+    #[test]
+    fn test_let_with_if_value() {
+        let result = parse("let x = if cond { 1 } else { 2 }");
+        assert!(result.is_ok(), "Let with if expression value should parse");
+    }
+
+    #[test]
+    fn test_let_with_match_value() {
+        let result = parse("let x = match opt { Some(v) => v, None => 0 }");
+        assert!(result.is_ok(), "Let with match expression value should parse");
+    }
+
+    #[test]
+    fn test_let_with_block_value() {
+        let result = parse("let x = { let a = 1; a + 1 }");
+        assert!(result.is_ok(), "Let with block value should parse");
+    }
+
+    #[test]
+    fn test_let_chain_multiple() {
+        let result = parse("let a = 1; let b = 2; let c = a + b");
+        assert!(result.is_ok(), "Multiple let statements should parse");
+    }
+
+    #[test]
+    fn test_let_with_method_chain() {
+        let result = parse("let result = data.filter().map().collect()");
+        assert!(result.is_ok(), "Let with method chain should parse");
+    }
+
+    #[test]
+    fn test_let_with_index_value() {
+        let result = parse("let x = arr[0]");
+        assert!(result.is_ok(), "Let with index value should parse");
+    }
+
+    #[test]
+    fn test_let_with_field_access() {
+        let result = parse("let x = obj.field");
+        assert!(result.is_ok(), "Let with field access should parse");
+    }
+
+    #[test]
+    fn test_let_in_with_complex_body() {
+        let result = parse("let x = 1 in if x > 0 { x } else { 0 }");
+        assert!(result.is_ok(), "Let-in with complex body should parse");
+    }
+
+    #[test]
+    fn test_let_with_negative_number() {
+        let result = parse("let x = -42");
+        assert!(result.is_ok(), "Let with negative number should parse");
+    }
+
+    #[test]
+    fn test_let_with_tuple_value() {
+        let result = parse("let pair = (1, 2)");
+        assert!(result.is_ok(), "Let with tuple value should parse");
+    }
+
+    #[test]
+    fn test_let_with_range_value() {
+        let result = parse("let r = 0..10");
+        assert!(result.is_ok(), "Let with range value should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
