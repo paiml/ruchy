@@ -38,7 +38,7 @@ cloned_instead_of_copied = "warn"
 cognitive_complexity = "allow"  # Test functions can be complex
 default_trait_access = "allow"  # Tests can use Default::default() explicitly
 doc_markdown = "warn"
-empty_enum = "warn"
+empty_enums = "warn"
 enum_variant_names = "warn"
 expl_impl_clone_on_copy = "warn"
 explicit_deref_methods = "warn"
@@ -262,7 +262,7 @@ ruchyruchy = "1.10.0"  # TEMPORARY: Use published version to bypass local build 
 # Six Pillars of Batteries-Included Data Science:
 trueno = "0.8"           # Pillar 1: SIMD compute engine
 alimentar = "0.2"        # Pillar 2: Data loading, transforms, drift detection
-trueno-db = "0.3"        # Pillar 3: Embedded analytics database
+# Removed: trueno-db = "0.3" (unused per cargo-machete)
 aprender = { version = "0.16", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
 entrenar = { version = "0.2.7", features = ["citl"] }  # CITL, distillation, Tarantula fault localization, audit logging (inference module always available)
 trueno-viz = "0.1"       # Pillar 5: GPU/WASM visualization
@@ -278,12 +278,11 @@ serde = { workspace = true }
 serde_json.workspace = true
 tracing = { workspace = true }
 logos = { workspace = true }
-pest = { workspace = true }
-pest_derive = { workspace = true }
+# Removed: pest and pest_derive (unused per cargo-machete - using logos instead)
 syn = { workspace = true }
 quote = { workspace = true }
-im = "15.1"
-quickcheck = "1.0"
+# Removed: im = "15.1" (unused per cargo-machete)
+# Removed: quickcheck = "1.0" (unused - workspace quickcheck in dev-deps)
 smallvec = "1.15"
 proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
@@ -300,9 +299,9 @@ arrow-schema = { version = "54.0", optional = true }
 # WebAssembly support
 uuid = { version = "1.18", features = ["v4", "js"] }
 wasm-bindgen = "0.2"
-serde-wasm-bindgen = "0.6"
-js-sys = "0.3"
-web-sys = { version = "0.3", features = ["console"] }
+# Removed: serde-wasm-bindgen = "0.6" (unused per cargo-machete, available via WASM target)
+# Removed: js-sys = "0.3" (unused per cargo-machete, available via WASM target)
+# Removed: web-sys = "0.3" (unused per cargo-machete, available via WASM target)
 console_error_panic_hook = "0.1"
 # JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
 cranelift = { workspace = true, optional = true }
@@ -316,7 +315,7 @@ target-lexicon = { workspace = true, optional = true }
 num_cpus = "1.17"
 # MCP Integration (optional for WASM compatibility)
 pmcp = { version = "1.3.0", features = ["full"], optional = true }
-tokio = { version = "1.47", features = ["full"], optional = true }
+tokio = { version = "1.47", features = ["rt", "rt-multi-thread", "io-std", "io-util", "net", "sync", "time", "macros"], optional = true }
 tokio-util = { version = "0.7", features = ["rt"], optional = true }
 async-trait = { version = "0.1", optional = true }
 # Snapshot testing
@@ -329,7 +328,7 @@ tower-lsp = { version = "0.20", optional = true }
 axum = { version = "0.8", features = ["macros"], optional = true }
 tower = { version = "0.4", features = ["util"], optional = true }
 tower-http = { version = "0.5", features = ["cors", "fs", "set-header"], optional = true }
-once_cell = "1.21"
+# Removed: once_cell = "1.21" (unused per cargo-machete, lazy_static covers this)
 lazy_static = "1.5"
 # Compilation support
 tempfile = "3.21"
@@ -337,10 +336,10 @@ proptest = { version = "1.7", optional = true }
 # HTTP client support (STD-002) - optional for minimal builds
 reqwest = { version = "0.12", features = ["blocking"], optional = true }
 # HTTP server support (HTTP-001)
-mime_guess = "2.0"
+# Removed: mime_guess = "2.0" (unused per cargo-machete)
 # HTML parsing support (HTTP-002-C) - native implementation
 html5ever = "0.27"
-markup5ever = "0.13"
+# Removed: markup5ever = "0.13" (transitive dep via markup5ever_rcdom)
 markup5ever_rcdom = "0.3"
 # Notebook support
 wasmparser = { version = "0.239.0", optional = true }
@@ -393,6 +392,8 @@ nix = { version = "0.29", features = ["signal", "process"] }
 axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# Probar: GUI coverage and Playwright-compatible testing
+jugar-probar = "0.4"
 
 # WASM QA Framework dependencies (following spec)
 wasm-bindgen-test = "0.3"
