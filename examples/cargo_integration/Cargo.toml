@@ -11,7 +11,7 @@ build = "build.rs"  # Enable build script
 
 [build-dependencies]
 # Ruchy transpiler as build dependency
-ruchy = { path = "../..", version = "3.71" }
+ruchy = "3.213.0"
 
 [dependencies]
 # You can use any Rust crate directly!
