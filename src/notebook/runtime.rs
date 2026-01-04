@@ -1,4 +1,4 @@
-//! Pure Rust NotebookRuntime - probador validated, zero JavaScript
+//! Pure Rust `NotebookRuntime` - probador validated, zero JavaScript
 //!
 //! Minimal notebook runtime with 100% test coverage.
 //! Replaces the 6K-line WASM version with Pure Rust.
