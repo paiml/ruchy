@@ -753,4 +753,162 @@ mod tests {
         // Modulo by zero should return error
         assert!(modulo_values(&Value::Integer(10), &Value::Integer(0)).is_err());
     }
+
+    #[test]
+    fn test_sub_values() {
+        assert_eq!(
+            sub_values(&Value::Integer(10), &Value::Integer(3))
+                .expect("operation should succeed in test"),
+            Value::Integer(7)
+        );
+        assert_eq!(
+            sub_values(&Value::Float(10.5), &Value::Float(3.5))
+                .expect("operation should succeed in test"),
+            Value::Float(7.0)
+        );
+        // Mixed types
+        assert_eq!(
+            sub_values(&Value::Integer(10), &Value::Float(3.5))
+                .expect("operation should succeed in test"),
+            Value::Float(6.5)
+        );
+    }
+
+    #[test]
+    fn test_mul_values() {
+        assert_eq!(
+            mul_values(&Value::Integer(4), &Value::Integer(5))
+                .expect("operation should succeed in test"),
+            Value::Integer(20)
+        );
+        assert_eq!(
+            mul_values(&Value::Float(2.5), &Value::Float(4.0))
+                .expect("operation should succeed in test"),
+            Value::Float(10.0)
+        );
+        // String repeat
+        let result = mul_values(&Value::from_string("ab".to_string()), &Value::Integer(3))
+            .expect("operation should succeed in test");
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "ababab"),
+            _ => panic!("Expected string result"),
+        }
+    }
+
+    #[test]
+    fn test_power_values() {
+        assert_eq!(
+            power_values(&Value::Integer(2), &Value::Integer(3))
+                .expect("operation should succeed in test"),
+            Value::Integer(8)
+        );
+        assert_eq!(
+            power_values(&Value::Float(2.0), &Value::Float(3.0))
+                .expect("operation should succeed in test"),
+            Value::Float(8.0)
+        );
+    }
+
+    #[test]
+    fn test_modulo_values() {
+        assert_eq!(
+            modulo_values(&Value::Integer(10), &Value::Integer(3))
+                .expect("operation should succeed in test"),
+            Value::Integer(1)
+        );
+        assert_eq!(
+            modulo_values(&Value::Float(10.5), &Value::Float(3.0))
+                .expect("operation should succeed in test"),
+            Value::Float(1.5)
+        );
+    }
+
+    #[test]
+    fn test_bitwise_ops() {
+        // AND
+        let result = eval_bitwise_op(AstBinaryOp::BitwiseAnd, &Value::Integer(0b1100), &Value::Integer(0b1010))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(0b1000));
+
+        // OR
+        let result = eval_bitwise_op(AstBinaryOp::BitwiseOr, &Value::Integer(0b1100), &Value::Integer(0b1010))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(0b1110));
+
+        // XOR
+        let result = eval_bitwise_op(AstBinaryOp::BitwiseXor, &Value::Integer(0b1100), &Value::Integer(0b1010))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(0b0110));
+
+        // Left shift
+        let result = eval_bitwise_op(AstBinaryOp::LeftShift, &Value::Integer(1), &Value::Integer(4))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(16));
+
+        // Right shift
+        let result = eval_bitwise_op(AstBinaryOp::RightShift, &Value::Integer(16), &Value::Integer(2))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_less_or_equal_values() {
+        assert!(less_or_equal_values(&Value::Integer(3), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+        assert!(less_or_equal_values(&Value::Integer(5), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+        assert!(!less_or_equal_values(&Value::Integer(6), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+    }
+
+    #[test]
+    fn test_greater_or_equal_values() {
+        assert!(greater_or_equal_values(&Value::Integer(6), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+        assert!(greater_or_equal_values(&Value::Integer(5), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+        assert!(!greater_or_equal_values(&Value::Integer(4), &Value::Integer(5))
+            .expect("operation should succeed in test"));
+    }
+
+    #[test]
+    fn test_eval_binary_op_dispatcher() {
+        // Test the main dispatcher with arithmetic
+        let result = eval_binary_op(AstBinaryOp::Add, &Value::Integer(2), &Value::Integer(3))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Integer(5));
+
+        // Comparison
+        let result = eval_binary_op(AstBinaryOp::Equal, &Value::Integer(5), &Value::Integer(5))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Bool(true));
+
+        // Logical
+        let result = eval_binary_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(false))
+            .expect("operation should succeed in test");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_mixed_type_comparisons() {
+        // Integer vs Float
+        assert!(less_than_values(&Value::Integer(3), &Value::Float(3.5))
+            .expect("operation should succeed in test"));
+        assert!(greater_than_values(&Value::Float(3.5), &Value::Integer(3))
+            .expect("operation should succeed in test"));
+    }
+
+    #[test]
+    fn test_string_comparison() {
+        assert!(less_than_values(
+            &Value::from_string("abc".to_string()),
+            &Value::from_string("abd".to_string())
+        )
+        .expect("operation should succeed in test"));
+        assert!(!greater_than_values(
+            &Value::from_string("abc".to_string()),
+            &Value::from_string("abd".to_string())
+        )
+        .expect("operation should succeed in test"));
+    }
 }
