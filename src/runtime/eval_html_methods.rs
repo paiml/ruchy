@@ -210,4 +210,262 @@ mod tests {
             _ => panic!("Expected string"),
         }
     }
+
+    // ============================================================================
+    // COVERAGE TESTS - Error paths and edge cases
+    // ============================================================================
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_select_wrong_arg_count() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+
+        // No arguments
+        let result = eval_html_document_select(&html, &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+
+        // Too many arguments
+        let selector1 = Value::from_string("div".to_string());
+        let selector2 = Value::from_string("span".to_string());
+        let result = eval_html_document_select(&html, &[selector1, selector2]);
+        assert!(result.is_err());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_select_wrong_type() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let non_string = Value::Integer(42);
+
+        let result = eval_html_document_select(&html, &[non_string]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("expects selector as string"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_query_selector() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div id='main'>Content</div>");
+        let selector = Value::from_string("#main".to_string());
+
+        let result = eval_html_document_query_selector(&html, &[selector]);
+        assert!(result.is_ok());
+
+        // Should return single element, not array
+        match result.unwrap() {
+            Value::HtmlElement(_) => {} // Good
+            _ => panic!("Expected HtmlElement"),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_query_selector_not_found() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let selector = Value::from_string("#nonexistent".to_string());
+
+        let result = eval_html_document_query_selector(&html, &[selector]);
+        assert!(result.is_ok());
+
+        // Should return Nil when not found
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_query_selector_wrong_args() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+
+        // No arguments
+        let result = eval_html_document_query_selector(&html, &[]);
+        assert!(result.is_err());
+
+        // Wrong type
+        let non_string = Value::Bool(true);
+        let result = eval_html_document_query_selector(&html, &[non_string]);
+        assert!(result.is_err());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_query_selector_all() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>One</div><div>Two</div>");
+        let selector = Value::from_string("div".to_string());
+
+        let result = eval_html_document_query_selector_all(&html, &[selector]);
+        assert!(result.is_ok());
+
+        match result.unwrap() {
+            Value::Array(arr) => assert_eq!(arr.len(), 2),
+            _ => panic!("Expected array"),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_method_unknown() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+
+        let result = eval_html_document_method(&html, "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown HtmlDocument method"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_html() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div><span>Content</span></div>");
+        let elements = html.select("div").unwrap();
+        assert!(!elements.is_empty());
+
+        let result = eval_html_element_html(&elements[0], &[]);
+        assert!(result.is_ok());
+
+        match result.unwrap() {
+            Value::String(s) => assert!(s.contains("span")),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_html_with_args_error() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let elements = html.select("div").unwrap();
+
+        let result = eval_html_element_html(&elements[0], &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_text_with_args_error() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let elements = html.select("div").unwrap();
+
+        let result = eval_html_element_text(&elements[0], &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_attr() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<a href='https://example.com'>Link</a>");
+        let elements = html.select("a").unwrap();
+        assert!(!elements.is_empty());
+
+        let attr_name = Value::from_string("href".to_string());
+        let result = eval_html_element_attr(&elements[0], &[attr_name]);
+        assert!(result.is_ok());
+
+        match result.unwrap() {
+            Value::String(s) => assert_eq!(s.as_ref(), "https://example.com"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_attr_not_found() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let elements = html.select("div").unwrap();
+
+        let attr_name = Value::from_string("nonexistent".to_string());
+        let result = eval_html_element_attr(&elements[0], &[attr_name]);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_attr_wrong_args() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let elements = html.select("div").unwrap();
+
+        // No arguments
+        let result = eval_html_element_attr(&elements[0], &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+
+        // Wrong type
+        let result = eval_html_element_attr(&elements[0], &[Value::Integer(42)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("expects attribute name as string"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_element_method_unknown() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let elements = html.select("div").unwrap();
+
+        let result = eval_html_element_method(&elements[0], "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown HtmlElement method"));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_select_multiple_elements() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<ul><li>One</li><li>Two</li><li>Three</li></ul>");
+        let selector = Value::from_string("li".to_string());
+
+        let result = eval_html_document_select(&html, &[selector]);
+        assert!(result.is_ok());
+
+        match result.unwrap() {
+            Value::Array(arr) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected array with 3 elements"),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_html_document_select_empty_result() {
+        use crate::stdlib::html::HtmlDocument;
+
+        let html = HtmlDocument::parse("<div>Content</div>");
+        let selector = Value::from_string("span".to_string());
+
+        let result = eval_html_document_select(&html, &[selector]);
+        assert!(result.is_ok());
+
+        match result.unwrap() {
+            Value::Array(arr) => assert_eq!(arr.len(), 0),
+            _ => panic!("Expected empty array"),
+        }
+    }
 }

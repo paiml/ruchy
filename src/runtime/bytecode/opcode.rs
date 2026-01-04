@@ -291,29 +291,75 @@ impl OpCode {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_opcode_to_u8_roundtrip() {
-        // Test all opcodes can be converted to u8 and back
-        let opcodes = [
-            OpCode::Nop,
-            OpCode::Const,
-            OpCode::LoadLocal,
-            OpCode::StoreLocal,
-            OpCode::Add,
-            OpCode::Sub,
-            OpCode::Mul,
-            OpCode::Div,
-            OpCode::Equal,
-            OpCode::Greater,
-            OpCode::Less,
-            OpCode::Jump,
-            OpCode::JumpIfTrue,
-            OpCode::JumpIfFalse,
-            OpCode::Call,
-            OpCode::Return,
-        ];
+    // All opcodes for comprehensive testing
+    const ALL_OPCODES: &[OpCode] = &[
+        // Stack Operations
+        OpCode::Nop,
+        OpCode::Const,
+        OpCode::LoadLocal,
+        OpCode::StoreLocal,
+        OpCode::LoadGlobal,
+        OpCode::StoreGlobal,
+        OpCode::LoadField,
+        OpCode::StoreField,
+        OpCode::LoadIndex,
+        OpCode::StoreIndex,
+        OpCode::LoadUpvalue,
+        OpCode::StoreUpvalue,
+        OpCode::Move,
+        OpCode::Pop,
+        OpCode::Dup,
+        OpCode::Swap,
+        // Arithmetic Operations
+        OpCode::Add,
+        OpCode::Sub,
+        OpCode::Mul,
+        OpCode::Div,
+        OpCode::Mod,
+        OpCode::Neg,
+        OpCode::BitAnd,
+        OpCode::BitOr,
+        OpCode::BitXor,
+        OpCode::BitNot,
+        OpCode::ShiftLeft,
+        OpCode::ShiftRight,
+        OpCode::NewObject,
+        OpCode::NewArray,
+        OpCode::NewClosure,
+        OpCode::GetType,
+        // Logical Operations
+        OpCode::Equal,
+        OpCode::NotEqual,
+        OpCode::Greater,
+        OpCode::GreaterEqual,
+        OpCode::Less,
+        OpCode::LessEqual,
+        OpCode::Not,
+        OpCode::And,
+        OpCode::Or,
+        OpCode::InstanceOf,
+        OpCode::InlineCache,
+        OpCode::Specialize,
+        OpCode::Deoptimize,
+        OpCode::NewTuple,
+        // Control Flow
+        OpCode::Jump,
+        OpCode::JumpIfTrue,
+        OpCode::JumpIfFalse,
+        OpCode::Call,
+        OpCode::TailCall,
+        OpCode::Return,
+        OpCode::Throw,
+        OpCode::EnterTry,
+        OpCode::ExitTry,
+        OpCode::For,
+        OpCode::MethodCall,
+        OpCode::Match,
+    ];
 
-        for opcode in &opcodes {
+    #[test]
+    fn test_opcode_to_u8_roundtrip_all() {
+        for opcode in ALL_OPCODES {
             let u8_val = opcode.to_u8();
             let recovered = OpCode::from_u8(u8_val).expect("Failed to recover opcode");
             assert_eq!(*opcode, recovered, "Opcode roundtrip failed for {opcode:?}");
@@ -322,16 +368,112 @@ mod tests {
 
     #[test]
     fn test_invalid_opcode() {
-        // Test that invalid u8 values return None
         assert!(OpCode::from_u8(0xFF).is_none());
         assert!(OpCode::from_u8(0x60).is_none());
         assert!(OpCode::from_u8(0xAA).is_none());
+        assert!(OpCode::from_u8(0x3C).is_none()); // Just past Match
+        assert!(OpCode::from_u8(0x2E).is_none()); // Gap in logical section
     }
 
     #[test]
-    fn test_opcode_names() {
+    fn test_opcode_names_all() {
+        for opcode in ALL_OPCODES {
+            let name = opcode.name();
+            assert!(!name.is_empty(), "Opcode {opcode:?} has empty name");
+        }
+    }
+
+    #[test]
+    fn test_opcode_names_specific() {
+        assert_eq!(OpCode::Nop.name(), "Nop");
+        assert_eq!(OpCode::Const.name(), "Const");
+        assert_eq!(OpCode::LoadLocal.name(), "LoadLocal");
+        assert_eq!(OpCode::StoreLocal.name(), "StoreLocal");
+        assert_eq!(OpCode::LoadGlobal.name(), "LoadGlobal");
+        assert_eq!(OpCode::StoreGlobal.name(), "StoreGlobal");
+        assert_eq!(OpCode::LoadField.name(), "LoadField");
+        assert_eq!(OpCode::StoreField.name(), "StoreField");
+        assert_eq!(OpCode::LoadIndex.name(), "LoadIndex");
+        assert_eq!(OpCode::StoreIndex.name(), "StoreIndex");
+        assert_eq!(OpCode::LoadUpvalue.name(), "LoadUpvalue");
+        assert_eq!(OpCode::StoreUpvalue.name(), "StoreUpvalue");
+        assert_eq!(OpCode::Move.name(), "Move");
+        assert_eq!(OpCode::Pop.name(), "Pop");
+        assert_eq!(OpCode::Dup.name(), "Dup");
+        assert_eq!(OpCode::Swap.name(), "Swap");
         assert_eq!(OpCode::Add.name(), "Add");
+        assert_eq!(OpCode::Sub.name(), "Sub");
+        assert_eq!(OpCode::Mul.name(), "Mul");
+        assert_eq!(OpCode::Div.name(), "Div");
+        assert_eq!(OpCode::Mod.name(), "Mod");
+        assert_eq!(OpCode::Neg.name(), "Neg");
+        assert_eq!(OpCode::BitAnd.name(), "BitAnd");
+        assert_eq!(OpCode::BitOr.name(), "BitOr");
+        assert_eq!(OpCode::BitXor.name(), "BitXor");
+        assert_eq!(OpCode::BitNot.name(), "BitNot");
+        assert_eq!(OpCode::ShiftLeft.name(), "ShiftLeft");
+        assert_eq!(OpCode::ShiftRight.name(), "ShiftRight");
+        assert_eq!(OpCode::NewObject.name(), "NewObject");
+        assert_eq!(OpCode::NewArray.name(), "NewArray");
+        assert_eq!(OpCode::NewClosure.name(), "NewClosure");
+        assert_eq!(OpCode::GetType.name(), "GetType");
+        assert_eq!(OpCode::Equal.name(), "Equal");
+        assert_eq!(OpCode::NotEqual.name(), "NotEqual");
+        assert_eq!(OpCode::Greater.name(), "Greater");
+        assert_eq!(OpCode::GreaterEqual.name(), "GreaterEqual");
+        assert_eq!(OpCode::Less.name(), "Less");
+        assert_eq!(OpCode::LessEqual.name(), "LessEqual");
+        assert_eq!(OpCode::Not.name(), "Not");
+        assert_eq!(OpCode::And.name(), "And");
+        assert_eq!(OpCode::Or.name(), "Or");
+        assert_eq!(OpCode::InstanceOf.name(), "InstanceOf");
+        assert_eq!(OpCode::InlineCache.name(), "InlineCache");
+        assert_eq!(OpCode::Specialize.name(), "Specialize");
+        assert_eq!(OpCode::Deoptimize.name(), "Deoptimize");
+        assert_eq!(OpCode::NewTuple.name(), "NewTuple");
         assert_eq!(OpCode::Jump.name(), "Jump");
+        assert_eq!(OpCode::JumpIfTrue.name(), "JumpIfTrue");
+        assert_eq!(OpCode::JumpIfFalse.name(), "JumpIfFalse");
+        assert_eq!(OpCode::Call.name(), "Call");
+        assert_eq!(OpCode::TailCall.name(), "TailCall");
         assert_eq!(OpCode::Return.name(), "Return");
+        assert_eq!(OpCode::Throw.name(), "Throw");
+        assert_eq!(OpCode::EnterTry.name(), "EnterTry");
+        assert_eq!(OpCode::ExitTry.name(), "ExitTry");
+        assert_eq!(OpCode::For.name(), "For");
+        assert_eq!(OpCode::MethodCall.name(), "MethodCall");
+        assert_eq!(OpCode::Match.name(), "Match");
+    }
+
+    #[test]
+    fn test_opcode_u8_values() {
+        // Stack operations 0x00-0x0F
+        assert_eq!(OpCode::Nop.to_u8(), 0x00);
+        assert_eq!(OpCode::Swap.to_u8(), 0x0F);
+        // Arithmetic 0x10-0x1F
+        assert_eq!(OpCode::Add.to_u8(), 0x10);
+        assert_eq!(OpCode::GetType.to_u8(), 0x1F);
+        // Logical 0x20-0x2D
+        assert_eq!(OpCode::Equal.to_u8(), 0x20);
+        assert_eq!(OpCode::NewTuple.to_u8(), 0x2D);
+        // Control 0x30-0x3B
+        assert_eq!(OpCode::Jump.to_u8(), 0x30);
+        assert_eq!(OpCode::Match.to_u8(), 0x3B);
+    }
+
+    #[test]
+    fn test_from_u8_boundary_values() {
+        // Test boundary values for each section
+        assert!(OpCode::from_u8(0x00).is_some()); // First stack op
+        assert!(OpCode::from_u8(0x0F).is_some()); // Last stack op
+        assert!(OpCode::from_u8(0x10).is_some()); // First arithmetic
+        assert!(OpCode::from_u8(0x1F).is_some()); // Last arithmetic
+        assert!(OpCode::from_u8(0x20).is_some()); // First logical
+        assert!(OpCode::from_u8(0x2D).is_some()); // Last logical (NewTuple)
+        assert!(OpCode::from_u8(0x2E).is_none()); // Gap
+        assert!(OpCode::from_u8(0x2F).is_none()); // Gap
+        assert!(OpCode::from_u8(0x30).is_some()); // First control
+        assert!(OpCode::from_u8(0x3B).is_some()); // Last control (Match)
+        assert!(OpCode::from_u8(0x3C).is_none()); // Past end
     }
 }

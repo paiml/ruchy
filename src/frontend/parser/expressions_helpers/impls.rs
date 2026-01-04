@@ -234,3 +234,155 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
         is_pub,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Parser;
+    use crate::frontend::ast::ExprKind;
+
+    #[test]
+    fn test_parse_impl_block_simple() {
+        let code = r#"impl Point { fun new() { 42 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_block_with_method() {
+        let code = r#"impl Point { fun new(x: i32) -> Point { Point { x } } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_block_multiple_methods() {
+        let code = r#"impl Point {
+            fun new() { 0 }
+            fun get() { 1 }
+        }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_trait() {
+        let code = r#"impl Display for Point { fun fmt() { "" } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+
+        if let Ok(ast) = &result {
+            if let ExprKind::Block(exprs) = &ast.kind {
+                for expr in exprs {
+                    if let ExprKind::Impl { trait_name, for_type, .. } = &expr.kind {
+                        assert_eq!(trait_name.as_deref(), Some("Display"));
+                        assert_eq!(for_type, "Point");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_impl_with_type_params() {
+        let code = r#"impl<T> Container { fun new() { 0 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_generic_type() {
+        let code = r#"impl Container<T> { fun new() { 0 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_pub_method() {
+        let code = r#"impl Point { pub fun new() { 0 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_fn_keyword() {
+        let code = r#"impl Point { fn new() { 0 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_empty() {
+        let code = r#"impl Point { }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_return_type() {
+        let code = r#"impl Point { fun value() -> i32 { 42 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_complex_generic() {
+        let code = r#"impl<T, U> Pair<T, U> { fun new() { 0 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_trait_for_generic() {
+        let code = r#"impl<T> Display for Container<T> { fun fmt() { "" } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_comments() {
+        let code = r#"impl Point {
+            // This is a comment
+            fun new() { 0 }
+        }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_with_self_param() {
+        let code = r#"impl Point { fun get(&self) { self.x } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_impl_extracts_methods() {
+        let code = r#"impl Point { fun a() { 1 } fun b() { 2 } }"#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse().unwrap();
+
+        if let ExprKind::Block(exprs) = &result.kind {
+            for expr in exprs {
+                if let ExprKind::Impl { methods, .. } = &expr.kind {
+                    assert_eq!(methods.len(), 2);
+                    assert_eq!(methods[0].name, "a");
+                    assert_eq!(methods[1].name, "b");
+                }
+            }
+        }
+    }
+}

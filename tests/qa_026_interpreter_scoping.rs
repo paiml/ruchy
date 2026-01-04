@@ -55,7 +55,11 @@ println(x)
     let result = run_ruchy(code);
     let lines: Vec<&str> = result.trim().lines().collect();
 
-    assert_eq!(lines.len(), 2, "Should have exactly 2 output lines. Got: {result}");
+    assert_eq!(
+        lines.len(),
+        2,
+        "Should have exactly 2 output lines. Got: {result}"
+    );
     assert_eq!(lines[0], "20", "Inner print should be 20. Got: {result}");
     assert_eq!(lines[1], "10", "Outer print should be 10. Got: {result}");
 }

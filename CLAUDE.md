@@ -313,6 +313,60 @@ grep "MISSED" core_mutations.txt  # Target specific gaps
 **Strategy**: `make prompt-coverage` generates AI-ready prompts
 - Full spec: `docs/specifications/90-percent-coverage-strategy-spec.md`
 
+### Coverage Tooling (MANDATORY)
+
+**ONLY allowed coverage tool**: `cargo-llvm-cov`
+
+**🚨 FORBIDDEN coverage tools** (DO NOT USE):
+- ❌ `cargo-tarpaulin` - Slow, unreliable, causes hangs
+- ❌ `grcov` - Deprecated approach
+- ❌ Manual gcov/lcov - Not integrated with cargo
+
+**Coverage breaks with mold linker**. Follow bashrs pattern:
+```bash
+# Temporarily disable mold for coverage (MANDATORY)
+mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup
+cargo llvm-cov clean --workspace
+cargo llvm-cov --no-report nextest --all-features --workspace
+cargo llvm-cov report --summary-only
+mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml
+```
+
+**Use `make coverage`** - handles mold backup/restore automatically.
+
+### 🚨 CRITICAL: Coverage Speed Optimization (Five Whys - 2025-01-04)
+
+**Problem**: Coverage was taking 20+ min, making development impossible.
+
+**Root Cause Analysis (Five Whys)**:
+1. Why slow? → 14K+ tests with property tests running 100+ iterations
+2. Why so many iterations? → PROPTEST_CASES=25 default
+3. Why not parallel? → Wrong nextest config (`threads` vs `test-threads`)
+4. Why fail early? → `fail-fast=true` default
+5. Why path mismatches? → macOS `/var` vs `/private/var` symlinks
+
+**Solution (learned from bashrs)**:
+```bash
+# Fast coverage command (<5 min)
+env PROPTEST_CASES=5 QUICKCHECK_TESTS=5 cargo llvm-cov nextest \
+  --profile coverage \
+  --lib -p ruchy \
+  -E 'not test(/stress|fuzz|property.*comprehensive|benchmark/)'
+```
+
+**Key Config Changes** (`.config/nextest.toml`):
+- `fail-fast = false` - Run ALL tests even on failure
+- `test-threads = "num-cpus"` - Correct parameter name
+- `[profile.coverage]` - Separate profile for coverage runs
+- Single-threaded overrides only for global-state tests (repl, watcher, env_set_current_dir)
+
+**Results**:
+| Before | After |
+|--------|-------|
+| 20+ min | <5 min |
+| 37% CPU | 1500%+ CPU |
+| Fail-fast | All tests run |
+
 ## Certeza Three-Tiered Testing Framework
 
 **Spec**: `docs/specifications/improve-testing-quality-using-certeza-concepts.md`

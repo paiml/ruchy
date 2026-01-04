@@ -646,12 +646,13 @@ fn eval_random(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Length of collections and strings
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
+/// Cyclomatic complexity: 6 (within Toyota Way limits)
 fn eval_len(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("len", args, 1)?;
     match &args[0] {
         Value::String(s) => Ok(Value::Integer(s.len() as i64)),
         Value::Array(arr) => Ok(Value::Integer(arr.len() as i64)),
+        Value::Tuple(t) => Ok(Value::Integer(t.len() as i64)),
         Value::DataFrame { columns } => {
             if columns.is_empty() {
                 Ok(Value::Integer(0))
@@ -660,7 +661,7 @@ fn eval_len(args: &[Value]) -> Result<Value, InterpreterError> {
             }
         }
         _ => Err(InterpreterError::RuntimeError(
-            "len() expects a string, array, or dataframe".to_string(),
+            "len() expects a string, array, tuple, or dataframe".to_string(),
         )),
     }
 }
@@ -4086,4 +4087,1001 @@ fn test_println_string_no_quotes() {
         output.contains("Name: Ruchy"),
         "Expected 'Name: Ruchy' without quotes, got: {output}"
     );
+}
+
+// ============================================================================
+// PROPERTY-BASED TESTS (EXTREME TDD)
+// ============================================================================
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod property_tests_builtin {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(50))]
+
+        // sqrt of non-negative values is non-negative
+        #[test]
+        fn prop_sqrt_non_negative(x in 0.0f64..1000.0) {
+            let result = eval_sqrt(&[Value::Float(x)]).expect("sqrt should succeed");
+            if let Value::Float(f) = result {
+                prop_assert!(f >= 0.0, "sqrt({}) = {} should be >= 0", x, f);
+            }
+        }
+
+        // sqrt then square recovers original (approximately)
+        #[test]
+        fn prop_sqrt_square_inverse(x in 0.0f64..1000.0) {
+            let sqrt_result = eval_sqrt(&[Value::Float(x)]).expect("sqrt");
+            if let Value::Float(s) = sqrt_result {
+                let squared = s * s;
+                prop_assert!((squared - x).abs() < 1e-9, "sqrt({})² = {} should ≈ {}", x, squared, x);
+            }
+        }
+
+        // abs always returns non-negative
+        #[test]
+        fn prop_abs_always_non_negative(x in -1000i64..1000) {
+            let result = eval_abs(&[Value::Integer(x)]).expect("abs should succeed");
+            if let Value::Integer(a) = result {
+                prop_assert!(a >= 0, "abs({}) = {} should be >= 0", x, a);
+            }
+        }
+
+        // abs(x) = abs(-x)
+        #[test]
+        fn prop_abs_symmetric(x in -1000i64..1000) {
+            let pos_result = eval_abs(&[Value::Integer(x)]).expect("abs(x)");
+            let neg_result = eval_abs(&[Value::Integer(-x)]).expect("abs(-x)");
+            prop_assert_eq!(pos_result, neg_result, "abs({}) should == abs({})", x, -x);
+        }
+
+        // min(a, b) <= a and min(a, b) <= b
+        #[test]
+        fn prop_min_less_than_both(a in -1000i64..1000, b in -1000i64..1000) {
+            let result = eval_min(&[Value::Integer(a), Value::Integer(b)]).expect("min");
+            if let Value::Integer(m) = result {
+                prop_assert!(m <= a, "min({}, {}) = {} should be <= {}", a, b, m, a);
+                prop_assert!(m <= b, "min({}, {}) = {} should be <= {}", a, b, m, b);
+            }
+        }
+
+        // max(a, b) >= a and max(a, b) >= b
+        #[test]
+        fn prop_max_greater_than_both(a in -1000i64..1000, b in -1000i64..1000) {
+            let result = eval_max(&[Value::Integer(a), Value::Integer(b)]).expect("max");
+            if let Value::Integer(m) = result {
+                prop_assert!(m >= a, "max({}, {}) = {} should be >= {}", a, b, m, a);
+                prop_assert!(m >= b, "max({}, {}) = {} should be >= {}", a, b, m, b);
+            }
+        }
+
+        // min(a, a) == a
+        #[test]
+        fn prop_min_same_value(a in -1000i64..1000) {
+            let result = eval_min(&[Value::Integer(a), Value::Integer(a)]).expect("min");
+            prop_assert_eq!(result, Value::Integer(a), "min({}, {}) should == {}", a, a, a);
+        }
+
+        // max(a, a) == a
+        #[test]
+        fn prop_max_same_value(a in -1000i64..1000) {
+            let result = eval_max(&[Value::Integer(a), Value::Integer(a)]).expect("max");
+            prop_assert_eq!(result, Value::Integer(a), "max({}, {}) should == {}", a, a, a);
+        }
+
+        // floor(x) <= x
+        #[test]
+        fn prop_floor_less_than_or_equal(x in -1000.0f64..1000.0) {
+            let result = eval_floor(&[Value::Float(x)]).expect("floor");
+            if let Value::Integer(f) = result {
+                let f_as_f64 = f as f64;
+                prop_assert!(f_as_f64 <= x, "floor({}) = {} should be <= {}", x, f, x);
+            }
+        }
+
+        // ceil(x) >= x
+        #[test]
+        fn prop_ceil_greater_than_or_equal(x in -1000.0f64..1000.0) {
+            let result = eval_ceil(&[Value::Float(x)]).expect("ceil");
+            if let Value::Integer(c) = result {
+                let c_as_f64 = c as f64;
+                prop_assert!(c_as_f64 >= x, "ceil({}) = {} should be >= {}", x, c, x);
+            }
+        }
+
+        // range(n) has length n for non-negative n
+        #[test]
+        fn prop_range_length(n in 0i64..100) {
+            let result = eval_range(&[Value::Integer(n)]).expect("range");
+            if let Value::Array(arr) = result {
+                prop_assert_eq!(arr.len() as i64, n, "range({}) should have length {}", n, n);
+            }
+        }
+
+        // range(n) starts at 0 and ends at n-1
+        #[test]
+        fn prop_range_boundaries(n in 1i64..100) {
+            let result = eval_range(&[Value::Integer(n)]).expect("range");
+            if let Value::Array(arr) = result {
+                prop_assert_eq!(arr[0].clone(), Value::Integer(0), "range({}) should start at 0", n);
+                let last_idx = arr.len() - 1;
+                prop_assert_eq!(arr[last_idx].clone(), Value::Integer(n - 1), "range({}) should end at {}", n, n - 1);
+            }
+        }
+
+        // len of string equals number of chars
+        #[test]
+        fn prop_len_string(s in "[a-zA-Z0-9]{0,50}") {
+            let result = eval_len(&[Value::from_string(s.clone())]).expect("len");
+            if let Value::Integer(len) = result {
+                prop_assert_eq!(len as usize, s.chars().count(), "len('{}') should be {}", s, s.chars().count());
+            }
+        }
+
+        // type always returns a non-empty string
+        #[test]
+        fn prop_type_non_empty(x in -1000i64..1000) {
+            let result = eval_type(&[Value::Integer(x)]).expect("type");
+            if let Value::String(s) = result {
+                prop_assert!(!s.is_empty(), "type should return non-empty string");
+            }
+        }
+
+        // reverse twice recovers original
+        #[test]
+        fn prop_reverse_involutive(
+            a in -100i64..100,
+            b in -100i64..100,
+            c in -100i64..100
+        ) {
+            let arr = Value::Array(Arc::from(vec![
+                Value::Integer(a),
+                Value::Integer(b),
+                Value::Integer(c),
+            ]));
+            let reversed = eval_reverse(std::slice::from_ref(&arr)).expect("reverse once");
+            let double_reversed = eval_reverse(&[reversed]).expect("reverse twice");
+            prop_assert_eq!(double_reversed, arr, "reverse(reverse(arr)) should == arr");
+        }
+
+        // pow(x, 0) == 1 for non-zero x
+        #[test]
+        fn prop_pow_zero_exponent(x in 1i64..100) {
+            let result = eval_pow(&[Value::Integer(x), Value::Integer(0)]).expect("pow");
+            prop_assert_eq!(result, Value::Integer(1), "{}^0 should == 1", x);
+        }
+
+        // pow(x, 1) == x
+        #[test]
+        fn prop_pow_one_exponent(x in -100i64..100) {
+            let result = eval_pow(&[Value::Integer(x), Value::Integer(1)]).expect("pow");
+            prop_assert_eq!(result, Value::Integer(x), "{}^1 should == {}", x, x);
+        }
+
+        // sin²(x) + cos²(x) = 1
+        #[test]
+        fn prop_trig_identity(x in -10.0f64..10.0) {
+            let sin_result = eval_sin(&[Value::Float(x)]).expect("sin");
+            let cos_result = eval_cos(&[Value::Float(x)]).expect("cos");
+            if let (Value::Float(s), Value::Float(c)) = (sin_result, cos_result) {
+                let identity = s * s + c * c;
+                prop_assert!((identity - 1.0).abs() < 1e-10, "sin²({}) + cos²({}) = {} should ≈ 1", x, x, identity);
+            }
+        }
+
+        // tan(x) = sin(x) / cos(x) (for small x where cos(x) != 0)
+        #[test]
+        fn prop_tan_definition(x in -1.0f64..1.0) {
+            let sin_result = eval_sin(&[Value::Float(x)]).expect("sin");
+            let cos_result = eval_cos(&[Value::Float(x)]).expect("cos");
+            let tan_result = eval_tan(&[Value::Float(x)]).expect("tan");
+            if let (Value::Float(s), Value::Float(c), Value::Float(t)) = (sin_result, cos_result, tan_result) {
+                if c.abs() > 0.01 {
+                    let expected = s / c;
+                    prop_assert!((t - expected).abs() < 1e-10, "tan({}) = {} should ≈ sin/cos = {}", x, t, expected);
+                }
+            }
+        }
+
+        // log(exp(x)) ≈ x for reasonable x
+        #[test]
+        fn prop_log_exp_inverse(x in -10.0f64..10.0) {
+            let exp_result = eval_exp(&[Value::Float(x)]).expect("exp");
+            if let Value::Float(e) = exp_result {
+                if e > 0.0 && e.is_finite() {
+                    let log_result = eval_log(&[Value::Float(e)]).expect("log");
+                    if let Value::Float(l) = log_result {
+                        prop_assert!((l - x).abs() < 1e-9, "log(exp({})) = {} should ≈ {}", x, l, x);
+                    }
+                }
+            }
+        }
+    }
+
+    // ============================================================================
+    // COVERAGE-95%: Additional Comprehensive Tests
+    // ============================================================================
+
+    #[test]
+    fn test_eval_log() {
+        let args = vec![Value::Float(std::f64::consts::E)];
+        let result = eval_log(&args).expect("eval_log should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "ln(e) should be ~1");
+        } else {
+            panic!("Expected float result");
+        }
+
+        let args = vec![Value::Integer(1)];
+        let result = eval_log(&args).expect("eval_log should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10, "ln(1) should be ~0");
+        }
+    }
+
+    #[test]
+    fn test_eval_log10() {
+        let args = vec![Value::Float(100.0)];
+        let result = eval_log10(&args).expect("eval_log10 should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 2.0).abs() < 1e-10, "log10(100) should be ~2");
+        }
+
+        let args = vec![Value::Integer(10)];
+        let result = eval_log10(&args).expect("eval_log10 should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "log10(10) should be ~1");
+        }
+    }
+
+    #[test]
+    fn test_eval_exp() {
+        let args = vec![Value::Float(0.0)];
+        let result = eval_exp(&args).expect("eval_exp should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "exp(0) should be ~1");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_exp(&args).expect("eval_exp should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "exp(0) should be ~1");
+        }
+    }
+
+    #[test]
+    fn test_eval_random() {
+        let args = vec![];
+        let result = eval_random(&args).expect("eval_random should succeed");
+        if let Value::Float(v) = result {
+            assert!(v >= 0.0 && v < 1.0, "random() should be in [0, 1)");
+        } else {
+            panic!("Expected float result");
+        }
+    }
+
+    #[test]
+    fn test_eval_type_of() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_type_of(&args).expect("eval_type_of should succeed");
+        assert_eq!(result, Value::from_string("integer".to_string()));
+
+        let args = vec![Value::Nil];
+        let result = eval_type_of(&args).expect("eval_type_of should succeed");
+        assert_eq!(result, Value::from_string("nil".to_string()));
+
+        let args = vec![Value::Bool(true)];
+        let result = eval_type_of(&args).expect("eval_type_of should succeed");
+        assert_eq!(result, Value::from_string("boolean".to_string()));
+    }
+
+    #[test]
+    fn test_eval_is_nil() {
+        let args = vec![Value::Nil];
+        let result = eval_is_nil(&args).expect("eval_is_nil should succeed");
+        assert_eq!(result, Value::Bool(true));
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_is_nil(&args).expect("eval_is_nil should succeed");
+        assert_eq!(result, Value::Bool(false));
+
+        let args = vec![Value::from_string("".to_string())];
+        let result = eval_is_nil(&args).expect("eval_is_nil should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_push() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let args = vec![arr, Value::Integer(3)];
+        let result = eval_push(&args).expect("eval_push should succeed");
+        if let Value::Array(new_arr) = result {
+            assert_eq!(new_arr.len(), 3);
+            assert_eq!(new_arr[2], Value::Integer(3));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_pop() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let args = vec![arr];
+        let result = eval_pop(&args).expect("eval_pop should succeed");
+        // eval_pop returns the popped value directly
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_eval_sort() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(3),
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let args = vec![arr];
+        let result = eval_sort(&args).expect("eval_sort should succeed");
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::Integer(1));
+            assert_eq!(sorted[1], Value::Integer(2));
+            assert_eq!(sorted[2], Value::Integer(3));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_zip() {
+        let arr1 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let arr2 = Value::Array(Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]));
+        let args = vec![arr1, arr2];
+        let result = eval_zip(&args).expect("eval_zip should succeed");
+        if let Value::Array(zipped) = result {
+            assert_eq!(zipped.len(), 2);
+            if let Value::Tuple(first) = &zipped[0] {
+                assert_eq!(first[0], Value::Integer(1));
+            }
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_enumerate() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]));
+        let args = vec![arr];
+        let result = eval_enumerate(&args).expect("eval_enumerate should succeed");
+        if let Value::Array(enumerated) = result {
+            assert_eq!(enumerated.len(), 2);
+            if let Value::Tuple(first) = &enumerated[0] {
+                assert_eq!(first[0], Value::Integer(0));
+            }
+            if let Value::Tuple(second) = &enumerated[1] {
+                assert_eq!(second[0], Value::Integer(1));
+            }
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_assert_eq_success() {
+        let args = vec![Value::Integer(42), Value::Integer(42)];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_assert_eq_failure() {
+        let args = vec![Value::Integer(42), Value::Integer(43)];
+        let result = eval_assert_eq(&args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_assert_success() {
+        let args = vec![Value::Bool(true)];
+        let result = eval_assert(&args);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_assert_failure() {
+        let args = vec![Value::Bool(false)];
+        let result = eval_assert(&args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_assert_with_message() {
+        let args = vec![
+            Value::Bool(false),
+            Value::from_string("custom error".to_string()),
+        ];
+        let result = eval_assert(&args);
+        assert!(result.is_err());
+        if let Err(InterpreterError::AssertionFailed(msg)) = result {
+            // Message may include "Assertion failed:" prefix from format!("{}", Value)
+            assert!(msg.contains("custom error"), "Message should contain custom error text");
+        }
+    }
+
+    #[test]
+    fn test_eval_range_two_args() {
+        let args = vec![Value::Integer(2), Value::Integer(5)];
+        let result = eval_range(&args).expect("eval_range should succeed");
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[0], Value::Integer(2));
+            assert_eq!(arr[1], Value::Integer(3));
+            assert_eq!(arr[2], Value::Integer(4));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_range_three_args() {
+        let args = vec![Value::Integer(0), Value::Integer(10), Value::Integer(2)];
+        let result = eval_range(&args).expect("eval_range should succeed");
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 5);
+            assert_eq!(arr[0], Value::Integer(0));
+            assert_eq!(arr[1], Value::Integer(2));
+            assert_eq!(arr[4], Value::Integer(8));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_range_negative_step() {
+        let args = vec![Value::Integer(5), Value::Integer(0), Value::Integer(-1)];
+        let result = eval_range(&args).expect("eval_range should succeed");
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 5);
+            assert_eq!(arr[0], Value::Integer(5));
+            assert_eq!(arr[4], Value::Integer(1));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_eval_min_floats() {
+        let args = vec![Value::Float(5.5), Value::Float(3.3)];
+        let result = eval_min(&args).expect("eval_min should succeed");
+        assert_eq!(result, Value::Float(3.3));
+    }
+
+    #[test]
+    fn test_eval_max_floats() {
+        let args = vec![Value::Float(5.5), Value::Float(3.3)];
+        let result = eval_max(&args).expect("eval_max should succeed");
+        assert_eq!(result, Value::Float(5.5));
+    }
+
+    #[test]
+    fn test_eval_len_tuple() {
+        let tuple = Value::Tuple(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let args = vec![tuple];
+        let result = eval_len(&args).expect("eval_len should succeed");
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_eval_type_string() {
+        let args = vec![Value::from_string("hello".to_string())];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("string".to_string()));
+    }
+
+    #[test]
+    fn test_eval_type_array() {
+        let args = vec![Value::Array(Arc::from(vec![]))];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("array".to_string()));
+    }
+
+    #[test]
+    fn test_eval_type_nil() {
+        let args = vec![Value::Nil];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("nil".to_string()));
+    }
+
+    #[test]
+    fn test_eval_type_bool() {
+        let args = vec![Value::Bool(true)];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("boolean".to_string()));
+    }
+
+    #[test]
+    fn test_eval_cos() {
+        let args = vec![Value::Float(0.0)];
+        let result = eval_cos(&args).expect("eval_cos should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "cos(0) should be ~1");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_cos(&args).expect("eval_cos should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10, "cos(0) should be ~1");
+        }
+    }
+
+    #[test]
+    fn test_eval_tan() {
+        let args = vec![Value::Float(0.0)];
+        let result = eval_tan(&args).expect("eval_tan should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10, "tan(0) should be ~0");
+        }
+
+        let args = vec![Value::Integer(0)];
+        let result = eval_tan(&args).expect("eval_tan should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 0.0).abs() < 1e-10, "tan(0) should be ~0");
+        }
+    }
+
+    #[test]
+    fn test_eval_str() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_str(&args).expect("eval_str should succeed");
+        assert_eq!(result, Value::from_string("42".to_string()));
+
+        let args = vec![Value::Float(3.14)];
+        let result = eval_str(&args).expect("eval_str should succeed");
+        if let Value::String(s) = result {
+            assert!(s.starts_with("3.14"));
+        }
+
+        let args = vec![Value::Bool(true)];
+        let result = eval_str(&args).expect("eval_str should succeed");
+        assert_eq!(result, Value::from_string("true".to_string()));
+    }
+
+    #[test]
+    fn test_eval_to_string() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_to_string(&args).expect("eval_to_string should succeed");
+        assert_eq!(result, Value::from_string("42".to_string()));
+    }
+
+    #[test]
+    fn test_eval_int() {
+        let args = vec![Value::Float(3.9)];
+        let result = eval_int(&args).expect("eval_int should succeed");
+        assert_eq!(result, Value::Integer(3));
+
+        let args = vec![Value::from_string("42".to_string())];
+        let result = eval_int(&args).expect("eval_int should succeed");
+        assert_eq!(result, Value::Integer(42));
+
+        let args = vec![Value::Bool(true)];
+        let result = eval_int(&args).expect("eval_int should succeed");
+        assert_eq!(result, Value::Integer(1));
+
+        let args = vec![Value::Bool(false)];
+        let result = eval_int(&args).expect("eval_int should succeed");
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_eval_float() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_float(&args).expect("eval_float should succeed");
+        assert_eq!(result, Value::Float(42.0));
+
+        let args = vec![Value::from_string("3.14".to_string())];
+        let result = eval_float(&args).expect("eval_float should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 3.14).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_eval_bool() {
+        let args = vec![Value::Integer(0)];
+        let result = eval_bool(&args).expect("eval_bool should succeed");
+        assert_eq!(result, Value::Bool(false));
+
+        let args = vec![Value::Integer(1)];
+        let result = eval_bool(&args).expect("eval_bool should succeed");
+        assert_eq!(result, Value::Bool(true));
+
+        let args = vec![Value::from_string("".to_string())];
+        let result = eval_bool(&args).expect("eval_bool should succeed");
+        assert_eq!(result, Value::Bool(false));
+
+        let args = vec![Value::from_string("hello".to_string())];
+        let result = eval_bool(&args).expect("eval_bool should succeed");
+        assert_eq!(result, Value::Bool(true));
+
+        let args = vec![Value::Nil];
+        let result = eval_bool(&args).expect("eval_bool should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_parse_int() {
+        let args = vec![Value::from_string("42".to_string())];
+        let result = eval_parse_int(&args).expect("eval_parse_int should succeed");
+        assert_eq!(result, Value::Integer(42));
+
+        let args = vec![Value::from_string("-123".to_string())];
+        let result = eval_parse_int(&args).expect("eval_parse_int should succeed");
+        assert_eq!(result, Value::Integer(-123));
+    }
+
+    #[test]
+    fn test_eval_parse_float() {
+        let args = vec![Value::from_string("3.14".to_string())];
+        let result = eval_parse_float(&args).expect("eval_parse_float should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 3.14).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_eval_timestamp() {
+        let args = vec![];
+        let result = eval_timestamp(&args).expect("eval_timestamp should succeed");
+        if let Value::Integer(ts) = result {
+            assert!(ts > 0, "timestamp should be positive");
+        } else {
+            panic!("Expected integer result");
+        }
+    }
+
+    #[test]
+    fn test_try_eval_io_function_unknown() {
+        let result = try_eval_io_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_eval_math_function_unknown() {
+        let result = try_eval_math_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_eval_utility_function_unknown() {
+        let result = try_eval_utility_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_eval_collection_function_unknown() {
+        let result = try_eval_collection_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_eval_conversion_function_unknown() {
+        let result = try_eval_conversion_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_eval_time_function_unknown() {
+        let result = try_eval_time_function("unknown", &[]).expect("should not error");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_eval_builtin_function_unknown() {
+        let result =
+            eval_builtin_function("unknown_function", &[]).expect("should not error for unknown");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_eval_builtin_function_println() {
+        let result = eval_builtin_function("__builtin_println__", &[Value::Integer(42)])
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_eval_builtin_function_sqrt() {
+        let result = eval_builtin_function("__builtin_sqrt__", &[Value::Integer(16)])
+            .expect("should succeed");
+        assert_eq!(result, Some(Value::Float(4.0)));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_len() {
+        let result = eval_builtin_function(
+            "__builtin_len__",
+            &[Value::from_string("hello".to_string())],
+        )
+        .expect("should succeed");
+        assert_eq!(result, Some(Value::Integer(5)));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_range() {
+        let result = eval_builtin_function("__builtin_range__", &[Value::Integer(3)])
+            .expect("should succeed");
+        assert!(result.is_some());
+        if let Some(Value::Array(arr)) = result {
+            assert_eq!(arr.len(), 3);
+        }
+    }
+
+    #[test]
+    fn test_eval_builtin_function_type() {
+        let result = eval_builtin_function("__builtin_type__", &[Value::Integer(42)])
+            .expect("should succeed");
+        assert_eq!(result, Some(Value::from_string("integer".to_string())));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_str() {
+        let result =
+            eval_builtin_function("__builtin_str__", &[Value::Integer(42)]).expect("should succeed");
+        assert_eq!(result, Some(Value::from_string("42".to_string())));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_int() {
+        let result = eval_builtin_function("__builtin_int__", &[Value::Float(3.9)])
+            .expect("should succeed");
+        assert_eq!(result, Some(Value::Integer(3)));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_float() {
+        let result = eval_builtin_function("__builtin_float__", &[Value::Integer(42)])
+            .expect("should succeed");
+        assert_eq!(result, Some(Value::Float(42.0)));
+    }
+
+    #[test]
+    fn test_eval_builtin_function_bool() {
+        let result = eval_builtin_function("__builtin_bool__", &[Value::Integer(1)])
+            .expect("should succeed");
+        assert_eq!(result, Some(Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_eval_sort_strings() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::from_string("c".to_string()),
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]));
+        let args = vec![arr];
+        let result = eval_sort(&args).expect("eval_sort should succeed");
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::from_string("a".to_string()));
+            assert_eq!(sorted[1], Value::from_string("b".to_string()));
+            assert_eq!(sorted[2], Value::from_string("c".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_eval_sort_floats() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Float(3.3),
+            Value::Float(1.1),
+            Value::Float(2.2),
+        ]));
+        let args = vec![arr];
+        let result = eval_sort(&args).expect("eval_sort should succeed");
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted[0], Value::Float(1.1));
+            assert_eq!(sorted[1], Value::Float(2.2));
+            assert_eq!(sorted[2], Value::Float(3.3));
+        }
+    }
+
+    #[test]
+    fn test_eval_sqrt_from_integer() {
+        let args = vec![Value::Integer(25)];
+        let result = eval_sqrt(&args).expect("eval_sqrt should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 5.0).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_eval_pow_with_floats() {
+        let args = vec![Value::Float(2.0), Value::Float(3.0)];
+        let result = eval_pow(&args).expect("eval_pow should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 8.0).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_eval_min_with_floats() {
+        let args = vec![Value::Float(5.5), Value::Float(3.3)];
+        let result = eval_min(&args).expect("eval_min should succeed");
+        assert_eq!(result, Value::Float(3.3));
+    }
+
+    #[test]
+    fn test_eval_max_with_floats() {
+        let args = vec![Value::Float(5.5), Value::Float(3.3)];
+        let result = eval_max(&args).expect("eval_max should succeed");
+        assert_eq!(result, Value::Float(5.5));
+    }
+
+    #[test]
+    fn test_eval_floor_with_negative() {
+        let args = vec![Value::Float(-3.2)];
+        let result = eval_floor(&args).expect("eval_floor should succeed");
+        assert_eq!(result, Value::Integer(-4));
+    }
+
+    #[test]
+    fn test_eval_ceil_with_negative() {
+        let args = vec![Value::Float(-3.7)];
+        let result = eval_ceil(&args).expect("eval_ceil should succeed");
+        assert_eq!(result, Value::Integer(-3));
+    }
+
+    #[test]
+    fn test_eval_round_down_case() {
+        let args = vec![Value::Float(3.4)];
+        let result = eval_round(&args).expect("eval_round should succeed");
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_eval_range_single_arg() {
+        let args = vec![Value::Integer(5)];
+        let result = eval_range(&args).expect("eval_range should succeed");
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 5);
+            assert_eq!(arr[0], Value::Integer(0));
+            assert_eq!(arr[4], Value::Integer(4));
+        }
+    }
+
+    #[test]
+    fn test_eval_reverse_on_array() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let args = vec![arr];
+        let result = eval_reverse(&args).expect("eval_reverse should succeed");
+        if let Value::Array(reversed) = result {
+            assert_eq!(reversed[0], Value::Integer(3));
+            assert_eq!(reversed[1], Value::Integer(2));
+            assert_eq!(reversed[2], Value::Integer(1));
+        }
+    }
+
+    #[test]
+    fn test_eval_reverse_on_string() {
+        let args = vec![Value::from_string("hello".to_string())];
+        let result = eval_reverse(&args).expect("eval_reverse should succeed");
+        assert_eq!(result, Value::from_string("olleh".to_string()));
+    }
+
+    #[test]
+    fn test_eval_is_nil_returns_true() {
+        let args = vec![Value::Nil];
+        let result = eval_is_nil(&args).expect("eval_is_nil should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_is_nil_returns_false() {
+        let args = vec![Value::Integer(0)];
+        let result = eval_is_nil(&args).expect("eval_is_nil should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_push_element_to_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let args = vec![arr, Value::Integer(2)];
+        let result = eval_push(&args).expect("eval_push should succeed");
+        if let Value::Array(new_arr) = result {
+            assert_eq!(new_arr.len(), 2);
+        }
+    }
+
+    #[test]
+    fn test_eval_pop_element_from_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let args = vec![arr];
+        let result = eval_pop(&args).expect("eval_pop should succeed");
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_eval_pop_from_empty_array() {
+        let arr = Value::Array(Arc::from(vec![]));
+        let args = vec![arr];
+        let result = eval_pop(&args).expect("eval_pop should succeed");
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_type_for_integer_value() {
+        let args = vec![Value::Integer(42)];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("integer".to_string()));
+    }
+
+    #[test]
+    fn test_eval_type_for_float_value() {
+        let args = vec![Value::Float(3.14)];
+        let result = eval_type(&args).expect("eval_type should succeed");
+        assert_eq!(result, Value::from_string("float".to_string()));
+    }
+
+    #[test]
+    fn test_eval_abs_on_negative_integer() {
+        let args = vec![Value::Integer(-42)];
+        let result = eval_abs(&args).expect("eval_abs should succeed");
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_abs_on_negative_float() {
+        let args = vec![Value::Float(-3.14)];
+        let result = eval_abs(&args).expect("eval_abs should succeed");
+        if let Value::Float(v) = result {
+            assert!((v - 3.14).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_eval_len_on_string() {
+        let args = vec![Value::from_string("hello".to_string())];
+        let result = eval_len(&args).expect("eval_len should succeed");
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_eval_len_on_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let args = vec![arr];
+        let result = eval_len(&args).expect("eval_len should succeed");
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_eval_len_on_empty_string() {
+        let args = vec![Value::from_string("".to_string())];
+        let result = eval_len(&args).expect("eval_len should succeed");
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_eval_len_on_empty_array() {
+        let arr = Value::Array(Arc::from(vec![]));
+        let args = vec![arr];
+        let result = eval_len(&args).expect("eval_len should succeed");
+        assert_eq!(result, Value::Integer(0));
+    }
 }

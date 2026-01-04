@@ -561,7 +561,7 @@ impl PlagiarismDetector {
             return 1.0; // Identical
         }
         // Compare structural patterns
-        let common: usize = fp1
+        let common = fp1
             .structure
             .iter()
             .zip(fp2.structure.iter())
@@ -569,7 +569,9 @@ impl PlagiarismDetector {
             .count();
         let total = fp1.structure.len().max(fp2.structure.len());
         if total > 0 {
-            common as f32 / total as f32
+            #[allow(clippy::cast_precision_loss)]
+            let ratio = common as f32 / total as f32;
+            ratio
         } else {
             0.0
         }

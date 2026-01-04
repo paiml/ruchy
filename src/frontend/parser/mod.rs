@@ -997,7 +997,7 @@ fn is_try_operator_not_ternary(state: &mut ParserState) -> bool {
                 break;
             }
             Some((Token::Semicolon, _)) => break, // Statement end
-            None => break,                         // EOF
+            None => break,                        // EOF
             _ => {}
         }
     }

@@ -260,8 +260,18 @@ impl KaizenTracker {
         }
 
         let chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        let min = self.metrics.trend.iter().copied().fold(f64::INFINITY, f64::min);
-        let max = self.metrics.trend.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let min = self
+            .metrics
+            .trend
+            .iter()
+            .copied()
+            .fold(f64::INFINITY, f64::min);
+        let max = self
+            .metrics
+            .trend
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max);
         let range = max - min;
 
         self.metrics

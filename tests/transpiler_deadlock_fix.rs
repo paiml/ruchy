@@ -742,6 +742,7 @@ println!("{}", x)
 
 // Test 10: Bitwise operators in self-reference (flags = flags & 0xFF)
 #[test]
+#[ignore = "Slow test - deadlock detection, run in tier3-nightly"]
 fn test_bitwise_operators_self_reference() {
     let code = r#"
 let mut flags = 255
@@ -805,6 +806,7 @@ println!("{}", flags)
 
 // Test 11: Comparison operators (status = status > 5)
 #[test]
+#[ignore = "Slow test - deadlock detection, run in tier3-nightly"]
 fn test_comparison_operators_self_reference() {
     let code = r#"
 let mut status = 10
@@ -868,6 +870,7 @@ println!("{}", status)
 
 // Test 12: Modulo operator (index = (index + 1) % 10)
 #[test]
+#[ignore = "Slow test - deadlock detection, run in tier3-nightly"]
 fn test_modulo_operator_self_reference() {
     let code = r#"
 let mut index = 9
@@ -931,6 +934,7 @@ println!("{}", index)
 
 // Test 13: Logical AND operator (result = result && true)
 #[test]
+#[ignore = "Slow test - deadlock detection, run in tier3-nightly"]
 fn test_logical_and_self_reference() {
     let code = r#"
 let mut result = true
@@ -994,6 +998,7 @@ println!("{}", result)
 
 // Test 14: Shift operators (value = value << 1)
 #[test]
+#[ignore = "Slow test - deadlock detection, run in tier3-nightly"]
 fn test_shift_operators_self_reference() {
     let code = r#"
 let mut value = 5

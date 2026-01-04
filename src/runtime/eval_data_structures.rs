@@ -128,19 +128,15 @@ where
         }
         Value::Object(fields) => {
             match index_value {
-                Value::String(key) => {
-                    fields.get(&*key).cloned().ok_or_else(|| {
-                        InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-                    })
-                }
+                Value::String(key) => fields.get(&*key).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
+                }),
                 // PARSER-082: Support atom bracket access (e.g., config[:host])
                 // Atom keys are stored with ":" prefix in the object
                 Value::Atom(key) => {
                     let atom_key = format!(":{key}");
                     fields.get(&atom_key).cloned().ok_or_else(|| {
-                        InterpreterError::RuntimeError(format!(
-                            "Key ':{key}' not found in object"
-                        ))
+                        InterpreterError::RuntimeError(format!("Key ':{key}' not found in object"))
                     })
                 }
                 _ => Err(InterpreterError::TypeError(
@@ -920,7 +916,10 @@ mod tests {
     fn test_parser082_atom_bracket_access_basic() {
         // Object with atom key ":host" => "localhost"
         let mut fields = HashMap::new();
-        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+        fields.insert(
+            ":host".to_string(),
+            Value::from_string("localhost".to_string()),
+        );
         fields.insert(":port".to_string(), Value::Integer(8080));
 
         let obj = Value::Object(Arc::new(fields));
@@ -930,10 +929,8 @@ mod tests {
         );
 
         // Indexing with :host atom should find ":host" key
-        let result = eval_index_access(&obj, &index_expr, |_| {
-            Ok(Value::Atom("host".into()))
-        })
-        .expect("atom bracket access should succeed");
+        let result = eval_index_access(&obj, &index_expr, |_| Ok(Value::Atom("host".into())))
+            .expect("atom bracket access should succeed");
         assert_eq!(result, Value::from_string("localhost".to_string()));
     }
 
@@ -941,7 +938,10 @@ mod tests {
     #[test]
     fn test_parser082_atom_bracket_access_port() {
         let mut fields = HashMap::new();
-        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+        fields.insert(
+            ":host".to_string(),
+            Value::from_string("localhost".to_string()),
+        );
         fields.insert(":port".to_string(), Value::Integer(8080));
 
         let obj = Value::Object(Arc::new(fields));
@@ -950,10 +950,8 @@ mod tests {
             Span::new(0, 5),
         );
 
-        let result = eval_index_access(&obj, &index_expr, |_| {
-            Ok(Value::Atom("port".into()))
-        })
-        .expect("atom bracket access should succeed");
+        let result = eval_index_access(&obj, &index_expr, |_| Ok(Value::Atom("port".into())))
+            .expect("atom bracket access should succeed");
         assert_eq!(result, Value::Integer(8080));
     }
 
@@ -961,7 +959,10 @@ mod tests {
     #[test]
     fn test_parser082_atom_bracket_access_missing_key() {
         let mut fields = HashMap::new();
-        fields.insert(":host".to_string(), Value::from_string("localhost".to_string()));
+        fields.insert(
+            ":host".to_string(),
+            Value::from_string("localhost".to_string()),
+        );
 
         let obj = Value::Object(Arc::new(fields));
         let index_expr = Expr::new(
@@ -969,9 +970,7 @@ mod tests {
             Span::new(0, 7),
         );
 
-        let result = eval_index_access(&obj, &index_expr, |_| {
-            Ok(Value::Atom("missing".into()))
-        });
+        let result = eval_index_access(&obj, &index_expr, |_| Ok(Value::Atom("missing".into())));
         assert!(result.is_err(), "missing atom key should return error");
     }
 
@@ -990,10 +989,9 @@ mod tests {
             ExprKind::Literal(Literal::Atom("status".to_string())),
             Span::new(0, 7),
         );
-        let atom_result = eval_index_access(&obj, &atom_index, |_| {
-            Ok(Value::Atom("status".into()))
-        })
-        .expect("atom bracket access should succeed");
+        let atom_result =
+            eval_index_access(&obj, &atom_index, |_| Ok(Value::Atom("status".into())))
+                .expect("atom bracket access should succeed");
         assert_eq!(atom_result, Value::Atom("ok".into()));
 
         // Access string key with string index still works

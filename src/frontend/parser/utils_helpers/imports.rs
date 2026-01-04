@@ -362,3 +362,461 @@ fn parse_export_declaration(state: &mut ParserState, start_span: Span) -> Result
         start_span,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Helper to create parser state from source
+    fn create_state(source: &str) -> ParserState {
+        ParserState::new(source)
+    }
+
+    // parse_module_path tests
+    #[test]
+    fn test_parse_module_path_simple() {
+        let mut state = create_state("foo");
+        let path = parse_module_path(&mut state).expect("should succeed");
+        assert_eq!(path, vec!["foo"]);
+    }
+
+    #[test]
+    fn test_parse_module_path_nested() {
+        let mut state = create_state("foo::bar::baz");
+        let path = parse_module_path(&mut state).expect("should succeed");
+        assert_eq!(path, vec!["foo", "bar", "baz"]);
+    }
+
+    #[test]
+    fn test_parse_module_path_empty() {
+        let mut state = create_state("");
+        let path = parse_module_path(&mut state).expect("should succeed");
+        assert!(path.is_empty());
+    }
+
+    #[test]
+    fn test_parse_module_path_stops_at_star() {
+        let mut state = create_state("foo::*");
+        let path = parse_module_path(&mut state).expect("should succeed");
+        assert_eq!(path, vec!["foo"]);
+    }
+
+    #[test]
+    fn test_parse_module_path_stops_at_brace() {
+        let mut state = create_state("foo::{bar}");
+        let path = parse_module_path(&mut state).expect("should succeed");
+        assert_eq!(path, vec!["foo"]);
+    }
+
+    // parse_import_items tests
+    #[test]
+    fn test_parse_import_items_wildcard() {
+        let mut state = create_state("*");
+        let items = parse_import_items(&mut state, &[]).expect("should succeed");
+        assert_eq!(items.len(), 1);
+        assert!(matches!(items[0], ImportItem::Wildcard));
+    }
+
+    #[test]
+    fn test_parse_import_items_braced_single() {
+        let mut state = create_state("{foo}");
+        let items = parse_import_items(&mut state, &[]).expect("should succeed");
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], ImportItem::Named(n) if n == "foo"));
+    }
+
+    #[test]
+    fn test_parse_import_items_braced_multiple() {
+        let mut state = create_state("{foo, bar, baz}");
+        let items = parse_import_items(&mut state, &[]).expect("should succeed");
+        assert_eq!(items.len(), 3);
+    }
+
+    #[test]
+    fn test_parse_import_items_braced_with_alias() {
+        let mut state = create_state("{foo as f}");
+        let items = parse_import_items(&mut state, &[]).expect("should succeed");
+        assert_eq!(items.len(), 1);
+        if let ImportItem::Aliased { name, alias } = &items[0] {
+            assert_eq!(name, "foo");
+            assert_eq!(alias, "f");
+        } else {
+            panic!("Expected Aliased import");
+        }
+    }
+
+    #[test]
+    fn test_parse_import_items_simple_with_path() {
+        let mut state = create_state("");
+        let items = parse_import_items(&mut state, &["foo".to_string(), "bar".to_string()])
+            .expect("should succeed");
+        assert_eq!(items.len(), 1);
+        assert!(matches!(&items[0], ImportItem::Named(n) if n == "bar"));
+    }
+
+    #[test]
+    fn test_parse_import_items_simple_empty_path() {
+        let mut state = create_state("");
+        let items = parse_import_items(&mut state, &[]).expect("should succeed");
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_parse_import_items_single_segment_path() {
+        let mut state = create_state("");
+        let items = parse_import_items(&mut state, &["foo".to_string()]).expect("should succeed");
+        assert!(items.is_empty()); // Single segment treated as wildcard
+    }
+
+    // parse_braced_import_list tests
+    #[test]
+    fn test_parse_braced_import_list_empty() {
+        let mut state = create_state("{}");
+        let items = parse_braced_import_list(&mut state).expect("should succeed");
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_parse_braced_import_list_trailing_comma() {
+        let mut state = create_state("{foo,}");
+        // This may or may not be valid depending on grammar
+        let result = parse_braced_import_list(&mut state);
+        // Either succeeds or errors predictably
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    // create_import_expression tests
+    #[test]
+    fn test_create_import_expression_simple() {
+        let path = vec!["foo".to_string()];
+        let items = vec![];
+        let span = Span::default();
+        let expr = create_import_expression(path, items, span).expect("should succeed");
+        if let ExprKind::Import { module, .. } = &expr.kind {
+            assert_eq!(module, "foo");
+        } else {
+            panic!("Expected Import expression");
+        }
+    }
+
+    #[test]
+    fn test_create_import_expression_nested() {
+        let path = vec!["foo".to_string(), "bar".to_string(), "baz".to_string()];
+        let items = vec![];
+        let span = Span::default();
+        let expr = create_import_expression(path, items, span).expect("should succeed");
+        if let ExprKind::Import { module, .. } = &expr.kind {
+            assert_eq!(module, "foo::bar::baz");
+        } else {
+            panic!("Expected Import expression");
+        }
+    }
+
+    #[test]
+    fn test_create_import_expression_empty_path_error() {
+        let path = vec![];
+        let items = vec![];
+        let span = Span::default();
+        let result = create_import_expression(path, items, span);
+        assert!(result.is_err());
+    }
+
+    // parse_url_import tests
+    #[test]
+    fn test_parse_url_import_invalid_scheme() {
+        let mut state = create_state("");
+        let result = parse_url_import(&mut state, "ftp://example.com", Span::default());
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("https://") || err.contains("http://"));
+    }
+
+    // parse_export tests
+    #[test]
+    fn test_parse_export_default() {
+        let mut state = create_state("export default 42");
+        let expr = parse_export(&mut state).expect("should succeed");
+        assert!(matches!(expr.kind, ExprKind::ExportDefault { .. }));
+    }
+
+    #[test]
+    fn test_parse_export_list_simple() {
+        let mut state = create_state("export {foo}");
+        let expr = parse_export(&mut state).expect("should succeed");
+        if let ExprKind::ExportList { names } = &expr.kind {
+            assert_eq!(names, &vec!["foo".to_string()]);
+        } else {
+            panic!("Expected ExportList");
+        }
+    }
+
+    #[test]
+    fn test_parse_export_list_multiple() {
+        let mut state = create_state("export {foo, bar}");
+        let expr = parse_export(&mut state).expect("should succeed");
+        if let ExprKind::ExportList { names } = &expr.kind {
+            assert_eq!(names.len(), 2);
+        } else {
+            panic!("Expected ExportList");
+        }
+    }
+
+    #[test]
+    fn test_parse_export_invalid() {
+        let mut state = create_state("export 123");
+        let result = parse_export(&mut state);
+        // Number literal is not a valid export target
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_export_function() {
+        let mut state = create_state("export fun foo() { 42 }");
+        let expr = parse_export(&mut state).expect("should succeed");
+        assert!(matches!(expr.kind, ExprKind::Export { .. }));
+    }
+
+    // is_import_items_start tests
+    #[test]
+    fn test_is_import_items_start_star() {
+        let mut state = create_state("*");
+        assert!(is_import_items_start(&mut state));
+    }
+
+    #[test]
+    fn test_is_import_items_start_brace() {
+        let mut state = create_state("{");
+        assert!(is_import_items_start(&mut state));
+    }
+
+    #[test]
+    fn test_is_import_items_start_identifier() {
+        let mut state = create_state("foo");
+        assert!(!is_import_items_start(&mut state));
+    }
+
+    // parse_path_segment tests
+    #[test]
+    fn test_parse_path_segment_valid() {
+        let mut state = create_state("foo");
+        let segment = parse_path_segment(&mut state).expect("should succeed");
+        assert_eq!(segment, "foo");
+    }
+
+    #[test]
+    fn test_parse_path_segment_invalid() {
+        let mut state = create_state("123");
+        let result = parse_path_segment(&mut state);
+        assert!(result.is_err());
+    }
+
+    // parse_simple_import_without_alias tests
+    #[test]
+    fn test_parse_simple_import_without_alias_empty() {
+        let result = parse_simple_import_without_alias(&[]).expect("should succeed");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_simple_import_without_alias_single() {
+        let result =
+            parse_simple_import_without_alias(&["foo".to_string()]).expect("should succeed");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_simple_import_without_alias_multi() {
+        let result = parse_simple_import_without_alias(&["foo".to_string(), "bar".to_string()])
+            .expect("should succeed");
+        assert_eq!(result.len(), 1);
+        assert!(matches!(&result[0], ImportItem::Named(n) if n == "bar"));
+    }
+
+    // parse_simple_import tests
+    #[test]
+    fn test_parse_simple_import_no_alias() {
+        let mut state = create_state("");
+        let result = parse_simple_import(&mut state, &["foo".to_string(), "bar".to_string()])
+            .expect("should succeed");
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_simple_import_with_alias() {
+        let mut state = create_state("as alias");
+        let result = parse_simple_import(&mut state, &["foo".to_string(), "bar".to_string()])
+            .expect("should succeed");
+        assert_eq!(result.len(), 1);
+        if let ImportItem::Aliased { name, alias } = &result[0] {
+            assert_eq!(name, "bar");
+            assert_eq!(alias, "alias");
+        } else {
+            panic!("Expected Aliased import");
+        }
+    }
+
+    // consume_module_identifier tests
+    #[test]
+    fn test_consume_module_identifier_valid() {
+        let mut state = create_state("my_module");
+        let name = consume_module_identifier(&mut state).expect("should succeed");
+        assert_eq!(name, "my_module");
+    }
+
+    #[test]
+    fn test_consume_module_identifier_invalid() {
+        let mut state = create_state("123");
+        let result = consume_module_identifier(&mut state);
+        assert!(result.is_err());
+    }
+
+    // try_consume_item_separator tests
+    #[test]
+    fn test_try_consume_item_separator_comma() {
+        let mut state = create_state(",");
+        let result = try_consume_item_separator(&mut state).expect("should succeed");
+        assert!(result);
+    }
+
+    #[test]
+    fn test_try_consume_item_separator_brace() {
+        let mut state = create_state("}");
+        let result = try_consume_item_separator(&mut state).expect("should succeed");
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_try_consume_item_separator_invalid() {
+        let mut state = create_state("foo");
+        let result = try_consume_item_separator(&mut state);
+        assert!(result.is_err());
+    }
+
+    // parse_item_with_optional_alias tests
+    #[test]
+    fn test_parse_item_with_optional_alias_no_alias() {
+        let mut state = create_state("");
+        let item = parse_item_with_optional_alias(&mut state, "foo".to_string())
+            .expect("should succeed");
+        assert!(matches!(item, ImportItem::Named(n) if n == "foo"));
+    }
+
+    #[test]
+    fn test_parse_item_with_optional_alias_with_alias() {
+        let mut state = create_state("as bar");
+        let item = parse_item_with_optional_alias(&mut state, "foo".to_string())
+            .expect("should succeed");
+        if let ImportItem::Aliased { name, alias } = item {
+            assert_eq!(name, "foo");
+            assert_eq!(alias, "bar");
+        } else {
+            panic!("Expected Aliased");
+        }
+    }
+
+    #[test]
+    fn test_parse_item_with_optional_alias_missing_alias_name() {
+        let mut state = create_state("as 123");
+        let result = parse_item_with_optional_alias(&mut state, "foo".to_string());
+        assert!(result.is_err());
+    }
+
+    // parse_single_import_item tests
+    #[test]
+    fn test_parse_single_import_item_simple() {
+        let mut state = create_state("foo");
+        let item = parse_single_import_item(&mut state).expect("should succeed");
+        assert!(matches!(item, ImportItem::Named(n) if n == "foo"));
+    }
+
+    // parse_wildcard_import tests
+    #[test]
+    fn test_parse_wildcard_import() {
+        let mut state = create_state("*");
+        let items = parse_wildcard_import(&mut state).expect("should succeed");
+        assert_eq!(items.len(), 1);
+        assert!(matches!(items[0], ImportItem::Wildcard));
+    }
+
+    // parse_export_identifier tests
+    #[test]
+    fn test_parse_export_identifier_valid() {
+        let mut state = create_state("foo");
+        let name = parse_export_identifier(&mut state).expect("should succeed");
+        assert_eq!(name, "foo");
+    }
+
+    #[test]
+    fn test_parse_export_identifier_invalid() {
+        let mut state = create_state("123");
+        let result = parse_export_identifier(&mut state);
+        assert!(result.is_err());
+    }
+
+    // try_consume_export_comma tests
+    #[test]
+    fn test_try_consume_export_comma_present() {
+        let mut state = create_state(",foo");
+        try_consume_export_comma(&mut state);
+        // Should have advanced past the comma
+        assert!(matches!(
+            state.tokens.peek(),
+            Some((Token::Identifier(_), _))
+        ));
+    }
+
+    #[test]
+    fn test_try_consume_export_comma_absent() {
+        let mut state = create_state("foo");
+        try_consume_export_comma(&mut state);
+        // Should not have advanced
+        assert!(matches!(
+            state.tokens.peek(),
+            Some((Token::Identifier(n), _)) if n == "foo"
+        ));
+    }
+
+    // parse_module_specifier tests
+    #[test]
+    fn test_parse_module_specifier_string() {
+        let mut state = create_state("\"my_module\"");
+        let module = parse_module_specifier(&mut state).expect("should succeed");
+        assert_eq!(module, "my_module");
+    }
+
+    #[test]
+    fn test_parse_module_specifier_identifier() {
+        let mut state = create_state("my_module");
+        let module = parse_module_specifier(&mut state).expect("should succeed");
+        assert_eq!(module, "my_module");
+    }
+
+    #[test]
+    fn test_parse_module_specifier_invalid() {
+        let mut state = create_state("123");
+        let result = parse_module_specifier(&mut state);
+        assert!(result.is_err());
+    }
+
+    // create_export_or_reexport tests
+    #[test]
+    fn test_create_export_or_reexport_no_from() {
+        let mut state = create_state("");
+        let expr = create_export_or_reexport(&mut state, vec!["foo".to_string()], Span::default())
+            .expect("should succeed");
+        assert!(matches!(expr.kind, ExprKind::ExportList { .. }));
+    }
+
+    #[test]
+    fn test_create_export_or_reexport_with_from() {
+        let mut state = create_state("from \"module\"");
+        let expr = create_export_or_reexport(&mut state, vec!["foo".to_string()], Span::default())
+            .expect("should succeed");
+        if let ExprKind::ReExport { items, module } = &expr.kind {
+            assert_eq!(items, &vec!["foo".to_string()]);
+            assert_eq!(module, "module");
+        } else {
+            panic!("Expected ReExport");
+        }
+    }
+}

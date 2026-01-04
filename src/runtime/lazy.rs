@@ -467,6 +467,182 @@ mod tests {
         assert_eq!(result, Value::Integer(42)); // Cached value
         assert_eq!(*counter.borrow(), 1); // Not incremented
     }
+
+    // COVERAGE-95: Additional tests for complete coverage
+
+    #[test]
+    fn test_lazy_value_clone_computed() {
+        let lazy = LazyValue::computed(Value::Integer(42));
+        let cloned = lazy.clone();
+        assert!(cloned.is_computed());
+        assert_eq!(cloned.force().unwrap(), Value::Integer(42));
+    }
+
+    #[test]
+    fn test_lazy_value_clone_deferred() {
+        let lazy = LazyValue::deferred(|| Ok(Value::Integer(99)));
+        let cloned = lazy.clone();
+        assert!(!cloned.is_computed());
+        assert_eq!(cloned.force().unwrap(), Value::Integer(99));
+    }
+
+    #[test]
+    fn test_lazy_value_clone_pipeline() {
+        let source = LazyValue::computed(Value::Integer(10));
+        let lazy = LazyValue::pipeline(source, |v| {
+            if let Value::Integer(n) = v {
+                Ok(Value::Integer(n * 2))
+            } else {
+                Ok(v)
+            }
+        });
+        let cloned = lazy.clone();
+        assert!(!cloned.is_computed());
+        assert_eq!(cloned.force().unwrap(), Value::Integer(20));
+    }
+
+    #[test]
+    fn test_lazy_value_pipeline_chain() {
+        let source = LazyValue::computed(Value::Integer(5));
+        let lazy1 = LazyValue::pipeline(source, |v| {
+            if let Value::Integer(n) = v {
+                Ok(Value::Integer(n + 1))
+            } else {
+                Ok(v)
+            }
+        });
+        let lazy2 = LazyValue::pipeline(lazy1, |v| {
+            if let Value::Integer(n) = v {
+                Ok(Value::Integer(n * 2))
+            } else {
+                Ok(v)
+            }
+        });
+        // (5 + 1) * 2 = 12
+        assert_eq!(lazy2.force().unwrap(), Value::Integer(12));
+    }
+
+    #[test]
+    fn test_lazy_value_is_computed_pipeline() {
+        let source = LazyValue::computed(Value::Integer(10));
+        let lazy = LazyValue::pipeline(source, |v| Ok(v));
+        assert!(!lazy.is_computed());
+    }
+
+    #[test]
+    fn test_lazy_iterator_take() {
+        let values = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+        ];
+        let lazy = LazyIterator::from_vec(values).take(3);
+        let result = lazy.collect().unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result, vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+    }
+
+    #[test]
+    fn test_lazy_iterator_skip() {
+        let values = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+        ];
+        let lazy = LazyIterator::from_vec(values).skip(2);
+        let result = lazy.collect().unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result, vec![Value::Integer(3), Value::Integer(4), Value::Integer(5)]);
+    }
+
+    #[test]
+    fn test_lazy_iterator_first() {
+        let values = vec![Value::Integer(10), Value::Integer(20)];
+        let lazy = LazyIterator::from_vec(values);
+        let result = lazy.first().unwrap();
+        assert_eq!(result, Some(Value::Integer(10)));
+    }
+
+    #[test]
+    fn test_lazy_iterator_first_empty() {
+        let values: Vec<Value> = vec![];
+        let lazy = LazyIterator::from_vec(values);
+        let result = lazy.first().unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_lazy_iterator_count_source() {
+        let values = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let lazy = LazyIterator::from_vec(values);
+        assert_eq!(lazy.count().unwrap(), 3);
+    }
+
+    #[test]
+    fn test_lazy_iterator_count_with_filter() {
+        let values = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let lazy = LazyIterator::from_vec(values).filter(|v| {
+            if let Value::Integer(n) = v {
+                Ok(*n > 1)
+            } else {
+                Ok(false)
+            }
+        });
+        assert_eq!(lazy.count().unwrap(), 2);
+    }
+
+    #[test]
+    fn test_lazy_cache_clear() {
+        let cache = LazyCache::new();
+        cache.get_or_compute("key1", || Ok(Value::Integer(1))).unwrap();
+        cache.get_or_compute("key2", || Ok(Value::Integer(2))).unwrap();
+        assert_eq!(cache.size(), 2);
+        cache.clear();
+        assert_eq!(cache.size(), 0);
+    }
+
+    #[test]
+    fn test_lazy_cache_size() {
+        let cache = LazyCache::new();
+        assert_eq!(cache.size(), 0);
+        cache.get_or_compute("key1", || Ok(Value::Integer(1))).unwrap();
+        assert_eq!(cache.size(), 1);
+        cache.get_or_compute("key2", || Ok(Value::Integer(2))).unwrap();
+        assert_eq!(cache.size(), 2);
+    }
+
+    #[test]
+    fn test_lazy_cache_default() {
+        let cache = LazyCache::default();
+        assert_eq!(cache.size(), 0);
+    }
+
+    #[test]
+    fn test_lazy_iterator_chain() {
+        let values = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+        ];
+        let lazy = LazyIterator::from_vec(values)
+            .skip(1)
+            .take(3)
+            .map(|v| {
+                if let Value::Integer(n) = v {
+                    Ok(Value::Integer(n * 10))
+                } else {
+                    Ok(v)
+                }
+            });
+        let result = lazy.collect().unwrap();
+        assert_eq!(result, vec![Value::Integer(20), Value::Integer(30), Value::Integer(40)]);
+    }
 }
 #[cfg(test)]
 mod property_tests_lazy {

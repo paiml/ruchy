@@ -461,6 +461,203 @@ mod tests {
         assert!(html.contains("src/lib.rs"));
         Ok(())
     }
+
+    // --- Additional coverage tests ---
+
+    #[test]
+    fn test_file_coverage_zero_lines() {
+        let coverage = FileCoverage {
+            path: "empty.rs".to_string(),
+            lines_total: 0,
+            lines_covered: 0,
+            branches_total: 0,
+            branches_covered: 0,
+            functions_total: 0,
+            functions_covered: 0,
+        };
+        // Should return 100% for zero total
+        assert!((coverage.line_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+        assert!((coverage.branch_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+        assert!((coverage.function_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_report_default() {
+        let report = CoverageReport::default();
+        assert_eq!(report.total_lines, 0);
+        assert!((report.line_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_report_new() {
+        let report = CoverageReport::new();
+        assert!(report.files.is_empty());
+        assert_eq!(report.covered_functions, 0);
+    }
+
+    #[test]
+    fn test_coverage_report_branch_percentage_zero() {
+        let report = CoverageReport::new();
+        assert!((report.branch_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_report_function_percentage_zero() {
+        let report = CoverageReport::new();
+        assert!((report.function_coverage_percentage() - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_collector_with_source_dir() {
+        let collector = CoverageCollector::new(CoverageTool::Grcov).with_source_dir("custom/src");
+        assert_eq!(collector.source_dir, "custom/src");
+    }
+
+    #[test]
+    fn test_coverage_tool_clone() {
+        let tool = CoverageTool::LlvmCov;
+        let cloned = tool.clone();
+        assert!(matches!(cloned, CoverageTool::LlvmCov));
+    }
+
+    #[test]
+    fn test_coverage_tool_debug() {
+        let tool = CoverageTool::Grcov;
+        let debug = format!("{:?}", tool);
+        assert!(debug.contains("Grcov"));
+    }
+
+    #[test]
+    fn test_file_coverage_clone() {
+        let coverage = FileCoverage {
+            path: "test.rs".to_string(),
+            lines_total: 50,
+            lines_covered: 40,
+            branches_total: 10,
+            branches_covered: 8,
+            functions_total: 5,
+            functions_covered: 4,
+        };
+        let cloned = coverage.clone();
+        assert_eq!(cloned.path, "test.rs");
+        assert_eq!(cloned.lines_total, 50);
+    }
+
+    #[test]
+    fn test_file_coverage_debug() {
+        let coverage = FileCoverage {
+            path: "debug_test.rs".to_string(),
+            lines_total: 10,
+            lines_covered: 5,
+            branches_total: 0,
+            branches_covered: 0,
+            functions_total: 1,
+            functions_covered: 1,
+        };
+        let debug = format!("{:?}", coverage);
+        assert!(debug.contains("debug_test.rs"));
+    }
+
+    #[test]
+    fn test_coverage_report_clone() {
+        let mut report = CoverageReport::new();
+        report.add_file(FileCoverage {
+            path: "clone_test.rs".to_string(),
+            lines_total: 20,
+            lines_covered: 15,
+            branches_total: 0,
+            branches_covered: 0,
+            functions_total: 2,
+            functions_covered: 2,
+        });
+        let cloned = report.clone();
+        assert_eq!(cloned.total_lines, 20);
+        assert!(cloned.files.contains_key("clone_test.rs"));
+    }
+
+    #[test]
+    fn test_coverage_report_debug() {
+        let report = CoverageReport::new();
+        let debug = format!("{:?}", report);
+        assert!(debug.contains("CoverageReport"));
+    }
+
+    #[test]
+    fn test_coverage_class_high() {
+        let class = HtmlReportGenerator::coverage_class(85.0);
+        assert_eq!(class, "high");
+    }
+
+    #[test]
+    fn test_coverage_class_medium() {
+        let class = HtmlReportGenerator::coverage_class(70.0);
+        assert_eq!(class, "medium");
+    }
+
+    #[test]
+    fn test_coverage_class_low() {
+        let class = HtmlReportGenerator::coverage_class(50.0);
+        assert_eq!(class, "low");
+    }
+
+    #[test]
+    fn test_html_report_multiple_files() -> Result<(), Box<dyn std::error::Error>> {
+        let mut report = CoverageReport::new();
+        for i in 0..3 {
+            let file_coverage = FileCoverage {
+                path: format!("src/file{i}.rs"),
+                lines_total: 50 + i * 10,
+                lines_covered: 40 + i * 8,
+                branches_total: 10,
+                branches_covered: 8,
+                functions_total: 5,
+                functions_covered: 4,
+            };
+            report.add_file(file_coverage);
+        }
+        let html = HtmlReportGenerator::generate_html(&report)?;
+        assert!(html.contains("src/file0.rs"));
+        assert!(html.contains("src/file1.rs"));
+        assert!(html.contains("src/file2.rs"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_html_generator_generate() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = tempfile::tempdir()?;
+        let generator = HtmlReportGenerator::new(temp_dir.path());
+
+        let mut report = CoverageReport::new();
+        report.add_file(FileCoverage {
+            path: "test.rs".to_string(),
+            lines_total: 100,
+            lines_covered: 80,
+            branches_total: 0,
+            branches_covered: 0,
+            functions_total: 10,
+            functions_covered: 9,
+        });
+
+        generator.generate(&report)?;
+
+        let output_path = temp_dir.path().join("coverage.html");
+        assert!(output_path.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn test_coverage_collector_is_available_llvm() {
+        let collector = CoverageCollector::new(CoverageTool::LlvmCov);
+        // Just verify the method runs without panic
+        let _ = collector.is_available();
+    }
+
+    #[test]
+    fn test_coverage_collector_is_available_grcov() {
+        let collector = CoverageCollector::new(CoverageTool::Grcov);
+        // Just verify the method runs without panic
+        let _ = collector.is_available();
+    }
 }
 #[cfg(test)]
 mod property_tests_coverage {

@@ -4874,7 +4874,9 @@ pub fn handle_mutations_command(
                 let parts: Vec<&str> = l.split_whitespace().collect();
                 let total_idx = parts.iter().position(|&p| p == "mutants")?;
                 let total: f64 = parts.get(total_idx - 1)?.parse().ok()?;
-                let caught_idx = parts.iter().position(|&p| p == "caught" || p == "caught,")?;
+                let caught_idx = parts
+                    .iter()
+                    .position(|&p| p == "caught" || p == "caught,")?;
                 let caught: f64 = parts.get(caught_idx - 1)?.parse().ok()?;
                 Some((caught, total))
             });

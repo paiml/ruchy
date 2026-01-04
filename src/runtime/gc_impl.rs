@@ -486,6 +486,274 @@ mod tests {
         assert!(info.auto_collect_enabled);
     }
 
-    // Property tests would go here with proptest
-    // But keeping it simple for now
+    // COVERAGE-95: Additional tests for complete coverage
+
+    #[test]
+    fn test_gc_default() {
+        let gc = ConservativeGC::default();
+        assert_eq!(gc.collections_performed, 0);
+        assert_eq!(gc.tracked_objects.len(), 0);
+    }
+
+    #[test]
+    fn test_force_collect() {
+        let mut gc = ConservativeGC::new();
+        gc.track_object(Value::Integer(1));
+        gc.track_object(Value::Integer(2));
+
+        let stats = gc.force_collect();
+        assert_eq!(stats.collections, 1);
+        assert_eq!(stats.current_objects, 2); // Conservative GC keeps all
+    }
+
+    #[test]
+    fn test_estimate_object_size_byte() {
+        assert_eq!(ConservativeGC::estimate_object_size(&Value::Byte(255)), 1);
+    }
+
+    #[test]
+    fn test_estimate_object_size_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let size = ConservativeGC::estimate_object_size(&arr);
+        // 24 + 2*8 + 8 + 8 = 24 + 16 + 16 = 56
+        assert!(size > 24);
+    }
+
+    #[test]
+    fn test_estimate_object_size_tuple() {
+        let tuple = Value::Tuple(vec![Value::Integer(1), Value::Bool(true)].into());
+        let size = ConservativeGC::estimate_object_size(&tuple);
+        assert!(size > 24);
+    }
+
+    #[test]
+    fn test_estimate_object_size_closure() {
+        use std::sync::Arc;
+        use std::rc::Rc;
+        use std::cell::RefCell;
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let closure = Value::Closure {
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
+            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            env: Rc::new(RefCell::new(std::collections::HashMap::new())),
+        };
+        let size = ConservativeGC::estimate_object_size(&closure);
+        assert!(size >= 48);
+    }
+
+    #[test]
+    fn test_estimate_object_size_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        assert_eq!(ConservativeGC::estimate_object_size(&range), 24);
+    }
+
+    #[test]
+    fn test_estimate_object_size_enum_variant() {
+        let variant = Value::EnumVariant {
+            enum_name: "MyEnum".to_string(),
+            variant_name: "Variant".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        let size = ConservativeGC::estimate_object_size(&variant);
+        assert!(size > 24);
+    }
+
+    #[test]
+    fn test_estimate_object_size_enum_variant_no_data() {
+        let variant = Value::EnumVariant {
+            enum_name: "MyEnum".to_string(),
+            variant_name: "Empty".to_string(),
+            data: None,
+        };
+        let size = ConservativeGC::estimate_object_size(&variant);
+        assert!(size >= 24);
+    }
+
+    #[test]
+    fn test_estimate_object_size_builtin_function() {
+        let builtin = Value::BuiltinFunction("print".to_string());
+        let size = ConservativeGC::estimate_object_size(&builtin);
+        assert_eq!(size, 24 + 5);
+    }
+
+    #[test]
+    fn test_estimate_object_size_object() {
+        use std::sync::Arc;
+        let mut map = std::collections::HashMap::new();
+        map.insert("key".to_string(), Value::Integer(42));
+        let obj = Value::Object(Arc::new(map));
+        let size = ConservativeGC::estimate_object_size(&obj);
+        assert!(size > 48);
+    }
+
+    #[test]
+    fn test_estimate_object_size_object_mut() {
+        use std::sync::Mutex;
+        use std::sync::Arc;
+        let mut map = std::collections::HashMap::new();
+        map.insert("key".to_string(), Value::Integer(42));
+        let obj = Value::ObjectMut(Arc::new(Mutex::new(map)));
+        let size = ConservativeGC::estimate_object_size(&obj);
+        assert!(size > 56);
+    }
+
+    #[test]
+    fn test_estimate_object_size_struct() {
+        use std::sync::Arc;
+        let mut fields = std::collections::HashMap::new();
+        fields.insert("field1".to_string(), Value::Integer(1));
+        let s = Value::Struct {
+            name: "MyStruct".to_string(),
+            fields: Arc::new(fields),
+        };
+        let size = ConservativeGC::estimate_object_size(&s);
+        assert!(size > 48);
+    }
+
+    #[test]
+    fn test_estimate_object_size_class() {
+        use std::sync::{Arc, RwLock};
+        let fields = Arc::new(RwLock::new(std::collections::HashMap::new()));
+        let class = Value::Class {
+            class_name: "MyClass".to_string(),
+            fields,
+            methods: Arc::new(std::collections::HashMap::new()),
+        };
+        let size = ConservativeGC::estimate_object_size(&class);
+        assert!(size > 48);
+    }
+
+    #[test]
+    fn test_estimate_object_size_dataframe() {
+        use crate::runtime::DataFrameColumn;
+        let df = Value::DataFrame {
+            columns: vec![DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            }],
+        };
+        let size = ConservativeGC::estimate_object_size(&df);
+        assert!(size > 48);
+    }
+
+    #[test]
+    fn test_estimate_object_size_atom() {
+        let atom = Value::Atom("my_atom".to_string());
+        let size = ConservativeGC::estimate_object_size(&atom);
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_gc_track_multiple_objects() {
+        let mut gc = ConservativeGC::new();
+        gc.track_object(Value::Integer(1));
+        gc.track_object(Value::from_string("hello".to_string()));
+        gc.track_object(Value::Bool(true));
+        gc.track_object(Value::Float(3.14));
+
+        assert_eq!(gc.tracked_objects.len(), 4);
+        let stats = gc.get_stats();
+        assert!(stats.allocated_bytes > 0);
+    }
+
+    #[test]
+    fn test_gc_stats_clone() {
+        let stats = GCStats {
+            collections: 5,
+            objects_collected: 100,
+            current_objects: 50,
+            allocated_bytes: 1024,
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.collections, 5);
+        assert_eq!(cloned.objects_collected, 100);
+    }
+
+    #[test]
+    fn test_gc_info_clone() {
+        let info = GCInfo {
+            threshold: 1024,
+            auto_collect_enabled: true,
+            tracked_count: 10,
+        };
+        let cloned = info.clone();
+        assert_eq!(cloned.threshold, 1024);
+        assert!(cloned.auto_collect_enabled);
+    }
+
+    #[test]
+    fn test_gc_object_fields() {
+        let obj = GCObject {
+            id: 42,
+            size: 100,
+            marked: false,
+            generation: 0,
+            value: Value::Integer(99),
+        };
+        assert_eq!(obj.id, 42);
+        assert_eq!(obj.size, 100);
+        assert!(!obj.marked);
+        assert_eq!(obj.generation, 0);
+    }
+
+    #[test]
+    fn test_gc_object_clone() {
+        let obj = GCObject {
+            id: 1,
+            size: 8,
+            marked: true,
+            generation: 1,
+            value: Value::Integer(42),
+        };
+        let cloned = obj.clone();
+        assert_eq!(cloned.id, 1);
+        assert!(cloned.marked);
+    }
+
+    #[test]
+    fn test_gc_track_array_triggers_mark() {
+        let mut gc = ConservativeGC::new();
+        gc.track_object(Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()));
+        gc.collect();
+        let stats = gc.get_stats();
+        assert_eq!(stats.collections, 1);
+    }
+
+    #[test]
+    fn test_gc_track_tuple_triggers_mark() {
+        let mut gc = ConservativeGC::new();
+        gc.track_object(Value::Tuple(vec![Value::Integer(1), Value::Bool(true)].into()));
+        gc.collect();
+        let stats = gc.get_stats();
+        assert_eq!(stats.collections, 1);
+    }
+
+    #[test]
+    fn test_gc_auto_collect_trigger() {
+        let mut gc = ConservativeGC::new();
+        gc.set_collection_threshold(10); // Very low threshold
+        gc.set_auto_collect(true);
+
+        // Track large string to trigger collection
+        gc.track_object(Value::from_string("a".repeat(100)));
+
+        // Collection should have been triggered
+        let stats = gc.get_stats();
+        assert!(stats.collections > 0);
+    }
+
+    #[test]
+    fn test_gc_clone() {
+        let mut gc = ConservativeGC::new();
+        gc.track_object(Value::Integer(42));
+        gc.collect();
+
+        let cloned = gc.clone();
+        assert_eq!(cloned.collections_performed, gc.collections_performed);
+        assert_eq!(cloned.tracked_objects.len(), gc.tracked_objects.len());
+    }
 }

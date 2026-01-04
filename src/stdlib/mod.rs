@@ -47,7 +47,7 @@ pub mod aprender_bridge; // Pillar 4: ML Primitives
 pub mod presentar_bridge;
 pub mod trueno_bridge; // Pillar 1: SIMD Compute
 pub mod viz_bridge; // Pillar 5: Visualization // Pillar 6: WASM Widgets
-                                               // Pillar 3 (trueno-db) exposed via dataframe module
+                    // Pillar 3 (trueno-db) exposed via dataframe module
 
 // === Utility Modules ===
 pub mod env;

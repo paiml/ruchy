@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::time::Instant;
 /// Complete trace of a compilation
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompilationTrace {
     /// SHA256 hash of the source code
     pub source_hash: String,
@@ -27,7 +27,7 @@ pub struct CompilationMetadata {
     pub optimization_level: String,
 }
 /// A single transformation pass
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transformation {
     /// Name of the transformation pass
     pub pass: String,
@@ -41,7 +41,7 @@ pub struct Transformation {
     pub duration_ns: u64,
 }
 /// A single rule application
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     /// Name of the rule
     pub name: String,
@@ -376,6 +376,341 @@ mod tests {
         let point = divergence.unwrap();
         assert_eq!(point.stage, "transformation");
         assert_eq!(point.pass_index, 0);
+    }
+
+    // Additional coverage tests
+
+    #[test]
+    fn test_provenance_tracker_new() {
+        let tracker = ProvenanceTracker::new("test source");
+        let trace = tracker.finish();
+        assert!(!trace.source_hash.is_empty());
+        assert!(trace.transformations.is_empty());
+    }
+
+    #[test]
+    fn test_trace_differ_same_traces() {
+        let trace1 = CompilationTrace {
+            source_hash: "abc".to_string(),
+            transformations: vec![Transformation {
+                pass: "parse".to_string(),
+                input_hash: "in1".to_string(),
+                output_hash: "out1".to_string(),
+                rules_applied: vec![],
+                duration_ns: 1000,
+            }],
+            total_duration_ns: 2000,
+            metadata: CompilationMetadata {
+                ruchy_version: "1.0.0".to_string(),
+                rustc_version: "1.75.0".to_string(),
+                timestamp: "2024-01-01".to_string(),
+                deterministic_seed: 42,
+                optimization_level: "O2".to_string(),
+            },
+        };
+
+        let trace2 = trace1.clone();
+        let differ = TraceDiffer::new(trace1, trace2);
+        let divergence = differ.find_divergence();
+        assert!(divergence.is_none());
+    }
+
+    #[test]
+    fn test_trace_differ_different_source() {
+        let trace1 = CompilationTrace {
+            source_hash: "abc".to_string(),
+            transformations: vec![],
+            total_duration_ns: 1000,
+            metadata: CompilationMetadata {
+                ruchy_version: "1.0.0".to_string(),
+                rustc_version: "1.75.0".to_string(),
+                timestamp: "2024-01-01".to_string(),
+                deterministic_seed: 42,
+                optimization_level: "O2".to_string(),
+            },
+        };
+
+        let trace2 = CompilationTrace {
+            source_hash: "xyz".to_string(), // Different source
+            transformations: vec![],
+            total_duration_ns: 1000,
+            metadata: trace1.metadata.clone(),
+        };
+
+        let differ = TraceDiffer::new(trace1, trace2);
+        let divergence = differ.find_divergence();
+        assert!(divergence.is_some());
+        assert_eq!(divergence.unwrap().stage, "source");
+    }
+
+    #[test]
+    fn test_trace_differ_different_pass() {
+        let trace1 = CompilationTrace {
+            source_hash: "abc".to_string(),
+            transformations: vec![Transformation {
+                pass: "parse".to_string(),
+                input_hash: "in".to_string(),
+                output_hash: "out".to_string(),
+                rules_applied: vec![],
+                duration_ns: 1000,
+            }],
+            total_duration_ns: 2000,
+            metadata: CompilationMetadata {
+                ruchy_version: "1.0.0".to_string(),
+                rustc_version: "1.75.0".to_string(),
+                timestamp: "2024-01-01".to_string(),
+                deterministic_seed: 42,
+                optimization_level: "O2".to_string(),
+            },
+        };
+
+        let trace2 = CompilationTrace {
+            source_hash: "abc".to_string(),
+            transformations: vec![Transformation {
+                pass: "different_pass".to_string(), // Different pass name
+                input_hash: "in".to_string(),
+                output_hash: "out".to_string(),
+                rules_applied: vec![],
+                duration_ns: 1000,
+            }],
+            total_duration_ns: 2000,
+            metadata: trace1.metadata.clone(),
+        };
+
+        let differ = TraceDiffer::new(trace1, trace2);
+        let divergence = differ.find_divergence();
+        assert!(divergence.is_some());
+        let point = divergence.unwrap();
+        assert_eq!(point.stage, "transformation");
+        assert!(point.description.contains("Different pass"));
+    }
+
+    #[test]
+    fn test_source_span_creation() {
+        let span = SourceSpan {
+            file: Some("test.ruchy".to_string()),
+            line_start: 1,
+            line_end: 5,
+            column_start: 0,
+            column_end: 20,
+        };
+
+        assert_eq!(span.file, Some("test.ruchy".to_string()));
+        assert_eq!(span.line_start, 1);
+        assert_eq!(span.line_end, 5);
+        assert_eq!(span.column_start, 0);
+        assert_eq!(span.column_end, 20);
+    }
+
+    #[test]
+    fn test_source_span_no_file() {
+        let span = SourceSpan {
+            file: None,
+            line_start: 1,
+            line_end: 1,
+            column_start: 0,
+            column_end: 10,
+        };
+
+        assert!(span.file.is_none());
+    }
+
+    #[test]
+    fn test_rule_creation() {
+        let rule = Rule {
+            name: "test_rule".to_string(),
+            location: SourceSpan {
+                file: None,
+                line_start: 1,
+                line_end: 1,
+                column_start: 0,
+                column_end: 10,
+            },
+            before: "before_code".to_string(),
+            after: "after_code".to_string(),
+        };
+
+        assert_eq!(rule.name, "test_rule");
+        assert_eq!(rule.before, "before_code");
+        assert_eq!(rule.after, "after_code");
+    }
+
+    #[test]
+    fn test_transformation_creation() {
+        let transform = Transformation {
+            pass: "optimize".to_string(),
+            input_hash: "abc123".to_string(),
+            output_hash: "def456".to_string(),
+            rules_applied: vec![
+                Rule {
+                    name: "rule1".to_string(),
+                    location: SourceSpan {
+                        file: None,
+                        line_start: 1,
+                        line_end: 1,
+                        column_start: 0,
+                        column_end: 5,
+                    },
+                    before: "x".to_string(),
+                    after: "y".to_string(),
+                },
+                Rule {
+                    name: "rule2".to_string(),
+                    location: SourceSpan {
+                        file: None,
+                        line_start: 2,
+                        line_end: 2,
+                        column_start: 0,
+                        column_end: 5,
+                    },
+                    before: "a".to_string(),
+                    after: "b".to_string(),
+                },
+            ],
+            duration_ns: 5000,
+        };
+
+        assert_eq!(transform.pass, "optimize");
+        assert_eq!(transform.rules_applied.len(), 2);
+        assert_eq!(transform.duration_ns, 5000);
+    }
+
+    #[test]
+    fn test_compilation_metadata_creation() {
+        let metadata = CompilationMetadata {
+            ruchy_version: "0.1.0".to_string(),
+            rustc_version: "1.75.0".to_string(),
+            timestamp: "2024-12-15T00:00:00Z".to_string(),
+            deterministic_seed: 12345,
+            optimization_level: "O3".to_string(),
+        };
+
+        assert_eq!(metadata.ruchy_version, "0.1.0");
+        assert_eq!(metadata.deterministic_seed, 12345);
+        assert_eq!(metadata.optimization_level, "O3");
+    }
+
+    #[test]
+    fn test_compilation_trace_serialization() {
+        let trace = CompilationTrace {
+            source_hash: "abc".to_string(),
+            transformations: vec![],
+            total_duration_ns: 1000,
+            metadata: CompilationMetadata {
+                ruchy_version: "1.0.0".to_string(),
+                rustc_version: "1.75.0".to_string(),
+                timestamp: "2024-01-01".to_string(),
+                deterministic_seed: 42,
+                optimization_level: "O2".to_string(),
+            },
+        };
+
+        let json = serde_json::to_string(&trace).expect("serialize");
+        assert!(json.contains("source_hash"));
+        assert!(json.contains("abc"));
+
+        let deserialized: CompilationTrace =
+            serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(deserialized.source_hash, trace.source_hash);
+    }
+
+    #[test]
+    fn test_divergence_point_debug() {
+        let point = DivergencePoint {
+            stage: "parse".to_string(),
+            pass_index: 2,
+            description: "Output mismatch".to_string(),
+        };
+
+        let debug = format!("{:?}", point);
+        assert!(debug.contains("DivergencePoint"));
+        assert!(debug.contains("parse"));
+    }
+
+    #[test]
+    fn test_provenance_tracker_multiple_passes() {
+        let mut tracker = ProvenanceTracker::new("code");
+
+        tracker.begin_pass("pass1", "input1");
+        tracker.end_pass("output1");
+
+        tracker.begin_pass("pass2", "input2");
+        tracker.end_pass("output2");
+
+        tracker.begin_pass("pass3", "input3");
+        tracker.end_pass("output3");
+
+        let trace = tracker.finish();
+        assert_eq!(trace.transformations.len(), 3);
+        assert_eq!(trace.transformations[0].pass, "pass1");
+        assert_eq!(trace.transformations[1].pass, "pass2");
+        assert_eq!(trace.transformations[2].pass, "pass3");
+    }
+
+    #[test]
+    fn test_provenance_tracker_unfinished_pass() {
+        let mut tracker = ProvenanceTracker::new("code");
+
+        tracker.begin_pass("pass1", "input1");
+        // Don't call end_pass
+
+        let trace = tracker.finish();
+        // Unfinished pass should still be included
+        assert_eq!(trace.transformations.len(), 1);
+        assert_eq!(trace.transformations[0].output_hash, "incomplete");
+    }
+
+    #[test]
+    fn test_hash_deterministic() {
+        let source = "let x = 42";
+        let tracker1 = ProvenanceTracker::new(source);
+        let tracker2 = ProvenanceTracker::new(source);
+
+        let trace1 = tracker1.finish();
+        let trace2 = tracker2.finish();
+
+        assert_eq!(trace1.source_hash, trace2.source_hash);
+    }
+
+    #[test]
+    fn test_hash_different_inputs() {
+        let tracker1 = ProvenanceTracker::new("code1");
+        let tracker2 = ProvenanceTracker::new("code2");
+
+        let trace1 = tracker1.finish();
+        let trace2 = tracker2.finish();
+
+        assert_ne!(trace1.source_hash, trace2.source_hash);
+    }
+
+    #[test]
+    fn test_source_span_clone() {
+        let span = SourceSpan {
+            file: Some("test.ruchy".to_string()),
+            line_start: 1,
+            line_end: 5,
+            column_start: 0,
+            column_end: 20,
+        };
+
+        let cloned = span.clone();
+        assert_eq!(span.file, cloned.file);
+        assert_eq!(span.line_start, cloned.line_start);
+    }
+
+    #[test]
+    fn test_compilation_metadata_clone() {
+        let metadata = CompilationMetadata {
+            ruchy_version: "0.1.0".to_string(),
+            rustc_version: "1.75.0".to_string(),
+            timestamp: "2024-12-15".to_string(),
+            deterministic_seed: 42,
+            optimization_level: "O2".to_string(),
+        };
+
+        let cloned = metadata.clone();
+        assert_eq!(metadata.ruchy_version, cloned.ruchy_version);
+        assert_eq!(metadata.deterministic_seed, cloned.deterministic_seed);
     }
 }
 #[cfg(test)]

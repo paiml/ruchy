@@ -126,10 +126,7 @@ mod tests {
     #[test]
     fn test_sarif_with_errors() {
         let mut report = TranspileReport::new(100, 85, 15);
-        report.add_error(
-            ErrorEntry::new("E0308", 2)
-                .with_sample("mismatched types: expected i32"),
-        );
+        report.add_error(ErrorEntry::new("E0308", 2).with_sample("mismatched types: expected i32"));
 
         let fmt = SarifFormatter;
         let output = fmt.format(&report);

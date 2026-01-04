@@ -63,7 +63,12 @@ fn test_oracle_004_auto_train_reports_completion() {
         .timeout(std::time::Duration::from_secs(30))
         .assert()
         .success()
-        .stdout(predicate::str::contains("complete").or(predicate::str::contains("Complete")).or(predicate::str::contains("done")).or(predicate::str::contains("Done")));
+        .stdout(
+            predicate::str::contains("complete")
+                .or(predicate::str::contains("Complete"))
+                .or(predicate::str::contains("done"))
+                .or(predicate::str::contains("Done")),
+        );
 }
 
 /// Test that --max-iterations requires a value
@@ -98,7 +103,15 @@ fn test_oracle_004_max_iterations_zero() {
 #[test]
 fn test_oracle_004_auto_train_json_format() {
     ruchy_cmd()
-        .args(["oracle", "train", "--auto-train", "--max-iterations", "2", "--format", "json"])
+        .args([
+            "oracle",
+            "train",
+            "--auto-train",
+            "--max-iterations",
+            "2",
+            "--format",
+            "json",
+        ])
         .timeout(std::time::Duration::from_secs(30))
         .assert()
         .success()
@@ -113,7 +126,14 @@ fn test_oracle_004_auto_train_json_format() {
 #[test]
 fn test_oracle_004_auto_train_uses_curriculum() {
     ruchy_cmd()
-        .args(["oracle", "train", "--auto-train", "--max-iterations", "5", "--verbose"])
+        .args([
+            "oracle",
+            "train",
+            "--auto-train",
+            "--max-iterations",
+            "5",
+            "--verbose",
+        ])
         .timeout(std::time::Duration::from_secs(60))
         .assert()
         .success();

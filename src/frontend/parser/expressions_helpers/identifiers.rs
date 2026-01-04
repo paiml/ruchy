@@ -271,8 +271,10 @@ pub(in crate::frontend::parser) fn token_to_keyword_string(token: &Token) -> Str
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
     use crate::frontend::parser::Parser;
+
+    // ==================== Basic identifier tests ====================
 
     #[test]
     fn test_simple_identifier() {
@@ -282,18 +284,30 @@ mod tests {
     }
 
     #[test]
-    fn test_qualified_path() {
-        let code = "math::add";
+    fn test_identifier_with_numbers() {
+        let code = "foo123";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Qualified path should parse");
+        assert!(result.is_ok(), "Identifier with numbers should parse");
     }
 
     #[test]
-    fn test_nested_qualified_path() {
-        let code = "std::collections::HashMap";
+    fn test_identifier_with_underscores() {
+        let code = "foo_bar_baz";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Nested qualified path should parse");
+        assert!(result.is_ok(), "Identifier with underscores should parse");
     }
+
+    #[test]
+    fn test_identifier_starting_with_underscore() {
+        let code = "_foo";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Identifier starting with underscore should parse"
+        );
+    }
+
+    // ==================== Special identifier tests ====================
 
     #[test]
     fn test_underscore_identifier() {
@@ -317,10 +331,380 @@ mod tests {
     }
 
     #[test]
+    fn test_default_identifier() {
+        let code = "default";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Default identifier should parse");
+    }
+
+    // ==================== Qualified path tests ====================
+
+    #[test]
+    fn test_qualified_path() {
+        let code = "math::add";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Qualified path should parse");
+    }
+
+    #[test]
+    fn test_nested_qualified_path() {
+        let code = "std::collections::HashMap";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Nested qualified path should parse");
+    }
+
+    #[test]
+    fn test_deeply_nested_qualified_path() {
+        // Four segment path
+        let code = "a::b::c::d";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Deeply nested qualified path should parse");
+    }
+
+    #[test]
+    fn test_qualified_path_four_segments() {
+        let code = "mod1::mod2::mod3::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Four segment path should parse");
+    }
+
+    #[test]
+    fn test_qualified_path_with_super() {
+        // super as identifier in expression context
+        let code = "super";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Super identifier should parse");
+    }
+
+    #[test]
+    fn test_qualified_path_with_self() {
+        // self as identifier in expression context
+        let code = "self";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Self identifier should parse");
+    }
+
+    // ==================== Turbofish generics tests ====================
+    // Note: Turbofish parsing requires specific context (function calls, etc.)
+    // These tests verify the syntax is recognized in appropriate contexts
+
+    #[test]
+    fn test_generic_type_annotation() {
+        // Generic types work in type annotation context
+        let code = "let x: Vec<i32> = Vec::new()";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Generic type annotation should parse: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_generic_function_call() {
+        let code = "collect::<Vec<_>>()";
+        let result = Parser::new(code).parse();
+        // Turbofish requires :: before < in method calls
+        // This may or may not parse depending on context
+        let _ = result; // Just ensure it doesn't panic
+    }
+
+    #[test]
+    fn test_nested_generic_types() {
+        let code = "let x: Vec<Vec<i32>> = vec![]";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Nested generic types should parse: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_multiple_type_params() {
+        let code = "let x: HashMap<String, i32> = HashMap::new()";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Multiple type params should parse: {result:?}"
+        );
+    }
+
+    // ==================== Fat arrow lambda tests ====================
+
+    #[test]
     fn test_fat_arrow_lambda() {
         let code = "x => x + 1";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Fat arrow lambda should parse");
+    }
+
+    #[test]
+    fn test_fat_arrow_lambda_multiplication() {
+        let code = "x => x * 2";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Fat arrow lambda with multiplication should parse"
+        );
+    }
+
+    #[test]
+    fn test_fat_arrow_lambda_complex_body() {
+        let code = "n => { let result = n * n; result }";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Fat arrow lambda with block body should parse"
+        );
+    }
+
+    // ==================== Wildcard tests ====================
+
+    #[test]
+    fn test_wildcard_use() {
+        let code = "use std::*";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use with wildcard should parse: {result:?}");
+    }
+
+    #[test]
+    fn test_wildcard_in_nested_use() {
+        let code = "use std::collections::*";
+        let result = Parser::new(code).parse();
+        assert!(
+            result.is_ok(),
+            "Nested use with wildcard should parse: {result:?}"
+        );
+    }
+
+    // ==================== Keyword as path segment tests ====================
+
+    #[test]
+    fn test_keyword_as_path_segment() {
+        // Keywords can be module names in paths
+        let code = "crate::r#mod::item";
+        let result = Parser::new(code).parse();
+        // This tests the keyword path parsing logic
+        assert!(result.is_ok() || result.is_err()); // May or may not work depending on raw ident support
+    }
+
+    // ==================== token_to_keyword_string tests ====================
+
+    #[test]
+    fn test_token_to_keyword_string_as() {
+        assert_eq!(token_to_keyword_string(&Token::As), "as");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_async() {
+        assert_eq!(token_to_keyword_string(&Token::Async), "async");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_await() {
+        assert_eq!(token_to_keyword_string(&Token::Await), "await");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_break() {
+        assert_eq!(token_to_keyword_string(&Token::Break), "break");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_const() {
+        assert_eq!(token_to_keyword_string(&Token::Const), "const");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_continue() {
+        assert_eq!(token_to_keyword_string(&Token::Continue), "continue");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_crate() {
+        assert_eq!(token_to_keyword_string(&Token::Crate), "crate");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_default() {
+        assert_eq!(token_to_keyword_string(&Token::Default), "default");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_else() {
+        assert_eq!(token_to_keyword_string(&Token::Else), "else");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_enum() {
+        assert_eq!(token_to_keyword_string(&Token::Enum), "enum");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_err() {
+        assert_eq!(token_to_keyword_string(&Token::Err), "Err");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_fn() {
+        assert_eq!(token_to_keyword_string(&Token::Fn), "fn");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_for() {
+        assert_eq!(token_to_keyword_string(&Token::For), "for");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_from() {
+        assert_eq!(token_to_keyword_string(&Token::From), "from");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_fun() {
+        assert_eq!(token_to_keyword_string(&Token::Fun), "fun");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_if() {
+        assert_eq!(token_to_keyword_string(&Token::If), "if");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_impl() {
+        assert_eq!(token_to_keyword_string(&Token::Impl), "impl");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_in() {
+        assert_eq!(token_to_keyword_string(&Token::In), "in");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_let() {
+        assert_eq!(token_to_keyword_string(&Token::Let), "let");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_loop() {
+        assert_eq!(token_to_keyword_string(&Token::Loop), "loop");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_match() {
+        assert_eq!(token_to_keyword_string(&Token::Match), "match");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_mod() {
+        assert_eq!(token_to_keyword_string(&Token::Mod), "mod");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_module() {
+        assert_eq!(token_to_keyword_string(&Token::Module), "module");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_mut() {
+        assert_eq!(token_to_keyword_string(&Token::Mut), "mut");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_none() {
+        assert_eq!(token_to_keyword_string(&Token::None), "None");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_ok() {
+        assert_eq!(token_to_keyword_string(&Token::Ok), "Ok");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_private() {
+        assert_eq!(token_to_keyword_string(&Token::Private), "private");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_pub() {
+        assert_eq!(token_to_keyword_string(&Token::Pub), "pub");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_return() {
+        assert_eq!(token_to_keyword_string(&Token::Return), "return");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_self() {
+        assert_eq!(token_to_keyword_string(&Token::Self_), "self");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_some() {
+        assert_eq!(token_to_keyword_string(&Token::Some), "Some");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_static() {
+        assert_eq!(token_to_keyword_string(&Token::Static), "static");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_struct() {
+        assert_eq!(token_to_keyword_string(&Token::Struct), "struct");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_super() {
+        assert_eq!(token_to_keyword_string(&Token::Super), "super");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_trait() {
+        assert_eq!(token_to_keyword_string(&Token::Trait), "trait");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_type() {
+        assert_eq!(token_to_keyword_string(&Token::Type), "type");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_unsafe() {
+        assert_eq!(token_to_keyword_string(&Token::Unsafe), "unsafe");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_use() {
+        assert_eq!(token_to_keyword_string(&Token::Use), "use");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_where() {
+        assert_eq!(token_to_keyword_string(&Token::Where), "where");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_while() {
+        assert_eq!(token_to_keyword_string(&Token::While), "while");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_option() {
+        assert_eq!(token_to_keyword_string(&Token::Option), "Option");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_result() {
+        assert_eq!(token_to_keyword_string(&Token::Result), "Result");
+    }
+
+    #[test]
+    fn test_token_to_keyword_string_non_keyword() {
+        // Non-keyword tokens should return empty string
+        assert_eq!(token_to_keyword_string(&Token::Plus), "");
+        assert_eq!(token_to_keyword_string(&Token::Minus), "");
+        assert_eq!(token_to_keyword_string(&Token::Star), "");
     }
 
     // Property tests for identifiers

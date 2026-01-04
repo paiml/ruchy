@@ -769,4 +769,451 @@ mod tests {
         let result = op_div(&mut state, 0);
         assert!(matches!(result, InstructionResult::Error(_)));
     }
+
+    // Additional coverage tests for COVERAGE-95%
+
+    #[test]
+    fn test_op_sub_integers() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(10));
+        state.stack.push(Value::Integer(3));
+
+        let result = op_sub(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Integer(7));
+    }
+
+    #[test]
+    fn test_op_sub_floats() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.5));
+        state.stack.push(Value::Float(3.5));
+
+        let result = op_sub(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(7.0));
+    }
+
+    #[test]
+    fn test_op_sub_mixed_int_float() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(10));
+        state.stack.push(Value::Float(3.0));
+
+        let result = op_sub(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(7.0));
+    }
+
+    #[test]
+    fn test_op_sub_mixed_float_int() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.0));
+        state.stack.push(Value::Integer(3));
+
+        let result = op_sub(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(7.0));
+    }
+
+    #[test]
+    fn test_op_mul_integers() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(6));
+        state.stack.push(Value::Integer(7));
+
+        let result = op_mul(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Integer(42));
+    }
+
+    #[test]
+    fn test_op_mul_floats() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(3.0));
+        state.stack.push(Value::Float(4.0));
+
+        let result = op_mul(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(12.0));
+    }
+
+    #[test]
+    fn test_op_mul_mixed() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(5));
+        state.stack.push(Value::Float(2.5));
+
+        let result = op_mul(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(12.5));
+    }
+
+    #[test]
+    fn test_op_div_integers() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(42));
+        state.stack.push(Value::Integer(6));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Integer(7));
+    }
+
+    #[test]
+    fn test_op_div_floats() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.0));
+        state.stack.push(Value::Float(4.0));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_op_div_by_zero_float() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.0));
+        state.stack.push(Value::Float(0.0));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_div_mixed_int_float() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(10));
+        state.stack.push(Value::Float(4.0));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_op_div_mixed_int_float_by_zero() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(10));
+        state.stack.push(Value::Float(0.0));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_div_mixed_float_int() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.0));
+        state.stack.push(Value::Integer(4));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_op_div_mixed_float_int_by_zero() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(10.0));
+        state.stack.push(Value::Integer(0));
+
+        let result = op_div(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_add_floats() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(1.5));
+        state.stack.push(Value::Float(2.5));
+
+        let result = op_add(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_op_add_mixed_int_float() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(1));
+        state.stack.push(Value::Float(2.5));
+
+        let result = op_add(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(3.5));
+    }
+
+    #[test]
+    fn test_op_add_mixed_float_int() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Float(2.5));
+        state.stack.push(Value::Integer(1));
+
+        let result = op_add(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Continue));
+        assert_eq!(state.stack[0], Value::Float(3.5));
+    }
+
+    #[test]
+    fn test_op_add_invalid_types() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::from_string("hello".to_string()));
+        state.stack.push(Value::Integer(5));
+
+        let result = op_add(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_jump() {
+        let mut state = InterpreterState::new();
+        let result = op_jump(&mut state, 42);
+        assert!(matches!(result, InstructionResult::Jump(42)));
+    }
+
+    #[test]
+    fn test_op_jump_if_false_with_false() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Bool(false));
+
+        let result = op_jump_if_false(&mut state, 10);
+        assert!(matches!(result, InstructionResult::Jump(10)));
+    }
+
+    #[test]
+    fn test_op_jump_if_false_with_nil() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Nil);
+
+        let result = op_jump_if_false(&mut state, 10);
+        assert!(matches!(result, InstructionResult::Jump(10)));
+    }
+
+    #[test]
+    fn test_op_jump_if_false_with_true() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Bool(true));
+
+        let result = op_jump_if_false(&mut state, 10);
+        assert!(matches!(result, InstructionResult::Continue));
+    }
+
+    #[test]
+    fn test_op_jump_if_false_with_integer() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(42));
+
+        let result = op_jump_if_false(&mut state, 10);
+        assert!(matches!(result, InstructionResult::Continue));
+    }
+
+    #[test]
+    fn test_op_jump_if_false_empty_stack() {
+        let mut state = InterpreterState::new();
+        let result = op_jump_if_false(&mut state, 10);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_load_const_invalid_index() {
+        let mut state = InterpreterState::new();
+        let result = op_load_const(&mut state, 999);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_load_var() {
+        let mut state = InterpreterState::new();
+        let result = op_load_var(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_ast_fallback_with_string() {
+        let mut state = InterpreterState::new();
+        state.constants.push(Value::from_string("test_fallback".to_string()));
+
+        let result = op_ast_fallback(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_ast_fallback_invalid_index() {
+        let mut state = InterpreterState::new();
+        let result = op_ast_fallback(&mut state, 999);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_op_return_empty_stack() {
+        let mut state = InterpreterState::new();
+        let result = op_return(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Return(Value::Nil)));
+    }
+
+    #[test]
+    fn test_binary_arithmetic_op_stack_underflow() {
+        let mut state = InterpreterState::new();
+        state.stack.push(Value::Integer(5)); // Only one value
+
+        let result = op_add(&mut state, 0);
+        assert!(matches!(result, InstructionResult::Error(_)));
+    }
+
+    #[test]
+    fn test_interpreter_default() {
+        let interpreter: DirectThreadedInterpreter = Default::default();
+        assert_eq!(interpreter.instruction_count(), 0);
+    }
+
+    #[test]
+    fn test_interpreter_state_default() {
+        let state: InterpreterState = Default::default();
+        assert!(state.stack.is_empty());
+        assert!(state.constants.is_empty());
+    }
+
+    #[test]
+    fn test_interpreter_clear() {
+        let mut interpreter = DirectThreadedInterpreter::new();
+        interpreter.add_instruction(op_load_nil, 0);
+        let _ = interpreter.add_constant(Value::Integer(42));
+        interpreter.clear();
+        assert_eq!(interpreter.instruction_count(), 0);
+        assert_eq!(interpreter.constants_count(), 0);
+    }
+
+    #[test]
+    fn test_threaded_instruction_debug() {
+        let instr = ThreadedInstruction {
+            handler: op_load_nil,
+            operand: 42,
+        };
+        let debug_str = format!("{:?}", instr);
+        assert!(debug_str.contains("operand: 42"));
+    }
+
+    #[test]
+    fn test_instruction_result_clone() {
+        let result = InstructionResult::Continue;
+        let cloned = result.clone();
+        assert!(matches!(cloned, InstructionResult::Continue));
+
+        let result = InstructionResult::Jump(10);
+        let cloned = result.clone();
+        assert!(matches!(cloned, InstructionResult::Jump(10)));
+
+        let result = InstructionResult::Return(Value::Integer(42));
+        let cloned = result.clone();
+        assert!(matches!(cloned, InstructionResult::Return(Value::Integer(42))));
+    }
+
+    #[test]
+    fn test_literal_to_value_string() {
+        let interpreter = DirectThreadedInterpreter::new();
+        let result = interpreter.literal_to_value(&Literal::String("hello".to_string()));
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_literal_to_value_char() {
+        let interpreter = DirectThreadedInterpreter::new();
+        let result = interpreter.literal_to_value(&Literal::Char('x'));
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_literal_to_value_byte() {
+        let interpreter = DirectThreadedInterpreter::new();
+        let result = interpreter.literal_to_value(&Literal::Byte(255));
+        assert_eq!(result, Value::Byte(255));
+    }
+
+    #[test]
+    fn test_literal_to_value_atom() {
+        let interpreter = DirectThreadedInterpreter::new();
+        let result = interpreter.literal_to_value(&Literal::Atom("ok".to_string()));
+        assert_eq!(result, Value::Atom("ok".to_string()));
+    }
+
+    #[test]
+    fn test_compile_and_execute_integer_literal() {
+        use crate::frontend::ast::Span;
+
+        let mut interpreter = DirectThreadedInterpreter::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+
+        interpreter.compile(&expr).expect("Compilation should succeed");
+        let result = interpreter.execute().expect("Execution should succeed");
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_compile_and_execute_nil_literal() {
+        use crate::frontend::ast::Span;
+
+        let mut interpreter = DirectThreadedInterpreter::new();
+        let expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::new(0, 2));
+
+        interpreter.compile(&expr).expect("Compilation should succeed");
+        let result = interpreter.execute().expect("Execution should succeed");
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_compile_identifier() {
+        use crate::frontend::ast::Span;
+
+        let mut interpreter = DirectThreadedInterpreter::new();
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 1));
+
+        interpreter.compile(&expr).expect("Compilation should succeed");
+        // Execution will error because variable lookup isn't implemented
+        let result = interpreter.execute();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_empty_code() {
+        let mut interpreter = DirectThreadedInterpreter::new();
+        let result = interpreter.execute();
+        // Empty code should error with PC out of bounds
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_with_state() {
+        let mut interpreter = DirectThreadedInterpreter::new();
+        interpreter.add_instruction(op_load_nil, 0);
+        interpreter.add_instruction(op_return, 0);
+
+        let mut state = InterpreterState::new();
+        let result = interpreter.execute_with_state(&mut state);
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_execute_with_state_jump_out_of_bounds() {
+        let mut interpreter = DirectThreadedInterpreter::new();
+        interpreter.add_instruction(op_jump, 999);
+
+        let mut state = InterpreterState::new();
+        let result = interpreter.execute_with_state(&mut state);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_multiple_constants() {
+        let mut interpreter = DirectThreadedInterpreter::new();
+        let idx1 = interpreter.add_constant(Value::Integer(1));
+        let idx2 = interpreter.add_constant(Value::Integer(2));
+        let idx3 = interpreter.add_constant(Value::Integer(3));
+
+        assert_eq!(idx1, 0);
+        assert_eq!(idx2, 1);
+        assert_eq!(idx3, 2);
+        assert_eq!(interpreter.constants_count(), 3);
+    }
 }

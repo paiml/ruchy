@@ -82,7 +82,9 @@ mod andon_tui {
         let history = vec![0.5, 0.5, 0.5, 0.5];
         let sparkline = render_sparkline(&history, 4);
         // All same height when flat
-        assert!(sparkline.chars().all(|c| c == sparkline.chars().next().unwrap()));
+        assert!(sparkline
+            .chars()
+            .all(|c| c == sparkline.chars().next().unwrap()));
     }
 
     #[test]
@@ -232,8 +234,8 @@ mod curriculum_learning {
 
 mod knowledge_distillation {
     use ruchy::oracle::{
-        DistillationConfig, ErrorCategory, KnowledgeDistiller, RuchyOracle, Sample, SoftLabel,
-        SampleSource,
+        DistillationConfig, ErrorCategory, KnowledgeDistiller, RuchyOracle, Sample, SampleSource,
+        SoftLabel,
     };
 
     #[test]
@@ -296,12 +298,10 @@ mod knowledge_distillation {
             confidence_threshold: 0.99, // Very high threshold
         });
 
-        let samples = vec![Sample::new(
-            "unknown error pattern xyz",
-            None,
-            ErrorCategory::Other,
-        )
-        .with_source(SampleSource::Synthetic)];
+        let samples = vec![
+            Sample::new("unknown error pattern xyz", None, ErrorCategory::Other)
+                .with_source(SampleSource::Synthetic),
+        ];
 
         let soft_labels = distiller.distill(&oracle, &samples);
         // Low confidence predictions should be filtered
@@ -310,8 +310,7 @@ mod knowledge_distillation {
 
     #[test]
     fn test_soft_label_structure() {
-        let sample =
-            Sample::new("test", Some("E0308".into()), ErrorCategory::TypeMismatch);
+        let sample = Sample::new("test", Some("E0308".into()), ErrorCategory::TypeMismatch);
         let soft_targets = vec![0.9, 0.05, 0.02, 0.01, 0.01, 0.005, 0.004, 0.001];
 
         let soft_label = SoftLabel::new(sample, soft_targets);
@@ -324,9 +323,7 @@ mod knowledge_distillation {
 // ============================================================================
 
 mod four_source_pipeline {
-    use ruchy::oracle::{
-        CorpusMergerWithProvenance, ErrorCategory, Sample, SampleSource,
-    };
+    use ruchy::oracle::{CorpusMergerWithProvenance, ErrorCategory, Sample, SampleSource};
 
     #[test]
     fn test_corpus_merger_new() {
@@ -556,10 +553,9 @@ mod unified_training_loop {
 
         // Simulate drift by recording many incorrect predictions
         for _ in 0..100 {
-            loop_runner.oracle_mut().record_result(
-                ErrorCategory::TypeMismatch,
-                ErrorCategory::BorrowChecker,
-            );
+            loop_runner
+                .oracle_mut()
+                .record_result(ErrorCategory::TypeMismatch, ErrorCategory::BorrowChecker);
         }
 
         let event = loop_runner.step();

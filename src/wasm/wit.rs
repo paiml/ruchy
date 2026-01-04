@@ -939,6 +939,966 @@ mod tests {
 }
 
 #[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    // WitType format tests
+    #[test]
+    fn test_format_wit_type_bool() {
+        let result = WitGenerator::format_wit_type(&WitType::Bool);
+        assert_eq!(result, "bool");
+    }
+
+    #[test]
+    fn test_format_wit_type_u8() {
+        let result = WitGenerator::format_wit_type(&WitType::U8);
+        assert_eq!(result, "u8");
+    }
+
+    #[test]
+    fn test_format_wit_type_u16() {
+        let result = WitGenerator::format_wit_type(&WitType::U16);
+        assert_eq!(result, "u16");
+    }
+
+    #[test]
+    fn test_format_wit_type_u32() {
+        let result = WitGenerator::format_wit_type(&WitType::U32);
+        assert_eq!(result, "u32");
+    }
+
+    #[test]
+    fn test_format_wit_type_u64() {
+        let result = WitGenerator::format_wit_type(&WitType::U64);
+        assert_eq!(result, "u64");
+    }
+
+    #[test]
+    fn test_format_wit_type_s8() {
+        let result = WitGenerator::format_wit_type(&WitType::S8);
+        assert_eq!(result, "s8");
+    }
+
+    #[test]
+    fn test_format_wit_type_s16() {
+        let result = WitGenerator::format_wit_type(&WitType::S16);
+        assert_eq!(result, "s16");
+    }
+
+    #[test]
+    fn test_format_wit_type_s32() {
+        let result = WitGenerator::format_wit_type(&WitType::S32);
+        assert_eq!(result, "s32");
+    }
+
+    #[test]
+    fn test_format_wit_type_s64() {
+        let result = WitGenerator::format_wit_type(&WitType::S64);
+        assert_eq!(result, "s64");
+    }
+
+    #[test]
+    fn test_format_wit_type_f32() {
+        let result = WitGenerator::format_wit_type(&WitType::F32);
+        assert_eq!(result, "f32");
+    }
+
+    #[test]
+    fn test_format_wit_type_f64() {
+        let result = WitGenerator::format_wit_type(&WitType::F64);
+        assert_eq!(result, "f64");
+    }
+
+    #[test]
+    fn test_format_wit_type_char() {
+        let result = WitGenerator::format_wit_type(&WitType::Char);
+        assert_eq!(result, "char");
+    }
+
+    #[test]
+    fn test_format_wit_type_string() {
+        let result = WitGenerator::format_wit_type(&WitType::String);
+        assert_eq!(result, "string");
+    }
+
+    #[test]
+    fn test_format_wit_type_named() {
+        let result = WitGenerator::format_wit_type(&WitType::Named("my-type".to_string()));
+        assert_eq!(result, "my-type");
+    }
+
+    #[test]
+    fn test_format_wit_type_list() {
+        let result = WitGenerator::format_wit_type(&WitType::List(Box::new(WitType::U32)));
+        assert_eq!(result, "list<u32>");
+    }
+
+    #[test]
+    fn test_format_wit_type_option() {
+        let result = WitGenerator::format_wit_type(&WitType::Option(Box::new(WitType::String)));
+        assert_eq!(result, "option<string>");
+    }
+
+    #[test]
+    fn test_format_wit_type_result_both() {
+        let result = WitGenerator::format_wit_type(&WitType::Result {
+            ok: Some(Box::new(WitType::U32)),
+            err: Some(Box::new(WitType::String)),
+        });
+        assert_eq!(result, "result<u32, string>");
+    }
+
+    #[test]
+    fn test_format_wit_type_result_ok_only() {
+        let result = WitGenerator::format_wit_type(&WitType::Result {
+            ok: Some(Box::new(WitType::Bool)),
+            err: None,
+        });
+        assert_eq!(result, "result<bool, _>");
+    }
+
+    #[test]
+    fn test_format_wit_type_result_err_only() {
+        let result = WitGenerator::format_wit_type(&WitType::Result {
+            ok: None,
+            err: Some(Box::new(WitType::String)),
+        });
+        assert_eq!(result, "result<_, string>");
+    }
+
+    #[test]
+    fn test_format_wit_type_result_neither() {
+        let result = WitGenerator::format_wit_type(&WitType::Result {
+            ok: None,
+            err: None,
+        });
+        assert_eq!(result, "result<_, _>");
+    }
+
+    #[test]
+    fn test_format_wit_type_tuple() {
+        let result = WitGenerator::format_wit_type(&WitType::Tuple(vec![
+            WitType::U32,
+            WitType::String,
+            WitType::Bool,
+        ]));
+        assert_eq!(result, "tuple<u32, string, bool>");
+    }
+
+    #[test]
+    fn test_format_wit_type_tuple_empty() {
+        let result = WitGenerator::format_wit_type(&WitType::Tuple(vec![]));
+        assert_eq!(result, "tuple<>");
+    }
+
+    #[test]
+    fn test_format_wit_type_nested() {
+        let result =
+            WitGenerator::format_wit_type(&WitType::List(Box::new(WitType::Option(Box::new(
+                WitType::Result {
+                    ok: Some(Box::new(WitType::U32)),
+                    err: Some(Box::new(WitType::String)),
+                },
+            )))));
+        assert_eq!(result, "list<option<result<u32, string>>>");
+    }
+
+    // TypeKind format tests
+    #[test]
+    fn test_format_type_definition_record() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "person".to_string(),
+            kind: TypeKind::Record(vec![
+                Field {
+                    name: "name".to_string(),
+                    field_type: WitType::String,
+                    documentation: Some("Person's name".to_string()),
+                },
+                Field {
+                    name: "age".to_string(),
+                    field_type: WitType::U32,
+                    documentation: None,
+                },
+            ]),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("record person"));
+        assert!(result.contains("name: string"));
+        assert!(result.contains("age: u32"));
+        assert!(result.contains("/// Person's name"));
+    }
+
+    #[test]
+    fn test_format_type_definition_variant() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "status".to_string(),
+            kind: TypeKind::Variant(vec![
+                VariantCase {
+                    name: "ok".to_string(),
+                    payload: Some(WitType::U32),
+                    documentation: Some("Success case".to_string()),
+                },
+                VariantCase {
+                    name: "error".to_string(),
+                    payload: None,
+                    documentation: None,
+                },
+            ]),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("variant status"));
+        assert!(result.contains("ok(u32)"));
+        assert!(result.contains("error,"));
+        assert!(result.contains("/// Success case"));
+    }
+
+    #[test]
+    fn test_format_type_definition_flags() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "permissions".to_string(),
+            kind: TypeKind::Flags(vec![
+                "read".to_string(),
+                "write".to_string(),
+                "execute".to_string(),
+            ]),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("flags permissions"));
+        assert!(result.contains("read,"));
+        assert!(result.contains("write,"));
+        assert!(result.contains("execute,"));
+    }
+
+    #[test]
+    fn test_format_type_definition_alias() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "my-string".to_string(),
+            kind: TypeKind::Alias(Box::new(WitType::String)),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert_eq!(result, "type my-string = string");
+    }
+
+    #[test]
+    fn test_format_type_definition_tuple() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "pair".to_string(),
+            kind: TypeKind::Tuple(vec![WitType::U32, WitType::String]),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("type pair"));
+    }
+
+    #[test]
+    fn test_format_type_definition_list() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "numbers".to_string(),
+            kind: TypeKind::List(Box::new(WitType::U32)),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("type numbers"));
+    }
+
+    #[test]
+    fn test_format_type_definition_option() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "maybe-string".to_string(),
+            kind: TypeKind::Option(Box::new(WitType::String)),
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("type maybe-string"));
+    }
+
+    #[test]
+    fn test_format_type_definition_result() {
+        let generator = WitGenerator::new();
+        let type_def = TypeDefinition {
+            name: "my-result".to_string(),
+            kind: TypeKind::Result {
+                ok: Some(Box::new(WitType::U32)),
+                err: Some(Box::new(WitType::String)),
+            },
+            documentation: None,
+        };
+        let result = generator.format_type_definition(&type_def);
+        assert!(result.contains("type my-result"));
+    }
+
+    // Function format tests
+    #[test]
+    fn test_format_function_with_params_and_return() {
+        let generator = WitGenerator::new();
+        let func = FunctionDefinition {
+            name: "greet".to_string(),
+            params: vec![
+                Parameter {
+                    name: "name".to_string(),
+                    param_type: WitType::String,
+                },
+                Parameter {
+                    name: "count".to_string(),
+                    param_type: WitType::U32,
+                },
+            ],
+            return_type: Some(WitType::String),
+            is_async: false,
+            documentation: None,
+        };
+        let result = generator.format_function(&func);
+        assert_eq!(result, "greet: func(name: string, count: u32) -> string;");
+    }
+
+    #[test]
+    fn test_format_function_no_params() {
+        let generator = WitGenerator::new();
+        let func = FunctionDefinition {
+            name: "get-time".to_string(),
+            params: vec![],
+            return_type: Some(WitType::U64),
+            is_async: false,
+            documentation: None,
+        };
+        let result = generator.format_function(&func);
+        assert_eq!(result, "get-time: func() -> u64;");
+    }
+
+    #[test]
+    fn test_format_function_no_return() {
+        let generator = WitGenerator::new();
+        let func = FunctionDefinition {
+            name: "log".to_string(),
+            params: vec![Parameter {
+                name: "msg".to_string(),
+                param_type: WitType::String,
+            }],
+            return_type: None,
+            is_async: false,
+            documentation: None,
+        };
+        let result = generator.format_function(&func);
+        assert_eq!(result, "log: func(msg: string);");
+    }
+
+    // World format tests
+    #[test]
+    fn test_format_world_with_imports_and_exports() {
+        let generator = WitGenerator::new();
+        let world = WorldDefinition {
+            name: "my-world".to_string(),
+            imports: vec![
+                WorldImport {
+                    name: "console".to_string(),
+                    interface: "wasi:cli/terminal".to_string(),
+                },
+                WorldImport {
+                    name: "fs".to_string(),
+                    interface: "wasi:filesystem/types".to_string(),
+                },
+            ],
+            exports: vec![WorldExport {
+                name: "handler".to_string(),
+                interface: "ruchy:component/handler".to_string(),
+            }],
+            documentation: Some("My world documentation".to_string()),
+        };
+        let result = generator.format_world(&world);
+        assert!(result.contains("/// My world documentation"));
+        assert!(result.contains("world my-world"));
+        assert!(result.contains("import console: wasi:cli/terminal"));
+        assert!(result.contains("import fs: wasi:filesystem/types"));
+        assert!(result.contains("export handler: ruchy:component/handler"));
+    }
+
+    #[test]
+    fn test_format_world_empty() {
+        let generator = WitGenerator::new();
+        let world = WorldDefinition {
+            name: "empty-world".to_string(),
+            imports: vec![],
+            exports: vec![],
+            documentation: None,
+        };
+        let result = generator.format_world(&world);
+        assert!(result.contains("world empty-world"));
+        assert!(!result.contains("///"));
+    }
+
+    // WIT file generation tests
+    #[test]
+    fn test_generate_wit_file_full() {
+        let generator = WitGenerator::new();
+        let interface = WitInterface {
+            name: "api".to_string(),
+            version: "2.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "myorg".to_string(),
+                name: "mypackage".to_string(),
+                version: "2.0.0".to_string(),
+            },
+            types: vec![TypeDefinition {
+                name: "request".to_string(),
+                kind: TypeKind::Record(vec![Field {
+                    name: "path".to_string(),
+                    field_type: WitType::String,
+                    documentation: Some("Request path".to_string()),
+                }]),
+                documentation: Some("HTTP request".to_string()),
+            }],
+            functions: vec![FunctionDefinition {
+                name: "handle".to_string(),
+                params: vec![Parameter {
+                    name: "req".to_string(),
+                    param_type: WitType::Named("request".to_string()),
+                }],
+                return_type: Some(WitType::String),
+                is_async: false,
+                documentation: Some("Handle request".to_string()),
+            }],
+            resources: vec![],
+            world: Some(WorldDefinition {
+                name: "http".to_string(),
+                imports: vec![],
+                exports: vec![],
+                documentation: None,
+            }),
+        };
+
+        let wit_content = generator.generate_wit_file(&interface);
+        assert!(wit_content.contains("package myorg:mypackage/api@2.0.0"));
+        assert!(wit_content.contains("interface api"));
+        assert!(wit_content.contains("/// HTTP request"));
+        assert!(wit_content.contains("record request"));
+        assert!(wit_content.contains("/// Request path"));
+        assert!(wit_content.contains("path: string"));
+        assert!(wit_content.contains("/// Handle request"));
+        assert!(wit_content.contains("handle: func(req: request) -> string"));
+        assert!(wit_content.contains("world http"));
+    }
+
+    #[test]
+    fn test_generate_wit_file_no_world() {
+        let generator = WitGenerator::new();
+        let interface = WitInterface {
+            name: "simple".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "test".to_string(),
+                name: "simple".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+
+        let wit_content = generator.generate_wit_file(&interface);
+        assert!(wit_content.contains("package test:simple/simple@1.0.0"));
+        assert!(wit_content.contains("interface simple"));
+        assert!(!wit_content.contains("world"));
+    }
+
+    // WitInterface Display trait test
+    #[test]
+    fn test_wit_interface_display() {
+        let interface = WitInterface {
+            name: "display-test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "test".to_string(),
+                name: "display".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+
+        let display = format!("{}", interface);
+        assert!(display.contains("package test:display/display-test@1.0.0"));
+        assert!(display.contains("interface display-test"));
+    }
+
+    // Generate methods tests
+    #[test]
+    fn test_generate_from_source() {
+        let mut generator = WitGenerator::new();
+        let result = generator.generate_from_source("fun main() {}");
+        assert!(result.is_ok());
+        let interface = result.unwrap();
+        assert_eq!(interface.name, "ruchy-component");
+        assert!(interface.types.len() > 0);
+        assert!(interface.functions.len() > 0);
+    }
+
+    #[test]
+    fn test_generate_from_component() {
+        use crate::wasm::component::{ComponentMetadata, WasmComponent};
+
+        let mut generator = WitGenerator::new();
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![],
+            imports: vec![],
+            exports: vec![],
+            metadata: ComponentMetadata::default(),
+            custom_sections: HashMap::new(),
+        };
+
+        let result = generator.generate_from_component(&component);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_generate() {
+        use crate::wasm::component::{ComponentMetadata, WasmComponent};
+
+        let mut generator = WitGenerator::new();
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![],
+            imports: vec![],
+            exports: vec![],
+            metadata: ComponentMetadata::default(),
+            custom_sections: HashMap::new(),
+        };
+
+        let result = generator.generate(&component);
+        assert!(result.is_ok());
+    }
+
+    // MethodKind tests
+    #[test]
+    fn test_method_kind_constructor() {
+        let kind = MethodKind::Constructor;
+        assert_eq!(kind, MethodKind::Constructor);
+    }
+
+    #[test]
+    fn test_method_kind_static() {
+        let kind = MethodKind::Static;
+        assert_eq!(kind, MethodKind::Static);
+    }
+
+    #[test]
+    fn test_method_kind_instance() {
+        let kind = MethodKind::Instance;
+        assert_eq!(kind, MethodKind::Instance);
+    }
+
+    #[test]
+    fn test_method_kind_clone() {
+        let kind = MethodKind::Constructor;
+        let cloned = kind.clone();
+        assert_eq!(kind, cloned);
+    }
+
+    #[test]
+    fn test_method_kind_debug() {
+        let kind = MethodKind::Instance;
+        let debug_str = format!("{:?}", kind);
+        assert!(debug_str.contains("Instance"));
+    }
+
+    // ResourceMethod test
+    #[test]
+    fn test_resource_method_creation() {
+        let method = ResourceMethod {
+            name: "get-value".to_string(),
+            kind: MethodKind::Instance,
+            function: FunctionDefinition {
+                name: "get-value".to_string(),
+                params: vec![],
+                return_type: Some(WitType::U32),
+                is_async: false,
+                documentation: None,
+            },
+        };
+
+        assert_eq!(method.name, "get-value");
+        assert_eq!(method.kind, MethodKind::Instance);
+        assert_eq!(method.function.name, "get-value");
+    }
+
+    // Field tests
+    #[test]
+    fn test_field_creation() {
+        let field = Field {
+            name: "my-field".to_string(),
+            field_type: WitType::U64,
+            documentation: Some("A numeric field".to_string()),
+        };
+
+        assert_eq!(field.name, "my-field");
+        assert!(matches!(field.field_type, WitType::U64));
+        assert_eq!(field.documentation, Some("A numeric field".to_string()));
+    }
+
+    #[test]
+    fn test_field_clone() {
+        let field = Field {
+            name: "test".to_string(),
+            field_type: WitType::Bool,
+            documentation: None,
+        };
+        let cloned = field.clone();
+        assert_eq!(field.name, cloned.name);
+    }
+
+    // VariantCase tests
+    #[test]
+    fn test_variant_case_with_payload() {
+        let case = VariantCase {
+            name: "some-value".to_string(),
+            payload: Some(WitType::String),
+            documentation: Some("Has a value".to_string()),
+        };
+
+        assert_eq!(case.name, "some-value");
+        assert!(case.payload.is_some());
+        assert_eq!(case.documentation, Some("Has a value".to_string()));
+    }
+
+    #[test]
+    fn test_variant_case_without_payload() {
+        let case = VariantCase {
+            name: "none".to_string(),
+            payload: None,
+            documentation: None,
+        };
+
+        assert_eq!(case.name, "none");
+        assert!(case.payload.is_none());
+    }
+
+    // WorldImport and WorldExport tests
+    #[test]
+    fn test_world_import_creation() {
+        let import = WorldImport {
+            name: "logger".to_string(),
+            interface: "wasi:logging/log".to_string(),
+        };
+
+        assert_eq!(import.name, "logger");
+        assert_eq!(import.interface, "wasi:logging/log");
+    }
+
+    #[test]
+    fn test_world_export_creation() {
+        let export = WorldExport {
+            name: "run".to_string(),
+            interface: "wasi:cli/run".to_string(),
+        };
+
+        assert_eq!(export.name, "run");
+        assert_eq!(export.interface, "wasi:cli/run");
+    }
+
+    // InterfaceDefinition test
+    #[test]
+    fn test_interface_definition_full() {
+        let iface = InterfaceDefinition {
+            name: "my-interface".to_string(),
+            functions: vec![InterfaceFunction {
+                name: "do-work".to_string(),
+                params: vec![("input".to_string(), "string".to_string())],
+                return_type: Some("u32".to_string()),
+            }],
+            types: vec![InterfaceType {
+                name: "my-type".to_string(),
+                definition: "record my-type {}".to_string(),
+            }],
+            documentation: Some("Interface documentation".to_string()),
+        };
+
+        assert_eq!(iface.name, "my-interface");
+        assert_eq!(iface.functions.len(), 1);
+        assert_eq!(iface.types.len(), 1);
+        assert_eq!(
+            iface.documentation,
+            Some("Interface documentation".to_string())
+        );
+    }
+
+    // InterfaceFunction with params test
+    #[test]
+    fn test_interface_function_with_params() {
+        let func = InterfaceFunction {
+            name: "transform".to_string(),
+            params: vec![
+                ("input".to_string(), "string".to_string()),
+                ("options".to_string(), "my-options".to_string()),
+            ],
+            return_type: Some("result".to_string()),
+        };
+
+        assert_eq!(func.name, "transform");
+        assert_eq!(func.params.len(), 2);
+        assert_eq!(func.params[0].0, "input");
+        assert_eq!(func.params[0].1, "string");
+        assert_eq!(func.return_type, Some("result".to_string()));
+    }
+
+    // WitGenerator Default test
+    #[test]
+    fn test_wit_generator_default() {
+        let generator = WitGenerator::default();
+        assert!(generator.config.include_docs);
+        assert!(generator.config.use_type_aliases);
+    }
+
+    // WitConfig serialize/deserialize tests
+    #[test]
+    fn test_wit_config_serialize() {
+        let config = WitConfig::default();
+        let json = serde_json::to_string(&config);
+        assert!(json.is_ok());
+    }
+
+    #[test]
+    fn test_wit_config_deserialize() {
+        let json = r#"{"include_docs":true,"use_type_aliases":false,"generate_resources":true,"component_model_version":"0.2.0","type_mappings":{},"world_name":null}"#;
+        let config: Result<WitConfig, _> = serde_json::from_str(json);
+        assert!(config.is_ok());
+        let config = config.unwrap();
+        assert!(config.include_docs);
+        assert!(!config.use_type_aliases);
+    }
+
+    // Clone/Debug derive tests
+    #[test]
+    fn test_wit_interface_clone() {
+        let interface = WitInterface {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "t".to_string(),
+                name: "t".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+        let cloned = interface.clone();
+        assert_eq!(interface.name, cloned.name);
+    }
+
+    #[test]
+    fn test_wit_interface_debug() {
+        let interface = WitInterface {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "t".to_string(),
+                name: "t".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+        let debug_str = format!("{:?}", interface);
+        assert!(debug_str.contains("WitInterface"));
+    }
+
+    #[test]
+    fn test_type_definition_clone() {
+        let type_def = TypeDefinition {
+            name: "test".to_string(),
+            kind: TypeKind::Alias(Box::new(WitType::U32)),
+            documentation: None,
+        };
+        let cloned = type_def.clone();
+        assert_eq!(type_def.name, cloned.name);
+    }
+
+    #[test]
+    fn test_function_definition_clone() {
+        let func = FunctionDefinition {
+            name: "test".to_string(),
+            params: vec![],
+            return_type: None,
+            is_async: true,
+            documentation: None,
+        };
+        let cloned = func.clone();
+        assert_eq!(func.name, cloned.name);
+        assert!(cloned.is_async);
+    }
+
+    #[test]
+    fn test_resource_definition_clone() {
+        let resource = ResourceDefinition {
+            name: "res".to_string(),
+            methods: vec![],
+            constructor: None,
+            documentation: None,
+        };
+        let cloned = resource.clone();
+        assert_eq!(resource.name, cloned.name);
+    }
+
+    #[test]
+    fn test_world_definition_clone() {
+        let world = WorldDefinition {
+            name: "w".to_string(),
+            imports: vec![],
+            exports: vec![],
+            documentation: None,
+        };
+        let cloned = world.clone();
+        assert_eq!(world.name, cloned.name);
+    }
+
+    #[test]
+    fn test_type_kind_clone() {
+        let kind = TypeKind::Flags(vec!["a".to_string(), "b".to_string()]);
+        let cloned = kind.clone();
+        if let TypeKind::Flags(flags) = cloned {
+            assert_eq!(flags.len(), 2);
+        } else {
+            panic!("Expected Flags variant");
+        }
+    }
+
+    #[test]
+    fn test_wit_type_clone() {
+        let wt = WitType::List(Box::new(WitType::U8));
+        let cloned = wt.clone();
+        assert!(matches!(cloned, WitType::List(_)));
+    }
+
+    // Resource with constructor test
+    #[test]
+    fn test_resource_definition_with_constructor() {
+        let resource = ResourceDefinition {
+            name: "connection".to_string(),
+            methods: vec![ResourceMethod {
+                name: "send".to_string(),
+                kind: MethodKind::Instance,
+                function: FunctionDefinition {
+                    name: "send".to_string(),
+                    params: vec![Parameter {
+                        name: "data".to_string(),
+                        param_type: WitType::List(Box::new(WitType::U8)),
+                    }],
+                    return_type: None,
+                    is_async: false,
+                    documentation: None,
+                },
+            }],
+            constructor: Some(FunctionDefinition {
+                name: "new".to_string(),
+                params: vec![Parameter {
+                    name: "host".to_string(),
+                    param_type: WitType::String,
+                }],
+                return_type: None,
+                is_async: false,
+                documentation: Some("Create a new connection".to_string()),
+            }),
+            documentation: Some("Network connection resource".to_string()),
+        };
+
+        assert_eq!(resource.name, "connection");
+        assert_eq!(resource.methods.len(), 1);
+        assert!(resource.constructor.is_some());
+        assert_eq!(
+            resource.constructor.as_ref().unwrap().name,
+            "new".to_string()
+        );
+    }
+
+    // Async function test
+    #[test]
+    fn test_async_function_definition() {
+        let func = FunctionDefinition {
+            name: "fetch-data".to_string(),
+            params: vec![Parameter {
+                name: "url".to_string(),
+                param_type: WitType::String,
+            }],
+            return_type: Some(WitType::Result {
+                ok: Some(Box::new(WitType::List(Box::new(WitType::U8)))),
+                err: Some(Box::new(WitType::String)),
+            }),
+            is_async: true,
+            documentation: Some("Fetch data asynchronously".to_string()),
+        };
+
+        assert!(func.is_async);
+        assert_eq!(func.name, "fetch-data");
+    }
+
+    // Empty WIT interface save error test
+    #[test]
+    fn test_wit_interface_save_error() {
+        let interface = WitInterface {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "test".to_string(),
+                name: "test".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+
+        // Try to save to an invalid path (directory that doesn't exist)
+        let result = interface.save("/nonexistent/path/to/file.wit");
+        assert!(result.is_err());
+    }
+
+    // Package info serialization tests
+    #[test]
+    fn test_package_info_serialize() {
+        let package = PackageInfo {
+            namespace: "test".to_string(),
+            name: "pkg".to_string(),
+            version: "1.0.0".to_string(),
+        };
+        let json = serde_json::to_string(&package);
+        assert!(json.is_ok());
+        let json_str = json.unwrap();
+        assert!(json_str.contains("\"namespace\":\"test\""));
+    }
+
+    #[test]
+    fn test_package_info_deserialize() {
+        let json = r#"{"namespace":"myns","name":"mypkg","version":"2.0.0"}"#;
+        let package: Result<PackageInfo, _> = serde_json::from_str(json);
+        assert!(package.is_ok());
+        let package = package.unwrap();
+        assert_eq!(package.namespace, "myns");
+        assert_eq!(package.name, "mypkg");
+        assert_eq!(package.version, "2.0.0");
+    }
+}
+
+#[cfg(test)]
 mod property_tests_wit {
     use super::*;
     use proptest::prelude::*;

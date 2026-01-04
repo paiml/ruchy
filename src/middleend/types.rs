@@ -453,3 +453,368 @@ mod property_tests_types {
         }
     }
 }
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    // COVERAGE-95: Comprehensive MonoType Display tests
+
+    #[test]
+    fn test_display_float() {
+        assert_eq!(MonoType::Float.to_string(), "f64");
+    }
+
+    #[test]
+    fn test_display_string() {
+        assert_eq!(MonoType::String.to_string(), "String");
+    }
+
+    #[test]
+    fn test_display_char() {
+        assert_eq!(MonoType::Char.to_string(), "char");
+    }
+
+    #[test]
+    fn test_display_unit() {
+        assert_eq!(MonoType::Unit.to_string(), "()");
+    }
+
+    #[test]
+    fn test_display_optional() {
+        assert_eq!(
+            MonoType::Optional(Box::new(MonoType::Int)).to_string(),
+            "i32?"
+        );
+    }
+
+    #[test]
+    fn test_display_result() {
+        assert_eq!(
+            MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String)).to_string(),
+            "Result<i32, String>"
+        );
+    }
+
+    #[test]
+    fn test_display_tuple_empty() {
+        assert_eq!(MonoType::Tuple(vec![]).to_string(), "()");
+    }
+
+    #[test]
+    fn test_display_tuple_single() {
+        assert_eq!(
+            MonoType::Tuple(vec![MonoType::Int]).to_string(),
+            "(i32)"
+        );
+    }
+
+    #[test]
+    fn test_display_tuple_multiple() {
+        assert_eq!(
+            MonoType::Tuple(vec![MonoType::Int, MonoType::Bool, MonoType::String]).to_string(),
+            "(i32, bool, String)"
+        );
+    }
+
+    #[test]
+    fn test_display_named() {
+        assert_eq!(MonoType::Named("MyStruct".into()).to_string(), "MyStruct");
+    }
+
+    #[test]
+    fn test_display_reference() {
+        assert_eq!(
+            MonoType::Reference(Box::new(MonoType::Int)).to_string(),
+            "&i32"
+        );
+    }
+
+    #[test]
+    fn test_display_dataframe_empty() {
+        assert_eq!(MonoType::DataFrame(vec![]).to_string(), "DataFrame[]");
+    }
+
+    #[test]
+    fn test_display_dataframe_columns() {
+        let df = MonoType::DataFrame(vec![
+            ("name".into(), MonoType::String),
+            ("age".into(), MonoType::Int),
+        ]);
+        assert_eq!(df.to_string(), "DataFrame[name: String, age: i32]");
+    }
+
+    #[test]
+    fn test_display_series() {
+        assert_eq!(
+            MonoType::Series(Box::new(MonoType::Float)).to_string(),
+            "Series<f64>"
+        );
+    }
+
+    #[test]
+    fn test_display_tyvar() {
+        assert_eq!(TyVar(0).to_string(), "τ0");
+        assert_eq!(TyVar(42).to_string(), "τ42");
+    }
+
+    #[test]
+    fn test_display_var() {
+        assert_eq!(MonoType::Var(TyVar(5)).to_string(), "τ5");
+    }
+
+    // TypeScheme tests
+
+    #[test]
+    fn test_type_scheme_mono() {
+        let scheme = TypeScheme::mono(MonoType::Int);
+        assert!(scheme.vars.is_empty());
+        assert_eq!(scheme.ty, MonoType::Int);
+    }
+
+    #[test]
+    fn test_type_scheme_display_mono() {
+        let scheme = TypeScheme::mono(MonoType::Bool);
+        assert_eq!(scheme.to_string(), "bool");
+    }
+
+    #[test]
+    fn test_type_scheme_display_poly() {
+        let scheme = TypeScheme {
+            vars: vec![TyVar(0), TyVar(1)],
+            ty: MonoType::Function(
+                Box::new(MonoType::Var(TyVar(0))),
+                Box::new(MonoType::Var(TyVar(1))),
+            ),
+        };
+        assert!(scheme.to_string().contains("∀"));
+        assert!(scheme.to_string().contains("τ0"));
+        assert!(scheme.to_string().contains("τ1"));
+    }
+
+    #[test]
+    fn test_type_scheme_instantiate_mono() {
+        let mut gen = TyVarGenerator::new();
+        let scheme = TypeScheme::mono(MonoType::Int);
+        let result = scheme.instantiate(&mut gen);
+        assert_eq!(result, MonoType::Int);
+    }
+
+    // TyVarGenerator tests
+
+    #[test]
+    fn test_tyvar_generator_default() {
+        let gen = TyVarGenerator::default();
+        let mut gen = gen;
+        assert_eq!(gen.fresh(), TyVar(0));
+    }
+
+    #[test]
+    fn test_tyvar_generator_increments() {
+        let mut gen = TyVarGenerator::new();
+        assert_eq!(gen.fresh(), TyVar(0));
+        assert_eq!(gen.fresh(), TyVar(1));
+        assert_eq!(gen.fresh(), TyVar(2));
+    }
+
+    // Substitution tests
+
+    #[test]
+    fn test_substitute_optional() {
+        let var = TyVar(0);
+        let mut subst = HashMap::new();
+        subst.insert(var.clone(), MonoType::String);
+
+        let ty = MonoType::Optional(Box::new(MonoType::Var(var)));
+        let result = ty.substitute(&subst);
+        assert_eq!(result, MonoType::Optional(Box::new(MonoType::String)));
+    }
+
+    #[test]
+    fn test_substitute_result() {
+        let var1 = TyVar(0);
+        let var2 = TyVar(1);
+        let mut subst = HashMap::new();
+        subst.insert(var1.clone(), MonoType::Int);
+        subst.insert(var2.clone(), MonoType::String);
+
+        let ty = MonoType::Result(
+            Box::new(MonoType::Var(var1)),
+            Box::new(MonoType::Var(var2)),
+        );
+        let result = ty.substitute(&subst);
+        assert_eq!(
+            result,
+            MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String))
+        );
+    }
+
+    #[test]
+    fn test_substitute_reference() {
+        let var = TyVar(0);
+        let mut subst = HashMap::new();
+        subst.insert(var.clone(), MonoType::Bool);
+
+        let ty = MonoType::Reference(Box::new(MonoType::Var(var)));
+        let result = ty.substitute(&subst);
+        assert_eq!(result, MonoType::Reference(Box::new(MonoType::Bool)));
+    }
+
+    #[test]
+    fn test_substitute_tuple() {
+        let var = TyVar(0);
+        let mut subst = HashMap::new();
+        subst.insert(var.clone(), MonoType::Float);
+
+        let ty = MonoType::Tuple(vec![
+            MonoType::Int,
+            MonoType::Var(var),
+            MonoType::Bool,
+        ]);
+        let result = ty.substitute(&subst);
+        assert_eq!(
+            result,
+            MonoType::Tuple(vec![MonoType::Int, MonoType::Float, MonoType::Bool])
+        );
+    }
+
+    #[test]
+    fn test_substitute_dataframe() {
+        let var = TyVar(0);
+        let mut subst = HashMap::new();
+        subst.insert(var.clone(), MonoType::Int);
+
+        let ty = MonoType::DataFrame(vec![
+            ("id".into(), MonoType::Var(var)),
+            ("name".into(), MonoType::String),
+        ]);
+        let result = ty.substitute(&subst);
+        assert_eq!(
+            result,
+            MonoType::DataFrame(vec![
+                ("id".into(), MonoType::Int),
+                ("name".into(), MonoType::String),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_substitute_series() {
+        let var = TyVar(0);
+        let mut subst = HashMap::new();
+        subst.insert(var.clone(), MonoType::Float);
+
+        let ty = MonoType::Series(Box::new(MonoType::Var(var)));
+        let result = ty.substitute(&subst);
+        assert_eq!(result, MonoType::Series(Box::new(MonoType::Float)));
+    }
+
+    #[test]
+    fn test_substitute_no_match() {
+        let var = TyVar(0);
+        let subst = HashMap::new(); // Empty substitution
+
+        let ty = MonoType::Var(var.clone());
+        let result = ty.substitute(&subst);
+        assert_eq!(result, MonoType::Var(var));
+    }
+
+    #[test]
+    fn test_substitute_primitive_unchanged() {
+        let subst = HashMap::new();
+        assert_eq!(MonoType::Int.substitute(&subst), MonoType::Int);
+        assert_eq!(MonoType::Bool.substitute(&subst), MonoType::Bool);
+        assert_eq!(MonoType::Char.substitute(&subst), MonoType::Char);
+    }
+
+    // Free vars tests
+
+    #[test]
+    fn test_free_vars_optional() {
+        let var = TyVar(0);
+        let ty = MonoType::Optional(Box::new(MonoType::Var(var.clone())));
+        let vars = ty.free_vars();
+        assert!(vars.contains(&var));
+    }
+
+    #[test]
+    fn test_free_vars_result() {
+        let var1 = TyVar(0);
+        let var2 = TyVar(1);
+        let ty = MonoType::Result(
+            Box::new(MonoType::Var(var1.clone())),
+            Box::new(MonoType::Var(var2.clone())),
+        );
+        let vars = ty.free_vars();
+        assert_eq!(vars.len(), 2);
+        assert!(vars.contains(&var1));
+        assert!(vars.contains(&var2));
+    }
+
+    #[test]
+    fn test_free_vars_reference() {
+        let var = TyVar(0);
+        let ty = MonoType::Reference(Box::new(MonoType::Var(var.clone())));
+        let vars = ty.free_vars();
+        assert!(vars.contains(&var));
+    }
+
+    #[test]
+    fn test_free_vars_series() {
+        let var = TyVar(0);
+        let ty = MonoType::Series(Box::new(MonoType::Var(var.clone())));
+        let vars = ty.free_vars();
+        assert!(vars.contains(&var));
+    }
+
+    #[test]
+    fn test_free_vars_dataframe() {
+        let var = TyVar(0);
+        let ty = MonoType::DataFrame(vec![
+            ("col".into(), MonoType::Var(var.clone())),
+        ]);
+        let vars = ty.free_vars();
+        assert!(vars.contains(&var));
+    }
+
+    #[test]
+    fn test_free_vars_tuple() {
+        let var1 = TyVar(0);
+        let var2 = TyVar(1);
+        let ty = MonoType::Tuple(vec![
+            MonoType::Var(var1.clone()),
+            MonoType::Int,
+            MonoType::Var(var2.clone()),
+        ]);
+        let vars = ty.free_vars();
+        assert_eq!(vars.len(), 2);
+        assert!(vars.contains(&var1));
+        assert!(vars.contains(&var2));
+    }
+
+    #[test]
+    fn test_free_vars_primitive_empty() {
+        assert!(MonoType::Int.free_vars().is_empty());
+        assert!(MonoType::Bool.free_vars().is_empty());
+        assert!(MonoType::String.free_vars().is_empty());
+        assert!(MonoType::Unit.free_vars().is_empty());
+    }
+
+    // TyVar equality tests
+
+    #[test]
+    fn test_tyvar_equality() {
+        assert_eq!(TyVar(0), TyVar(0));
+        assert_ne!(TyVar(0), TyVar(1));
+    }
+
+    #[test]
+    fn test_tyvar_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(TyVar(0));
+        set.insert(TyVar(1));
+        set.insert(TyVar(0)); // Duplicate
+        assert_eq!(set.len(), 2);
+    }
+}

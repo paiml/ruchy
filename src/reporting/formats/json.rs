@@ -25,7 +25,11 @@ impl ReportFormatter for JsonFormatter {
             .errors
             .iter()
             .map(|e| {
-                let samples: Vec<_> = e.samples.iter().map(|s| format!("\"{}\"", escape_json(s))).collect();
+                let samples: Vec<_> = e
+                    .samples
+                    .iter()
+                    .map(|s| format!("\"{}\"", escape_json(s)))
+                    .collect();
                 format!(
                     r#"{{"code":"{}","count":{},"samples":[{}]}}"#,
                     e.code,
@@ -174,9 +178,7 @@ mod tests {
     #[test]
     fn test_json_valid_structure() {
         let mut report = TranspileReport::new(100, 85, 15);
-        report.add_error(
-            ErrorEntry::new("E0308", 5).with_sample("mismatched types"),
-        );
+        report.add_error(ErrorEntry::new("E0308", 5).with_sample("mismatched types"));
 
         let fmt = JsonFormatter::default();
         let output = fmt.format(&report);

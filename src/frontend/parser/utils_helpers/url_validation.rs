@@ -55,3 +55,89 @@ pub fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_url_import_valid_https() {
+        assert!(validate_url_import("https://example.com/module.ruchy").is_ok());
+        assert!(validate_url_import("https://cdn.example.com/lib.rchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_import_valid_localhost() {
+        assert!(validate_url_import("http://localhost/test.ruchy").is_ok());
+        assert!(validate_url_import("http://127.0.0.1/module.ruchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_scheme_https() {
+        assert!(validate_url_scheme("https://example.com/test.ruchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_scheme_http_rejected() {
+        assert!(validate_url_scheme("http://example.com/test.ruchy").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_scheme_localhost() {
+        assert!(validate_url_scheme("http://localhost/test.ruchy").is_ok());
+        assert!(validate_url_scheme("http://127.0.0.1/test.ruchy").is_ok());
+    }
+
+    #[test]
+    fn test_is_valid_url_scheme() {
+        assert!(is_valid_url_scheme("https://example.com"));
+        assert!(is_valid_url_scheme("http://localhost"));
+        assert!(is_valid_url_scheme("http://127.0.0.1"));
+        assert!(!is_valid_url_scheme("http://evil.com"));
+        assert!(!is_valid_url_scheme("ftp://example.com"));
+    }
+
+    #[test]
+    fn test_validate_url_extension_valid() {
+        assert!(validate_url_extension("https://example.com/mod.ruchy").is_ok());
+        assert!(validate_url_extension("https://example.com/mod.rchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_extension_invalid() {
+        assert!(validate_url_extension("https://example.com/mod.js").is_err());
+        assert!(validate_url_extension("https://example.com/mod.py").is_err());
+        assert!(validate_url_extension("https://example.com/mod").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_path_safety_valid() {
+        assert!(validate_url_path_safety("https://example.com/modules/test.ruchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_path_safety_traversal() {
+        assert!(validate_url_path_safety("https://example.com/../etc/passwd.ruchy").is_err());
+        assert!(validate_url_path_safety("https://example.com/.hidden/test.ruchy").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_no_suspicious_patterns_valid() {
+        assert!(validate_url_no_suspicious_patterns("https://example.com/test.ruchy").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_no_suspicious_patterns_javascript() {
+        assert!(validate_url_no_suspicious_patterns("javascript:alert(1)").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_no_suspicious_patterns_data() {
+        assert!(validate_url_no_suspicious_patterns("data:text/html,<script>").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_no_suspicious_patterns_file() {
+        assert!(validate_url_no_suspicious_patterns("file:///etc/passwd").is_err());
+    }
+}

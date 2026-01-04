@@ -248,7 +248,12 @@ impl<T: Clone> DeltaDebugger<T> {
         }
 
         // Return first chunk to test
-        let subset: Vec<usize> = self.failing_indices.iter().take(chunk_size).copied().collect();
+        let subset: Vec<usize> = self
+            .failing_indices
+            .iter()
+            .take(chunk_size)
+            .copied()
+            .collect();
 
         if subset.is_empty() {
             None
@@ -270,8 +275,8 @@ impl<T: Clone> DeltaDebugger<T> {
     /// Record test result and update state
     pub fn record_result(&mut self, tested_indices: Vec<usize>, result: TestResult) {
         let step_num = self.steps.len() + 1;
-        let step = BisectStep::new(step_num, tested_indices.clone(), self.items.len())
-            .with_result(result);
+        let step =
+            BisectStep::new(step_num, tested_indices.clone(), self.items.len()).with_result(result);
         self.steps.push(step);
 
         match result {
@@ -379,9 +384,7 @@ impl<T: Clone> DeltaDebugger<T> {
             ));
 
             for step in self.steps.iter().rev().take(5) {
-                let result_str = step
-                    .result
-                    .map_or("?".to_string(), |r| r.to_string());
+                let result_str = step.result.map_or("?".to_string(), |r| r.to_string());
                 let icon = match step.result {
                     Some(TestResult::Fail) => "✗",
                     Some(TestResult::Pass) => "✓",
@@ -436,7 +439,13 @@ impl BisectSession {
     pub fn new(files: Vec<String>) -> Self {
         let end = files.len().saturating_sub(1);
         Self {
-            id: format!("bisect-{}", std::time::UNIX_EPOCH.elapsed().unwrap_or_default().as_secs()),
+            id: format!(
+                "bisect-{}",
+                std::time::UNIX_EPOCH
+                    .elapsed()
+                    .unwrap_or_default()
+                    .as_secs()
+            ),
             files,
             range: (0, end),
             good: Vec::new(),
@@ -495,7 +504,8 @@ impl BisectSession {
     /// Get current file being tested
     #[must_use]
     pub fn current_file(&self) -> Option<&str> {
-        self.midpoint().and_then(|i| self.files.get(i).map(String::as_str))
+        self.midpoint()
+            .and_then(|i| self.files.get(i).map(String::as_str))
     }
 
     /// Get first bad file (result)
@@ -692,7 +702,11 @@ mod tests {
 
     #[test]
     fn test_bisect_session_new() {
-        let files = vec!["a.ruchy".to_string(), "b.ruchy".to_string(), "c.ruchy".to_string()];
+        let files = vec![
+            "a.ruchy".to_string(),
+            "b.ruchy".to_string(),
+            "c.ruchy".to_string(),
+        ];
         let session = BisectSession::new(files);
 
         assert_eq!(session.range, (0, 2));
@@ -701,7 +715,13 @@ mod tests {
 
     #[test]
     fn test_bisect_session_midpoint() {
-        let files = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string(), "e".to_string()];
+        let files = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+            "e".to_string(),
+        ];
         let session = BisectSession::new(files);
 
         assert_eq!(session.midpoint(), Some(2)); // (0+4)/2 = 2
@@ -709,7 +729,12 @@ mod tests {
 
     #[test]
     fn test_bisect_session_mark_good() {
-        let files = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string()];
+        let files = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+        ];
         let mut session = BisectSession::new(files);
 
         session.mark_good(1);
@@ -718,7 +743,12 @@ mod tests {
 
     #[test]
     fn test_bisect_session_mark_bad() {
-        let files = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string()];
+        let files = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+        ];
         let mut session = BisectSession::new(files);
 
         session.mark_bad(2);
@@ -748,7 +778,11 @@ mod tests {
 
     #[test]
     fn test_bisect_session_current_file() {
-        let files = vec!["a.ruchy".to_string(), "b.ruchy".to_string(), "c.ruchy".to_string()];
+        let files = vec![
+            "a.ruchy".to_string(),
+            "b.ruchy".to_string(),
+            "c.ruchy".to_string(),
+        ];
         let session = BisectSession::new(files);
 
         assert_eq!(session.current_file(), Some("b.ruchy"));

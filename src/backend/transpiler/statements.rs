@@ -886,7 +886,8 @@ impl Transpiler {
                 else_branch,
                 ..
             } => {
-                let then_is_literal = Self::returns_string_literal_with_vars(then_branch, string_vars);
+                let then_is_literal =
+                    Self::returns_string_literal_with_vars(then_branch, string_vars);
                 let else_is_literal = else_branch
                     .as_ref()
                     .is_some_and(|e| Self::returns_string_literal_with_vars(e, string_vars));
@@ -2920,7 +2921,9 @@ impl Transpiler {
                 if already_iter {
                     Ok(quote! { #obj_tokens.filter(#(#arg_tokens),*).collect::<Vec<_>>() })
                 } else {
-                    Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() })
+                    Ok(
+                        quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() },
+                    )
                 }
             }
             "reduce" => {
@@ -5907,56 +5910,57 @@ impl Transpiler {
         // Get function name for signature lookup
         let func_name = func_tokens.to_string().trim().to_string();
         // Apply type coercion based on function signature
-        let arg_tokens: Result<Vec<_>> =
-            if let Some(signature) = self.function_signatures.get(&func_name) {
-                args.iter()
-                    .enumerate()
-                    .map(|(i, arg)| {
-                        let mut base_tokens = self.transpile_expr(arg)?;
+        let arg_tokens: Result<Vec<_>> = if let Some(signature) =
+            self.function_signatures.get(&func_name)
+        {
+            args.iter()
+                .enumerate()
+                .map(|(i, arg)| {
+                    let mut base_tokens = self.transpile_expr(arg)?;
 
-                        // Apply String/&str coercion if needed
-                        if let Some(expected_type) = signature.param_types.get(i) {
-                            // DEFECT-018 FIX: For Identifier args in loops, use .to_string()
-                            // for String params (handles &str->String), or .clone() for others
-                            if self.in_loop_context.get()
-                                && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
-                            {
-                                if expected_type == "String" {
-                                    // Use .to_string() which handles both &str and String
-                                    return Ok(quote! { #base_tokens.to_string() });
-                                }
-                                base_tokens = quote! { #base_tokens.clone() };
+                    // Apply String/&str coercion if needed
+                    if let Some(expected_type) = signature.param_types.get(i) {
+                        // DEFECT-018 FIX: For Identifier args in loops, use .to_string()
+                        // for String params (handles &str->String), or .clone() for others
+                        if self.in_loop_context.get()
+                            && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                        {
+                            if expected_type == "String" {
+                                // Use .to_string() which handles both &str and String
+                                return Ok(quote! { #base_tokens.to_string() });
                             }
-                            self.apply_string_coercion(arg, &base_tokens, expected_type)
-                        } else {
-                            // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
-                            // to prevent "use of moved value" errors on subsequent iterations
-                            if self.in_loop_context.get()
-                                && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
-                            {
-                                base_tokens = quote! { #base_tokens.clone() };
-                            }
-                            Ok(base_tokens)
+                            base_tokens = quote! { #base_tokens.clone() };
                         }
-                    })
-                    .collect()
-            } else {
-                // No signature info - transpile as-is
-                args.iter()
-                    .map(|arg| {
-                        let mut base_tokens = self.transpile_expr(arg)?;
-
+                        self.apply_string_coercion(arg, &base_tokens, expected_type)
+                    } else {
                         // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                        // to prevent "use of moved value" errors on subsequent iterations
                         if self.in_loop_context.get()
                             && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
                         {
                             base_tokens = quote! { #base_tokens.clone() };
                         }
-
                         Ok(base_tokens)
-                    })
-                    .collect()
-            };
+                    }
+                })
+                .collect()
+        } else {
+            // No signature info - transpile as-is
+            args.iter()
+                .map(|arg| {
+                    let mut base_tokens = self.transpile_expr(arg)?;
+
+                    // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
+                    if self.in_loop_context.get()
+                        && matches!(&arg.kind, crate::frontend::ast::ExprKind::Identifier(_))
+                    {
+                        base_tokens = quote! { #base_tokens.clone() };
+                    }
+
+                    Ok(base_tokens)
+                })
+                .collect()
+        };
         let arg_tokens = arg_tokens?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }

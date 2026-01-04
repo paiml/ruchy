@@ -212,14 +212,18 @@ impl HuntMode {
                 let (fix_applied, confidence, lessons) = match verify_result {
                     VerifyResult::Success => {
                         self.kaizen.record_success(&fix);
-                        (true, fix.confidence, vec![format!("Fix {} applied successfully", fix.id)])
+                        (
+                            true,
+                            fix.confidence,
+                            vec![format!("Fix {} applied successfully", fix.id)],
+                        )
                     }
-                    VerifyResult::NeedsReview => {
-                        (false, fix.confidence, vec!["Fix needs human review".to_string()])
-                    }
-                    VerifyResult::FixFailed(e) => {
-                        (false, 0.0, vec![format!("Fix failed: {e}")])
-                    }
+                    VerifyResult::NeedsReview => (
+                        false,
+                        fix.confidence,
+                        vec!["Fix needs human review".to_string()],
+                    ),
+                    VerifyResult::FixFailed(e) => (false, 0.0, vec![format!("Fix failed: {e}")]),
                 };
 
                 let outcome = CycleOutcome {
@@ -235,7 +239,11 @@ impl HuntMode {
                 self.history.push(outcome.clone());
                 Ok(outcome)
             }
-            RepairResult::NeedsHumanReview { fix, confidence, reason } => {
+            RepairResult::NeedsHumanReview {
+                fix,
+                confidence,
+                reason,
+            } => {
                 let outcome = CycleOutcome {
                     cycle,
                     pattern: Some(pattern),
@@ -522,5 +530,163 @@ mod tests {
     fn test_hunt_mode_error_internal_display() {
         let error = HuntModeError::InternalError("test error".to_string());
         assert!(error.to_string().contains("Internal error"));
+    }
+
+    // ============================================================================
+    // Coverage Improvement Tests
+    // ============================================================================
+
+    #[test]
+    fn test_hunt_config_verbose_default() {
+        let config = HuntConfig::default();
+        assert!(!config.verbose);
+    }
+
+    #[test]
+    fn test_hunt_config_clone() {
+        let config = HuntConfig::default();
+        let cloned = config.clone();
+        assert_eq!(cloned.max_cycles, config.max_cycles);
+        assert_eq!(cloned.plateau_threshold, config.plateau_threshold);
+    }
+
+    #[test]
+    fn test_hunt_config_debug() {
+        let config = HuntConfig::default();
+        let debug = format!("{:?}", config);
+        assert!(debug.contains("max_cycles"));
+        assert!(debug.contains("quality_threshold"));
+    }
+
+    #[test]
+    fn test_hunt_mode_add_error() {
+        let mut hunt = HuntMode::new();
+        hunt.add_error("E0001", "Test error", Some("test.rs"), 0.5);
+        // Error added to planner
+    }
+
+    #[test]
+    fn test_hunt_mode_andon_status() {
+        let hunt = HuntMode::new();
+        let status = hunt.andon_status();
+        // Status should be retrievable
+        let _ = format!("{:?}", status);
+    }
+
+    #[test]
+    fn test_hunt_mode_kaizen_metrics() {
+        let hunt = HuntMode::new();
+        let metrics = hunt.kaizen_metrics();
+        // Metrics should be retrievable
+        let _ = format!("{:?}", metrics);
+    }
+
+    #[test]
+    fn test_hunt_mode_run_empty() {
+        let mut hunt = HuntMode::new();
+        let result = hunt.run(0);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_hunt_mode_run_single_cycle() {
+        let mut hunt = HuntMode::new();
+        let result = hunt.run(1);
+        assert!(result.is_ok());
+        let outcomes = result.unwrap();
+        assert_eq!(outcomes.len(), 1);
+    }
+
+    #[test]
+    fn test_hunt_mode_run_multiple_cycles() {
+        let mut hunt = HuntMode::new();
+        let result = hunt.run(3);
+        assert!(result.is_ok());
+        // May stop early due to plateau
+        let outcomes = result.unwrap();
+        assert!(!outcomes.is_empty());
+    }
+
+    #[test]
+    fn test_hunt_mode_history_after_cycle() {
+        let mut hunt = HuntMode::new();
+        // Add an error so there's a pattern to process
+        hunt.add_error("E0001", "Test error", Some("test.rs"), 0.5);
+        let _ = hunt.run_cycle();
+        // History may or may not have entries depending on pattern availability
+        // Just verify run_cycle completed without error
+    }
+
+    #[test]
+    fn test_cycle_outcome_clone() {
+        let outcome = CycleOutcome {
+            cycle: 1,
+            pattern: None,
+            fix_applied: false,
+            compilation_rate: 0.5,
+            rate_delta: 0.0,
+            confidence: 0.0,
+            lessons: vec!["Test".to_string()],
+        };
+        let cloned = outcome.clone();
+        assert_eq!(cloned.cycle, 1);
+        assert_eq!(cloned.lessons.len(), 1);
+    }
+
+    #[test]
+    fn test_cycle_outcome_debug() {
+        let outcome = CycleOutcome {
+            cycle: 1,
+            pattern: None,
+            fix_applied: true,
+            compilation_rate: 0.75,
+            rate_delta: 0.05,
+            confidence: 0.9,
+            lessons: vec![],
+        };
+        let debug = format!("{:?}", outcome);
+        assert!(debug.contains("cycle"));
+        assert!(debug.contains("fix_applied"));
+    }
+
+    #[test]
+    fn test_hunt_mode_error_clone() {
+        let error = HuntModeError::IsolationFailed("test".to_string());
+        let cloned = error.clone();
+        assert!(cloned.to_string().contains("Isolation failed"));
+    }
+
+    #[test]
+    fn test_hunt_mode_error_debug() {
+        let error = HuntModeError::WorkspaceFailed("test".to_string());
+        let debug = format!("{:?}", error);
+        assert!(debug.contains("WorkspaceFailed"));
+    }
+
+    #[test]
+    fn test_hunt_mode_error_is_error() {
+        let error: Box<dyn std::error::Error> =
+            Box::new(HuntModeError::CompilationFailed("test".to_string()));
+        assert!(error.to_string().contains("Compilation failed"));
+    }
+
+    #[test]
+    fn test_hunt_mode_with_custom_config() {
+        let config = HuntConfig {
+            max_cycles: 10,
+            quality_threshold: 0.5,
+            plateau_threshold: 2,
+            target_rate: 0.5,
+            min_improvement_per_cycle: 0.01,
+            enable_five_whys: false,
+            human_review_threshold: 0.5,
+            auto_commit_threshold: 0.8,
+            verbose: true,
+        };
+        let hunt = HuntMode::with_config(config);
+        assert_eq!(hunt.config.max_cycles, 10);
+        assert!(!hunt.config.enable_five_whys);
+        assert!(hunt.config.verbose);
     }
 }

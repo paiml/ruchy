@@ -218,10 +218,7 @@ impl AndonVerifier {
             self.verified_fixes.push(fix.id.clone());
             VerifyResult::Success
         } else {
-            self.status = AndonStatus::red(
-                format!("Fix {} failed compilation", fix.id),
-                true,
-            );
+            self.status = AndonStatus::red(format!("Fix {} failed compilation", fix.id), true);
             self.failed_fixes.push(fix.id.clone());
             VerifyResult::FixFailed("Compilation failed".to_string())
         }

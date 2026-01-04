@@ -79,9 +79,7 @@ impl ReproCase {
     /// Get age of reproduction case
     #[must_use]
     pub fn age(&self) -> Duration {
-        self.created_at
-            .elapsed()
-            .unwrap_or(Duration::ZERO)
+        self.created_at.elapsed().unwrap_or(Duration::ZERO)
     }
 
     /// Get source lines
@@ -169,8 +167,7 @@ impl MinimalReproducer {
     pub fn synthesize_repro(&self, pattern: &FailurePattern) -> Result<ReproCase, HuntModeError> {
         // If pattern has sample code, use it directly
         if let Some(ref sample) = pattern.sample_code {
-            let repro = ReproCase::new(sample, &pattern.error_code)
-                .with_pattern_id(&pattern.id);
+            let repro = ReproCase::new(sample, &pattern.error_code).with_pattern_id(&pattern.id);
 
             // Verify this actually fails (Poka-Yoke: repro must fail before fix)
             // Note: In a real implementation, we would compile and verify
@@ -214,7 +211,9 @@ impl MinimalReproducer {
             }
             _ => {
                 // Generic failing code
-                format!("// Error code: {error_code}\npub fn test() {{ compile_error!(\"test\"); }}")
+                format!(
+                    "// Error code: {error_code}\npub fn test() {{ compile_error!(\"test\"); }}"
+                )
             }
         }
     }
@@ -308,22 +307,20 @@ mod tests {
 
     #[test]
     fn test_repro_case_with_expected_message() {
-        let repro = ReproCase::new("fn test() {}", "E0308")
-            .with_expected_message("mismatched types");
+        let repro =
+            ReproCase::new("fn test() {}", "E0308").with_expected_message("mismatched types");
         assert_eq!(repro.expected_message, Some("mismatched types".to_string()));
     }
 
     #[test]
     fn test_repro_case_with_pattern_id() {
-        let repro = ReproCase::new("fn test() {}", "E0308")
-            .with_pattern_id("PAT-001");
+        let repro = ReproCase::new("fn test() {}", "E0308").with_pattern_id("PAT-001");
         assert_eq!(repro.pattern_id, "PAT-001");
     }
 
     #[test]
     fn test_repro_case_with_original_file() {
-        let repro = ReproCase::new("fn test() {}", "E0308")
-            .with_original_file("/path/to/file.rs");
+        let repro = ReproCase::new("fn test() {}", "E0308").with_original_file("/path/to/file.rs");
         assert_eq!(repro.original_file, Some(PathBuf::from("/path/to/file.rs")));
     }
 
@@ -402,8 +399,7 @@ mod tests {
 
     #[test]
     fn test_minimal_reproducer_with_timeout() {
-        let reproducer = MinimalReproducer::new()
-            .with_timeout(Duration::from_secs(30));
+        let reproducer = MinimalReproducer::new().with_timeout(Duration::from_secs(30));
         assert_eq!(reproducer.timeout, Duration::from_secs(30));
     }
 
@@ -435,8 +431,8 @@ mod tests {
     #[test]
     fn test_minimal_reproducer_synthesize_with_sample() {
         let reproducer = MinimalReproducer::new();
-        let pattern = FailurePattern::new("PAT-001", "E0308")
-            .with_sample_code("fn custom() -> i32 { true }");
+        let pattern =
+            FailurePattern::new("PAT-001", "E0308").with_sample_code("fn custom() -> i32 { true }");
         let repro = reproducer.synthesize_repro(&pattern).unwrap();
         assert_eq!(repro.source, "fn custom() -> i32 { true }");
     }

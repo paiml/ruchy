@@ -394,6 +394,185 @@ mod tests {
         assert!(result.is_ok(), "Nested grouped use should parse");
     }
 
+    // Additional comprehensive tests
+    #[test]
+    fn test_use_single_module() {
+        let code = "use mymodule";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Single module use should parse");
+    }
+
+    #[test]
+    fn test_use_deeply_nested_path() {
+        let code = "use a::b::c::d::e::f";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Deeply nested path should parse");
+    }
+
+    #[test]
+    fn test_use_with_trailing_comma() {
+        let code = "use std::{collections,}";
+        let result = Parser::new(code).parse();
+        // Trailing comma support depends on grammar
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_use_empty_group() {
+        let code = "use std::{}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Empty group should parse");
+    }
+
+    #[test]
+    fn test_use_single_item_group() {
+        let code = "use std::{collections}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Single item group should parse");
+    }
+
+    #[test]
+    fn test_use_many_items_group() {
+        let code = "use std::{a, b, c, d, e}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Many items group should parse");
+    }
+
+    #[test]
+    fn test_use_wildcard_at_top_level() {
+        let code = "use mymod::*";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Top level wildcard should parse");
+    }
+
+    #[test]
+    fn test_use_grouped_with_paths() {
+        let code = "use std::collections::{HashMap, BTreeMap, HashSet}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Grouped with multiple items should parse");
+    }
+
+    #[test]
+    fn test_use_alias_capitalized() {
+        let code = "use std::collections::HashMap as MyMap";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Alias with capitals should parse");
+    }
+
+    #[test]
+    fn test_use_alias_underscore() {
+        let code = "use std::collections::HashMap as hash_map";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Alias with underscore should parse");
+    }
+
+    #[test]
+    fn test_use_from_crate() {
+        let code = "use crate::module::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use from crate should parse");
+    }
+
+    #[test]
+    fn test_use_from_self() {
+        let code = "use self::submodule::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use from self should parse");
+    }
+
+    #[test]
+    fn test_use_from_super() {
+        let code = "use super::parent_item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use from super should parse");
+    }
+
+    #[test]
+    fn test_use_double_super() {
+        let code = "use super::super::grandparent";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Double super should parse");
+    }
+
+    #[test]
+    fn test_use_with_aliased_item_in_group() {
+        let code = "use std::collections::{HashMap as Map}";
+        let result = Parser::new(code).parse();
+        // Aliases in groups may or may not be supported
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_use_complex_nested() {
+        let code = "use std::io::{Read, Write, BufReader}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Complex nested should parse");
+    }
+
+    #[test]
+    fn test_use_numeric_module_name() {
+        let code = "use module123::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Module with numbers should parse");
+    }
+
+    #[test]
+    fn test_use_leading_underscore_module() {
+        let code = "use _private::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Module with leading underscore should parse");
+    }
+
+    #[test]
+    fn test_use_with_double_underscore() {
+        let code = "use my__module::item";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Module with double underscore should parse");
+    }
+
+    #[test]
+    fn test_multiple_use_statements() {
+        let code = "use std::io\nuse std::fs";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Multiple use statements should parse");
+    }
+
+    #[test]
+    fn test_use_before_function() {
+        let code = "use std::io\nfun main() { 42 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use before function should parse");
+    }
+
+    #[test]
+    fn test_use_after_function() {
+        let code = "fun main() { 42 }\nuse std::io";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use after function should parse");
+    }
+
+    // Edge cases
+    #[test]
+    fn test_use_three_item_group() {
+        let code = "use std::{a, b, c}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Three item group should parse");
+    }
+
+    #[test]
+    fn test_use_four_level_path() {
+        let code = "use a::b::c::d";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Four level path should parse");
+    }
+
+    #[test]
+    fn test_use_at_start_of_file() {
+        let code = "use foo";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Use at start should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {

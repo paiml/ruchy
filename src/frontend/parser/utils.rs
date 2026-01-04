@@ -528,12 +528,13 @@ mod tests {
 
     #[test]
     fn test_parse_type_parameters_with_bounds() {
+        // DEFECT-021 FIX: Bounds are preserved in type parameters
         let mut state = ParserState::new("<T: Display>");
         let result = parse_type_parameters(&mut state);
         assert!(result.is_ok());
         if let Ok(params) = result {
             assert_eq!(params.len(), 1);
-            assert_eq!(params[0], "T");
+            assert_eq!(params[0], "T: Display");
         }
 
         // Test multiple parameters with bounds
@@ -542,8 +543,8 @@ mod tests {
         assert!(result2.is_ok());
         if let Ok(params) = result2 {
             assert_eq!(params.len(), 2);
-            assert_eq!(params[0], "T");
-            assert_eq!(params[1], "U");
+            assert_eq!(params[0], "T: Display");
+            assert_eq!(params[1], "U: Clone");
         }
     }
 
@@ -666,6 +667,67 @@ mod tests {
             result.is_ok(),
             "Escaped char should validate match guard logic"
         );
+    }
+}
+
+// Always-on tests for coverage
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    #[test]
+    fn test_suggest_correction_function() {
+        assert_eq!(suggest_correction("fucntion"), Some("function".to_string()));
+        assert_eq!(suggest_correction("funtion"), Some("function".to_string()));
+        assert_eq!(suggest_correction("functon"), Some("function".to_string()));
+    }
+
+    #[test]
+    fn test_suggest_correction_return() {
+        assert_eq!(suggest_correction("retrun"), Some("return".to_string()));
+        assert_eq!(suggest_correction("reutrn"), Some("return".to_string()));
+        assert_eq!(suggest_correction("retrn"), Some("return".to_string()));
+    }
+
+    #[test]
+    fn test_suggest_correction_lambda() {
+        assert_eq!(suggest_correction("lamba"), Some("lambda".to_string()));
+        assert_eq!(suggest_correction("lamda"), Some("lambda".to_string()));
+        assert_eq!(suggest_correction("lamdba"), Some("lambda".to_string()));
+    }
+
+    #[test]
+    fn test_suggest_correction_match() {
+        assert_eq!(suggest_correction("mactch"), Some("match".to_string()));
+        assert_eq!(suggest_correction("mathc"), Some("match".to_string()));
+        assert_eq!(suggest_correction("mtach"), Some("match".to_string()));
+    }
+
+    #[test]
+    fn test_suggest_correction_unknown() {
+        assert_eq!(suggest_correction("xyz"), None);
+        assert_eq!(suggest_correction("let"), None);
+        assert_eq!(suggest_correction("if"), None);
+        assert_eq!(suggest_correction("while"), None);
+    }
+
+    #[test]
+    fn test_error_with_context() {
+        let mut state = ParserState::new("let x = 5");
+        let err = error_with_context("test error", &mut state, "something");
+        let err_str = format!("{err}");
+        assert!(err_str.contains("Parse error"));
+        assert!(err_str.contains("test error"));
+        assert!(err_str.contains("Expected: something"));
+    }
+
+    #[test]
+    fn test_error_with_context_empty_source() {
+        let mut state = ParserState::new("");
+        let err = error_with_context("empty input", &mut state, "expression");
+        let err_str = format!("{err}");
+        assert!(err_str.contains("Parse error"));
+        assert!(err_str.contains("EOF"));
     }
 }
 

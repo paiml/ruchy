@@ -86,3 +86,96 @@ pub fn parse_struct_literal(
         start_span,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_struct_literal_empty() {
+        let mut state = ParserState::new("{ }");
+        let result = parse_struct_literal(&mut state, "Point".to_string(), Span::default());
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        if let ExprKind::StructLiteral { name, fields, base } = expr.kind {
+            assert_eq!(name, "Point");
+            assert!(fields.is_empty());
+            assert!(base.is_none());
+        } else {
+            panic!("Expected StructLiteral");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_literal_single_field() {
+        let mut state = ParserState::new("{ x: 10 }");
+        let result = parse_struct_literal(&mut state, "Point".to_string(), Span::default());
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        if let ExprKind::StructLiteral { name, fields, .. } = expr.kind {
+            assert_eq!(name, "Point");
+            assert_eq!(fields.len(), 1);
+            assert_eq!(fields[0].0, "x");
+        } else {
+            panic!("Expected StructLiteral");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_literal_multiple_fields() {
+        let mut state = ParserState::new("{ x: 10, y: 20 }");
+        let result = parse_struct_literal(&mut state, "Point".to_string(), Span::default());
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        if let ExprKind::StructLiteral { fields, .. } = expr.kind {
+            assert_eq!(fields.len(), 2);
+            assert_eq!(fields[0].0, "x");
+            assert_eq!(fields[1].0, "y");
+        } else {
+            panic!("Expected StructLiteral");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_literal_trailing_comma() {
+        let mut state = ParserState::new("{ x: 10, y: 20, }");
+        let result = parse_struct_literal(&mut state, "Point".to_string(), Span::default());
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        if let ExprKind::StructLiteral { fields, .. } = expr.kind {
+            assert_eq!(fields.len(), 2);
+        } else {
+            panic!("Expected StructLiteral");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_literal_field_shorthand() {
+        let mut state = ParserState::new("{ x, y }");
+        let result = parse_struct_literal(&mut state, "Point".to_string(), Span::default());
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        if let ExprKind::StructLiteral { fields, .. } = expr.kind {
+            assert_eq!(fields.len(), 2);
+            // Field shorthand: x becomes (x, Identifier(x))
+            assert_eq!(fields[0].0, "x");
+            assert_eq!(fields[1].0, "y");
+        } else {
+            panic!("Expected StructLiteral");
+        }
+    }
+
+    #[test]
+    fn test_consume_trailing_comma() {
+        let mut state = ParserState::new(", x");
+        let result = consume_trailing_comma(&mut state);
+        assert!(result);
+    }
+
+    #[test]
+    fn test_consume_trailing_comma_none() {
+        let mut state = ParserState::new("x");
+        let result = consume_trailing_comma(&mut state);
+        assert!(!result);
+    }
+}

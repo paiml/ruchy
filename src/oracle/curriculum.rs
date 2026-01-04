@@ -148,7 +148,8 @@ impl CurriculumScheduler {
         }
 
         let accuracy = self.level_accuracy();
-        self.advancement_history.push((self.current_level, accuracy));
+        self.advancement_history
+            .push((self.current_level, accuracy));
 
         self.current_level = self.current_level.next();
         self.samples_at_level = 0;
@@ -361,5 +362,183 @@ mod tests {
         let config = CurriculumConfig::default();
         assert!((config.advance_threshold - 0.85).abs() < f64::EPSILON);
         assert_eq!(config.samples_per_level, 100);
+    }
+
+    // COVERAGE-95: Additional tests for complete coverage
+
+    #[test]
+    fn test_curriculum_scheduler_default() {
+        let scheduler = CurriculumScheduler::default();
+        assert_eq!(scheduler.current_level(), DifficultyLevel::Easy);
+        assert_eq!(scheduler.samples_processed(), 0);
+    }
+
+    #[test]
+    fn test_curriculum_config_fields() {
+        let scheduler = CurriculumScheduler::new();
+        let config = scheduler.config();
+        assert!(config.auto_advance);
+        assert_eq!(config.min_samples_before_advance, 10);
+    }
+
+    #[test]
+    fn test_curriculum_samples_at_difficulty() {
+        let mut corpus = Corpus::new();
+        // Use completely different messages to avoid deduplication
+        corpus.add(
+            Sample::new("mismatched types: expected i32, found String", Some("E0308".into()), ErrorCategory::TypeMismatch)
+                .with_difficulty(0.25),
+        );
+        corpus.add(
+            Sample::new("mismatched types: expected bool, found char", Some("E0308".into()), ErrorCategory::TypeMismatch)
+                .with_difficulty(0.25),
+        );
+        corpus.add(
+            Sample::new("borrow of moved value", Some("E0382".into()), ErrorCategory::BorrowChecker)
+                .with_difficulty(0.50),
+        );
+
+        let scheduler = CurriculumScheduler::new();
+        let easy_samples = scheduler.samples_at_difficulty(&corpus, DifficultyLevel::Easy);
+        assert_eq!(easy_samples.len(), 2);
+    }
+
+    #[test]
+    fn test_curriculum_advancement_history() {
+        let config = CurriculumConfig {
+            advance_threshold: 0.85,
+            min_samples_before_advance: 1,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        scheduler.report_accuracy(0.90);
+        scheduler.report_accuracy(0.90);
+
+        let history = scheduler.advancement_history();
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0].0, DifficultyLevel::Easy);
+        assert_eq!(history[1].0, DifficultyLevel::Medium);
+    }
+
+    #[test]
+    fn test_curriculum_should_advance_min_samples() {
+        let config = CurriculumConfig {
+            advance_threshold: 0.85,
+            min_samples_before_advance: 10,
+            auto_advance: false, // Disable auto-advance to test should_advance
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        // Not enough samples yet
+        scheduler.record_prediction(true);
+        assert!(!scheduler.should_advance());
+    }
+
+    #[test]
+    fn test_curriculum_level_accuracy_zero_samples() {
+        let scheduler = CurriculumScheduler::new();
+        assert_eq!(scheduler.level_accuracy(), 0.0);
+    }
+
+    #[test]
+    fn test_curriculum_advance_at_expert_noop() {
+        let config = CurriculumConfig {
+            advance_threshold: 0.85,
+            min_samples_before_advance: 1,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        // Advance to Expert
+        scheduler.report_accuracy(0.90); // Easy -> Medium
+        scheduler.report_accuracy(0.90); // Medium -> Hard
+        scheduler.report_accuracy(0.90); // Hard -> Expert
+        assert_eq!(scheduler.current_level(), DifficultyLevel::Expert);
+
+        // Try to advance again (should be noop)
+        scheduler.advance();
+        assert_eq!(scheduler.current_level(), DifficultyLevel::Expert);
+    }
+
+    #[test]
+    fn test_curriculum_should_advance_at_expert() {
+        let config = CurriculumConfig {
+            advance_threshold: 0.85,
+            min_samples_before_advance: 1,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        // Advance to Expert
+        scheduler.report_accuracy(0.90);
+        scheduler.report_accuracy(0.90);
+        scheduler.report_accuracy(0.90);
+
+        // Should not advance even with high accuracy
+        assert!(!scheduler.should_advance());
+    }
+
+    #[test]
+    fn test_curriculum_record_prediction_false() {
+        let config = CurriculumConfig {
+            min_samples_before_advance: 100,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        scheduler.record_prediction(false);
+        scheduler.record_prediction(false);
+        scheduler.record_prediction(false);
+
+        assert_eq!(scheduler.level_accuracy(), 0.0);
+        assert_eq!(scheduler.samples_processed(), 3);
+    }
+
+    #[test]
+    fn test_curriculum_manual_advance() {
+        let config = CurriculumConfig {
+            auto_advance: false,
+            min_samples_before_advance: 1,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        scheduler.record_prediction(true);
+        assert_eq!(scheduler.current_level(), DifficultyLevel::Easy);
+
+        // Manual advance
+        scheduler.advance();
+        assert_eq!(scheduler.current_level(), DifficultyLevel::Medium);
+    }
+
+    #[test]
+    fn test_curriculum_config_all_fields() {
+        let config = CurriculumConfig {
+            advance_threshold: 0.99,
+            samples_per_level: 500,
+            min_samples_before_advance: 50,
+            auto_advance: false,
+        };
+        assert_eq!(config.advance_threshold, 0.99);
+        assert_eq!(config.samples_per_level, 500);
+        assert_eq!(config.min_samples_before_advance, 50);
+        assert!(!config.auto_advance);
+    }
+
+    #[test]
+    fn test_curriculum_reset_clears_history() {
+        let config = CurriculumConfig {
+            min_samples_before_advance: 1,
+            ..Default::default()
+        };
+        let mut scheduler = CurriculumScheduler::with_config(config);
+
+        scheduler.report_accuracy(0.90);
+        assert!(!scheduler.advancement_history().is_empty());
+
+        scheduler.reset();
+        assert!(scheduler.advancement_history().is_empty());
     }
 }

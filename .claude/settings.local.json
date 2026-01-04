@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(sort:*)",
+      "Bash(source /home/noah/.zshrc)",
+      "Bash(filter_region_args:*)",
+      "Bash(bashrs lint:*)",
+      "Bash(chmod:*)",
+      "Bash(zsh:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue create:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

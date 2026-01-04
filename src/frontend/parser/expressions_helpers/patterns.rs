@@ -1367,6 +1367,209 @@ mod tests {
         assert!(result.is_ok(), "Atom in tuple pattern should parse");
     }
 
+    // COVERAGE: Additional pattern tests
+    #[test]
+    fn test_nested_tuple_pattern() {
+        let code = "let ((a, b), c) = ((1, 2), 3)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Nested tuple pattern should parse");
+    }
+
+    #[test]
+    fn test_list_pattern_without_rest() {
+        let code = "let [a, b, c] = [1, 2, 3]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "List pattern without rest should parse");
+    }
+
+    #[test]
+    fn test_tuple_variant_pattern() {
+        let code = "match x { Point(a, b) => a + b }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Tuple variant pattern should parse");
+    }
+
+    #[test]
+    fn test_struct_pattern_with_rest() {
+        let code = "let Point { x, .. } = point";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Struct pattern with rest should parse");
+    }
+
+    #[test]
+    fn test_match_with_guard() {
+        let code = "match x { n if n > 0 => true, _ => false }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Match with guard should parse");
+    }
+
+    #[test]
+    fn test_match_inclusive_range() {
+        let code = "match x { 1..=10 => \"in range\", _ => \"out\" }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Inclusive range pattern should parse");
+    }
+
+    #[test]
+    fn test_if_let_expression() {
+        let code = "if let Some(x) = maybe { x } else { 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "If-let expression should parse");
+    }
+
+    #[test]
+    fn test_string_literal_pattern() {
+        let code = r#"match s { "hello" => true, _ => false }"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "String literal pattern should parse");
+    }
+
+    #[test]
+    fn test_bool_literal_pattern() {
+        let code = "match b { true => 1, false => 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Bool literal pattern should parse");
+    }
+
+    #[test]
+    fn test_float_literal_pattern() {
+        let code = "match f { 3.14 => \"pi\", _ => \"other\" }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Float literal pattern should parse");
+    }
+
+    #[test]
+    fn test_multiple_or_patterns() {
+        let code = "match x { 1 | 2 | 3 => true, _ => false }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Multiple or patterns should parse");
+    }
+
+    #[test]
+    fn test_char_literal_pattern() {
+        let code = "match c { 'a' => 1, 'b' => 2, _ => 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Char literal pattern should parse");
+    }
+
+    #[test]
+    fn test_char_range_pattern() {
+        let code = "match c { 'a'..'z' => true, _ => false }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Char range pattern should parse");
+    }
+
+    #[test]
+    fn test_match_with_wildcard_only() {
+        // Match requires at least one arm
+        let code = "match x { _ => 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Match with wildcard arm should parse");
+    }
+
+    #[test]
+    fn test_match_multiple_arms() {
+        let code = "match n { 0 => \"zero\", 1 => \"one\", 2 => \"two\", _ => \"many\" }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Match with multiple arms should parse");
+    }
+
+    #[test]
+    fn test_let_with_type_annotation() {
+        let code = "let x: i32 = 42";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Let with type annotation should parse");
+    }
+
+    #[test]
+    fn test_mutable_pattern() {
+        let code = "let mut x = 42";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Mutable let should parse");
+    }
+
+    #[test]
+    fn test_var_declaration() {
+        let code = "var x = 42";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Var declaration should parse");
+    }
+
+    #[test]
+    fn test_constructor_pattern_no_args() {
+        let code = "match x { Unit => 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Constructor pattern without args should parse");
+    }
+
+    #[test]
+    fn test_constructor_pattern_with_args() {
+        let code = "match x { Pair(a, b) => a + b }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Constructor pattern with args should parse");
+    }
+
+    #[test]
+    fn test_nested_struct_pattern() {
+        let code = "let Line { start: Point { x, y }, end } = line";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Nested struct pattern should parse");
+    }
+
+    #[test]
+    fn test_struct_field_rename() {
+        let code = "let Point { x: new_x, y: new_y } = point";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Struct field rename should parse");
+    }
+
+    #[test]
+    fn test_complex_match_expression() {
+        let code = r#"match result {
+            Ok(value) if value > 0 => value * 2,
+            Ok(0) => 0,
+            Err(e) => -1
+        }"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Complex match expression should parse");
+    }
+
+    #[test]
+    fn test_if_let_with_else_if() {
+        let code = "if let Some(x) = a { x } else if let Some(y) = b { y } else { 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Chained if-let should parse");
+    }
+
+    #[test]
+    fn test_let_else_clause() {
+        let code = "let Some(x) = maybe else { return 0 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Let-else should parse");
+    }
+
+    #[test]
+    fn test_pattern_with_default_value() {
+        let code = "fun foo(x = 10) { x }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Pattern with default value should parse");
+    }
+
+    #[test]
+    fn test_rest_pattern_only() {
+        let code = "let [...all] = [1, 2, 3]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Rest pattern only should parse");
+    }
+
+    #[test]
+    fn test_large_integer_pattern() {
+        // Use positive integer - negative literals in patterns may not be supported
+        let code = "match x { 100 => \"hundred\", _ => \"other\" }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Large integer pattern should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {

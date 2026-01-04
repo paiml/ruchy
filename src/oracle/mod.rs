@@ -43,30 +43,32 @@
 //! and online learning. Custom implementations (~1,500 lines) have been deleted
 //! in favor of the well-tested aprender implementations.
 
+pub mod andon;
 mod category;
 mod classifier;
+mod curriculum;
+mod distillation;
 mod features;
+pub mod hansei;
 mod metrics;
 mod patterns;
 pub mod persistence;
-pub mod transfer;
-pub mod hansei;
-pub mod andon;
-mod curriculum;
-mod distillation;
 mod training_loop;
+pub mod transfer;
 
 pub use category::ErrorCategory;
 pub use classifier::{Classification, CompilationError, OracleError, OracleMetadata, RuchyOracle};
+pub use curriculum::{CurriculumConfig, CurriculumScheduler as RuchyCurriculumScheduler};
+pub use distillation::{DistillationConfig, KnowledgeDistiller, SoftLabel};
 pub use features::{ErrorFeatures, FEATURE_COUNT};
+pub use hansei::{CategoryStats, HanseiIssue, HanseiReport, Severity, Trend};
 pub use metrics::OracleMetrics;
 pub use patterns::{FixPattern, FixSuggestion, PatternStore};
 pub use persistence::{ModelMetadata, ModelPaths, SerializedModel, APR_MAGIC, APR_VERSION};
+pub use training_loop::{
+    DisplayMode, RetrainReason, TrainingEvent, TrainingLoop, TrainingLoopConfig,
+};
 pub use transfer::{TransferLearner, TransferLearningConfig, TransferStatus};
-pub use hansei::{HanseiReport, HanseiIssue, Severity, Trend, CategoryStats};
-pub use curriculum::{CurriculumScheduler as RuchyCurriculumScheduler, CurriculumConfig};
-pub use distillation::{KnowledgeDistiller, DistillationConfig, SoftLabel};
-pub use training_loop::{TrainingLoop, TrainingLoopConfig, TrainingEvent, DisplayMode, RetrainReason};
 // Re-export our types with aliases
 pub use self::curriculum::CurriculumScheduler;
 
@@ -77,30 +79,37 @@ pub use self::curriculum::CurriculumScheduler;
 // Drift detection - using aprender's ADWIN algorithm (recommended default)
 // Reference: [Bifet & Gavalda 2007] "Learning from Time-Changing Data with Adaptive Windowing"
 pub use aprender::online::drift::{
-    DriftDetector, DriftDetectorFactory, DriftStats,
-    DriftStatus,  // Enum: Stable, Warning, Drift
-    DDM,          // Drift Detection Method (sudden drift)
-    PageHinkley,  // Page-Hinkley test (gradual drift)
-    ADWIN,        // ADaptive WINdowing (recommended - handles both)
+    DriftDetector,
+    DriftDetectorFactory,
+    DriftStats,
+    DriftStatus, // Enum: Stable, Warning, Drift
+    PageHinkley, // Page-Hinkley test (gradual drift)
+    ADWIN,       // ADaptive WINdowing (recommended - handles both)
+    DDM,         // Drift Detection Method (sudden drift)
 };
 
 // Corpus management - using aprender's CorpusBuffer with deduplication
 // Reference: [Vitter 1985] "Random Sampling with a Reservoir"
 pub use aprender::online::corpus::{
-    CorpusBuffer, CorpusBufferConfig, EvictionPolicy,
-    Sample as AprenderSample,         // Renamed to avoid conflict
+    CorpusBuffer,
+    CorpusBufferConfig,
+    CorpusMerger,
+    CorpusProvenance,
+    CorpusSource,
+    EvictionPolicy,
+    Sample as AprenderSample, // Renamed to avoid conflict
     SampleSource as AprenderSampleSource,
-    CorpusMerger, CorpusSource, CorpusProvenance,
 };
 
 // Curriculum learning for progressive training difficulty
 pub use aprender::online::curriculum::{
-    CurriculumScheduler as AprenderCurriculumScheduler, LinearCurriculum, SelfPacedCurriculum, CurriculumTrainer,
+    CurriculumScheduler as AprenderCurriculumScheduler, CurriculumTrainer, LinearCurriculum,
+    SelfPacedCurriculum,
 };
 
 // Online learning orchestration
 pub use aprender::online::orchestrator::{
-    RetrainOrchestrator, OrchestratorBuilder, OrchestratorStats, ObserveResult,
+    ObserveResult, OrchestratorBuilder, OrchestratorStats, RetrainOrchestrator,
 };
 
 // =============================================================================
@@ -175,7 +184,12 @@ impl Sample {
     /// Convert to aprender Sample for corpus buffer
     #[must_use]
     pub fn to_aprender(&self) -> AprenderSample {
-        let features = self.to_features().to_vec().iter().map(|&x| f64::from(x)).collect();
+        let features = self
+            .to_features()
+            .to_vec()
+            .iter()
+            .map(|&x| f64::from(x))
+            .collect();
         let target = vec![self.category.to_index() as f64];
         AprenderSample::with_weight(features, target, f64::from(self.difficulty))
     }
@@ -340,7 +354,10 @@ impl Corpus {
     #[must_use]
     pub fn filter_by_difficulty(&self, max_level: DifficultyLevel) -> Vec<&Sample> {
         let max_score = max_level.score();
-        self.samples.iter().filter(|s| s.difficulty <= max_score).collect()
+        self.samples
+            .iter()
+            .filter(|s| s.difficulty <= max_score)
+            .collect()
     }
 
     /// Get samples by source
@@ -366,7 +383,9 @@ impl Corpus {
 
         let mut rng_state = seed;
         for i in (1..n).rev() {
-            rng_state = rng_state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            rng_state = rng_state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let j = (rng_state as usize) % (i + 1);
             self.samples.swap(i, j);
         }
@@ -381,7 +400,11 @@ impl Corpus {
     /// Extract features and labels for training
     #[must_use]
     pub fn to_training_data(&self) -> (Vec<Vec<f32>>, Vec<usize>) {
-        let features: Vec<Vec<f32>> = self.samples.iter().map(|s| s.to_features().to_vec()).collect();
+        let features: Vec<Vec<f32>> = self
+            .samples
+            .iter()
+            .map(|s| s.to_features().to_vec())
+            .collect();
         let labels: Vec<usize> = self.samples.iter().map(|s| s.category.to_index()).collect();
         (features, labels)
     }
@@ -421,15 +444,22 @@ impl CorpusCollector {
 
         // Type mismatch samples
         for &(expected, found) in &[
-            ("i32", "String"), ("i32", "&str"), ("String", "&str"),
-            ("Vec<i32>", "i32"), ("bool", "i32"),
+            ("i32", "String"),
+            ("i32", "&str"),
+            ("String", "&str"),
+            ("Vec<i32>", "i32"),
+            ("bool", "i32"),
         ] {
             for _ in 0..20 {
-                samples.push(Sample::new(
-                    format!("mismatched types: expected `{expected}`, found `{found}`"),
-                    Some("E0308".to_string()),
-                    ErrorCategory::TypeMismatch,
-                ).with_difficulty(0.25).with_source(SampleSource::Synthetic));
+                samples.push(
+                    Sample::new(
+                        format!("mismatched types: expected `{expected}`, found `{found}`"),
+                        Some("E0308".to_string()),
+                        ErrorCategory::TypeMismatch,
+                    )
+                    .with_difficulty(0.25)
+                    .with_source(SampleSource::Synthetic),
+                );
             }
         }
 
@@ -439,9 +469,11 @@ impl CorpusCollector {
             ("cannot borrow `x` as mutable", "E0502"),
         ] {
             for _ in 0..20 {
-                samples.push(Sample::new(
-                    msg, Some(code.to_string()), ErrorCategory::BorrowChecker,
-                ).with_difficulty(0.5).with_source(SampleSource::Synthetic));
+                samples.push(
+                    Sample::new(msg, Some(code.to_string()), ErrorCategory::BorrowChecker)
+                        .with_difficulty(0.5)
+                        .with_source(SampleSource::Synthetic),
+                );
             }
         }
 
@@ -451,9 +483,11 @@ impl CorpusCollector {
             ("lifetime `'a` required", "E0621"),
         ] {
             for _ in 0..15 {
-                samples.push(Sample::new(
-                    msg, Some(code.to_string()), ErrorCategory::LifetimeError,
-                ).with_difficulty(0.75).with_source(SampleSource::Synthetic));
+                samples.push(
+                    Sample::new(msg, Some(code.to_string()), ErrorCategory::LifetimeError)
+                        .with_difficulty(0.75)
+                        .with_source(SampleSource::Synthetic),
+                );
             }
         }
 
@@ -527,7 +561,10 @@ impl CorpusMergerWithProvenance {
     }
 
     /// Merge all sources with specified seed for deterministic shuffle
-    pub fn merge_with_seed(&self, seed: u64) -> Result<(Corpus, RuchyCorpusProvenance), OracleError> {
+    pub fn merge_with_seed(
+        &self,
+        seed: u64,
+    ) -> Result<(Corpus, RuchyCorpusProvenance), OracleError> {
         let mut corpus = Corpus::new();
         let mut provenance = RuchyCorpusProvenance::default();
 
@@ -566,7 +603,9 @@ impl Corpus {
 
         let mut rng_state = seed;
         for i in (1..n).rev() {
-            rng_state = rng_state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            rng_state = rng_state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1);
             let j = (rng_state as usize) % (i + 1);
             self.samples.swap(i, j);
         }
@@ -677,14 +716,23 @@ impl HotFixLayer {
     }
 
     /// Record a fix for online learning
-    pub fn record_fix(&mut self, message: &str, error_code: Option<String>, category: ErrorCategory) -> bool {
-        let sample = Sample::new(message, error_code, category)
-            .with_source(SampleSource::Production);
+    pub fn record_fix(
+        &mut self,
+        message: &str,
+        error_code: Option<String>,
+        category: ErrorCategory,
+    ) -> bool {
+        let sample =
+            Sample::new(message, error_code, category).with_source(SampleSource::Production);
 
         self.corpus.add(sample);
         self.stats.samples_accumulated = self.corpus.len();
 
-        if self.corpus.len().is_multiple_of(self.config.micro_batch_size) {
+        if self
+            .corpus
+            .len()
+            .is_multiple_of(self.config.micro_batch_size)
+        {
             self.stats.micro_batches_processed += 1;
             true
         } else {
@@ -800,16 +848,16 @@ impl OnlineLearner {
 
         // High confidence → add to corpus
         if confidence >= self.hotfix.config.hotfix_confidence {
-            self.hotfix.record_fix(&error.message, error.code.clone(), category);
+            self.hotfix
+                .record_fix(&error.message, error.code.clone(), category);
         }
     }
 }
 
 // Re-export from entrenar (§3.1, §3.2, §3.4 of spec)
 pub use entrenar::citl::{
-    DecisionPatternStore, DecisionCITL, CITLConfig,
-    FixPattern as CitlFixPattern, FixSuggestion as CitlFixSuggestion,
-    DecisionTrace, SuspiciousDecision, ErrorCorrelation,
+    CITLConfig, DecisionCITL, DecisionPatternStore, DecisionTrace, ErrorCorrelation,
+    FixPattern as CitlFixPattern, FixSuggestion as CitlFixSuggestion, SuspiciousDecision,
 };
 pub use entrenar::distill::{DistillationLoss, EnsembleDistiller, ProgressiveDistiller};
 
@@ -912,7 +960,10 @@ mod tests {
         // ADWIN should have detected drift at some point
         // Note: may be Stable if ADWIN already adapted
         let status = detector.detected_change();
-        assert!(matches!(status, DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift));
+        assert!(matches!(
+            status,
+            DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift
+        ));
     }
 
     #[test]
@@ -1011,9 +1062,7 @@ mod tests {
 
     #[test]
     fn test_migration_sample_with_difficulty() {
-        let sample = Sample::new(
-            "test", None, ErrorCategory::Other,
-        ).with_difficulty(0.75);
+        let sample = Sample::new("test", None, ErrorCategory::Other).with_difficulty(0.75);
 
         assert!((sample.difficulty - 0.75).abs() < f32::EPSILON);
     }
@@ -1051,8 +1100,16 @@ mod tests {
     fn test_migration_corpus_deduplication() {
         let mut corpus = Corpus::new();
 
-        let sample1 = Sample::new("test", Some("E0001".to_string()), ErrorCategory::TypeMismatch);
-        let sample2 = Sample::new("test", Some("E0001".to_string()), ErrorCategory::TypeMismatch);
+        let sample1 = Sample::new(
+            "test",
+            Some("E0001".to_string()),
+            ErrorCategory::TypeMismatch,
+        );
+        let sample2 = Sample::new(
+            "test",
+            Some("E0001".to_string()),
+            ErrorCategory::TypeMismatch,
+        );
 
         corpus.add(sample1);
         // Second add may or may not be deduplicated depending on feature extraction
@@ -1066,10 +1123,14 @@ mod tests {
     fn test_migration_corpus_filter_by_source() {
         let mut corpus = Corpus::new();
 
-        corpus.add(Sample::new("test1", None, ErrorCategory::TypeMismatch)
-            .with_source(SampleSource::Synthetic));
-        corpus.add(Sample::new("test2", None, ErrorCategory::BorrowChecker)
-            .with_source(SampleSource::Production));
+        corpus.add(
+            Sample::new("test1", None, ErrorCategory::TypeMismatch)
+                .with_source(SampleSource::Synthetic),
+        );
+        corpus.add(
+            Sample::new("test2", None, ErrorCategory::BorrowChecker)
+                .with_source(SampleSource::Production),
+        );
 
         let synthetic = corpus.filter_by_source(SampleSource::Synthetic);
         assert_eq!(synthetic.len(), 1);
@@ -1079,8 +1140,16 @@ mod tests {
     fn test_migration_corpus_training_data() {
         let mut corpus = Corpus::new();
 
-        corpus.add(Sample::new("error1", Some("E0308".to_string()), ErrorCategory::TypeMismatch));
-        corpus.add(Sample::new("error2", Some("E0382".to_string()), ErrorCategory::BorrowChecker));
+        corpus.add(Sample::new(
+            "error1",
+            Some("E0308".to_string()),
+            ErrorCategory::TypeMismatch,
+        ));
+        corpus.add(Sample::new(
+            "error2",
+            Some("E0382".to_string()),
+            ErrorCategory::BorrowChecker,
+        ));
 
         let (features, labels) = corpus.to_training_data();
 
@@ -1140,7 +1209,11 @@ mod tests {
     fn test_migration_hotfix_layer_record_fix() {
         let mut hotfix = HotFixLayer::new();
 
-        hotfix.record_fix("test error", Some("E0308".to_string()), ErrorCategory::TypeMismatch);
+        hotfix.record_fix(
+            "test error",
+            Some("E0308".to_string()),
+            ErrorCategory::TypeMismatch,
+        );
 
         assert_eq!(hotfix.get_accumulated_samples().len(), 1);
     }
@@ -1247,12 +1320,13 @@ mod tests {
     #[test]
     fn test_migration_end_to_end_classification_with_drift() {
         let mut oracle = RuchyOracle::new();
-        oracle.train_from_examples().expect("training should succeed");
+        oracle
+            .train_from_examples()
+            .expect("training should succeed");
 
         // Simulate some classifications
         for _ in 0..10 {
-            let error = CompilationError::new("mismatched types")
-                .with_code("E0308");
+            let error = CompilationError::new("mismatched types").with_code("E0308");
             let classification = oracle.classify(&error);
 
             // Record result

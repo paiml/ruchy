@@ -11,9 +11,8 @@
 //! - Spec: docs/specifications/ruchy-oracle-spec.md
 
 use ruchy::oracle::{
-    CompilationError, DriftDetector, DriftStatus, ADWIN,
-    ErrorCategory, ErrorFeatures, FixPattern,
-    OracleConfig, PatternStore, RuchyOracle,
+    CompilationError, DriftDetector, DriftStatus, ErrorCategory, ErrorFeatures, FixPattern,
+    OracleConfig, PatternStore, RuchyOracle, ADWIN,
 };
 
 // ============================================================================
@@ -24,7 +23,9 @@ use ruchy::oracle::{
 fn test_oracle_full_pipeline_type_mismatch() {
     // Create and train Oracle
     let mut oracle = RuchyOracle::new();
-    oracle.train_from_examples().expect("Training should succeed");
+    oracle
+        .train_from_examples()
+        .expect("Training should succeed");
 
     // Simulate a type mismatch error from rustc
     let error = CompilationError::new("error[E0308]: mismatched types")
@@ -43,7 +44,9 @@ fn test_oracle_full_pipeline_type_mismatch() {
 #[test]
 fn test_oracle_full_pipeline_borrow_checker() {
     let mut oracle = RuchyOracle::new();
-    oracle.train_from_examples().expect("Training should succeed");
+    oracle
+        .train_from_examples()
+        .expect("Training should succeed");
 
     let error = CompilationError::new("error[E0382]: borrow of moved value: `x`")
         .with_code("E0382")
@@ -58,10 +61,13 @@ fn test_oracle_full_pipeline_borrow_checker() {
 #[test]
 fn test_oracle_full_pipeline_missing_import() {
     let mut oracle = RuchyOracle::new();
-    oracle.train_from_examples().expect("Training should succeed");
+    oracle
+        .train_from_examples()
+        .expect("Training should succeed");
 
-    let error = CompilationError::new("error[E0433]: failed to resolve: use of undeclared type `HashMap`")
-        .with_code("E0433");
+    let error =
+        CompilationError::new("error[E0433]: failed to resolve: use of undeclared type `HashMap`")
+            .with_code("E0433");
 
     let classification = oracle.classify(&error);
 
@@ -73,13 +79,16 @@ fn test_oracle_pattern_suggestions() {
     let oracle = RuchyOracle::new();
 
     // This error should match the HashMap pattern
-    let error = CompilationError::new("cannot find type `HashMap` in this scope")
-        .with_code("E0433");
+    let error =
+        CompilationError::new("cannot find type `HashMap` in this scope").with_code("E0433");
 
     let classification = oracle.classify(&error);
 
     // Should have suggestions from pattern store
-    assert!(!classification.suggestions.is_empty() || classification.category == ErrorCategory::MissingImport);
+    assert!(
+        !classification.suggestions.is_empty()
+            || classification.category == ErrorCategory::MissingImport
+    );
 }
 
 // ============================================================================
@@ -90,13 +99,41 @@ fn test_oracle_pattern_suggestions() {
 fn test_all_error_categories_classified() {
     // Use messages similar to training data for accurate classification
     let test_cases = vec![
-        ("E0308", "mismatched types: expected `i32`, found `String`", ErrorCategory::TypeMismatch),
-        ("E0382", "borrow of moved value: `x`", ErrorCategory::BorrowChecker),
-        ("E0597", "borrowed value does not live long enough", ErrorCategory::LifetimeError),
-        ("E0277", "the trait `Debug` is not implemented", ErrorCategory::TraitBound),
-        ("E0433", "cannot find type `HashMap` in this scope", ErrorCategory::MissingImport),
-        ("E0596", "cannot borrow `x` as mutable, as it is not declared as mutable", ErrorCategory::MutabilityError),
-        ("E0658", "this function takes 2 arguments but 1 was supplied", ErrorCategory::SyntaxError),
+        (
+            "E0308",
+            "mismatched types: expected `i32`, found `String`",
+            ErrorCategory::TypeMismatch,
+        ),
+        (
+            "E0382",
+            "borrow of moved value: `x`",
+            ErrorCategory::BorrowChecker,
+        ),
+        (
+            "E0597",
+            "borrowed value does not live long enough",
+            ErrorCategory::LifetimeError,
+        ),
+        (
+            "E0277",
+            "the trait `Debug` is not implemented",
+            ErrorCategory::TraitBound,
+        ),
+        (
+            "E0433",
+            "cannot find type `HashMap` in this scope",
+            ErrorCategory::MissingImport,
+        ),
+        (
+            "E0596",
+            "cannot borrow `x` as mutable, as it is not declared as mutable",
+            ErrorCategory::MutabilityError,
+        ),
+        (
+            "E0658",
+            "this function takes 2 arguments but 1 was supplied",
+            ErrorCategory::SyntaxError,
+        ),
     ];
 
     let mut oracle = RuchyOracle::new();
@@ -130,8 +167,10 @@ fn test_feature_extraction_consistency() {
         let f1 = ErrorFeatures::extract(message, None);
         let f2 = ErrorFeatures::extract(message, None);
 
-        assert_eq!(f1.features, f2.features,
-            "Feature extraction should be deterministic for: {message}");
+        assert_eq!(
+            f1.features, f2.features,
+            "Feature extraction should be deterministic for: {message}"
+        );
     }
 }
 
@@ -144,7 +183,10 @@ fn test_feature_extraction_error_codes() {
 
         // At least one feature should be set for known error codes
         let sum: f32 = features.as_slice().iter().sum();
-        assert!(sum > 0.0, "Features should be non-zero for error code {code}");
+        assert!(
+            sum > 0.0,
+            "Features should be non-zero for error code {code}"
+        );
     }
 }
 
@@ -183,7 +225,10 @@ fn test_drift_detection_degradation() {
 
     // Should detect drift, warning, or remain stable depending on ADWIN thresholds
     let status = detector.detected_change();
-    assert!(matches!(status, DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift));
+    assert!(matches!(
+        status,
+        DriftStatus::Stable | DriftStatus::Warning | DriftStatus::Drift
+    ));
 }
 
 // ============================================================================
@@ -276,8 +321,7 @@ fn test_oracle_unknown_error_code() {
     let mut oracle = RuchyOracle::new();
     oracle.train_from_examples().expect("Training");
 
-    let error = CompilationError::new("some unknown error")
-        .with_code("E9999");
+    let error = CompilationError::new("some unknown error").with_code("E9999");
 
     let classification = oracle.classify(&error);
 

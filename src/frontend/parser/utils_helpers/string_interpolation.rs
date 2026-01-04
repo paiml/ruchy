@@ -263,3 +263,333 @@ impl ExprContext {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_state() -> super::super::super::ParserState<'static> {
+        super::super::super::ParserState::new("")
+    }
+
+    #[test]
+    fn test_parse_simple_text() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Hello World");
+        assert_eq!(parts.len(), 1);
+        match &parts[0] {
+            StringPart::Text(s) => assert_eq!(s, "Hello World"),
+            _ => panic!("Expected Text part"),
+        }
+    }
+
+    #[test]
+    fn test_parse_single_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Hello {name}!");
+        assert_eq!(parts.len(), 3);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "Hello "));
+        assert!(matches!(&parts[1], StringPart::Expr(_)));
+        assert!(matches!(&parts[2], StringPart::Text(s) if s == "!"));
+    }
+
+    #[test]
+    fn test_parse_escaped_braces() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Value: {{42}}");
+        assert_eq!(parts.len(), 1);
+        match &parts[0] {
+            StringPart::Text(s) => assert_eq!(s, "Value: {42}"),
+            _ => panic!("Expected Text part with escaped braces"),
+        }
+    }
+
+    #[test]
+    fn test_parse_multiple_interpolations() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{a} + {b} = {c}");
+        assert_eq!(parts.len(), 5);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+        assert!(matches!(&parts[1], StringPart::Text(s) if s == " + "));
+        assert!(matches!(&parts[2], StringPart::Expr(_)));
+        assert!(matches!(&parts[3], StringPart::Text(s) if s == " = "));
+        assert!(matches!(&parts[4], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_format_specifier() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Value: {x:02}");
+        assert_eq!(parts.len(), 2);
+        assert!(matches!(&parts[1], StringPart::ExprWithFormat { format_spec, .. } if format_spec == ":02"));
+    }
+
+    #[test]
+    fn test_parse_empty_string() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "");
+        assert_eq!(parts.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_only_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{x}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_nested_braces_in_expr() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Result: {obj.get()}");
+        assert_eq!(parts.len(), 2);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "Result: "));
+        assert!(matches!(&parts[1], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_string_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Say: {\"hello\"}");
+        assert_eq!(parts.len(), 2);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "Say: "));
+        assert!(matches!(&parts[1], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_handle_escaped_brace_function() {
+        let mut text = String::from("test");
+        let mut chars = "abc".chars().peekable();
+        handle_escaped_brace(&mut chars, &mut text, '{');
+        assert_eq!(text, "test{");
+        // First char consumed
+        assert_eq!(chars.next(), Some('b'));
+    }
+
+    #[test]
+    fn test_expr_context_default() {
+        let ctx = ExprContext::default();
+        assert_eq!(ctx.brace_count, 1);
+        assert!(!ctx.in_string);
+        assert!(!ctx.in_char);
+        assert!(!ctx.escaped);
+    }
+
+    #[test]
+    fn test_should_process_string_quote() {
+        let ctx = ExprContext {
+            in_char: false,
+            escaped: false,
+            ..ExprContext::default()
+        };
+        assert!(should_process_string_quote(&ctx));
+
+        let ctx2 = ExprContext {
+            in_char: true,
+            ..ExprContext::default()
+        };
+        assert!(!should_process_string_quote(&ctx2));
+    }
+
+    #[test]
+    fn test_should_process_char_quote() {
+        let ctx = ExprContext {
+            in_string: false,
+            escaped: false,
+            ..ExprContext::default()
+        };
+        assert!(should_process_char_quote(&ctx));
+
+        let ctx2 = ExprContext {
+            in_string: true,
+            ..ExprContext::default()
+        };
+        assert!(!should_process_char_quote(&ctx2));
+    }
+
+    #[test]
+    fn test_should_process_brace() {
+        let ctx = ExprContext {
+            in_string: false,
+            in_char: false,
+            ..ExprContext::default()
+        };
+        assert!(should_process_brace(&ctx));
+
+        let ctx2 = ExprContext {
+            in_string: true,
+            ..ExprContext::default()
+        };
+        assert!(!should_process_brace(&ctx2));
+    }
+
+    #[test]
+    fn test_should_escape() {
+        let ctx = ExprContext {
+            in_string: true,
+            escaped: false,
+            ..ExprContext::default()
+        };
+        assert!(should_escape(&ctx));
+
+        let ctx2 = ExprContext {
+            in_string: false,
+            in_char: false,
+            ..ExprContext::default()
+        };
+        assert!(!should_escape(&ctx2));
+    }
+
+    #[test]
+    fn test_handle_string_delimiter() {
+        let mut ctx = ExprContext::default();
+        assert!(!ctx.in_string);
+        handle_string_delimiter(&mut ctx);
+        assert!(ctx.in_string);
+        handle_string_delimiter(&mut ctx);
+        assert!(!ctx.in_string);
+    }
+
+    #[test]
+    fn test_handle_char_delimiter() {
+        let mut ctx = ExprContext::default();
+        assert!(!ctx.in_char);
+        handle_char_delimiter(&mut ctx);
+        assert!(ctx.in_char);
+        handle_char_delimiter(&mut ctx);
+        assert!(!ctx.in_char);
+    }
+
+    #[test]
+    fn test_handle_open_close_brace() {
+        let mut ctx = ExprContext::default();
+        assert_eq!(ctx.brace_count, 1);
+        handle_open_brace(&mut ctx);
+        assert_eq!(ctx.brace_count, 2);
+        handle_close_brace(&mut ctx);
+        assert_eq!(ctx.brace_count, 1);
+    }
+
+    #[test]
+    fn test_handle_escape() {
+        let mut ctx = ExprContext::default();
+        assert!(!ctx.escaped);
+        handle_escape(&mut ctx);
+        assert!(ctx.escaped);
+    }
+
+    #[test]
+    fn test_handle_regular_char() {
+        let mut ctx = ExprContext {
+            escaped: true,
+            ..ExprContext::default()
+        };
+        handle_regular_char(&mut ctx, 'x');
+        assert!(!ctx.escaped);
+    }
+
+    #[test]
+    fn test_reset_escape_flag() {
+        let mut ctx = ExprContext {
+            escaped: true,
+            ..ExprContext::default()
+        };
+        reset_escape_flag(&mut ctx, 'a');
+        assert!(!ctx.escaped);
+
+        ctx.escaped = true;
+        reset_escape_flag(&mut ctx, '\\');
+        assert!(ctx.escaped);
+    }
+
+    #[test]
+    fn test_should_terminate() {
+        let ctx = ExprContext {
+            brace_count: 0,
+            ..ExprContext::default()
+        };
+        assert!(should_terminate(&ctx));
+
+        let ctx2 = ExprContext::default();
+        assert!(!should_terminate(&ctx2));
+    }
+
+    #[test]
+    fn test_split_format_specifier_with_spec() {
+        let (expr, spec) = split_format_specifier("x:02d");
+        assert_eq!(expr, "x");
+        assert_eq!(spec, Some(":02d"));
+    }
+
+    #[test]
+    fn test_split_format_specifier_no_spec() {
+        let (expr, spec) = split_format_specifier("variable");
+        assert_eq!(expr, "variable");
+        assert_eq!(spec, None);
+    }
+
+    #[test]
+    fn test_split_format_specifier_colon_in_string() {
+        let (expr, spec) = split_format_specifier("\"key:value\"");
+        assert_eq!(expr, "\"key:value\"");
+        assert_eq!(spec, None);
+    }
+
+    #[test]
+    fn test_finalize_text_part_non_empty() {
+        let mut parts = vec![];
+        finalize_text_part(&mut parts, "hello".to_string());
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "hello"));
+    }
+
+    #[test]
+    fn test_finalize_text_part_empty() {
+        let mut parts = vec![];
+        finalize_text_part(&mut parts, String::new());
+        assert_eq!(parts.len(), 0);
+    }
+
+    #[test]
+    fn test_extract_expression_text() {
+        let mut chars = "abc}rest".chars();
+        let result = extract_expression_text(&mut chars);
+        assert_eq!(result, "abc");
+    }
+
+    #[test]
+    fn test_process_character_regular() {
+        let mut ctx = ExprContext::default();
+        let mut text = String::new();
+        let terminated = process_character('x', &mut ctx, &mut text);
+        assert!(!terminated);
+        assert_eq!(text, "x");
+    }
+
+    #[test]
+    fn test_process_character_close_brace_terminate() {
+        let mut ctx = ExprContext {
+            brace_count: 1,
+            ..ExprContext::default()
+        };
+        let mut text = String::new();
+        let terminated = process_character('}', &mut ctx, &mut text);
+        assert!(terminated);
+    }
+
+    #[test]
+    fn test_parse_char_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Char: {'a'}");
+        assert_eq!(parts.len(), 2);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "Char: "));
+    }
+
+    #[test]
+    fn test_parse_invalid_expr_fallback() {
+        // Test that invalid expressions fallback to text
+        let result = parse_interpolated_expr("@#$%^&invalid");
+        assert!(matches!(result, StringPart::Text(_)));
+    }
+}

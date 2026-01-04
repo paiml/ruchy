@@ -777,8 +777,10 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let enum_name = format_ident!("{}", name);
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| Self::parse_type_param_to_tokens(p))
+            .collect();
         // Check if any variant has discriminant values
         let has_discriminants = variants.iter().any(|v| v.discriminant.is_some());
         let variant_tokens: Vec<TokenStream> = variants
@@ -929,8 +931,10 @@ impl Transpiler {
             })
             .collect();
         let method_tokens = method_tokens?;
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| Self::parse_type_param_to_tokens(p))
+            .collect();
         let visibility = if is_pub {
             quote! { pub }
         } else {
@@ -1020,8 +1024,10 @@ impl Transpiler {
             })
             .collect();
         let method_tokens = method_tokens?;
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| Self::parse_type_param_to_tokens(p)).collect();
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| Self::parse_type_param_to_tokens(p))
+            .collect();
         if let Some(trait_name) = trait_name {
             let trait_ident = format_ident!("{}", trait_name);
             if type_params.is_empty() {

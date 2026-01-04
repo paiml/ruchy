@@ -44,7 +44,13 @@ fn validate_with_15_tools(example: &PathBuf) {
         example.file_stem().unwrap().to_string_lossy(),
         std::process::id()
     ));
-    ruchy_cmd().arg("compile").arg(example).arg("-o").arg(&compile_output).assert().success();
+    ruchy_cmd()
+        .arg("compile")
+        .arg(example)
+        .arg("-o")
+        .arg(&compile_output)
+        .assert()
+        .success();
     std::fs::remove_file(&compile_output).ok();
 
     // TOOL 6: ruchy run - Execution

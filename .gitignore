@@ -98,3 +98,7 @@ ERRATUM*.md
 *_ARCHIVED.md
 coverage-improvement-report.json
 dependency_cleanup_analysis.md
+
+# PMAT
+.pmat/backup/
+.pmat-qa/

@@ -31,7 +31,11 @@ fn test_langcomp_014_01_basic_structs_example_file() {
 #[test]
 fn test_langcomp_014_01_struct_definition_and_creation() {
     let temp_file = std::env::temp_dir().join("langcomp_014_01_struct_def.ruchy");
-    std::fs::write(&temp_file, "struct Point { x: i32, y: i32 }\nlet p = Point { x: 10, y: 20 }\nprintln(p.x)").unwrap();
+    std::fs::write(
+        &temp_file,
+        "struct Point { x: i32, y: i32 }\nlet p = Point { x: 10, y: 20 }\nprintln(p.x)",
+    )
+    .unwrap();
     ruchy_cmd()
         .arg("run")
         .arg(&temp_file)
@@ -44,7 +48,11 @@ fn test_langcomp_014_01_struct_definition_and_creation() {
 #[test]
 fn test_langcomp_014_01_struct_field_access() {
     let temp_file = std::env::temp_dir().join("langcomp_014_01_struct_access.ruchy");
-    std::fs::write(&temp_file, "struct Point { x: i32, y: i32 }\nlet p = Point { x: 10, y: 20 }\nprintln(p.y)").unwrap();
+    std::fs::write(
+        &temp_file,
+        "struct Point { x: i32, y: i32 }\nlet p = Point { x: 10, y: 20 }\nprintln(p.y)",
+    )
+    .unwrap();
     ruchy_cmd()
         .arg("run")
         .arg(&temp_file)
@@ -107,7 +115,11 @@ fn test_langcomp_014_03_tuple_structs_example_file() {
 #[ignore = "TUPLE-STRUCT: Numeric field access (p.0, p.1) not implemented in runtime"]
 fn test_langcomp_014_03_tuple_struct_creation() {
     let temp_file = std::env::temp_dir().join("langcomp_014_03_tuple_struct.ruchy");
-    std::fs::write(&temp_file, "struct Point(i32, i32)\nlet p = Point(10, 20)\nprintln(p.0)").unwrap();
+    std::fs::write(
+        &temp_file,
+        "struct Point(i32, i32)\nlet p = Point(10, 20)\nprintln(p.0)",
+    )
+    .unwrap();
     ruchy_cmd()
         .arg("run")
         .arg(&temp_file)
@@ -121,7 +133,11 @@ fn test_langcomp_014_03_tuple_struct_creation() {
 #[ignore = "TUPLE-STRUCT: Numeric field access (p.0, p.1) not implemented in runtime"]
 fn test_langcomp_014_03_tuple_struct_field_access() {
     let temp_file = std::env::temp_dir().join("langcomp_014_03_tuple_access.ruchy");
-    std::fs::write(&temp_file, "struct Point(i32, i32)\nlet p = Point(10, 20)\nprintln(p.1)").unwrap();
+    std::fs::write(
+        &temp_file,
+        "struct Point(i32, i32)\nlet p = Point(10, 20)\nprintln(p.1)",
+    )
+    .unwrap();
     ruchy_cmd()
         .arg("run")
         .arg(&temp_file)

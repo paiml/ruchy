@@ -1308,7 +1308,11 @@ mod tests {
         // Should eliminate else branch and return then branch wrapped in block
         match &folded.kind {
             ExprKind::Block(exprs) => {
-                assert_eq!(exprs.len(), 1, "Block should contain exactly one expression");
+                assert_eq!(
+                    exprs.len(),
+                    1,
+                    "Block should contain exactly one expression"
+                );
                 assert!(matches!(
                     exprs[0].kind,
                     ExprKind::Literal(Literal::Integer(42, None))

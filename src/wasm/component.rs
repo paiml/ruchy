@@ -1376,6 +1376,244 @@ mod tests {
         assert!(size_opt.inline_threshold < speed_opt.inline_threshold);
         assert!(!size_opt.unroll_loops && speed_opt.unroll_loops);
     }
+
+    // Additional coverage tests
+
+    #[test]
+    fn test_build_dry_run() {
+        let mut builder = ComponentBuilder::new();
+        builder.set_name("dry-run-test".to_string());
+        builder.set_version("1.0.0".to_string());
+
+        let component = builder.build_dry_run();
+        assert!(component.is_ok());
+        let component = component.unwrap();
+        assert_eq!(component.name, "dry-run-test");
+        assert!(!component.bytecode.is_empty());
+        assert_eq!(component.exports.len(), 1);
+    }
+
+    #[test]
+    fn test_build_with_source_files() {
+        let mut builder = ComponentBuilder::new();
+        builder.set_name("build-test".to_string());
+
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("build_test_source.ruchy");
+        fs::write(&temp_file, "fn main() { 42 }").expect("write should succeed");
+
+        builder.add_source(&temp_file).expect("add should succeed");
+
+        let result = builder.build();
+        assert!(result.is_ok());
+        let component = result.unwrap();
+        assert!(!component.bytecode.is_empty());
+
+        let _ = fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_build_validation_no_sources() {
+        let builder = ComponentBuilder::new();
+        // No sources added - should fail validation
+        let result = builder.build();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_build_validation_no_name() {
+        let mut builder = ComponentBuilder::new();
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("no_name_test.ruchy");
+        fs::write(&temp_file, "fn main() {}").expect("write should succeed");
+        builder.add_source(&temp_file).expect("add should succeed");
+
+        // No name set - should fail validation
+        let result = builder.build();
+        assert!(result.is_err());
+
+        let _ = fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_target_architecture_all_variants() {
+        let variants = vec![
+            TargetArchitecture::Wasm32,
+            TargetArchitecture::Wasm64,
+            TargetArchitecture::Wasi,
+            TargetArchitecture::Browser,
+            TargetArchitecture::NodeJs,
+            TargetArchitecture::CloudflareWorkers,
+            TargetArchitecture::Custom("custom-target".to_string()),
+        ];
+
+        for target in variants {
+            let config = ComponentConfig {
+                target: target.clone(),
+                ..Default::default()
+            };
+            assert_eq!(config.target, target);
+        }
+    }
+
+    #[test]
+    fn test_export_type_custom() {
+        let custom = ExportType::Custom("custom_type".to_string());
+        assert!(matches!(custom, ExportType::Custom(_)));
+    }
+
+    #[test]
+    fn test_import_type_custom() {
+        let custom = ImportType::Custom("custom_import".to_string());
+        assert!(matches!(custom, ImportType::Custom(_)));
+    }
+
+    #[test]
+    fn test_wasm_type_ref() {
+        let ref_type = WasmType::Ref("custom_ref".to_string());
+        assert!(matches!(ref_type, WasmType::Ref(_)));
+    }
+
+    #[test]
+    fn test_component_validate_invalid_magic() {
+        let component = WasmComponent {
+            name: "invalid".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00],
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        let result = component.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_component_validate_too_small() {
+        let component = WasmComponent {
+            name: "tiny".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0x00, 0x61, 0x73], // Only 3 bytes - too small
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        let result = component.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_component_summary_with_debug_info() {
+        let mut custom_sections = HashMap::new();
+        custom_sections.insert("name".to_string(), vec![1, 2, 3]);
+
+        let component = WasmComponent {
+            name: "debug-component".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00],
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections,
+        };
+
+        let summary = component.summary();
+        assert!(summary.has_debug_info);
+    }
+
+    #[test]
+    fn test_linking_config_default() {
+        let config = LinkingConfig::default();
+        assert!(config.imports.is_empty());
+    }
+
+    #[test]
+    fn test_component_builder_default() {
+        let builder = ComponentBuilder::default();
+        assert_eq!(builder.source_files.len(), 0);
+    }
+
+    #[test]
+    fn test_feature_flags_default() {
+        let flags = FeatureFlags::default();
+        // Default should have bulk_memory and multi_value enabled
+        assert!(flags.bulk_memory);
+        assert!(flags.multi_value);
+    }
+
+    #[test]
+    fn test_optimization_level_oz() {
+        let level = OptimizationLevel::Oz;
+        let builder = ComponentBuilder::new().with_optimization(level.clone());
+        assert_eq!(builder.optimization_level, OptimizationLevel::Oz);
+    }
+
+    #[test]
+    fn test_type_signature_with_metadata() {
+        let mut metadata = HashMap::new();
+        metadata.insert("doc".to_string(), "Test function".to_string());
+
+        let sig = TypeSignature {
+            params: vec![WasmType::I32, WasmType::I64],
+            results: vec![WasmType::F64],
+            metadata,
+        };
+
+        assert_eq!(sig.params.len(), 2);
+        assert_eq!(sig.results.len(), 1);
+        assert!(sig.metadata.contains_key("doc"));
+    }
+
+    #[test]
+    fn test_export_definition_with_documentation() {
+        let export = ExportDefinition {
+            name: "documented_func".to_string(),
+            export_type: ExportType::Function,
+            signature: TypeSignature {
+                params: vec![],
+                results: vec![WasmType::I32],
+                metadata: HashMap::new(),
+            },
+            documentation: Some("This is a documented function".to_string()),
+        };
+
+        assert!(export.documentation.is_some());
+        assert_eq!(
+            export.documentation.unwrap(),
+            "This is a documented function"
+        );
+    }
+
+    #[test]
+    fn test_import_definition_complete() {
+        let import = ImportDefinition {
+            module: "env".to_string(),
+            name: "print".to_string(),
+            import_type: ImportType::Function,
+            signature: TypeSignature {
+                params: vec![WasmType::I32],
+                results: vec![],
+                metadata: HashMap::new(),
+            },
+        };
+
+        assert_eq!(import.module, "env");
+        assert_eq!(import.name, "print");
+        assert!(matches!(import.import_type, ImportType::Function));
+    }
+
+    #[test]
+    fn test_memory_config_default() {
+        let config = MemoryConfig::default();
+        assert_eq!(config.initial_pages, 1);
+        assert!(config.maximum_pages.is_none());
+        assert!(!config.shared);
+        assert!(!config.memory64);
+    }
 }
 
 #[cfg(test)]

@@ -44,9 +44,10 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
         if let Some(colon_pos) = bound.find(':') {
             let param_name = bound[..colon_pos].trim();
             // Find and update matching type param, or add if not found
-            if let Some(existing) = type_params.iter_mut().find(|p| {
-                p.split(':').next().map(str::trim) == Some(param_name)
-            }) {
+            if let Some(existing) = type_params
+                .iter_mut()
+                .find(|p| p.split(':').next().map(str::trim) == Some(param_name))
+            {
                 // Merge bounds: if existing has bounds, append; otherwise replace
                 if existing.contains(':') {
                     // Already has bounds, append with +
@@ -824,9 +825,7 @@ fn parse_single_trait_bound(state: &mut ParserState) -> Result<Option<String>> {
     let mut traits = String::new();
     while !is_trait_bound_end(state) {
         if let Some((token, _)) = state.tokens.peek() {
-            if !traits.is_empty()
-                && !matches!(token, Token::Plus | Token::Less | Token::Greater)
-            {
+            if !traits.is_empty() && !matches!(token, Token::Plus | Token::Less | Token::Greater) {
                 traits.push(' ');
             }
             traits.push_str(&token_to_string(token));

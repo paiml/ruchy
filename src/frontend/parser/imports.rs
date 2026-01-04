@@ -295,6 +295,169 @@ mod tests {
     }
 }
 
+// Coverage tests for import parsing
+#[cfg(test)]
+mod coverage_tests {
+    use super::super::Parser;
+    use crate::frontend::ast::ExprKind;
+
+    #[test]
+    fn test_import_simple() {
+        let mut parser = Parser::new("import std");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_import_with_dot_path() {
+        let mut parser = Parser::new("import std.collections");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_import_with_colons_path() {
+        let mut parser = Parser::new("import std::collections::HashMap");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_import_with_alias() {
+        let mut parser = Parser::new("import std.collections.HashMap as Map");
+        let result = parser.parse();
+        assert!(result.is_ok());
+
+        if let Ok(ast) = &result {
+            if let ExprKind::Block(exprs) = &ast.kind {
+                for expr in exprs {
+                    if let ExprKind::Import { module, items } = &expr.kind {
+                        assert_eq!(module, "std::collections");
+                        assert!(items.is_some());
+                        let items = items.as_ref().unwrap();
+                        assert!(items[0].contains("as Map"));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_import_single_name_alias() {
+        let mut parser = Parser::new("import std as stdlib");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_from_import_single() {
+        let mut parser = Parser::new("from std import println");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_from_import_multiple() {
+        let mut parser = Parser::new("from std.collections import HashMap, HashSet");
+        let result = parser.parse();
+        assert!(result.is_ok());
+
+        if let Ok(ast) = &result {
+            if let ExprKind::Block(exprs) = &ast.kind {
+                for expr in exprs {
+                    if let ExprKind::Import { items, .. } = &expr.kind {
+                        assert!(items.is_some());
+                        let items = items.as_ref().unwrap();
+                        assert_eq!(items.len(), 2);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_from_import_wildcard() {
+        let mut parser = Parser::new("from std import *");
+        let result = parser.parse();
+        assert!(result.is_ok());
+
+        if let Ok(ast) = &result {
+            if let ExprKind::Block(exprs) = &ast.kind {
+                for expr in exprs {
+                    if let ExprKind::Import { items, .. } = &expr.kind {
+                        // Wildcard import uses empty vec
+                        assert!(items.is_some());
+                        let items = items.as_ref().unwrap();
+                        assert!(items.is_empty());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_from_import_with_alias() {
+        let mut parser = Parser::new("from std import HashMap as Map");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_js_style_import() {
+        let mut parser = Parser::new("import { readFile, writeFile } from fs");
+        let result = parser.parse();
+        assert!(result.is_ok());
+
+        if let Ok(ast) = &result {
+            if let ExprKind::Block(exprs) = &ast.kind {
+                for expr in exprs {
+                    if let ExprKind::Import { module, items } = &expr.kind {
+                        assert_eq!(module, "fs");
+                        assert!(items.is_some());
+                        let items = items.as_ref().unwrap();
+                        assert_eq!(items.len(), 2);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_js_style_import_with_alias() {
+        let mut parser = Parser::new("import { foo as bar } from baz");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_import_string_path() {
+        let mut parser = Parser::new(r#"import "path/to/module""#);
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_from_import_string_path() {
+        let mut parser = Parser::new(r#"from "path/to/module" import foo"#);
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_js_style_import_string_path() {
+        let mut parser = Parser::new(r#"import { foo } from "path/to/module""#);
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_import_mixed_separators() {
+        let mut parser = Parser::new("import std::collections.vec");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+}
+
 #[cfg(test)]
 mod mutation_tests {
     use super::super::Parser;

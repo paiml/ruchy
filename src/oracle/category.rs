@@ -200,57 +200,111 @@ mod tests {
 
     #[test]
     fn test_from_error_code_type_mismatch() {
-        assert_eq!(ErrorCategory::from_error_code("E0308"), ErrorCategory::TypeMismatch);
-        assert_eq!(ErrorCategory::from_error_code("E0271"), ErrorCategory::TypeMismatch);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0308"),
+            ErrorCategory::TypeMismatch
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0271"),
+            ErrorCategory::TypeMismatch
+        );
     }
 
     #[test]
     fn test_from_error_code_borrow_checker() {
-        assert_eq!(ErrorCategory::from_error_code("E0382"), ErrorCategory::BorrowChecker);
-        assert_eq!(ErrorCategory::from_error_code("E0502"), ErrorCategory::BorrowChecker);
-        assert_eq!(ErrorCategory::from_error_code("E0499"), ErrorCategory::BorrowChecker);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0382"),
+            ErrorCategory::BorrowChecker
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0502"),
+            ErrorCategory::BorrowChecker
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0499"),
+            ErrorCategory::BorrowChecker
+        );
     }
 
     #[test]
     fn test_from_error_code_lifetime() {
-        assert_eq!(ErrorCategory::from_error_code("E0597"), ErrorCategory::LifetimeError);
-        assert_eq!(ErrorCategory::from_error_code("E0716"), ErrorCategory::LifetimeError);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0597"),
+            ErrorCategory::LifetimeError
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0716"),
+            ErrorCategory::LifetimeError
+        );
     }
 
     #[test]
     fn test_from_error_code_trait_bound() {
-        assert_eq!(ErrorCategory::from_error_code("E0277"), ErrorCategory::TraitBound);
-        assert_eq!(ErrorCategory::from_error_code("E0599"), ErrorCategory::TraitBound);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0277"),
+            ErrorCategory::TraitBound
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0599"),
+            ErrorCategory::TraitBound
+        );
     }
 
     #[test]
     fn test_from_error_code_missing_import() {
-        assert_eq!(ErrorCategory::from_error_code("E0433"), ErrorCategory::MissingImport);
-        assert_eq!(ErrorCategory::from_error_code("E0425"), ErrorCategory::MissingImport);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0433"),
+            ErrorCategory::MissingImport
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0425"),
+            ErrorCategory::MissingImport
+        );
     }
 
     #[test]
     fn test_from_error_code_mutability() {
-        assert_eq!(ErrorCategory::from_error_code("E0596"), ErrorCategory::MutabilityError);
-        assert_eq!(ErrorCategory::from_error_code("E0594"), ErrorCategory::MutabilityError);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0596"),
+            ErrorCategory::MutabilityError
+        );
+        assert_eq!(
+            ErrorCategory::from_error_code("E0594"),
+            ErrorCategory::MutabilityError
+        );
     }
 
     #[test]
     fn test_from_error_code_syntax() {
-        assert_eq!(ErrorCategory::from_error_code("E0658"), ErrorCategory::SyntaxError);
+        assert_eq!(
+            ErrorCategory::from_error_code("E0658"),
+            ErrorCategory::SyntaxError
+        );
     }
 
     #[test]
     fn test_from_error_code_unknown() {
-        assert_eq!(ErrorCategory::from_error_code("E9999"), ErrorCategory::Other);
+        assert_eq!(
+            ErrorCategory::from_error_code("E9999"),
+            ErrorCategory::Other
+        );
         assert_eq!(ErrorCategory::from_error_code(""), ErrorCategory::Other);
-        assert_eq!(ErrorCategory::from_error_code("invalid"), ErrorCategory::Other);
+        assert_eq!(
+            ErrorCategory::from_error_code("invalid"),
+            ErrorCategory::Other
+        );
     }
 
     #[test]
     fn test_from_index_valid() {
-        assert_eq!(ErrorCategory::from_index(0), Some(ErrorCategory::TypeMismatch));
-        assert_eq!(ErrorCategory::from_index(1), Some(ErrorCategory::BorrowChecker));
+        assert_eq!(
+            ErrorCategory::from_index(0),
+            Some(ErrorCategory::TypeMismatch)
+        );
+        assert_eq!(
+            ErrorCategory::from_index(1),
+            Some(ErrorCategory::BorrowChecker)
+        );
         assert_eq!(ErrorCategory::from_index(7), Some(ErrorCategory::Other));
     }
 
@@ -272,8 +326,10 @@ mod tests {
     fn test_error_codes_not_empty_except_other() {
         for category in ErrorCategory::ALL {
             if category != ErrorCategory::Other {
-                assert!(!category.error_codes().is_empty(),
-                    "{category:?} should have error codes");
+                assert!(
+                    !category.error_codes().is_empty(),
+                    "{category:?} should have error codes"
+                );
             }
         }
     }
@@ -281,8 +337,10 @@ mod tests {
     #[test]
     fn test_description_not_empty() {
         for category in ErrorCategory::ALL {
-            assert!(!category.description().is_empty(),
-                "{category:?} should have description");
+            assert!(
+                !category.description().is_empty(),
+                "{category:?} should have description"
+            );
         }
     }
 

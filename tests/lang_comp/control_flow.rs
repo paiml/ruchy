@@ -44,7 +44,13 @@ fn validate_with_15_tools(example: &PathBuf) {
         example.file_stem().unwrap().to_string_lossy(),
         std::process::id()
     ));
-    ruchy_cmd().arg("compile").arg(example).arg("-o").arg(&compile_output).assert().success();
+    ruchy_cmd()
+        .arg("compile")
+        .arg(example)
+        .arg("-o")
+        .arg(&compile_output)
+        .assert()
+        .success();
     std::fs::remove_file(&compile_output).ok();
 
     // TOOL 6: ruchy run - Execution
@@ -163,7 +169,11 @@ fn test_langcomp_003_01_if_expression_example_file() {
 fn test_langcomp_003_02_match_literal_pattern() {
     // Test: match 1 { 1 => 100, 2 => 200, _ => 999 } returns 100
     let temp_file = std::env::temp_dir().join("langcomp_003_02_match_literal.ruchy");
-    std::fs::write(&temp_file, "println(match 1 { 1 => 100, 2 => 200, _ => 999 })").unwrap();
+    std::fs::write(
+        &temp_file,
+        "println(match 1 { 1 => 100, 2 => 200, _ => 999 })",
+    )
+    .unwrap();
 
     ruchy_cmd()
         .arg("run")
@@ -179,7 +189,11 @@ fn test_langcomp_003_02_match_literal_pattern() {
 fn test_langcomp_003_02_match_wildcard_pattern() {
     // Test: match 99 { 1 => 100, 2 => 200, _ => 999 } returns 999 (wildcard)
     let temp_file = std::env::temp_dir().join("langcomp_003_02_match_wildcard.ruchy");
-    std::fs::write(&temp_file, "println(match 99 { 1 => 100, 2 => 200, _ => 999 })").unwrap();
+    std::fs::write(
+        &temp_file,
+        "println(match 99 { 1 => 100, 2 => 200, _ => 999 })",
+    )
+    .unwrap();
 
     ruchy_cmd()
         .arg("run")

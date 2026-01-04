@@ -198,6 +198,32 @@ pub fn find_demo_files() -> Vec<std::path::PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // NotebookCell tests
+    #[test]
+    fn test_notebook_cell_code_creation() {
+        let cell = NotebookCell::code("let x = 42".to_string());
+        assert_eq!(cell.cell_type, "code");
+        assert_eq!(cell.source, "let x = 42");
+        assert!(cell.metadata.is_object());
+    }
+
+    #[test]
+    fn test_notebook_cell_markdown_creation() {
+        let cell = NotebookCell::markdown("# Header".to_string());
+        assert_eq!(cell.cell_type, "markdown");
+        assert_eq!(cell.source, "# Header");
+        assert!(cell.metadata.is_object());
+    }
+
+    #[test]
+    fn test_notebook_cell_empty_source() {
+        let cell = NotebookCell::code("".to_string());
+        assert_eq!(cell.cell_type, "code");
+        assert_eq!(cell.source, "");
+    }
+
+    // Notebook tests
     #[test]
     fn test_simple_conversion() {
         let content = "42\nlet x = 10";
@@ -206,6 +232,7 @@ mod tests {
         assert_eq!(notebook.cells[0].source, "42");
         assert_eq!(notebook.cells[1].source, "let x = 10");
     }
+
     #[test]
     fn test_comment_conversion() {
         let content = "# Comment\n42";
@@ -214,6 +241,7 @@ mod tests {
         assert_eq!(notebook.cells[0].cell_type, "markdown");
         assert_eq!(notebook.cells[1].cell_type, "code");
     }
+
     #[test]
     fn test_repl_command_filtering() {
         let content = "42\n:rust 1 + 2\nlet x = 10";
@@ -221,6 +249,263 @@ mod tests {
         assert_eq!(notebook.cells.len(), 2);
         assert_eq!(notebook.cells[0].source, "42");
         assert_eq!(notebook.cells[1].source, "let x = 10");
+    }
+
+    #[test]
+    fn test_empty_content() {
+        let content = "";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert!(notebook.cells.is_empty());
+    }
+
+    #[test]
+    fn test_only_empty_lines() {
+        let content = "\n\n\n";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert!(notebook.cells.is_empty());
+    }
+
+    #[test]
+    fn test_notebook_metadata() {
+        let content = "42";
+        let notebook = convert_demo_to_notebook("my_demo", content).unwrap();
+
+        assert!(notebook.metadata.contains_key("language_info"));
+        assert!(notebook.metadata.contains_key("kernelspec"));
+        assert!(notebook.metadata.contains_key("original_demo"));
+
+        let original_demo = notebook.metadata.get("original_demo").unwrap();
+        assert_eq!(original_demo.as_str().unwrap(), "my_demo");
+    }
+
+    #[test]
+    fn test_notebook_format_version() {
+        let content = "42";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.nbformat, 4);
+        assert_eq!(notebook.nbformat_minor, 2);
+    }
+
+    // Multiline tests
+    #[test]
+    fn test_function_multiline() {
+        let content = "fun foo() {\n  42\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+        assert!(notebook.cells[0].source.contains("fun foo()"));
+    }
+
+    #[test]
+    fn test_if_multiline() {
+        let content = "if true {\n  1\n} else {\n  2\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    #[test]
+    fn test_while_multiline() {
+        let content = "while x > 0 {\n  x = x - 1\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    #[test]
+    fn test_for_multiline() {
+        let content = "for i in items {\n  print(i)\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    #[test]
+    fn test_match_multiline() {
+        let content = "match x {\n  1 => a,\n  _ => b\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    #[test]
+    fn test_brace_only_multiline() {
+        let content = "{\n  let x = 1\n  x + 1\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    // is_multiline_start tests
+    #[test]
+    fn test_is_multiline_start_fun() {
+        assert!(is_multiline_start("fun foo() {"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_if() {
+        assert!(is_multiline_start("if x > 0 {"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_while() {
+        assert!(is_multiline_start("while true {"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_for() {
+        assert!(is_multiline_start("for i in items {"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_match() {
+        assert!(is_multiline_start("match x {"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_brace() {
+        assert!(is_multiline_start("{"));
+    }
+
+    #[test]
+    fn test_is_multiline_start_simple_expr() {
+        assert!(!is_multiline_start("let x = 42"));
+    }
+
+    // count_braces tests
+    #[test]
+    fn test_count_braces_open_only() {
+        assert_eq!(count_braces("{"), 1);
+    }
+
+    #[test]
+    fn test_count_braces_close_only() {
+        assert_eq!(count_braces("}"), -1);
+    }
+
+    #[test]
+    fn test_count_braces_balanced() {
+        assert_eq!(count_braces("{ }"), 0);
+    }
+
+    #[test]
+    fn test_count_braces_nested() {
+        assert_eq!(count_braces("{ { } }"), 0);
+    }
+
+    #[test]
+    fn test_count_braces_unbalanced_open() {
+        assert_eq!(count_braces("{ {"), 2);
+    }
+
+    #[test]
+    fn test_count_braces_unbalanced_close() {
+        assert_eq!(count_braces("} }"), -2);
+    }
+
+    #[test]
+    fn test_count_braces_empty() {
+        assert_eq!(count_braces(""), 0);
+    }
+
+    // Edge cases
+    #[test]
+    fn test_multiple_comments() {
+        let content = "# Comment 1\n# Comment 2\n42";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 3);
+        assert_eq!(notebook.cells[0].cell_type, "markdown");
+        assert_eq!(notebook.cells[1].cell_type, "markdown");
+        assert_eq!(notebook.cells[2].cell_type, "code");
+    }
+
+    #[test]
+    fn test_mixed_content() {
+        let content = "# Header\nlet x = 1\n# Another comment\nlet y = 2";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 4);
+    }
+
+    #[test]
+    fn test_whitespace_only_lines() {
+        let content = "42\n   \n   \nlet x = 10";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        // Whitespace-only lines are skipped
+        assert_eq!(notebook.cells.len(), 2);
+    }
+
+    #[test]
+    fn test_multiple_repl_commands() {
+        let content = ":help\n:clear\n42\n:exit";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+        assert_eq!(notebook.cells[0].source, "42");
+    }
+
+    #[test]
+    fn test_nested_multiline() {
+        let content = "fun outer() {\n  if true {\n    42\n  }\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+    }
+
+    #[test]
+    fn test_comment_in_multiline_skipped() {
+        let content = "fun foo() {\n  # Comment inside function - skipped\n  42\n}";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        assert_eq!(notebook.cells.len(), 1);
+        // The comment inside shouldn't become a cell, it's part of code block
+        assert!(notebook.cells[0].source.contains("42"));
+    }
+
+    // Notebook serialization tests
+    #[test]
+    fn test_notebook_debug() {
+        let notebook = Notebook {
+            cells: vec![],
+            metadata: serde_json::Map::new(),
+            nbformat: 4,
+            nbformat_minor: 2,
+        };
+        let debug_str = format!("{:?}", notebook);
+        assert!(debug_str.contains("Notebook"));
+    }
+
+    #[test]
+    fn test_notebook_cell_debug() {
+        let cell = NotebookCell::code("42".to_string());
+        let debug_str = format!("{:?}", cell);
+        assert!(debug_str.contains("NotebookCell"));
+    }
+
+    #[test]
+    fn test_notebook_serialization() {
+        let content = "42";
+        let notebook = convert_demo_to_notebook("test", content).unwrap();
+        let json = serde_json::to_string(&notebook);
+        assert!(json.is_ok());
+        let json_str = json.unwrap();
+        assert!(json_str.contains("cells"));
+        assert!(json_str.contains("nbformat"));
+    }
+
+    #[test]
+    fn test_notebook_cell_serialization() {
+        let cell = NotebookCell::code("let x = 42".to_string());
+        let json = serde_json::to_string(&cell);
+        assert!(json.is_ok());
+        let json_str = json.unwrap();
+        assert!(json_str.contains("code"));
+        assert!(json_str.contains("let x = 42"));
+    }
+
+    // find_demo_files tests
+    #[test]
+    fn test_find_demo_files_returns_sorted() {
+        let files = find_demo_files();
+        let mut sorted = files.clone();
+        sorted.sort();
+        assert_eq!(files, sorted);
+    }
+
+    #[test]
+    fn test_find_demo_files_empty_when_no_examples() {
+        // This test depends on environment, but should not panic
+        let _ = find_demo_files();
     }
 }
 #[cfg(test)]

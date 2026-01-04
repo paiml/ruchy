@@ -221,12 +221,11 @@ mod property_tests {
 
     /// Keywords that cannot be used as identifiers in import paths
     const KEYWORDS: &[&str] = &[
-        "fn", "fun", "if", "else", "for", "while", "loop", "match", "return",
-        "let", "mut", "const", "pub", "mod", "use", "import", "from", "as",
-        "struct", "enum", "trait", "impl", "type", "self", "super", "crate",
-        "true", "false", "async", "await", "in", "where", "ref", "move",
-        "df", "class", "try", "catch", "throw", "break", "continue", "None",
-        "Some", "Ok", "Err", "null", "Result", "Option",
+        "fn", "fun", "if", "else", "for", "while", "loop", "match", "return", "let", "mut",
+        "const", "pub", "mod", "use", "import", "from", "as", "struct", "enum", "trait", "impl",
+        "type", "self", "super", "crate", "true", "false", "async", "await", "in", "where", "ref",
+        "move", "df", "class", "try", "catch", "throw", "break", "continue", "None", "Some", "Ok",
+        "Err", "null", "Result", "Option",
     ];
 
     /// Check if a string is a keyword

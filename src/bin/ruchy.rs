@@ -25,9 +25,9 @@ use std::path::{Path, PathBuf};
 mod handlers;
 use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
-    handle_file_execution, handle_fuzz_command, handle_mutations_command,
-    handle_parse_command, handle_property_tests_command, handle_repl_command, handle_run_command,
-    handle_stdin_input, handle_test_command, handle_transpile_command, VmMode,
+    handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
+    handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
+    handle_test_command, handle_transpile_command, VmMode,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -1118,7 +1118,14 @@ fn handle_command_dispatch(
             hansei_report,
             five_whys,
             verbose,
-        }) => handle_hunt_command(&target, cycles, andon, hansei_report.as_deref(), five_whys, verbose),
+        }) => handle_hunt_command(
+            &target,
+            cycles,
+            andon,
+            hansei_report.as_deref(),
+            five_whys,
+            verbose,
+        ),
         Some(Commands::Report {
             target,
             format,
@@ -1162,13 +1169,18 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
     }
 
     match command {
-        OracleCommands::Train { format, verbose, auto_train, max_iterations } => {
+        OracleCommands::Train {
+            format,
+            verbose,
+            auto_train,
+            max_iterations,
+        } => {
             let mut oracle = RuchyOracle::new();
             oracle.train_from_examples()?;
 
             if auto_train {
                 // Use TrainingLoop for continuous improvement (Spec §13)
-                use ruchy::oracle::{TrainingLoop, TrainingLoopConfig, DisplayMode, TrainingEvent};
+                use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
 
                 let display_mode = if verbose {
                     DisplayMode::Verbose
@@ -1202,8 +1214,8 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
                         let done = matches!(
                             event,
                             TrainingEvent::Converged { .. }
-                            | TrainingEvent::MaxIterationsReached { .. }
-                            | TrainingEvent::Error { .. }
+                                | TrainingEvent::MaxIterationsReached { .. }
+                                | TrainingEvent::Error { .. }
                         );
                         events.push(format!("{:?}", event));
                         if done {
@@ -1223,7 +1235,10 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
                     );
                 } else {
                     // Run with visual output
-                    println!("🔄 Starting auto-train loop (max {} iterations)...", max_iterations);
+                    println!(
+                        "🔄 Starting auto-train loop (max {} iterations)...",
+                        max_iterations
+                    );
                     loop {
                         let event = training_loop.step();
                         let output = training_loop.render();
@@ -1232,20 +1247,37 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
                         }
 
                         match event {
-                            TrainingEvent::Converged { iteration, accuracy } => {
-                                println!("✅ Converged at iteration {} with {:.1}% accuracy", iteration, accuracy * 100.0);
+                            TrainingEvent::Converged {
+                                iteration,
+                                accuracy,
+                            } => {
+                                println!(
+                                    "✅ Converged at iteration {} with {:.1}% accuracy",
+                                    iteration,
+                                    accuracy * 100.0
+                                );
                                 break;
                             }
                             TrainingEvent::MaxIterationsReached { accuracy } => {
-                                println!("⏹ Max iterations reached. Final accuracy: {:.1}%", accuracy * 100.0);
+                                println!(
+                                    "⏹ Max iterations reached. Final accuracy: {:.1}%",
+                                    accuracy * 100.0
+                                );
                                 break;
                             }
                             TrainingEvent::Error { message } => {
                                 eprintln!("❌ Error: {}", message);
                                 break;
                             }
-                            TrainingEvent::RetrainingComplete { accuracy_before, accuracy_after } => {
-                                println!("🔄 Retrained: {:.1}% → {:.1}%", accuracy_before * 100.0, accuracy_after * 100.0);
+                            TrainingEvent::RetrainingComplete {
+                                accuracy_before,
+                                accuracy_after,
+                            } => {
+                                println!(
+                                    "🔄 Retrained: {:.1}% → {:.1}%",
+                                    accuracy_before * 100.0,
+                                    accuracy_after * 100.0
+                                );
                             }
                             TrainingEvent::CurriculumAdvanced { from, to } => {
                                 println!("📈 Curriculum advanced: {:?} → {:?}", from, to);
@@ -1290,17 +1322,14 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
             oracle.train_from_examples()?;
 
             // Default to project root for easier local development
-            let save_path = path.unwrap_or_else(|| {
-                ModelPaths::default().primary
-            });
+            let save_path = path.unwrap_or_else(|| ModelPaths::default().primary);
 
             // Get training data for persistence
             let (features, labels) = oracle.get_training_data();
 
-            let metadata = ModelMetadata::new("ruchy-oracle")
-                .with_training_stats(labels.len(), 0.85);
-            let model = SerializedModel::new(metadata)
-                .with_training_data(features, labels);
+            let metadata =
+                ModelMetadata::new("ruchy-oracle").with_training_stats(labels.len(), 0.85);
+            let model = SerializedModel::new(metadata).with_training_data(features, labels);
 
             model.save(&save_path)?;
             println!("Saved model to: {}", save_path.display());
@@ -1325,9 +1354,9 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
             let found_model = paths.find_existing();
 
             // Try to load model metadata if found
-            let model_info = found_model.as_ref().and_then(|path| {
-                SerializedModel::load(path).ok().map(|m| (path.clone(), m))
-            });
+            let model_info = found_model
+                .as_ref()
+                .and_then(|path| SerializedModel::load(path).ok().map(|m| (path.clone(), m)));
 
             if format == "json" {
                 if let Some((path, model)) = &model_info {
@@ -1423,7 +1452,10 @@ fn handle_hunt_command(
 
     // Run PDCA cycles
     for cycle in 1..=cycles {
-        println!("{}", format!("━━━ PDCA Cycle {}/{} ━━━", cycle, cycles).cyan());
+        println!(
+            "{}",
+            format!("━━━ PDCA Cycle {}/{} ━━━", cycle, cycles).cyan()
+        );
 
         // Analyze each file
         for file_path in &ruchy_files {
@@ -1469,13 +1501,19 @@ fn handle_hunt_command(
     // Export Hansei report if requested
     if let Some(report_path) = hansei_report {
         export_hansei_report(&hunt, report_path)?;
-        println!("{}", format!("📝 Hansei report exported to: {}", report_path.display()).green());
+        println!(
+            "{}",
+            format!("📝 Hansei report exported to: {}", report_path.display()).green()
+        );
     }
 
     // Final summary
     let metrics = hunt.kaizen_metrics();
     println!("{}", "━━━ Hunt Mode Summary ━━━".bold());
-    println!("  Compilation Rate: {:.1}%", metrics.compilation_rate * 100.0);
+    println!(
+        "  Compilation Rate: {:.1}%",
+        metrics.compilation_rate * 100.0
+    );
     println!("  Total Cycles: {}", metrics.total_cycles);
     println!("  Cumulative Fixes: {}", metrics.cumulative_fixes);
 
@@ -1526,7 +1564,7 @@ fn analyze_file_for_hunt(file_path: &Path) -> Result<Vec<(String, String)>> {
 /// is more robust or add per-file timeouts.
 #[allow(dead_code)]
 fn collect_examples_samples() -> Vec<ruchy::oracle::Sample> {
-    use ruchy::oracle::{Sample, SampleSource, ErrorCategory};
+    use ruchy::oracle::{Sample, SampleSource};
 
     let examples_dir = Path::new("examples");
     if !examples_dir.exists() {
@@ -1546,41 +1584,52 @@ fn collect_examples_samples() -> Vec<ruchy::oracle::Sample> {
         // Transpile and collect errors
         if let Ok(errors) = analyze_file_for_hunt(&file) {
             for (code, message) in errors {
-                // Map error code to category
-                let category = if code.starts_with("E0308") || code.starts_with("E0271") {
-                    ErrorCategory::TypeMismatch
-                } else if code.starts_with("E0382") || code.starts_with("E0502") || code.starts_with("E0503") {
-                    ErrorCategory::BorrowChecker
-                } else if code.starts_with("E0597") || code.starts_with("E0106") || code.starts_with("E0621") {
-                    ErrorCategory::LifetimeError
-                } else if code.starts_with("E0277") || code.starts_with("E0599") {
-                    ErrorCategory::TraitBound
-                } else if code.starts_with("E0425") || code.starts_with("E0433") || code.starts_with("E0412") {
-                    ErrorCategory::MissingImport
-                } else if code.starts_with("E0596") || code.starts_with("E0594") {
-                    ErrorCategory::MutabilityError
-                } else if code == "PARSE" || code.starts_with("E0061") {
-                    ErrorCategory::SyntaxError
-                } else {
-                    ErrorCategory::Other
-                };
-
-                let error_code = if code == "PARSE" || code == "TRANSPILE" {
-                    None
-                } else {
-                    Some(code)
+                let category = categorize_error_code(&code);
+                let error_code = match code.as_str() {
+                    "PARSE" | "TRANSPILE" => None,
+                    _ => Some(code),
                 };
 
                 samples.push(
                     Sample::new(message, error_code, category)
                         .with_source(SampleSource::Examples)
-                        .with_difficulty(0.7) // Real errors are harder than synthetic
+                        .with_difficulty(0.7), // Real errors are harder than synthetic
                 );
             }
         }
     }
 
     samples
+}
+
+/// Categorize Rust error code to Oracle `ErrorCategory` (complexity: 7)
+/// Extracts error classification logic from `collect_examples_samples`.
+fn categorize_error_code(code: &str) -> ruchy::oracle::ErrorCategory {
+    use ruchy::oracle::ErrorCategory;
+
+    // Early returns for non-E codes
+    if code == "PARSE" || code.starts_with("E0061") {
+        return ErrorCategory::SyntaxError;
+    }
+
+    // Extract first 5 chars (E0XXX format)
+    let prefix = if code.len() >= 5 { &code[..5] } else { code };
+
+    match prefix {
+        // Type mismatch: E0308, E0271
+        "E0308" | "E0271" => ErrorCategory::TypeMismatch,
+        // Borrow checker: E0382, E0502, E0503
+        "E0382" | "E0502" | "E0503" => ErrorCategory::BorrowChecker,
+        // Lifetime errors: E0597, E0106, E0621
+        "E0597" | "E0106" | "E0621" => ErrorCategory::LifetimeError,
+        // Trait bounds: E0277, E0599
+        "E0277" | "E0599" => ErrorCategory::TraitBound,
+        // Missing imports: E0425, E0433, E0412
+        "E0425" | "E0433" | "E0412" => ErrorCategory::MissingImport,
+        // Mutability errors: E0596, E0594
+        "E0596" | "E0594" => ErrorCategory::MutabilityError,
+        _ => ErrorCategory::Other,
+    }
 }
 
 /// Scan for .ruchy files recursively
@@ -1621,16 +1670,31 @@ fn display_andon_dashboard(hunt: &ruchy::hunt_mode::HuntMode) {
 
     // Status light
     let status_line = match status {
-        ruchy::hunt_mode::AndonStatus::Green { .. } => "│  🟢 GREEN - All systems nominal     │".green(),
-        ruchy::hunt_mode::AndonStatus::Yellow { .. } => "│  🟡 YELLOW - Warnings present       │".yellow(),
-        ruchy::hunt_mode::AndonStatus::Red { .. } => "│  🔴 RED - Issues detected           │".red(),
+        ruchy::hunt_mode::AndonStatus::Green { .. } => {
+            "│  🟢 GREEN - All systems nominal     │".green()
+        }
+        ruchy::hunt_mode::AndonStatus::Yellow { .. } => {
+            "│  🟡 YELLOW - Warnings present       │".yellow()
+        }
+        ruchy::hunt_mode::AndonStatus::Red { .. } => {
+            "│  🔴 RED - Issues detected           │".red()
+        }
     };
     println!("{}", status_line);
 
     println!("{}", "├─────────────────────────────────────┤".bold());
-    println!("│  Compilation Rate: {:>6.1}%          │", metrics.compilation_rate * 100.0);
-    println!("│  Total Cycles:     {:>6}           │", metrics.total_cycles);
-    println!("│  Fixes Applied:    {:>6}           │", metrics.cumulative_fixes);
+    println!(
+        "│  Compilation Rate: {:>6.1}%          │",
+        metrics.compilation_rate * 100.0
+    );
+    println!(
+        "│  Total Cycles:     {:>6}           │",
+        metrics.total_cycles
+    );
+    println!(
+        "│  Fixes Applied:    {:>6}           │",
+        metrics.cumulative_fixes
+    );
     println!("{}", "└─────────────────────────────────────┘".bold());
     println!();
 }
@@ -1677,7 +1741,9 @@ fn handle_report_command(
     verbose: bool,
 ) -> Result<()> {
     use colored::Colorize;
-    use ruchy::reporting::formats::{HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter};
+    use ruchy::reporting::formats::{
+        HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter,
+    };
 
     println!("{}", "📊 Generating Transpilation Report".bold());
     println!("   Target: {}", target.display());
@@ -1745,7 +1811,10 @@ fn handle_report_command(
     // Output
     if let Some(output_path) = output {
         fs::write(output_path, &report_content)?;
-        println!("{}", format!("📝 Report written to: {}", output_path.display()).green());
+        println!(
+            "{}",
+            format!("📝 Report written to: {}", output_path.display()).green()
+        );
     } else {
         println!("{}", report_content);
     }
@@ -1804,7 +1873,10 @@ fn analyze_file_for_report(file_path: &Path) -> Result<FileResult> {
 }
 
 /// Format report as JSON
-fn format_report_json(results: &[FileResult], _formatter: &ruchy::reporting::formats::JsonFormatter) -> String {
+fn format_report_json(
+    results: &[FileResult],
+    _formatter: &ruchy::reporting::formats::JsonFormatter,
+) -> String {
     let json = serde_json::json!({
         "total": results.len(),
         "success": results.iter().filter(|r| r.success).count(),
@@ -1822,12 +1894,21 @@ fn format_report_json(results: &[FileResult], _formatter: &ruchy::reporting::for
 }
 
 /// Format report as Markdown
-fn format_report_markdown(results: &[FileResult], _formatter: &ruchy::reporting::formats::MarkdownFormatter) -> String {
+fn format_report_markdown(
+    results: &[FileResult],
+    _formatter: &ruchy::reporting::formats::MarkdownFormatter,
+) -> String {
     let mut md = String::from("# Transpilation Report\n\n");
     md.push_str("## Summary\n\n");
     md.push_str(&format!("- **Total Files**: {}\n", results.len()));
-    md.push_str(&format!("- **Successful**: {}\n", results.iter().filter(|r| r.success).count()));
-    md.push_str(&format!("- **Failed**: {}\n\n", results.iter().filter(|r| !r.success).count()));
+    md.push_str(&format!(
+        "- **Successful**: {}\n",
+        results.iter().filter(|r| r.success).count()
+    ));
+    md.push_str(&format!(
+        "- **Failed**: {}\n\n",
+        results.iter().filter(|r| !r.success).count()
+    ));
 
     md.push_str("## Results\n\n");
     for result in results {
@@ -1841,7 +1922,10 @@ fn format_report_markdown(results: &[FileResult], _formatter: &ruchy::reporting:
 }
 
 /// Format report as SARIF
-fn format_report_sarif(results: &[FileResult], _formatter: &ruchy::reporting::formats::SarifFormatter) -> String {
+fn format_report_sarif(
+    results: &[FileResult],
+    _formatter: &ruchy::reporting::formats::SarifFormatter,
+) -> String {
     let sarif = serde_json::json!({
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
         "version": "2.1.0",
@@ -1874,13 +1958,22 @@ fn format_report_sarif(results: &[FileResult], _formatter: &ruchy::reporting::fo
 }
 
 /// Format report as human-readable text
-fn format_report_human(results: &[FileResult], _formatter: &ruchy::reporting::formats::HumanFormatter) -> String {
+fn format_report_human(
+    results: &[FileResult],
+    _formatter: &ruchy::reporting::formats::HumanFormatter,
+) -> String {
     let mut output = String::from("Transpilation Report\n");
     output.push_str(&"=".repeat(40));
     output.push('\n');
     output.push_str(&format!("\nTotal: {} files\n", results.len()));
-    output.push_str(&format!("Success: {}\n", results.iter().filter(|r| r.success).count()));
-    output.push_str(&format!("Failed: {}\n\n", results.iter().filter(|r| !r.success).count()));
+    output.push_str(&format!(
+        "Success: {}\n",
+        results.iter().filter(|r| r.success).count()
+    ));
+    output.push_str(&format!(
+        "Failed: {}\n\n",
+        results.iter().filter(|r| !r.success).count()
+    ));
 
     for result in results {
         let status = if result.success { "[OK]" } else { "[FAIL]" };

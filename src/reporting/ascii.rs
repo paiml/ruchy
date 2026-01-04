@@ -378,7 +378,10 @@ pub fn detect_trend(values: &[f64]) -> TrendDirection {
     let total_changes = increases + decreases;
     if total_changes == 0 {
         TrendDirection::Stable
-    } else if increases > 0 && decreases > 0 && (f64::from(increases) / f64::from(total_changes)) < 0.7 {
+    } else if increases > 0
+        && decreases > 0
+        && (f64::from(increases) / f64::from(total_changes)) < 0.7
+    {
         TrendDirection::Oscillating
     } else if increases > decreases {
         TrendDirection::Improving
