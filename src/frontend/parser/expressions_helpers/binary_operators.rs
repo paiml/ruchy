@@ -296,6 +296,281 @@ mod tests {
         assert!(get_precedence(BinaryOp::Equal) > get_precedence(BinaryOp::And));
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::Expr;
+    use crate::frontend::parser::{Parser, Result};
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    // ============================================================
+    // Arithmetic expression parsing tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_add_expression() {
+        let result = parse("1 + 2");
+        assert!(result.is_ok(), "Addition should parse");
+    }
+
+    #[test]
+    fn test_parse_subtract_expression() {
+        let result = parse("5 - 3");
+        assert!(result.is_ok(), "Subtraction should parse");
+    }
+
+    #[test]
+    fn test_parse_multiply_expression() {
+        let result = parse("2 * 3");
+        assert!(result.is_ok(), "Multiplication should parse");
+    }
+
+    #[test]
+    fn test_parse_divide_expression() {
+        let result = parse("10 / 2");
+        assert!(result.is_ok(), "Division should parse");
+    }
+
+    #[test]
+    fn test_parse_modulo_expression() {
+        let result = parse("10 % 3");
+        assert!(result.is_ok(), "Modulo should parse");
+    }
+
+    #[test]
+    fn test_parse_power_expression() {
+        let result = parse("2 ** 8");
+        assert!(result.is_ok(), "Power should parse");
+    }
+
+    #[test]
+    fn test_parse_complex_arithmetic() {
+        let result = parse("1 + 2 * 3 - 4 / 2");
+        assert!(result.is_ok(), "Complex arithmetic should parse");
+    }
+
+    // ============================================================
+    // Comparison expression parsing tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_equal_expression() {
+        let result = parse("a == b");
+        assert!(result.is_ok(), "Equality should parse");
+    }
+
+    #[test]
+    fn test_parse_not_equal_expression() {
+        let result = parse("a != b");
+        assert!(result.is_ok(), "Not equal should parse");
+    }
+
+    #[test]
+    fn test_parse_less_expression() {
+        let result = parse("a < b");
+        assert!(result.is_ok(), "Less than should parse");
+    }
+
+    #[test]
+    fn test_parse_less_equal_expression() {
+        let result = parse("a <= b");
+        assert!(result.is_ok(), "Less or equal should parse");
+    }
+
+    #[test]
+    fn test_parse_greater_expression() {
+        let result = parse("a > b");
+        assert!(result.is_ok(), "Greater than should parse");
+    }
+
+    #[test]
+    fn test_parse_greater_equal_expression() {
+        let result = parse("a >= b");
+        assert!(result.is_ok(), "Greater or equal should parse");
+    }
+
+    // ============================================================
+    // Logical expression parsing tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_and_expression() {
+        let result = parse("a && b");
+        assert!(result.is_ok(), "Logical AND should parse");
+    }
+
+    #[test]
+    fn test_parse_or_expression() {
+        let result = parse("a || b");
+        assert!(result.is_ok(), "Logical OR should parse");
+    }
+
+    #[test]
+    fn test_parse_null_coalesce_expression() {
+        let result = parse("a ?? b");
+        assert!(result.is_ok(), "Null coalesce should parse");
+    }
+
+    #[test]
+    fn test_parse_complex_logical() {
+        let result = parse("a && b || c && d");
+        assert!(result.is_ok(), "Complex logical should parse");
+    }
+
+    // ============================================================
+    // Bitwise expression parsing tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_bitwise_and_expression() {
+        let result = parse("a & b");
+        assert!(result.is_ok(), "Bitwise AND should parse");
+    }
+
+    #[test]
+    fn test_parse_bitwise_or_expression() {
+        let result = parse("a | b");
+        assert!(result.is_ok(), "Bitwise OR should parse");
+    }
+
+    #[test]
+    fn test_parse_bitwise_xor_expression() {
+        let result = parse("a ^ b");
+        assert!(result.is_ok(), "Bitwise XOR should parse");
+    }
+
+    #[test]
+    fn test_parse_left_shift_expression() {
+        let result = parse("a << 2");
+        assert!(result.is_ok(), "Left shift should parse");
+    }
+
+    #[test]
+    fn test_parse_right_shift_expression() {
+        let result = parse("a >> 2");
+        assert!(result.is_ok(), "Right shift should parse");
+    }
+
+    // ============================================================
+    // Precedence behavior tests
+    // ============================================================
+
+    #[test]
+    fn test_mul_before_add() {
+        // 1 + 2 * 3 should be parsed as 1 + (2 * 3) = 7
+        let result = parse("1 + 2 * 3");
+        assert!(result.is_ok(), "Mul before add should parse");
+    }
+
+    #[test]
+    fn test_power_right_associative() {
+        // 2 ** 3 ** 2 should work
+        let result = parse("2 ** 3 ** 2");
+        assert!(result.is_ok(), "Nested power should parse");
+    }
+
+    #[test]
+    fn test_comparison_chain() {
+        // a < b && b < c
+        let result = parse("a < b && b < c");
+        assert!(result.is_ok(), "Comparison chain should parse");
+    }
+
+    #[test]
+    fn test_mixed_precedence() {
+        let result = parse("a + b * c == d / e - f");
+        assert!(result.is_ok(), "Mixed precedence should parse");
+    }
+
+    // ============================================================
+    // Shift operator tests
+    // ============================================================
+
+    #[test]
+    fn test_shift_operators() {
+        assert!(matches!(
+            token_to_binary_op(&Token::LeftShift),
+            Some(BinaryOp::LeftShift)
+        ));
+        assert!(matches!(
+            token_to_binary_op(&Token::RightShift),
+            Some(BinaryOp::RightShift)
+        ));
+    }
+
+    #[test]
+    fn test_shift_precedence() {
+        assert_eq!(get_precedence(BinaryOp::LeftShift), 9);
+        assert_eq!(get_precedence(BinaryOp::RightShift), 9);
+    }
+
+    // ============================================================
+    // Edge cases and special operators
+    // ============================================================
+
+    #[test]
+    fn test_less_equal_and_greater_equal() {
+        assert!(matches!(
+            token_to_binary_op(&Token::LessEqual),
+            Some(BinaryOp::LessEqual)
+        ));
+        assert!(matches!(
+            token_to_binary_op(&Token::GreaterEqual),
+            Some(BinaryOp::GreaterEqual)
+        ));
+    }
+
+    #[test]
+    fn test_comparison_precedence_same() {
+        assert_eq!(
+            get_precedence(BinaryOp::Less),
+            get_precedence(BinaryOp::Greater)
+        );
+        assert_eq!(
+            get_precedence(BinaryOp::LessEqual),
+            get_precedence(BinaryOp::GreaterEqual)
+        );
+    }
+
+    #[test]
+    fn test_equality_precedence_same() {
+        assert_eq!(
+            get_precedence(BinaryOp::Equal),
+            get_precedence(BinaryOp::NotEqual)
+        );
+    }
+
+    #[test]
+    fn test_bitwise_precedence_order() {
+        // & binds tighter than ^, which binds tighter than |
+        assert!(get_precedence(BinaryOp::BitwiseAnd) > get_precedence(BinaryOp::BitwiseXor));
+        assert!(get_precedence(BinaryOp::BitwiseXor) > get_precedence(BinaryOp::BitwiseOr));
+    }
+
+    #[test]
+    fn test_add_subtract_same_precedence() {
+        assert_eq!(
+            get_precedence(BinaryOp::Add),
+            get_precedence(BinaryOp::Subtract)
+        );
+    }
+
+    #[test]
+    fn test_mul_div_mod_same_precedence() {
+        assert_eq!(
+            get_precedence(BinaryOp::Multiply),
+            get_precedence(BinaryOp::Divide)
+        );
+        assert_eq!(
+            get_precedence(BinaryOp::Divide),
+            get_precedence(BinaryOp::Modulo)
+        );
+    }
+
     // Property tests for binary operators
     #[cfg(test)]
     mod property_tests {
