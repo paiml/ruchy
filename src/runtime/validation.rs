@@ -220,6 +220,72 @@ mod tests {
         )
         .is_err());
     }
+
+    // === EXTREME TDD Round 18 tests ===
+
+    #[test]
+    fn test_validate_array() {
+        use std::sync::Arc;
+
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(validate_array("test", &arr, "arg").is_ok());
+
+        // Non-array should fail
+        assert!(validate_array("test", &Value::Integer(42), "arg").is_err());
+        assert!(validate_array("test", &Value::from_string("str".to_string()), "arg").is_err());
+    }
+
+    #[test]
+    fn test_validate_arg_count_singular_plural() {
+        // Test singular "argument" for 1
+        let args_one = vec![Value::Integer(1)];
+        let result = validate_arg_count("test", &args_one, 2);
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("2 arguments")); // plural for expected
+
+        // Test with expecting 1 argument
+        let args_two = vec![Value::Integer(1), Value::Integer(2)];
+        let result = validate_arg_count("test", &args_two, 1);
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("1 argument")); // singular for 1
+    }
+
+    #[test]
+    fn test_validate_min_args_singular_plural() {
+        let args_empty: Vec<Value> = vec![];
+
+        // Test plural for min > 1
+        let result = validate_min_args("test", &args_empty, 2);
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("2 arguments"));
+
+        // Test singular for min = 1
+        let result = validate_min_args("test", &args_empty, 1);
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("1 argument"));
+    }
+
+    #[test]
+    fn test_validate_array_error_message() {
+        let result = validate_array("my_function", &Value::Integer(42), "my_arg");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("my_function"));
+        assert!(err_msg.contains("my_arg"));
+        assert!(err_msg.contains("array"));
+    }
+
+    #[test]
+    fn test_validate_numeric_error_message() {
+        let result = validate_numeric(
+            "compute",
+            &Value::from_string("text".to_string()),
+            "input",
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("compute"));
+        assert!(err_msg.contains("input"));
+        assert!(err_msg.contains("number"));
+    }
 }
 
 #[cfg(test)]
