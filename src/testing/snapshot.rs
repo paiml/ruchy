@@ -641,3 +641,233 @@ mod property_tests_snapshot {
         }
     }
 }
+
+// === EXTREME TDD Round 21 - Coverage Push Tests ===
+#[cfg(test)]
+mod coverage_push_tests {
+    use super::*;
+
+    #[test]
+    fn test_snapshot_bisector_new() {
+        let tests = vec![];
+        let bisector = SnapshotBisector::new(tests);
+        // Just verify it doesn't panic
+        let _ = bisector;
+    }
+
+    #[test]
+    fn test_snapshot_bisector_bisect() {
+        let tests = vec![];
+        let bisector = SnapshotBisector::new(tests);
+        let result = bisector.bisect("test_name", |_| true);
+        assert!(result.is_none()); // Currently returns None
+    }
+
+    #[test]
+    fn test_core_snapshot_tests_count() {
+        let tests = core_snapshot_tests();
+        assert!(!tests.is_empty());
+        assert!(tests.len() >= 15); // At least 15 core tests
+    }
+
+    #[test]
+    fn test_core_snapshot_tests_coverage() {
+        let tests = core_snapshot_tests();
+        // Verify expected test names exist
+        let names: Vec<_> = tests.iter().map(|(name, _)| *name).collect();
+        assert!(names.contains(&"literal_int"));
+        assert!(names.contains(&"literal_float"));
+        assert!(names.contains(&"literal_string"));
+        assert!(names.contains(&"binary_add"));
+        assert!(names.contains(&"function_simple"));
+    }
+
+    #[test]
+    fn test_snapshot_test_debug() {
+        let test = SnapshotTest {
+            name: "test".to_string(),
+            input: "1+1".to_string(),
+            output_hash: "abc".to_string(),
+            rust_output: "2".to_string(),
+            metadata: SnapshotMetadata {
+                created_at: "2023-01-01".to_string(),
+                updated_at: "2023-01-01".to_string(),
+                ruchy_version: "1.0".to_string(),
+                rustc_version: "1.75".to_string(),
+            },
+        };
+        let debug = format!("{:?}", test);
+        assert!(debug.contains("SnapshotTest"));
+        assert!(debug.contains("test"));
+    }
+
+    #[test]
+    fn test_snapshot_test_clone() {
+        let test = SnapshotTest {
+            name: "test".to_string(),
+            input: "1+1".to_string(),
+            output_hash: "abc".to_string(),
+            rust_output: "2".to_string(),
+            metadata: SnapshotMetadata {
+                created_at: "2023-01-01".to_string(),
+                updated_at: "2023-01-01".to_string(),
+                ruchy_version: "1.0".to_string(),
+                rustc_version: "1.75".to_string(),
+            },
+        };
+        let cloned = test.clone();
+        assert_eq!(test.name, cloned.name);
+        assert_eq!(test.input, cloned.input);
+    }
+
+    #[test]
+    fn test_snapshot_metadata_debug() {
+        let metadata = SnapshotMetadata {
+            created_at: "2023-01-01".to_string(),
+            updated_at: "2023-01-02".to_string(),
+            ruchy_version: "1.0".to_string(),
+            rustc_version: "1.75".to_string(),
+        };
+        let debug = format!("{:?}", metadata);
+        assert!(debug.contains("SnapshotMetadata"));
+    }
+
+    #[test]
+    fn test_snapshot_metadata_clone() {
+        let metadata = SnapshotMetadata {
+            created_at: "2023-01-01".to_string(),
+            updated_at: "2023-01-02".to_string(),
+            ruchy_version: "1.0".to_string(),
+            rustc_version: "1.75".to_string(),
+        };
+        let cloned = metadata.clone();
+        assert_eq!(metadata.created_at, cloned.created_at);
+    }
+
+    #[test]
+    fn test_snapshot_config_debug() {
+        let config = SnapshotConfig::default();
+        let debug = format!("{:?}", config);
+        assert!(debug.contains("SnapshotConfig"));
+    }
+
+    #[test]
+    fn test_snapshot_config_clone() {
+        let config = SnapshotConfig {
+            auto_update: true,
+            snapshot_dir: PathBuf::from("test"),
+            fail_on_missing: false,
+        };
+        let cloned = config.clone();
+        assert_eq!(config.auto_update, cloned.auto_update);
+        assert_eq!(config.snapshot_dir, cloned.snapshot_dir);
+    }
+
+    #[test]
+    fn test_snapshot_suite_debug() {
+        let suite = SnapshotSuite {
+            tests: vec![],
+            config: SnapshotConfig::default(),
+        };
+        let debug = format!("{:?}", suite);
+        assert!(debug.contains("SnapshotSuite"));
+    }
+
+    #[test]
+    fn test_hash_empty_string() {
+        let hash = SnapshotRunner::hash("");
+        assert_eq!(hash.len(), 64);
+        // SHA256 of empty string
+        assert_eq!(hash, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    }
+
+    #[test]
+    fn test_hash_unicode() {
+        let hash = SnapshotRunner::hash("Hello 世界 🌍");
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn test_run_all_with_failures() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-failures"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).expect("load");
+
+        // Create a snapshot
+        runner.test("test1", "input1", |_| Ok("output1".to_string())).expect("create");
+
+        // Run with failing transform
+        let result = runner.run_all(|_| Ok("wrong_output".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_snapshot_test_serialize_deserialize() {
+        let test = SnapshotTest {
+            name: "serialize_test".to_string(),
+            input: "let x = 42".to_string(),
+            output_hash: "deadbeef".to_string(),
+            rust_output: "fn main() {}".to_string(),
+            metadata: SnapshotMetadata {
+                created_at: "2023-06-15T10:30:00Z".to_string(),
+                updated_at: "2023-06-15T10:30:00Z".to_string(),
+                ruchy_version: "1.2.3".to_string(),
+                rustc_version: "1.70.0".to_string(),
+            },
+        };
+        let toml_str = toml::to_string(&test).expect("serialize");
+        let decoded: SnapshotTest = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(test.name, decoded.name);
+        assert_eq!(test.input, decoded.input);
+    }
+
+    #[test]
+    fn test_snapshot_suite_serialize_deserialize() {
+        let suite = SnapshotSuite {
+            tests: vec![
+                SnapshotTest {
+                    name: "t1".to_string(),
+                    input: "1".to_string(),
+                    output_hash: "h1".to_string(),
+                    rust_output: "o1".to_string(),
+                    metadata: SnapshotMetadata {
+                        created_at: "now".to_string(),
+                        updated_at: "now".to_string(),
+                        ruchy_version: "1.0".to_string(),
+                        rustc_version: "1.75".to_string(),
+                    },
+                },
+            ],
+            config: SnapshotConfig::default(),
+        };
+        let toml_str = toml::to_string(&suite).expect("serialize");
+        let decoded: SnapshotSuite = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(suite.tests.len(), decoded.tests.len());
+    }
+
+    #[test]
+    fn test_snapshot_transform_error() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-transform-err"),
+            fail_on_missing: false,
+        };
+
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).expect("load");
+
+        // Test with transform that returns error
+        let result = runner.test("error_test", "input", |_| {
+            Err(anyhow::anyhow!("Transform failed"))
+        });
+        assert!(result.is_err());
+    }
+}

@@ -743,4 +743,465 @@ mod tests {
         let areas = converter.identify_coverage_areas("while x > 0 { x = x - 1 }");
         assert!(areas.contains(&"iteration".to_string()));
     }
+
+    // === EXTREME TDD Round 21 - Coverage Push Tests ===
+
+    #[test]
+    fn test_generated_test_debug() {
+        let test = GeneratedTest {
+            name: "test".to_string(),
+            code: "code".to_string(),
+            category: TestCategory::Unit,
+            coverage_areas: vec![],
+        };
+        let debug = format!("{:?}", test);
+        assert!(debug.contains("GeneratedTest"));
+    }
+
+    #[test]
+    fn test_test_category_debug() {
+        let cat = TestCategory::Unit;
+        let debug = format!("{:?}", cat);
+        assert_eq!(debug, "Unit");
+    }
+
+    #[test]
+    fn test_test_category_clone() {
+        let cat1 = TestCategory::Property;
+        let cat2 = cat1.clone();
+        assert_eq!(cat1, cat2);
+    }
+
+    #[test]
+    fn test_test_category_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(TestCategory::Unit);
+        set.insert(TestCategory::Integration);
+        set.insert(TestCategory::Unit); // Duplicate
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_conversion_config_debug() {
+        let config = ConversionConfig::default();
+        let debug = format!("{:?}", config);
+        assert!(debug.contains("ConversionConfig"));
+    }
+
+    #[test]
+    fn test_session_with_error_result() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "error_test".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![
+                TimestampedEvent {
+                    id: EventId(1),
+                    timestamp_ns: 1000,
+                    event: Event::Input {
+                        text: "invalid syntax".to_string(),
+                        mode: InputMode::Interactive,
+                    },
+                    causality: vec![],
+                },
+                TimestampedEvent {
+                    id: EventId(2),
+                    timestamp_ns: 2000,
+                    event: Event::Output {
+                        result: EvalResult::Error {
+                            message: "Parse error".to_string(),
+                        },
+                        stdout: vec![],
+                        stderr: vec![],
+                    },
+                    causality: vec![],
+                },
+            ],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "error").expect("convert");
+        // Should generate error handling tests
+        assert!(tests.iter().any(|t| t.category == TestCategory::ErrorHandling));
+    }
+
+    #[test]
+    fn test_session_with_unit_result() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "unit_test".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![
+                TimestampedEvent {
+                    id: EventId(1),
+                    timestamp_ns: 1000,
+                    event: Event::Input {
+                        text: "let x = 42".to_string(),
+                        mode: InputMode::Paste,
+                    },
+                    causality: vec![],
+                },
+                TimestampedEvent {
+                    id: EventId(2),
+                    timestamp_ns: 2000,
+                    event: Event::Output {
+                        result: EvalResult::Unit,
+                        stdout: vec![],
+                        stderr: vec![],
+                    },
+                    causality: vec![],
+                },
+            ],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "unit").expect("convert");
+        assert!(!tests.is_empty());
+    }
+
+    #[test]
+    fn test_session_with_string_wrapped_value() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "string_test".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![
+                TimestampedEvent {
+                    id: EventId(1),
+                    timestamp_ns: 1000,
+                    event: Event::Input {
+                        text: "\"hello\"".to_string(),
+                        mode: InputMode::File,
+                    },
+                    causality: vec![],
+                },
+                TimestampedEvent {
+                    id: EventId(2),
+                    timestamp_ns: 2000,
+                    event: Event::Output {
+                        result: EvalResult::Success {
+                            value: "String(\"hello\")".to_string(),
+                        },
+                        stdout: vec![],
+                        stderr: vec![],
+                    },
+                    causality: vec![],
+                },
+            ],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "string_wrap").expect("convert");
+        // Verify the String("...") format is handled
+        assert!(!tests.is_empty());
+        let unit_tests: Vec<_> = tests.iter().filter(|t| t.category == TestCategory::Unit).collect();
+        assert!(!unit_tests.is_empty());
+    }
+
+    #[test]
+    fn test_session_with_script_mode() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "script_test".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![
+                TimestampedEvent {
+                    id: EventId(1),
+                    timestamp_ns: 1000,
+                    event: Event::Input {
+                        text: "script.ruchy".to_string(),
+                        mode: InputMode::Script,
+                    },
+                    causality: vec![],
+                },
+                TimestampedEvent {
+                    id: EventId(2),
+                    timestamp_ns: 2000,
+                    event: Event::Output {
+                        result: EvalResult::Success {
+                            value: "script executed".to_string(),
+                        },
+                        stdout: vec![],
+                        stderr: vec![],
+                    },
+                    causality: vec![],
+                },
+            ],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "script").expect("convert");
+        assert!(!tests.is_empty());
+    }
+
+    #[test]
+    fn test_write_tests_creates_file() {
+        let converter = ReplayConverter::new();
+        let tests = vec![
+            GeneratedTest {
+                name: "test_one".to_string(),
+                code: "#[test]\nfn test_one() {}".to_string(),
+                category: TestCategory::Unit,
+                coverage_areas: vec!["area1".to_string()],
+            },
+            GeneratedTest {
+                name: "test_two".to_string(),
+                code: "#[test]\nfn test_two() {}".to_string(),
+                category: TestCategory::Integration,
+                coverage_areas: vec!["area2".to_string()],
+            },
+        ];
+        let temp_dir = std::env::temp_dir();
+        let output_path = temp_dir.join("test_generated.rs");
+        converter.write_tests(&tests, &output_path).expect("write");
+        assert!(output_path.exists());
+        let content = std::fs::read_to_string(&output_path).expect("read");
+        assert!(content.contains("Unit Tests"));
+        assert!(content.contains("Integration Tests"));
+        // Clean up
+        std::fs::remove_file(&output_path).ok();
+    }
+
+    #[test]
+    fn test_convert_file_nonexistent() {
+        let converter = ReplayConverter::new();
+        let result = converter.convert_file(Path::new("/nonexistent/path.replay"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_session_without_property_tests() {
+        let config = ConversionConfig {
+            test_module_prefix: "test".to_string(),
+            include_property_tests: false,
+            include_benchmarks: false,
+            timeout_ms: 1000,
+        };
+        let converter = ReplayConverter::with_config(config);
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "no_prop".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![
+                TimestampedEvent {
+                    id: EventId(1),
+                    timestamp_ns: 1000,
+                    event: Event::Input {
+                        text: "1".to_string(),
+                        mode: InputMode::Interactive,
+                    },
+                    causality: vec![],
+                },
+                TimestampedEvent {
+                    id: EventId(2),
+                    timestamp_ns: 2000,
+                    event: Event::Output {
+                        result: EvalResult::Success {
+                            value: "1".to_string(),
+                        },
+                        stdout: vec![],
+                        stderr: vec![],
+                    },
+                    causality: vec![],
+                },
+            ],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "no_prop").expect("convert");
+        // Should NOT have property tests
+        assert!(!tests.iter().any(|t| t.category == TestCategory::Property));
+    }
+
+    #[test]
+    fn test_coverage_introspection() {
+        let converter = ReplayConverter::new();
+        // Question mark for introspection (not null coalescing)
+        let areas = converter.identify_coverage_areas("x?");
+        assert!(areas.contains(&"repl_introspection".to_string()));
+    }
+
+    #[test]
+    fn test_empty_session() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "empty".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        let tests = converter.convert_session(&session, "empty").expect("convert");
+        // Should at least have integration and property tests
+        assert!(tests.iter().any(|t| t.category == TestCategory::Integration));
+    }
+
+    #[test]
+    fn test_all_test_categories_in_write() {
+        let converter = ReplayConverter::new();
+        let tests = vec![
+            GeneratedTest {
+                name: "unit".to_string(),
+                code: "unit".to_string(),
+                category: TestCategory::Unit,
+                coverage_areas: vec![],
+            },
+            GeneratedTest {
+                name: "integration".to_string(),
+                code: "integration".to_string(),
+                category: TestCategory::Integration,
+                coverage_areas: vec![],
+            },
+            GeneratedTest {
+                name: "property".to_string(),
+                code: "property".to_string(),
+                category: TestCategory::Property,
+                coverage_areas: vec![],
+            },
+            GeneratedTest {
+                name: "error".to_string(),
+                code: "error".to_string(),
+                category: TestCategory::ErrorHandling,
+                coverage_areas: vec![],
+            },
+            GeneratedTest {
+                name: "bench".to_string(),
+                code: "bench".to_string(),
+                category: TestCategory::Benchmark,
+                coverage_areas: vec![],
+            },
+        ];
+        let temp_dir = std::env::temp_dir();
+        let output_path = temp_dir.join("test_all_categories.rs");
+        converter.write_tests(&tests, &output_path).expect("write");
+        let content = std::fs::read_to_string(&output_path).expect("read");
+        assert!(content.contains("Unit Tests"));
+        assert!(content.contains("Integration Tests"));
+        assert!(content.contains("Property Tests"));
+        assert!(content.contains("ErrorHandling Tests"));
+        assert!(content.contains("Benchmark Tests"));
+        std::fs::remove_file(&output_path).ok();
+    }
+
+    #[test]
+    fn test_hyphenated_prefix() {
+        let converter = ReplayConverter::new();
+        let session = ReplSession {
+            version: SemVer::new(1, 0, 0),
+            metadata: SessionMetadata {
+                session_id: "test".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            },
+            environment: Environment {
+                seed: 0,
+                feature_flags: vec![],
+                resource_limits: ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline: vec![],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+        // Use hyphenated prefix - should be sanitized to underscores
+        let tests = converter.convert_session(&session, "my-replay-session").expect("convert");
+        for test in &tests {
+            assert!(!test.name.contains('-'), "Test name should not contain hyphens: {}", test.name);
+        }
+    }
 }
