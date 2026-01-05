@@ -284,4 +284,51 @@ mod tests {
         assert_eq!(InstructionFormat::from_u8(3), Some(InstructionFormat::Ax));
         assert_eq!(InstructionFormat::from_u8(4), None);
     }
+
+    // === EXTREME TDD Round 19 tests ===
+
+    #[test]
+    fn test_instruction_debug() {
+        let instr = Instruction::abc(OpCode::Add, 0, 1, 2);
+        let debug_str = format!("{:?}", instr);
+        assert!(debug_str.contains("Instruction"));
+    }
+
+    #[test]
+    fn test_instruction_clone() {
+        let instr1 = Instruction::abc(OpCode::Sub, 5, 6, 7);
+        let instr2 = instr1;
+        assert_eq!(instr1, instr2);
+    }
+
+    #[test]
+    fn test_instruction_format_debug() {
+        let fmt = InstructionFormat::ABC;
+        let debug_str = format!("{:?}", fmt);
+        assert_eq!(debug_str, "ABC");
+    }
+
+    #[test]
+    fn test_instruction_format_clone() {
+        let fmt1 = InstructionFormat::ABx;
+        let fmt2 = fmt1;
+        assert_eq!(fmt1, fmt2);
+    }
+
+    #[test]
+    fn test_instruction_zero_operands() {
+        let instr = Instruction::abc(OpCode::Nop, 0, 0, 0);
+        assert_eq!(instr.get_a(), 0);
+        assert_eq!(instr.get_b(), 0);
+        assert_eq!(instr.get_c(), 0);
+    }
+
+    #[test]
+    fn test_instruction_max_register_value() {
+        // Test maximum 8-bit register values
+        let instr = Instruction::abc(OpCode::Move, 255, 255, 255);
+        assert_eq!(instr.get_a(), 255);
+        assert_eq!(instr.get_b(), 255);
+        assert_eq!(instr.get_c(), 255);
+    }
 }

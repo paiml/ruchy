@@ -236,6 +236,55 @@ mod tests {
         assert_eq!(unifier.solve(&var1), MonoType::Int);
         assert_eq!(unifier.solve(&var2), MonoType::Int);
     }
+
+    // === EXTREME TDD Round 19 tests ===
+
+    #[test]
+    fn test_unifier_default() {
+        let unifier = Unifier::default();
+        assert!(unifier.substitution().is_empty());
+    }
+
+    #[test]
+    fn test_unifier_apply_no_substitution() {
+        let unifier = Unifier::new();
+        let ty = MonoType::Int;
+        // Applying substitution to concrete type should return same type
+        assert_eq!(unifier.apply(&ty), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_optional_types() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let opt1 = MonoType::Optional(Box::new(MonoType::Var(var.clone())));
+        let opt2 = MonoType::Optional(Box::new(MonoType::String));
+        assert!(unifier.unify(&opt1, &opt2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::String);
+    }
+
+    #[test]
+    fn test_unify_same_var() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        // Unifying τ0 with itself should succeed
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Var(var))
+            .is_ok());
+    }
+
+    #[test]
+    fn test_unify_unit_type() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Unit, &MonoType::Unit).is_ok());
+    }
+
+    #[test]
+    fn test_unify_float_types() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Float, &MonoType::Float).is_ok());
+        assert!(unifier.unify(&MonoType::Float, &MonoType::Int).is_err());
+    }
 }
 #[cfg(test)]
 mod property_tests_unify {

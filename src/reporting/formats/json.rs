@@ -193,4 +193,38 @@ mod tests {
         assert!(output.contains("\"failed\""));
         assert!(output.contains("\"errors\""));
     }
+
+    // === EXTREME TDD Round 19 tests ===
+
+    #[test]
+    fn test_escape_json_backslash() {
+        assert_eq!(escape_json("path\\to\\file"), "path\\\\to\\\\file");
+    }
+
+    #[test]
+    fn test_escape_json_carriage_return() {
+        assert_eq!(escape_json("line1\r\nline2"), "line1\\r\\nline2");
+    }
+
+    #[test]
+    fn test_json_formatter_default_not_pretty() {
+        let fmt = JsonFormatter::default();
+        assert!(!fmt.pretty);
+    }
+
+    #[test]
+    fn test_pretty_print_preserves_strings() {
+        // Strings with special chars should be preserved
+        let json = r#"{"message":"hello\nworld"}"#;
+        let pretty = pretty_print_json(json);
+        assert!(pretty.contains("hello\\nworld"));
+    }
+
+    #[test]
+    fn test_json_formatter_empty_errors() {
+        let report = TranspileReport::new(50, 50, 0);
+        let fmt = JsonFormatter::default();
+        let output = fmt.format(&report);
+        assert!(output.contains("\"errors\":[]"));
+    }
 }
