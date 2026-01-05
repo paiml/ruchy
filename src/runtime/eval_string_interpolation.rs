@@ -225,6 +225,97 @@ mod tests {
 
         assert_eq!(result.to_string(), "\"Hello world!\"");
     }
+
+    // === EXTREME TDD Round 16 tests ===
+
+    #[test]
+    fn test_format_value_with_spec_float() {
+        let float_val = Value::Float(3.14159);
+        let result = format_value_with_spec(&float_val, "f");
+        assert!(result.starts_with("3.14"));
+        assert!(result.len() >= 6); // Should have decimal places
+    }
+
+    #[test]
+    fn test_format_value_with_spec_string() {
+        let str_val = Value::from_string("hello".to_string());
+        let result = format_value_with_spec(&str_val, "s");
+        assert!(result.contains("hello"));
+    }
+
+    #[test]
+    fn test_format_value_with_spec_unknown() {
+        let val = Value::Integer(42);
+        let result = format_value_with_spec(&val, "unknown_spec");
+        // Unknown spec should fall back to to_string()
+        assert_eq!(result, "42");
+    }
+
+    #[test]
+    fn test_format_value_for_interpolation_array() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let result = format_value_for_interpolation(&arr);
+        assert_eq!(result, "[1, 2, 3]");
+    }
+
+    #[test]
+    fn test_format_value_for_interpolation_tuple() {
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = format_value_for_interpolation(&tuple);
+        assert_eq!(result, "(1, 2)");
+    }
+
+    #[test]
+    fn test_format_value_for_interpolation_object() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("x".to_string(), Value::Integer(10));
+        let obj = Value::Object(Arc::new(map));
+        let result = format_value_for_interpolation(&obj);
+        assert!(result.starts_with('{'));
+        assert!(result.contains("x: 10"));
+        assert!(result.ends_with('}'));
+    }
+
+    #[test]
+    fn test_format_value_for_display_array() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]));
+        let result = format_value_for_display(&arr);
+        // Strings should have quotes in display
+        assert!(result.contains("\"a\""));
+        assert!(result.contains("\"b\""));
+    }
+
+    #[test]
+    fn test_string_interpolation_with_format_spec() {
+        let parts = vec![
+            StringPart::Text("Value: ".to_string()),
+            StringPart::ExprWithFormat {
+                expr: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(255, None)),
+                    Span::new(0, 3),
+                )),
+                format_spec: "x".to_string(),
+            },
+        ];
+
+        let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
+
+        // 255 in hex is "ff"
+        let result_str = result.to_string();
+        assert!(result_str.contains("ff"), "Expected hex format, got {result_str}");
+    }
 }
 
 #[cfg(test)]
