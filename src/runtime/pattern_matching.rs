@@ -386,7 +386,7 @@ fn match_err_pattern_helper(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{Literal, Pattern, StructPatternField};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Span, StructPatternField};
     use crate::runtime::Value;
     use std::collections::HashMap;
 
@@ -905,5 +905,494 @@ mod tests {
         let literal_pattern = Pattern::Literal(Literal::Integer(42, None));
         assert!(match_pattern(&literal_pattern, &Value::Integer(43)).is_none());
         assert!(match_pattern(&literal_pattern, &Value::from_string("42".to_string())).is_none());
+    }
+
+    // Test 13: AtBinding Pattern
+    #[test]
+    fn test_at_binding_pattern() {
+        let at_pattern = Pattern::AtBinding {
+            name: "whole".to_string(),
+            pattern: Box::new(Pattern::Tuple(vec![
+                Pattern::Identifier("x".to_string()),
+                Pattern::Identifier("y".to_string()),
+            ])),
+        };
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let binding = match_pattern(&at_pattern, &tuple);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 3); // x, y, whole
+        assert!(bindings.iter().any(|(n, _)| n == "whole"));
+        assert!(bindings.iter().any(|(n, _)| n == "x"));
+        assert!(bindings.iter().any(|(n, _)| n == "y"));
+    }
+
+    // Test 14: AtBinding with failing inner pattern
+    #[test]
+    fn test_at_binding_pattern_failure() {
+        let at_pattern = Pattern::AtBinding {
+            name: "whole".to_string(),
+            pattern: Box::new(Pattern::Literal(Literal::Integer(42, None))),
+        };
+        let value = Value::Integer(99);
+        assert!(match_pattern(&at_pattern, &value).is_none());
+    }
+
+    // Test 15: Mut Pattern
+    #[test]
+    fn test_mut_pattern() {
+        let mut_pattern = Pattern::Mut(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::Integer(42);
+        let binding = match_pattern(&mut_pattern, &value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+        assert!(values_equal(&bindings[0].1, &Value::Integer(42)));
+    }
+
+    // Test 16: WithDefault Pattern
+    #[test]
+    fn test_with_default_pattern() {
+        let default_pattern = Pattern::WithDefault {
+            pattern: Box::new(Pattern::Identifier("x".to_string())),
+            default: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::new(0, 1),
+            )),
+        };
+        let value = Value::Integer(42);
+        let binding = match_pattern(&default_pattern, &value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+    }
+
+    // Test 17: QualifiedName Pattern
+    #[test]
+    fn test_qualified_name_pattern() {
+        let qn_pattern = Pattern::QualifiedName(vec!["Foo".to_string(), "Bar".to_string()]);
+        let value = Value::Integer(42);
+        // QualifiedName patterns currently always return None
+        assert!(match_pattern(&qn_pattern, &value).is_none());
+    }
+
+    // Test 18: TupleVariant Pattern
+    #[test]
+    fn test_tuple_variant_pattern() {
+        let variant_pattern = Pattern::TupleVariant {
+            path: vec!["Some".to_string()],
+            patterns: vec![Pattern::Identifier("inner".to_string())],
+        };
+        let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(42)]));
+        let binding = match_pattern(&variant_pattern, &tuple_value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "inner");
+    }
+
+    // Test 19: Rest Pattern standalone
+    #[test]
+    fn test_rest_pattern_standalone() {
+        let rest_pattern = Pattern::Rest;
+        let value = Value::Integer(42);
+        let binding = match_pattern(&rest_pattern, &value);
+        assert!(binding.is_some());
+        assert!(binding.expect("should succeed").is_empty());
+    }
+
+    // Test 20: RestNamed Pattern standalone
+    #[test]
+    fn test_rest_named_pattern_standalone() {
+        let rest_named = Pattern::RestNamed("rest".to_string());
+        let value = Value::Integer(42);
+        let binding = match_pattern(&rest_named, &value);
+        assert!(binding.is_some());
+        assert!(binding.expect("should succeed").is_empty());
+    }
+
+    // Test 21: Ok Pattern matching
+    #[test]
+    fn test_ok_pattern_matching() {
+        let ok_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Ok".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map
+        }));
+
+        let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("val".to_string())));
+        let binding = match_pattern(&ok_pattern, &ok_value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "val");
+        assert!(values_equal(&bindings[0].1, &Value::Integer(42)));
+    }
+
+    // Test 22: Err Pattern matching
+    #[test]
+    fn test_err_pattern_matching() {
+        let err_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Err".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::from_string("error".to_string())])));
+            map
+        }));
+
+        let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        let binding = match_pattern(&err_pattern, &err_value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "e");
+    }
+
+    // Test 23: Ok Pattern not matching Err value
+    #[test]
+    fn test_ok_pattern_not_matching_err() {
+        let err_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Err".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map
+        }));
+
+        let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("val".to_string())));
+        assert!(match_pattern(&ok_pattern, &err_value).is_none());
+    }
+
+    // Test 24: Err Pattern not matching Ok value
+    #[test]
+    fn test_err_pattern_not_matching_ok() {
+        let ok_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Ok".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map
+        }));
+
+        let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        assert!(match_pattern(&err_pattern, &ok_value).is_none());
+    }
+
+    // Test 25: Range pattern matching
+    #[test]
+    fn test_range_pattern_matching_inclusive() {
+        let range_pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        };
+        assert!(match_pattern(&range_pattern, &Value::Integer(1)).is_some());
+        assert!(match_pattern(&range_pattern, &Value::Integer(5)).is_some());
+        assert!(match_pattern(&range_pattern, &Value::Integer(10)).is_some());
+        assert!(match_pattern(&range_pattern, &Value::Integer(0)).is_none());
+        assert!(match_pattern(&range_pattern, &Value::Integer(11)).is_none());
+    }
+
+    // Test 26: Range pattern exclusive
+    #[test]
+    fn test_range_pattern_matching_exclusive() {
+        let range_pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: false,
+        };
+        assert!(match_pattern(&range_pattern, &Value::Integer(1)).is_some());
+        assert!(match_pattern(&range_pattern, &Value::Integer(9)).is_some());
+        assert!(match_pattern(&range_pattern, &Value::Integer(10)).is_none()); // Not inclusive
+        assert!(match_pattern(&range_pattern, &Value::Integer(0)).is_none());
+    }
+
+    // Test 27: EnumVariant equality
+    #[test]
+    fn test_enum_variant_equality() {
+        let v1 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        let v2 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        let v3 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(99)]),
+        };
+        assert!(values_equal(&v1, &v2));
+        assert!(!values_equal(&v1, &v3));
+    }
+
+    // Test 28: EnumVariant None equality
+    #[test]
+    fn test_enum_variant_none_equality() {
+        let v1 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        let v2 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        let v3 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: None,
+        };
+        assert!(values_equal(&v1, &v2));
+        assert!(!values_equal(&v1, &v3)); // Different variant names
+    }
+
+    // Test 29: Object/Struct equality
+    #[test]
+    fn test_object_equality() {
+        let o1 = Value::Object(Arc::new({
+            let mut m = HashMap::new();
+            m.insert("a".to_string(), Value::Integer(1));
+            m.insert("b".to_string(), Value::Integer(2));
+            m
+        }));
+        let o2 = Value::Object(Arc::new({
+            let mut m = HashMap::new();
+            m.insert("a".to_string(), Value::Integer(1));
+            m.insert("b".to_string(), Value::Integer(2));
+            m
+        }));
+        let o3 = Value::Object(Arc::new({
+            let mut m = HashMap::new();
+            m.insert("a".to_string(), Value::Integer(1));
+            m
+        }));
+        assert!(values_equal(&o1, &o2));
+        assert!(!values_equal(&o1, &o3)); // Different number of fields
+    }
+
+    // Test 30: Nil equality
+    #[test]
+    fn test_nil_equality() {
+        assert!(values_equal(&Value::Nil, &Value::Nil));
+        assert!(!values_equal(&Value::Nil, &Value::Integer(0)));
+    }
+
+    // Test 31: Bool equality
+    #[test]
+    fn test_bool_equality() {
+        assert!(values_equal(&Value::Bool(true), &Value::Bool(true)));
+        assert!(values_equal(&Value::Bool(false), &Value::Bool(false)));
+        assert!(!values_equal(&Value::Bool(true), &Value::Bool(false)));
+    }
+
+    // Test 32: Some pattern on wrong type
+    #[test]
+    fn test_some_pattern_on_wrong_type() {
+        let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        // Integer is not an EnumVariant
+        assert!(match_pattern(&some_pattern, &Value::Integer(42)).is_none());
+    }
+
+    // Test 33: None pattern on wrong type
+    #[test]
+    fn test_none_pattern_on_wrong_type() {
+        let none_pattern = Pattern::None;
+        // Integer is not an EnumVariant
+        assert!(match_pattern(&none_pattern, &Value::Integer(42)).is_none());
+    }
+
+    // Test 34: Range pattern with non-integer value
+    #[test]
+    fn test_range_pattern_non_integer() {
+        let range_pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        };
+        // Float is not an Integer
+        assert!(match_pattern(&range_pattern, &Value::Float(5.0)).is_none());
+    }
+
+    // Test 35: Struct pattern with missing field
+    #[test]
+    fn test_struct_pattern_missing_field() {
+        let struct_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("name".to_string(), Value::from_string("Alice".to_string()));
+            map
+        }));
+
+        let struct_pattern = Pattern::Struct {
+            name: "Person".to_string(),
+            fields: vec![
+                StructPatternField {
+                    name: "name".to_string(),
+                    pattern: Some(Pattern::Identifier("n".to_string())),
+                },
+                StructPatternField {
+                    name: "age".to_string(), // This field doesn't exist
+                    pattern: Some(Pattern::Identifier("a".to_string())),
+                },
+            ],
+            has_rest: false,
+        };
+
+        assert!(match_pattern(&struct_pattern, &struct_value).is_none());
+    }
+
+    // Test 36: Struct pattern with shorthand (no pattern)
+    #[test]
+    fn test_struct_pattern_shorthand() {
+        let struct_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("name".to_string(), Value::from_string("Alice".to_string()));
+            map
+        }));
+
+        let struct_pattern = Pattern::Struct {
+            name: "Person".to_string(),
+            fields: vec![StructPatternField {
+                name: "name".to_string(),
+                pattern: None, // Shorthand - binds directly to field name
+            }],
+            has_rest: false,
+        };
+
+        let binding = match_pattern(&struct_pattern, &struct_value);
+        assert!(binding.is_some());
+        let bindings = binding.expect("should succeed");
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "name");
+    }
+
+    // Test 37: List pattern with not enough elements for rest
+    #[test]
+    fn test_list_pattern_rest_not_enough_elements() {
+        let list_value = Value::Array(Arc::from(vec![Value::Integer(1)]));
+
+        // Pattern requires 2 non-rest elements but list has only 1
+        let pattern = Pattern::List(vec![
+            Pattern::Identifier("first".to_string()),
+            Pattern::RestNamed("middle".to_string()),
+            Pattern::Identifier("last".to_string()),
+        ]);
+
+        assert!(match_pattern(&pattern, &list_value).is_none());
+    }
+
+    // Test 38: Ok pattern with empty data
+    #[test]
+    fn test_ok_pattern_empty_data() {
+        let ok_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Ok".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![]))); // Empty data
+            map
+        }));
+
+        let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("val".to_string())));
+        assert!(match_pattern(&ok_pattern, &ok_value).is_none());
+    }
+
+    // Test 39: Err pattern with empty data
+    #[test]
+    fn test_err_pattern_empty_data() {
+        let err_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("type".to_string(), Value::from_string("Err".to_string()));
+            map.insert("data".to_string(), Value::Array(Arc::from(vec![]))); // Empty data
+            map
+        }));
+
+        let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        assert!(match_pattern(&err_pattern, &err_value).is_none());
+    }
+
+    // Test 40: Ok pattern on non-object
+    #[test]
+    fn test_ok_pattern_non_object() {
+        let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("val".to_string())));
+        assert!(match_pattern(&ok_pattern, &Value::Integer(42)).is_none());
+    }
+
+    // Test 41: Err pattern on non-object
+    #[test]
+    fn test_err_pattern_non_object() {
+        let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        assert!(match_pattern(&err_pattern, &Value::Integer(42)).is_none());
+    }
+
+    // Test 42: Some with empty data
+    #[test]
+    fn test_some_pattern_empty_data() {
+        let some_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![]), // Empty data
+        };
+        let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        assert!(match_pattern(&some_pattern, &some_value).is_none());
+    }
+
+    // Test 43: Some pattern with None data
+    #[test]
+    fn test_some_pattern_none_data() {
+        let some_value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: None,
+        };
+        let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        assert!(match_pattern(&some_pattern, &some_value).is_none());
+    }
+
+    // Test 44: Tuple pattern on list
+    #[test]
+    fn test_tuple_pattern_on_list() {
+        let tuple_pattern = Pattern::Tuple(vec![Pattern::Identifier("x".to_string())]);
+        let list_value = Value::Array(Arc::from(vec![Value::Integer(42)]));
+        // Tuple patterns should not match lists
+        assert!(match_pattern(&tuple_pattern, &list_value).is_none());
+    }
+
+    // Test 45: List pattern on tuple
+    #[test]
+    fn test_list_pattern_on_tuple() {
+        let list_pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
+        let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(42)]));
+        // List patterns should not match tuples
+        assert!(match_pattern(&list_pattern, &tuple_value).is_none());
+    }
+
+    // Test 46: Range pattern with non-literal patterns
+    #[test]
+    fn test_range_pattern_non_literal_bounds() {
+        let range_pattern = Pattern::Range {
+            start: Box::new(Pattern::Identifier("x".to_string())), // Not a literal
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        };
+        assert!(match_pattern(&range_pattern, &Value::Integer(5)).is_none());
+    }
+
+    // Test 47: Object equality with different field values
+    #[test]
+    fn test_object_equality_different_values() {
+        let o1 = Value::Object(Arc::new({
+            let mut m = HashMap::new();
+            m.insert("a".to_string(), Value::Integer(1));
+            m
+        }));
+        let o2 = Value::Object(Arc::new({
+            let mut m = HashMap::new();
+            m.insert("a".to_string(), Value::Integer(2));
+            m
+        }));
+        assert!(!values_equal(&o1, &o2));
     }
 }
