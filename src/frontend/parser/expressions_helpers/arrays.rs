@@ -207,6 +207,369 @@ mod tests {
         assert!(result.is_ok(), "Mixed spread expression should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // List produces List ExprKind
+    // ============================================================
+
+    #[test]
+    fn test_list_produces_list_exprkind() {
+        let expr = parse("[1, 2, 3]").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::List(_)),
+                "Should produce List ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_empty_list_produces_list_exprkind() {
+        let expr = parse("[]").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::List(_)),
+                "Empty list should produce List"
+            );
+        }
+    }
+
+    #[test]
+    fn test_array_init_produces_array_init_exprkind() {
+        let expr = parse("[0; 5]").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::ArrayInit { .. }),
+                "Should produce ArrayInit ExprKind"
+            );
+        }
+    }
+
+    // ============================================================
+    // Integer lists
+    // ============================================================
+
+    #[test]
+    fn test_list_single_int() {
+        let result = parse("[42]");
+        assert!(result.is_ok(), "Single int list should parse");
+    }
+
+    #[test]
+    fn test_list_two_ints() {
+        let result = parse("[1, 2]");
+        assert!(result.is_ok(), "Two int list should parse");
+    }
+
+    #[test]
+    fn test_list_five_ints() {
+        let result = parse("[1, 2, 3, 4, 5]");
+        assert!(result.is_ok(), "Five int list should parse");
+    }
+
+    #[test]
+    fn test_list_negative_ints() {
+        let result = parse("[-1, -2, -3]");
+        assert!(result.is_ok(), "Negative int list should parse");
+    }
+
+    #[test]
+    fn test_list_large_ints() {
+        let result = parse("[1000000, 2000000, 3000000]");
+        assert!(result.is_ok(), "Large int list should parse");
+    }
+
+    // ============================================================
+    // Float lists
+    // ============================================================
+
+    #[test]
+    fn test_list_floats() {
+        let result = parse("[1.0, 2.5, 3.14]");
+        assert!(result.is_ok(), "Float list should parse");
+    }
+
+    #[test]
+    fn test_list_negative_floats() {
+        let result = parse("[-1.0, -2.5]");
+        assert!(result.is_ok(), "Negative float list should parse");
+    }
+
+    // ============================================================
+    // String lists
+    // ============================================================
+
+    #[test]
+    fn test_list_strings() {
+        let result = parse("[\"a\", \"b\", \"c\"]");
+        assert!(result.is_ok(), "String list should parse");
+    }
+
+    #[test]
+    fn test_list_empty_strings() {
+        let result = parse("[\"\", \"\"]");
+        assert!(result.is_ok(), "Empty string list should parse");
+    }
+
+    #[test]
+    fn test_list_multiword_strings() {
+        let result = parse("[\"hello world\", \"foo bar\"]");
+        assert!(result.is_ok(), "Multiword string list should parse");
+    }
+
+    // ============================================================
+    // Boolean lists
+    // ============================================================
+
+    #[test]
+    fn test_list_booleans() {
+        let result = parse("[true, false, true]");
+        assert!(result.is_ok(), "Boolean list should parse");
+    }
+
+    #[test]
+    fn test_list_all_true() {
+        let result = parse("[true, true, true]");
+        assert!(result.is_ok(), "All true list should parse");
+    }
+
+    #[test]
+    fn test_list_all_false() {
+        let result = parse("[false, false]");
+        assert!(result.is_ok(), "All false list should parse");
+    }
+
+    // ============================================================
+    // Mixed type lists
+    // ============================================================
+
+    #[test]
+    fn test_list_mixed_int_float() {
+        let result = parse("[1, 2.5, 3]");
+        assert!(result.is_ok(), "Mixed int/float list should parse");
+    }
+
+    #[test]
+    fn test_list_mixed_various() {
+        let result = parse("[1, \"hello\", true]");
+        assert!(result.is_ok(), "Mixed various types should parse");
+    }
+
+    // ============================================================
+    // Nested lists
+    // ============================================================
+
+    #[test]
+    fn test_nested_empty_lists() {
+        let result = parse("[[], []]");
+        assert!(result.is_ok(), "Nested empty lists should parse");
+    }
+
+    #[test]
+    fn test_nested_two_level() {
+        let result = parse("[[1, 2], [3, 4]]");
+        assert!(result.is_ok(), "Two level nested should parse");
+    }
+
+    #[test]
+    fn test_nested_three_level() {
+        let result = parse("[[[1]]]");
+        assert!(result.is_ok(), "Three level nested should parse");
+    }
+
+    #[test]
+    fn test_nested_mixed_depths() {
+        let result = parse("[1, [2, 3], [[4]]]");
+        assert!(result.is_ok(), "Mixed depth nested should parse");
+    }
+
+    // ============================================================
+    // Array initialization
+    // ============================================================
+
+    #[test]
+    fn test_array_init_zero() {
+        let result = parse("[0; 10]");
+        assert!(result.is_ok(), "Zero array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_one() {
+        let result = parse("[1; 5]");
+        assert!(result.is_ok(), "One array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_string() {
+        let result = parse("[\"x\"; 3]");
+        assert!(result.is_ok(), "String array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_boolean() {
+        let result = parse("[false; 4]");
+        assert!(result.is_ok(), "Boolean array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_empty_list() {
+        let result = parse("[[]; 3]");
+        assert!(result.is_ok(), "Empty list array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_expression_size() {
+        let result = parse("[0; n]");
+        assert!(result.is_ok(), "Expression size array init should parse");
+    }
+
+    #[test]
+    fn test_array_init_expression_value() {
+        let result = parse("[default_value; 10]");
+        assert!(result.is_ok(), "Expression value array init should parse");
+    }
+
+    // ============================================================
+    // Spread expressions
+    // ============================================================
+
+    #[test]
+    fn test_spread_only() {
+        let result = parse("[...items]");
+        assert!(result.is_ok(), "Spread only should parse");
+    }
+
+    #[test]
+    fn test_spread_at_start() {
+        let result = parse("[...first, 1, 2]");
+        assert!(result.is_ok(), "Spread at start should parse");
+    }
+
+    #[test]
+    fn test_spread_at_end() {
+        let result = parse("[1, 2, ...rest]");
+        assert!(result.is_ok(), "Spread at end should parse");
+    }
+
+    #[test]
+    fn test_spread_in_middle() {
+        let result = parse("[1, ...middle, 2]");
+        assert!(result.is_ok(), "Spread in middle should parse");
+    }
+
+    #[test]
+    fn test_multiple_spreads() {
+        let result = parse("[...a, ...b]");
+        assert!(result.is_ok(), "Multiple spreads should parse");
+    }
+
+    #[test]
+    fn test_spread_function_call() {
+        let result = parse("[...get_items()]");
+        assert!(result.is_ok(), "Spread function call should parse");
+    }
+
+    // ============================================================
+    // Trailing commas
+    // ============================================================
+
+    #[test]
+    fn test_trailing_comma_single() {
+        let result = parse("[1,]");
+        assert!(result.is_ok(), "Single element trailing comma should parse");
+    }
+
+    #[test]
+    fn test_trailing_comma_multiple() {
+        let result = parse("[1, 2, 3,]");
+        assert!(result.is_ok(), "Multiple element trailing comma should parse");
+    }
+
+    #[test]
+    fn test_trailing_comma_nested() {
+        let result = parse("[[1, 2,], [3, 4,],]");
+        assert!(result.is_ok(), "Nested trailing commas should parse");
+    }
+
+    // ============================================================
+    // List comprehensions
+    // ============================================================
+
+    #[test]
+    fn test_list_comprehension_simple() {
+        let result = parse("[x for x in items]");
+        assert!(result.is_ok(), "Simple list comprehension should parse");
+    }
+
+    #[test]
+    fn test_list_comprehension_expression() {
+        let result = parse("[x * 2 for x in items]");
+        assert!(result.is_ok(), "Expression list comprehension should parse");
+    }
+
+    #[test]
+    fn test_list_comprehension_with_filter() {
+        let result = parse("[x for x in items if x > 0]");
+        assert!(result.is_ok(), "Filtered list comprehension should parse");
+    }
+
+    #[test]
+    fn test_list_comprehension_range() {
+        let result = parse("[x for x in 0..10]");
+        assert!(result.is_ok(), "Range list comprehension should parse");
+    }
+
+    #[test]
+    fn test_list_comprehension_method_call() {
+        let result = parse("[s.len() for s in strings]");
+        assert!(result.is_ok(), "Method call list comprehension should parse");
+    }
+
+    // ============================================================
+    // Expression elements
+    // ============================================================
+
+    #[test]
+    fn test_list_with_arithmetic() {
+        let result = parse("[1 + 2, 3 * 4, 5 - 6]");
+        assert!(result.is_ok(), "Arithmetic expression list should parse");
+    }
+
+    #[test]
+    fn test_list_with_function_calls() {
+        let result = parse("[foo(), bar(), baz()]");
+        assert!(result.is_ok(), "Function call list should parse");
+    }
+
+    #[test]
+    fn test_list_with_method_calls() {
+        let result = parse("[a.len(), b.size(), c.count()]");
+        assert!(result.is_ok(), "Method call list should parse");
+    }
+
+    #[test]
+    fn test_list_with_conditionals() {
+        let result = parse("[if a { 1 } else { 0 }, if b { 2 } else { 0 }]");
+        assert!(result.is_ok(), "Conditional expression list should parse");
+    }
+
     // Property tests for arrays
     #[cfg(test)]
     mod property_tests {
