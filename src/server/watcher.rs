@@ -137,4 +137,70 @@ mod tests {
         let second = watcher.check_changes();
         assert!(second.is_none(), "Should debounce rapid changes");
     }
+
+    #[test]
+    fn test_watcher_new_creates_instance() {
+        let temp_dir = tempdir().expect("operation should succeed in test");
+        let watch_path = temp_dir.path().to_path_buf();
+        let result = FileWatcher::new(vec![watch_path], 500);
+        assert!(result.is_ok(), "Should create watcher successfully");
+    }
+
+    #[test]
+    fn test_watcher_check_changes_no_events() {
+        let temp_dir = tempdir().expect("operation should succeed in test");
+        let watch_path = temp_dir.path().to_path_buf();
+        let mut watcher = FileWatcher::new(vec![watch_path], 100)
+            .expect("operation should succeed in test");
+        // No file changes made
+        let changes = watcher.check_changes();
+        assert!(changes.is_none(), "Should return None when no changes");
+    }
+
+    #[test]
+    fn test_watcher_detects_file_modification() {
+        let temp_dir = tempdir().expect("operation should succeed in test");
+        let watch_path = temp_dir.path().to_path_buf();
+        let test_file = watch_path.join("existing.txt");
+        fs::write(&test_file, "initial").expect("operation should succeed in test");
+
+        let mut watcher = FileWatcher::new(vec![watch_path], 100)
+            .expect("operation should succeed in test");
+
+        // Modify file
+        thread::sleep(Duration::from_millis(100));
+        fs::write(&test_file, "modified").expect("operation should succeed in test");
+        thread::sleep(Duration::from_millis(200));
+
+        let changes = watcher.check_changes();
+        assert!(changes.is_some(), "Should detect file modification");
+    }
+
+    #[test]
+    fn test_watcher_detects_file_deletion() {
+        let temp_dir = tempdir().expect("operation should succeed in test");
+        let watch_path = temp_dir.path().to_path_buf();
+        let test_file = watch_path.join("to_delete.txt");
+        fs::write(&test_file, "content").expect("operation should succeed in test");
+
+        let mut watcher = FileWatcher::new(vec![watch_path], 100)
+            .expect("operation should succeed in test");
+
+        // Delete file
+        thread::sleep(Duration::from_millis(100));
+        fs::remove_file(&test_file).expect("operation should succeed in test");
+        thread::sleep(Duration::from_millis(200));
+
+        let changes = watcher.check_changes();
+        assert!(changes.is_some(), "Should detect file deletion");
+    }
+
+    #[test]
+    fn test_watcher_with_zero_debounce() {
+        let temp_dir = tempdir().expect("operation should succeed in test");
+        let watch_path = temp_dir.path().to_path_buf();
+        // Zero debounce should still work
+        let result = FileWatcher::new(vec![watch_path], 0);
+        assert!(result.is_ok(), "Should create watcher with zero debounce");
+    }
 }
