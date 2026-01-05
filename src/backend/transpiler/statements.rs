@@ -1978,96 +1978,11 @@ impl Transpiler {
             }
         }
     }
-    /// Handle math functions (sqrt, pow, abs, min, max, floor, ceil, round)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new("sqrt(4.0)");
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("sqrt"));
-    /// ```
-    fn try_transpile_math_function(
-        &self,
-        base_name: &str,
-        args: &[Expr],
-    ) -> Result<Option<TokenStream>> {
-        match (base_name, args.len()) {
-            ("sqrt", 1) => self.transpile_sqrt(&args[0]).map(Some),
-            ("pow", 2) => self.transpile_pow(&args[0], &args[1]).map(Some),
-            ("abs", 1) => self.transpile_abs(&args[0]).map(Some),
-            ("min", 2) => self.transpile_min(&args[0], &args[1]).map(Some),
-            ("max", 2) => self.transpile_max(&args[0], &args[1]).map(Some),
-            ("floor", 1) => self.transpile_floor(&args[0]).map(Some),
-            ("ceil", 1) => self.transpile_ceil(&args[0]).map(Some),
-            ("round", 1) => self.transpile_round(&args[0]).map(Some),
-            _ => Ok(None),
-        }
-    }
-    fn transpile_sqrt(&self, arg: &Expr) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_expr(arg)?;
-        Ok(quote! { (#arg_tokens as f64).sqrt() })
-    }
-    fn transpile_pow(&self, base: &Expr, exp: &Expr) -> Result<TokenStream> {
-        let base_tokens = self.transpile_expr(base)?;
-        let exp_tokens = self.transpile_expr(exp)?;
-        Ok(quote! { (#base_tokens as f64).powf(#exp_tokens as f64) })
-    }
-    fn transpile_abs(&self, arg: &Expr) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_expr(arg)?;
-        // Check if arg is negative literal to handle type
-        if let ExprKind::Unary {
-            op: UnaryOp::Negate,
-            operand,
-        } = &arg.kind
-        {
-            if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
-                return Ok(quote! { (#arg_tokens).abs() });
-            }
-        }
-        // For all other cases, use standard abs
-        Ok(quote! { #arg_tokens.abs() })
-    }
-    fn transpile_min(&self, a: &Expr, b: &Expr) -> Result<TokenStream> {
-        let a_tokens = self.transpile_expr(a)?;
-        let b_tokens = self.transpile_expr(b)?;
-        // Check if args are float literals to determine type
-        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_)))
-            || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
-        if is_float {
-            Ok(quote! { (#a_tokens as f64).min(#b_tokens as f64) })
-        } else {
-            Ok(quote! { std::cmp::min(#a_tokens, #b_tokens) })
-        }
-    }
-    fn transpile_max(&self, a: &Expr, b: &Expr) -> Result<TokenStream> {
-        let a_tokens = self.transpile_expr(a)?;
-        let b_tokens = self.transpile_expr(b)?;
-        // Check if args are float literals to determine type
-        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_)))
-            || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
-        if is_float {
-            Ok(quote! { (#a_tokens as f64).max(#b_tokens as f64) })
-        } else {
-            Ok(quote! { std::cmp::max(#a_tokens, #b_tokens) })
-        }
-    }
-    fn transpile_floor(&self, arg: &Expr) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_expr(arg)?;
-        Ok(quote! { (#arg_tokens as f64).floor() })
-    }
-    fn transpile_ceil(&self, arg: &Expr) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_expr(arg)?;
-        Ok(quote! { (#arg_tokens as f64).ceil() })
-    }
-    fn transpile_round(&self, arg: &Expr) -> Result<TokenStream> {
-        let arg_tokens = self.transpile_expr(arg)?;
-        Ok(quote! { (#arg_tokens as f64).round() })
-    }
+
+    // EXTREME TDD Round 56: Math built-in functions moved to math_builtins.rs
+    // (try_transpile_math_function, transpile_sqrt, transpile_pow, transpile_abs,
+    //  transpile_min, transpile_max, transpile_floor, transpile_ceil, transpile_round)
+
     /// Handle input functions (input, readline)
     ///
     /// # Examples
