@@ -1254,11 +1254,43 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: Apex Hunt: EXTREME TDD Round 29 - Coverage Push'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-01-05T16:08:57.461564776+00:00
-  updated: 2026-01-05T16:08:57.461564776+00:00
+  updated: 2026-01-05T16:11:06.180911076+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 30 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 30 - Coverage Push'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T16:11:14.099624165+00:00
+  updated: 2026-01-05T16:13:27.577257321+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 31 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 31 - Coverage Push'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T16:13:52.650174401+00:00
+  updated: 2026-01-05T16:13:52.650174401+00:00
   spec: null
   acceptance_criteria: []
   phases: []
