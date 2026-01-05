@@ -58,6 +58,7 @@ mod control_flow; // EXTREME TDD Round 53: if/for/while/loop/try-catch
 mod bindings; // EXTREME TDD Round 54: let bindings and patterns
 mod imports; // EXTREME TDD Round 55: imports and exports
 mod math_builtins; // EXTREME TDD Round 56: math built-in functions
+mod input_builtins; // EXTREME TDD Round 57: input/readline functions
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
