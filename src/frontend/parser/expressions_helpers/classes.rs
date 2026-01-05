@@ -1277,4 +1277,303 @@ mod tests {
         let result = Parser::new(code).parse();
         assert!(result.is_ok() || result.is_err());
     }
+
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Class produces Class ExprKind
+    // ============================================================
+
+    #[test]
+    fn test_class_produces_class_exprkind() {
+        let expr = parse("class Foo { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Class { .. }),
+                "Should produce Class ExprKind"
+            );
+        }
+    }
+
+    // ============================================================
+    // Basic class variations
+    // ============================================================
+
+    #[test]
+    fn test_class_single_char_name() {
+        let result = parse("class A { }");
+        assert!(result.is_ok(), "Single char class name should parse");
+    }
+
+    #[test]
+    fn test_class_long_name() {
+        let result = parse("class VeryLongClassNameWithManyChars { }");
+        assert!(result.is_ok(), "Long class name should parse");
+    }
+
+    #[test]
+    fn test_class_underscore_name() {
+        let result = parse("class _InternalClass { }");
+        assert!(result.is_ok(), "Underscore prefix class should parse");
+    }
+
+    #[test]
+    fn test_class_numbers_in_name() {
+        let result = parse("class Vector3D { }");
+        assert!(result.is_ok(), "Class with numbers should parse");
+    }
+
+    // ============================================================
+    // Field variations
+    // ============================================================
+
+    #[test]
+    fn test_class_one_field() {
+        let result = parse("class Point { x: i32 }");
+        assert!(result.is_ok(), "One field should parse");
+    }
+
+    #[test]
+    fn test_class_two_fields() {
+        let result = parse("class Point { x: i32, y: i32 }");
+        assert!(result.is_ok(), "Two fields should parse");
+    }
+
+    #[test]
+    fn test_class_three_fields() {
+        let result = parse("class Point { x: i32, y: i32, z: i32 }");
+        assert!(result.is_ok(), "Three fields should parse");
+    }
+
+    #[test]
+    fn test_class_field_i32() {
+        let result = parse("class Data { value: i32 }");
+        assert!(result.is_ok(), "i32 field should parse");
+    }
+
+    #[test]
+    fn test_class_field_f64() {
+        let result = parse("class Data { value: f64 }");
+        assert!(result.is_ok(), "f64 field should parse");
+    }
+
+    #[test]
+    fn test_class_field_string() {
+        let result = parse("class Data { name: String }");
+        assert!(result.is_ok(), "String field should parse");
+    }
+
+    #[test]
+    fn test_class_field_bool() {
+        let result = parse("class Data { flag: bool }");
+        assert!(result.is_ok(), "bool field should parse");
+    }
+
+    #[test]
+    fn test_class_field_option() {
+        let result = parse("class Data { maybe: Option<i32> }");
+        assert!(result.is_ok(), "Option field should parse");
+    }
+
+    #[test]
+    fn test_class_field_vec() {
+        let result = parse("class Data { items: Vec<i32> }");
+        assert!(result.is_ok(), "Vec field should parse");
+    }
+
+    // ============================================================
+    // Method variations
+    // ============================================================
+
+    #[test]
+    fn test_class_method_no_params() {
+        let result = parse("class Foo { fun get(&self) { } }");
+        assert!(result.is_ok(), "Method no params should parse");
+    }
+
+    #[test]
+    fn test_class_method_one_param() {
+        let result = parse("class Foo { fun set(&mut self, v: i32) { } }");
+        assert!(result.is_ok(), "Method one param should parse");
+    }
+
+    #[test]
+    fn test_class_method_two_params() {
+        let result = parse("class Foo { fun compute(&self, a: i32, b: i32) { } }");
+        assert!(result.is_ok(), "Method two params should parse");
+    }
+
+    #[test]
+    fn test_class_static_method_no_params() {
+        let result = parse("class Foo { static fun create() { } }");
+        assert!(result.is_ok(), "Static no params should parse");
+    }
+
+    #[test]
+    fn test_class_static_method_with_params() {
+        let result = parse("class Foo { static fun create(a: i32) { } }");
+        assert!(result.is_ok(), "Static with params should parse");
+    }
+
+    // ============================================================
+    // Constructor variations
+    // ============================================================
+
+    #[test]
+    fn test_class_constructor_no_params() {
+        let result = parse("class Foo { new() { } }");
+        assert!(result.is_ok(), "Constructor no params should parse");
+    }
+
+    #[test]
+    fn test_class_constructor_one_param() {
+        let result = parse("class Foo { new(x: i32) { } }");
+        assert!(result.is_ok(), "Constructor one param should parse");
+    }
+
+    #[test]
+    fn test_class_constructor_three_params() {
+        let result = parse("class Foo { new(a: i32, b: i32, c: i32) { } }");
+        assert!(result.is_ok(), "Constructor three params should parse");
+    }
+
+    #[test]
+    fn test_class_init_constructor_no_params() {
+        let result = parse("class Foo { init() { } }");
+        assert!(result.is_ok(), "Init no params should parse");
+    }
+
+    #[test]
+    fn test_class_init_constructor_with_params() {
+        let result = parse("class Foo { init(v: i32) { self.v = v } }");
+        assert!(result.is_ok(), "Init with params should parse");
+    }
+
+    // ============================================================
+    // Inheritance variations
+    // ============================================================
+
+    #[test]
+    fn test_class_extends_one() {
+        let result = parse("class Child : Parent { }");
+        assert!(result.is_ok(), "Extends one should parse");
+    }
+
+    #[test]
+    fn test_class_extends_with_trait() {
+        let result = parse("class Child : Parent + Trait1 { }");
+        assert!(result.is_ok(), "Extends with trait should parse");
+    }
+
+    #[test]
+    fn test_class_extends_with_two_traits() {
+        let result = parse("class Child : Parent + Trait1 + Trait2 { }");
+        assert!(result.is_ok(), "Extends with two traits should parse");
+    }
+
+    #[test]
+    fn test_class_extends_generic_parent() {
+        let result = parse("class IntList : List<i32> { }");
+        assert!(result.is_ok(), "Extends generic parent should parse");
+    }
+
+    // ============================================================
+    // Generic class variations
+    // ============================================================
+
+    #[test]
+    fn test_class_generic_one() {
+        let result = parse("class Box<T> { }");
+        assert!(result.is_ok(), "One generic should parse");
+    }
+
+    #[test]
+    fn test_class_generic_two() {
+        let result = parse("class Pair<A, B> { }");
+        assert!(result.is_ok(), "Two generics should parse");
+    }
+
+    #[test]
+    fn test_class_generic_three() {
+        let result = parse("class Triple<A, B, C> { }");
+        assert!(result.is_ok(), "Three generics should parse");
+    }
+
+    #[test]
+    fn test_class_generic_with_field() {
+        let result = parse("class Box<T> { value: T }");
+        assert!(result.is_ok(), "Generic with field should parse");
+    }
+
+    #[test]
+    fn test_class_generic_with_method() {
+        let result = parse("class Box<T> { fun get(&self) -> T { self.value } }");
+        assert!(result.is_ok(), "Generic with method should parse");
+    }
+
+    // ============================================================
+    // Visibility combinations
+    // ============================================================
+
+    #[test]
+    fn test_class_pub_field_only() {
+        let result = parse("class Foo { pub x: i32 }");
+        assert!(result.is_ok(), "Pub field should parse");
+    }
+
+    #[test]
+    fn test_class_mut_field_only() {
+        let result = parse("class Foo { mut x: i32 }");
+        assert!(result.is_ok(), "Mut field should parse");
+    }
+
+    #[test]
+    fn test_class_pub_method() {
+        let result = parse("class Foo { pub fun get(&self) { } }");
+        assert!(result.is_ok(), "Pub method should parse");
+    }
+
+    #[test]
+    fn test_class_pub_static_method() {
+        let result = parse("class Foo { pub static fun create() { } }");
+        assert!(result.is_ok(), "Pub static method should parse");
+    }
+
+    // ============================================================
+    // Combined class tests
+    // ============================================================
+
+    #[test]
+    fn test_class_fields_and_methods() {
+        let result = parse("class Point { x: i32, y: i32, fun len(&self) { } }");
+        assert!(result.is_ok(), "Fields and methods should parse");
+    }
+
+    #[test]
+    fn test_class_constructor_and_method() {
+        let result = parse("class Foo { new() { } fun get(&self) { } }");
+        assert!(result.is_ok(), "Constructor and method should parse");
+    }
+
+    #[test]
+    fn test_class_all_elements() {
+        let result = parse("class Foo { x: i32, new(x: i32) { self.x = x } fun get(&self) -> i32 { self.x } static fun zero() { } }");
+        assert!(result.is_ok(), "All elements should parse");
+    }
 }
