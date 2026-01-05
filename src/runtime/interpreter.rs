@@ -24,7 +24,6 @@ use crate::frontend::ast::{
     StringPart,
 };
 use crate::frontend::Param;
-use smallvec::{smallvec, SmallVec};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// ISSUE-117: Parse JSON string into Value (complexity: 8)
 pub fn json_parse(json_str: &str) -> Result<Value, InterpreterError> {
     let json_value: serde_json::Value = serde_json::from_str(json_str)
-        .map_err(|e| InterpreterError::RuntimeError(format!("JSON.parse() failed: {}", e)))?;
+        .map_err(|e| InterpreterError::RuntimeError(format!("JSON.parse() failed: {e}")))?;
     serde_to_value(&json_value)
 }
 
@@ -17,7 +17,7 @@ pub fn json_parse(json_str: &str) -> Result<Value, InterpreterError> {
 pub fn json_stringify(value: &Value) -> Result<Value, InterpreterError> {
     let json_value = value_to_serde(value)?;
     let json_str = serde_json::to_string(&json_value).map_err(|e| {
-        InterpreterError::RuntimeError(format!("JSON.stringify() failed: {}", e))
+        InterpreterError::RuntimeError(format!("JSON.stringify() failed: {e}"))
     })?;
     Ok(Value::from_string(json_str))
 }
@@ -83,8 +83,7 @@ pub fn value_to_serde(value: &Value) -> Result<serde_json::Value, InterpreterErr
             Ok(serde_json::Value::Object(json_obj))
         }
         _ => Err(InterpreterError::RuntimeError(format!(
-            "Cannot convert {:?} to JSON",
-            value
+            "Cannot convert {value:?} to JSON"
         ))),
     }
 }

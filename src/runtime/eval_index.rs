@@ -73,8 +73,7 @@ pub fn slice_string(
                 let adjusted = len as i64 + i;
                 if adjusted < 0 {
                     return Err(InterpreterError::RuntimeError(format!(
-                        "Range start {} is out of bounds for string of length {}",
-                        i, len
+                        "Range start {i} is out of bounds for string of length {len}"
                     )));
                 }
                 adjusted as usize
@@ -83,9 +82,9 @@ pub fn slice_string(
             }
         }
         _ => {
+            let type_name = start.type_name();
             return Err(InterpreterError::RuntimeError(format!(
-                "Range start must be integer or nil, got {}",
-                start.type_name()
+                "Range start must be integer or nil, got {type_name}"
             )))
         }
     };
@@ -98,8 +97,7 @@ pub fn slice_string(
                 let adjusted = len as i64 + i;
                 if adjusted < 0 {
                     return Err(InterpreterError::RuntimeError(format!(
-                        "Range end {} is out of bounds for string of length {}",
-                        i, len
+                        "Range end {i} is out of bounds for string of length {len}"
                     )));
                 }
                 adjusted as usize
@@ -108,9 +106,9 @@ pub fn slice_string(
             }
         }
         _ => {
+            let type_name = end.type_name();
             return Err(InterpreterError::RuntimeError(format!(
-                "Range end must be integer or nil, got {}",
-                end.type_name()
+                "Range end must be integer or nil, got {type_name}"
             )))
         }
     };
@@ -118,15 +116,13 @@ pub fn slice_string(
     // Validate range
     if start_idx > end_idx {
         return Err(InterpreterError::RuntimeError(format!(
-            "Invalid range: start {} is greater than end {}",
-            start_idx, end_idx
+            "Invalid range: start {start_idx} is greater than end {end_idx}"
         )));
     }
 
     if end_idx > len {
         return Err(InterpreterError::RuntimeError(format!(
-            "Range end {} is out of bounds for string of length {}",
-            end_idx, len
+            "Range end {end_idx} is out of bounds for string of length {len}"
         )));
     }
 

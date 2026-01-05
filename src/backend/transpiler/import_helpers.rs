@@ -3,7 +3,6 @@
 //! This module provides functions for generating Rust code for std:: imports,
 //! particularly file operations, process management, and system information.
 
-use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 

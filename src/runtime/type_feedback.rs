@@ -302,7 +302,7 @@ impl TypeFeedback {
         let feedback = self
             .operation_sites
             .entry(site_id)
-            .or_insert_with(OperationFeedback::new);
+            .or_default();
 
         // Record types if not already seen
         if !feedback.left_types.contains(&left_type) {
@@ -327,7 +327,7 @@ impl TypeFeedback {
         let feedback = self
             .variable_types
             .entry(var_name.to_string())
-            .or_insert_with(VariableTypeFeedback::new);
+            .or_default();
 
         // Record type transition if there was a previous type
         if let Some(prev_type) = feedback.dominant_type {
@@ -372,7 +372,7 @@ impl TypeFeedback {
         let feedback = self
             .call_sites
             .entry(site_id)
-            .or_insert_with(CallSiteFeedback::new);
+            .or_default();
 
         // Record argument pattern if not seen before
         if !feedback
