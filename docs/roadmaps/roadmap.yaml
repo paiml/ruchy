@@ -1458,3 +1458,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'EXTREME TDD Round 46: Extract pgo + compile handlers'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 46: Extract pgo + compile handlers'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T18:05:39.503250445+00:00
+  updated: 2026-01-05T18:05:39.503250445+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
