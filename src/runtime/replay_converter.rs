@@ -598,4 +598,149 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_conversion_config_default() {
+        let config = ConversionConfig::default();
+        assert_eq!(config.test_module_prefix, "replay_generated");
+        assert!(config.include_property_tests);
+        assert!(!config.include_benchmarks);
+        assert_eq!(config.timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_conversion_config_clone() {
+        let config = ConversionConfig {
+            test_module_prefix: "custom".to_string(),
+            include_property_tests: false,
+            include_benchmarks: true,
+            timeout_ms: 10000,
+        };
+        let cloned = config.clone();
+        assert_eq!(cloned.test_module_prefix, "custom");
+        assert!(!cloned.include_property_tests);
+        assert!(cloned.include_benchmarks);
+    }
+
+    #[test]
+    fn test_test_category_eq() {
+        assert_eq!(TestCategory::Unit, TestCategory::Unit);
+        assert_eq!(TestCategory::Integration, TestCategory::Integration);
+        assert_ne!(TestCategory::Unit, TestCategory::Integration);
+    }
+
+    #[test]
+    fn test_generated_test_clone() {
+        let test = GeneratedTest {
+            name: "test_foo".to_string(),
+            code: "#[test] fn test_foo() {}".to_string(),
+            category: TestCategory::Unit,
+            coverage_areas: vec!["foo".to_string()],
+        };
+        let cloned = test.clone();
+        assert_eq!(cloned.name, "test_foo");
+        assert_eq!(cloned.category, TestCategory::Unit);
+    }
+
+    #[test]
+    fn test_replay_converter_with_config() {
+        let config = ConversionConfig {
+            test_module_prefix: "custom_prefix".to_string(),
+            include_property_tests: false,
+            include_benchmarks: true,
+            timeout_ms: 1000,
+        };
+        let converter = ReplayConverter::with_config(config);
+        assert_eq!(converter.config.test_module_prefix, "custom_prefix");
+    }
+
+    #[test]
+    fn test_replay_converter_default_impl() {
+        let converter = ReplayConverter::default();
+        assert_eq!(converter.config.test_module_prefix, "replay_generated");
+    }
+
+    #[test]
+    fn test_coverage_function_definition() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("fn add(a, b) { a + b }");
+        assert!(areas.contains(&"function_definition".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_conditional() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("if x > 0 { x } else { -x }");
+        assert!(areas.contains(&"conditional_expressions".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_iteration() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("for i in 0..10 { print(i) }");
+        assert!(areas.contains(&"iteration".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_tuple_operations() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("(1, 2, 3)");
+        assert!(areas.contains(&"tuple_operations".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_null_coalescing() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("x ?? default_value");
+        assert!(areas.contains(&"null_coalescing".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_repl_commands() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas(":help");
+        assert!(areas.contains(&"repl_commands".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_string_interpolation() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas(r#"f"Hello {name}""#);
+        assert!(areas.contains(&"string_interpolation".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_object_operations() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("{name: \"Alice\", age: 30}");
+        assert!(areas.contains(&"object_operations".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_pipeline_operator() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("data |> filter |> map");
+        assert!(areas.contains(&"pipeline_operator".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_spread_operator() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("[...arr1, ...arr2]");
+        assert!(areas.contains(&"spread_operator".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_error_handling() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("try { x } catch { default }");
+        assert!(areas.contains(&"error_handling".to_string()));
+    }
+
+    #[test]
+    fn test_coverage_while_loop() {
+        let converter = ReplayConverter::new();
+        let areas = converter.identify_coverage_areas("while x > 0 { x = x - 1 }");
+        assert!(areas.contains(&"iteration".to_string()));
+    }
 }

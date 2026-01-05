@@ -589,4 +589,447 @@ mod tests {
 
         assert_eq!(state.get("count"), Some(&ActorFieldValue::Integer(1)));
     }
+
+    #[test]
+    fn test_supervision_strategy_one_for_one() {
+        let strategy = SupervisionStrategy::OneForOne {
+            max_restarts: 3,
+            within: Duration::from_secs(60),
+        };
+        if let SupervisionStrategy::OneForOne { max_restarts, within } = strategy {
+            assert_eq!(max_restarts, 3);
+            assert_eq!(within, Duration::from_secs(60));
+        } else {
+            panic!("Expected OneForOne");
+        }
+    }
+
+    #[test]
+    fn test_supervision_strategy_all_for_one() {
+        let strategy = SupervisionStrategy::AllForOne {
+            max_restarts: 5,
+            within: Duration::from_secs(120),
+        };
+        if let SupervisionStrategy::AllForOne { max_restarts, within } = strategy {
+            assert_eq!(max_restarts, 5);
+            assert_eq!(within, Duration::from_secs(120));
+        } else {
+            panic!("Expected AllForOne");
+        }
+    }
+
+    #[test]
+    fn test_supervision_strategy_rest_for_one() {
+        let strategy = SupervisionStrategy::RestForOne {
+            max_restarts: 2,
+            within: Duration::from_secs(30),
+        };
+        if let SupervisionStrategy::RestForOne { max_restarts, within } = strategy {
+            assert_eq!(max_restarts, 2);
+            assert_eq!(within, Duration::from_secs(30));
+        } else {
+            panic!("Expected RestForOne");
+        }
+    }
+
+    #[test]
+    fn test_actor_state_variants() {
+        assert_eq!(ActorState::Starting, ActorState::Starting);
+        assert_eq!(ActorState::Running, ActorState::Running);
+        assert_eq!(ActorState::Stopping, ActorState::Stopping);
+        assert_eq!(ActorState::Stopped, ActorState::Stopped);
+        assert_eq!(ActorState::Restarting, ActorState::Restarting);
+        assert_ne!(ActorState::Starting, ActorState::Running);
+    }
+
+    #[test]
+    fn test_actor_state_failed() {
+        let failed = ActorState::Failed("test error".to_string());
+        if let ActorState::Failed(msg) = failed {
+            assert_eq!(msg, "test error");
+        } else {
+            panic!("Expected Failed state");
+        }
+    }
+
+    #[test]
+    fn test_envelope_user_message() {
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let envelope = Envelope::UserMessage {
+            from: Some("sender".to_string()),
+            message: msg,
+        };
+        if let Envelope::UserMessage { from, message } = envelope {
+            assert_eq!(from, Some("sender".to_string()));
+            assert_eq!(message.message_type, "Test");
+        } else {
+            panic!("Expected UserMessage");
+        }
+    }
+
+    #[test]
+    fn test_envelope_system_message() {
+        let envelope = Envelope::SystemMessage(SystemMessage::Stop);
+        if let Envelope::SystemMessage(SystemMessage::Stop) = envelope {
+            // OK
+        } else {
+            panic!("Expected SystemMessage::Stop");
+        }
+    }
+
+    #[test]
+    fn test_system_message_variants() {
+        let _ = SystemMessage::Start;
+        let _ = SystemMessage::Stop;
+        let _ = SystemMessage::Restart;
+        let supervise = SystemMessage::Supervise("child1".to_string(), "error".to_string());
+        if let SystemMessage::Supervise(child, error) = supervise {
+            assert_eq!(child, "child1");
+            assert_eq!(error, "error");
+        } else {
+            panic!("Expected Supervise");
+        }
+    }
+
+    #[test]
+    fn test_concurrent_actor_new_default_state() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "test_id".to_string(),
+            "TestType".to_string(),
+            state,
+            None,
+        );
+        assert_eq!(actor.id, "test_id");
+        assert_eq!(actor.actor_type, "TestType");
+        assert!(actor.supervisor.is_none());
+
+        let ls = actor.lifecycle_state.read().unwrap();
+        assert_eq!(*ls, ActorState::Starting);
+    }
+
+    #[test]
+    fn test_concurrent_actor_with_supervisor() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "child".to_string(),
+            "Child".to_string(),
+            state,
+            Some("parent".to_string()),
+        );
+        assert_eq!(actor.supervisor, Some("parent".to_string()));
+    }
+
+    #[test]
+    fn test_concurrent_actor_should_restart_within_limit() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        // Default strategy is OneForOne with max_restarts: 3
+        assert!(actor.should_restart());
+    }
+
+    #[test]
+    fn test_concurrent_actor_system_new() {
+        let system = ConcurrentActorSystem::new();
+        let actors = system.actors.read().unwrap();
+        assert!(actors.is_empty());
+    }
+
+    #[test]
+    fn test_concurrent_actor_system_default() {
+        let system = ConcurrentActorSystem::default();
+        let tree = system.supervision_tree.read().unwrap();
+        assert!(tree.is_empty());
+    }
+
+    #[test]
+    fn test_send_message_to_nonexistent_actor() {
+        let system = ConcurrentActorSystem::new();
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let result = system.send_message("nonexistent", msg, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_spawn_actor_with_supervisor() {
+        let system = ConcurrentActorSystem::new();
+
+        // First spawn parent
+        let parent_state = HashMap::new();
+        let parent_handlers = HashMap::new();
+        let parent_id = system
+            .spawn_actor("Parent".to_string(), parent_state, parent_handlers, None)
+            .expect("should spawn parent");
+
+        // Then spawn child with supervisor
+        let child_state = HashMap::new();
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor("Child".to_string(), child_state, child_handlers, Some(parent_id.clone()))
+            .expect("should spawn child");
+
+        // Verify supervision tree
+        let tree = system.supervision_tree.read().unwrap();
+        assert!(tree.get(&parent_id).unwrap().contains(&child_id));
+
+        // Cleanup
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_actor_system_shutdown() {
+        let system = ConcurrentActorSystem::new();
+
+        let state = HashMap::new();
+        let handlers = HashMap::new();
+        let _ = system
+            .spawn_actor("Test".to_string(), state, handlers, None)
+            .expect("should spawn");
+
+        assert!(system.shutdown().is_ok());
+    }
+
+    #[test]
+    fn test_actor_stop_lifecycle() {
+        let mut state = HashMap::new();
+        state.insert("value".to_string(), ActorFieldValue::Integer(42));
+
+        let mut actor = ConcurrentActor::new(
+            "lifecycle_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let handlers = HashMap::new();
+        actor.start(handlers).expect("should start");
+
+        {
+            let ls = actor.lifecycle_state.read().unwrap();
+            assert_eq!(*ls, ActorState::Running);
+        }
+
+        actor.stop().expect("should stop");
+
+        {
+            let ls = actor.lifecycle_state.read().unwrap();
+            assert_eq!(*ls, ActorState::Stopped);
+        }
+    }
+
+    #[test]
+    fn test_actor_initial_state_preserved() {
+        let mut state = HashMap::new();
+        state.insert("name".to_string(), ActorFieldValue::String("test".to_string()));
+        state.insert("count".to_string(), ActorFieldValue::Integer(100));
+
+        let actor = ConcurrentActor::new(
+            "state_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let s = actor.state.read().unwrap();
+        assert_eq!(s.get("name"), Some(&ActorFieldValue::String("test".to_string())));
+        assert_eq!(s.get("count"), Some(&ActorFieldValue::Integer(100)));
+    }
+
+    #[test]
+    fn test_actor_children_initially_empty() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        let children = actor.children.read().unwrap();
+        assert!(children.is_empty());
+    }
+
+    #[test]
+    fn test_actor_restart_count_initially_zero() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        let count = actor.restart_count.lock().unwrap();
+        assert_eq!(*count, 0);
+    }
+
+    #[test]
+    fn test_supervision_strategy_clone() {
+        let strategy = SupervisionStrategy::OneForOne {
+            max_restarts: 5,
+            within: Duration::from_secs(60),
+        };
+        let cloned = strategy.clone();
+        if let SupervisionStrategy::OneForOne { max_restarts, .. } = cloned {
+            assert_eq!(max_restarts, 5);
+        }
+    }
+
+    #[test]
+    fn test_actor_state_clone() {
+        let state = ActorState::Running;
+        let cloned = state.clone();
+        assert_eq!(cloned, ActorState::Running);
+    }
+
+    #[test]
+    fn test_actor_state_debug() {
+        let state = ActorState::Starting;
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("Starting"));
+    }
+
+    #[test]
+    fn test_envelope_debug() {
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let envelope = Envelope::UserMessage { from: None, message: msg };
+        let debug_str = format!("{:?}", envelope);
+        assert!(debug_str.contains("UserMessage"));
+    }
+
+    #[test]
+    fn test_system_message_debug() {
+        let msg = SystemMessage::Start;
+        let debug_str = format!("{:?}", msg);
+        assert!(debug_str.contains("Start"));
+    }
+
+    #[test]
+    fn test_supervision_strategy_debug() {
+        let strategy = SupervisionStrategy::AllForOne {
+            max_restarts: 3,
+            within: Duration::from_secs(30),
+        };
+        let debug_str = format!("{:?}", strategy);
+        assert!(debug_str.contains("AllForOne"));
+    }
+
+    #[test]
+    fn test_actor_send_without_from() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+
+        let mut actor = ConcurrentActor::new(
+            "send_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let handlers = HashMap::new();
+        actor.start(handlers).expect("should start");
+
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        assert!(actor.send(msg, None).is_ok());
+
+        actor.stop().ok();
+    }
+
+    #[test]
+    fn test_actor_thread_handle_none_initially() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "handle_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        assert!(actor.thread_handle.is_none());
+    }
+
+    #[test]
+    fn test_actor_default_supervision_strategy() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "strategy_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        // Default is OneForOne
+        if let SupervisionStrategy::OneForOne { max_restarts, within } = actor.supervision_strategy {
+            assert_eq!(max_restarts, 3);
+            assert_eq!(within, Duration::from_secs(60));
+        } else {
+            panic!("Expected OneForOne default strategy");
+        }
+    }
+
+    #[test]
+    fn test_multiple_actors_in_system() {
+        let system = ConcurrentActorSystem::new();
+
+        let state1 = HashMap::new();
+        let state2 = HashMap::new();
+        let handlers = HashMap::new();
+
+        let id1 = system.spawn_actor("Type1".to_string(), state1, handlers.clone(), None).unwrap();
+        let id2 = system.spawn_actor("Type2".to_string(), state2, handlers, None).unwrap();
+
+        let actors = system.actors.read().unwrap();
+        assert_eq!(actors.len(), 2);
+        assert!(actors.contains_key(&id1));
+        assert!(actors.contains_key(&id2));
+
+        drop(actors);
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_actor_id_format() {
+        let system = ConcurrentActorSystem::new();
+        let state = HashMap::new();
+        let handlers = HashMap::new();
+
+        let id = system.spawn_actor("MyType".to_string(), state, handlers, None).unwrap();
+        assert!(id.starts_with("actor_MyType_"));
+
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_actor_last_restart_initialized() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "restart_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+        // last_restart should be initialized to now
+        let last = actor.last_restart.lock().unwrap();
+        assert!(last.elapsed() < Duration::from_secs(5));
+    }
+
+    #[test]
+    fn test_supervision_tree_initially_empty() {
+        let system = ConcurrentActorSystem::new();
+        let tree = system.supervision_tree.read().unwrap();
+        assert!(tree.is_empty());
+    }
 }

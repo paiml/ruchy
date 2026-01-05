@@ -626,3 +626,201 @@ mod property_tests_arena {
         }
     }
 }
+
+#[cfg(test)]
+mod enabled_tests {
+    use super::*;
+
+    #[test]
+    fn test_arena_stats_default() {
+        let stats = ArenaStats::default();
+        assert_eq!(stats.allocations, 0);
+        assert_eq!(stats.deallocations, 0);
+        assert_eq!(stats.peak_usage, 0);
+        assert_eq!(stats.fragmentation, 0.0);
+        assert_eq!(stats.chunks_allocated, 0);
+    }
+
+    #[test]
+    fn test_arena_stats_clone() {
+        let stats = ArenaStats {
+            allocations: 10,
+            deallocations: 5,
+            peak_usage: 1000,
+            fragmentation: 0.2,
+            chunks_allocated: 2,
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.allocations, 10);
+        assert_eq!(cloned.deallocations, 5);
+    }
+
+    #[test]
+    fn test_arena_stats_debug() {
+        let stats = ArenaStats::default();
+        let debug = format!("{:?}", stats);
+        assert!(debug.contains("allocations"));
+    }
+
+    #[test]
+    fn test_arena_new() {
+        let arena = Arena::new(1024);
+        assert_eq!(arena.max_size, 1024);
+    }
+
+    #[test]
+    fn test_arena_new_with_large_limit() {
+        let arena = Arena::new(1024 * 1024);
+        assert_eq!(arena.max_size, 1024 * 1024);
+    }
+
+    #[test]
+    fn test_arena_initial_stats() {
+        let arena = Arena::new(1024 * 1024);
+        let stats = arena.stats();
+        assert_eq!(stats.allocations, 0);
+        assert_eq!(stats.chunks_allocated, 1);
+    }
+
+    #[test]
+    fn test_arena_used_initially_zero() {
+        let arena = Arena::new(1024 * 1024);
+        assert_eq!(arena.used(), 0);
+    }
+
+    #[test]
+    fn test_chunk_empty() {
+        let chunk = Chunk::empty();
+        assert_eq!(chunk.size, 0);
+        assert_eq!(chunk.pos, 0);
+    }
+
+    #[test]
+    fn test_chunk_new() {
+        let chunk = Chunk::new(1024).expect("should succeed");
+        assert_eq!(chunk.size, 1024);
+        assert_eq!(chunk.pos, 0);
+    }
+
+    #[test]
+    fn test_chunk_reset() {
+        let mut chunk = Chunk::new(1024).expect("should succeed");
+        chunk.pos = 100;
+        chunk.reset();
+        assert_eq!(chunk.pos, 0);
+    }
+
+    #[test]
+    fn test_chunk_try_alloc() {
+        let mut chunk = Chunk::new(1024).expect("should succeed");
+        let result = chunk.try_alloc(64, 8);
+        assert!(result.is_some());
+        assert_eq!(chunk.pos, 64);
+    }
+
+    #[test]
+    fn test_chunk_try_alloc_full() {
+        let mut chunk = Chunk::new(100).expect("should succeed");
+        // Fill it up
+        let _ = chunk.try_alloc(80, 1);
+        // This should fail
+        let result = chunk.try_alloc(50, 1);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_chunk_alignment() {
+        let mut chunk = Chunk::new(1024).expect("should succeed");
+        // Allocate 1 byte at alignment 1
+        let _ = chunk.try_alloc(1, 1);
+        assert_eq!(chunk.pos, 1);
+        // Allocate 4 bytes at alignment 8 - should align to 8
+        let _ = chunk.try_alloc(4, 8);
+        assert_eq!(chunk.pos, 8 + 4); // aligned to 8, then +4
+    }
+
+    #[test]
+    fn test_transactional_arena_new() {
+        let arena = TransactionalArena::new(1024 * 1024);
+        let inner = arena.arena();
+        assert_eq!(inner.used(), 0);
+    }
+
+    #[test]
+    fn test_transactional_arena_checkpoint() {
+        let arena = TransactionalArena::new(1024 * 1024);
+        let checkpoint = arena.checkpoint();
+        assert_eq!(checkpoint.used, 0);
+        assert_eq!(checkpoint.chunks_count, 0);
+    }
+
+    #[test]
+    fn test_pool_new() {
+        let arena = Rc::new(Arena::new(1024 * 1024));
+        let pool: Pool<i32> = Pool::new(arena);
+        let free_list = pool.free_list.borrow();
+        assert!(free_list.is_empty());
+    }
+
+    #[test]
+    fn test_arena_stats_peak_tracking() {
+        let arena = Arena::new(1024 * 1024);
+        arena.alloc(42i32).ok();
+        let stats = arena.stats();
+        assert!(stats.peak_usage > 0);
+    }
+
+    #[test]
+    fn test_arena_stats_allocation_count() {
+        let arena = Arena::new(1024 * 1024);
+        arena.alloc(1i32).ok();
+        arena.alloc(2i32).ok();
+        arena.alloc(3i32).ok();
+        let stats = arena.stats();
+        assert_eq!(stats.allocations, 3);
+    }
+
+    #[test]
+    fn test_arena_reset() {
+        let arena = Arena::new(1024 * 1024);
+        arena.alloc(42i32).ok();
+        arena.alloc(100i64).ok();
+        assert!(arena.used() > 0);
+        arena.reset();
+        // After reset, current chunk position is 0
+        assert_eq!(arena.current_chunk.borrow().pos, 0);
+    }
+
+    #[test]
+    fn test_transactional_arena_rollback() {
+        let arena = TransactionalArena::new(1024 * 1024);
+        let cp = arena.checkpoint();
+        {
+            let inner = arena.arena();
+            inner.alloc(42i32).ok();
+            inner.alloc(100i64).ok();
+        }
+        let used_before = arena.arena().used();
+        assert!(used_before > 0);
+        arena.rollback(cp.id).ok();
+        let used_after = arena.arena().used();
+        assert_eq!(used_after, 0);
+    }
+
+    #[test]
+    fn test_pool_alloc() {
+        let arena = Rc::new(Arena::new(1024 * 1024));
+        let pool: Pool<i32> = Pool::new(arena);
+        let boxed = pool.alloc(42).expect("should allocate");
+        assert_eq!(*boxed, 42);
+    }
+
+    #[test]
+    fn test_transactional_arena_commit() {
+        let mut arena = TransactionalArena::new(1024 * 1024);
+        let _cp = arena.checkpoint();
+        arena.arena().alloc(42i32).ok();
+        let result = arena.commit();
+        assert!(result.is_ok());
+    }
+}
