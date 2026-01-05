@@ -3,7 +3,7 @@
 //! This validates that the WASM REPL correctly captures println output
 //! Bug: <https://github.com/paiml/ruchy/issues/PRINTLN_STDOUT>
 
-use ruchy::wasm::repl::{ReplOutput, WasmRepl};
+use ruchy::wasm::{ReplOutput, WasmRepl};
 
 fn main() {
     println!("=== EXTREME TDD - Testing println stdout capture ===\n");
