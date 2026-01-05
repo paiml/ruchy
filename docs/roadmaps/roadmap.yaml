@@ -1334,11 +1334,27 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: Apex Hunt: EXTREME TDD Round 34 - REPL Module Explosion'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-01-05T16:42:24.510189537+00:00
-  updated: 2026-01-05T16:42:24.510189537+00:00
+  updated: 2026-01-05T16:46:49.019661158+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 35 - Backend WASM Extraction'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 35 - Backend WASM Extraction'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T16:53:28.941945749+00:00
+  updated: 2026-01-05T16:53:28.941945749+00:00
   spec: null
   acceptance_criteria: []
   phases: []

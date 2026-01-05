@@ -5,74 +5,16 @@ use wasm_encoder::{
     CodeSection, ConstExpr, ExportSection, Function, FunctionSection, GlobalSection, GlobalType,
     Instruction, MemorySection, MemoryType, Module, TypeSection, ValType,
 };
+
+// Submodules
 #[cfg(test)]
 mod debug;
+pub mod symbol_table;
+pub mod types;
 
-/// WASM value types for type inference
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum WasmType {
-    I32,
-    F32,
-    I64,
-    F64,
-}
-
-/// Symbol table for tracking variable types and local indices across scopes
-/// Complexity: <10 per method (Toyota Way)
-#[derive(Debug, Clone)]
-struct SymbolTable {
-    scopes: Vec<std::collections::HashMap<String, (WasmType, u32)>>,
-    next_local_index: u32,
-}
-
-impl SymbolTable {
-    fn new() -> Self {
-        Self {
-            scopes: vec![std::collections::HashMap::new()],
-            next_local_index: 0,
-        }
-    }
-
-    fn push_scope(&mut self) {
-        self.scopes.push(std::collections::HashMap::new());
-    }
-
-    fn pop_scope(&mut self) {
-        if self.scopes.len() > 1 {
-            self.scopes.pop();
-        }
-    }
-
-    fn insert(&mut self, name: String, ty: WasmType) {
-        let index = self.next_local_index;
-        self.next_local_index += 1;
-        if let Some(scope) = self.scopes.last_mut() {
-            scope.insert(name, (ty, index));
-        }
-    }
-
-    fn lookup(&self, name: &str) -> Option<(WasmType, u32)> {
-        // Search from innermost to outermost scope
-        for scope in self.scopes.iter().rev() {
-            if let Some(&(ty, index)) = scope.get(name) {
-                return Some((ty, index));
-            }
-        }
-        None
-    }
-
-    fn lookup_type(&self, name: &str) -> Option<WasmType> {
-        self.lookup(name).map(|(ty, _)| ty)
-    }
-
-    fn lookup_index(&self, name: &str) -> Option<u32> {
-        self.lookup(name).map(|(_, index)| index)
-    }
-
-    fn local_count(&self) -> u32 {
-        self.next_local_index
-    }
-}
+// Re-exports
+pub use symbol_table::SymbolTable;
+pub use types::WasmType;
 
 pub struct WasmEmitter {
     module: Module,
@@ -593,12 +535,7 @@ impl WasmEmitter {
         }
 
         // Collect all unique (type, index) pairs
-        let mut locals: Vec<(WasmType, u32)> = vec![];
-        for scope in &symbols.scopes {
-            for &(ty, index) in scope.values() {
-                locals.push((ty, index));
-            }
-        }
+        let mut locals: Vec<(WasmType, u32)> = symbols.all_locals();
 
         // Sort by index
         locals.sort_by_key(|(_, index)| *index);
@@ -2483,88 +2420,8 @@ mod tests {
         );
     }
 
-    // COVERAGE: SymbolTable tests
-    #[test]
-    fn test_symbol_table_push_pop_scope() {
-        let mut table = SymbolTable::new();
-        assert_eq!(table.scopes.len(), 1);
-        table.push_scope();
-        assert_eq!(table.scopes.len(), 2);
-        table.push_scope();
-        assert_eq!(table.scopes.len(), 3);
-        table.pop_scope();
-        assert_eq!(table.scopes.len(), 2);
-        table.pop_scope();
-        assert_eq!(table.scopes.len(), 1);
-        // Can't pop the last scope
-        table.pop_scope();
-        assert_eq!(table.scopes.len(), 1);
-    }
-
-    #[test]
-    fn test_symbol_table_insert_lookup() {
-        let mut table = SymbolTable::new();
-        table.insert("x".to_string(), WasmType::I32);
-        table.insert("y".to_string(), WasmType::F32);
-
-        assert_eq!(table.lookup("x"), Some((WasmType::I32, 0)));
-        assert_eq!(table.lookup("y"), Some((WasmType::F32, 1)));
-        assert_eq!(table.lookup("z"), None);
-    }
-
-    #[test]
-    fn test_symbol_table_lookup_type_and_index() {
-        let mut table = SymbolTable::new();
-        table.insert("x".to_string(), WasmType::I64);
-
-        assert_eq!(table.lookup_type("x"), Some(WasmType::I64));
-        assert_eq!(table.lookup_index("x"), Some(0));
-        assert_eq!(table.lookup_type("nonexistent"), None);
-        assert_eq!(table.lookup_index("nonexistent"), None);
-    }
-
-    #[test]
-    fn test_symbol_table_local_count() {
-        let mut table = SymbolTable::new();
-        assert_eq!(table.local_count(), 0);
-        table.insert("a".to_string(), WasmType::I32);
-        assert_eq!(table.local_count(), 1);
-        table.insert("b".to_string(), WasmType::I32);
-        assert_eq!(table.local_count(), 2);
-    }
-
-    #[test]
-    fn test_symbol_table_scope_shadowing() {
-        let mut table = SymbolTable::new();
-        table.insert("x".to_string(), WasmType::I32);
-        table.push_scope();
-        table.insert("x".to_string(), WasmType::F64);
-
-        // Inner scope shadows outer
-        assert_eq!(table.lookup_type("x"), Some(WasmType::F64));
-        table.pop_scope();
-        // Outer scope is accessible after pop
-        assert_eq!(table.lookup_type("x"), Some(WasmType::I32));
-    }
-
-    #[test]
-    fn test_wasm_type_eq() {
-        assert_eq!(WasmType::I32, WasmType::I32);
-        assert_eq!(WasmType::F32, WasmType::F32);
-        assert_eq!(WasmType::I64, WasmType::I64);
-        assert_eq!(WasmType::F64, WasmType::F64);
-        assert_ne!(WasmType::I32, WasmType::F32);
-        assert_ne!(WasmType::I64, WasmType::F64);
-    }
-
-    #[test]
-    fn test_wasm_type_clone() {
-        let t1 = WasmType::I32;
-        let t2 = t1;
-        assert_eq!(t1, t2);
-    }
-
     // COVERAGE: Additional expression tests
+    // NOTE: SymbolTable and WasmType tests moved to symbol_table.rs and types.rs
     #[test]
     fn test_while_loop_with_assignment() {
         let code = "let x = 0; while x < 10 { x = x + 1 }";
