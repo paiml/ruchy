@@ -313,4 +313,138 @@ mod tests {
         let result = format_value_with_spec(&Value::Float(1.0), ":.10");
         assert_eq!(result, "1.0000000000");
     }
+
+    // === EXTREME TDD Round 22 - Coverage Push Tests ===
+
+    #[test]
+    fn test_format_array_value() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let result = format_string_with_values("{}", &[arr]);
+        assert!(result.contains("[1, 2]"));
+    }
+
+    #[test]
+    fn test_format_tuple_value() {
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Bool(true)].into_boxed_slice()));
+        let result = format_string_with_values("{}", &[tuple]);
+        assert!(result.contains("1"));
+    }
+
+    #[test]
+    fn test_format_debug_nil() {
+        let result = format_value_debug(&Value::Nil);
+        assert!(result.contains("Nil"));
+    }
+
+    #[test]
+    fn test_format_debug_bool() {
+        let result = format_value_debug(&Value::Bool(false));
+        assert!(result.contains("Bool"));
+        assert!(result.contains("false"));
+    }
+
+    #[test]
+    fn test_format_debug_float() {
+        let result = format_value_debug(&Value::Float(2.718));
+        assert!(result.contains("Float"));
+    }
+
+    #[test]
+    fn test_format_display_array() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)].into_boxed_slice()));
+        let result = format_value_display(&arr);
+        assert!(result.contains("[1]"));
+    }
+
+    #[test]
+    fn test_format_consecutive_debug_placeholders() {
+        let result = format_string_with_values("{:?}{:?}", &[Value::Integer(1), Value::Integer(2)]);
+        assert!(result.contains("Integer"));
+    }
+
+    #[test]
+    fn test_format_mixed_placeholders() {
+        let result = format_string_with_values("{} {:?} {}", &[Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        assert!(result.contains("1"));
+        assert!(result.contains("3"));
+    }
+
+    #[test]
+    fn test_format_with_text_around() {
+        let result = format_string_with_values("Value: {} end", &[Value::Integer(42)]);
+        assert_eq!(result, "Value: 42 end");
+    }
+
+    #[test]
+    fn test_spec_negative_float() {
+        let result = format_value_with_spec(&Value::Float(-3.14159), ":.2");
+        assert_eq!(result, "-3.14");
+    }
+
+    #[test]
+    fn test_spec_very_small_float() {
+        let result = format_value_with_spec(&Value::Float(0.0001), ":.4");
+        assert_eq!(result, "0.0001");
+    }
+
+    #[test]
+    fn test_spec_integer_precision_3() {
+        let result = format_value_with_spec(&Value::Integer(100), ":.3");
+        assert_eq!(result, "100.000");
+    }
+
+    #[test]
+    fn test_format_lone_colon() {
+        let result = format_string_with_values("{:}", &[Value::Integer(1)]);
+        assert_eq!(result, "{:}");
+    }
+
+    #[test]
+    fn test_format_brace_at_end() {
+        let result = format_string_with_values("test{", &[]);
+        assert_eq!(result, "test{");
+    }
+
+    #[test]
+    fn test_format_empty_values_array() {
+        let result = format_string_with_values("no placeholders", &[]);
+        assert_eq!(result, "no placeholders");
+    }
+
+    #[test]
+    fn test_display_empty_string() {
+        let result = format_value_display(&Value::from_string("".to_string()));
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_display_special_chars() {
+        let result = format_value_display(&Value::from_string("line1\nline2".to_string()));
+        assert!(result.contains('\n'));
+    }
+
+    #[test]
+    fn test_spec_nil_value() {
+        let result = format_value_with_spec(&Value::Nil, ":.2");
+        assert_eq!(result, "nil");
+    }
+
+    #[test]
+    fn test_spec_array_value() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)].into_boxed_slice()));
+        let result = format_value_with_spec(&arr, ":.2");
+        assert!(result.contains("[1]"));
+    }
+
+    #[test]
+    fn test_format_negative_integer() {
+        let result = format_string_with_values("{}", &[Value::Integer(-42)]);
+        assert_eq!(result, "-42");
+    }
+
+    #[test]
+    fn test_format_float_small() {
+        let result = format_string_with_values("{}", &[Value::Float(0.001)]);
+        assert_eq!(result, "0.001");
+    }
 }
