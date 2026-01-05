@@ -21,6 +21,10 @@ pub mod fuzz_handler;
 pub mod mutations_handler;
 pub mod property_tests_handler;
 
+// Other extracted handlers
+pub mod oracle_handler;
+pub mod publish_handler;
+
 // Re-export from extracted modules
 pub use bench_handler::handle_bench_command;
 pub use check_handler::handle_check_command;
@@ -40,6 +44,10 @@ pub use wasm_handler::{compile_ruchy_to_wasm, handle_wasm_command};
 pub use fuzz_handler::handle_fuzz_command;
 pub use mutations_handler::handle_mutations_command;
 pub use property_tests_handler::handle_property_tests_command;
+
+// Other re-exports
+pub use oracle_handler::handle_oracle_command;
+pub use publish_handler::handle_publish_command;
 
 // Import for internal use
 use transpile_handler::parse_source;
@@ -2942,247 +2950,8 @@ pub fn handle_replay_to_tests_command(
 // handle_property_tests_command moved to property_tests_handler.rs
 // handle_mutations_command moved to mutations_handler.rs
 // handle_fuzz_command moved to fuzz_handler.rs
-
-/// Handle oracle command - classify compilation errors using ML
-///
-/// Uses aprender `RandomForestClassifier` to categorize rustc errors
-/// and suggest fixes from pattern database.
-///
-/// # Arguments
-/// * `error_message` - The compilation error message
-/// * `code` - Optional error code (e.g., "E0308")
-/// * `format` - Output format ("text" or "json")
-/// * `verbose` - Show confidence scores and details
-///
-/// # Returns
-/// * Classification result with category and suggestions
-pub fn handle_oracle_command(
-    error_message: &str,
-    code: Option<&str>,
-    format: &str,
-    verbose: bool,
-) -> Result<()> {
-    use ruchy::oracle::{CompilationError, ModelPaths, RuchyOracle, SerializedModel};
-
-    if verbose {
-        eprintln!("Classifying error: {}", error_message);
-        if let Some(c) = code {
-            eprintln!("Error code: {}", c);
-        }
-    }
-
-    // Try to load persisted model first, then fall back to training
-    let mut oracle = RuchyOracle::new();
-    let paths = ModelPaths::default();
-    if let Some(model_path) = paths.find_existing() {
-        if let Ok(model) = SerializedModel::load(&model_path) {
-            if verbose {
-                eprintln!("Loaded model from: {}", model_path.display());
-            }
-            oracle.load_from_serialized(&model)?;
-        } else {
-            oracle.train_from_examples()?;
-        }
-    } else {
-        oracle.train_from_examples()?;
-    }
-
-    // Create compilation error
-    let mut error = CompilationError::new(error_message);
-    if let Some(c) = code {
-        error = error.with_code(c);
-    }
-
-    // Classify
-    let classification = oracle.classify(&error);
-
-    // Output result
-    if format == "json" {
-        let json = serde_json::json!({
-            "category": format!("{:?}", classification.category),
-            "confidence": classification.confidence,
-            "suggestions": classification.suggestions.iter().map(|s| {
-                serde_json::json!({
-                    "pattern_id": s.pattern_id,
-                    "description": s.description,
-                    "success_rate": s.success_rate,
-                })
-            }).collect::<Vec<_>>(),
-            "should_auto_fix": classification.should_auto_fix,
-        });
-        println!("{}", serde_json::to_string_pretty(&json)?);
-    } else {
-        println!("Category: {:?}", classification.category);
-        println!("Confidence: {:.2}%", classification.confidence * 100.0);
-
-        if !classification.suggestions.is_empty() {
-            println!("\nSuggested fixes:");
-            for (i, suggestion) in classification.suggestions.iter().enumerate() {
-                println!(
-                    "  {}. {} (success rate: {:.0}%)",
-                    i + 1,
-                    suggestion.description,
-                    suggestion.success_rate * 100.0
-                );
-            }
-        }
-
-        if classification.should_auto_fix {
-            println!("\n✓ Auto-fix recommended");
-        }
-    }
-
-    Ok(())
-}
-
-/// Handle publish command - publish a package to the Ruchy registry
-///
-/// TOOL-FEATURE-001: Package publishing with Ruchy.toml validation
-///
-/// # Arguments
-/// * `registry` - Registry URL to publish to
-/// * `version` - Optional version override (reads from Ruchy.toml if None)
-/// * `dry_run` - Validate without publishing
-/// * `allow_dirty` - Allow publishing with uncommitted changes
-/// * `verbose` - Show detailed output
-///
-/// # Errors
-/// Returns error if:
-/// - Ruchy.toml not found
-/// - Required fields missing (name, version, authors, description, license)
-/// - Invalid semver version
-/// - Package validation fails
-pub fn handle_publish_command(
-    _registry: &str,
-    _version: Option<&str>,
-    dry_run: bool,
-    _allow_dirty: bool,
-    verbose: bool,
-) -> Result<()> {
-    use semver::Version;
-    use serde::Deserialize;
-    use std::env;
-
-    // Package metadata from Ruchy.toml
-    #[derive(Debug, Deserialize)]
-    struct PackageManifest {
-        package: PackageMetadata,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct PackageMetadata {
-        name: String,
-        version: String,
-        authors: Vec<String>,
-        description: String,
-        license: String,
-        repository: Option<String>,
-    }
-
-    // Find Ruchy.toml in current directory
-    let manifest_path = env::current_dir()?.join("Ruchy.toml");
-
-    if !manifest_path.exists() {
-        bail!("Ruchy.toml not found in current directory.\nRun 'ruchy publish' from your package root.");
-    }
-
-    if verbose {
-        eprintln!("📦 Reading manifest: {}", manifest_path.display());
-    }
-
-    // Parse Ruchy.toml
-    let manifest_content =
-        fs::read_to_string(&manifest_path).context("Failed to read Ruchy.toml")?;
-
-    let manifest: PackageManifest = toml::from_str(&manifest_content)
-        .context("Failed to parse Ruchy.toml.\nEnsure all required fields are present: name, version, authors, description, license")?;
-
-    // Validate required fields
-    if manifest.package.name.is_empty() {
-        bail!("Package name cannot be empty in Ruchy.toml");
-    }
-
-    if manifest.package.authors.is_empty() {
-        bail!("At least one author is required in Ruchy.toml");
-    }
-
-    if manifest.package.description.is_empty() {
-        bail!("Package description cannot be empty in Ruchy.toml");
-    }
-
-    if manifest.package.license.is_empty() {
-        bail!("Package license cannot be empty in Ruchy.toml");
-    }
-
-    // Validate semver version
-    Version::parse(&manifest.package.version).context(format!(
-        "Invalid version '{}' in Ruchy.toml.\nMust be valid semver (e.g., 1.0.0, 0.2.3)",
-        manifest.package.version
-    ))?;
-
-    if verbose {
-        eprintln!("✅ Manifest validation passed");
-        eprintln!("   Name: {}", manifest.package.name);
-        eprintln!("   Version: {}", manifest.package.version);
-        eprintln!("   Authors: {}", manifest.package.authors.join(", "));
-        eprintln!("   Description: {}", manifest.package.description);
-        eprintln!("   License: {}", manifest.package.license);
-        if let Some(repo) = &manifest.package.repository {
-            eprintln!("   Repository: {}", repo);
-        }
-    }
-
-    if dry_run {
-        println!(
-            "🔍 Dry-run mode: Validating package '{}'",
-            manifest.package.name
-        );
-        println!("✅ Package validation successful");
-        println!(
-            "📦 Package: {} v{}",
-            manifest.package.name, manifest.package.version
-        );
-        println!("👤 Authors: {}", manifest.package.authors.join(", "));
-        println!("📝 License: {}", manifest.package.license);
-        println!("\n✨ Would publish package (skipped in dry-run mode)");
-        Ok(())
-    } else {
-        // Actually publish to crates.io via cargo publish
-        println!(
-            "📦 Publishing {} v{}...",
-            manifest.package.name, manifest.package.version
-        );
-
-        use std::process::Command;
-
-        // Build cargo publish command
-        let mut cargo_cmd = Command::new("cargo");
-        cargo_cmd.arg("publish");
-
-        if verbose {
-            cargo_cmd.arg("--verbose");
-        }
-
-        if _allow_dirty {
-            cargo_cmd.arg("--allow-dirty");
-        }
-
-        // Execute cargo publish
-        let status = cargo_cmd
-            .status()
-            .context("Failed to execute 'cargo publish'. Ensure cargo is installed.")?;
-
-        if status.success() {
-            println!(
-                "✅ Successfully published {} v{} to crates.io",
-                manifest.package.name, manifest.package.version
-            );
-            Ok(())
-        } else {
-            bail!("cargo publish failed with exit code: {}", status);
-        }
-    }
-}
+// handle_oracle_command moved to oracle_handler.rs
+// handle_publish_command moved to publish_handler.rs
 
 /// Handle Profile-Guided Optimization compilation (PERF-002 Phase 4)
 ///
