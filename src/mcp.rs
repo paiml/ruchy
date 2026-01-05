@@ -624,6 +624,150 @@ mod tests {
         let client = create_ruchy_mcp_client();
         assert!(client.is_ok());
     }
+
+    #[test]
+    fn test_ruchy_mcp_default() {
+        let mcp = RuchyMCP::default();
+        assert!(mcp.server.is_none());
+        assert!(mcp.type_registry.is_empty());
+    }
+
+    #[test]
+    fn test_validate_against_type_unregistered() {
+        let mcp = RuchyMCP::new();
+        let value = serde_json::json!("test");
+        let result = mcp.validate_against_type(&value, "UnknownType");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_json_value_bool() {
+        let value = serde_json::json!(true);
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Bool).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_int() {
+        let value = serde_json::json!(42);
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Int).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_float() {
+        let value = serde_json::json!(3.14);
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Float).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_null() {
+        let value = serde_json::json!(null);
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Unit).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_list() {
+        let value = serde_json::json!([1, 2, 3]);
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::List(Box::new(MonoType::Int))).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_object() {
+        let value = serde_json::json!({"key": "value"});
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Named("Any".to_string())).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_value_type_mismatch() {
+        let value = serde_json::json!("string");
+        assert!(RuchyMCP::validate_json_value(&value, &MonoType::Int).is_err());
+    }
+
+    #[test]
+    fn test_ruchy_mcp_tool_with_input_type() {
+        let tool = RuchyMCPTool::new("test".to_string(), "test".to_string(), |args| Ok(args))
+            .with_input_type(MonoType::String);
+        assert!(tool.input_type.is_some());
+    }
+
+    #[test]
+    fn test_ruchy_mcp_tool_with_output_type() {
+        let tool = RuchyMCPTool::new("test".to_string(), "test".to_string(), |args| Ok(args))
+            .with_output_type(MonoType::Int);
+        assert!(tool.output_type.is_some());
+    }
+
+    #[test]
+    fn test_ruchy_mcp_tool_name() {
+        let tool = RuchyMCPTool::new("my-tool".to_string(), "desc".to_string(), |args| Ok(args));
+        assert_eq!(tool.name(), "my-tool");
+    }
+
+    #[test]
+    fn test_ruchy_mcp_tool_description() {
+        let tool = RuchyMCPTool::new("tool".to_string(), "My description".to_string(), |args| Ok(args));
+        assert_eq!(tool.description(), "My description");
+    }
+
+    #[test]
+    fn test_create_score_tool() {
+        let (name, tool) = create_score_tool();
+        assert_eq!(name, "ruchy-score");
+        assert_eq!(tool.name(), "ruchy-score");
+    }
+
+    #[test]
+    fn test_create_lint_tool() {
+        let (name, tool) = create_lint_tool();
+        assert_eq!(name, "ruchy-lint");
+        assert_eq!(tool.name(), "ruchy-lint");
+    }
+
+    #[test]
+    fn test_create_format_tool() {
+        let (name, tool) = create_format_tool();
+        assert_eq!(name, "ruchy-format");
+        assert_eq!(tool.name(), "ruchy-format");
+    }
+
+    #[test]
+    fn test_create_analyze_tool() {
+        let (name, tool) = create_analyze_tool();
+        assert_eq!(name, "ruchy-analyze");
+        assert_eq!(tool.name(), "ruchy-analyze");
+    }
+
+    #[test]
+    fn test_create_eval_tool() {
+        let (name, tool) = create_eval_tool();
+        assert_eq!(name, "ruchy-eval");
+        assert_eq!(tool.name(), "ruchy-eval");
+    }
+
+    #[test]
+    fn test_create_transpile_tool() {
+        let (name, tool) = create_transpile_tool();
+        assert_eq!(name, "ruchy-transpile");
+        assert_eq!(tool.name(), "ruchy-transpile");
+    }
+
+    #[test]
+    fn test_create_type_check_tool() {
+        let (name, tool) = create_type_check_tool();
+        assert_eq!(name, "ruchy-type-check");
+        assert_eq!(tool.name(), "ruchy-type-check");
+    }
+
+    #[test]
+    fn test_ruchy_mcp_server_getter() {
+        let mut mcp = RuchyMCP::new();
+        assert!(mcp.server().is_none());
+    }
+
+    #[test]
+    fn test_ruchy_mcp_client_getter() {
+        let mut mcp = RuchyMCP::new();
+        assert!(mcp.client().is_none());
+    }
 }
 #[cfg(test)]
 mod property_tests_mcp {

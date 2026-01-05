@@ -414,7 +414,10 @@ impl ComplexityAnalyzer {
 
 #[cfg(test)]
 mod test_issue_142_bigo_recursion {
-    use crate::notebook::testing::complexity::{ComplexityAnalyzer, TimeComplexity};
+    use crate::notebook::testing::complexity::{
+        ComplexityAnalyzer, ComplexityConfig, ComplexityResult, HalsteadMetrics, Hotspot,
+        SpaceComplexity, TimeComplexity,
+    };
     use crate::notebook::testing::types::{Cell, CellMetadata, CellType};
 
     fn make_test_cell(id: &str, code: &str) -> Cell {
@@ -562,5 +565,203 @@ pub fun weird_recursion(n: i32) -> i32 {
             matches!(result.time_complexity, TimeComplexity::OExp),
             "Recursion inside loop should be exponential or worse"
         );
+    }
+
+    #[test]
+    fn test_complexity_config_default() {
+        let config = ComplexityConfig::default();
+        assert_eq!(config.cyclomatic_threshold, 10);
+        assert_eq!(config.cognitive_threshold, 15);
+        assert!(config.enable_suggestions);
+    }
+
+    #[test]
+    fn test_time_complexity_enum() {
+        let tc = TimeComplexity::ON;
+        assert_eq!(tc, TimeComplexity::ON);
+        assert_ne!(tc, TimeComplexity::O1);
+    }
+
+    #[test]
+    fn test_space_complexity_enum() {
+        let sc = SpaceComplexity::ON;
+        assert_eq!(sc, SpaceComplexity::ON);
+        assert_ne!(sc, SpaceComplexity::O1);
+    }
+
+    #[test]
+    fn test_complexity_analyzer_default() {
+        let analyzer = ComplexityAnalyzer::default();
+        assert_eq!(analyzer.get_default_threshold(), 10);
+    }
+
+    #[test]
+    fn test_complexity_analyzer_with_config() {
+        let config = ComplexityConfig {
+            cyclomatic_threshold: 5,
+            cognitive_threshold: 8,
+            enable_suggestions: false,
+        };
+        let analyzer = ComplexityAnalyzer::with_config(config);
+        assert_eq!(analyzer.get_default_threshold(), 5);
+    }
+
+    #[test]
+    fn test_analyze_space_complexity_on2() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("matrix", "let m = Array(n).fill(0).map(() => Array(n))");
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.space_complexity, SpaceComplexity::ON2);
+    }
+
+    #[test]
+    fn test_analyze_space_complexity_on() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("vec", "let v = vec![0; n];");
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.space_complexity, SpaceComplexity::ON);
+    }
+
+    #[test]
+    fn test_calculate_cyclomatic_simple() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("simple", "let x = 1 + 2;");
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.cyclomatic_complexity, 1); // Base complexity only
+    }
+
+    #[test]
+    fn test_calculate_cyclomatic_with_if() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("ifelse", "if x > 0 { y } else if x < 0 { z } else { w }");
+        let result = analyzer.analyze(&cell);
+        assert!(result.cyclomatic_complexity >= 3); // if + else if + base
+    }
+
+    #[test]
+    fn test_calculate_cognitive_nested() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell(
+            "nested",
+            r"
+if a {
+    if b {
+        if c {
+            x
+        }
+    }
+}
+",
+        );
+        let result = analyzer.analyze(&cell);
+        assert!(result.cognitive_complexity > 1);
+    }
+
+    #[test]
+    fn test_count_loop_depth_nested() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell(
+            "nested_loops",
+            r"
+for i in 0..n {
+    for j in 0..m {
+        x
+    }
+}
+",
+        );
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.time_complexity, TimeComplexity::ON2);
+    }
+
+    #[test]
+    fn test_extract_function_name_fun() {
+        let analyzer = ComplexityAnalyzer::new();
+        let source = "fun myfunction(x: i32) -> i32 { x }";
+        let name = analyzer.extract_function_name(source);
+        assert_eq!(name, "myfunction");
+    }
+
+    #[test]
+    fn test_extract_function_name_fn() {
+        let analyzer = ComplexityAnalyzer::new();
+        let source = "fn myfunction(x: i32) -> i32 { x }";
+        let name = analyzer.extract_function_name(source);
+        assert_eq!(name, "myfunction");
+    }
+
+    #[test]
+    fn test_extract_function_name_none() {
+        let analyzer = ComplexityAnalyzer::new();
+        let source = "let x = 42;";
+        let name = analyzer.extract_function_name(source);
+        assert!(name.is_empty());
+    }
+
+    #[test]
+    fn test_halstead_metrics() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("math", "let x = 1 + 2 * 3 - 4 / 5;");
+        let result = analyzer.analyze(&cell);
+        assert!(result.halstead_metrics.volume > 0.0);
+        assert!(result.halstead_metrics.effort >= 0.0);
+    }
+
+    #[test]
+    fn test_hotspot_struct() {
+        let hotspot = Hotspot {
+            cell_id: "cell1".to_string(),
+            complexity: TimeComplexity::ON2,
+            impact: 0.7,
+            location: "Cell cell1".to_string(),
+        };
+        assert_eq!(hotspot.cell_id, "cell1");
+        assert_eq!(hotspot.complexity, TimeComplexity::ON2);
+    }
+
+    #[test]
+    fn test_complexity_result_fields() {
+        let result = ComplexityResult {
+            time_complexity: TimeComplexity::ON,
+            space_complexity: SpaceComplexity::O1,
+            cyclomatic_complexity: 5,
+            cognitive_complexity: 3,
+            halstead_metrics: HalsteadMetrics {
+                volume: 10.0,
+                difficulty: 2.0,
+                effort: 20.0,
+            },
+        };
+        assert_eq!(result.cyclomatic_complexity, 5);
+        assert_eq!(result.cognitive_complexity, 3);
+    }
+
+    #[test]
+    fn test_suggest_optimizations_disabled() {
+        let config = ComplexityConfig {
+            cyclomatic_threshold: 10,
+            cognitive_threshold: 15,
+            enable_suggestions: false,
+        };
+        let analyzer = ComplexityAnalyzer::with_config(config);
+        let cell = make_test_cell("complex", "for i in arr { for j in arr { x } }");
+        let suggestions = analyzer.suggest_optimizations(&cell);
+        assert!(suggestions.is_empty());
+    }
+
+    #[test]
+    fn test_analyze_loop_complexity_binary_search() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("bsearch", "binary_search(arr, target)");
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.time_complexity, TimeComplexity::OLogN);
+    }
+
+    #[test]
+    fn test_analyze_loop_complexity_sort() {
+        let analyzer = ComplexityAnalyzer::new();
+        let cell = make_test_cell("sorting", "arr.sort()");
+        let result = analyzer.analyze(&cell);
+        assert_eq!(result.time_complexity, TimeComplexity::ONLogN);
     }
 }

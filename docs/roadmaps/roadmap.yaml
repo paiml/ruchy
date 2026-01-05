@@ -882,3 +882,115 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'EXTREME TDD: PDCA Cycle - Test Explosion Round 6'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD: PDCA Cycle - Test Explosion Round 6'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T09:39:45.182983320+00:00
+  updated: 2026-01-05T09:39:45.182983320+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - EXTREME TDD Round 7'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - EXTREME TDD Round 7'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T10:07:43.516565443+00:00
+  updated: 2026-01-05T10:09:37.308980618+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'EXTREME TDD Round 8: High-ratio file expansion'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 8: High-ratio file expansion'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T10:25:40.974898664+00:00
+  updated: 2026-01-05T10:25:40.974898664+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'EXTREME TDD Round 9: High-ratio file expansion'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 9: High-ratio file expansion'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T11:15:13.879411685+00:00
+  updated: 2026-01-05T11:15:13.879411685+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'EXTREME TDD Round 10: High-ratio file expansion'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 10: High-ratio file expansion'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T11:44:18.794911306+00:00
+  updated: 2026-01-05T11:44:18.794911306+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'EXTREME TDD Round 11: High-ratio file expansion'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 11: High-ratio file expansion'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T11:50:22.947645807+00:00
+  updated: 2026-01-05T11:50:22.947645807+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - EXTREME TDD Round 12'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - EXTREME TDD Round 12'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T12:03:22.547226546+00:00
+  updated: 2026-01-05T12:03:22.547226546+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
