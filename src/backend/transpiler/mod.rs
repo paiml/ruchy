@@ -68,6 +68,7 @@ mod call_helpers; // EXTREME TDD Round 63: result/option call and function call 
 mod print_helpers; // EXTREME TDD Round 64: print/println/dbg/panic macros
 mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collection methods
 mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
+mod block_categorization; // EXTREME TDD Round 67: Block categorization, statement detection
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
@@ -277,6 +278,10 @@ impl Transpiler {
     //  collect_module_names, collect_module_names_from_expr, collect_signatures_from_expr, type_to_string,
     //  resolve_imports, resolve_imports_with_context, contains_imports, contains_file_imports,
     //  is_standard_library, contains_hashmap, contains_dataframe, has_standalone_functions)
+
+    // EXTREME TDD Round 67: Block categorization functions moved to block_categorization.rs
+    // (categorize_block_expressions, categorize_single_expression, categorize_function, categorize_block,
+    //  is_module_resolver_block, categorize_statement, infer_type_from_value, is_statement_expr, is_call_to_main)
 
     /// Transpiles an expression to a `TokenStream`
     ///
@@ -563,326 +568,13 @@ impl Transpiler {
         }
     }
 
-    /// Helper: Infer type token from expression value
-    /// Reduces cognitive complexity by extracting duplicated type inference patterns
-    fn infer_type_from_value(value: &Expr) -> TokenStream {
-        match &value.kind {
-            ExprKind::Literal(lit) => match lit {
-                crate::frontend::ast::Literal::Integer(_, _) => quote! { i32 },
-                crate::frontend::ast::Literal::Float(_) => quote! { f64 },
-                crate::frontend::ast::Literal::String(_) => quote! { &str },
-                crate::frontend::ast::Literal::Bool(_) => quote! { bool },
-                _ => quote! { i32 },
-            },
-            ExprKind::List(elements) => {
-                if elements.is_empty() {
-                    quote! { Vec<i32> }
-                } else {
-                    // Infer element type from first element
-                    match &elements[0].kind {
-                        ExprKind::Literal(lit) => match lit {
-                            crate::frontend::ast::Literal::Integer(_, _) => quote! { Vec<i32> },
-                            crate::frontend::ast::Literal::Float(_) => quote! { Vec<f64> },
-                            crate::frontend::ast::Literal::String(_) => quote! { Vec<String> },
-                            crate::frontend::ast::Literal::Bool(_) => quote! { Vec<bool> },
-                            _ => quote! { Vec<i32> },
-                        },
-                        ExprKind::List(_) => quote! { Vec<Vec<i32>> },
-                        _ => quote! { Vec<i32> },
-                    }
-                }
-            }
-            _ => quote! { i32 },
-        }
-    }
 
-    fn categorize_block_expressions<'a>(
-        &self,
-        exprs: &'a [Expr],
-    ) -> Result<BlockCategorization<'a>> {
-        let mut functions = Vec::new();
-        let mut statements = Vec::new();
-        let mut modules = Vec::new();
-        let mut imports = Vec::new();
-        let mut has_main_function = false;
-        let mut main_function_expr = None;
 
-        // TRANSPILER-SCOPE: First pass - collect names of mutable Lets that will become globals
-        // SPEC-001-B: Const names are collected earlier (before optimization) in collect_const_declarations()
-        let mut global_var_names = std::collections::HashSet::new();
-        let const_var_names = self
-            .const_vars
-            .read()
-            .expect("rwlock should not be poisoned")
-            .clone();
-        for expr in exprs {
-            if let ExprKind::Function { name, .. } = &expr.kind {
-                if name == "main" {
-                    has_main_function = true;
-                }
-            }
-        }
 
-        // If we have functions, collect mutable Let names to promote to globals
-        let has_functions_check = exprs
-            .iter()
-            .any(|e| matches!(&e.kind, ExprKind::Function { .. }))
-            || has_main_function;
-        if has_functions_check {
-            for expr in exprs {
-                if let ExprKind::Let {
-                    name, is_mutable, ..
-                } = &expr.kind
-                {
-                    if *is_mutable && !const_var_names.contains(name) {
-                        global_var_names.insert(name.clone());
-                    }
-                }
-            }
-        }
 
-        // TRANSPILER-SCOPE: Store global variable names for use during expression transpilation
-        (*self
-            .global_vars
-            .write()
-            .expect("rwlock should not be poisoned"))
-        .clone_from(&global_var_names);
 
-        // Second pass - categorize expressions, skipping main() calls and promoted globals
-        for expr in exprs {
-            // Skip explicit main() calls when main function exists
-            if has_main_function && Self::is_call_to_main(expr) {
-                continue;
-            }
 
-            // TRANSPILER-SCOPE: Skip mutable Lets and const declarations that were promoted to globals
-            if let ExprKind::Let {
-                name, is_mutable, ..
-            } = &expr.kind
-            {
-                if (*is_mutable && global_var_names.contains(name))
-                    || const_var_names.contains(name)
-                {
-                    continue; // Skip this Let - it's now a static mut global or module-level const
-                }
-            }
 
-            self.categorize_single_expression(
-                expr,
-                &mut functions,
-                &mut statements,
-                &mut modules,
-                &mut imports,
-                &mut has_main_function,
-                &mut main_function_expr,
-            )?;
-        }
-
-        // TRANSPILER-SCOPE: Third pass - generate static mut declarations for globals and const declarations
-        let mut globals = Vec::new();
-
-        // SPEC-001-B: Generate module-level const declarations
-        if !const_var_names.is_empty() {
-            for expr in exprs {
-                if let ExprKind::Let {
-                    name,
-                    value,
-                    type_annotation,
-                    ..
-                } = &expr.kind
-                {
-                    if const_var_names.contains(name) {
-                        // Transpile value to get initializer
-                        let value_tokens = self.transpile_expr(value)?;
-                        let const_name = format_ident!("{}", name);
-
-                        // Const declarations MUST have explicit type annotation
-                        let type_token = if let Some(ref type_ann) = type_annotation {
-                            self.transpile_type(type_ann)?
-                        } else {
-                            // Use helper to infer type from literal
-                            Self::infer_type_from_value(value)
-                        };
-
-                        // Generate module-level const declaration
-                        globals.push(quote! {
-                            const #const_name: #type_token = #value_tokens;
-                        });
-                    }
-                }
-            }
-        }
-
-        // Generate thread-safe mutable globals using LazyLock<Mutex<T>>
-        if !global_var_names.is_empty() {
-            for expr in exprs {
-                if let ExprKind::Let {
-                    name,
-                    value,
-                    is_mutable,
-                    type_annotation,
-                    ..
-                } = &expr.kind
-                {
-                    if *is_mutable && global_var_names.contains(name) {
-                        // Transpile value to get initializer
-                        let value_tokens = self.transpile_expr(value)?;
-                        let var_name = format_ident!("{}", name);
-
-                        // TRANSPILER-SCOPE: Infer type from literal or use annotation
-                        // Static variables can't use `_` placeholder, need explicit type
-                        let type_token = if let Some(ref type_ann) = type_annotation {
-                            self.transpile_type(type_ann)?
-                        } else {
-                            // Use helper for type inference
-                            Self::infer_type_from_value(value)
-                        };
-
-                        // Generate thread-safe global using LazyLock<Mutex<T>>
-                        // Issue #132: NEVER generate unsafe code - use safe Rust abstractions
-                        globals.push(quote! {
-                            static #var_name: std::sync::LazyLock<std::sync::Mutex<#type_token>> =
-                                std::sync::LazyLock::new(|| std::sync::Mutex::new(#value_tokens));
-                        });
-                    }
-                }
-            }
-        }
-
-        Ok((
-            functions,
-            statements,
-            modules,
-            has_main_function,
-            main_function_expr,
-            imports,
-            globals,
-        ))
-    }
-
-    /// Check if expression is a call to `main()` function
-    /// Used to prevent stack overflow when both `fun main()` definition and `main()` call exist
-    /// Complexity: 2 (within Toyota Way limits)
-    fn is_call_to_main(expr: &Expr) -> bool {
-        match &expr.kind {
-            ExprKind::Call { func, .. } => {
-                matches!(&func.kind, ExprKind::Identifier(name) if name == "main")
-            }
-            _ => false,
-        }
-    }
-
-    /// Categorize a single expression into appropriate category (complexity: 8)
-    fn categorize_single_expression<'a>(
-        &self,
-        expr: &'a Expr,
-        functions: &mut Vec<TokenStream>,
-        statements: &mut Vec<TokenStream>,
-        modules: &mut Vec<TokenStream>,
-        imports: &mut Vec<TokenStream>,
-        has_main_function: &mut bool,
-        main_function_expr: &mut Option<&'a Expr>,
-    ) -> Result<()> {
-        match &expr.kind {
-            ExprKind::Function { name, .. } => {
-                self.categorize_function(
-                    expr,
-                    name,
-                    functions,
-                    has_main_function,
-                    main_function_expr,
-                )?;
-            }
-            ExprKind::Module { name, body } => {
-                modules.push(self.transpile_module_declaration(name, body)?);
-            }
-            ExprKind::Block(block_exprs) => {
-                self.categorize_block(block_exprs, expr, modules, statements, imports)?;
-            }
-            ExprKind::Trait { .. } | ExprKind::Impl { .. } => {
-                functions.push(self.transpile_type_decl_expr(expr)?);
-            }
-            ExprKind::Struct { .. } | ExprKind::TupleStruct { .. } => {
-                functions.push(self.transpile_struct_expr(expr)?);
-            }
-            ExprKind::Enum { .. }
-            | ExprKind::Class { .. }
-            | ExprKind::Actor { .. }
-            | ExprKind::Effect { .. } => {
-                functions.push(self.transpile_expr(expr)?);
-            }
-            ExprKind::Import { .. }
-            | ExprKind::ImportAll { .. }
-            | ExprKind::ImportDefault { .. } => {
-                imports.push(self.transpile_expr(expr)?);
-            }
-            _ => {
-                self.categorize_statement(expr, statements)?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Categorize function expression (complexity: 3)
-    fn categorize_function<'a>(
-        &self,
-        expr: &'a Expr,
-        name: &str,
-        functions: &mut Vec<TokenStream>,
-        has_main_function: &mut bool,
-        main_function_expr: &mut Option<&'a Expr>,
-    ) -> Result<()> {
-        if name == "main" {
-            *has_main_function = true;
-            *main_function_expr = Some(expr);
-        } else {
-            functions.push(self.transpile_function_expr(expr)?);
-        }
-        Ok(())
-    }
-
-    /// Categorize block expression (complexity: 4)
-    fn categorize_block(
-        &self,
-        block_exprs: &[Expr],
-        expr: &Expr,
-        modules: &mut Vec<TokenStream>,
-        statements: &mut Vec<TokenStream>,
-        imports: &mut Vec<TokenStream>,
-    ) -> Result<()> {
-        // Check if this is a module-containing block from the resolver
-        if self.is_module_resolver_block(block_exprs) {
-            if let ExprKind::Module { name, body } = &block_exprs[0].kind {
-                modules.push(self.transpile_module_declaration(name, body)?);
-            }
-            // ISSUE-103: Import should go to imports vector, not statements
-            imports.push(self.transpile_expr(&block_exprs[1])?);
-        } else {
-            // Regular block, treat as statement
-            statements.push(self.transpile_expr(expr)?);
-        }
-        Ok(())
-    }
-
-    /// Check if block is a module resolver block (complexity: 2)
-    fn is_module_resolver_block(&self, block_exprs: &[Expr]) -> bool {
-        block_exprs.len() == 2
-            && matches!(block_exprs[0].kind, ExprKind::Module { .. })
-            && matches!(block_exprs[1].kind, ExprKind::Import { .. })
-    }
-
-    /// Categorize general statement expression (complexity: 3)
-    fn categorize_statement(&self, expr: &Expr, statements: &mut Vec<TokenStream>) -> Result<()> {
-        let stmt = self.transpile_expr(expr)?;
-        let stmt_str = stmt.to_string();
-
-        if !stmt_str.trim().ends_with(';') && !stmt_str.trim().ends_with('}') {
-            statements.push(quote! { #stmt; });
-        } else {
-            statements.push(stmt);
-        }
-        Ok(())
-    }
     fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
         // Handle module body - if it's a block, transpile its contents as module items
@@ -1005,40 +697,6 @@ impl Transpiler {
             let block_expr = Expr::new(ExprKind::Block(exprs.to_vec()), Span::new(0, 0));
             let body = self.transpile_expr(&block_expr)?;
             self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
-        }
-    }
-    fn is_statement_expr(expr: &Expr) -> bool {
-        match &expr.kind {
-            // Let bindings are statements
-            ExprKind::Let { .. } | ExprKind::LetPattern { .. } => true,
-            // Assignment operations are statements
-            ExprKind::Assign { .. } | ExprKind::CompoundAssign { .. } => true,
-            // Loops are statements (void/unit type)
-            ExprKind::While { .. } | ExprKind::For { .. } | ExprKind::Loop { .. } => true,
-            // Function calls that don't return meaningful values (like println)
-            ExprKind::Call { func, .. } => {
-                if let ExprKind::Identifier(name) = &func.kind {
-                    matches!(name.as_str(), "println" | "print" | "dbg")
-                } else {
-                    false
-                }
-            }
-            // If expressions where both branches are statements (return unit)
-            ExprKind::If {
-                then_branch,
-                else_branch,
-                ..
-            } => {
-                // If both branches are statements, the whole if is a statement
-                Self::is_statement_expr(then_branch)
-                    && else_branch
-                        .as_ref()
-                        .is_none_or(|e| Self::is_statement_expr(e))
-            }
-            // Blocks containing statements
-            ExprKind::Block(exprs) => exprs.iter().any(Self::is_statement_expr),
-            // Most other expressions are not statements
-            _ => false,
         }
     }
     /// Transpile block with main function wrapper
