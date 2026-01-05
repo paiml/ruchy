@@ -953,4 +953,317 @@ mod tests {
         assert_eq!(stats.monomorphic_call_sites, 4);
         assert_eq!(stats.total_samples, 100);
     }
+
+    // === EXTREME TDD Round 24 - Coverage Push Tests ===
+
+    #[test]
+    fn test_inline_cache_multiple_hits_tracking() {
+        let mut cache = InlineCache::new();
+        let obj = Value::Integer(1);
+        cache.insert(&obj, "x".to_string(), Value::Integer(10));
+
+        // Multiple hits
+        for _ in 0..10 {
+            let result = cache.lookup(&obj, "x");
+            assert_eq!(result, Some(Value::Integer(10)));
+        }
+        assert_eq!(cache.total_hits(), 10);
+    }
+
+    #[test]
+    fn test_inline_cache_same_obj_different_fields() {
+        let mut cache = InlineCache::new();
+        let obj = Value::Integer(1);
+        cache.insert(&obj, "a".to_string(), Value::Integer(1));
+        cache.insert(&obj, "b".to_string(), Value::Integer(2));
+
+        assert_eq!(cache.lookup(&obj, "a"), Some(Value::Integer(1)));
+        assert_eq!(cache.lookup(&obj, "b"), Some(Value::Integer(2)));
+    }
+
+    #[test]
+    fn test_inline_cache_polymorphic_three_entries() {
+        let mut cache = InlineCache::new();
+        cache.insert(&Value::Integer(1), "a".to_string(), Value::Integer(1));
+        cache.insert(&Value::Float(1.0), "b".to_string(), Value::Float(2.0));
+        cache.insert(&Value::Bool(true), "c".to_string(), Value::Bool(false));
+
+        assert_eq!(*cache.state(), CacheState::Polymorphic);
+        assert_eq!(cache.entry_count(), 3);
+    }
+
+    #[test]
+    fn test_inline_cache_polymorphic_four_entries() {
+        let mut cache = InlineCache::new();
+        cache.insert(&Value::Integer(1), "a".to_string(), Value::Integer(1));
+        cache.insert(&Value::Float(1.0), "b".to_string(), Value::Float(2.0));
+        cache.insert(&Value::Bool(true), "c".to_string(), Value::Bool(false));
+        cache.insert(&Value::Nil, "d".to_string(), Value::Nil);
+
+        assert_eq!(*cache.state(), CacheState::Polymorphic);
+        assert_eq!(cache.entry_count(), 4);
+    }
+
+    #[test]
+    fn test_type_feedback_binary_op_multiple_sites() {
+        let mut feedback = TypeFeedback::new();
+
+        // Site 0
+        feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        // Site 1
+        feedback.record_binary_op(1, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_operation_sites, 2);
+    }
+
+    #[test]
+    fn test_type_feedback_binary_op_polymorphic_site() {
+        let mut feedback = TypeFeedback::new();
+
+        // Same site with different types
+        feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        feedback.record_binary_op(0, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_operation_sites, 1);
+        assert_eq!(stats.monomorphic_operation_sites, 0); // No longer monomorphic
+    }
+
+    #[test]
+    fn test_type_feedback_variable_multiple_vars() {
+        let mut feedback = TypeFeedback::new();
+
+        feedback.record_variable_assignment("x", Value::Integer(1).type_id());
+        feedback.record_variable_assignment("y", Value::Float(1.0).type_id());
+        feedback.record_variable_assignment("z", Value::Bool(true).type_id());
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_variables, 3);
+        assert_eq!(stats.stable_variables, 3); // All single assignments
+    }
+
+    #[test]
+    fn test_type_feedback_variable_multiple_transitions() {
+        let mut feedback = TypeFeedback::new();
+
+        // Transition x multiple times
+        feedback.record_variable_assignment("x", Value::Integer(1).type_id());
+        feedback.record_variable_assignment("x", Value::Float(1.0).type_id());
+        feedback.record_variable_assignment("x", Value::Bool(true).type_id());
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_variables, 1);
+        assert_eq!(stats.stable_variables, 0); // Three types = not stable
+    }
+
+    #[test]
+    fn test_type_feedback_call_site_multiple_calls() {
+        let mut feedback = TypeFeedback::new();
+        let args1 = vec![Value::Integer(1)];
+        let args2 = vec![Value::Float(1.0)];
+
+        feedback.record_function_call(0, "func", &args1, &Value::Integer(2));
+        feedback.record_function_call(0, "func", &args2, &Value::Float(2.0));
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_call_sites, 1);
+        assert_eq!(stats.monomorphic_call_sites, 0); // Two different arg patterns
+    }
+
+    #[test]
+    fn test_type_feedback_call_site_same_pattern_repeated() {
+        let mut feedback = TypeFeedback::new();
+        let args = vec![Value::Integer(1)];
+
+        for _ in 0..10 {
+            feedback.record_function_call(0, "func", &args, &Value::Integer(2));
+        }
+
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.total_call_sites, 1);
+        assert_eq!(stats.monomorphic_call_sites, 1);
+    }
+
+    #[test]
+    fn test_type_feedback_specialization_not_enough_samples() {
+        let mut feedback = TypeFeedback::new();
+
+        // Only 5 samples (need >10 for binary op specialization)
+        for _ in 0..5 {
+            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        }
+
+        let candidates = feedback.get_specialization_candidates();
+        // Should not include binary op site (not enough samples)
+        let has_binary_op = candidates.iter().any(|c| {
+            matches!(c.kind, SpecializationKind::BinaryOperation { .. })
+        });
+        assert!(!has_binary_op);
+    }
+
+    #[test]
+    fn test_type_feedback_total_samples_tracking() {
+        let mut feedback = TypeFeedback::new();
+
+        for i in 0..20 {
+            feedback.record_binary_op(i % 5, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        }
+
+        assert_eq!(feedback.total_samples(), 20);
+    }
+
+    #[test]
+    fn test_inline_cache_hit_rate_calculation() {
+        let mut cache = InlineCache::new();
+        let obj = Value::Integer(1);
+        cache.insert(&obj, "x".to_string(), Value::Integer(10));
+
+        // 3 hits
+        cache.lookup(&obj, "x");
+        cache.lookup(&obj, "x");
+        cache.lookup(&obj, "x");
+        // 1 miss
+        cache.lookup(&obj, "y");
+
+        // 3 hits / 4 total = 0.75
+        assert!((cache.hit_rate() - 0.75).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_specialization_candidate_sorting() {
+        let mut feedback = TypeFeedback::new();
+
+        // Binary op with 15 samples
+        for _ in 0..15 {
+            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        }
+
+        // Call site with 10 samples (benefit = 10 * 10 = 100)
+        let args = vec![Value::Integer(1)];
+        for _ in 0..10 {
+            feedback.record_function_call(1, "func", &args, &Value::Integer(2));
+        }
+
+        let candidates = feedback.get_specialization_candidates();
+        assert!(candidates.len() >= 2);
+
+        // Verify sorted by benefit score
+        for i in 1..candidates.len() {
+            assert!(candidates[i - 1].benefit_score >= candidates[i].benefit_score);
+        }
+    }
+
+    #[test]
+    fn test_cache_entry_debug_format() {
+        let entry = CacheEntry {
+            type_id: Value::Integer(1).type_id(),
+            field_name: "test".to_string(),
+            cached_result: Value::Bool(true),
+            hit_count: 5,
+        };
+        let debug = format!("{entry:?}");
+        assert!(debug.contains("test"));
+        assert!(debug.contains("5"));
+    }
+
+    #[test]
+    fn test_cache_state_debug_format() {
+        let states = [
+            CacheState::Uninitialized,
+            CacheState::Monomorphic,
+            CacheState::Polymorphic,
+            CacheState::Megamorphic,
+        ];
+        for state in states {
+            let debug = format!("{state:?}");
+            assert!(!debug.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_type_feedback_stats_debug() {
+        let stats = TypeFeedbackStats {
+            total_operation_sites: 10,
+            monomorphic_operation_sites: 5,
+            total_variables: 20,
+            stable_variables: 15,
+            total_call_sites: 8,
+            monomorphic_call_sites: 4,
+            total_samples: 100,
+        };
+        let debug = format!("{stats:?}");
+        assert!(debug.contains("10"));
+        assert!(debug.contains("100"));
+    }
+
+    #[test]
+    fn test_inline_cache_eviction_policy() {
+        let mut cache = InlineCache::new();
+
+        // Insert 4 entries (max before megamorphic)
+        cache.insert(&Value::Integer(1), "a".to_string(), Value::Integer(1));
+        cache.insert(&Value::Float(1.0), "b".to_string(), Value::Float(2.0));
+        cache.insert(&Value::Bool(true), "c".to_string(), Value::Bool(false));
+        cache.insert(&Value::Nil, "d".to_string(), Value::Nil);
+
+        // Make one entry "hot" (high hit count)
+        for _ in 0..10 {
+            cache.lookup(&Value::Integer(1), "a");
+        }
+
+        // Insert 5th entry - should trigger eviction of least used
+        cache.insert(&Value::from_string("test".to_string()), "e".to_string(), Value::from_string("val".to_string()));
+
+        assert_eq!(*cache.state(), CacheState::Megamorphic);
+        // Hot entry should still be there
+        assert!(cache.lookup(&Value::Integer(1), "a").is_some());
+    }
+
+    #[test]
+    fn test_variable_stability_score_calculation() {
+        let mut feedback = TypeFeedback::new();
+
+        // Single type = stability 1.0
+        feedback.record_variable_assignment("x", Value::Integer(1).type_id());
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.stable_variables, 1);
+
+        // Two types = stability 0.5 (not stable)
+        feedback.record_variable_assignment("x", Value::Float(1.0).type_id());
+        let stats = feedback.get_statistics();
+        assert_eq!(stats.stable_variables, 0);
+    }
+
+    #[test]
+    fn test_operation_feedback_type_counts() {
+        let mut feedback = TypeFeedback::new();
+
+        // 3 int+int operations
+        for _ in 0..3 {
+            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        }
+
+        // 2 float+float operations
+        for _ in 0..2 {
+            feedback.record_binary_op(0, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+        }
+
+        assert_eq!(feedback.total_samples(), 5);
+    }
+
+    #[test]
+    fn test_specialization_candidate_clone() {
+        let candidate = SpecializationCandidate {
+            kind: SpecializationKind::Variable {
+                name: "x".to_string(),
+                specialized_type: Value::Integer(1).type_id(),
+            },
+            confidence: 0.95,
+            benefit_score: 100.0,
+        };
+        let cloned = candidate.clone();
+        assert_eq!(cloned.confidence, candidate.confidence);
+        assert_eq!(cloned.benefit_score, candidate.benefit_score);
+    }
 }

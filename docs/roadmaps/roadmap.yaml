@@ -1106,3 +1106,83 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 20'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 20'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T13:31:22.445899540+00:00
+  updated: 2026-01-05T13:31:22.445899540+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Coverage Push: 83% → 95% EXTREME TDD'
+  github_issue: null
+  item_type: task
+  title: 'New task: Coverage Push: 83% → 95% EXTREME TDD'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T14:50:39.002940083+00:00
+  updated: 2026-01-05T15:07:13.954280544+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 22 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 22 - Coverage Push'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T15:10:43.728160478+00:00
+  updated: 2026-01-05T15:22:27.437578271+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 23 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 23 - Coverage Push'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T15:23:34.557069550+00:00
+  updated: 2026-01-05T15:29:03.319850912+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 24 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 24 - Coverage Push'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T15:29:09.520321732+00:00
+  updated: 2026-01-05T15:29:09.520321732+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
