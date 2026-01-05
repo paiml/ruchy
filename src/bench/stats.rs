@@ -342,4 +342,69 @@ mod tests {
             prop_assert!(stats.median() <= stats.max());
         });
     }
+
+    // === EXTREME TDD Round 17 tests ===
+
+    #[test]
+    fn test_statistics_debug() {
+        let times = vec![Duration::from_millis(10), Duration::from_millis(20)];
+        let stats = Statistics::from_durations(&times);
+        let debug_str = format!("{:?}", stats);
+        assert!(debug_str.contains("Statistics"));
+        assert!(debug_str.contains("samples"));
+    }
+
+    #[test]
+    fn test_statistics_clone() {
+        let times = vec![Duration::from_millis(10), Duration::from_millis(20)];
+        let stats = Statistics::from_durations(&times);
+        let cloned = stats.clone();
+        assert_eq!(stats.mean(), cloned.mean());
+        assert_eq!(stats.median(), cloned.median());
+    }
+
+    #[test]
+    fn test_single_sample() {
+        let times = vec![Duration::from_millis(42)];
+        let stats = Statistics::from_durations(&times);
+
+        assert_eq!(stats.mean(), Duration::from_millis(42));
+        assert_eq!(stats.median(), Duration::from_millis(42));
+        assert_eq!(stats.min(), Duration::from_millis(42));
+        assert_eq!(stats.max(), Duration::from_millis(42));
+        assert_eq!(stats.std_dev(), Duration::ZERO); // No variance with single sample
+        assert_eq!(stats.percentile(50.0), Duration::from_millis(42));
+    }
+
+    #[test]
+    fn test_percentile_edge_cases() {
+        let times = vec![
+            Duration::from_millis(10),
+            Duration::from_millis(20),
+            Duration::from_millis(30),
+        ];
+        let stats = Statistics::from_durations(&times);
+
+        // 0th percentile should be min
+        assert_eq!(stats.percentile(0.0), Duration::from_millis(10));
+        // 100th percentile should be max
+        assert_eq!(stats.percentile(100.0), Duration::from_millis(30));
+        // 99th percentile for small sample
+        assert_eq!(stats.percentile(99.0), Duration::from_millis(30));
+    }
+
+    #[test]
+    fn test_samples_are_sorted() {
+        let times = vec![
+            Duration::from_millis(30),
+            Duration::from_millis(10),
+            Duration::from_millis(20),
+        ];
+        let stats = Statistics::from_durations(&times);
+
+        // min should be 10 (smallest), max should be 30 (largest)
+        // This verifies sorting happened
+        assert_eq!(stats.min(), Duration::from_millis(10));
+        assert_eq!(stats.max(), Duration::from_millis(30));
+    }
 }
