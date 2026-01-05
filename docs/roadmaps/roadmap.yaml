@@ -1474,3 +1474,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'EXTREME TDD Round 47: Extract test + dataflow handlers'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD Round 47: Extract test + dataflow handlers'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T18:09:03.431771767+00:00
+  updated: 2026-01-05T18:09:03.431771767+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
