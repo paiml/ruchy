@@ -2,9 +2,18 @@ use anyhow::{bail, Context, Result};
 pub mod add;
 pub mod build;
 mod commands;
+pub mod eval;
 mod handlers_modules;
 pub mod new;
+pub mod transpile_handler;
 use ruchy::backend::module_resolver::ModuleResolver;
+
+// Re-export from extracted modules
+pub use eval::handle_eval_command;
+pub use transpile_handler::handle_transpile_command;
+
+// Import for internal use
+use transpile_handler::parse_source;
 use ruchy::frontend::ast::{Expr, ExprKind};
 use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::replay_converter::ConversionConfig;
@@ -13,100 +22,8 @@ use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 // Replay functionality imports removed - not needed in handler, used directly in REPL
 // PARSER-077: Add syn and prettyplease for proper TokenStream formatting
 use std::fs;
-use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-/// Handle eval command - evaluate a one-liner expression with -e flag
-///
-/// # Arguments
-/// * `expr` - The expression to evaluate
-/// * `verbose` - Enable verbose output
-/// * `format` - Output format ("json" or default text)
-/// * `trace` - Enable function call tracing (DEBUGGER-014)
-///
-/// # Examples
-/// ```
-/// // This function is typically called by the CLI with parsed arguments
-/// // handle_eval_command("2 + 2", false, "text", false);
-/// ```
-///
-/// # Errors
-/// Returns error if expression cannot be parsed or evaluated
-/// Handle eval command (complexity: 5 - reduced from 11)
-pub fn handle_eval_command(expr: &str, verbose: bool, format: &str, trace: bool) -> Result<()> {
-    // DEBUGGER-014 Phase 1.3: Set trace flag via environment variable
-    if trace {
-        std::env::set_var("RUCHY_TRACE", "1");
-    } else {
-        std::env::remove_var("RUCHY_TRACE");
-    }
-
-    if verbose {
-        eprintln!("Parsing expression: {expr}");
-    }
-    let mut repl = create_repl()?;
-
-    // If expression defines main(), call it automatically
-    // PARSER-085: Fixed to check for "fun main(" (Ruchy keyword) not "fn main(" (Rust keyword)
-    let expr_to_eval = if expr.contains("fun main(") {
-        format!("{expr}\nmain()")
-    } else {
-        expr.to_string()
-    };
-
-    match repl.eval(&expr_to_eval) {
-        Ok(result) => {
-            if verbose {
-                eprintln!("Evaluation successful");
-            }
-            // [CLI-EVAL-001] FIX: Print result for REPL one-liners (unless already printed)
-            // - `ruchy -e "42"` → prints "42" (REPL behavior)
-            // - `ruchy -e "println(42)"` → prints "42" only once (println returns "nil", don't double-print)
-            // This fixes tests: non_tty_omits_interactive_features, cli_eval_flag_executes_inline
-            // Preserves: prop_021_consistency_eval_equals_file (println behavior still consistent)
-            if result != "nil" && !result.is_empty() {
-                println!("{result}");
-                // Ensure output is flushed for tests capturing stdout
-                use std::io::Write;
-                let _ = std::io::stdout().flush();
-            }
-            Ok(())
-        }
-        Err(e) => {
-            if verbose {
-                eprintln!("Evaluation failed: {e}");
-            }
-            print_eval_error(&e, format);
-            Err(e)
-        }
-    }
-}
-
-/// Print successful evaluation result (complexity: 2)
-fn print_eval_success(result: &str, format: &str) {
-    if format == "json" {
-        // Manually construct JSON to ensure field order matches test expectations
-        let result_str = result.replace('"', "\\\"");
-        println!("{{\"success\":true,\"result\":\"{result_str}\"}}");
-    } else {
-        // Default text output - always show result for one-liner evaluation
-        println!("{result}");
-    }
-}
-
-/// Print evaluation error (complexity: 2)
-fn print_eval_error(e: &anyhow::Error, format: &str) {
-    if format == "json" {
-        println!(
-            "{}",
-            serde_json::json!({
-                "success": false,
-                "error": e.to_string()
-            })
-        );
-    } else {
-        eprintln!("Error: {e}");
-    }
-}
+// handle_eval_command moved to eval.rs
 /// Handle file execution - run a Ruchy script file directly (not via subcommand)
 ///
 /// # Arguments
@@ -245,100 +162,7 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
         }
     }
 }
-/// Handle transpile command - convert Ruchy to Rust
-pub fn handle_transpile_command(
-    file: &Path,
-    output: Option<&Path>,
-    minimal: bool,
-    verbose: bool,
-) -> Result<()> {
-    log_transpile_start(file, minimal, verbose);
-    let source = read_source_file(file, verbose)?;
-    let ast = parse_source(&source)?;
-    let rust_code = transpile_ast(&ast, minimal)?;
-    // Default to stdout for backwards compatibility (many tests expect stdout output)
-    // Use -o to specify file output explicitly
-    write_output(&rust_code, output, verbose)?;
-    Ok(())
-}
-
-/// Derive default output path from input file (QA-049)
-/// Changes .ruchy extension to .rs, or appends .rs if no .ruchy extension
-/// Returns None for stdin input ("-")
-/// Complexity: 3 (within Toyota Way limits)
-fn derive_default_output_path(file: &Path) -> Option<PathBuf> {
-    if file.as_os_str() == "-" {
-        return None; // stdin: output to stdout
-    }
-    let stem = file.file_stem()?;
-    let parent = file.parent().unwrap_or(Path::new("."));
-    Some(parent.join(format!("{}.rs", stem.to_string_lossy())))
-}
-/// Log transpilation start (complexity: 3)
-fn log_transpile_start(file: &Path, minimal: bool, verbose: bool) {
-    if !verbose {
-        return;
-    }
-    eprintln!("Transpiling file: {}", file.display());
-    if minimal {
-        eprintln!("Using minimal codegen for self-hosting");
-    }
-}
-/// Read source from file or stdin (complexity: 5)
-fn read_source_file(file: &Path, verbose: bool) -> Result<String> {
-    if file.as_os_str() == "-" {
-        if verbose {
-            eprintln!("Reading from stdin...");
-        }
-        let mut input = String::new();
-        io::stdin().read_to_string(&mut input)?;
-        Ok(input)
-    } else {
-        fs::read_to_string(file).with_context(|| format!("Failed to read file: {}", file.display()))
-    }
-}
-/// Parse source code to AST (complexity: 2)
-fn parse_source(source: &str) -> Result<Expr> {
-    let mut parser = RuchyParser::new(source);
-    parser.parse().with_context(|| "Failed to parse input")
-}
-/// Transpile AST to Rust code (complexity: 4)
-/// PARSER-077: Use prettyplease for proper formatting (no extra spaces)
-fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
-    let mut transpiler = Transpiler::new();
-    if minimal {
-        transpiler
-            .transpile_minimal(ast)
-            .with_context(|| "Failed to transpile to Rust (minimal)")
-    } else {
-        let tokens = transpiler
-            .transpile_to_program(ast)
-            .with_context(|| "Failed to transpile to Rust")?;
-
-        // Parse TokenStream as syn::File and format with prettyplease
-        let syntax_tree = syn::parse2(tokens)
-            .with_context(|| "Failed to parse generated tokens as Rust syntax")?;
-        Ok(prettyplease::unparse(&syntax_tree))
-    }
-}
-/// Write output to file or stdout (complexity: 5)
-/// Use "-" as output path to write to stdout explicitly
-fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result<()> {
-    if let Some(output_path) = output {
-        // QA-049: "-" means stdout, for explicit stdout output
-        if output_path.as_os_str() == "-" {
-            print!("{rust_code}");
-        } else {
-            write_file_with_context(output_path, rust_code.as_bytes())?;
-            if verbose {
-                eprintln!("Output written to: {}", output_path.display());
-            }
-        }
-    } else {
-        print!("{rust_code}");
-    }
-    Ok(())
-}
+// handle_transpile_command moved to transpile_handler.rs
 
 // ============================================================================
 // Common Helper Functions (Complexity ≤5, reused across handlers)
