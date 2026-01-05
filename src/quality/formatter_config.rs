@@ -330,4 +330,158 @@ mod tests {
         assert_eq!(loaded.use_tabs, original.use_tabs);
         assert_eq!(loaded.max_line_length, original.max_line_length);
     }
+
+    // === EXTREME TDD Round 14 tests ===
+
+    #[test]
+    fn test_new_returns_default() {
+        let config = FormatterConfig::new();
+        let default = FormatterConfig::default();
+        assert_eq!(config.indent_width, default.indent_width);
+        assert_eq!(config.use_tabs, default.use_tabs);
+        assert_eq!(config.max_line_length, default.max_line_length);
+    }
+
+    #[test]
+    fn test_from_toml_invalid() {
+        let invalid_toml = "not valid toml {{{";
+        let result = FormatterConfig::from_toml(invalid_toml);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Failed to parse"));
+    }
+
+    #[test]
+    fn test_should_ignore_empty_patterns() {
+        let config = FormatterConfig::default();
+        // Empty patterns should never ignore
+        assert!(!config.should_ignore("src/main.ruchy"));
+        assert!(!config.should_ignore("anything/at/all.rs"));
+    }
+
+    #[test]
+    fn test_should_ignore_no_match() {
+        let mut config = FormatterConfig::default();
+        config.ignore_patterns = vec!["**/vendor/**".to_string()];
+        // Should not ignore files that don't match
+        assert!(!config.should_ignore("src/main.ruchy"));
+        assert!(!config.should_ignore("lib/utils.ruchy"));
+    }
+
+    #[test]
+    fn test_merge_ignore_patterns() {
+        let mut base = FormatterConfig::default();
+        base.ignore_patterns = vec!["**/vendor/**".to_string()];
+
+        let mut override_config = FormatterConfig::default();
+        override_config.ignore_patterns = vec!["**/test/**".to_string()];
+
+        base.merge(override_config);
+
+        // Both patterns should be present
+        assert_eq!(base.ignore_patterns.len(), 2);
+        assert!(base.ignore_patterns.contains(&"**/vendor/**".to_string()));
+        assert!(base.ignore_patterns.contains(&"**/test/**".to_string()));
+    }
+
+    #[test]
+    fn test_config_clone() {
+        let original = FormatterConfig {
+            indent_width: 8,
+            use_tabs: true,
+            max_line_length: 80,
+            preserve_newlines: false,
+            trailing_commas: false,
+            space_after_colon: false,
+            space_before_brace: false,
+            format_strings: true,
+            format_comments: true,
+            ignore_patterns: vec!["*.test.rs".to_string()],
+        };
+
+        let cloned = original.clone();
+        assert_eq!(cloned.indent_width, 8);
+        assert!(cloned.use_tabs);
+        assert_eq!(cloned.max_line_length, 80);
+        assert!(!cloned.preserve_newlines);
+        assert!(cloned.format_strings);
+        assert_eq!(cloned.ignore_patterns.len(), 1);
+    }
+
+    #[test]
+    fn test_default_boolean_fields() {
+        let config = FormatterConfig::default();
+        // Check all boolean fields have expected defaults
+        assert!(!config.use_tabs);
+        assert!(config.preserve_newlines);
+        assert!(config.trailing_commas);
+        assert!(config.space_after_colon);
+        assert!(config.space_before_brace);
+        assert!(!config.format_strings);
+        assert!(!config.format_comments);
+    }
+
+    #[test]
+    fn test_from_toml_partial_fails() {
+        // Partial TOML should fail since all fields are required
+        let toml = r#"
+        indent_width = 2
+        "#;
+
+        let result = FormatterConfig::from_toml(toml);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("missing field"));
+    }
+
+    #[test]
+    fn test_merge_preserves_defaults() {
+        let mut base = FormatterConfig::default();
+        let override_config = FormatterConfig::default();
+
+        // Merging two defaults should keep defaults
+        base.merge(override_config);
+
+        assert_eq!(base.indent_width, 4);
+        assert!(!base.use_tabs);
+        assert_eq!(base.max_line_length, 100);
+    }
+
+    #[test]
+    fn test_to_toml_contains_all_fields() {
+        let config = FormatterConfig::default();
+        let toml = config.to_toml().expect("should serialize");
+
+        assert!(toml.contains("indent_width"));
+        assert!(toml.contains("use_tabs"));
+        assert!(toml.contains("max_line_length"));
+        assert!(toml.contains("preserve_newlines"));
+        assert!(toml.contains("trailing_commas"));
+        assert!(toml.contains("space_after_colon"));
+        assert!(toml.contains("space_before_brace"));
+        assert!(toml.contains("format_strings"));
+        assert!(toml.contains("format_comments"));
+        assert!(toml.contains("ignore_patterns"));
+    }
+
+    #[test]
+    fn test_should_ignore_multiple_patterns() {
+        let mut config = FormatterConfig::default();
+        config.ignore_patterns = vec![
+            "**/target/**".to_string(),
+            "**/build/**".to_string(),
+            "**/node_modules/**".to_string(),
+        ];
+
+        assert!(config.should_ignore("project/target/debug/main.rs"));
+        assert!(config.should_ignore("app/build/output.js"));
+        assert!(config.should_ignore("web/node_modules/package/index.js"));
+        assert!(!config.should_ignore("src/main.rs"));
+    }
+
+    #[test]
+    fn test_debug_impl() {
+        let config = FormatterConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("FormatterConfig"));
+        assert!(debug_str.contains("indent_width"));
+    }
 }

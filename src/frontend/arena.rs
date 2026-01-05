@@ -188,4 +188,108 @@ mod tests {
         assert_eq!(arena.total_allocated(), 0);
         assert_eq!(arena.num_items(), 0);
     }
+
+    // === EXTREME TDD Round 14 tests ===
+
+    #[test]
+    fn test_arena_default() {
+        let arena = Arena::default();
+        assert_eq!(arena.total_allocated(), 0);
+        assert_eq!(arena.num_items(), 0);
+    }
+
+    #[test]
+    fn test_string_interner_default() {
+        let interner = StringInterner::default();
+        let (count, size) = interner.stats();
+        assert_eq!(count, 0);
+        assert_eq!(size, 0);
+    }
+
+    #[test]
+    fn test_string_interner_clear() {
+        let interner = StringInterner::new();
+        interner.intern("hello");
+        interner.intern("world");
+        let (count, _) = interner.stats();
+        assert_eq!(count, 2);
+
+        interner.clear();
+        let (count_after, size_after) = interner.stats();
+        assert_eq!(count_after, 0);
+        assert_eq!(size_after, 0);
+    }
+
+    #[test]
+    fn test_bump_allocator_default() {
+        let alloc: BumpAllocator<i32> = BumpAllocator::default();
+        assert!(alloc.is_empty());
+        assert_eq!(alloc.len(), 0);
+    }
+
+    #[test]
+    fn test_bump_allocator_is_empty() {
+        let alloc = BumpAllocator::with_capacity(10);
+        assert!(alloc.is_empty());
+
+        alloc.alloc(42i32);
+        assert!(!alloc.is_empty());
+    }
+
+    #[test]
+    fn test_bump_allocator_clear() {
+        let alloc = BumpAllocator::with_capacity(10);
+        alloc.alloc(1i32);
+        alloc.alloc(2i32);
+        alloc.alloc(3i32);
+        assert_eq!(alloc.len(), 3);
+
+        alloc.clear();
+        assert!(alloc.is_empty());
+        assert_eq!(alloc.len(), 0);
+    }
+
+    #[test]
+    fn test_bump_allocator_get_out_of_bounds() {
+        let alloc = BumpAllocator::with_capacity(10);
+        alloc.alloc(42i32);
+        assert_eq!(alloc.get(0), Some(42));
+        assert_eq!(alloc.get(1), None);
+        assert_eq!(alloc.get(100), None);
+    }
+
+    #[test]
+    fn test_string_interner_stats() {
+        let interner = StringInterner::new();
+        interner.intern("abc");
+        interner.intern("defgh");
+        let (count, total_size) = interner.stats();
+        assert_eq!(count, 2);
+        assert_eq!(total_size, 8); // "abc" (3) + "defgh" (5)
+    }
+
+    #[test]
+    fn test_arena_clear() {
+        let arena = Arena::new();
+        arena.alloc(1i32);
+        arena.alloc(2i32);
+        assert_eq!(arena.total_allocated(), 2);
+
+        arena.clear();
+        assert_eq!(arena.total_allocated(), 0);
+        assert_eq!(arena.num_items(), 0);
+    }
+
+    #[test]
+    fn test_arena_alloc_different_types() {
+        let arena = Arena::new();
+        let int_val = arena.alloc(42i64);
+        let str_val = arena.alloc("hello".to_string());
+        let vec_val = arena.alloc(vec![1, 2, 3]);
+
+        assert_eq!(*int_val, 42i64);
+        assert_eq!(&*str_val, "hello");
+        assert_eq!(&*vec_val, &vec![1, 2, 3]);
+        assert_eq!(arena.total_allocated(), 3);
+    }
 }

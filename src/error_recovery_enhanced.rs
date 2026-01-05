@@ -611,4 +611,307 @@ mod tests {
         assert_eq!(context.recovery_stack.len(), 0);
         assert_eq!(context.error_history.len(), 0);
     }
+
+    // === EXTREME TDD Round 14 tests ===
+
+    #[test]
+    fn test_recovery_strategy_clone_and_eq() {
+        let strategy1 = RecoveryStrategy::Adaptive;
+        let strategy2 = strategy1.clone();
+        assert_eq!(strategy1, strategy2);
+
+        let strategy3 = RecoveryStrategy::SkipToDelimiter;
+        assert_ne!(strategy1, strategy3);
+    }
+
+    #[test]
+    fn test_recovery_strategy_variants() {
+        assert_eq!(
+            RecoveryStrategy::SkipToDelimiter,
+            RecoveryStrategy::SkipToDelimiter
+        );
+        assert_eq!(
+            RecoveryStrategy::InsertMissing,
+            RecoveryStrategy::InsertMissing
+        );
+        assert_eq!(
+            RecoveryStrategy::ReplaceTokens,
+            RecoveryStrategy::ReplaceTokens
+        );
+        assert_eq!(RecoveryStrategy::Adaptive, RecoveryStrategy::Adaptive);
+    }
+
+    #[test]
+    fn test_recovery_point_struct() {
+        let point = RecoveryPoint {
+            position: 42,
+            state_description: "parsing function".to_string(),
+            nesting_level: 3,
+        };
+        assert_eq!(point.position, 42);
+        assert_eq!(point.state_description, "parsing function");
+        assert_eq!(point.nesting_level, 3);
+    }
+
+    #[test]
+    fn test_recovered_error_new() {
+        let error = RecoveredError::new(
+            "Missing bracket".to_string(),
+            100,
+            RecoveryAction::InsertedToken {
+                token: "]".to_string(),
+            },
+            false,
+        );
+        assert_eq!(error.message, "Missing bracket");
+        assert_eq!(error.position, 100);
+        assert!(!error.recovery_success);
+    }
+
+    #[test]
+    fn test_recovery_action_display_replaced_token() {
+        let action = RecoveryAction::ReplacedToken {
+            original: "func".to_string(),
+            replacement: "fn".to_string(),
+        };
+        let display = format!("{action}");
+        assert!(display.contains("Replaced 'func' with 'fn'"));
+    }
+
+    #[test]
+    fn test_recovery_action_display_adaptive() {
+        let action = RecoveryAction::AdaptiveRecovery {
+            strategy_used: "skip-to-semicolon".to_string(),
+        };
+        let display = format!("{action}");
+        assert!(display.contains("Adaptive recovery using skip-to-semicolon"));
+    }
+
+    #[test]
+    fn test_error_recovery_context_current_strategy() {
+        let context = ErrorRecoveryContext::new(RecoveryStrategy::InsertMissing, 5);
+        assert_eq!(context.current_strategy(), &RecoveryStrategy::InsertMissing);
+    }
+
+    #[test]
+    fn test_error_history_limit_100() {
+        let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 200);
+
+        // Add 105 errors to exceed the 100 limit
+        for i in 0..105 {
+            let error = RecoveredError::new(
+                format!("Error {i}"),
+                i,
+                RecoveryAction::InsertedToken {
+                    token: ";".to_string(),
+                },
+                true,
+            );
+            context.record_error(error);
+        }
+
+        // History should be capped at 100
+        assert_eq!(context.error_history.len(), 100);
+        // Oldest errors should be removed
+        assert!(context
+            .error_history
+            .front()
+            .unwrap()
+            .message
+            .contains("Error 5"));
+    }
+
+    #[test]
+    fn test_recovery_statistics_fields() {
+        let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
+
+        let error1 = RecoveredError::new(
+            "Error 1".to_string(),
+            0,
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            true,
+        );
+        let error2 = RecoveredError::new(
+            "Error 2".to_string(),
+            10,
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            false,
+        );
+
+        context.record_error(error1);
+        context.record_error(error2);
+
+        let stats = context.recovery_statistics();
+        assert_eq!(stats.total_errors, 2);
+        assert_eq!(stats.successful_recoveries, 1);
+        assert_eq!(stats.success_rate, 0.5);
+        assert_eq!(stats.current_error_count, 2);
+        assert_eq!(stats.max_errors, 10);
+    }
+
+    #[test]
+    fn test_error_pattern_struct() {
+        let pattern = ErrorPattern {
+            message_prefix: "Expected".to_string(),
+            recovery_action: RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            success: true,
+        };
+        assert_eq!(pattern.message_prefix, "Expected");
+        assert!(pattern.success);
+    }
+
+    #[test]
+    fn test_extract_message_prefix_short() {
+        // Test with a very short message
+        let prefix = ErrorRecoveryContext::extract_message_prefix("Hi");
+        assert_eq!(prefix, "Hi");
+    }
+
+    #[test]
+    fn test_extract_message_prefix_long() {
+        let prefix = ErrorRecoveryContext::extract_message_prefix(
+            "This is a very long error message that should be truncated",
+        );
+        // Should take first 20 chars, then first 3 words
+        assert!(prefix.len() <= 20);
+        assert!(prefix.contains("This"));
+    }
+
+    #[test]
+    fn test_error_suggestions_paren() {
+        let suggestions = ErrorSuggestions::suggest_fixes("Expected ')' after arguments");
+        assert!(!suggestions.is_empty());
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("closing parenthesis")));
+    }
+
+    #[test]
+    fn test_error_suggestions_unexpected_token() {
+        let suggestions = ErrorSuggestions::suggest_fixes("Unexpected token 'xyz'");
+        assert!(suggestions.iter().any(|s| s.contains("typos")));
+    }
+
+    #[test]
+    fn test_error_suggestions_expected_expression() {
+        let suggestions = ErrorSuggestions::suggest_fixes("Expected expression");
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("value") || s.contains("expression")));
+    }
+
+    #[test]
+    fn test_error_suggestions_unknown_error() {
+        let suggestions = ErrorSuggestions::suggest_fixes("Some unknown error type");
+        // Should provide fallback suggestions
+        assert!(!suggestions.is_empty());
+        assert!(suggestions.iter().any(|s| s.contains("syntax")));
+    }
+
+    #[test]
+    fn test_contextual_suggestions_if_statement() {
+        let context = "if condition ";
+        let suggestions = ErrorSuggestions::contextual_suggestions("Expected '{'", context);
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("If statements") || s.contains("brace")));
+    }
+
+    #[test]
+    fn test_contextual_suggestions_let_statement() {
+        let context = "let x ";
+        let suggestions = ErrorSuggestions::contextual_suggestions("Expected '='", context);
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("Variable") || s.contains("assignment")));
+    }
+
+    #[test]
+    fn test_recovery_strategy_debug() {
+        let strategy = RecoveryStrategy::Adaptive;
+        let debug_str = format!("{:?}", strategy);
+        assert_eq!(debug_str, "Adaptive");
+    }
+
+    #[test]
+    fn test_recovery_point_clone() {
+        let point = RecoveryPoint {
+            position: 10,
+            state_description: "test".to_string(),
+            nesting_level: 1,
+        };
+        let cloned = point.clone();
+        assert_eq!(point.position, cloned.position);
+        assert_eq!(point.state_description, cloned.state_description);
+    }
+
+    #[test]
+    fn test_recovered_error_clone() {
+        let error = RecoveredError::new(
+            "Test".to_string(),
+            0,
+            RecoveryAction::InsertedToken {
+                token: ";".to_string(),
+            },
+            true,
+        );
+        let cloned = error.clone();
+        assert_eq!(error.message, cloned.message);
+        assert_eq!(error.position, cloned.position);
+    }
+
+    #[test]
+    fn test_recovery_action_clone() {
+        let action = RecoveryAction::SkippedToDelimiter {
+            skipped_count: 5,
+            delimiter: "}".to_string(),
+        };
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn test_recovery_statistics_zero_errors() {
+        let context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
+        let stats = context.recovery_statistics();
+        assert_eq!(stats.total_errors, 0);
+        assert_eq!(stats.successful_recoveries, 0);
+        assert_eq!(stats.success_rate, 0.0);
+    }
+
+    #[test]
+    fn test_pop_empty_recovery_stack() {
+        let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
+        assert!(context.pop_recovery_point().is_none());
+    }
+
+    #[test]
+    fn test_non_adaptive_strategy_no_update() {
+        let mut context = ErrorRecoveryContext::new(RecoveryStrategy::SkipToDelimiter, 10);
+
+        // Add several errors
+        for _ in 0..5 {
+            let error = RecoveredError::new(
+                "Error".to_string(),
+                0,
+                RecoveryAction::InsertedToken {
+                    token: ";".to_string(),
+                },
+                true,
+            );
+            context.record_error(error);
+        }
+
+        // Strategy should remain unchanged for non-adaptive
+        assert_eq!(
+            context.current_strategy(),
+            &RecoveryStrategy::SkipToDelimiter
+        );
+    }
 }
