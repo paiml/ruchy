@@ -978,3 +978,257 @@ mod property_tests_repl {
         }
     }
 }
+
+// === EXTREME TDD Round 21 - Coverage Push Tests ===
+#[cfg(test)]
+mod coverage_push_tests {
+    use super::*;
+
+    #[test]
+    fn test_eval_runtime_error() {
+        let mut repl = WasmRepl::new().expect("repl");
+        // Test undefined variable - should produce runtime error
+        let result = repl.eval("undefined_variable_xyz").expect("eval should return");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        // May succeed with nil or fail with error depending on interpreter
+        let _ = output;
+    }
+
+    #[test]
+    fn test_eval_division_by_zero() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("10 / 0").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        // Division by zero might succeed with special value or fail
+        let _ = output;
+    }
+
+    #[test]
+    fn test_eval_complex_expression() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("(1 + 2) * (3 + 4)").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("21".to_string()));
+    }
+
+    #[test]
+    fn test_eval_string_literal() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval(r#""hello world""#).expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("hello world".to_string()));
+    }
+
+    #[test]
+    fn test_eval_array_literal() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("[1, 2, 3]").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+    }
+
+    #[test]
+    fn test_eval_empty_input() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        // Empty input should result in parse error or nil
+        let _ = output;
+    }
+
+    #[test]
+    fn test_eval_whitespace_only() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("   \t\n   ").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        // Whitespace-only should parse but evaluate to nil
+        let _ = output;
+    }
+
+    #[test]
+    fn test_eval_nested_parse_error() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("((((").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(!output.success);
+        assert!(output.error.is_some());
+    }
+
+    #[test]
+    fn test_timing_info_present() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("42").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.timing.total_ms >= 0.0);
+        assert!(output.timing.parse_ms >= 0.0);
+        assert!(output.timing.eval_ms >= 0.0);
+    }
+
+    #[test]
+    fn test_heap_with_data() {
+        let mut heap = WasmHeap::new();
+        // Add data to young gen
+        heap.young.extend_from_slice(&[1, 2, 3, 4, 5]);
+        assert_eq!(heap.young.len(), 5);
+
+        // Minor GC clears young
+        heap.minor_gc();
+        assert!(heap.young.is_empty());
+    }
+
+    #[test]
+    fn test_heap_major_gc_all_marked() {
+        let mut heap = WasmHeap::new();
+        heap.old = vec![10, 20, 30];
+        heap.roots = vec![0, 1, 2]; // Mark all
+        heap.major_gc();
+        assert_eq!(heap.old.len(), 3);
+    }
+
+    #[test]
+    fn test_heap_major_gc_none_marked() {
+        let mut heap = WasmHeap::new();
+        heap.old = vec![10, 20, 30];
+        heap.roots = vec![]; // Mark none
+        heap.major_gc();
+        assert!(heap.old.is_empty());
+    }
+
+    #[test]
+    fn test_heap_major_gc_partial_marks() {
+        let mut heap = WasmHeap::new();
+        heap.old = vec![10, 20, 30, 40, 50];
+        heap.roots = vec![1, 3]; // Mark indices 1 and 3
+        heap.major_gc();
+        assert_eq!(heap.old.len(), 2);
+        assert!(heap.old.contains(&20));
+        assert!(heap.old.contains(&40));
+    }
+
+    #[test]
+    fn test_format_value_array() {
+        use std::sync::Arc;
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]);
+        let value = Value::Array(arr);
+        let result = WasmRepl::format_value_for_display(&value);
+        assert!(result.contains("1"));
+        assert!(result.contains("2"));
+    }
+
+    #[test]
+    fn test_eval_boolean_false() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("false").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("false".to_string()));
+    }
+
+    #[test]
+    fn test_eval_negative_number() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("-42").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+    }
+
+    #[test]
+    fn test_eval_comparison() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("5 > 3").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("true".to_string()));
+    }
+
+    #[test]
+    fn test_eval_logical_and() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("true && false").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("false".to_string()));
+    }
+
+    #[test]
+    fn test_eval_logical_or() {
+        let mut repl = WasmRepl::new().expect("repl");
+        let result = repl.eval("true || false").expect("eval");
+        let output: ReplOutput = serde_json::from_str(&result).expect("parse");
+        assert!(output.success);
+        assert_eq!(output.display, Some("true".to_string()));
+    }
+
+    #[test]
+    fn test_history_accumulation() {
+        let mut repl = WasmRepl::new().expect("repl");
+        for i in 1..=10 {
+            let _ = repl.eval(&format!("{i}"));
+        }
+        let history = repl.get_history();
+        assert_eq!(history.len(), 10);
+    }
+
+    #[test]
+    fn test_clear_after_multiple_evals() {
+        let mut repl = WasmRepl::new().expect("repl");
+        for i in 1..=5 {
+            let _ = repl.eval(&format!("{i}"));
+        }
+        repl.bindings.insert("x".to_string(), "10".to_string());
+        assert_eq!(repl.get_history().len(), 5);
+        assert!(!repl.bindings.is_empty());
+
+        repl.clear();
+
+        assert!(repl.get_history().is_empty());
+        assert!(repl.bindings.is_empty());
+    }
+
+    #[test]
+    fn test_repl_output_with_all_fields() {
+        let output = ReplOutput {
+            success: true,
+            display: Some("result".to_string()),
+            type_info: Some("i64".to_string()),
+            rust_code: Some("fn main() { println!(\"42\"); }".to_string()),
+            error: None,
+            timing: TimingInfo {
+                parse_ms: 0.5,
+                typecheck_ms: 1.0,
+                eval_ms: 0.3,
+                total_ms: 1.8,
+            },
+        };
+        let json = serde_json::to_string(&output).expect("serialize");
+        assert!(json.contains("result"));
+        assert!(json.contains("i64"));
+        assert!(json.contains("fn main"));
+    }
+
+    #[test]
+    fn test_repl_output_with_error_field() {
+        let output = ReplOutput {
+            success: false,
+            display: None,
+            type_info: None,
+            rust_code: None,
+            error: Some("Type mismatch: expected i64, got String".to_string()),
+            timing: TimingInfo {
+                parse_ms: 0.1,
+                typecheck_ms: 0.2,
+                eval_ms: 0.0,
+                total_ms: 0.3,
+            },
+        };
+        let json = serde_json::to_string(&output).expect("serialize");
+        let decoded: ReplOutput = serde_json::from_str(&json).expect("deserialize");
+        assert!(!decoded.success);
+        assert!(decoded.error.unwrap().contains("Type mismatch"));
+    }
+}

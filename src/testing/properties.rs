@@ -690,4 +690,370 @@ mod tests {
         let simple_parts = vec![StringPart::Text("hello".to_string())];
         assert!(prop_string_interpolation_transpiles(&simple_parts).is_ok());
     }
+
+    // === EXTREME TDD Round 21 - Coverage Push Tests ===
+
+    #[test]
+    fn test_prop_recovery_handles_truncation_empty() {
+        let result = prop_recovery_handles_truncation("");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prop_recovery_handles_truncation_short() {
+        let result = prop_recovery_handles_truncation("1+2");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prop_recovery_handles_truncation_long() {
+        // Input longer than 50 chars to hit truncation logic
+        let long_input = "a".repeat(100);
+        let result = prop_recovery_handles_truncation(&long_input);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_well_typed_with_subtract() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Default::default(),
+        );
+        let sub_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Subtract,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&sub_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_divide() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(20, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Default::default(),
+        );
+        let div_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Divide,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&div_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_or() {
+        let left = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let right = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
+        let or_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Or,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&or_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_equal() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Default::default(),
+        );
+        let eq_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Equal,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&eq_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_not_equal() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Default::default(),
+        );
+        let neq_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::NotEqual,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&neq_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_bitwise_not() {
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let bnot_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(int_expr),
+                op: UnaryOp::BitwiseNot,
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&bnot_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_reference() {
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let ref_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(expr),
+                op: UnaryOp::Reference,
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&ref_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_mutable_reference() {
+        let expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Default::default(),
+        );
+        let mut_ref_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(expr),
+                op: UnaryOp::MutableReference,
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&mut_ref_expr));
+    }
+
+    #[test]
+    fn test_well_typed_with_deref() {
+        let expr = Expr::new(
+            ExprKind::Identifier("ptr".to_string()),
+            Default::default(),
+        );
+        let deref_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(expr),
+                op: UnaryOp::Deref,
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&deref_expr));
+    }
+
+    #[test]
+    fn test_well_typed_if_no_else() {
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let if_no_else = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: None,
+            },
+            Default::default(),
+        );
+        assert!(is_well_typed(&if_no_else));
+    }
+
+    #[test]
+    fn test_is_well_typed_string_literal() {
+        let str_expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Default::default(),
+        );
+        assert!(is_well_typed(&str_expr));
+    }
+
+    #[test]
+    fn test_is_well_typed_char_literal() {
+        let char_expr = Expr::new(
+            ExprKind::Literal(Literal::Char('a')),
+            Default::default(),
+        );
+        assert!(is_well_typed(&char_expr));
+    }
+
+    #[test]
+    fn test_is_well_typed_unit_literal() {
+        // Unit literal (closest to nil in Ruchy)
+        let unit_expr = Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            Default::default(),
+        );
+        assert!(is_well_typed(&unit_expr));
+    }
+
+    #[test]
+    fn test_ill_typed_and_with_int() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
+        let bad_and = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::And,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(!is_well_typed(&bad_and));
+    }
+
+    #[test]
+    fn test_ill_typed_or_with_int() {
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
+        let bad_or = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Or,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        assert!(!is_well_typed(&bad_or));
+    }
+
+    #[test]
+    fn test_ill_typed_not_with_int() {
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let bad_not = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(int_expr),
+                op: UnaryOp::Not,
+            },
+            Default::default(),
+        );
+        assert!(!is_well_typed(&bad_not));
+    }
+
+    #[test]
+    fn test_ill_typed_negate_with_bool() {
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let bad_neg = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(bool_expr),
+                op: UnaryOp::Negate,
+            },
+            Default::default(),
+        );
+        assert!(!is_well_typed(&bad_neg));
+    }
+
+    #[test]
+    fn test_ill_typed_if_non_bool_condition() {
+        let condition = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
+        let bad_if = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: None,
+            },
+            Default::default(),
+        );
+        assert!(!is_well_typed(&bad_if));
+    }
+
+    #[test]
+    fn test_prop_parse_print_roundtrip_direct() {
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let result = prop_parse_print_roundtrip(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prop_well_typed_always_transpiles_simple() {
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let result = prop_well_typed_always_transpiles(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prop_well_typed_always_transpiles_complex() {
+        // A well-typed but more complex expression
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Default::default(),
+        );
+        let result = prop_well_typed_always_transpiles(&expr);
+        assert!(result.is_ok());
+    }
 }
