@@ -222,3 +222,101 @@ mod property_tests_analyzer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_semantic_analyzer_new() {
+        let analyzer = SemanticAnalyzer::new();
+        assert!(analyzer.symbol_table.symbols.is_empty());
+    }
+
+    #[test]
+    fn test_semantic_analyzer_default() {
+        let analyzer = SemanticAnalyzer::default();
+        assert!(analyzer.symbol_table.symbols.is_empty());
+    }
+
+    #[test]
+    fn test_get_completions_includes_keywords() {
+        let analyzer = SemanticAnalyzer::new();
+        let completions = analyzer
+            .get_completions("", Position { line: 0, character: 0 })
+            .expect("should succeed");
+        let labels: Vec<_> = completions.iter().map(|c| c.label.as_str()).collect();
+        assert!(labels.contains(&"fun"));
+        assert!(labels.contains(&"let"));
+        assert!(labels.contains(&"if"));
+    }
+
+    #[test]
+    fn test_get_completions_includes_types() {
+        let analyzer = SemanticAnalyzer::new();
+        let completions = analyzer
+            .get_completions("", Position { line: 0, character: 0 })
+            .expect("should succeed");
+        let labels: Vec<_> = completions.iter().map(|c| c.label.as_str()).collect();
+        assert!(labels.contains(&"i32"));
+        assert!(labels.contains(&"String"));
+        assert!(labels.contains(&"bool"));
+    }
+
+    #[test]
+    fn test_get_hover_info_returns_some() {
+        let analyzer = SemanticAnalyzer::new();
+        let hover = analyzer
+            .get_hover_info("let x = 42", Position { line: 0, character: 0 })
+            .expect("should succeed");
+        assert!(hover.is_some());
+    }
+
+    #[test]
+    fn test_get_definition_returns_none() {
+        let analyzer = SemanticAnalyzer::new();
+        let location = analyzer
+            .get_definition("let x = 42", Position { line: 0, character: 0 })
+            .expect("should succeed");
+        assert!(location.is_none());
+    }
+
+    #[test]
+    fn test_get_diagnostics_valid_code() {
+        let mut analyzer = SemanticAnalyzer::new();
+        let diagnostics = analyzer
+            .get_diagnostics("let x = 42")
+            .expect("should succeed");
+        // Valid code should not produce diagnostics
+        assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn test_symbol_table_default() {
+        let table = SymbolTable::default();
+        assert!(table.symbols.is_empty());
+    }
+
+    #[test]
+    fn test_symbol_clone() {
+        let symbol = Symbol {
+            name: "test".to_string(),
+            kind: "variable".to_string(),
+            documentation: Some("doc".to_string()),
+        };
+        let cloned = symbol.clone();
+        assert_eq!(cloned.name, "test");
+        assert_eq!(cloned.kind, "variable");
+        assert_eq!(cloned.documentation, Some("doc".to_string()));
+    }
+
+    #[test]
+    fn test_get_diagnostics_invalid_code() {
+        let mut analyzer = SemanticAnalyzer::new();
+        let diagnostics = analyzer
+            .get_diagnostics("fun { incomplete")
+            .expect("should succeed");
+        // Invalid code should produce parse error diagnostic
+        assert!(!diagnostics.is_empty());
+    }
+}

@@ -96,3 +96,58 @@ mod property_tests_capabilities {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_semantic_token_legend_has_token_types() {
+        assert!(!SEMANTIC_TOKEN_LEGEND.token_types.is_empty());
+        assert!(SEMANTIC_TOKEN_LEGEND.token_types.contains(&SemanticTokenType::KEYWORD));
+        assert!(SEMANTIC_TOKEN_LEGEND.token_types.contains(&SemanticTokenType::FUNCTION));
+    }
+
+    #[test]
+    fn test_semantic_token_legend_has_modifiers() {
+        assert!(!SEMANTIC_TOKEN_LEGEND.token_modifiers.is_empty());
+        assert!(SEMANTIC_TOKEN_LEGEND.token_modifiers.contains(&SemanticTokenModifier::DECLARATION));
+    }
+
+    #[test]
+    fn test_ruchy_token_to_lsp_actor() {
+        let result = ruchy_token_to_lsp(RuchyTokenType::Actor);
+        assert_eq!(result, SemanticTokenType::CLASS);
+    }
+
+    #[test]
+    fn test_ruchy_token_to_lsp_dataframe() {
+        let result = ruchy_token_to_lsp(RuchyTokenType::DataFrame);
+        assert_eq!(result, SemanticTokenType::TYPE);
+    }
+
+    #[test]
+    fn test_ruchy_token_to_lsp_pipeline() {
+        let result = ruchy_token_to_lsp(RuchyTokenType::Pipeline);
+        assert_eq!(result, SemanticTokenType::OPERATOR);
+    }
+
+    #[test]
+    fn test_ruchy_token_to_lsp_pattern() {
+        let result = ruchy_token_to_lsp(RuchyTokenType::Pattern);
+        assert_eq!(result, SemanticTokenType::ENUM_MEMBER);
+    }
+
+    #[test]
+    fn test_ruchy_token_type_eq() {
+        assert_eq!(RuchyTokenType::Actor, RuchyTokenType::Actor);
+        assert_ne!(RuchyTokenType::Actor, RuchyTokenType::DataFrame);
+    }
+
+    #[test]
+    fn test_ruchy_token_type_clone() {
+        let token = RuchyTokenType::Pipeline;
+        let cloned = token;
+        assert_eq!(cloned, RuchyTokenType::Pipeline);
+    }
+}

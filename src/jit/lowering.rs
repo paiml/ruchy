@@ -100,26 +100,98 @@ mod tests {
     use cranelift_jit::{JITBuilder, JITModule};
     use cranelift_module::Module;
 
-    #[test]
-    fn test_lower_literal() {
-        let code = "42";
-        let ast = Parser::new(code).parse().unwrap();
-
-        // Create minimal Cranelift context for testing
+    fn setup_func_builder() -> (JITModule, codegen::Context, FunctionBuilderContext) {
         let builder = JITBuilder::new(cranelift_module::default_libcall_names()).unwrap();
         let module = JITModule::new(builder);
         let mut ctx = codegen::Context::new();
         let mut sig = module.make_signature();
         sig.returns.push(AbiParam::new(types::I64));
         ctx.func.signature = sig;
+        let func_builder_ctx = FunctionBuilderContext::new();
+        (module, ctx, func_builder_ctx)
+    }
 
-        let mut func_builder_ctx = FunctionBuilderContext::new();
+    #[test]
+    fn test_lower_literal() {
+        let code = "42";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
         let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
-
         let entry_block = func_builder.create_block();
         func_builder.switch_to_block(entry_block);
-
         let result = lower_expr_to_value(&mut func_builder, &ast);
         assert!(result.is_ok(), "Should lower literal successfully");
+    }
+
+    #[test]
+    fn test_lower_addition() {
+        let code = "1 + 2";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower addition successfully");
+    }
+
+    #[test]
+    fn test_lower_subtraction() {
+        let code = "10 - 3";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower subtraction successfully");
+    }
+
+    #[test]
+    fn test_lower_multiplication() {
+        let code = "5 * 4";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower multiplication successfully");
+    }
+
+    #[test]
+    fn test_lower_division() {
+        let code = "20 / 4";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower division successfully");
+    }
+
+    #[test]
+    fn test_lower_nested_arithmetic() {
+        let code = "(1 + 2) * 3";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower nested arithmetic successfully");
+    }
+
+    #[test]
+    fn test_lower_modulo() {
+        let code = "10 % 3";
+        let ast = Parser::new(code).parse().unwrap();
+        let (_module, mut ctx, mut func_builder_ctx) = setup_func_builder();
+        let mut func_builder = FunctionBuilder::new(&mut ctx.func, &mut func_builder_ctx);
+        let entry_block = func_builder.create_block();
+        func_builder.switch_to_block(entry_block);
+        let result = lower_expr_to_value(&mut func_builder, &ast);
+        assert!(result.is_ok(), "Should lower modulo successfully");
     }
 }
