@@ -158,4 +158,79 @@ mod tests {
             result => panic!("Expected Error, got {result:?}"),
         }
     }
+
+    // === EXTREME TDD Round 15 tests ===
+
+    #[test]
+    fn test_evaluator_default() {
+        let evaluator = Evaluator::default();
+        assert!(!evaluator.is_multiline());
+    }
+
+    #[test]
+    fn test_eval_result_debug() {
+        let value_result = EvalResult::Value(Value::Integer(42));
+        let debug_str = format!("{:?}", value_result);
+        assert!(debug_str.contains("Value"));
+
+        let need_more = EvalResult::NeedMoreInput;
+        let debug_str = format!("{:?}", need_more);
+        assert!(debug_str.contains("NeedMoreInput"));
+
+        let error_result = EvalResult::Error("test error".to_string());
+        let debug_str = format!("{:?}", error_result);
+        assert!(debug_str.contains("Error"));
+    }
+
+    #[test]
+    fn test_eval_result_clone() {
+        let original = EvalResult::Value(Value::Integer(100));
+        let cloned = original.clone();
+        match cloned {
+            EvalResult::Value(Value::Integer(100)) => {}
+            _ => panic!("Clone should preserve value"),
+        }
+    }
+
+    #[test]
+    fn test_is_incomplete_error() {
+        let evaluator = Evaluator::new();
+
+        // These should be detected as incomplete
+        assert!(evaluator.is_incomplete_error("unexpected end of input"));
+        assert!(evaluator.is_incomplete_error("incomplete expression"));
+        assert!(evaluator.is_incomplete_error("Expected } but found EOF"));
+        assert!(evaluator.is_incomplete_error("expected ) at EOF"));
+        assert!(evaluator.is_incomplete_error("found EOF unexpectedly"));
+
+        // These should NOT be incomplete
+        assert!(!evaluator.is_incomplete_error("undefined variable"));
+        assert!(!evaluator.is_incomplete_error("type mismatch"));
+    }
+
+    #[test]
+    fn test_string_evaluation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("\"hello\"", &mut state).unwrap() {
+            EvalResult::Value(Value::String(s)) => {
+                assert_eq!(&*s, "hello");
+            }
+            result => panic!("Expected String, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_let_binding_evaluation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        // Define a variable
+        let result = evaluator.evaluate_line("let x = 10", &mut state).unwrap();
+        match result {
+            EvalResult::Value(_) => {}
+            result => panic!("Expected Value for let binding, got {result:?}"),
+        }
+    }
 }

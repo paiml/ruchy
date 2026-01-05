@@ -311,6 +311,102 @@ mod tests {
         assert_eq!(stats.misses, 1);
         assert!(stats.hit_rate > 60.0 && stats.hit_rate < 70.0);
     }
+
+    // === EXTREME TDD Round 15 tests ===
+
+    #[test]
+    fn test_cache_key_hash() {
+        use std::collections::HashSet;
+
+        let key1 = CacheKey::new("let x = 1".to_string());
+        let key2 = CacheKey::new("let x = 1".to_string());
+        let key3 = CacheKey::new("let x = 2".to_string());
+
+        let mut set = HashSet::new();
+        set.insert(key1.clone());
+        assert!(set.contains(&key2));
+        assert!(!set.contains(&key3));
+    }
+
+    #[test]
+    fn test_bytecode_cache_default() {
+        let cache = BytecodeCache::default();
+        assert_eq!(cache.stats().capacity, 1000);
+        assert_eq!(cache.stats().size, 0);
+    }
+
+    #[test]
+    fn test_expression_cache_default() {
+        let cache = ExpressionCache::default();
+        assert_eq!(cache.stats().size, 0);
+    }
+
+    #[test]
+    fn test_cache_stats_empty() {
+        let cache = BytecodeCache::new();
+        let stats = cache.stats();
+        assert_eq!(stats.size, 0);
+        assert_eq!(stats.hits, 0);
+        assert_eq!(stats.misses, 0);
+        assert_eq!(stats.hit_rate, 0.0);
+    }
+
+    #[test]
+    fn test_cache_stats_clone() {
+        let cache = BytecodeCache::new();
+        let _ = cache.get("missing");
+        let stats = cache.stats();
+        let cloned = stats.clone();
+        assert_eq!(stats.misses, cloned.misses);
+        assert_eq!(stats.capacity, cloned.capacity);
+    }
+
+    #[test]
+    fn test_cached_result_clone() {
+        let result = CachedResult {
+            ast: make_test_expr(42),
+            rust_code: Some("let x = 42;".to_string()),
+            timestamp: std::time::Instant::now(),
+        };
+        let cloned = result.clone();
+        assert!(Rc::ptr_eq(&result.ast, &cloned.ast));
+        assert_eq!(result.rust_code, cloned.rust_code);
+    }
+
+    #[test]
+    fn test_bytecode_cache_insert_duplicate() {
+        let cache = BytecodeCache::with_capacity(10);
+        cache.insert("expr1".to_string(), make_test_expr(1), None);
+        cache.insert("expr1".to_string(), make_test_expr(2), None);
+
+        // Size should still be 1 (duplicate key)
+        assert_eq!(cache.stats().size, 1);
+    }
+
+    #[test]
+    fn test_expression_cache_get_transpiled_none() {
+        let cache = ExpressionCache::new();
+        cache.cache_parsed("test".to_string(), make_test_expr(1));
+
+        // Should return None for rust_code since we only cached parsed
+        assert!(cache.get_transpiled("test").is_none());
+    }
+
+    #[test]
+    fn test_cache_key_debug() {
+        let key = CacheKey::new("test".to_string());
+        let debug = format!("{:?}", key);
+        assert!(debug.contains("CacheKey"));
+        assert!(debug.contains("test"));
+    }
+
+    #[test]
+    fn test_cache_stats_debug() {
+        let cache = BytecodeCache::new();
+        let stats = cache.stats();
+        let debug = format!("{:?}", stats);
+        assert!(debug.contains("CacheStats"));
+    }
 }
 #[cfg(test)]
 mod property_tests_cache {
