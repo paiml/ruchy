@@ -142,4 +142,75 @@ mod tests {
             assert!(val < 100);
         }
     }
+
+    // === EXTREME TDD Round 18 tests ===
+
+    #[test]
+    fn test_simple_rng_debug() {
+        let rng = SimpleRng::new(42);
+        let debug_str = format!("{:?}", rng);
+        assert!(debug_str.contains("SimpleRng"));
+        assert!(debug_str.contains("state"));
+    }
+
+    #[test]
+    fn test_simple_rng_clone() {
+        let rng1 = SimpleRng::new(42);
+        let mut rng2 = rng1.clone();
+        let mut rng3 = SimpleRng::new(42);
+
+        // Cloned RNG should produce same sequence as fresh one with same seed
+        for _ in 0..10 {
+            assert_eq!(rng2.next_u64(), rng3.next_u64());
+        }
+    }
+
+    #[test]
+    fn test_simple_rng_from_global_seed() {
+        let rng1 = SimpleRng::from_global_seed();
+        let rng2 = SimpleRng::new(get_seed());
+
+        // Should have same initial state
+        let mut r1 = rng1;
+        let mut r2 = rng2;
+        assert_eq!(r1.next_u64(), r2.next_u64());
+    }
+
+    #[test]
+    fn test_simple_rng_for_component() {
+        let rng1 = SimpleRng::for_component("test_component");
+        let rng2 = SimpleRng::new(get_component_seed("test_component"));
+
+        let mut r1 = rng1;
+        let mut r2 = rng2;
+        assert_eq!(r1.next_u64(), r2.next_u64());
+    }
+
+    #[test]
+    fn test_simple_rng_reseed() {
+        let mut rng = SimpleRng::new(42);
+        let _ = rng.next_u64(); // advance state
+
+        rng.reseed(42);
+        let mut fresh_rng = SimpleRng::new(42);
+
+        // After reseed, should produce same sequence as fresh RNG
+        assert_eq!(rng.next_u64(), fresh_rng.next_u64());
+    }
+
+    #[test]
+    fn test_get_seed_returns_default() {
+        // Without RUCHY_SEED env var, should return DEFAULT_SEED
+        let seed = get_seed();
+        assert_eq!(seed, DEFAULT_SEED);
+    }
+
+    #[test]
+    fn test_get_rng_deterministic() {
+        let mut rng1 = get_rng("test");
+        let mut rng2 = get_rng("test");
+
+        // Same component should produce same sequence
+        assert_eq!(rng1.next_u64(), rng2.next_u64());
+    }
 }

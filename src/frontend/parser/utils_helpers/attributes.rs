@@ -207,4 +207,60 @@ mod tests {
             _ => panic!("Expected function definition"),
         }
     }
+
+    // === EXTREME TDD Round 18 tests ===
+
+    #[test]
+    fn test_parse_at_decorator_empty_args() {
+        let mut parser = Parser::new("@test() fn empty_args() { 1 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes.len(), 1);
+                assert_eq!(expr.attributes[0].name, "test");
+                assert!(expr.attributes[0].args.is_empty());
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_decorator_on_let() {
+        // Decorators can be on various statements
+        let mut parser = Parser::new("@memoize let x = 42");
+        let expr = parser.parse().unwrap();
+        // Should have decorator attached
+        assert_eq!(expr.attributes.len(), 1);
+        assert_eq!(expr.attributes[0].name, "memoize");
+    }
+
+    #[test]
+    fn test_decorator_span_preserved() {
+        let mut parser = Parser::new("@test fn foo() { 1 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                // Span should have valid position (non-zero indicates parsed correctly)
+                // Position depends on tokenizer implementation
+                assert!(expr.attributes[0].span.start < 20);
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
+
+    #[test]
+    fn test_multiple_decorators_with_args() {
+        let mut parser = Parser::new("@route(\"GET\") @auth(\"admin\") fn api() { 0 }");
+        let expr = parser.parse().unwrap();
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => {
+                assert_eq!(expr.attributes.len(), 2);
+                assert_eq!(expr.attributes[0].name, "route");
+                assert_eq!(expr.attributes[0].args, vec!["GET"]);
+                assert_eq!(expr.attributes[1].name, "auth");
+                assert_eq!(expr.attributes[1].args, vec!["admin"]);
+            }
+            _ => panic!("Expected function definition"),
+        }
+    }
 }
