@@ -747,6 +747,156 @@ mod tests {
         assert!(result.is_ok(), "Struct variant with many fields should parse");
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    // ===== Name variations =====
+
+    #[test]
+    fn test_enum_single_char_name() {
+        let result = parse("enum A { V }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_long_name() {
+        let result = parse("enum VeryLongEnumNameHere { Value }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_snake_case_name() {
+        let result = parse("enum my_enum { value }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_uppercase_name() {
+        let result = parse("enum STATUS { ACTIVE }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Variant count variations =====
+
+    #[test]
+    fn test_enum_five_variants() {
+        let result = parse("enum Dir { N, S, E, W, Center }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_ten_variants() {
+        let result = parse("enum Digit { D0, D1, D2, D3, D4, D5, D6, D7, D8, D9 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Tuple field count =====
+
+    #[test]
+    fn test_tuple_variant_four_fields() {
+        let result = parse("enum Rect { XYWH(i32, i32, i32, i32) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_variant_five_fields() {
+        let result = parse("enum Data { Row(i32, i32, i32, i32, i32) }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Struct variant field count =====
+
+    #[test]
+    fn test_struct_variant_three_fields() {
+        let result = parse("enum Point3D { Coord { x: i32, y: i32, z: i32 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_variant_five_fields() {
+        let result = parse("enum Config { Full { a: i32, b: i32, c: i32, d: i32, e: i32 } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Type variations in variants =====
+
+    #[test]
+    fn test_tuple_variant_bool() {
+        let result = parse("enum Flag { Set(bool) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_variant_float() {
+        let result = parse("enum Value { Float(f64) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_variant_char() {
+        let result = parse("enum Key { Char(char) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_variant_string_field() {
+        let result = parse("enum Named { Item { name: String } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_variant_vec_field() {
+        let result = parse("enum Container { List { items: Vec<i32> } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Multiple enums =====
+
+    #[test]
+    fn test_two_enums() {
+        let result = parse("enum A { X } enum B { Y }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_three_enums() {
+        let result = parse("enum A { X } enum B { Y } enum C { Z }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_with_function() {
+        let result = parse("enum Status { Active } fun main() { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Empty and minimal =====
+
+    #[test]
+    fn test_enum_empty() {
+        let result = parse("enum Empty { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_minimal_unit() {
+        let result = parse("enum E { V }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_minimal_tuple() {
+        let result = parse("enum E { V(i32) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_enum_minimal_struct() {
+        let result = parse("enum E { V { x: i32 } }");
+        assert!(result.is_ok());
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
