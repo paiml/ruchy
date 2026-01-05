@@ -911,4 +911,194 @@ mod tests {
         )
         .expect("operation should succeed in test"));
     }
+
+    #[test]
+    fn test_array_addition() {
+        let arr1 = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
+        let arr2 = Value::from_array(vec![Value::Integer(3), Value::Integer(4)]);
+        let result = add_values(&arr1, &arr2).expect("should succeed");
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 4);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_string_concat() {
+        let s1 = Value::from_string("hello".to_string());
+        let s2 = Value::from_string(" world".to_string());
+        let result = add_values(&s1, &s2).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "hello world");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_string_plus_integer() {
+        let s = Value::from_string("count: ".to_string());
+        let i = Value::Integer(42);
+        let result = add_values(&s, &i).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "count: 42");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_integer_plus_string() {
+        let i = Value::Integer(42);
+        let s = Value::from_string(" items".to_string());
+        let result = add_values(&i, &s).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "42 items");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_string_plus_float() {
+        let s = Value::from_string("pi: ".to_string());
+        let f = Value::Float(3.14);
+        let result = add_values(&s, &f).expect("should succeed");
+        if let Value::String(s) = result {
+            assert!(s.starts_with("pi: 3.14"));
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_string_plus_bool() {
+        let s = Value::from_string("active: ".to_string());
+        let b = Value::Bool(true);
+        let result = add_values(&s, &b).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "active: true");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_string_repeat_zero() {
+        let s = Value::from_string("abc".to_string());
+        let n = Value::Integer(0);
+        let result = mul_values(&s, &n).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_string_repeat_negative() {
+        let s = Value::from_string("abc".to_string());
+        let n = Value::Integer(-1);
+        let result = mul_values(&s, &n).expect("should succeed");
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_unary_reference() {
+        let v = Value::Integer(42);
+        let result = eval_unary_op(UnaryOp::Reference, &v).expect("should succeed");
+        assert_eq!(result, Value::Integer(42)); // Reference is no-op in interpreter
+    }
+
+    #[test]
+    fn test_unary_mutable_reference() {
+        let v = Value::Integer(42);
+        let result = eval_unary_op(UnaryOp::MutableReference, &v).expect("should succeed");
+        assert_eq!(result, Value::Integer(42)); // MutRef is no-op in interpreter
+    }
+
+    #[test]
+    fn test_unary_deref() {
+        let v = Value::Integer(42);
+        let result = eval_unary_op(UnaryOp::Deref, &v).expect("should succeed");
+        assert_eq!(result, Value::Integer(42)); // Deref is no-op in interpreter
+    }
+
+    #[test]
+    fn test_bitwise_on_non_integer() {
+        let result = eval_bitwise_op(AstBinaryOp::BitwiseAnd, &Value::Float(1.0), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_negate_on_invalid_type() {
+        let result = eval_unary_op(UnaryOp::Negate, &Value::Bool(true));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_bitwise_not_on_invalid_type() {
+        let result = eval_unary_op(UnaryOp::BitwiseNot, &Value::Float(1.0));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_add_type_error() {
+        let result = add_values(&Value::Bool(true), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sub_type_error() {
+        let result = sub_values(&Value::from_string("a".to_string()), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_not_equal() {
+        let result = eval_comparison_op(
+            AstBinaryOp::NotEqual,
+            &Value::Integer(1),
+            &Value::Integer(2),
+        )
+        .expect("should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_mul_type_error() {
+        let result = mul_values(&Value::Bool(true), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_div_type_error() {
+        let result = div_values(&Value::from_string("a".to_string()), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_power_mixed_types() {
+        let result = power_values(&Value::Integer(2), &Value::Float(3.0)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 8.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_modulo_float() {
+        let result = modulo_values(&Value::Float(10.0), &Value::Float(3.0)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 1.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
 }

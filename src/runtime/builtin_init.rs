@@ -868,4 +868,475 @@ mod tests {
             assert!(env.contains_key(*func), "Missing advanced utility: {func}");
         }
     }
+
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    #[test]
+    fn test_add_builtin_constants() {
+        let mut env = HashMap::new();
+        add_builtin_constants(&mut env);
+        assert_eq!(env.get("nil"), Some(&Value::Nil));
+        assert_eq!(env.len(), 1);
+    }
+
+    #[test]
+    fn test_add_basic_builtins() {
+        let mut env = HashMap::new();
+        add_basic_builtins(&mut env);
+        assert!(env.contains_key("format"));
+        assert!(env.contains_key("HashMap"));
+        assert!(env.contains_key("DataFrame"));
+        assert!(env.contains_key("Command"));
+        assert!(env.contains_key("String"));
+        assert!(env.contains_key("DataFrame::new"));
+        assert!(env.contains_key("DataFrame::from_range"));
+        assert!(env.contains_key("col"));
+    }
+
+    #[test]
+    fn test_add_math_functions() {
+        let mut env = HashMap::new();
+        add_math_functions(&mut env);
+        let math_fns = ["sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan", "log", "log10", "random"];
+        for func in &math_fns {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 14);
+    }
+
+    #[test]
+    fn test_add_io_functions() {
+        let mut env = HashMap::new();
+        add_io_functions(&mut env);
+        assert!(env.contains_key("println"));
+        assert!(env.contains_key("print"));
+        assert!(env.contains_key("dbg"));
+        assert_eq!(env.len(), 3);
+    }
+
+    #[test]
+    fn test_add_utility_functions() {
+        let mut env = HashMap::new();
+        add_utility_functions(&mut env);
+        assert!(env.contains_key("len"));
+        assert!(env.contains_key("range"));
+        assert!(env.contains_key("typeof"));
+        assert!(env.contains_key("assert_eq"));
+        assert!(env.contains_key("assert"));
+        assert_eq!(env.len(), 5);
+    }
+
+    #[test]
+    fn test_add_type_conversion_functions() {
+        let mut env = HashMap::new();
+        add_type_conversion_functions(&mut env);
+        assert!(env.contains_key("int"));
+        assert!(env.contains_key("float"));
+        assert!(env.contains_key("str"));
+        assert!(env.contains_key("bool"));
+        assert_eq!(env.len(), 4);
+    }
+
+    #[test]
+    fn test_add_advanced_utility_functions() {
+        let mut env = HashMap::new();
+        add_advanced_utility_functions(&mut env);
+        let funcs = ["reverse", "sort", "sum", "product", "unique", "flatten", "zip", "enumerate"];
+        for func in &funcs {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 8);
+    }
+
+    #[test]
+    fn test_add_string_functions() {
+        let mut env = HashMap::new();
+        add_string_functions(&mut env);
+        assert!(env.contains_key("join"));
+        assert!(env.contains_key("split"));
+        assert_eq!(env.len(), 2);
+    }
+
+    #[test]
+    fn test_add_random_time_functions() {
+        let mut env = HashMap::new();
+        add_random_time_functions(&mut env);
+        assert!(env.contains_key("random"));
+        assert!(env.contains_key("random_int"));
+        assert!(env.contains_key("timestamp"));
+        assert!(env.contains_key("get_time_ms"));
+        assert!(env.contains_key("std::time::now_millis"));
+        assert!(env.contains_key("sleep"));
+        assert_eq!(env.len(), 6);
+    }
+
+    #[test]
+    fn test_add_environment_functions() {
+        let mut env = HashMap::new();
+        add_environment_functions(&mut env);
+        let funcs = ["env_args", "env_var", "env_set_var", "env_remove_var", "env_vars", "env_current_dir", "env_set_current_dir", "env_temp_dir"];
+        for func in &funcs {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 8);
+    }
+
+    #[test]
+    fn test_add_fs_functions() {
+        let mut env = HashMap::new();
+        add_fs_functions(&mut env);
+        let funcs = ["fs_read", "fs_write", "fs_exists", "fs_create_dir", "fs_remove_file", "fs_remove_dir", "fs_copy", "fs_rename", "fs_metadata", "fs_read_dir", "fs_canonicalize", "fs_is_file"];
+        for func in &funcs {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 12);
+    }
+
+    #[test]
+    fn test_add_stdlib003_functions() {
+        let mut env = HashMap::new();
+        add_stdlib003_functions(&mut env);
+        assert!(env.contains_key("read_file"));
+        assert!(env.contains_key("write_file"));
+        assert!(env.contains_key("file_exists"));
+        assert!(env.contains_key("append_file"));
+        assert!(env.contains_key("delete_file"));
+        assert!(env.contains_key("open"));
+        assert_eq!(env.len(), 6);
+    }
+
+    #[test]
+    fn test_add_stdlib005_functions() {
+        let mut env = HashMap::new();
+        add_stdlib005_functions(&mut env);
+        assert!(env.contains_key("walk"));
+        assert!(env.contains_key("walk_parallel"));
+        assert!(env.contains_key("glob"));
+        assert!(env.contains_key("search"));
+        assert!(env.contains_key("walk_with_options"));
+        assert!(env.contains_key("compute_hash"));
+        assert_eq!(env.len(), 6);
+    }
+
+    #[test]
+    fn test_add_path_functions() {
+        let mut env = HashMap::new();
+        add_path_functions(&mut env);
+        let funcs = ["path_join", "path_join_many", "path_parent", "path_file_name", "path_file_stem", "path_extension", "path_is_absolute", "path_is_relative", "path_canonicalize", "path_with_extension", "path_with_file_name", "path_components", "path_normalize"];
+        for func in &funcs {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 13);
+    }
+
+    #[test]
+    fn test_add_json_functions() {
+        let mut env = HashMap::new();
+        add_json_functions(&mut env);
+        let funcs = ["json_parse", "parse_json", "json_stringify", "json_pretty", "json_read", "json_write", "json_validate", "json_type", "json_merge", "json_get", "json_set"];
+        for func in &funcs {
+            assert!(env.contains_key(*func), "Missing: {func}");
+        }
+        assert_eq!(env.len(), 11);
+    }
+
+    #[test]
+    fn test_add_http_functions() {
+        let mut env = HashMap::new();
+        add_http_functions(&mut env);
+        assert!(env.contains_key("http_get"));
+        assert!(env.contains_key("http_post"));
+        assert!(env.contains_key("http_put"));
+        assert!(env.contains_key("http_delete"));
+        assert_eq!(env.len(), 4);
+    }
+
+    #[test]
+    fn test_add_std_namespace() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        assert!(env.contains_key("std"));
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            assert!(std_obj.contains_key("time"));
+            assert!(std_obj.contains_key("process"));
+            assert!(std_obj.contains_key("fs"));
+            assert!(std_obj.contains_key("env"));
+            assert!(std_obj.contains_key("math"));
+        } else {
+            panic!("std should be an Object");
+        }
+    }
+
+    #[test]
+    fn test_add_chrono_namespace() {
+        let mut env = HashMap::new();
+        add_chrono_namespace(&mut env);
+        assert!(env.contains_key("chrono"));
+        assert!(env.contains_key("Utc"));
+        if let Some(Value::Object(chrono_obj)) = env.get("chrono") {
+            assert!(chrono_obj.contains_key("Utc"));
+        } else {
+            panic!("chrono should be an Object");
+        }
+    }
+
+    #[test]
+    fn test_std_time_module() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            if let Some(Value::Object(time_obj)) = std_obj.get("time") {
+                assert!(time_obj.contains_key("now_millis"));
+            } else {
+                panic!("std::time should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_std_process_module() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            if let Some(Value::Object(process_obj)) = std_obj.get("process") {
+                assert!(process_obj.contains_key("Command"));
+            } else {
+                panic!("std::process should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_std_fs_module() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            if let Some(Value::Object(fs_obj)) = std_obj.get("fs") {
+                assert!(fs_obj.contains_key("write"));
+                assert!(fs_obj.contains_key("read"));
+                assert!(fs_obj.contains_key("read_to_string"));
+                assert!(fs_obj.contains_key("exists"));
+                assert!(fs_obj.contains_key("create_dir"));
+                assert!(fs_obj.contains_key("create_dir_all"));
+            } else {
+                panic!("std::fs should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_std_env_module() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            if let Some(Value::Object(env_obj)) = std_obj.get("env") {
+                assert!(env_obj.contains_key("args"));
+                assert!(env_obj.contains_key("var"));
+            } else {
+                panic!("std::env should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_std_math_module() {
+        let mut env = HashMap::new();
+        add_std_namespace(&mut env);
+        if let Some(Value::Object(std_obj)) = env.get("std") {
+            if let Some(Value::Object(math_obj)) = std_obj.get("math") {
+                let funcs = ["sqrt", "sin", "cos", "tan", "pow", "abs", "floor", "ceil", "log", "log10", "exp", "random", "min", "max", "round"];
+                for func in &funcs {
+                    assert!(math_obj.contains_key(*func), "Missing std::math::{func}");
+                }
+            } else {
+                panic!("std::math should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_chrono_utc_module() {
+        let mut env = HashMap::new();
+        add_chrono_namespace(&mut env);
+        if let Some(Value::Object(chrono_obj)) = env.get("chrono") {
+            if let Some(Value::Object(utc_obj)) = chrono_obj.get("Utc") {
+                assert!(utc_obj.contains_key("now"));
+            } else {
+                panic!("chrono::Utc should be an Object");
+            }
+        }
+    }
+
+    #[test]
+    fn test_builtin_marker_format() {
+        let env = init_global_environment();
+        // All builtin functions should have __builtin_*__ format
+        let test_funcs = ["sqrt", "println", "len", "range", "int"];
+        for func in &test_funcs {
+            if let Some(Value::String(s)) = env.get(*func) {
+                assert!(s.starts_with("__builtin_"), "Function {} should start with __builtin_", func);
+                assert!(s.ends_with("__"), "Function {} should end with __", func);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dataframe_qualified_names() {
+        let env = init_global_environment();
+        assert!(env.contains_key("DataFrame::new"));
+        assert!(env.contains_key("DataFrame::from_range"));
+        assert!(env.contains_key("DataFrame::from_rows"));
+        assert!(env.contains_key("DataFrame::from_csv_string"));
+        assert!(env.contains_key("DataFrame::from_json"));
+    }
+
+    #[test]
+    fn test_no_duplicate_builtin_markers() {
+        let env = init_global_environment();
+        // Verify specific functions have unique markers
+        let format_marker = env.get("format");
+        let println_marker = env.get("println");
+        assert_ne!(format_marker, println_marker);
+    }
+
+    #[test]
+    fn test_io_functions_complete() {
+        let mut env = HashMap::new();
+        add_io_functions(&mut env);
+        let expected = ["println", "print", "dbg"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing IO function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_type_conversion_complete() {
+        let mut env = HashMap::new();
+        add_type_conversion_functions(&mut env);
+        let expected = ["int", "float", "str", "bool"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing conversion: {func}");
+        }
+    }
+
+    #[test]
+    fn test_utility_functions_complete() {
+        let mut env = HashMap::new();
+        add_utility_functions(&mut env);
+        let expected = ["len", "range", "typeof", "assert_eq", "assert"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing utility: {func}");
+        }
+    }
+
+    #[test]
+    fn test_string_functions_complete() {
+        let mut env = HashMap::new();
+        add_string_functions(&mut env);
+        let expected = ["join", "split"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing string function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_fs_functions_complete() {
+        let mut env = HashMap::new();
+        add_fs_functions(&mut env);
+        let expected = [
+            "fs_read", "fs_write", "fs_exists", "fs_create_dir",
+            "fs_remove_file", "fs_remove_dir", "fs_copy", "fs_rename",
+        ];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing fs function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_path_functions_complete() {
+        let mut env = HashMap::new();
+        add_path_functions(&mut env);
+        let expected = [
+            "path_join", "path_join_many", "path_parent",
+            "path_file_name", "path_file_stem",
+        ];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing path function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_json_functions_complete() {
+        let mut env = HashMap::new();
+        add_json_functions(&mut env);
+        let expected = ["json_parse", "parse_json", "json_stringify", "json_pretty"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing json function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_stdlib003_functions_complete() {
+        let mut env = HashMap::new();
+        add_stdlib003_functions(&mut env);
+        let expected = ["read_file", "write_file", "file_exists", "append_file", "delete_file"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing stdlib003 function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_stdlib005_functions_complete() {
+        let mut env = HashMap::new();
+        add_stdlib005_functions(&mut env);
+        let expected = ["walk", "walk_parallel", "glob", "search", "walk_with_options"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing stdlib005 function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_environment_functions_complete() {
+        let mut env = HashMap::new();
+        add_environment_functions(&mut env);
+        let expected = ["env_args", "env_var", "env_set_var", "env_remove_var", "env_vars"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing env function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_random_time_functions_complete() {
+        let mut env = HashMap::new();
+        add_random_time_functions(&mut env);
+        let expected = ["random", "random_int", "timestamp", "get_time_ms", "sleep", "std::time::now_millis"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing random/time function: {func}");
+        }
+    }
+
+    #[test]
+    fn test_advanced_utility_functions_complete() {
+        let mut env = HashMap::new();
+        add_advanced_utility_functions(&mut env);
+        let expected = ["reverse", "sort", "sum", "product", "unique", "flatten", "zip", "enumerate"];
+        for func in &expected {
+            assert!(env.contains_key(*func), "Missing advanced util: {func}");
+        }
+    }
+
+    #[test]
+    fn test_global_env_contains_dataframe() {
+        let env = init_global_environment();
+        assert!(env.contains_key("DataFrame::new"));
+        assert!(env.contains_key("DataFrame::from_rows"));
+    }
+
+    #[test]
+    fn test_global_env_contains_nil() {
+        let env = init_global_environment();
+        assert_eq!(env.get("nil"), Some(&Value::Nil));
+    }
 }
