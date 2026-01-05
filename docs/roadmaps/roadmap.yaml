@@ -1298,3 +1298,35 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 32 - Coverage Push'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 32 - Coverage Push'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T16:20:47.182240915+00:00
+  updated: 2026-01-05T16:24:52.821321082+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: EXTREME TDD Round 33 - WASM Module Extraction'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: EXTREME TDD Round 33 - WASM Module Extraction'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T16:32:41.781070795+00:00
+  updated: 2026-01-05T16:32:41.781070795+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
