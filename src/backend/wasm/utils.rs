@@ -362,7 +362,8 @@ mod tests {
             }
 
             #[test]
-            fn prop_has_main_function_never_panics(name in "[a-z]{1,10}") {
+            fn prop_has_main_function_never_panics(name in "[a-z]{4,10}") {
+                // Use 4+ char names to avoid reserved keywords (if, in, for, etc.)
                 let expr = parse(&format!("fun {name}() {{ 0 }}"));
                 let _ = has_main_function(&expr);
             }
@@ -374,7 +375,8 @@ mod tests {
             }
 
             #[test]
-            fn prop_needs_locals_never_panics(name in "[a-z]{1,10}") {
+            fn prop_needs_locals_never_panics(name in "[a-z]{4,10}") {
+                // Use 4+ char names to avoid reserved keywords (if, in, for, etc.)
                 let expr = parse(&name);
                 let _ = needs_locals(&expr);
             }
