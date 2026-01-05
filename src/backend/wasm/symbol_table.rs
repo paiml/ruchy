@@ -77,8 +77,7 @@ impl SymbolTable {
     pub fn exists_in_current_scope(&self, name: &str) -> bool {
         self.scopes
             .last()
-            .map(|scope| scope.contains_key(name))
-            .unwrap_or(false)
+            .is_some_and(|scope| scope.contains_key(name))
     }
 
     /// Get all local variables across all scopes as (type, index) pairs
