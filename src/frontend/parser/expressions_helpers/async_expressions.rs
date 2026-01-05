@@ -601,6 +601,148 @@ mod tests {
         assert!(result.is_ok(), "Async block in let should parse");
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    // ===== Name variations =====
+
+    #[test]
+    fn test_async_fun_single_char_name() {
+        let result = parse("async fun f() { 1 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_long_name() {
+        let result = parse("async fun very_long_function_name() { 1 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_name_with_numbers() {
+        let result = parse("async fun fetch2() { 1 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Param name variations =====
+
+    #[test]
+    fn test_async_lambda_single_char_param() {
+        let result = parse("async |x| x");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_lambda_long_param_name() {
+        let result = parse("async |very_long_param| very_long_param");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_lambda_params_with_numbers() {
+        let result = parse("async |x1, y2| x1 + y2");
+        assert!(result.is_ok());
+    }
+
+    // ===== Multiple async constructs =====
+
+    #[test]
+    fn test_two_async_functions() {
+        let result = parse("async fun a() { 1 }\nasync fun b() { 2 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_and_regular() {
+        let result = parse("async fun a() { 1 }\nfun b() { 2 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_block_and_function() {
+        let result = parse("let x = async { 1 }\nasync fun f() { 2 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Async with control flow =====
+
+    #[test]
+    fn test_async_fun_with_if() {
+        let result = parse("async fun check(x) { if x > 0 { x } else { 0 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_with_match() {
+        let result = parse("async fun process(opt) { match opt { Some(v) => v, None => 0 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_with_loop() {
+        let result = parse("async fun count() { let mut i = 0; while i < 10 { i = i + 1 }; i }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Return types =====
+
+    #[test]
+    fn test_async_fun_return_i32() {
+        let result = parse("async fun get() -> i32 { 42 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_return_bool() {
+        let result = parse("async fun check() -> bool { true }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_return_vec() {
+        let result = parse("async fun list() -> Vec<i32> { vec![] }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_fun_return_result() {
+        let result = parse("async fun try_get() -> Result<i32, Error> { Ok(0) }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Edge cases =====
+
+    #[test]
+    fn test_async_block_empty_like() {
+        let result = parse("async { () }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_lambda_returns_block() {
+        let result = parse("async |x| { x }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_lambda_tuple_return() {
+        let result = parse("async |a, b| (a, b)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_block_with_function_call() {
+        let result = parse("async { foo() }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_async_block_with_method_call() {
+        let result = parse("async { x.method() }");
+        assert!(result.is_ok());
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
