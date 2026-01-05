@@ -7,11 +7,13 @@ mod commands;
 pub mod coverage_handler;
 pub mod doc_handler;
 pub mod eval;
+pub mod execution_handler;
 mod handlers_modules;
 pub mod new;
+pub mod parse_handler;
+pub mod repl_handler;
 pub mod run_handler;
 pub mod transpile_handler;
-use ruchy::backend::module_resolver::ModuleResolver;
 
 // Re-export from extracted modules
 pub use bench_handler::handle_bench_command;
@@ -19,13 +21,16 @@ pub use check_handler::handle_check_command;
 pub use coverage_handler::handle_coverage_command;
 pub use doc_handler::handle_doc_command;
 pub use eval::handle_eval_command;
-pub use run_handler::{handle_run_command, VmMode};
+pub use execution_handler::{handle_file_execution, handle_stdin_input};
+pub use parse_handler::handle_parse_command;
+pub use repl_handler::handle_repl_command;
+pub use run_handler::{
+    compile_rust_code, handle_run_command, prepare_compilation, transpile_for_execution, VmMode,
+};
 pub use transpile_handler::handle_transpile_command;
 
 // Import for internal use
 use transpile_handler::parse_source;
-use ruchy::frontend::ast::{Expr, ExprKind};
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::runtime::replay_converter::ConversionConfig;
 use ruchy::runtime::Repl;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
@@ -33,145 +38,10 @@ use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 // PARSER-077: Add syn and prettyplease for proper TokenStream formatting
 use std::fs;
 use std::path::{Path, PathBuf};
+
 // handle_eval_command moved to eval.rs
-/// Handle file execution - run a Ruchy script file directly (not via subcommand)
-///
-/// # Arguments
-/// * `file` - Path to the Ruchy file to execute
-///
-/// # Examples
-/// ```
-/// // This function is typically called by the CLI
-/// // handle_file_execution(&Path::new("script.ruchy"));
-/// ```
-///
-/// # Errors
-/// Returns error if file cannot be read, parsed, or executed
-pub fn handle_file_execution(file: &Path) -> Result<()> {
-    let source = read_file_with_context(file)?;
-
-    // ISSUE-106: Parse and check for module declarations
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser
-        .parse()
-        .map_err(|e| anyhow::anyhow!("Syntax error: {e}"))?;
-
-    // Check if we need module resolution
-    if needs_module_resolution(&ast) {
-        // Resolve module declarations (mod name;) and imports
-        let resolved_ast = resolve_modules_for_execution(file, ast)?;
-
-        // Use interpreter to evaluate the resolved AST
-        let mut interpreter = Interpreter::new();
-        interpreter
-            .eval_expr(&resolved_ast)
-            .map_err(|e| anyhow::anyhow!("Evaluation error: {e:?}"))?;
-        return Ok(());
-    }
-
-    // CLI-UNIFY-002: Use REPL-based evaluation for simple scripts
-    let mut repl = create_repl()?;
-
-    match repl.eval(&source) {
-        Ok(_result) => {
-            // After evaluating the file, call main() if it exists
-            match repl.eval("main()") {
-                Ok(_) => Ok(()),
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Error: {e}");
-            std::process::exit(1);
-        }
-    }
-}
-
-/// Check if AST contains module declarations that need resolution
-fn needs_module_resolution(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::ModuleDeclaration { .. } => true,
-        ExprKind::Module { .. } => true,
-        ExprKind::Import { .. } => true,
-        ExprKind::ImportAll { .. } => true,
-        ExprKind::ImportDefault { .. } => true,
-        ExprKind::Block(exprs) => exprs.iter().any(needs_module_resolution),
-        ExprKind::Function { body, .. } => needs_module_resolution(body),
-        ExprKind::Let { value, body, .. } => {
-            needs_module_resolution(value) || needs_module_resolution(body)
-        }
-        _ => false,
-    }
-}
-
-/// ISSUE-106: Resolve module declarations and imports for script execution
-fn resolve_modules_for_execution(source_path: &Path, ast: Expr) -> Result<Expr> {
-    let mut resolver = ModuleResolver::new();
-
-    // Add the source file's directory to the module search path
-    if let Some(parent_dir) = source_path.parent() {
-        resolver.add_search_path(parent_dir);
-
-        // Also search in standard project layout directories
-        if let Some(project_root) = parent_dir.parent() {
-            resolver.add_search_path(project_root.join("src"));
-            resolver.add_search_path(project_root.join("lib"));
-            resolver.add_search_path(project_root.join("modules"));
-        }
-    }
-
-    resolver
-        .resolve_imports(ast)
-        .map_err(|e| anyhow::anyhow!("Module resolution error: {e}"))
-}
-
-/// Handle stdin/piped input - evaluate input from standard input
-///
-/// # Arguments
-/// * `input` - The input string to evaluate
-///
-/// # Examples
-/// ```
-/// // This function is typically called when input is piped to the CLI
-/// // handle_stdin_input("2 + 2");
-/// ```
-///
-/// # Errors
-/// Returns error if input cannot be parsed or evaluated
-pub fn handle_stdin_input(input: &str) -> Result<()> {
-    let mut repl = create_repl()?;
-    match repl.eval(input) {
-        Ok(result) => {
-            println!("{result}");
-            Ok(())
-        }
-        Err(e) => {
-            eprintln!("Error: {e}");
-            Err(e)
-        }
-    }
-}
-/// Handle parse command - show AST for a Ruchy file
-pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
-    if verbose {
-        eprintln!("Parsing file: {}", file.display());
-    }
-    let source = read_file_with_context(file)?;
-    let mut parser = RuchyParser::new(&source);
-    match parser.parse() {
-        Ok(ast) => {
-            println!("{ast:#?}");
-            Ok(())
-        }
-        Err(e) => {
-            eprintln!("Parse error: {e}");
-            Err(anyhow::anyhow!("Parse error: {}", e))
-        }
-    }
-}
+// handle_file_execution, handle_stdin_input moved to execution_handler.rs
+// handle_parse_command moved to parse_handler.rs
 // handle_transpile_command moved to transpile_handler.rs
 
 // ============================================================================
@@ -244,54 +114,10 @@ pub fn handle_prove_command(
         format,
     )
 }
-/// Print prover help - moved to separate function for clarity
-fn print_prover_help() {
-    println!("\nInteractive Prover Commands:");
-    println!("  help          - Show this help message");
-    println!("  quit/exit     - Exit the prover");
-    println!("  goals         - Show current proof goals");
-    println!("  tactics       - List available tactics");
-    println!("  goal <stmt>   - Add a new proof goal");
-    println!("  apply <tactic> - Apply a tactic to current goal");
-    println!("\nTactics:");
-    println!("  intro         - Introduce hypothesis from implication");
-    println!("  split         - Split conjunction into subgoals");
-    println!("  induction     - Proof by induction");
-    println!("  contradiction - Proof by contradiction");
-    println!("  reflexivity   - Prove equality by reflexivity");
-    println!("  simplify      - Simplify expression");
-    println!("  assumption    - Prove using an assumption");
-    println!("\nExamples:");
-    println!("  goal x > 0 -> x + 1 > 1");
-    println!("  apply intro");
-    println!("  apply simplify\n");
-}
-/// Handle REPL command - start the interactive Read-Eval-Print Loop
-///
-/// # Examples
-/// ```
-/// // This function is typically called when no command or when repl command is specified
-/// // handle_repl_command();
-/// ```
-///
-/// # Errors
-/// Returns error if REPL fails to initialize or run
-pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
-    use colored::Colorize;
-    let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
-    println!("{}", version_msg.bright_cyan().bold());
-    println!(
-        "Type {} for commands, {} to exit\n",
-        ":help".green(),
-        ":quit".yellow()
-    );
-    let mut repl = create_repl()?;
-    if let Some(record_path) = record_file {
-        repl.run_with_recording(&record_path)
-    } else {
-        repl.run()
-    }
-}
+
+// print_prover_help moved to repl_handler.rs
+// handle_repl_command moved to repl_handler.rs
+
 /// Handle compile command - compile Ruchy file to native binary
 ///
 /// # Arguments
