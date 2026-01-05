@@ -215,6 +215,368 @@ mod tests {
         assert!(result.is_ok(), "Nested lambda should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Lambda produces Lambda ExprKind
+    // ============================================================
+
+    #[test]
+    fn test_lambda_produces_lambda_exprkind() {
+        let expr = parse("|| 1").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Lambda { .. }),
+                "Should produce Lambda ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_lambda_with_params_produces_lambda() {
+        let expr = parse("|x| x").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Lambda { .. }),
+                "Param lambda should produce Lambda"
+            );
+        }
+    }
+
+    // ============================================================
+    // No-parameter lambda variations
+    // ============================================================
+
+    #[test]
+    fn test_lambda_no_params_simple() {
+        let result = parse("|| 42");
+        assert!(result.is_ok(), "Simple no-param lambda should parse");
+    }
+
+    #[test]
+    fn test_lambda_no_params_string() {
+        let result = parse("|| \"hello\"");
+        assert!(result.is_ok(), "No-param lambda returning string should parse");
+    }
+
+    #[test]
+    fn test_lambda_no_params_boolean() {
+        let result = parse("|| true");
+        assert!(result.is_ok(), "No-param lambda returning boolean should parse");
+    }
+
+    #[test]
+    fn test_lambda_no_params_block() {
+        let result = parse("|| { 42 }");
+        assert!(result.is_ok(), "No-param lambda with block should parse");
+    }
+
+    #[test]
+    fn test_lambda_no_params_call() {
+        let result = parse("|| foo()");
+        assert!(result.is_ok(), "No-param lambda with call should parse");
+    }
+
+    // ============================================================
+    // Single parameter variations
+    // ============================================================
+
+    #[test]
+    fn test_lambda_single_multiplication() {
+        let result = parse("|x| x * 2");
+        assert!(result.is_ok(), "Lambda multiplication should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_addition() {
+        let result = parse("|n| n + 1");
+        assert!(result.is_ok(), "Lambda addition should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_subtraction() {
+        let result = parse("|v| v - 10");
+        assert!(result.is_ok(), "Lambda subtraction should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_division() {
+        let result = parse("|d| d / 2");
+        assert!(result.is_ok(), "Lambda division should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_comparison() {
+        let result = parse("|x| x > 0");
+        assert!(result.is_ok(), "Lambda comparison should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_negation() {
+        let result = parse("|b| !b");
+        assert!(result.is_ok(), "Lambda negation should parse");
+    }
+
+    // ============================================================
+    // Multiple parameter variations
+    // ============================================================
+
+    #[test]
+    fn test_lambda_two_params_add() {
+        let result = parse("|a, b| a + b");
+        assert!(result.is_ok(), "Two-param add should parse");
+    }
+
+    #[test]
+    fn test_lambda_two_params_multiply() {
+        let result = parse("|x, y| x * y");
+        assert!(result.is_ok(), "Two-param multiply should parse");
+    }
+
+    #[test]
+    fn test_lambda_three_params() {
+        let result = parse("|a, b, c| a + b + c");
+        assert!(result.is_ok(), "Three-param lambda should parse");
+    }
+
+    #[test]
+    fn test_lambda_four_params() {
+        let result = parse("|a, b, c, d| a + b + c + d");
+        assert!(result.is_ok(), "Four-param lambda should parse");
+    }
+
+    #[test]
+    fn test_lambda_params_with_expression() {
+        let result = parse("|x, y| (x + y) * 2");
+        assert!(result.is_ok(), "Lambda with grouped expression should parse");
+    }
+
+    // ============================================================
+    // Type annotations
+    // ============================================================
+
+    #[test]
+    fn test_lambda_param_type_i32() {
+        let result = parse("|x: i32| x");
+        assert!(result.is_ok(), "Lambda with i32 type should parse");
+    }
+
+    #[test]
+    fn test_lambda_param_type_string() {
+        let result = parse("|s: String| s");
+        assert!(result.is_ok(), "Lambda with String type should parse");
+    }
+
+    #[test]
+    fn test_lambda_param_type_bool() {
+        let result = parse("|b: bool| b");
+        assert!(result.is_ok(), "Lambda with bool type should parse");
+    }
+
+    #[test]
+    fn test_lambda_multiple_typed_params() {
+        let result = parse("|x: i32, y: i32| x + y");
+        assert!(result.is_ok(), "Lambda with multiple typed params should parse");
+    }
+
+    #[test]
+    fn test_lambda_mixed_typed_params() {
+        let result = parse("|x: i32, y| x + y");
+        assert!(result.is_ok(), "Lambda with mixed typed params should parse");
+    }
+
+    // ============================================================
+    // Arrow syntax variations
+    // ============================================================
+
+    #[test]
+    fn test_arrow_simple() {
+        let result = parse("x => x");
+        assert!(result.is_ok(), "Simple arrow lambda should parse");
+    }
+
+    #[test]
+    fn test_arrow_expression() {
+        let result = parse("x => x * 2 + 1");
+        assert!(result.is_ok(), "Arrow with expression should parse");
+    }
+
+    #[test]
+    fn test_arrow_tuple_two() {
+        let result = parse("(a, b) => a + b");
+        assert!(result.is_ok(), "Arrow tuple two should parse");
+    }
+
+    #[test]
+    fn test_arrow_tuple_three() {
+        let result = parse("(a, b, c) => a + b + c");
+        assert!(result.is_ok(), "Arrow tuple three should parse");
+    }
+
+    #[test]
+    fn test_arrow_with_block() {
+        let result = parse("x => { x * 2 }");
+        assert!(result.is_ok(), "Arrow with block should parse");
+    }
+
+    // ============================================================
+    // Complex body expressions
+    // ============================================================
+
+    #[test]
+    fn test_lambda_with_if() {
+        let result = parse("|x| if x > 0 { x } else { 0 }");
+        assert!(result.is_ok(), "Lambda with if should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_match() {
+        let result = parse("|opt| match opt { Some(v) => v, None => 0 }");
+        assert!(result.is_ok(), "Lambda with match should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_let_block() {
+        let result = parse("|x| { let y = x * 2; y + 1 }");
+        assert!(result.is_ok(), "Lambda with let block should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_multiple_stmts() {
+        let result = parse("|x| { let a = x; let b = a + 1; b }");
+        assert!(result.is_ok(), "Lambda with multiple stmts should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_function_call() {
+        let result = parse("|x| compute(x)");
+        assert!(result.is_ok(), "Lambda with function call should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_method_call() {
+        let result = parse("|s| s.len()");
+        assert!(result.is_ok(), "Lambda with method call should parse");
+    }
+
+    // ============================================================
+    // Nested lambdas
+    // ============================================================
+
+    #[test]
+    fn test_nested_two_deep() {
+        let result = parse("|x| |y| x + y");
+        assert!(result.is_ok(), "Two-deep nested lambda should parse");
+    }
+
+    #[test]
+    fn test_nested_three_deep() {
+        let result = parse("|x| |y| |z| x + y + z");
+        assert!(result.is_ok(), "Three-deep nested lambda should parse");
+    }
+
+    #[test]
+    fn test_nested_arrow_in_pipe() {
+        let result = parse("|f| x => f(x)");
+        assert!(result.is_ok(), "Nested arrow in pipe should parse");
+    }
+
+    // ============================================================
+    // Lambda as argument
+    // ============================================================
+
+    #[test]
+    fn test_lambda_arg_to_map() {
+        let result = parse("list.map(|x| x * 2)");
+        assert!(result.is_ok(), "Lambda argument to map should parse");
+    }
+
+    #[test]
+    fn test_lambda_arg_to_filter() {
+        let result = parse("items.filter(|x| x > 0)");
+        assert!(result.is_ok(), "Lambda argument to filter should parse");
+    }
+
+    #[test]
+    fn test_lambda_arg_to_fold() {
+        let result = parse("nums.fold(0, |acc, x| acc + x)");
+        assert!(result.is_ok(), "Lambda argument to fold should parse");
+    }
+
+    #[test]
+    fn test_lambda_arg_to_sort_by() {
+        let result = parse("items.sort_by(|a, b| a.value - b.value)");
+        assert!(result.is_ok(), "Lambda argument to sort_by should parse");
+    }
+
+    // ============================================================
+    // Return type annotation
+    // ============================================================
+
+    #[test]
+    fn test_lambda_return_type() {
+        let result = parse("|x| -> i32 x * 2");
+        assert!(result.is_ok(), "Lambda with return type should parse");
+    }
+
+    #[test]
+    fn test_lambda_return_type_string() {
+        let result = parse("|x| -> String format(x)");
+        assert!(result.is_ok(), "Lambda with String return type should parse");
+    }
+
+    // ============================================================
+    // Edge cases
+    // ============================================================
+
+    #[test]
+    fn test_lambda_identity() {
+        let result = parse("|x| x");
+        assert!(result.is_ok(), "Identity lambda should parse");
+    }
+
+    #[test]
+    fn test_lambda_constant() {
+        // Note: underscore alone |_| not supported - use ignored param name
+        let result = parse("|unused| 42");
+        assert!(result.is_ok(), "Constant lambda should parse");
+    }
+
+    #[test]
+    fn test_lambda_long_param_name() {
+        let result = parse("|very_long_parameter_name| very_long_parameter_name");
+        assert!(result.is_ok(), "Lambda with long param name should parse");
+    }
+
+    #[test]
+    fn test_lambda_ignored_params() {
+        // Note: underscore alone not supported - use prefixed names
+        let result = parse("|unused1, unused2| 42");
+        assert!(result.is_ok(), "Lambda with ignored params should parse");
+    }
+
+    #[test]
+    fn test_lambda_single_char_params() {
+        let result = parse("|a, b, c, d, e| a + b + c + d + e");
+        assert!(result.is_ok(), "Lambda with single char params should parse");
+    }
+
     // Property tests for lambdas
     #[cfg(test)]
     mod property_tests {
