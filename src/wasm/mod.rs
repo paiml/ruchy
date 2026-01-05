@@ -9,6 +9,8 @@ pub mod component;
 pub mod demo_converter;
 pub mod deployment;
 pub mod heap;
+pub mod helpers;
+pub mod output;
 pub mod portability;
 pub mod repl;
 pub mod wit;
@@ -31,11 +33,17 @@ pub use deployment::{Deployer, DeploymentConfig, DeploymentTarget};
 // Re-exports from heap
 pub use heap::WasmHeap;
 
+// Re-exports from helpers
+pub use helpers::{generate_session_id, get_timestamp, JsValue};
+
+// Re-exports from output
+pub use output::{ReplOutput, TimingInfo};
+
 // Re-exports from portability
 pub use portability::{PortabilityAnalyzer, PortabilityReport, PortabilityScore};
 
 // Re-exports from repl
-pub use repl::{ReplOutput, TimingInfo, WasmRepl};
+pub use repl::WasmRepl;
 
 // Re-exports from wit
 pub use wit::{InterfaceDefinition, WitGenerator, WitInterface};
