@@ -1247,44 +1247,9 @@ impl Transpiler {
         // Default: regular function call with string conversion
         self.transpile_regular_function_call(&func_tokens, args)
     }
-    /// Transpiles println/print with string interpolation directly
-    fn transpile_print_with_interpolation(
-        &self,
-        func_name: &str,
-        parts: &[crate::frontend::ast::StringPart],
-    ) -> Result<TokenStream> {
-        if parts.is_empty() {
-            let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
-            return Ok(quote! { #func_tokens!("") });
-        }
-        let mut format_string = String::new();
-        let mut args = Vec::new();
-        for part in parts {
-            match part {
-                crate::frontend::ast::StringPart::Text(s) => {
-                    // Escape any format specifiers in literal parts
-                    format_string.push_str(&s.replace('{', "{{").replace('}', "}}"));
-                }
-                crate::frontend::ast::StringPart::Expr(expr) => {
-                    format_string.push_str("{}");
-                    let expr_tokens = self.transpile_expr(expr)?;
-                    args.push(expr_tokens);
-                }
-                crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
-                    // Include the format specifier in the format string
-                    format_string.push('{');
-                    format_string.push_str(format_spec);
-                    format_string.push('}');
-                    let expr_tokens = self.transpile_expr(expr)?;
-                    args.push(expr_tokens);
-                }
-            }
-        }
-        let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
-        Ok(quote! {
-            #func_tokens!(#format_string #(, #args)*)
-        })
-    }
+
+    // EXTREME TDD Round 64: transpile_print_with_interpolation moved to print_helpers.rs
+
     /// Transpiles method calls
     #[allow(clippy::cognitive_complexity)]
     pub fn transpile_method_call(
@@ -1857,127 +1822,6 @@ impl Transpiler {
     //  handle_single_import_item, handle_multiple_import_items, process_import_items,
     //  transpile_export_legacy)
 
-    /// Handle print/debug macros (println, print, dbg, panic)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// // Test println macro handling
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new("println(42)");
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("println"));
-    /// ```
-    fn try_transpile_print_macro(
-        &self,
-        func_tokens: &TokenStream,
-        base_name: &str,
-        args: &[Expr],
-    ) -> Result<Option<TokenStream>> {
-        if !(base_name == "println"
-            || base_name == "print"
-            || base_name == "dbg"
-            || base_name == "panic")
-        {
-            return Ok(None);
-        }
-        // Handle single argument with string interpolation
-        if (base_name == "println" || base_name == "print") && args.len() == 1 {
-            if let ExprKind::StringInterpolation { parts } = &args[0].kind {
-                return Ok(Some(
-                    self.transpile_print_with_interpolation(base_name, parts)?,
-                ));
-            }
-            // For single non-string arguments, add smart format string
-            if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
-                let arg_tokens = self.transpile_expr(&args[0])?;
-                // DEFECT-DICT-DETERMINISM FIX: Use Debug format with BTreeMap (deterministic)
-                // BTreeMap Debug format is sorted, so {:?} is safe and deterministic
-                let format_str = "{:?}";
-                return Ok(Some(quote! { #func_tokens!(#format_str, #arg_tokens) }));
-            }
-        }
-        // Handle multiple arguments
-        if args.len() > 1 {
-            return self.transpile_print_multiple_args(func_tokens, args);
-        }
-        // Single string literal or simple case
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-        let arg_tokens = arg_tokens?;
-        Ok(Some(quote! { #func_tokens!(#(#arg_tokens),*) }))
-    }
-    /// Handle multiple arguments for print macros
-    fn transpile_print_multiple_args(
-        &self,
-        func_tokens: &TokenStream,
-        args: &[Expr],
-    ) -> Result<Option<TokenStream>> {
-        // FIXED: Don't treat first string argument as format string
-        // Instead, treat all arguments as values to print with spaces
-        if args.is_empty() {
-            return Ok(Some(quote! { #func_tokens!() }));
-        }
-        let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-        let all_args = all_args?;
-        if args.len() == 1 {
-            // Single argument - check if it's a string-like expression
-            match &args[0].kind {
-                ExprKind::Literal(Literal::String(_)) | ExprKind::StringInterpolation { .. } => {
-                    // String literal or interpolation - use Display format
-                    Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
-                }
-                ExprKind::Identifier(_) => {
-                    // For identifiers, we can't know the type at compile time
-                    // Use a runtime check to decide format
-                    let arg = &all_args[0];
-                    let printing_logic = self
-                        .generate_value_printing_tokens(quote! { #arg }, quote! { #func_tokens });
-                    Ok(Some(printing_logic))
-                }
-                _ => {
-                    // DEFECT-DICT-DETERMINISM FIX: Debug format is OK with BTreeMap (sorted)
-                    Ok(Some(quote! { #func_tokens!("{:?}", #(#all_args)*) }))
-                }
-            }
-        } else {
-            // Multiple arguments - check if first is format string
-            if let ExprKind::Literal(Literal::String(format_str)) = &args[0].kind {
-                if format_str.contains("{}") {
-                    // First argument is a format string, rest are values
-                    let format_arg = &all_args[0];
-                    let value_args = &all_args[1..];
-                    Ok(Some(
-                        quote! { #func_tokens!(#format_arg, #(#value_args),*) },
-                    ))
-                } else {
-                    // First argument is regular string, treat all as separate values
-                    let format_parts: Vec<_> = args
-                        .iter()
-                        .map(|arg| match &arg.kind {
-                            ExprKind::Literal(Literal::String(_)) => "{}",
-                            _ => "{:?}",
-                        })
-                        .collect();
-                    let format_str = format_parts.join(" ");
-                    Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
-                }
-            } else {
-                // No format string, treat all as separate values
-                let format_parts: Vec<_> = args
-                    .iter()
-                    .map(|arg| match &arg.kind {
-                        ExprKind::Literal(Literal::String(_)) => "{}",
-                        _ => "{:?}",
-                    })
-                    .collect();
-                let format_str = format_parts.join(" ");
-                Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
-            }
-        }
-    }
 
     // EXTREME TDD Round 56: Math built-in functions moved to math_builtins.rs
     // (try_transpile_math_function, transpile_sqrt, transpile_pow, transpile_abs,
@@ -2055,6 +1899,9 @@ impl Transpiler {
 
     // EXTREME TDD Round 63: Call helpers moved to call_helpers.rs
     // (try_transpile_result_call, transpile_regular_function_call, apply_string_coercion)
+
+    // EXTREME TDD Round 64: Print helpers moved to print_helpers.rs
+    // (transpile_print_with_interpolation, try_transpile_print_macro, transpile_print_multiple_args)
 }
 
 #[cfg(test)]

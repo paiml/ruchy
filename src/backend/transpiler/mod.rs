@@ -65,6 +65,7 @@ mod utility_builtins; // EXTREME TDD Round 60: time/assert/collection/range func
 mod system_builtins; // EXTREME TDD Round 61: env/fs/path functions
 mod network_builtins; // EXTREME TDD Round 62: json/http functions
 mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
+mod print_helpers; // EXTREME TDD Round 64: print/println/dbg/panic macros
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
@@ -265,27 +266,8 @@ impl Transpiler {
             }
         }
     }
-    /// Centralized value printing logic for functions like println
-    fn generate_value_printing_tokens(
-        &self,
-        value_expr: TokenStream,
-        func_tokens: TokenStream,
-    ) -> TokenStream {
-        quote! {
-            {
-                use std::any::Any;
-                let value = #value_expr;
-                // Special handling for String and &str types to avoid quotes
-                if let Some(s) = (&value as &dyn Any).downcast_ref::<String>() {
-                    #func_tokens!("{}", s)
-                } else if let Some(s) = (&value as &dyn Any).downcast_ref::<&str>() {
-                    #func_tokens!("{}", s)
-                } else {
-                    #func_tokens!("{:?}", value)
-                }
-            }
-        }
-    }
+    // EXTREME TDD Round 64: generate_value_printing_tokens moved to print_helpers.rs
+
     /// Analyzes expressions to determine which variables need mutable bindings.
     ///
     /// This performs a static analysis pass over the AST to identify variables
