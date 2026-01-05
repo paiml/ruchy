@@ -332,6 +332,275 @@ mod tests {
         assert!(result.is_ok(), "Async lambda with block body should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Async function ExprKind verification
+    // ============================================================
+
+    #[test]
+    fn test_async_function_produces_function_exprkind() {
+        let expr = parse("async fun test() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Function { is_async: true, .. }),
+                "Should produce Function with is_async=true"
+            );
+        }
+    }
+
+    #[test]
+    fn test_async_block_produces_async_block_exprkind() {
+        let expr = parse("async { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::AsyncBlock { .. }),
+                "Should produce AsyncBlock ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_async_lambda_produces_async_lambda_exprkind() {
+        let expr = parse("async |x| x").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::AsyncLambda { .. }),
+                "Should produce AsyncLambda ExprKind"
+            );
+        }
+    }
+
+    // ============================================================
+    // Async function variations
+    // ============================================================
+
+    #[test]
+    fn test_async_fun_simple() {
+        let result = parse("async fun test() { 1 }");
+        assert!(result.is_ok(), "Simple async fun should parse");
+    }
+
+    #[test]
+    fn test_async_fn_simple() {
+        let result = parse("async fn test() { 1 }");
+        assert!(result.is_ok(), "Simple async fn should parse");
+    }
+
+    #[test]
+    fn test_async_fun_with_await() {
+        let result = parse("async fun fetch() { await get_data() }");
+        assert!(result.is_ok(), "Async fun with await should parse");
+    }
+
+    #[test]
+    fn test_async_fun_single_param() {
+        let result = parse("async fun process(x) { x }");
+        assert!(result.is_ok(), "Async fun with single param should parse");
+    }
+
+    #[test]
+    fn test_async_fun_two_params() {
+        let result = parse("async fun combine(a, b) { a + b }");
+        assert!(result.is_ok(), "Async fun with two params should parse");
+    }
+
+    #[test]
+    fn test_async_fun_three_params() {
+        let result = parse("async fun calc(x, y, z) { x + y + z }");
+        assert!(result.is_ok(), "Async fun with three params should parse");
+    }
+
+    #[test]
+    fn test_async_fun_typed_params() {
+        let result = parse("async fun add(x: i32, y: i32) { x + y }");
+        assert!(result.is_ok(), "Async fun with typed params should parse");
+    }
+
+    #[test]
+    fn test_async_fun_return_type_string() {
+        let result = parse("async fun greet() -> String { \"hello\" }");
+        assert!(result.is_ok(), "Async fun with String return should parse");
+    }
+
+    #[test]
+    fn test_async_fun_return_type_option() {
+        let result = parse("async fun find() -> Option<i32> { None }");
+        assert!(result.is_ok(), "Async fun with Option return should parse");
+    }
+
+    #[test]
+    fn test_async_fun_generic_single() {
+        let result = parse("async fun identity<T>(x: T) -> T { x }");
+        assert!(result.is_ok(), "Async fun with single generic should parse");
+    }
+
+    #[test]
+    fn test_async_fun_generic_two() {
+        let result = parse("async fun pair<T, U>(a: T, b: U) { (a, b) }");
+        assert!(result.is_ok(), "Async fun with two generics should parse");
+    }
+
+    // ============================================================
+    // Async block variations
+    // ============================================================
+
+    #[test]
+    fn test_async_block_integer() {
+        let result = parse("async { 42 }");
+        assert!(result.is_ok(), "Async block with integer should parse");
+    }
+
+    #[test]
+    fn test_async_block_string() {
+        let result = parse("async { \"result\" }");
+        assert!(result.is_ok(), "Async block with string should parse");
+    }
+
+    #[test]
+    fn test_async_block_with_await() {
+        let result = parse("async { await fetch() }");
+        assert!(result.is_ok(), "Async block with await should parse");
+    }
+
+    #[test]
+    fn test_async_block_with_let() {
+        let result = parse("async { let x = 1; x }");
+        assert!(result.is_ok(), "Async block with let should parse");
+    }
+
+    #[test]
+    fn test_async_block_multiple_lets() {
+        let result = parse("async { let a = 1; let b = 2; a + b }");
+        assert!(result.is_ok(), "Async block with multiple lets should parse");
+    }
+
+    #[test]
+    fn test_async_block_with_if() {
+        let result = parse("async { if cond { 1 } else { 0 } }");
+        assert!(result.is_ok(), "Async block with if should parse");
+    }
+
+    #[test]
+    fn test_async_block_with_match() {
+        let result = parse("async { match x { Some(v) => v, None => 0 } }");
+        assert!(result.is_ok(), "Async block with match should parse");
+    }
+
+    #[test]
+    fn test_async_block_multiple_awaits() {
+        let result = parse("async { let a = await first(); let b = await second(); a + b }");
+        assert!(result.is_ok(), "Async block with multiple awaits should parse");
+    }
+
+    #[test]
+    fn test_async_block_method_chain() {
+        let result = parse("async { await fetch().await_json() }");
+        assert!(result.is_ok(), "Async block with method chain should parse");
+    }
+
+    // ============================================================
+    // Async lambda variations
+    // ============================================================
+
+    #[test]
+    fn test_async_lambda_single_param() {
+        let result = parse("async |x| x");
+        assert!(result.is_ok(), "Async lambda single param should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_two_params() {
+        let result = parse("async |a, b| a + b");
+        assert!(result.is_ok(), "Async lambda two params should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_three_params() {
+        let result = parse("async |x, y, z| x + y + z");
+        assert!(result.is_ok(), "Async lambda three params should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_with_await() {
+        let result = parse("async |req| await process(req)");
+        assert!(result.is_ok(), "Async lambda with await should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_block_body() {
+        let result = parse("async |x| { let y = x * 2; y }");
+        assert!(result.is_ok(), "Async lambda with block body should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_if_body() {
+        let result = parse("async |x| if x > 0 { x } else { 0 }");
+        assert!(result.is_ok(), "Async lambda with if body should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_match_body() {
+        let result = parse("async |opt| match opt { Some(v) => v, None => 0 }");
+        assert!(result.is_ok(), "Async lambda with match body should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_arithmetic() {
+        let result = parse("async |n| n * 2 + 1");
+        assert!(result.is_ok(), "Async lambda with arithmetic should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_method_call() {
+        let result = parse("async |s| s.len()");
+        assert!(result.is_ok(), "Async lambda with method call should parse");
+    }
+
+    // ============================================================
+    // Complex async patterns
+    // ============================================================
+
+    #[test]
+    fn test_async_block_nested() {
+        let result = parse("async { let inner = async { 42 }; await inner }");
+        assert!(result.is_ok(), "Nested async blocks should parse");
+    }
+
+    #[test]
+    fn test_async_lambda_returns_async_block() {
+        let result = parse("async |x| async { x }");
+        assert!(result.is_ok(), "Async lambda returning async block should parse");
+    }
+
+    #[test]
+    fn test_async_as_argument() {
+        let result = parse("spawn(async { await task() })");
+        assert!(result.is_ok(), "Async block as argument should parse");
+    }
+
+    #[test]
+    fn test_async_in_let() {
+        let result = parse("let future = async { 42 }");
+        assert!(result.is_ok(), "Async block in let should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
