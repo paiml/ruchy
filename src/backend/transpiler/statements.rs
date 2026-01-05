@@ -1983,74 +1983,9 @@ impl Transpiler {
     // (try_transpile_math_function, transpile_sqrt, transpile_pow, transpile_abs,
     //  transpile_min, transpile_max, transpile_floor, transpile_ceil, transpile_round)
 
-    /// Handle input functions (input, readline)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new("input()");
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("read_line"));
-    /// ```
-    fn try_transpile_input_function(
-        &self,
-        base_name: &str,
-        args: &[Expr],
-    ) -> Result<Option<TokenStream>> {
-        match base_name {
-            "input" => {
-                if args.len() > 1 {
-                    bail!("input expects 0 or 1 arguments (optional prompt)");
-                }
-                if args.is_empty() {
-                    Ok(Some(self.generate_input_without_prompt()))
-                } else {
-                    let prompt = self.transpile_expr(&args[0])?;
-                    Ok(Some(self.generate_input_with_prompt(prompt)))
-                }
-            }
-            "readline" if args.is_empty() => Ok(Some(self.generate_input_without_prompt())),
-            _ => Ok(None),
-        }
-    }
-    /// Generate input reading code without prompt
-    fn generate_input_without_prompt(&self) -> TokenStream {
-        quote! {
-            {
-                let mut input = String::new();
-                std::io::stdin().read_line(&mut input).expect("Failed to read input");
-                if input.ends_with('\n') {
-                    input.pop();
-                    if input.ends_with('\r') {
-                        input.pop();
-                    }
-                }
-                input
-            }
-        }
-    }
-    /// Generate input reading code with prompt
-    fn generate_input_with_prompt(&self, prompt: TokenStream) -> TokenStream {
-        quote! {
-            {
-                print!("{}", #prompt);
-                let _ = std::io::Write::flush(&mut std::io::stdout());
-                let mut input = String::new();
-                std::io::stdin().read_line(&mut input).expect("Failed to read input");
-                if input.ends_with('\n') {
-                    input.pop();
-                    if input.ends_with('\r') {
-                        input.pop();
-                    }
-                }
-                input
-            }
-        }
-    }
+    // EXTREME TDD Round 57: Input built-in functions moved to input_builtins.rs
+    // (try_transpile_input_function, generate_input_without_prompt, generate_input_with_prompt)
+
     /// Try to transpile type conversion functions (str, int, float, bool)
     ///
     /// # Examples
