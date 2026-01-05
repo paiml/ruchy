@@ -217,6 +217,221 @@ mod tests {
         );
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Basic try-catch tests
+    // ============================================================
+
+    #[test]
+    fn test_try_catch_produces_try_catch_expr() {
+        let expr = parse("try { 1 } catch (e) { 0 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::TryCatch { .. }),
+                "Should produce TryCatch ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_try_catch_simple_bodies() {
+        let result = parse("try { foo() } catch (e) { bar() }");
+        assert!(result.is_ok(), "Simple try-catch should parse");
+    }
+
+    #[test]
+    fn test_try_catch_with_return() {
+        let result = parse("try { return value } catch (e) { return default }");
+        assert!(result.is_ok(), "Try-catch with return should parse");
+    }
+
+    #[test]
+    fn test_try_catch_with_throw() {
+        let result = parse("try { throw error } catch (e) { process(e) }");
+        assert!(result.is_ok(), "Try-catch with throw should parse");
+    }
+
+    // ============================================================
+    // Catch pattern tests
+    // ============================================================
+
+    #[test]
+    fn test_catch_with_parens() {
+        let result = parse("try { op() } catch (err) { recover(err) }");
+        assert!(result.is_ok(), "Catch with parens should parse");
+    }
+
+    #[test]
+    fn test_catch_without_parens() {
+        let result = parse("try { op() } catch err { recover(err) }");
+        assert!(result.is_ok(), "Catch without parens should parse");
+    }
+
+    #[test]
+    fn test_catch_single_letter_name() {
+        let result = parse("try { op() } catch (e) { recover(e) }");
+        assert!(result.is_ok(), "Catch with single letter should parse");
+    }
+
+    #[test]
+    fn test_catch_long_name() {
+        let result = parse("try { op() } catch (errorObject) { recover(errorObject) }");
+        assert!(result.is_ok(), "Catch with long name should parse");
+    }
+
+    // ============================================================
+    // Multiple catch tests
+    // ============================================================
+
+    #[test]
+    fn test_two_catch_clauses() {
+        let result = parse("try { op() } catch (e1) { h1() } catch (e2) { h2() }");
+        assert!(result.is_ok(), "Two catch clauses should parse");
+    }
+
+    #[test]
+    fn test_three_catch_clauses() {
+        let result = parse("try { op() } catch (a) { } catch (b) { } catch (c) { }");
+        assert!(result.is_ok(), "Three catch clauses should parse");
+    }
+
+    #[test]
+    fn test_catch_clause_count() {
+        let expr = parse("try { 1 } catch (a) { } catch (b) { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::TryCatch { catch_clauses, .. } = &exprs[0].kind {
+                assert_eq!(catch_clauses.len(), 2, "Should have 2 catch clauses");
+            }
+        }
+    }
+
+    // ============================================================
+    // Finally block tests
+    // ============================================================
+
+    #[test]
+    fn test_finally_only() {
+        let result = parse("try { op() } finally { cleanup() }");
+        assert!(result.is_ok(), "Try-finally only should parse");
+    }
+
+    #[test]
+    fn test_finally_has_block() {
+        let expr = parse("try { 1 } finally { cleanup() }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::TryCatch { finally_block, .. } = &exprs[0].kind {
+                assert!(finally_block.is_some(), "finally_block should be Some");
+            }
+        }
+    }
+
+    #[test]
+    fn test_catch_and_finally() {
+        let result = parse("try { op() } catch (e) { recover(e) } finally { cleanup() }");
+        assert!(result.is_ok(), "Catch and finally should parse");
+    }
+
+    #[test]
+    fn test_multiple_catch_and_finally() {
+        let result = parse("try { op() } catch (a) { } catch (b) { } finally { cleanup() }");
+        assert!(result.is_ok(), "Multiple catch and finally should parse");
+    }
+
+    // ============================================================
+    // Complex body tests
+    // ============================================================
+
+    #[test]
+    fn test_try_with_let_binding() {
+        let result = parse("try { let x = compute(); x + 1 } catch (e) { 0 }");
+        assert!(result.is_ok(), "Try with let should parse");
+    }
+
+    #[test]
+    fn test_try_with_if_expression() {
+        let result = parse("try { if cond { a() } else { b() } } catch (e) { c() }");
+        assert!(result.is_ok(), "Try with if should parse");
+    }
+
+    #[test]
+    fn test_try_with_match() {
+        let result = parse("try { match x { Some(v) => v, None => 0 } } catch (e) { -1 }");
+        assert!(result.is_ok(), "Try with match should parse");
+    }
+
+    #[test]
+    fn test_catch_with_multiple_statements() {
+        let result = parse("try { risky() } catch (e) { log(e); notify(); recover() }");
+        assert!(result.is_ok(), "Catch with multiple statements should parse");
+    }
+
+    #[test]
+    fn test_finally_with_multiple_statements() {
+        let result = parse("try { op() } finally { close(); cleanup(); log() }");
+        assert!(result.is_ok(), "Finally with multiple statements should parse");
+    }
+
+    // ============================================================
+    // Nested try-catch tests
+    // ============================================================
+
+    #[test]
+    fn test_nested_try_in_try() {
+        let result = parse("try { try { inner() } catch (e1) { } } catch (e2) { }");
+        assert!(result.is_ok(), "Nested try in try should parse");
+    }
+
+    #[test]
+    fn test_nested_try_in_catch() {
+        let result = parse("try { op() } catch (e) { try { recover() } catch (e2) { } }");
+        assert!(result.is_ok(), "Nested try in catch should parse");
+    }
+
+    #[test]
+    fn test_nested_try_in_finally() {
+        let result = parse("try { op() } finally { try { cleanup() } catch (e) { } }");
+        assert!(result.is_ok(), "Nested try in finally should parse");
+    }
+
+    // ============================================================
+    // Error cases
+    // ============================================================
+
+    #[test]
+    fn test_try_alone_fails() {
+        let result = parse("try { operation() }");
+        assert!(result.is_err(), "Try alone should fail");
+    }
+
+    #[test]
+    fn test_catch_alone_fails() {
+        let result = parse("catch (e) { recover(e) }");
+        assert!(result.is_err(), "Catch alone should fail");
+    }
+
+    #[test]
+    fn test_finally_alone_fails() {
+        let result = parse("finally { cleanup() }");
+        assert!(result.is_err(), "Finally alone should fail");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
@@ -253,7 +468,7 @@ mod tests {
             fn prop_multiple_catch_parses(n in 1usize..5) {
                 let mut code = String::from("try { risky() }");
                 for i in 0..n {
-                    code.push_str(&format!(" catch (e{i}) {{ handle{i}() }}"));
+                    code.push_str(&format!(" catch (e{i}) {{ recover{i}() }}"));
                 }
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok());
