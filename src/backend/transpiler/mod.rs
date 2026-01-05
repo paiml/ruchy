@@ -64,6 +64,7 @@ mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
 mod utility_builtins; // EXTREME TDD Round 60: time/assert/collection/range functions
 mod system_builtins; // EXTREME TDD Round 61: env/fs/path functions
 mod network_builtins; // EXTREME TDD Round 62: json/http functions
+mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
