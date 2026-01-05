@@ -731,6 +731,370 @@ mod tests {
 
         Ok(())
     }
+
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    #[test]
+    fn test_is_loading_initially_false() {
+        let loader = ModuleLoader::new();
+        assert!(!loader.is_loading("any_module"));
+        assert!(!loader.is_loading(""));
+        assert!(!loader.is_loading("test"));
+    }
+
+    #[test]
+    fn test_default_trait_impl() {
+        let loader = ModuleLoader::default();
+        assert_eq!(loader.stats().files_loaded, 0);
+        assert_eq!(loader.stats().cached_modules, 0);
+    }
+
+    #[test]
+    fn test_stats_search_paths_count() {
+        let loader = ModuleLoader::new();
+        let stats = loader.stats();
+        assert_eq!(stats.search_paths, 3); // Default paths
+    }
+
+    #[test]
+    fn test_cache_hit_ratio_zero_when_empty() {
+        let stats = ModuleLoaderStats {
+            cached_modules: 0,
+            files_loaded: 0,
+            cache_hits: 0,
+            search_paths: 1,
+        };
+        assert_eq!(stats.cache_hit_ratio(), 0.0);
+    }
+
+    #[test]
+    fn test_cache_hit_ratio_100_percent() {
+        let stats = ModuleLoaderStats {
+            cached_modules: 10,
+            files_loaded: 0,
+            cache_hits: 10,
+            search_paths: 1,
+        };
+        assert_eq!(stats.cache_hit_ratio(), 100.0);
+    }
+
+    #[test]
+    fn test_add_multiple_search_paths() {
+        let mut loader = ModuleLoader::new();
+        loader.add_search_path("/path1");
+        loader.add_search_path("/path2");
+        loader.add_search_path("/path3");
+        assert_eq!(loader.search_paths.len(), 6); // 3 default + 3 added
+    }
+
+    #[test]
+    fn test_add_duplicate_search_path() {
+        let mut loader = ModuleLoader::new();
+        loader.add_search_path("/custom");
+        loader.add_search_path("/custom");
+        // Duplicates are allowed
+        assert!(loader.search_paths.iter().filter(|p| p.to_string_lossy() == "/custom").count() >= 2);
+    }
+
+    #[test]
+    fn test_resolve_rchy_extension() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        // Create file with .rchy extension
+        let path = temp_dir.path().join("short.rchy");
+        fs::write(&path, "42")?;
+
+        let resolved = loader.resolve_module_path("short")?;
+        assert!(resolved.exists());
+        assert!(resolved.to_string_lossy().ends_with(".rchy"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_mod_ruchy_in_directory() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        // Create directory module structure
+        let mod_dir = temp_dir.path().join("mymodule");
+        fs::create_dir(&mod_dir)?;
+        let mod_file = mod_dir.join("mod.ruchy");
+        fs::write(&mod_file, "42")?;
+
+        let resolved = loader.resolve_module_path("mymodule")?;
+        assert!(resolved.exists());
+        assert!(resolved.to_string_lossy().contains("mod.ruchy"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parsed_module_name_with_nested_path() -> Result<()> {
+        let module = ParsedModule {
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
+            file_path: PathBuf::from("/some/path/deep/nested/module.ruchy"),
+            dependencies: Vec::new(),
+            last_modified: SystemTime::now(),
+        };
+        assert_eq!(module.name(), Some("module".to_string()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_parsed_module_no_extension() {
+        let module = ParsedModule {
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
+            file_path: PathBuf::from("module_no_ext"),
+            dependencies: Vec::new(),
+            last_modified: SystemTime::now(),
+        };
+        assert_eq!(module.name(), Some("module_no_ext".to_string()));
+    }
+
+    #[test]
+    fn test_clear_cache_resets_all_counters() {
+        let mut loader = ModuleLoader::new();
+        // Manually set some values
+        loader.files_loaded = 10;
+        loader.cache_hits = 5;
+
+        loader.clear_cache();
+
+        assert_eq!(loader.files_loaded, 0);
+        assert_eq!(loader.cache_hits, 0);
+        assert_eq!(loader.cache.len(), 0);
+    }
+
+    #[test]
+    fn test_load_simple_literal_module() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "literal", "123")?;
+
+        let module = loader.load_module("literal")?;
+        assert_eq!(module.name(), Some("literal".to_string()));
+        assert!(!module.has_dependencies());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_string_literal_module() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "string_mod", "\"hello world\"")?;
+
+        let module = loader.load_module("string_mod")?;
+        assert!(module.file_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_bool_module() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "bool_mod", "true")?;
+
+        let module = loader.load_module("bool_mod")?;
+        assert!(module.file_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_function_module() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "func_mod", "fun add(a, b) { a + b }")?;
+
+        let module = loader.load_module("func_mod")?;
+        assert!(module.file_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_cache_hit_on_second_load() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "cached", "42")?;
+
+        // First load
+        loader.load_module("cached")?;
+        assert_eq!(loader.cache_hits, 0);
+
+        // Second load should hit cache
+        loader.load_module("cached")?;
+        assert_eq!(loader.cache_hits, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_stats_after_multiple_loads() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "mod1", "1")?;
+        create_test_module(&temp_dir, "mod2", "2")?;
+        create_test_module(&temp_dir, "mod3", "3")?;
+
+        loader.load_module("mod1")?;
+        loader.load_module("mod2")?;
+        loader.load_module("mod3")?;
+
+        let stats = loader.stats();
+        assert_eq!(stats.files_loaded, 3);
+        assert_eq!(stats.cached_modules, 3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_module_priority_ruchy_over_rchy() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir.path());
+
+        // Create both .ruchy and .rchy files
+        create_test_module(&temp_dir, "priority", "42")?;
+        let rchy_path = temp_dir.path().join("priority.rchy");
+        fs::write(&rchy_path, "84")?;
+
+        let resolved = loader.resolve_module_path("priority")?;
+        // Should prefer .ruchy
+        assert!(resolved.to_string_lossy().ends_with(".ruchy"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_search_path_order() -> Result<()> {
+        let temp_dir1 = TempDir::new()?;
+        let temp_dir2 = TempDir::new()?;
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+        loader.add_search_path(temp_dir1.path());
+        loader.add_search_path(temp_dir2.path());
+
+        // Create same module in both dirs
+        create_test_module(&temp_dir1, "order_test", "1")?;
+        create_test_module(&temp_dir2, "order_test", "2")?;
+
+        let resolved = loader.resolve_module_path("order_test")?;
+        // Should find in first directory
+        assert_eq!(resolved.parent(), Some(temp_dir1.path()));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_empty_search_paths() {
+        let mut loader = ModuleLoader::new();
+        loader.search_paths.clear();
+
+        let result = loader.resolve_module_path("any");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_module_loader_stats_debug_impl() {
+        let stats = ModuleLoaderStats {
+            cached_modules: 1,
+            files_loaded: 2,
+            cache_hits: 3,
+            search_paths: 4,
+        };
+        let debug_str = format!("{:?}", stats);
+        assert!(debug_str.contains("cached_modules"));
+        assert!(debug_str.contains("files_loaded"));
+    }
+
+    #[test]
+    fn test_parsed_module_debug_impl() {
+        let module = ParsedModule {
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
+            file_path: PathBuf::from("test.ruchy"),
+            dependencies: vec!["dep".to_string()],
+            last_modified: SystemTime::now(),
+        };
+        let debug_str = format!("{:?}", module);
+        assert!(debug_str.contains("file_path"));
+        assert!(debug_str.contains("dependencies"));
+    }
+
+    #[test]
+    fn test_module_loader_debug_impl() {
+        let loader = ModuleLoader::new();
+        let debug_str = format!("{:?}", loader);
+        assert!(debug_str.contains("search_paths"));
+        assert!(debug_str.contains("cache"));
+    }
+
+    #[test]
+    fn test_parsed_module_clone() {
+        let module = ParsedModule {
+            ast: Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit),
+                crate::frontend::ast::Span { start: 0, end: 0 },
+            ),
+            file_path: PathBuf::from("test.ruchy"),
+            dependencies: vec!["dep".to_string()],
+            last_modified: SystemTime::now(),
+        };
+        let cloned = module.clone();
+        assert_eq!(module.file_path, cloned.file_path);
+        assert_eq!(module.dependencies, cloned.dependencies);
+    }
+
+    #[test]
+    fn test_module_loader_stats_copy() {
+        let stats = ModuleLoaderStats {
+            cached_modules: 1,
+            files_loaded: 2,
+            cache_hits: 3,
+            search_paths: 4,
+        };
+        let copied = stats;
+        assert_eq!(stats.cached_modules, copied.cached_modules);
+        assert_eq!(stats.files_loaded, copied.files_loaded);
+    }
 }
 #[cfg(test)]
 mod property_tests_module_loader {
