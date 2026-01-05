@@ -438,6 +438,306 @@ mod tests {
         // All functions now meet the ≤10 complexity requirement!
         // Test passes without panic;
     }
+
+    #[test]
+    fn test_value_integer() {
+        let v = Value::Integer(42);
+        assert!(matches!(v, Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_value_float() {
+        let v = Value::Float(3.14);
+        if let Value::Float(f) = v {
+            assert!((f - 3.14).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_value_bool() {
+        let v = Value::Bool(true);
+        assert!(matches!(v, Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_value_string() {
+        let v = Value::String("hello".to_string());
+        assert!(matches!(v, Value::String(s) if s == "hello"));
+    }
+
+    #[test]
+    fn test_value_list() {
+        let v = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
+        if let Value::List(l) = v {
+            assert_eq!(l.len(), 2);
+        } else {
+            panic!("Expected List");
+        }
+    }
+
+    #[test]
+    fn test_value_unit() {
+        let v = Value::Unit;
+        assert!(matches!(v, Value::Unit));
+    }
+
+    #[test]
+    fn test_interpreter_new() {
+        let interp = Interpreter::new();
+        assert!(interp.env.is_empty());
+    }
+
+    #[test]
+    fn test_eval_add_integers() {
+        let interp = Interpreter::new();
+        let result = interp.eval_add(&Value::Integer(2), &Value::Integer(3));
+        assert_eq!(result, Ok(Value::Integer(5)));
+    }
+
+    #[test]
+    fn test_eval_add_floats() {
+        let interp = Interpreter::new();
+        let result = interp.eval_add(&Value::Float(2.5), &Value::Float(3.5));
+        if let Ok(Value::Float(f)) = result {
+            assert!((f - 6.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Float result");
+        }
+    }
+
+    #[test]
+    fn test_eval_add_strings() {
+        let interp = Interpreter::new();
+        let result = interp.eval_add(
+            &Value::String("hello".to_string()),
+            &Value::String(" world".to_string()),
+        );
+        assert_eq!(result, Ok(Value::String("hello world".to_string())));
+    }
+
+    #[test]
+    fn test_eval_subtract() {
+        let interp = Interpreter::new();
+        let result = interp.eval_subtract(&Value::Integer(10), &Value::Integer(3));
+        assert_eq!(result, Ok(Value::Integer(7)));
+    }
+
+    #[test]
+    fn test_eval_multiply() {
+        let interp = Interpreter::new();
+        let result = interp.eval_multiply(&Value::Integer(4), &Value::Integer(5));
+        assert_eq!(result, Ok(Value::Integer(20)));
+    }
+
+    #[test]
+    fn test_eval_divide() {
+        let interp = Interpreter::new();
+        let result = interp.eval_divide(&Value::Integer(20), &Value::Integer(4));
+        assert_eq!(result, Ok(Value::Integer(5)));
+    }
+
+    #[test]
+    fn test_eval_divide_by_zero() {
+        let interp = Interpreter::new();
+        let result = interp.eval_divide(&Value::Integer(10), &Value::Integer(0));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Division by zero"));
+    }
+
+    #[test]
+    fn test_eval_modulo() {
+        let interp = Interpreter::new();
+        let result = interp.eval_modulo(&Value::Integer(10), &Value::Integer(3));
+        assert_eq!(result, Ok(Value::Integer(1)));
+    }
+
+    #[test]
+    fn test_eval_modulo_by_zero() {
+        let interp = Interpreter::new();
+        let result = interp.eval_modulo(&Value::Integer(10), &Value::Integer(0));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_power() {
+        let interp = Interpreter::new();
+        let result = interp.eval_power(&Value::Integer(2), &Value::Integer(3));
+        assert_eq!(result, Ok(Value::Integer(8)));
+    }
+
+    #[test]
+    fn test_values_equal_integers() {
+        let interp = Interpreter::new();
+        assert!(interp.values_equal(&Value::Integer(5), &Value::Integer(5)));
+        assert!(!interp.values_equal(&Value::Integer(5), &Value::Integer(6)));
+    }
+
+    #[test]
+    fn test_values_equal_bools() {
+        let interp = Interpreter::new();
+        assert!(interp.values_equal(&Value::Bool(true), &Value::Bool(true)));
+        assert!(!interp.values_equal(&Value::Bool(true), &Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_eval_less_than() {
+        let interp = Interpreter::new();
+        let result = interp.eval_less_than(&Value::Integer(3), &Value::Integer(5));
+        assert_eq!(result, Ok(Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_eval_greater_than() {
+        let interp = Interpreter::new();
+        let result = interp.eval_greater_than(&Value::Integer(5), &Value::Integer(3));
+        assert_eq!(result, Ok(Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_eval_and() {
+        let interp = Interpreter::new();
+        let result = interp.eval_and(&[Value::Bool(true), Value::Bool(false)]);
+        assert_eq!(result, Ok(Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_eval_or() {
+        let interp = Interpreter::new();
+        let result = interp.eval_or(&[Value::Bool(true), Value::Bool(false)]);
+        assert_eq!(result, Ok(Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_eval_not() {
+        let interp = Interpreter::new();
+        let result = interp.eval_not(&[Value::Bool(true)]);
+        assert_eq!(result, Ok(Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_eval_concat() {
+        let interp = Interpreter::new();
+        let result = interp.eval_concat(&[
+            Value::String("foo".to_string()),
+            Value::String("bar".to_string()),
+        ]);
+        assert_eq!(result, Ok(Value::String("foobar".to_string())));
+    }
+
+    #[test]
+    fn test_eval_length_string() {
+        let interp = Interpreter::new();
+        let result = interp.eval_length(&[Value::String("hello".to_string())]);
+        assert_eq!(result, Ok(Value::Integer(5)));
+    }
+
+    #[test]
+    fn test_eval_length_list() {
+        let interp = Interpreter::new();
+        let result = interp.eval_length(&[Value::List(vec![Value::Integer(1), Value::Integer(2)])]);
+        assert_eq!(result, Ok(Value::Integer(2)));
+    }
+
+    #[test]
+    fn test_eval_substring() {
+        let interp = Interpreter::new();
+        let result = interp.eval_substring(&[
+            Value::String("hello world".to_string()),
+            Value::Integer(0),
+            Value::Integer(5),
+        ]);
+        assert_eq!(result, Ok(Value::String("hello".to_string())));
+    }
+
+    #[test]
+    fn test_eval_head() {
+        let interp = Interpreter::new();
+        let result =
+            interp.eval_head(&[Value::List(vec![Value::Integer(1), Value::Integer(2)])]);
+        assert_eq!(result, Ok(Value::Integer(1)));
+    }
+
+    #[test]
+    fn test_eval_head_empty() {
+        let interp = Interpreter::new();
+        let result = interp.eval_head(&[Value::List(vec![])]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_tail() {
+        let interp = Interpreter::new();
+        let result = interp.eval_tail(&[Value::List(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ])]);
+        assert_eq!(
+            result,
+            Ok(Value::List(vec![Value::Integer(2), Value::Integer(3)]))
+        );
+    }
+
+    #[test]
+    fn test_eval_cons() {
+        let interp = Interpreter::new();
+        let result = interp.eval_cons(&[
+            Value::Integer(0),
+            Value::List(vec![Value::Integer(1), Value::Integer(2)]),
+        ]);
+        assert_eq!(
+            result,
+            Ok(Value::List(vec![
+                Value::Integer(0),
+                Value::Integer(1),
+                Value::Integer(2)
+            ]))
+        );
+    }
+
+    #[test]
+    fn test_eval_is_empty_true() {
+        let interp = Interpreter::new();
+        let result = interp.eval_is_empty(&[Value::List(vec![])]);
+        assert_eq!(result, Ok(Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_eval_is_empty_false() {
+        let interp = Interpreter::new();
+        let result = interp.eval_is_empty(&[Value::List(vec![Value::Integer(1)])]);
+        assert_eq!(result, Ok(Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_eval_typeof_integer() {
+        let interp = Interpreter::new();
+        let result = interp.eval_typeof(&[Value::Integer(42)]);
+        assert_eq!(result, Ok(Value::String("Integer".to_string())));
+    }
+
+    #[test]
+    fn test_eval_typeof_string() {
+        let interp = Interpreter::new();
+        let result = interp.eval_typeof(&[Value::String("test".to_string())]);
+        assert_eq!(result, Ok(Value::String("String".to_string())));
+    }
+
+    #[test]
+    fn test_eval_typeof_list() {
+        let interp = Interpreter::new();
+        let result = interp.eval_typeof(&[Value::List(vec![])]);
+        assert_eq!(result, Ok(Value::String("List".to_string())));
+    }
+
+    #[test]
+    fn test_eval_typeof_unit() {
+        let interp = Interpreter::new();
+        let result = interp.eval_typeof(&[Value::Unit]);
+        assert_eq!(result, Ok(Value::String("Unit".to_string())));
+    }
 }
 #[cfg(test)]
 mod property_tests_reference_interpreter_refactored {
