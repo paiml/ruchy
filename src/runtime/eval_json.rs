@@ -349,4 +349,183 @@ mod tests {
             }
         }
     }
+
+    // === EXTREME TDD Round 22 - Coverage Push Tests ===
+
+    #[test]
+    fn test_json_parse_negative_float() {
+        let result = json_parse("-3.14").unwrap();
+        assert_eq!(result, Value::Float(-3.14));
+    }
+
+    #[test]
+    fn test_json_parse_scientific_notation() {
+        let result = json_parse("1e10").unwrap();
+        if let Value::Float(f) = result {
+            assert!((f - 1e10).abs() < 1e5);
+        } else if let Value::Integer(i) = result {
+            assert_eq!(i, 10_000_000_000);
+        }
+    }
+
+    #[test]
+    fn test_json_parse_unicode_string() {
+        let result = json_parse("\"Hello 世界\"").unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "Hello 世界");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_escaped_string() {
+        let result = json_parse("\"line1\\nline2\"").unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('\n'));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_mixed_array() {
+        let result = json_parse("[1, \"two\", true, null]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 4);
+            assert_eq!(arr[0], Value::Integer(1));
+            assert_eq!(arr[2], Value::Bool(true));
+            assert_eq!(arr[3], Value::Nil);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_deeply_nested() {
+        let result = json_parse("{\"a\": {\"b\": {\"c\": 42}}}").unwrap();
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(a)) = obj.get("a") {
+                if let Some(Value::Object(b)) = a.get("b") {
+                    assert_eq!(b.get("c"), Some(&Value::Integer(42)));
+                } else {
+                    panic!("Expected nested object b");
+                }
+            } else {
+                panic!("Expected nested object a");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_negative_integer() {
+        let result = json_stringify(&Value::Integer(-100)).unwrap();
+        assert_eq!(result.to_string(), "\"-100\"");
+    }
+
+    #[test]
+    fn test_json_stringify_false() {
+        let result = json_stringify(&Value::Bool(false)).unwrap();
+        assert_eq!(result.to_string(), "\"false\"");
+    }
+
+    #[test]
+    fn test_json_stringify_empty_object() {
+        let obj = Value::Object(Arc::new(HashMap::new()));
+        let result = json_stringify(&obj).unwrap();
+        assert_eq!(result.to_string(), "\"{}\"");
+    }
+
+    #[test]
+    fn test_json_stringify_nested_array() {
+        let inner = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let outer = Value::Array(Arc::from(vec![inner].into_boxed_slice()));
+        let result = json_stringify(&outer).unwrap();
+        assert!(result.to_string().contains("[[1,2]]"));
+    }
+
+    #[test]
+    fn test_json_stringify_neg_infinity() {
+        let result = json_stringify(&Value::Float(f64::NEG_INFINITY));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_serde_to_value_i64_max() {
+        let json = serde_json::Value::Number(i64::MAX.into());
+        let result = serde_to_value(&json).unwrap();
+        assert_eq!(result, Value::Integer(i64::MAX));
+    }
+
+    #[test]
+    fn test_value_to_serde_nil() {
+        let result = value_to_serde(&Value::Nil).unwrap();
+        assert_eq!(result, serde_json::Value::Null);
+    }
+
+    #[test]
+    fn test_value_to_serde_integer() {
+        let result = value_to_serde(&Value::Integer(42)).unwrap();
+        assert_eq!(result, serde_json::Value::Number(42.into()));
+    }
+
+    #[test]
+    fn test_value_to_serde_string() {
+        let result = value_to_serde(&Value::from_string("test".to_string())).unwrap();
+        assert_eq!(result, serde_json::Value::String("test".to_string()));
+    }
+
+    #[test]
+    fn test_value_to_serde_bool() {
+        let result = value_to_serde(&Value::Bool(true)).unwrap();
+        assert_eq!(result, serde_json::Value::Bool(true));
+    }
+
+    #[test]
+    fn test_round_trip_bool() {
+        let original = Value::Bool(true);
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            assert_eq!(back, original);
+        }
+    }
+
+    #[test]
+    fn test_round_trip_nil() {
+        let original = Value::Nil;
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            assert_eq!(back, original);
+        }
+    }
+
+    #[test]
+    fn test_round_trip_float() {
+        let original = Value::Float(3.14159);
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            if let Value::Float(f) = back {
+                assert!((f - 3.14159).abs() < 0.00001);
+            }
+        }
+    }
+
+    #[test]
+    fn test_json_parse_trailing_comma() {
+        // JSON doesn't allow trailing commas
+        let result = json_parse("{\"a\": 1,}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_parse_single_quoted_string() {
+        // JSON requires double quotes
+        let result = json_parse("{'a': 1}");
+        assert!(result.is_err());
+    }
 }

@@ -1101,4 +1101,250 @@ mod tests {
             panic!("Expected float");
         }
     }
+
+    // === EXTREME TDD Round 22 - Coverage Push Tests ===
+
+    #[test]
+    fn test_power_negative_exponent() {
+        let result = power_values(&Value::Integer(2), &Value::Integer(-1)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 0.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float for negative exponent");
+        }
+    }
+
+    #[test]
+    fn test_power_large_overflow() {
+        // Large exponent that causes overflow
+        let result = power_values(&Value::Integer(100), &Value::Integer(100)).expect("should succeed");
+        // Should convert to float on overflow
+        assert!(matches!(result, Value::Float(_)));
+    }
+
+    #[test]
+    fn test_modulo_int_float_mixed() {
+        let result = modulo_values(&Value::Integer(10), &Value::Float(3.0)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 1.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_modulo_float_int_mixed() {
+        let result = modulo_values(&Value::Float(10.0), &Value::Integer(3)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 1.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_modulo_zero_float() {
+        let result = modulo_values(&Value::Integer(10), &Value::Float(0.0));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_modulo_type_error() {
+        let result = modulo_values(&Value::from_string("a".to_string()), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_power_type_error() {
+        let result = power_values(&Value::from_string("a".to_string()), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_power_float_int() {
+        let result = power_values(&Value::Float(2.0), &Value::Integer(3)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 8.0).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_div_int_by_float() {
+        let result = div_values(&Value::Integer(10), &Value::Float(4.0)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 2.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_div_float_by_int() {
+        let result = div_values(&Value::Float(10.0), &Value::Integer(4)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 2.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_mul_int_float() {
+        let result = mul_values(&Value::Integer(3), &Value::Float(2.5)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 7.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_mul_float_int() {
+        let result = mul_values(&Value::Float(2.5), &Value::Integer(3)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 7.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_sub_int_float() {
+        let result = sub_values(&Value::Integer(10), &Value::Float(3.5)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 6.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_sub_float_int() {
+        let result = sub_values(&Value::Float(10.5), &Value::Integer(3)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 7.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_add_int_float() {
+        let result = add_values(&Value::Integer(10), &Value::Float(3.5)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 13.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_add_float_int() {
+        let result = add_values(&Value::Float(10.5), &Value::Integer(3)).expect("should succeed");
+        if let Value::Float(f) = result {
+            assert!((f - 13.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_logical_and_truthy_values() {
+        // Non-bool truthy values - Integer(0) is still truthy in Ruchy
+        let result = eval_logical_op(AstBinaryOp::And, &Value::Integer(1), &Value::Integer(2))
+            .expect("should succeed");
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_logical_and_falsy_left() {
+        // Only Bool(false) and Nil are falsy in Ruchy
+        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(false), &Value::Integer(2))
+            .expect("should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_logical_or_truthy_left() {
+        let result = eval_logical_op(AstBinaryOp::Or, &Value::Integer(1), &Value::Integer(2))
+            .expect("should succeed");
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_logical_or_falsy_left() {
+        // Only Bool(false) and Nil are falsy in Ruchy
+        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Integer(2))
+            .expect("should succeed");
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_equal_struct_values() {
+        use std::collections::HashMap;
+        use std::sync::Arc;
+
+        let mut fields1 = HashMap::new();
+        fields1.insert("x".to_string(), Value::Integer(1));
+        let struct1 = Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(fields1.clone()),
+        };
+
+        let mut fields2 = HashMap::new();
+        fields2.insert("x".to_string(), Value::Integer(1));
+        let struct2 = Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(fields2),
+        };
+
+        assert!(equal_values(&struct1, &struct2));
+    }
+
+    #[test]
+    fn test_equal_atom_values() {
+        assert!(equal_values(
+            &Value::Atom("foo".to_string()),
+            &Value::Atom("foo".to_string())
+        ));
+        assert!(!equal_values(
+            &Value::Atom("foo".to_string()),
+            &Value::Atom("bar".to_string())
+        ));
+    }
+
+    #[test]
+    fn test_comparison_type_error() {
+        let result = less_than_values(&Value::Bool(true), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_equal_byte_values() {
+        assert!(equal_values(&Value::Byte(255), &Value::Byte(255)));
+        assert!(!equal_values(&Value::Byte(255), &Value::Byte(0)));
+    }
+
+    #[test]
+    fn test_equal_class_pointer_identity() {
+        use std::collections::HashMap;
+        use std::sync::{Arc, RwLock};
+
+        let fields = Arc::new(RwLock::new(HashMap::new()));
+        let class1 = Value::Class {
+            class_name: "Test".to_string(),
+            fields: Arc::clone(&fields),
+            methods: Arc::new(HashMap::new()),
+        };
+        let class2 = Value::Class {
+            class_name: "Test".to_string(),
+            fields: Arc::clone(&fields),
+            methods: Arc::new(HashMap::new()),
+        };
+
+        // Same Arc pointer for fields - should be equal
+        assert!(equal_values(&class1, &class2));
+    }
 }
