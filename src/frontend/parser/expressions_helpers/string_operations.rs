@@ -246,6 +246,274 @@ mod tests {
         assert_eq!(parts.len(), 2);
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    // ============================================================
+    // Text-only variations
+    // ============================================================
+
+    #[test]
+    fn test_empty_string() {
+        let result = parse_fstring_into_parts("");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert_eq!(parts.len(), 0);
+    }
+
+    #[test]
+    fn test_single_char() {
+        let result = parse_fstring_into_parts("a");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert_eq!(parts.len(), 1);
+    }
+
+    #[test]
+    fn test_long_text() {
+        let result = parse_fstring_into_parts("This is a very long string with many words");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_text_with_spaces() {
+        let result = parse_fstring_into_parts("   spaced   ");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_text_with_numbers() {
+        let result = parse_fstring_into_parts("Value 123 and 456");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_text_with_punctuation() {
+        let result = parse_fstring_into_parts("Hello, world! How are you?");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Single interpolation variations
+    // ============================================================
+
+    #[test]
+    fn test_interpolation_at_start() {
+        let result = parse_fstring_into_parts("{name} is here");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert!(matches!(parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_interpolation_at_end() {
+        let result = parse_fstring_into_parts("Hello {name}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_only() {
+        let result = parse_fstring_into_parts("{name}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert_eq!(parts.len(), 1);
+    }
+
+    #[test]
+    fn test_interpolation_single_letter() {
+        let result = parse_fstring_into_parts("{x}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_long_name() {
+        let result = parse_fstring_into_parts("{very_long_variable_name}");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Multiple interpolations
+    // ============================================================
+
+    #[test]
+    fn test_two_interpolations() {
+        let result = parse_fstring_into_parts("{a} and {b}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert_eq!(parts.len(), 3); // expr, text, expr
+    }
+
+    #[test]
+    fn test_three_interpolations() {
+        let result = parse_fstring_into_parts("{a}{b}{c}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert_eq!(parts.len(), 3); // expr, expr, expr
+    }
+
+    #[test]
+    fn test_adjacent_interpolations() {
+        let result = parse_fstring_into_parts("{x}{y}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_spaced_interpolations() {
+        let result = parse_fstring_into_parts("{a} {b} {c}");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Expression interpolations
+    // ============================================================
+
+    #[test]
+    fn test_interpolation_addition() {
+        let result = parse_fstring_into_parts("{a + b}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_multiplication() {
+        let result = parse_fstring_into_parts("{x * 2}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_comparison() {
+        let result = parse_fstring_into_parts("{x > 0}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_function_call() {
+        let result = parse_fstring_into_parts("{foo()}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_method_call() {
+        let result = parse_fstring_into_parts("{obj.method()}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_interpolation_field_access() {
+        let result = parse_fstring_into_parts("{obj.field}");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Format specifiers
+    // ============================================================
+
+    #[test]
+    fn test_format_decimal() {
+        let result = parse_fstring_into_parts("{x:.2f}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        assert!(matches!(parts[0], StringPart::ExprWithFormat { .. }));
+    }
+
+    #[test]
+    fn test_format_width() {
+        let result = parse_fstring_into_parts("{x:10}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_zero_pad() {
+        let result = parse_fstring_into_parts("{x:05}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_hex() {
+        let result = parse_fstring_into_parts("{x:x}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_binary() {
+        let result = parse_fstring_into_parts("{x:b}");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Escaped braces
+    // ============================================================
+
+    #[test]
+    fn test_escaped_open_brace() {
+        let result = parse_fstring_into_parts("{{");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        if let StringPart::Text(t) = &parts[0] {
+            assert_eq!(t, "{");
+        }
+    }
+
+    #[test]
+    fn test_escaped_close_brace() {
+        let result = parse_fstring_into_parts("}}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        if let StringPart::Text(t) = &parts[0] {
+            assert_eq!(t, "}");
+        }
+    }
+
+    #[test]
+    fn test_escaped_both() {
+        let result = parse_fstring_into_parts("{{}}");
+        assert!(result.is_ok());
+        let parts = result.unwrap();
+        if let StringPart::Text(t) = &parts[0] {
+            assert_eq!(t, "{}");
+        }
+    }
+
+    #[test]
+    fn test_escaped_with_text() {
+        let result = parse_fstring_into_parts("a{{b}}c");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_escaped_multiple() {
+        let result = parse_fstring_into_parts("{{{{}}}}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_escaped_mixed_with_interpolation() {
+        let result = parse_fstring_into_parts("{{x}} = {x}");
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Error cases
+    // ============================================================
+
+    #[test]
+    fn test_unmatched_open() {
+        let result = parse_fstring_into_parts("{x");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unmatched_close() {
+        let result = parse_fstring_into_parts("x}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unmatched_close_middle() {
+        let result = parse_fstring_into_parts("a } b");
+        assert!(result.is_err());
+    }
+
     // Property tests for string operations
     #[cfg(test)]
     mod property_tests {
