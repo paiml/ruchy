@@ -56,6 +56,7 @@ mod statements;
 mod comprehensions; // EXTREME TDD Round 53: List/set/dict comprehensions
 mod control_flow; // EXTREME TDD Round 53: if/for/while/loop/try-catch
 mod bindings; // EXTREME TDD Round 54: let bindings and patterns
+mod imports; // EXTREME TDD Round 55: imports and exports
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
