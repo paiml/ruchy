@@ -221,6 +221,326 @@ mod tests {
         assert!(result.is_ok(), "F-string should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind, Literal};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Integer literals
+    // ============================================================
+
+    #[test]
+    fn test_integer_zero() {
+        let result = parse("0");
+        assert!(result.is_ok(), "Zero should parse");
+    }
+
+    #[test]
+    fn test_integer_one() {
+        let result = parse("1");
+        assert!(result.is_ok(), "One should parse");
+    }
+
+    #[test]
+    fn test_integer_large() {
+        let result = parse("999999999");
+        assert!(result.is_ok(), "Large integer should parse");
+    }
+
+    #[test]
+    fn test_integer_negative() {
+        let result = parse("-42");
+        assert!(result.is_ok(), "Negative integer should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_i8() {
+        let result = parse("42i8");
+        assert!(result.is_ok(), "i8 suffix should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_i16() {
+        let result = parse("42i16");
+        assert!(result.is_ok(), "i16 suffix should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_i64() {
+        let result = parse("42i64");
+        assert!(result.is_ok(), "i64 suffix should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_u8() {
+        let result = parse("42u8");
+        assert!(result.is_ok(), "u8 suffix should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_u32() {
+        let result = parse("42u32");
+        assert!(result.is_ok(), "u32 suffix should parse");
+    }
+
+    #[test]
+    fn test_integer_suffix_u64() {
+        let result = parse("42u64");
+        assert!(result.is_ok(), "u64 suffix should parse");
+    }
+
+    // ============================================================
+    // Hex literals
+    // ============================================================
+
+    #[test]
+    fn test_hex_zero() {
+        let result = parse("0x0");
+        assert!(result.is_ok(), "Hex zero should parse");
+    }
+
+    #[test]
+    fn test_hex_lowercase() {
+        let result = parse("0xff");
+        assert!(result.is_ok(), "Hex lowercase should parse");
+    }
+
+    #[test]
+    fn test_hex_uppercase() {
+        let result = parse("0xFF");
+        assert!(result.is_ok(), "Hex uppercase should parse");
+    }
+
+    #[test]
+    fn test_hex_mixed_case() {
+        let result = parse("0xAbCd");
+        assert!(result.is_ok(), "Hex mixed case should parse");
+    }
+
+    #[test]
+    fn test_hex_long() {
+        let result = parse("0x123456");
+        assert!(result.is_ok(), "Hex long should parse");
+    }
+
+    // ============================================================
+    // Float literals
+    // ============================================================
+
+    #[test]
+    fn test_float_zero() {
+        let result = parse("0.0");
+        assert!(result.is_ok(), "Float zero should parse");
+    }
+
+    #[test]
+    fn test_float_one() {
+        let result = parse("1.0");
+        assert!(result.is_ok(), "Float one should parse");
+    }
+
+    #[test]
+    fn test_float_pi() {
+        let result = parse("3.14159");
+        assert!(result.is_ok(), "Float pi should parse");
+    }
+
+    #[test]
+    fn test_float_small() {
+        let result = parse("0.001");
+        assert!(result.is_ok(), "Small float should parse");
+    }
+
+    #[test]
+    fn test_float_negative() {
+        let result = parse("-3.14");
+        assert!(result.is_ok(), "Negative float should parse");
+    }
+
+    // ============================================================
+    // String literals
+    // ============================================================
+
+    #[test]
+    fn test_string_empty() {
+        let result = parse("\"\"");
+        assert!(result.is_ok(), "Empty string should parse");
+    }
+
+    #[test]
+    fn test_string_single_char() {
+        let result = parse("\"a\"");
+        assert!(result.is_ok(), "Single char string should parse");
+    }
+
+    #[test]
+    fn test_string_with_spaces() {
+        let result = parse("\"hello world\"");
+        assert!(result.is_ok(), "String with spaces should parse");
+    }
+
+    #[test]
+    fn test_string_with_numbers() {
+        let result = parse("\"test123\"");
+        assert!(result.is_ok(), "String with numbers should parse");
+    }
+
+    // ============================================================
+    // Char literals
+    // ============================================================
+
+    #[test]
+    fn test_char_letter() {
+        let result = parse("'x'");
+        assert!(result.is_ok(), "Char letter should parse");
+    }
+
+    #[test]
+    fn test_char_digit() {
+        let result = parse("'5'");
+        assert!(result.is_ok(), "Char digit should parse");
+    }
+
+    #[test]
+    fn test_char_space() {
+        let result = parse("' '");
+        assert!(result.is_ok(), "Char space should parse");
+    }
+
+    // ============================================================
+    // Bool literals
+    // ============================================================
+
+    #[test]
+    fn test_bool_true() {
+        let result = parse("true");
+        assert!(result.is_ok(), "True should parse");
+    }
+
+    #[test]
+    fn test_bool_false() {
+        let result = parse("false");
+        assert!(result.is_ok(), "False should parse");
+    }
+
+    // ============================================================
+    // None and Some
+    // ============================================================
+
+    #[test]
+    fn test_none_literal() {
+        let result = parse("None");
+        assert!(result.is_ok(), "None should parse");
+    }
+
+    #[test]
+    fn test_some_integer() {
+        let result = parse("Some(42)");
+        assert!(result.is_ok(), "Some with integer should parse");
+    }
+
+    #[test]
+    fn test_some_string() {
+        let result = parse("Some(\"hello\")");
+        assert!(result.is_ok(), "Some with string should parse");
+    }
+
+    #[test]
+    fn test_some_variable() {
+        let result = parse("Some(x)");
+        assert!(result.is_ok(), "Some with variable should parse");
+    }
+
+    // ============================================================
+    // Atom literals
+    // ============================================================
+
+    #[test]
+    fn test_atom_short() {
+        let result = parse(":ok");
+        assert!(result.is_ok(), "Short atom should parse");
+    }
+
+    #[test]
+    fn test_atom_long() {
+        let result = parse(":my_atom_name");
+        assert!(result.is_ok(), "Long atom should parse");
+    }
+
+    #[test]
+    fn test_atom_with_numbers() {
+        let result = parse(":status_200");
+        assert!(result.is_ok(), "Atom with numbers should parse");
+    }
+
+    // ============================================================
+    // F-string literals
+    // ============================================================
+
+    #[test]
+    fn test_fstring_simple() {
+        let result = parse("f\"hello\"");
+        assert!(result.is_ok(), "Simple f-string should parse");
+    }
+
+    #[test]
+    fn test_fstring_with_var() {
+        let result = parse("f\"hello {name}\"");
+        assert!(result.is_ok(), "F-string with var should parse");
+    }
+
+    #[test]
+    fn test_fstring_with_expr() {
+        let result = parse("f\"sum = {a + b}\"");
+        assert!(result.is_ok(), "F-string with expr should parse");
+    }
+
+    #[test]
+    fn test_fstring_multiple() {
+        let result = parse("f\"{x} + {y} = {z}\"");
+        assert!(result.is_ok(), "F-string multiple should parse");
+    }
+
+    // ============================================================
+    // Literal produces ExprKind::Literal
+    // ============================================================
+
+    #[test]
+    fn test_integer_produces_literal_exprkind() {
+        let expr = parse("42").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Literal(Literal::Integer(42, _))),
+                "Should produce Literal Integer"
+            );
+        }
+    }
+
+    #[test]
+    fn test_bool_produces_literal_exprkind() {
+        let expr = parse("true").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Literal(Literal::Bool(true))),
+                "Should produce Literal Bool"
+            );
+        }
+    }
+
     // Property tests for literals
     #[cfg(test)]
     mod property_tests {
