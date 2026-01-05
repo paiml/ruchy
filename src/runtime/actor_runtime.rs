@@ -383,4 +383,140 @@ mod mutation_tests {
             "Bool false should work"
         );
     }
+
+    #[test]
+    fn test_actor_message_creation() {
+        let msg = ActorMessage {
+            message_type: "Ping".to_string(),
+            data: vec!["arg1".to_string(), "arg2".to_string()],
+        };
+        assert_eq!(msg.message_type, "Ping");
+        assert_eq!(msg.data.len(), 2);
+    }
+
+    #[test]
+    fn test_mailbox_capacity_enforced() {
+        let mut mailbox = ActorMailbox::new(2);
+        let msg1 = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let msg2 = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let msg3 = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+
+        assert!(mailbox.enqueue(msg1).is_ok());
+        assert!(mailbox.enqueue(msg2).is_ok());
+        // Third should fail - mailbox full
+        let result = mailbox.enqueue(msg3);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Mailbox full");
+    }
+
+    #[test]
+    fn test_actor_field_value_integer() {
+        use crate::runtime::Value;
+        let int_value = Value::Integer(42);
+        let field = ActorFieldValue::from_value(&int_value);
+        assert_eq!(field, ActorFieldValue::Integer(42));
+
+        // Test to_value conversion
+        let back = field.to_value();
+        if let Value::Integer(i) = back {
+            assert_eq!(i, 42);
+        } else {
+            panic!("Expected Integer");
+        }
+    }
+
+    #[test]
+    fn test_actor_field_value_float() {
+        use crate::runtime::Value;
+        let float_value = Value::Float(3.14);
+        let field = ActorFieldValue::from_value(&float_value);
+        assert_eq!(field, ActorFieldValue::Float(3.14));
+
+        let back = field.to_value();
+        if let Value::Float(f) = back {
+            assert!((f - 3.14).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_actor_field_value_string() {
+        use crate::runtime::Value;
+        let str_value = Value::from_string("hello".to_string());
+        let field = ActorFieldValue::from_value(&str_value);
+        assert_eq!(field, ActorFieldValue::String("hello".to_string()));
+
+        let back = field.to_value();
+        if let Value::String(s) = back {
+            assert_eq!(&*s, "hello");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_actor_field_value_nil() {
+        let field = ActorFieldValue::Nil;
+        let back = field.to_value();
+        assert!(matches!(back, crate::runtime::Value::Nil));
+    }
+
+    #[test]
+    fn test_actor_runtime_default() {
+        let runtime = ActorRuntime::default();
+        let id = runtime.generate_actor_id();
+        assert!(id.starts_with("actor_"));
+    }
+
+    #[test]
+    fn test_get_actor_state_not_found() {
+        let runtime = ActorRuntime::new();
+        let result = runtime.get_actor_state("nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_actor_field_not_found() {
+        let runtime = ActorRuntime::new();
+        let result = runtime.get_actor_field("nonexistent", "field");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_send_message_to_nonexistent_actor() {
+        let runtime = ActorRuntime::new();
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let result = runtime.send_message("nonexistent", msg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_instance_process_message_no_handler() {
+        let mut instance = ActorInstance::new("Test".to_string(), HashMap::new());
+        let msg = ActorMessage {
+            message_type: "Unknown".to_string(),
+            data: vec![],
+        };
+        let result = instance.process_message(&msg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mailbox_dequeue_empty() {
+        let mut mailbox = ActorMailbox::new(10);
+        assert!(mailbox.dequeue().is_none());
+    }
 }

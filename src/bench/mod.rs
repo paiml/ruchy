@@ -297,4 +297,142 @@ mod tests {
             prop_assert!(p90 <= p99);
         });
     }
+
+    #[test]
+    fn test_zero_duration_rps() {
+        let results = BenchmarkResults {
+            total_requests: 100,
+            successful_requests: 100,
+            failed_requests: 0,
+            total_duration: Duration::ZERO,
+            request_times: vec![Duration::from_millis(100); 100],
+        };
+        // Zero duration should return 0.0 to avoid div by zero
+        assert_eq!(results.requests_per_second(), 0.0);
+    }
+
+    #[test]
+    fn test_single_request() {
+        let results = BenchmarkResults {
+            total_requests: 1,
+            successful_requests: 1,
+            failed_requests: 0,
+            total_duration: Duration::from_millis(500),
+            request_times: vec![Duration::from_millis(100)],
+        };
+        assert_eq!(results.mean_time(), Duration::from_millis(100));
+        assert_eq!(results.percentile(50.0), Duration::from_millis(100));
+        assert_eq!(results.percentile(100.0), Duration::from_millis(100));
+    }
+
+    #[test]
+    fn test_failed_requests_ratio() {
+        let results = BenchmarkResults {
+            total_requests: 10,
+            successful_requests: 7,
+            failed_requests: 3,
+            total_duration: Duration::from_secs(1),
+            request_times: vec![Duration::from_millis(100); 7],
+        };
+        assert_eq!(results.total_requests, 10);
+        assert_eq!(results.successful_requests + results.failed_requests, 10);
+    }
+
+    #[test]
+    fn test_benchmark_results_clone() {
+        let results = BenchmarkResults {
+            total_requests: 5,
+            successful_requests: 5,
+            failed_requests: 0,
+            total_duration: Duration::from_millis(500),
+            request_times: vec![Duration::from_millis(100); 5],
+        };
+        let cloned = results.clone();
+        assert_eq!(cloned.total_requests, results.total_requests);
+        assert_eq!(cloned.request_times.len(), results.request_times.len());
+    }
+
+    #[test]
+    fn test_percentile_boundary_0() {
+        let results = BenchmarkResults {
+            total_requests: 5,
+            successful_requests: 5,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(1),
+            request_times: vec![
+                Duration::from_millis(10),
+                Duration::from_millis(20),
+                Duration::from_millis(30),
+                Duration::from_millis(40),
+                Duration::from_millis(50),
+            ],
+        };
+        // 0th percentile should be first element
+        assert_eq!(results.percentile(0.0), Duration::from_millis(10));
+    }
+
+    #[test]
+    fn test_high_throughput() {
+        let results = BenchmarkResults {
+            total_requests: 1000,
+            successful_requests: 1000,
+            failed_requests: 0,
+            total_duration: Duration::from_millis(100),
+            request_times: vec![Duration::from_micros(100); 1000],
+        };
+        // 1000 requests in 100ms = 10000 RPS
+        assert_eq!(results.requests_per_second(), 10000.0);
+    }
+
+    #[test]
+    fn test_percentile_90th() {
+        let results = BenchmarkResults {
+            total_requests: 10,
+            successful_requests: 10,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(1),
+            request_times: (1..=10).map(|i| Duration::from_millis(i * 10)).collect(),
+        };
+        // 90th percentile of [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+        assert_eq!(results.percentile(90.0), Duration::from_millis(100));
+    }
+
+    #[test]
+    fn test_mean_time_large_values() {
+        let results = BenchmarkResults {
+            total_requests: 2,
+            successful_requests: 2,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(10),
+            request_times: vec![Duration::from_secs(2), Duration::from_secs(4)],
+        };
+        assert_eq!(results.mean_time(), Duration::from_secs(3));
+    }
+
+    #[test]
+    fn test_debug_impl() {
+        let results = BenchmarkResults {
+            total_requests: 1,
+            successful_requests: 1,
+            failed_requests: 0,
+            total_duration: Duration::from_millis(100),
+            request_times: vec![Duration::from_millis(100)],
+        };
+        let debug_str = format!("{results:?}");
+        assert!(debug_str.contains("BenchmarkResults"));
+        assert!(debug_str.contains("total_requests"));
+    }
+
+    #[test]
+    fn test_fractional_rps() {
+        let results = BenchmarkResults {
+            total_requests: 3,
+            successful_requests: 3,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(2),
+            request_times: vec![Duration::from_millis(100); 3],
+        };
+        // 3 requests in 2 seconds = 1.5 RPS
+        assert_eq!(results.requests_per_second(), 1.5);
+    }
 }
