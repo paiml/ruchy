@@ -271,72 +271,7 @@ fn get_timestamp() -> f64 {
             .as_millis() as f64
     }
 }
-// ============================================================================
-// Memory Management
-// ============================================================================
-/// Heap allocator for WASM
-pub struct WasmHeap {
-    /// Young generation for short-lived objects
-    young: Vec<u8>,
-    /// Old generation for long-lived objects
-    old: Vec<u8>,
-    /// GC roots
-    roots: Vec<usize>,
-}
-impl WasmHeap {
-    pub fn new() -> Self {
-        Self {
-            young: Vec::with_capacity(256 * 1024),    // 256KB
-            old: Vec::with_capacity(2 * 1024 * 1024), // 2MB
-            roots: Vec::new(),
-        }
-    }
-    /// Perform minor garbage collection
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::repl::WasmHeap;
-    ///
-    /// let mut instance = WasmHeap::new();
-    /// let result = instance.minor_gc();
-    /// // Verify behavior
-    /// ```
-    pub fn minor_gc(&mut self) {
-        self.young.clear();
-    }
-    /// Perform major garbage collection
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::repl::WasmHeap;
-    ///
-    /// let mut instance = WasmHeap::new();
-    /// let result = instance.major_gc();
-    /// // Verify behavior
-    /// ```
-    pub fn major_gc(&mut self) {
-        // Mark phase
-        let mut marked = vec![false; self.old.len()];
-        for &root in &self.roots {
-            if root < marked.len() {
-                marked[root] = true;
-            }
-        }
-        // Compact phase (simplified)
-        let mut compacted = Vec::new();
-        for (i, &is_marked) in marked.iter().enumerate() {
-            if is_marked && i < self.old.len() {
-                compacted.push(self.old[i]);
-            }
-        }
-        self.old = compacted;
-    }
-}
-impl Default for WasmHeap {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// WasmHeap has been extracted to heap.rs
 // ============================================================================
 // Tests
 // ============================================================================
@@ -597,66 +532,7 @@ mod tests {
         assert!((timing.total_ms - decoded.total_ms).abs() < f64::EPSILON);
     }
 
-    // ===== WasmHeap Tests =====
-
-    #[test]
-    fn test_heap() {
-        let mut heap = WasmHeap::new();
-        heap.minor_gc();
-        heap.major_gc();
-        assert!(heap.young.is_empty());
-    }
-
-    #[test]
-    fn test_heap_new() {
-        let heap = WasmHeap::new();
-        assert!(heap.young.is_empty());
-        assert!(heap.old.is_empty());
-        assert!(heap.roots.is_empty());
-    }
-
-    #[test]
-    fn test_heap_default() {
-        let heap = WasmHeap::default();
-        assert!(heap.young.is_empty());
-    }
-
-    #[test]
-    fn test_heap_minor_gc() {
-        let mut heap = WasmHeap::new();
-        heap.young.push(1);
-        heap.young.push(2);
-        assert_eq!(heap.young.len(), 2);
-        heap.minor_gc();
-        assert!(heap.young.is_empty());
-    }
-
-    #[test]
-    fn test_heap_major_gc_empty() {
-        let mut heap = WasmHeap::new();
-        heap.major_gc();
-        assert!(heap.old.is_empty());
-    }
-
-    #[test]
-    fn test_heap_major_gc_with_roots() {
-        let mut heap = WasmHeap::new();
-        heap.old = vec![1, 2, 3, 4, 5];
-        heap.roots = vec![0, 2, 4]; // Mark indices 0, 2, 4
-        heap.major_gc();
-        // Only marked items should remain
-        assert_eq!(heap.old.len(), 3);
-    }
-
-    #[test]
-    fn test_heap_major_gc_out_of_bounds_root() {
-        let mut heap = WasmHeap::new();
-        heap.old = vec![1, 2, 3];
-        heap.roots = vec![100]; // Out of bounds root
-        heap.major_gc();
-        // No items marked, so old should be empty
-        assert!(heap.old.is_empty());
-    }
+    // WasmHeap tests have been moved to heap.rs
 
     // ===== format_value_for_display Tests =====
 
@@ -1066,46 +942,7 @@ mod coverage_push_tests {
         assert!(output.timing.eval_ms >= 0.0);
     }
 
-    #[test]
-    fn test_heap_with_data() {
-        let mut heap = WasmHeap::new();
-        // Add data to young gen
-        heap.young.extend_from_slice(&[1, 2, 3, 4, 5]);
-        assert_eq!(heap.young.len(), 5);
-
-        // Minor GC clears young
-        heap.minor_gc();
-        assert!(heap.young.is_empty());
-    }
-
-    #[test]
-    fn test_heap_major_gc_all_marked() {
-        let mut heap = WasmHeap::new();
-        heap.old = vec![10, 20, 30];
-        heap.roots = vec![0, 1, 2]; // Mark all
-        heap.major_gc();
-        assert_eq!(heap.old.len(), 3);
-    }
-
-    #[test]
-    fn test_heap_major_gc_none_marked() {
-        let mut heap = WasmHeap::new();
-        heap.old = vec![10, 20, 30];
-        heap.roots = vec![]; // Mark none
-        heap.major_gc();
-        assert!(heap.old.is_empty());
-    }
-
-    #[test]
-    fn test_heap_major_gc_partial_marks() {
-        let mut heap = WasmHeap::new();
-        heap.old = vec![10, 20, 30, 40, 50];
-        heap.roots = vec![1, 3]; // Mark indices 1 and 3
-        heap.major_gc();
-        assert_eq!(heap.old.len(), 2);
-        assert!(heap.old.contains(&20));
-        assert!(heap.old.contains(&40));
-    }
+    // WasmHeap tests moved to heap.rs
 
     #[test]
     fn test_format_value_array() {
