@@ -535,4 +535,188 @@ mod tests {
         assert_eq!(cache.len(), 0);
         assert!(cache.is_empty());
     }
+
+    #[test]
+    fn test_cache_stats_hit_rate_empty() {
+        let stats = CacheStats {
+            hits: 0,
+            misses: 0,
+            evictions: 0,
+            size: 0,
+            capacity: 100,
+        };
+        assert_eq!(stats.hit_rate(), 0.0);
+    }
+
+    #[test]
+    fn test_cache_stats_utilization_empty() {
+        let stats = CacheStats {
+            hits: 0,
+            misses: 0,
+            evictions: 0,
+            size: 0,
+            capacity: 100,
+        };
+        assert_eq!(stats.utilization(), 0.0);
+    }
+
+    #[test]
+    fn test_cache_stats_utilization_zero_capacity() {
+        let stats = CacheStats {
+            hits: 0,
+            misses: 0,
+            evictions: 0,
+            size: 0,
+            capacity: 0,
+        };
+        assert_eq!(stats.utilization(), 0.0);
+    }
+
+    #[test]
+    fn test_cache_stats_utilization_half() {
+        let stats = CacheStats {
+            hits: 5,
+            misses: 3,
+            evictions: 1,
+            size: 50,
+            capacity: 100,
+        };
+        assert_eq!(stats.utilization(), 0.5);
+    }
+
+    #[test]
+    fn test_cache_is_empty() {
+        let cache = CompilationCache::new(10);
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_cache_capacity() {
+        let cache = CompilationCache::new(42);
+        assert_eq!(cache.capacity(), 42);
+    }
+
+    #[test]
+    fn test_string_interner_default() {
+        let interner = StringInterner::default();
+        assert!(interner.is_empty());
+        assert_eq!(interner.len(), 0);
+    }
+
+    #[test]
+    fn test_string_interner_is_empty() {
+        let mut interner = StringInterner::new();
+        assert!(interner.is_empty());
+        interner.intern("test");
+        assert!(!interner.is_empty());
+    }
+
+    #[test]
+    fn test_string_interner_clear() {
+        let mut interner = StringInterner::new();
+        interner.intern("hello");
+        interner.intern("world");
+        assert_eq!(interner.len(), 2);
+
+        interner.clear();
+        assert!(interner.is_empty());
+        assert_eq!(interner.len(), 0);
+    }
+
+    #[test]
+    fn test_string_interner_get_invalid() {
+        let interner = StringInterner::new();
+        assert!(interner.get(999).is_none());
+    }
+
+    #[test]
+    fn test_cache_stats_debug() {
+        let stats = CacheStats {
+            hits: 10,
+            misses: 5,
+            evictions: 2,
+            size: 8,
+            capacity: 20,
+        };
+        let debug_str = format!("{:?}", stats);
+        assert!(debug_str.contains("CacheStats"));
+        assert!(debug_str.contains("10")); // hits
+    }
+
+    #[test]
+    fn test_cache_stats_clone() {
+        let stats = CacheStats {
+            hits: 10,
+            misses: 5,
+            evictions: 2,
+            size: 8,
+            capacity: 20,
+        };
+        let cloned = stats.clone();
+        assert_eq!(stats.hits, cloned.hits);
+        assert_eq!(stats.misses, cloned.misses);
+    }
+
+    #[test]
+    fn test_pool_stats_summary_debug() {
+        let summary = PoolStatsSummary {
+            created: 5,
+            borrowed: 4,
+            returned: 3,
+            current_size: 2,
+        };
+        let debug_str = format!("{:?}", summary);
+        assert!(debug_str.contains("PoolStatsSummary"));
+    }
+
+    #[test]
+    fn test_pool_stats_summary_clone() {
+        let summary = PoolStatsSummary {
+            created: 5,
+            borrowed: 4,
+            returned: 3,
+            current_size: 2,
+        };
+        let cloned = summary.clone();
+        assert_eq!(summary.created, cloned.created);
+    }
+
+    #[test]
+    fn test_parser_pool_size() {
+        let pool = ParserPool::new(10);
+        assert_eq!(pool.size(), 0);
+    }
+
+    #[test]
+    fn test_cache_stats_total_requests() {
+        let stats = CacheStats {
+            hits: 7,
+            misses: 3,
+            evictions: 0,
+            size: 10,
+            capacity: 100,
+        };
+        assert_eq!(stats.total_requests(), 10);
+    }
+
+    #[test]
+    fn test_cache_eviction_counter() {
+        let mut cache = CompilationCache::new(1);
+        cache.insert("a".to_string(), "1".to_string(), Duration::from_millis(10), 100);
+        cache.insert("b".to_string(), "2".to_string(), Duration::from_millis(10), 100);
+
+        let stats = cache.stats();
+        assert_eq!(stats.evictions, 1);
+    }
+
+    #[test]
+    fn test_string_interner_multiple_same() {
+        let mut interner = StringInterner::new();
+        let id1 = interner.intern("foo");
+        let id2 = interner.intern("foo");
+        let id3 = interner.intern("foo");
+        assert_eq!(id1, id2);
+        assert_eq!(id2, id3);
+        assert_eq!(interner.len(), 1);
+    }
 }

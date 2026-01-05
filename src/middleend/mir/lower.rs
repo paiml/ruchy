@@ -453,6 +453,138 @@ mod tests {
         assert!(main_func.blocks.len() > 1);
         Ok(())
     }
+
+    #[test]
+    fn test_lowering_context_default() {
+        let ctx = LoweringContext::default();
+        assert!(ctx.current_block.is_none());
+    }
+
+    #[test]
+    fn test_lower_literal_integer() {
+        let lit = Literal::Integer(42, None);
+        let constant = LoweringContext::lower_literal(&lit);
+        assert!(matches!(constant, Constant::Int(42, Type::I32)));
+    }
+
+    #[test]
+    fn test_lower_literal_float() {
+        let lit = Literal::Float(3.14);
+        let constant = LoweringContext::lower_literal(&lit);
+        if let Constant::Float(f, Type::F64) = constant {
+            assert!((f - 3.14).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Float constant");
+        }
+    }
+
+    #[test]
+    fn test_lower_literal_string() {
+        let lit = Literal::String("hello".to_string());
+        let constant = LoweringContext::lower_literal(&lit);
+        assert!(matches!(constant, Constant::String(s) if s == "hello"));
+    }
+
+    #[test]
+    fn test_lower_literal_bool() {
+        let lit = Literal::Bool(true);
+        let constant = LoweringContext::lower_literal(&lit);
+        assert!(matches!(constant, Constant::Bool(true)));
+    }
+
+    #[test]
+    fn test_lower_literal_char() {
+        let lit = Literal::Char('x');
+        let constant = LoweringContext::lower_literal(&lit);
+        assert!(matches!(constant, Constant::Char('x')));
+    }
+
+    #[test]
+    fn test_lower_literal_unit() {
+        let lit = Literal::Unit;
+        let constant = LoweringContext::lower_literal(&lit);
+        assert!(matches!(constant, Constant::Unit));
+    }
+
+    #[test]
+    fn test_lower_binary_op_add() {
+        let op = LoweringContext::lower_binary_op(AstBinOp::Add);
+        assert!(matches!(op, BinOp::Add));
+    }
+
+    #[test]
+    fn test_lower_binary_op_subtract() {
+        let op = LoweringContext::lower_binary_op(AstBinOp::Subtract);
+        assert!(matches!(op, BinOp::Sub));
+    }
+
+    #[test]
+    fn test_lower_binary_op_equal() {
+        let op = LoweringContext::lower_binary_op(AstBinOp::Equal);
+        assert!(matches!(op, BinOp::Eq));
+    }
+
+    #[test]
+    fn test_lower_binary_op_and() {
+        let op = LoweringContext::lower_binary_op(AstBinOp::And);
+        assert!(matches!(op, BinOp::And));
+    }
+
+    #[test]
+    fn test_lower_unary_op_negate() {
+        let op = LoweringContext::lower_unary_op(AstUnOp::Negate);
+        assert!(matches!(op, UnOp::Neg));
+    }
+
+    #[test]
+    fn test_lower_unary_op_not() {
+        let op = LoweringContext::lower_unary_op(AstUnOp::Not);
+        assert!(matches!(op, UnOp::Not));
+    }
+
+    #[test]
+    fn test_infer_binary_result_type_arithmetic() {
+        let ty = LoweringContext::infer_binary_result_type(AstBinOp::Add);
+        assert!(matches!(ty, Type::I32));
+    }
+
+    #[test]
+    fn test_infer_binary_result_type_comparison() {
+        let ty = LoweringContext::infer_binary_result_type(AstBinOp::Equal);
+        assert!(matches!(ty, Type::Bool));
+    }
+
+    #[test]
+    fn test_infer_unary_result_type_negate() {
+        let ty = LoweringContext::infer_unary_result_type(AstUnOp::Negate);
+        assert!(matches!(ty, Type::I32));
+    }
+
+    #[test]
+    fn test_infer_unary_result_type_not() {
+        let ty = LoweringContext::infer_unary_result_type(AstUnOp::Not);
+        assert!(matches!(ty, Type::Bool));
+    }
+
+    #[test]
+    fn test_lower_let_expr() -> Result<()> {
+        let mut parser = Parser::new("let x = 5 in x");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("main"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_block_expr() -> Result<()> {
+        let mut parser = Parser::new("{ 1; 2; 3 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("main"));
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_lower {
