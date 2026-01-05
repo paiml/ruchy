@@ -973,3 +973,254 @@ mod coverage_tests {
         assert!(!Value::from_array(vec![]).greater_equal(&Value::Integer(1)));
     }
 }
+
+// === EXTREME TDD Round 28 - Coverage Push Tests ===
+
+#[cfg(test)]
+mod coverage_push_round28 {
+    use super::*;
+
+    #[test]
+    fn test_from_string_empty() {
+        let val = Value::from_string("".to_string());
+        if let Value::String(s) = val {
+            assert_eq!(s.as_ref(), "");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_from_string_unicode() {
+        let val = Value::from_string("日本語🎉".to_string());
+        if let Value::String(s) = val {
+            assert_eq!(s.as_ref(), "日本語🎉");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_from_array_empty() {
+        let val = Value::from_array(vec![]);
+        if let Value::Array(arr) = val {
+            assert_eq!(arr.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_from_array_nested() {
+        let inner = Value::from_array(vec![Value::Integer(1)]);
+        let outer = Value::from_array(vec![inner]);
+        if let Value::Array(arr) = outer {
+            assert_eq!(arr.len(), 1);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_from_object_empty() {
+        let val = Value::from_object(HashMap::new());
+        if let Value::Object(obj) = val {
+            assert_eq!(obj.len(), 0);
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_from_range_floats() {
+        let val = Value::from_range(Value::Float(0.5), Value::Float(10.5), false);
+        match val {
+            Value::Range { start, end, inclusive } => {
+                assert_eq!(*start, Value::Float(0.5));
+                assert_eq!(*end, Value::Float(10.5));
+                assert!(!inclusive);
+            }
+            _ => panic!("Expected range"),
+        }
+    }
+
+    #[test]
+    fn test_is_truthy_all_values() {
+        // Truthy values
+        assert!(Value::Integer(0).is_truthy());
+        assert!(Value::Integer(-1).is_truthy());
+        assert!(Value::Float(0.0).is_truthy());
+        assert!(Value::Float(-1.0).is_truthy());
+        assert!(Value::from_string("".to_string()).is_truthy());
+        assert!(Value::from_array(vec![]).is_truthy());
+        assert!(Value::Byte(0).is_truthy());
+        assert!(Value::Atom("".to_string()).is_truthy());
+
+        // Falsy values
+        assert!(!Value::Bool(false).is_truthy());
+        assert!(!Value::Nil.is_truthy());
+    }
+
+    #[test]
+    fn test_is_nil_all_values() {
+        assert!(Value::Nil.is_nil());
+        assert!(!Value::Bool(false).is_nil());
+        assert!(!Value::Integer(0).is_nil());
+        assert!(!Value::Float(0.0).is_nil());
+        assert!(!Value::from_string("".to_string()).is_nil());
+        assert!(!Value::from_array(vec![]).is_nil());
+    }
+
+    #[test]
+    fn test_as_i64_edge_cases() {
+        assert_eq!(Value::Integer(0).as_i64().unwrap(), 0);
+        assert_eq!(Value::Integer(-1).as_i64().unwrap(), -1);
+        assert_eq!(Value::Integer(i64::MAX).as_i64().unwrap(), i64::MAX);
+        assert_eq!(Value::Integer(i64::MIN).as_i64().unwrap(), i64::MIN);
+    }
+
+    #[test]
+    fn test_as_f64_edge_cases() {
+        assert_eq!(Value::Float(0.0).as_f64().unwrap(), 0.0);
+        assert_eq!(Value::Float(-0.0).as_f64().unwrap(), -0.0);
+        assert!(Value::Float(f64::INFINITY).as_f64().unwrap().is_infinite());
+        assert!(Value::Float(f64::NEG_INFINITY).as_f64().unwrap().is_infinite());
+    }
+
+    #[test]
+    fn test_as_bool_values() {
+        assert!(Value::Bool(true).as_bool().unwrap());
+        assert!(!Value::Bool(false).as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_type_name_closure() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let closure = Value::Closure {
+            params: vec![],
+            body: Arc::new(crate::frontend::ast::Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Null),
+                crate::frontend::ast::Span::default(),
+            )),
+            env: Rc::new(RefCell::new(HashMap::new())),
+        };
+        assert_eq!(closure.type_name(), "function");
+    }
+
+    #[test]
+    fn test_type_name_struct() {
+        let val = Value::Struct {
+            name: "Test".to_string(),
+            fields: Arc::new(HashMap::new()),
+        };
+        assert_eq!(val.type_name(), "struct");
+    }
+
+    #[test]
+    fn test_type_name_class() {
+        use std::sync::RwLock;
+        let val = Value::Class {
+            class_name: "Test".to_string(),
+            fields: Arc::new(RwLock::new(HashMap::new())),
+            methods: Arc::new(HashMap::new()),
+        };
+        assert_eq!(val.type_name(), "class");
+    }
+
+    #[test]
+    fn test_type_name_dataframe() {
+        let val = Value::DataFrame { columns: vec![] };
+        assert_eq!(val.type_name(), "dataframe");
+    }
+
+    #[test]
+    fn test_type_name_object_mut() {
+        use std::sync::Mutex;
+        let val = Value::ObjectMut(Arc::new(Mutex::new(HashMap::new())));
+        assert_eq!(val.type_name(), "object");
+    }
+
+    #[test]
+    fn test_add_negative_integers() {
+        let a = Value::Integer(-10);
+        let b = Value::Integer(-20);
+        assert_eq!(a.add(&b).unwrap(), Value::Integer(-30));
+    }
+
+    #[test]
+    fn test_subtract_negative_integers() {
+        let a = Value::Integer(-10);
+        let b = Value::Integer(-20);
+        assert_eq!(a.subtract(&b).unwrap(), Value::Integer(10));
+    }
+
+    #[test]
+    fn test_multiply_by_zero() {
+        let a = Value::Integer(1000);
+        let b = Value::Integer(0);
+        assert_eq!(a.multiply(&b).unwrap(), Value::Integer(0));
+    }
+
+    #[test]
+    fn test_multiply_by_one() {
+        let a = Value::Integer(42);
+        let b = Value::Integer(1);
+        assert_eq!(a.multiply(&b).unwrap(), Value::Integer(42));
+    }
+
+    #[test]
+    fn test_add_empty_strings() {
+        let a = Value::from_string("".to_string());
+        let b = Value::from_string("".to_string());
+        if let Value::String(s) = a.add(&b).unwrap() {
+            assert_eq!(s.as_ref(), "");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_add_empty_arrays() {
+        let a = Value::from_array(vec![]);
+        let b = Value::from_array(vec![]);
+        if let Value::Array(arr) = a.add(&b).unwrap() {
+            assert_eq!(arr.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_comparison_with_zero() {
+        // Less than zero
+        assert!(Value::Integer(-1).less_than(&Value::Integer(0)));
+        assert!(!Value::Integer(0).less_than(&Value::Integer(0)));
+        assert!(!Value::Integer(1).less_than(&Value::Integer(0)));
+
+        // Greater than zero
+        assert!(Value::Integer(1).greater_than(&Value::Integer(0)));
+        assert!(!Value::Integer(0).greater_than(&Value::Integer(0)));
+        assert!(!Value::Integer(-1).greater_than(&Value::Integer(0)));
+    }
+
+    #[test]
+    fn test_comparison_with_negative_floats() {
+        assert!(Value::Float(-2.0).less_than(&Value::Float(-1.0)));
+        assert!(Value::Float(-1.0).greater_than(&Value::Float(-2.0)));
+    }
+
+    #[test]
+    fn test_error_messages_contain_type_names() {
+        let err = Value::Bool(true).as_i64().unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("integer"));
+        assert!(msg.contains("boolean"));
+
+        let err = Value::Nil.as_f64().unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("float"));
+        assert!(msg.contains("nil"));
+    }
+}
