@@ -802,3 +802,67 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: PDCA Cycle - EXTREME TDD Test Explosion'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - EXTREME TDD Test Explosion'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T08:44:13.970054814+00:00
+  updated: 2026-01-05T08:44:13.970054814+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - EXTREME TDD Round 2'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - EXTREME TDD Round 2'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T08:57:39.576861432+00:00
+  updated: 2026-01-05T08:57:39.576861432+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - EXTREME TDD Round 3'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - EXTREME TDD Round 3'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T09:04:26.421955697+00:00
+  updated: 2026-01-05T09:04:26.421955697+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'EXTREME TDD: PDCA Cycle - Test Explosion Round 4'
+  github_issue: null
+  item_type: task
+  title: 'New task: EXTREME TDD: PDCA Cycle - Test Explosion Round 4'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-05T09:22:59.351387421+00:00
+  updated: 2026-01-05T09:22:59.351387421+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

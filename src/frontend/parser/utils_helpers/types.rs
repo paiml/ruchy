@@ -607,6 +607,10 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 mod tests {
     use super::*;
 
+    // ============================================================
+    // Qualified name tests
+    // ============================================================
+
     #[test]
     fn test_parse_qualified_name() {
         let mut state = ParserState::new("std::collections::HashMap");
@@ -618,12 +622,600 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_qualified_name_single() {
+        let mut state = ParserState::new("String");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "String");
+    }
+
+    #[test]
+    fn test_parse_qualified_name_two_parts() {
+        let mut state = ParserState::new("std::Vec");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "std::Vec");
+    }
+
+    #[test]
+    fn test_parse_qualified_name_four_parts() {
+        let mut state = ParserState::new("foo::bar::baz::Type");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "foo::bar::baz::Type");
+    }
+
+    #[test]
+    fn test_parse_qualified_name_result_keyword() {
+        let mut state = ParserState::new("Result");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "Result");
+    }
+
+    #[test]
+    fn test_parse_qualified_name_option_keyword() {
+        let mut state = ParserState::new("Option");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "Option");
+    }
+
+    // ============================================================
+    // Generic type tests
+    // ============================================================
+
+    #[test]
     fn test_parse_generic_type_nested() {
-        // The parser state should be positioned at the '<' token
         let mut state = ParserState::new("<str, Vec<int>>");
         let base = "HashMap".to_string();
         let span = Span { start: 0, end: 0 };
         let result = parse_generic_type(&mut state, base, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_generic_type_single_param() {
+        let mut state = ParserState::new("<i32>");
+        let base = "Vec".to_string();
+        let span = Span { start: 0, end: 0 };
+        let result = parse_generic_type(&mut state, base, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_generic_type_two_params() {
+        let mut state = ParserState::new("<String, i32>");
+        let base = "HashMap".to_string();
+        let span = Span { start: 0, end: 0 };
+        let result = parse_generic_type(&mut state, base, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_generic_type_three_params() {
+        let mut state = ParserState::new("<A, B, C>");
+        let base = "Triple".to_string();
+        let span = Span { start: 0, end: 0 };
+        let result = parse_generic_type(&mut state, base, span);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Reference type tests (via parse_type entry point)
+    // ============================================================
+
+    #[test]
+    fn test_parse_reference_type_immutable() {
+        let mut state = ParserState::new("&i32");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_reference_type_mutable() {
+        let mut state = ParserState::new("&mut String");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(t) = result {
+            if let TypeKind::Reference { is_mut, .. } = t.kind {
+                assert!(is_mut);
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_reference_type_nested() {
+        let mut state = ParserState::new("& &i32");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Function type tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_fn_type_no_params() {
+        let mut state = ParserState::new("fn() -> i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_fn_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_fn_type_one_param() {
+        let mut state = ParserState::new("fn(i32) -> i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_fn_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_fn_type_two_params() {
+        let mut state = ParserState::new("fn(i32, String) -> bool");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_fn_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_fn_type_no_return() {
+        let mut state = ParserState::new("fn()");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_fn_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_fn_type_fun_keyword() {
+        let mut state = ParserState::new("fun(i32) -> i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_fn_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // List and array type tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_list_type_simple() {
+        let mut state = ParserState::new("[i32]");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_list_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_list_type_string() {
+        let mut state = ParserState::new("[String]");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_list_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_array_type_fixed_size() {
+        let mut state = ParserState::new("[i32; 10]");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_list_type(&mut state, span);
+        assert!(result.is_ok());
+        if let Ok(t) = result {
+            if let TypeKind::Array { size, .. } = t.kind {
+                assert_eq!(size, 10);
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_array_type_large_size() {
+        let mut state = ParserState::new("[u8; 256]");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_list_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_array_type_nested() {
+        let mut state = ParserState::new("[[i32; 3]; 4]");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_list_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Tuple type tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_paren_type_unit() {
+        let mut state = ParserState::new("()");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_paren_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_paren_type_single() {
+        let mut state = ParserState::new("(i32)");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_paren_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_paren_type_tuple_two() {
+        let mut state = ParserState::new("(i32, String)");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_paren_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_paren_type_tuple_three() {
+        let mut state = ParserState::new("(i32, f64, bool)");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_paren_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_paren_type_function() {
+        let mut state = ParserState::new("(i32, i32) -> i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_paren_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Named type tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_named_type_simple() {
+        let mut state = ParserState::new("i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_named_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_named_type_string() {
+        let mut state = ParserState::new("String");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_named_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_named_type_with_generics() {
+        let mut state = ParserState::new("Vec<i32>");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_named_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_named_type_option() {
+        let mut state = ParserState::new("Option<String>");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_named_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_named_type_result() {
+        let mut state = ParserState::new("Result<i32, String>");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_named_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Type parameters tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_type_parameters_single() {
+        let mut state = ParserState::new("<T>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_parse_type_parameters_two() {
+        let mut state = ParserState::new("<T, U>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_parse_type_parameters_three() {
+        let mut state = ParserState::new("<T, U, V>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_parse_type_parameters_with_bounds() {
+        let mut state = ParserState::new("<T: Clone>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_parameters_multiple_bounds() {
+        let mut state = ParserState::new("<T: Clone + Debug>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Impl trait type tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_impl_trait_simple() {
+        let mut state = ParserState::new("impl Iterator");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_impl_trait_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_impl_trait_fn() {
+        let mut state = ParserState::new("impl Fn(i32) -> i32");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_impl_trait_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_impl_trait_fn_once() {
+        let mut state = ParserState::new("impl FnOnce() -> String");
+        let span = Span { start: 0, end: 0 };
+        let result = parse_impl_trait_type(&mut state, span);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_impl_trait_fn_mut() {
+        let mut state = ParserState::new("impl FnMut(i32)");
+        let span = Span { start: 0, end: 0 };
+        // This should either parse or fail gracefully
+        let _ = parse_impl_trait_type(&mut state, span);
+    }
+
+    // ============================================================
+    // Main parse_type entry point tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_type_i32() {
+        let mut state = ParserState::new("i32");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_string() {
+        let mut state = ParserState::new("String");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_bool() {
+        let mut state = ParserState::new("bool");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_f64() {
+        let mut state = ParserState::new("f64");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_reference() {
+        let mut state = ParserState::new("&str");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_mut_reference() {
+        let mut state = ParserState::new("&mut Vec<i32>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_vec() {
+        let mut state = ParserState::new("Vec<u8>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_option() {
+        let mut state = ParserState::new("Option<i32>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_result() {
+        let mut state = ParserState::new("Result<String, Error>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_hashmap() {
+        let mut state = ParserState::new("HashMap<String, i32>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_array() {
+        let mut state = ParserState::new("[i32; 5]");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_slice() {
+        let mut state = ParserState::new("[u8]");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_tuple() {
+        let mut state = ParserState::new("(i32, String, bool)");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_unit() {
+        let mut state = ParserState::new("()");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_fn() {
+        let mut state = ParserState::new("fn(i32) -> i32");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_impl_trait() {
+        let mut state = ParserState::new("impl Clone");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_qualified() {
+        let mut state = ParserState::new("std::vec::Vec<i32>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Helper function tests
+    // ============================================================
+
+    #[test]
+    fn test_strip_type_suffix_i32() {
+        assert_eq!(strip_type_suffix("42i32"), "42");
+    }
+
+    #[test]
+    fn test_strip_type_suffix_usize() {
+        assert_eq!(strip_type_suffix("100usize"), "100");
+    }
+
+    #[test]
+    fn test_strip_type_suffix_no_suffix() {
+        assert_eq!(strip_type_suffix("42"), "42");
+    }
+
+    #[test]
+    fn test_strip_type_suffix_u8() {
+        assert_eq!(strip_type_suffix("255u8"), "255");
+    }
+
+    #[test]
+    fn test_is_function_trait_fn() {
+        assert!(is_function_trait("Fn"));
+    }
+
+    #[test]
+    fn test_is_function_trait_fn_once() {
+        assert!(is_function_trait("FnOnce"));
+    }
+
+    #[test]
+    fn test_is_function_trait_fn_mut() {
+        assert!(is_function_trait("FnMut"));
+    }
+
+    #[test]
+    fn test_is_function_trait_other() {
+        assert!(!is_function_trait("Clone"));
+        assert!(!is_function_trait("Iterator"));
+    }
+
+    // ============================================================
+    // Type list tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_type_list_empty() {
+        let mut state = ParserState::new(")");
+        let result = parse_type_list(&mut state);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_parse_type_list_single() {
+        let mut state = ParserState::new("i32)");
+        let result = parse_type_list(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_parse_type_list_multiple() {
+        let mut state = ParserState::new("i32, String, bool)");
+        let result = parse_type_list(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    // ============================================================
+    // Edge case tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_type_nested_generics() {
+        let mut state = ParserState::new("Vec<Vec<i32>>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_deeply_nested() {
+        // Deeply nested generics - uses >> token handling
+        let mut state = ParserState::new("Option<Vec<i32>>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_complex_fn() {
+        let mut state = ParserState::new("fn(Vec<i32>, &str) -> Result<String, Error>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_type_tuple_with_generics() {
+        let mut state = ParserState::new("(Vec<i32>, Option<String>)");
+        let result = parse_type(&mut state);
         assert!(result.is_ok());
     }
 }
