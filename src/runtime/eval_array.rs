@@ -1066,4 +1066,401 @@ mod tests {
             }
         }
     }
+
+    // === EXTREME TDD Round 25 - Coverage Push Tests ===
+
+    #[test]
+    fn test_array_first_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_first(&arr).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_array_last_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_last(&arr).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_array_is_empty_true() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_is_empty(&arr).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_array_is_empty_false() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_is_empty(&arr).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_array_pop_returns_shorter_array() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let result = eval_array_pop(&arr).unwrap();
+        if let Value::Array(new_arr) = result {
+            assert_eq!(new_arr.len(), 2);
+            assert_eq!(new_arr[0], Value::Integer(1));
+            assert_eq!(new_arr[1], Value::Integer(2));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_pop_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_pop(&arr).unwrap();
+        if let Value::Array(new_arr) = result {
+            assert_eq!(new_arr.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_get_negative_index() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_get(&arr, &Value::Integer(-1)).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_array_get_out_of_bounds() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_get(&arr, &Value::Integer(100)).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_array_get_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_get(&arr, &Value::from_string("test".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_nth_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_nth(&arr, &Value::from_string("test".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_contains_found() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+        let result = eval_array_contains(&arr, &Value::Integer(2)).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_array_contains_not_found() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_contains(&arr, &Value::Integer(100)).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_array_contains_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_contains(&arr, &Value::Integer(1)).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_array_enumerate_basic() {
+        let arr = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]);
+        let result = eval_array_enumerate(&arr).unwrap();
+        if let Value::Array(enumerated) = result {
+            assert_eq!(enumerated.len(), 2);
+            if let Value::Tuple(first) = &enumerated[0] {
+                assert_eq!(first[0], Value::Integer(0));
+            }
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_enumerate_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_enumerate(&arr).unwrap();
+        if let Value::Array(enumerated) = result {
+            assert_eq!(enumerated.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_slice_basic() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]);
+        let result = eval_array_slice(&arr, &Value::Integer(1), &Value::Integer(3)).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(2));
+            assert_eq!(sliced[1], Value::Integer(3));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_slice_negative_start() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_slice(&arr, &Value::Integer(-5), &Value::Integer(1)).unwrap();
+        if let Value::Array(sliced) = result {
+            // Negative start clamped to 0
+            assert_eq!(sliced.len(), 1);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_slice_wrong_types() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_slice(&arr, &Value::from_string("a".to_string()), &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_join_basic() {
+        let arr = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+            Value::from_string("c".to_string()),
+        ]);
+        let sep = Value::from_string(",".to_string());
+        let result = eval_array_join(&arr, &sep).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "a,b,c");
+        } else {
+            panic!("Expected string");
+        }
+    }
+
+    #[test]
+    fn test_array_join_non_strings() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let sep = Value::from_string("-".to_string());
+        let result = eval_array_join(&arr, &sep).unwrap();
+        // Non-string values are formatted
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_array_join_wrong_separator_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_join(&arr, &Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_unique_basic() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(1),
+            Value::Integer(3),
+            Value::Integer(2),
+        ]);
+        let result = eval_array_unique(&arr).unwrap();
+        if let Value::Array(unique) = result {
+            assert_eq!(unique.len(), 3);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_unique_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_unique(&arr).unwrap();
+        if let Value::Array(unique) = result {
+            assert_eq!(unique.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_concat_basic() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+        let result = eval_array_concat(&arr, &other).unwrap();
+        if let Value::Array(concat) = result {
+            assert_eq!(concat.len(), 4);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_concat_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_concat(&arr, &Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_flatten_nested() {
+        let inner1 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let inner2 = Value::Array(Arc::from(vec![Value::Integer(3)]));
+        let arr = Arc::from(vec![inner1, inner2]);
+        let result = eval_array_flatten(&arr).unwrap();
+        if let Value::Array(flat) = result {
+            assert_eq!(flat.len(), 3);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_flatten_mixed() {
+        let inner = Value::Array(Arc::from(vec![Value::Integer(2)]));
+        let arr = Arc::from(vec![Value::Integer(1), inner, Value::Integer(3)]);
+        let result = eval_array_flatten(&arr).unwrap();
+        if let Value::Array(flat) = result {
+            assert_eq!(flat.len(), 3);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_union_basic() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(3)]));
+        let result = eval_array_union(&arr, &other).unwrap();
+        if let Value::Array(union_arr) = result {
+            assert_eq!(union_arr.len(), 3);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_union_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_union(&arr, &Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_intersection_basic() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(3), Value::Integer(4)]));
+        let result = eval_array_intersection(&arr, &other).unwrap();
+        if let Value::Array(inter) = result {
+            assert_eq!(inter.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_intersection_no_common() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+        let result = eval_array_intersection(&arr, &other).unwrap();
+        if let Value::Array(inter) = result {
+            assert_eq!(inter.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_intersection_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_intersection(&arr, &Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_difference_basic() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(2)]));
+        let result = eval_array_difference(&arr, &other).unwrap();
+        if let Value::Array(diff) = result {
+            assert_eq!(diff.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_difference_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_difference(&arr, &Value::Integer(42));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_sort_integers() {
+        let arr = Arc::from(vec![
+            Value::Integer(3),
+            Value::Integer(1),
+            Value::Integer(4),
+            Value::Integer(1),
+            Value::Integer(5),
+        ]);
+        let result = eval_array_sort(&arr).unwrap();
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted.len(), 5);
+            // Sorted by debug string representation
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_sort_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_sort(&arr).unwrap();
+        if let Value::Array(sorted) = result {
+            assert_eq!(sorted.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_array_method_unknown() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+        let result = eval_array_method(&arr, "unknown_method", &[], dummy_eval);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_array_len_empty() {
+        let arr = Arc::from(Vec::<Value>::new());
+        let result = eval_array_len(&arr).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_array_length_alias() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let dummy_eval = |_: &Value, _: &[Value]| Ok(Value::Nil);
+        let result = eval_array_method(&arr, "length", &[], dummy_eval).unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
 }
