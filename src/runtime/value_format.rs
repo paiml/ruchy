@@ -61,9 +61,10 @@ pub fn format_value_with_spec(value: &Value, spec: &str) -> String {
     if let Some(stripped) = spec.strip_prefix(":.") {
         if let Ok(precision) = stripped.parse::<usize>() {
             match value {
-                Value::Float(f) => return format!("{:.precision$}", f, precision = precision),
+                Value::Float(f) => return format!("{f:.precision$}"),
                 Value::Integer(i) => {
-                    return format!("{:.precision$}", *i as f64, precision = precision)
+                    let f = *i as f64;
+                    return format!("{f:.precision$}");
                 }
                 _ => {}
             }
@@ -75,7 +76,7 @@ pub fn format_value_with_spec(value: &Value, spec: &str) -> String {
 
 /// Format value for debug output
 pub fn format_value_debug(value: &Value) -> String {
-    format!("{:?}", value)
+    format!("{value:?}")
 }
 
 /// Format value for display output (no extra quotes for strings)
