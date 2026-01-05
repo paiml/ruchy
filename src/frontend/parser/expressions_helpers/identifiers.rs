@@ -707,6 +707,148 @@ mod tests {
         assert_eq!(token_to_keyword_string(&Token::Star), "");
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ===== ExprKind verification =====
+
+    #[test]
+    fn test_identifier_produces_identifier_exprkind() {
+        let expr = parse("foo").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Identifier(name) if name == "foo"));
+        }
+    }
+
+    #[test]
+    fn test_underscore_produces_identifier_exprkind() {
+        let expr = parse("_").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Identifier(name) if name == "_"));
+        }
+    }
+
+    #[test]
+    fn test_self_produces_identifier_exprkind() {
+        let expr = parse("self").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Identifier(name) if name == "self"));
+        }
+    }
+
+    // ===== Name variations =====
+
+    #[test]
+    fn test_single_char_identifier() {
+        let result = parse("x");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_two_char_identifier() {
+        let result = parse("ab");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_long_identifier() {
+        let result = parse("very_long_identifier_name_here");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_identifier_all_underscores() {
+        let result = parse("___");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_identifier_mixed_case() {
+        let result = parse("camelCase");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_identifier_pascal_case() {
+        let result = parse("PascalCase");
+        assert!(result.is_ok());
+    }
+
+    // ===== Path variations =====
+
+    #[test]
+    fn test_path_five_segments() {
+        let result = parse("a::b::c::d::e");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_path_six_segments() {
+        let result = parse("a::b::c::d::e::f");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_path_with_long_names() {
+        let result = parse("long_module::another_long::item");
+        assert!(result.is_ok());
+    }
+
+    // ===== Fat arrow lambda variations =====
+
+    #[test]
+    fn test_fat_arrow_simple() {
+        let result = parse("x => x");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_fat_arrow_with_block() {
+        let result = parse("x => { x + 1 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_fat_arrow_with_if() {
+        let result = parse("x => if x > 0 { x } else { 0 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Multiple identifiers =====
+
+    #[test]
+    fn test_two_identifiers() {
+        let result = parse("a\nb");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_identifier_in_let() {
+        let result = parse("let x = y");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_identifier_in_function() {
+        let result = parse("fun f(x) { x }");
+        assert!(result.is_ok());
+    }
+
     // Property tests for identifiers
     #[cfg(test)]
     mod property_tests {

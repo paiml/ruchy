@@ -574,6 +574,132 @@ mod tests {
         assert!(result.is_ok(), "Complex unary chain should parse");
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    // ===== Operand types =====
+
+    #[test]
+    fn test_negate_large_number() {
+        let result = parse("-999999");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_not_function_call() {
+        let result = parse("!is_valid()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_reference_struct_field() {
+        let result = parse("&obj.field");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_deref_array_index() {
+        let result = parse("*arr[0]");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bitwise_not_hex() {
+        let result = parse("~0xFFFF");
+        assert!(result.is_ok());
+    }
+
+    // ===== In expressions =====
+
+    #[test]
+    fn test_negate_in_return() {
+        let result = parse("fun f() { -x }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_not_in_if_condition() {
+        let result = parse("if !done { 1 } else { 0 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_reference_in_let() {
+        let result = parse("let r = &value");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_deref_in_assignment() {
+        let result = parse("*ptr = 42");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_await_in_let() {
+        let result = parse("let result = await fetch()");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex expressions =====
+
+    #[test]
+    fn test_negate_multiply() {
+        let result = parse("-x * y");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_not_in_logical() {
+        let result = parse("!a && !b");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_reference_method_result() {
+        let result = parse("&x.method()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_deref_then_method() {
+        let result = parse("(*ptr).method()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_multiple_await() {
+        let result = parse("await first() + await second()");
+        assert!(result.is_ok());
+    }
+
+    // ===== Edge cases =====
+
+    #[test]
+    fn test_negate_zero() {
+        let result = parse("-0");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_not_parens() {
+        let result = parse("!(x && y)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_reference_literal() {
+        let result = parse("&42");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_await_chain() {
+        let result = parse("await await_double()");
+        assert!(result.is_ok());
+    }
+
     // Property tests for unary operators
     #[cfg(test)]
     mod property_tests {
