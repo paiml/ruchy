@@ -182,4 +182,33 @@ mod tests {
             prop_assert!(results.total_duration >= sum);
         });
     }
+
+    // === EXTREME TDD Round 17 tests ===
+
+    #[test]
+    fn test_benchmark_results_fields() {
+        let results = benchmark_cli("echo 'hello'", 3, 0).expect("operation should succeed in test");
+
+        assert_eq!(results.total_requests, 3);
+        assert!(results.total_duration > Duration::ZERO);
+        assert!(!results.request_times.is_empty());
+    }
+
+    #[test]
+    fn test_benchmark_zero_warmup() {
+        let results = benchmark_cli("echo 'no warmup'", 2, 0).expect("operation should succeed in test");
+
+        assert_eq!(results.total_requests, 2);
+        assert_eq!(results.successful_requests, 2);
+        assert_eq!(results.failed_requests, 0);
+    }
+
+    #[test]
+    fn test_benchmark_command_output_ignored() {
+        // Command output should not affect benchmarking
+        let results =
+            benchmark_cli("echo 'lots of output'; echo 'more output'", 2, 0).expect("should succeed");
+
+        assert_eq!(results.successful_requests, 2);
+    }
 }

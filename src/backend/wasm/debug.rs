@@ -35,4 +35,31 @@ mod debug_tests {
             Err(e) => panic!("❌ Invalid: {e}"),
         }
     }
+
+    // === EXTREME TDD Round 17 tests ===
+
+    #[test]
+    fn test_wasm_emitter_new() {
+        let emitter = WasmEmitter::new();
+        // Emitter should be created successfully
+        // Just verify it doesn't panic
+        let _ = emitter;
+    }
+
+    #[test]
+    fn test_wasm_magic_and_version() {
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(ExprKind::Block(vec![]), Default::default());
+        let bytes = emitter.emit(&expr).expect("Should emit");
+
+        // WASM magic number: \0asm
+        assert_eq!(&bytes[0..4], b"\0asm", "Should have WASM magic number");
+
+        // WASM version 1
+        assert_eq!(
+            &bytes[4..8],
+            &[1, 0, 0, 0],
+            "Should have WASM version 1"
+        );
+    }
 }
