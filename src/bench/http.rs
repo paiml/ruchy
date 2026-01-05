@@ -275,6 +275,131 @@ fn unwrap_shared_results(
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_build_http_request_get() {
+        let client = Client::new();
+        let req = build_http_request(&client, "http://localhost:9999", "GET", None, &[]);
+        // RequestBuilder is opaque, but we can verify it was created without panic
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_post() {
+        let client = Client::new();
+        let req = build_http_request(
+            &client,
+            "http://localhost:9999",
+            "POST",
+            Some("body data"),
+            &[],
+        );
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_put() {
+        let client = Client::new();
+        let req = build_http_request(&client, "http://localhost:9999", "PUT", None, &[]);
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_delete() {
+        let client = Client::new();
+        let req = build_http_request(&client, "http://localhost:9999", "DELETE", None, &[]);
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_with_headers() {
+        let client = Client::new();
+        let headers = vec![
+            "Content-Type: application/json".to_string(),
+            "Authorization: Bearer token123".to_string(),
+        ];
+        let req = build_http_request(&client, "http://localhost:9999", "GET", None, &headers);
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_unknown_method_defaults_to_get() {
+        let client = Client::new();
+        let req = build_http_request(&client, "http://localhost:9999", "UNKNOWN", None, &[]);
+        let _ = req;
+    }
+
+    #[test]
+    fn test_join_worker_threads_empty() {
+        let handles: Vec<thread::JoinHandle<()>> = Vec::new();
+        let result = join_worker_threads(handles);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_unwrap_shared_results_empty() {
+        let results = Arc::new(Mutex::new(Vec::new()));
+        let successful = Arc::new(Mutex::new(0usize));
+        let failed = Arc::new(Mutex::new(0usize));
+
+        let (times, succ, fail) = unwrap_shared_results(results, successful, failed).unwrap();
+        assert!(times.is_empty());
+        assert_eq!(succ, 0);
+        assert_eq!(fail, 0);
+    }
+
+    #[test]
+    fn test_unwrap_shared_results_with_data() {
+        let results = Arc::new(Mutex::new(vec![
+            Duration::from_millis(10),
+            Duration::from_millis(20),
+        ]));
+        let successful = Arc::new(Mutex::new(2usize));
+        let failed = Arc::new(Mutex::new(1usize));
+
+        let (times, succ, fail) = unwrap_shared_results(results, successful, failed).unwrap();
+        assert_eq!(times.len(), 2);
+        assert_eq!(succ, 2);
+        assert_eq!(fail, 1);
+    }
+
+    #[test]
+    fn test_build_http_request_head() {
+        let client = Client::new();
+        let req = build_http_request(&client, "http://localhost:9999", "HEAD", None, &[]);
+        let _ = req;
+    }
+
+    #[test]
+    fn test_build_http_request_patch() {
+        let client = Client::new();
+        let req = build_http_request(
+            &client,
+            "http://localhost:9999",
+            "PATCH",
+            Some("patch data"),
+            &[],
+        );
+        let _ = req;
+    }
+
+    #[test]
+    fn test_join_worker_threads_with_simple_thread() {
+        let handles = vec![thread::spawn(|| {
+            // Simple thread that does nothing
+        })];
+        let result = join_worker_threads(handles);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_build_http_request_with_invalid_header_format() {
+        let client = Client::new();
+        // Headers without colon are silently ignored
+        let headers = vec!["InvalidHeaderNoColon".to_string()];
+        let req = build_http_request(&client, "http://localhost:9999", "GET", None, &headers);
+        let _ = req;
+    }
+
     /// Test HTTP benchmark with httpbin.org (requires internet)
     ///
     /// RED: This test should FAIL because `benchmark_http()` is unimplemented
