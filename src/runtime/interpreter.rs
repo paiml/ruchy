@@ -5,6 +5,9 @@
 //! - Tier 1: JIT compilation (future)
 //!
 //! Uses safe Rust enum approach instead of tagged pointers to respect `unsafe_code = "forbid"`.
+//!
+//! **EXTREME TDD Round 52**: Value enum extracted to runtime/value.rs
+//! **EXTREME TDD Round 52**: Types extracted to runtime/interpreter_types.rs
 
 #![allow(clippy::unused_self)] // Methods will use self in future phases
 #![allow(clippy::only_used_in_recursion)] // Recursive print_value is intentional
@@ -12,13 +15,16 @@
 #![allow(clippy::cast_precision_loss)] // Acceptable for arithmetic operations
 #![allow(clippy::expect_used)] // Used appropriately in tests
 #![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
-#![allow(unsafe_code)] // Required for CallFrame Send implementation - see DEFECT-001-B
 
 use super::eval_expr;
 use super::eval_func;
 use super::eval_literal;
 use super::eval_method;
 use super::eval_operations;
+// EXTREME TDD Round 52: Value types imported from dedicated module
+pub use super::value::{DataFrameColumn, Value};
+// EXTREME TDD Round 52: Interpreter types imported from dedicated module
+pub use super::interpreter_types::{CallFrame, InterpreterError, InterpreterResult};
 use crate::frontend::ast::{
     BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, MatchArm, Pattern,
     StringPart,
@@ -38,172 +44,8 @@ enum LoopControlOrError {
     Error(InterpreterError),
 }
 
-/// `DataFrame` column representation for the interpreter
-#[derive(Debug, Clone)]
-pub struct DataFrameColumn {
-    pub name: String,
-    pub values: Vec<Value>,
-}
-
-/// Runtime value representation using safe enum approach.
-///
-/// `Value` represents all runtime values in the Ruchy interpreter. This is an
-/// enum-based approach that avoids unsafe code while maintaining good performance
-/// through strategic use of `Rc` for heap-allocated data.
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::runtime::interpreter::Value;
-///
-/// let int_val = Value::from_i64(42);
-/// let str_val = Value::from_string("hello".to_string());
-/// let arr_val = Value::from_array(vec![int_val.clone(), str_val]);
-/// ```
-#[derive(Clone, Debug)]
-pub enum Value {
-    /// 64-bit signed integer
-    Integer(i64),
-    /// 64-bit float
-    Float(f64),
-    /// Boolean value
-    Bool(bool),
-    /// Byte value (0-255)
-    Byte(u8),
-    /// Nil/null value
-    Nil,
-    /// Atom value (interned identifier)
-    Atom(String),
-    /// String value (reference-counted for efficiency, thread-safe)
-    String(Arc<str>),
-    /// Array of values
-    Array(Arc<[Value]>),
-    /// Tuple of values
-    Tuple(Arc<[Value]>),
-    /// Function closure
-    /// RUNTIME-DEFAULT-PARAMS: Params now store (name, `default_value`) to support default parameters
-    Closure {
-        params: Vec<(String, Option<Arc<Expr>>)>, // (param_name, default_value)
-        body: Arc<Expr>,
-        env: Rc<RefCell<HashMap<String, Value>>>, // Shared mutable reference (ISSUE-119)
-    },
-    /// `DataFrame` value
-    DataFrame { columns: Vec<DataFrameColumn> },
-    /// Object/HashMap value for key-value mappings (immutable)
-    Object(Arc<HashMap<String, Value>>),
-    /// Mutable object with interior mutability (for actors and classes, thread-safe)
-    ObjectMut(Arc<std::sync::Mutex<HashMap<String, Value>>>),
-    /// Range value for representing ranges
-    Range {
-        start: Box<Value>,
-        end: Box<Value>,
-        inclusive: bool,
-    },
-    /// Enum variant value
-    EnumVariant {
-        enum_name: String,    // The enum type (e.g., "LogLevel")
-        variant_name: String, // The variant (e.g., "Debug", "Info")
-        data: Option<Vec<Value>>,
-    },
-    /// Built-in function reference
-    BuiltinFunction(String),
-    /// Struct instance (value type with named fields)
-    /// Thread-safe via Arc, value semantics via cloning
-    Struct {
-        name: String,
-        fields: Arc<HashMap<String, Value>>,
-    },
-    /// Class instance (reference type with methods)
-    /// Thread-safe via Arc, reference semantics, mutable via `RwLock`
-    /// Identity-based equality (pointer comparison)
-    Class {
-        class_name: String,
-        fields: Arc<std::sync::RwLock<HashMap<String, Value>>>,
-        methods: Arc<HashMap<String, Value>>, // method name -> Closure
-    },
-    /// HTML document (HTTP-002-C)
-    #[cfg(not(target_arch = "wasm32"))]
-    HtmlDocument(crate::stdlib::html::HtmlDocument),
-    /// HTML element (HTTP-002-C)
-    #[cfg(not(target_arch = "wasm32"))]
-    HtmlElement(crate::stdlib::html::HtmlElement),
-}
-
-// Manual PartialEq implementation because Mutex doesn't implement PartialEq
-// ObjectMut uses identity-based equality (Arc pointer comparison) since it represents mutable state
-impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => a == b,
-            (Value::Float(a), Value::Float(b)) => a == b,
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Atom(a), Value::Atom(b)) => a == b,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Array(a), Value::Array(b)) => a == b,
-            (Value::Tuple(a), Value::Tuple(b)) => a == b,
-            (Value::Object(a), Value::Object(b)) => Arc::ptr_eq(a, b) || **a == **b,
-            (Value::ObjectMut(a), Value::ObjectMut(b)) => Arc::ptr_eq(a, b), // Identity-based
-            (
-                Value::Struct {
-                    name: n1,
-                    fields: f1,
-                },
-                Value::Struct {
-                    name: n2,
-                    fields: f2,
-                },
-            ) => {
-                n1 == n2 && **f1 == **f2 // Value equality (compare fields)
-            }
-            (Value::Class { fields: f1, .. }, Value::Class { fields: f2, .. }) => {
-                Arc::ptr_eq(f1, f2) // Identity-based: same instance only
-            }
-            (Value::Nil, Value::Nil) => true,
-            (Value::Byte(a), Value::Byte(b)) => a == b,
-            #[cfg(not(target_arch = "wasm32"))]
-            (Value::HtmlDocument(_), Value::HtmlDocument(_)) => false, // Documents compared by identity
-            #[cfg(not(target_arch = "wasm32"))]
-            (Value::HtmlElement(_), Value::HtmlElement(_)) => false, // Elements compared by identity
-            _ => false, // Different variants are not equal
-        }
-    }
-}
-
-impl Value {
-    /// Get the type ID for this value for caching purposes
-    ///
-    /// # Complexity
-    /// Cyclomatic complexity: 10 (within Toyota Way limits, just barely)
-    pub fn type_id(&self) -> std::any::TypeId {
-        use std::any::TypeId;
-        match self {
-            Value::Integer(_) => TypeId::of::<i64>(),
-            Value::Float(_) => TypeId::of::<f64>(),
-            Value::Bool(_) => TypeId::of::<bool>(),
-            Value::Byte(_) => TypeId::of::<u8>(),
-            Value::String(_) => TypeId::of::<String>(),
-            Value::Atom(_) => TypeId::of::<crate::frontend::lexer::Token>(), // Use Token as proxy type ID
-            Value::Nil => TypeId::of::<()>(),
-            Value::Array(_) => TypeId::of::<Vec<Value>>(),
-            Value::Tuple(_) => TypeId::of::<(Value,)>(), // Generic tuple marker
-            Value::Closure { .. } => TypeId::of::<fn()>(), // Generic closure marker
-            Value::DataFrame { .. } => TypeId::of::<crate::runtime::DataFrameColumn>(),
-            Value::Object(_) => TypeId::of::<HashMap<String, Value>>(),
-            Value::ObjectMut(_) => TypeId::of::<HashMap<String, Value>>(),
-            Value::Range { .. } => TypeId::of::<std::ops::Range<i64>>(),
-            Value::EnumVariant { .. } => TypeId::of::<(String, Option<Vec<Value>>)>(),
-            Value::BuiltinFunction(_) => TypeId::of::<fn()>(),
-            Value::Struct { .. } => TypeId::of::<HashMap<String, Value>>(),
-            Value::Class { .. } => TypeId::of::<HashMap<String, Value>>(),
-            #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlDocument(_) => TypeId::of::<crate::stdlib::html::HtmlDocument>(),
-            #[cfg(not(target_arch = "wasm32"))]
-            Value::HtmlElement(_) => TypeId::of::<crate::stdlib::html::HtmlElement>(),
-        }
-    }
-}
-
-// Value utility methods moved to value_utils.rs
+// Value utility methods in value_utils.rs, type_id() in value.rs
+// Display implementations in eval_display.rs
 
 // Note: Complex object structures (ObjectHeader, Class, etc.) will be implemented
 // in Phase 1 of the interpreter spec when we add proper GC and method dispatch.
@@ -269,70 +111,6 @@ struct ErrorScope {
     /// Depth of environment stack when try block started
     env_depth: usize,
 }
-
-/// Call frame for function invocation (will be used in Phase 1)
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct CallFrame {
-    /// Function being executed
-    closure: Value,
-
-    /// Instruction pointer
-    ip: *const u8,
-
-    /// Base of stack frame
-    base: usize,
-
-    /// Number of locals in this frame
-    locals: usize,
-}
-
-// SAFETY: CallFrame can safely be Send because:
-// 1. The `ip` raw pointer points to immutable bytecode that never changes
-// 2. CallFrame has exclusive ownership of the data (no sharing)
-// 3. The pointer is never dereferenced across thread boundaries
-// 4. CallFrame is only used in single-threaded execution contexts within each thread
-// 5. When Repl is shared across threads, each thread gets its own CallFrame instance
-unsafe impl Send for CallFrame {}
-
-/// Interpreter execution result
-pub enum InterpreterResult {
-    Continue,
-    Jump(usize),
-    Return(Value),
-    Error(InterpreterError),
-}
-
-/// Errors that can occur during interpretation.
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::runtime::interpreter::InterpreterError;
-///
-/// let err = InterpreterError::TypeError("Expected integer".to_string());
-/// assert_eq!(err.to_string(), "Type error: Expected integer");
-/// ```
-#[derive(Debug, Clone)]
-pub enum InterpreterError {
-    TypeError(std::string::String),
-    RuntimeError(std::string::String),
-    StackOverflow,
-    StackUnderflow,
-    InvalidInstruction,
-    DivisionByZero,
-    IndexOutOfBounds,
-    Break(Option<String>, Value),
-    Continue(Option<String>),
-    Return(Value),
-    Throw(Value),                         // EXTREME TDD: Exception handling
-    AssertionFailed(std::string::String), // BUG-037: Test assertions
-    /// Recursion depth limit exceeded (`current_depth`, `max_depth`)
-    /// Added via [RUNTIME-001] fix for stack overflow crashes
-    RecursionLimitExceeded(usize, usize),
-}
-
-// Display implementations moved to eval_display.rs
 
 // Re-export JIT type feedback system from type_feedback module
 // EXTREME TDD: Eliminated 485 lines of duplicate code (massive entropy reduction)

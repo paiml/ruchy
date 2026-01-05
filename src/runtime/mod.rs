@@ -71,8 +71,10 @@ pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
+pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
 pub mod module_loader; // PARSER-060: Module resolution and import system
 pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
+pub mod value; // EXTREME TDD Round 52: Value type extracted from interpreter.rs
 pub mod value_utils;
 // Decomposed interpreter modules
 pub mod builtin_init; // EXTREME TDD: Builtin functions initialization
@@ -137,7 +139,11 @@ pub mod transaction;
 pub use repl::{Repl, ReplConfig};
 // pub use repl_legacy::{ReplConfig, ReplState as LegacyReplState}; // Temporarily disabled
 // Export interpreter components
-pub use interpreter::{DataFrameColumn, Interpreter, InterpreterError, InterpreterResult, Value};
+pub use interpreter::Interpreter;
+// Export interpreter types from dedicated module (EXTREME TDD Round 52)
+pub use interpreter_types::{CallFrame, InterpreterError, InterpreterResult};
+// Export Value types from dedicated module (EXTREME TDD Round 52)
+pub use value::{DataFrameColumn, Value};
 // Export actor system components
 pub use actor::{
     ActorBehavior, ActorContext, ActorId, ActorRef, ActorSystem, EchoActor, Message, MessageValue,
