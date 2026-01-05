@@ -89,4 +89,36 @@ mod tests {
     fn test_output_format_default() {
         assert_eq!(OutputFormat::default(), OutputFormat::Human);
     }
+
+    // === EXTREME TDD Round 20 tests ===
+
+    #[test]
+    fn test_output_format_debug() {
+        let format = OutputFormat::Json;
+        let debug_str = format!("{:?}", format);
+        assert_eq!(debug_str, "Json");
+    }
+
+    #[test]
+    fn test_output_format_clone() {
+        let format1 = OutputFormat::Sarif;
+        let format2 = format1;
+        assert_eq!(format1, format2);
+    }
+
+    #[test]
+    fn test_output_format_from_str_case_insensitive() {
+        assert_eq!(OutputFormat::from_str("JSON"), Some(OutputFormat::Json));
+        assert_eq!(OutputFormat::from_str("SARIF"), Some(OutputFormat::Sarif));
+        assert_eq!(OutputFormat::from_str("HUMAN"), Some(OutputFormat::Human));
+        assert_eq!(OutputFormat::from_str("MD"), Some(OutputFormat::Markdown));
+    }
+
+    #[test]
+    fn test_output_format_terminal_alias() {
+        assert_eq!(
+            OutputFormat::from_str("terminal"),
+            Some(OutputFormat::Human)
+        );
+    }
 }

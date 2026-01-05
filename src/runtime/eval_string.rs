@@ -457,4 +457,119 @@ mod tests {
             "substring with both conditions true should work"
         );
     }
+
+    // === EXTREME TDD Round 20 tests ===
+
+    #[test]
+    fn test_string_to_lower() {
+        let s = Arc::from("HELLO");
+        let result = eval_string_to_lower(&s).expect("operation should succeed");
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_string_trim() {
+        let s = Arc::from("  hello  ");
+        let result = eval_string_trim(&s).expect("operation should succeed");
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_string_trim_end() {
+        let s = Arc::from("  hello  ");
+        let result = eval_string_trim_end(&s).expect("operation should succeed");
+        assert_eq!(result, Value::from_string("  hello".to_string()));
+    }
+
+    #[test]
+    fn test_string_is_empty() {
+        let empty = Arc::from("");
+        let non_empty = Arc::from("hello");
+
+        assert_eq!(eval_string_is_empty(&empty).unwrap(), Value::Bool(true));
+        assert_eq!(eval_string_is_empty(&non_empty).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_chars() {
+        let s = Arc::from("abc");
+        let result = eval_string_chars(&s).expect("operation should succeed");
+        if let Value::Array(chars) = result {
+            assert_eq!(chars.len(), 3);
+            assert_eq!(chars[0], Value::from_string("a".to_string()));
+            assert_eq!(chars[1], Value::from_string("b".to_string()));
+            assert_eq!(chars[2], Value::from_string("c".to_string()));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_string_lines() {
+        let s = Arc::from("line1\nline2\nline3");
+        let result = eval_string_lines(&s).expect("operation should succeed");
+        if let Value::Array(lines) = result {
+            assert_eq!(lines.len(), 3);
+            assert_eq!(lines[0], Value::from_string("line1".to_string()));
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_string_starts_with() {
+        let s = Arc::from("hello world");
+        let prefix = Value::from_string("hello".to_string());
+        let result = eval_string_starts_with(&s, &prefix).unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let wrong_prefix = Value::from_string("world".to_string());
+        let result2 = eval_string_starts_with(&s, &wrong_prefix).unwrap();
+        assert_eq!(result2, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_ends_with() {
+        let s = Arc::from("hello world");
+        let suffix = Value::from_string("world".to_string());
+        let result = eval_string_ends_with(&s, &suffix).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_repeat() {
+        let s = Arc::from("ab");
+        let result = eval_string_repeat(&s, &Value::Integer(3)).unwrap();
+        assert_eq!(result, Value::from_string("ababab".to_string()));
+    }
+
+    #[test]
+    fn test_string_repeat_negative() {
+        let s = Arc::from("ab");
+        let result = eval_string_repeat(&s, &Value::Integer(-1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unknown_zero_arg_method() {
+        let s = Arc::from("hello");
+        let result = dispatch_zero_arg_string_method(&s, "unknown_method");
+        assert!(result.is_err());
+        let msg = format!("{}", result.unwrap_err());
+        assert!(msg.contains("Unknown"));
+    }
+
+    #[test]
+    fn test_unknown_single_arg_method() {
+        let s = Arc::from("hello");
+        let result = dispatch_single_arg_string_method(&s, "unknown", &Value::Integer(1));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unknown_two_arg_method() {
+        let s = Arc::from("hello");
+        let result = dispatch_two_arg_string_method(&s, "unknown", &Value::Integer(1), &Value::Integer(2));
+        assert!(result.is_err());
+    }
 }
