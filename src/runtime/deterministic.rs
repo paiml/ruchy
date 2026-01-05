@@ -243,6 +243,121 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    fn test_mock_time_new() {
+        let time = MockTime::new();
+        assert_eq!(time.now(), 0);
+    }
+
+    #[test]
+    fn test_mock_time_default() {
+        let time = MockTime::default();
+        assert_eq!(time.now(), 0);
+    }
+
+    #[test]
+    fn test_mock_time_advance() {
+        let mut time = MockTime::new();
+        time.advance(1000);
+        assert_eq!(time.now(), 1000);
+        time.advance(500);
+        assert_eq!(time.now(), 1500);
+    }
+
+    #[test]
+    fn test_deterministic_rng_new() {
+        let rng = DeterministicRng::new(42);
+        assert_eq!(rng.seed, 42);
+        assert_eq!(rng.state, 42);
+    }
+
+    #[test]
+    fn test_deterministic_rng_next() {
+        let mut rng = DeterministicRng::new(42);
+        let first = rng.next();
+        let second = rng.next();
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn test_deterministic_rng_reproducible() {
+        let mut rng1 = DeterministicRng::new(12345);
+        let mut rng2 = DeterministicRng::new(12345);
+        for _ in 0..10 {
+            assert_eq!(rng1.next(), rng2.next());
+        }
+    }
+
+    #[test]
+    fn test_deterministic_rng_different_seeds() {
+        let mut rng1 = DeterministicRng::new(1);
+        let mut rng2 = DeterministicRng::new(2);
+        assert_ne!(rng1.next(), rng2.next());
+    }
+
+    #[test]
+    fn test_mock_time_advance_zero() {
+        let mut time = MockTime::new();
+        time.advance(0);
+        assert_eq!(time.now(), 0);
+    }
+
+    #[test]
+    fn test_mock_time_advance_large() {
+        let mut time = MockTime::new();
+        time.advance(u64::MAX / 2);
+        assert_eq!(time.now(), u64::MAX / 2);
+    }
+
+    #[test]
+    fn test_deterministic_rng_many_values() {
+        let mut rng = DeterministicRng::new(999);
+        let mut values = Vec::new();
+        for _ in 0..100 {
+            values.push(rng.next());
+        }
+        // All values should be unique (with very high probability)
+        let unique: std::collections::HashSet<_> = values.iter().collect();
+        assert!(unique.len() > 90, "Should generate many unique values");
+    }
+
+    #[test]
+    fn test_mock_time_multiple_advances() {
+        let mut time = MockTime::new();
+        for i in 1..=10 {
+            time.advance(i);
+        }
+        // Sum of 1+2+...+10 = 55
+        assert_eq!(time.now(), 55);
+    }
+
+    #[test]
+    fn test_deterministic_rng_reset_multiple() {
+        let mut rng = DeterministicRng::new(42);
+        let first_run: Vec<_> = (0..5).map(|_| rng.next()).collect();
+        rng.reset();
+        let second_run: Vec<_> = (0..5).map(|_| rng.next()).collect();
+        rng.reset();
+        let third_run: Vec<_> = (0..5).map(|_| rng.next()).collect();
+        assert_eq!(first_run, second_run);
+        assert_eq!(second_run, third_run);
+    }
+
+    #[test]
+    fn test_deterministic_rng_zero_seed() {
+        let mut rng = DeterministicRng::new(0);
+        let val = rng.next();
+        assert_ne!(val, 0, "RNG should produce non-zero even with zero seed");
+    }
+
+    #[test]
+    fn test_mock_time_now_readonly() {
+        let time = MockTime::new();
+        let t1 = time.now();
+        let t2 = time.now();
+        assert_eq!(t1, t2, "now() should not change state");
+    }
+
+    #[test]
     fn test_deterministic_execution() {
         // Each test gets isolated temp directory for idempotence
         let temp_dir1 = TempDir::new().expect("TempDir::new should succeed in test");
