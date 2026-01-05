@@ -420,3 +420,193 @@ fn test_empty_immutable_object() {
     assert!(is_object(&immutable));
     assert_eq!(get_object_field(&immutable, "any"), None);
 }
+
+// === EXTREME TDD Round 27 - Coverage Push Tests ===
+
+#[test]
+fn test_is_mutable_object_all_value_types() {
+    use std::sync::Arc;
+
+    // Test against all major Value types
+    assert!(!is_mutable_object(&Value::Integer(1)));
+    assert!(!is_mutable_object(&Value::Float(1.0)));
+    assert!(!is_mutable_object(&Value::Bool(true)));
+    assert!(!is_mutable_object(&Value::Nil));
+    assert!(!is_mutable_object(&Value::from_string("test".to_string())));
+    assert!(!is_mutable_object(&Value::Array(Arc::from(vec![]))));
+    assert!(!is_mutable_object(&Value::Tuple(Arc::from(vec![]))));
+
+    // Only ObjectMut returns true
+    let mutable = new_mutable_object(HashMap::new());
+    assert!(is_mutable_object(&mutable));
+}
+
+#[test]
+fn test_is_object_all_value_types() {
+    use std::sync::Arc;
+
+    // Non-object types
+    assert!(!is_object(&Value::Integer(1)));
+    assert!(!is_object(&Value::Float(1.0)));
+    assert!(!is_object(&Value::Bool(true)));
+    assert!(!is_object(&Value::Nil));
+    assert!(!is_object(&Value::from_string("test".to_string())));
+    assert!(!is_object(&Value::Array(Arc::from(vec![]))));
+    assert!(!is_object(&Value::Tuple(Arc::from(vec![]))));
+
+    // Object types
+    let immutable = new_immutable_object(HashMap::new());
+    let mutable = new_mutable_object(HashMap::new());
+    assert!(is_object(&immutable));
+    assert!(is_object(&mutable));
+}
+
+#[test]
+fn test_get_object_field_multiple_fields() {
+    let mut map = HashMap::new();
+    map.insert("a".to_string(), Value::Integer(1));
+    map.insert("b".to_string(), Value::Integer(2));
+    map.insert("c".to_string(), Value::Integer(3));
+
+    let obj = new_immutable_object(map);
+
+    assert_eq!(get_object_field(&obj, "a"), Some(Value::Integer(1)));
+    assert_eq!(get_object_field(&obj, "b"), Some(Value::Integer(2)));
+    assert_eq!(get_object_field(&obj, "c"), Some(Value::Integer(3)));
+    assert_eq!(get_object_field(&obj, "d"), None);
+}
+
+#[test]
+fn test_get_object_field_nested_values() {
+    use std::sync::Arc;
+
+    let mut inner = HashMap::new();
+    inner.insert("inner_key".to_string(), Value::Integer(42));
+
+    let mut outer = HashMap::new();
+    outer.insert("nested".to_string(), Value::Object(Arc::new(inner)));
+
+    let obj = new_mutable_object(outer);
+
+    if let Some(Value::Object(nested_obj)) = get_object_field(&obj, "nested") {
+        assert_eq!(nested_obj.get("inner_key"), Some(&Value::Integer(42)));
+    } else {
+        panic!("Expected nested object");
+    }
+}
+
+#[test]
+fn test_set_object_field_overwrite_multiple() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Integer(0));
+
+    let mutable = new_mutable_object(map);
+
+    // Overwrite multiple times
+    for i in 1..=10 {
+        assert!(set_object_field(&mutable, "key", Value::Integer(i)).is_ok());
+        assert_eq!(get_object_field(&mutable, "key"), Some(Value::Integer(i)));
+    }
+}
+
+#[test]
+fn test_set_object_field_different_types() {
+    let mutable = new_mutable_object(HashMap::new());
+
+    // Set string value
+    assert!(set_object_field(&mutable, "str", Value::from_string("hello".to_string())).is_ok());
+
+    // Set bool value
+    assert!(set_object_field(&mutable, "bool", Value::Bool(true)).is_ok());
+
+    // Set nil value
+    assert!(set_object_field(&mutable, "nil", Value::Nil).is_ok());
+
+    // Verify all values
+    if let Some(Value::String(s)) = get_object_field(&mutable, "str") {
+        assert_eq!(s.as_ref(), "hello");
+    } else {
+        panic!("Expected string");
+    }
+    assert_eq!(get_object_field(&mutable, "bool"), Some(Value::Bool(true)));
+    assert_eq!(get_object_field(&mutable, "nil"), Some(Value::Nil));
+}
+
+#[test]
+fn test_to_mutable_preserves_all_fields() {
+    let mut map = HashMap::new();
+    map.insert("a".to_string(), Value::Integer(1));
+    map.insert("b".to_string(), Value::Integer(2));
+    map.insert("c".to_string(), Value::Integer(3));
+
+    let immutable = new_immutable_object(map);
+    let mutable = to_mutable(&immutable);
+
+    // All fields should be preserved
+    assert_eq!(get_object_field(&mutable, "a"), Some(Value::Integer(1)));
+    assert_eq!(get_object_field(&mutable, "b"), Some(Value::Integer(2)));
+    assert_eq!(get_object_field(&mutable, "c"), Some(Value::Integer(3)));
+}
+
+#[test]
+fn test_to_immutable_preserves_all_fields() {
+    let mut map = HashMap::new();
+    map.insert("x".to_string(), Value::Integer(10));
+    map.insert("y".to_string(), Value::Integer(20));
+
+    let mutable = new_mutable_object(map);
+    let immutable = to_immutable(&mutable);
+
+    // All fields should be preserved
+    assert_eq!(get_object_field(&immutable, "x"), Some(Value::Integer(10)));
+    assert_eq!(get_object_field(&immutable, "y"), Some(Value::Integer(20)));
+}
+
+#[test]
+fn test_to_mutable_creates_independent_copy() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Integer(1));
+
+    let immutable = new_immutable_object(map);
+    let mutable = to_mutable(&immutable);
+
+    // Modify the mutable copy
+    assert!(set_object_field(&mutable, "key", Value::Integer(100)).is_ok());
+
+    // Original immutable should be unchanged
+    assert_eq!(get_object_field(&immutable, "key"), Some(Value::Integer(1)));
+    assert_eq!(get_object_field(&mutable, "key"), Some(Value::Integer(100)));
+}
+
+#[test]
+fn test_to_immutable_creates_independent_copy() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Integer(1));
+
+    let mutable = new_mutable_object(map);
+    let immutable = to_immutable(&mutable);
+
+    // Modify the mutable original
+    assert!(set_object_field(&mutable, "key", Value::Integer(100)).is_ok());
+
+    // Immutable copy should be unchanged
+    assert_eq!(get_object_field(&immutable, "key"), Some(Value::Integer(1)));
+    assert_eq!(get_object_field(&mutable, "key"), Some(Value::Integer(100)));
+}
+
+#[test]
+fn test_special_field_names() {
+    let mutable = new_mutable_object(HashMap::new());
+
+    // Empty string field name
+    assert!(set_object_field(&mutable, "", Value::Integer(1)).is_ok());
+    assert_eq!(get_object_field(&mutable, ""), Some(Value::Integer(1)));
+
+    // Field name with spaces
+    assert!(set_object_field(&mutable, "field with spaces", Value::Integer(2)).is_ok());
+    assert_eq!(get_object_field(&mutable, "field with spaces"), Some(Value::Integer(2)));
+
+    // Field name with special characters
+    assert!(set_object_field(&mutable, "field_123", Value::Integer(3)).is_ok());
+    assert_eq!(get_object_field(&mutable, "field_123"), Some(Value::Integer(3)));
+}
