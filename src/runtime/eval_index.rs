@@ -486,4 +486,213 @@ mod tests {
     fn test_index_string_empty() {
         assert!(index_string("", 0).is_err());
     }
+
+    // === EXTREME TDD Round 23 - Coverage Push Tests ===
+
+    #[test]
+    fn test_index_array_boundary_negative() {
+        let arr = vec![Value::Integer(1), Value::Integer(2)];
+        // -2 should work (first element)
+        assert_eq!(index_array(&arr, -2).unwrap(), Value::Integer(1));
+        // -3 should fail (out of bounds)
+        assert!(index_array(&arr, -3).is_err());
+    }
+
+    #[test]
+    fn test_index_string_boundary_positive() {
+        // Test exact boundary
+        let result = index_string("ab", 1).unwrap();
+        assert_eq!(result.to_string(), "\"b\"");
+        // One past boundary should fail
+        assert!(index_string("ab", 2).is_err());
+    }
+
+    #[test]
+    fn test_slice_string_same_indices() {
+        let result = slice_string("hello", &Value::Integer(2), &Value::Integer(2), false).unwrap();
+        assert_eq!(result.to_string(), "\"\"");
+    }
+
+    #[test]
+    fn test_slice_string_negative_both() {
+        let result = slice_string("hello", &Value::Integer(-4), &Value::Integer(-1), false).unwrap();
+        assert_eq!(result.to_string(), "\"ell\"");
+    }
+
+    #[test]
+    fn test_index_tuple_string_element() {
+        let tuple = vec![Value::from_string("first".to_string()), Value::from_string("second".to_string())];
+        let result = index_tuple(&tuple, 1).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "second");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_object_multiple_keys() {
+        let mut obj = HashMap::new();
+        obj.insert("a".to_string(), Value::Integer(1));
+        obj.insert("b".to_string(), Value::Integer(2));
+        obj.insert("c".to_string(), Value::Integer(3));
+        assert_eq!(index_object(&obj, "a").unwrap(), Value::Integer(1));
+        assert_eq!(index_object(&obj, "b").unwrap(), Value::Integer(2));
+        assert_eq!(index_object(&obj, "c").unwrap(), Value::Integer(3));
+    }
+
+    #[test]
+    fn test_index_dataframe_row_second() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "x".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+        ];
+        let row = index_dataframe_row(&columns, 2).unwrap();
+        if let Value::Object(obj) = row {
+            assert_eq!(obj.get("x"), Some(&Value::Integer(3)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_index_dataframe_row_large_out_of_bounds() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        assert!(index_dataframe_row(&columns, 100).is_err());
+    }
+
+    #[test]
+    fn test_slice_string_unicode() {
+        let result = slice_string("日本語", &Value::Integer(0), &Value::Integer(2), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "日本");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_unicode_negative() {
+        let result = slice_string("日本語", &Value::Integer(-2), &Value::Nil, false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "本語");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_array_with_float_values() {
+        let arr = vec![Value::Float(1.5), Value::Float(2.5), Value::Float(3.5)];
+        assert_eq!(index_array(&arr, 1).unwrap(), Value::Float(2.5));
+        assert_eq!(index_array(&arr, -2).unwrap(), Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_index_array_with_string_values() {
+        let arr = vec![Value::from_string("a".to_string()), Value::from_string("b".to_string())];
+        let result = index_array(&arr, 0).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "a");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_tuple_empty() {
+        let tuple: Vec<Value> = vec![];
+        assert!(index_tuple(&tuple, 0).is_err());
+    }
+
+    #[test]
+    fn test_index_dataframe_column_multiple() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "col2".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+        ];
+        let col1 = index_dataframe_column(&columns, "col1").unwrap();
+        let col2 = index_dataframe_column(&columns, "col2").unwrap();
+        if let (Value::Array(arr1), Value::Array(arr2)) = (col1, col2) {
+            assert_eq!(arr1[0], Value::Integer(1));
+            assert_eq!(arr2[0], Value::Integer(2));
+        } else {
+            panic!("Expected Arrays");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_start_equals_len() {
+        // Start at exact length should give empty string
+        let result = slice_string("hi", &Value::Integer(2), &Value::Integer(2), false).unwrap();
+        assert_eq!(result.to_string(), "\"\"");
+    }
+
+    #[test]
+    fn test_index_object_nested_value() {
+        let mut inner = HashMap::new();
+        inner.insert("nested".to_string(), Value::Integer(42));
+        let mut obj = HashMap::new();
+        obj.insert("outer".to_string(), Value::Object(Arc::new(inner)));
+        let result = index_object(&obj, "outer").unwrap();
+        if let Value::Object(inner_obj) = result {
+            assert_eq!(inner_obj.get("nested"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_index_array_nested() {
+        let inner = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let arr = vec![inner.clone()];
+        let result = index_array(&arr, 0).unwrap();
+        if let Value::Array(inner_arr) = result {
+            assert_eq!(inner_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_single_char() {
+        let result = slice_string("x", &Value::Integer(0), &Value::Integer(1), false).unwrap();
+        assert_eq!(result.to_string(), "\"x\"");
+    }
+
+    #[test]
+    fn test_index_dataframe_row_multiple_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::from_string("x".to_string()), Value::from_string("y".to_string())],
+            },
+            DataFrameColumn {
+                name: "c".to_string(),
+                values: vec![Value::Bool(true), Value::Bool(false)],
+            },
+        ];
+        let row = index_dataframe_row(&columns, 1).unwrap();
+        if let Value::Object(obj) = row {
+            assert_eq!(obj.get("a"), Some(&Value::Integer(2)));
+            assert_eq!(obj.get("c"), Some(&Value::Bool(false)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
 }

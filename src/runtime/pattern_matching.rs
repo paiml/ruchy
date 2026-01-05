@@ -1395,4 +1395,208 @@ mod tests {
         }));
         assert!(!values_equal(&o1, &o2));
     }
+
+    // === EXTREME TDD Round 23 - Coverage Push Tests ===
+
+    #[test]
+    fn test_values_equal_integer_float_cross() {
+        // Integer and Float are different types
+        assert!(!values_equal(&Value::Integer(42), &Value::Float(42.0)));
+    }
+
+    #[test]
+    fn test_values_equal_empty_arrays() {
+        let arr1 = Value::Array(Arc::from(Vec::<Value>::new()));
+        let arr2 = Value::Array(Arc::from(Vec::<Value>::new()));
+        assert!(values_equal(&arr1, &arr2));
+    }
+
+    #[test]
+    fn test_values_equal_nested_arrays() {
+        let inner = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let arr1 = Value::Array(Arc::from(vec![inner.clone()]));
+        let arr2 = Value::Array(Arc::from(vec![inner]));
+        assert!(values_equal(&arr1, &arr2));
+    }
+
+    #[test]
+    fn test_values_equal_tuples_different_length() {
+        let t1 = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
+        let t2 = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(!values_equal(&t1, &t2));
+    }
+
+    #[test]
+    fn test_values_equal_empty_tuples() {
+        let t1 = Value::Tuple(Arc::from(Vec::<Value>::new()));
+        let t2 = Value::Tuple(Arc::from(Vec::<Value>::new()));
+        assert!(values_equal(&t1, &t2));
+    }
+
+    #[test]
+    fn test_match_literal_float_near_boundary() {
+        // Test float comparison at epsilon boundary
+        let tiny_diff = Value::Float(1.0 + f64::EPSILON * 0.4);
+        assert!(match_literal_pattern(&tiny_diff, &Literal::Float(1.0)));
+        let larger_diff = Value::Float(1.0 + 0.001);
+        assert!(!match_literal_pattern(&larger_diff, &Literal::Float(1.0)));
+    }
+
+    #[test]
+    fn test_values_equal_enum_different_variant_names() {
+        let v1 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(1)]),
+        };
+        let v2 = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        assert!(!values_equal(&v1, &v2));
+    }
+
+    #[test]
+    fn test_values_equal_range_different_inclusivity() {
+        let r1 = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: true,
+        };
+        let r2 = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        assert!(!values_equal(&r1, &r2));
+    }
+
+    #[test]
+    fn test_values_equal_range_different_start() {
+        let r1 = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: true,
+        };
+        let r2 = Value::Range {
+            start: Box::new(Value::Integer(2)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: true,
+        };
+        assert!(!values_equal(&r1, &r2));
+    }
+
+    #[test]
+    fn test_match_wildcard_with_nil() {
+        assert!(match_pattern(&Pattern::Wildcard, &Value::Nil).is_some());
+    }
+
+    #[test]
+    fn test_match_wildcard_with_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        assert!(match_pattern(&Pattern::Wildcard, &range).is_some());
+    }
+
+    #[test]
+    fn test_or_pattern_first_match() {
+        let or_pat = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let bindings = match_pattern(&or_pat, &Value::Integer(1));
+        assert!(bindings.is_some());
+        assert!(bindings.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_or_pattern_second_match() {
+        let or_pat = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let bindings = match_pattern(&or_pat, &Value::Integer(2));
+        assert!(bindings.is_some());
+    }
+
+    #[test]
+    fn test_struct_pattern_with_has_rest() {
+        let struct_value = Value::Object(Arc::new({
+            let mut map = HashMap::new();
+            map.insert("a".to_string(), Value::Integer(1));
+            map.insert("b".to_string(), Value::Integer(2));
+            map.insert("c".to_string(), Value::Integer(3));
+            map
+        }));
+
+        let struct_pattern = Pattern::Struct {
+            name: "Test".to_string(),
+            fields: vec![StructPatternField {
+                name: "a".to_string(),
+                pattern: Some(Pattern::Identifier("x".to_string())),
+            }],
+            has_rest: true, // Allow extra fields
+        };
+
+        let binding = match_pattern(&struct_pattern, &struct_value);
+        assert!(binding.is_some());
+    }
+
+    #[test]
+    fn test_tuple_variant_wrong_length() {
+        let variant_pattern = Pattern::TupleVariant {
+            path: vec!["Some".to_string()],
+            patterns: vec![Pattern::Identifier("a".to_string()), Pattern::Identifier("b".to_string())],
+        };
+        let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(42)])); // Only 1 element
+        assert!(match_pattern(&variant_pattern, &tuple_value).is_none());
+    }
+
+    #[test]
+    fn test_tuple_variant_match() {
+        let variant_pattern = Pattern::TupleVariant {
+            path: vec!["Pair".to_string()],
+            patterns: vec![Pattern::Identifier("a".to_string()), Pattern::Identifier("b".to_string())],
+        };
+        let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let binding = match_pattern(&variant_pattern, &tuple_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 2);
+    }
+
+    #[test]
+    fn test_values_equal_string_empty() {
+        let s1 = Value::from_string("".to_string());
+        let s2 = Value::from_string("".to_string());
+        assert!(values_equal(&s1, &s2));
+    }
+
+    #[test]
+    fn test_values_equal_string_whitespace() {
+        let s1 = Value::from_string(" ".to_string());
+        let s2 = Value::from_string("".to_string());
+        assert!(!values_equal(&s1, &s2));
+    }
+
+    #[test]
+    fn test_values_equal_negative_integer() {
+        // Test negative integer equality
+        assert!(values_equal(&Value::Integer(-42), &Value::Integer(-42)));
+        assert!(!values_equal(&Value::Integer(-42), &Value::Integer(-43)));
+    }
+
+    #[test]
+    fn test_match_identifier_with_tuple() {
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let binding = match_pattern(&Pattern::Identifier("x".to_string()), &tuple);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+    }
 }
