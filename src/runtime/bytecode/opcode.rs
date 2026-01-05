@@ -476,4 +476,133 @@ mod tests {
         assert!(OpCode::from_u8(0x3B).is_some()); // Last control (Match)
         assert!(OpCode::from_u8(0x3C).is_none()); // Past end
     }
+
+    #[test]
+    fn test_opcode_clone() {
+        let op = OpCode::Add;
+        let cloned = op.clone();
+        assert_eq!(op, cloned);
+    }
+
+    #[test]
+    fn test_opcode_copy() {
+        let op = OpCode::Sub;
+        let copied = op;
+        assert_eq!(op, copied);
+    }
+
+    #[test]
+    fn test_opcode_eq() {
+        assert_eq!(OpCode::Add, OpCode::Add);
+        assert_ne!(OpCode::Add, OpCode::Sub);
+    }
+
+    #[test]
+    fn test_opcode_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(OpCode::Add);
+        set.insert(OpCode::Sub);
+        assert!(set.contains(&OpCode::Add));
+        assert!(set.contains(&OpCode::Sub));
+        assert!(!set.contains(&OpCode::Mul));
+    }
+
+    #[test]
+    fn test_opcode_debug() {
+        let debug_str = format!("{:?}", OpCode::Add);
+        assert!(debug_str.contains("Add"));
+    }
+
+    #[test]
+    fn test_stack_operations_range() {
+        for i in 0x00..=0x0F {
+            assert!(OpCode::from_u8(i).is_some(), "Stack op 0x{:02X} should exist", i);
+        }
+    }
+
+    #[test]
+    fn test_arithmetic_operations_range() {
+        for i in 0x10..=0x1F {
+            assert!(OpCode::from_u8(i).is_some(), "Arithmetic op 0x{:02X} should exist", i);
+        }
+    }
+
+    #[test]
+    fn test_control_flow_operations_range() {
+        for i in 0x30..=0x3B {
+            assert!(OpCode::from_u8(i).is_some(), "Control flow op 0x{:02X} should exist", i);
+        }
+    }
+
+    #[test]
+    fn test_opcode_nop_is_zero() {
+        assert_eq!(OpCode::Nop.to_u8(), 0);
+    }
+
+    #[test]
+    fn test_opcode_category_stack() {
+        let stack_ops = [
+            OpCode::Nop, OpCode::Const, OpCode::LoadLocal, OpCode::StoreLocal,
+            OpCode::LoadGlobal, OpCode::StoreGlobal, OpCode::LoadField, OpCode::StoreField,
+            OpCode::LoadIndex, OpCode::StoreIndex, OpCode::LoadUpvalue, OpCode::StoreUpvalue,
+            OpCode::Move, OpCode::Pop, OpCode::Dup, OpCode::Swap,
+        ];
+        for op in stack_ops {
+            assert!(op.to_u8() <= 0x0F, "{:?} should be in stack range", op);
+        }
+    }
+
+    #[test]
+    fn test_opcode_category_arithmetic() {
+        let arith_ops = [
+            OpCode::Add, OpCode::Sub, OpCode::Mul, OpCode::Div, OpCode::Mod, OpCode::Neg,
+            OpCode::BitAnd, OpCode::BitOr, OpCode::BitXor, OpCode::BitNot,
+            OpCode::ShiftLeft, OpCode::ShiftRight,
+        ];
+        for op in arith_ops {
+            let val = op.to_u8();
+            assert!(val >= 0x10 && val <= 0x1F, "{:?} should be in arithmetic range", op);
+        }
+    }
+
+    #[test]
+    fn test_opcode_category_comparison() {
+        let cmp_ops = [
+            OpCode::Equal, OpCode::NotEqual, OpCode::Greater, OpCode::GreaterEqual,
+            OpCode::Less, OpCode::LessEqual, OpCode::Not, OpCode::And, OpCode::Or,
+        ];
+        for op in cmp_ops {
+            let val = op.to_u8();
+            assert!(val >= 0x20 && val <= 0x2F, "{:?} should be in comparison range", op);
+        }
+    }
+
+    #[test]
+    fn test_opcode_category_control() {
+        let ctrl_ops = [
+            OpCode::Jump, OpCode::JumpIfTrue, OpCode::JumpIfFalse, OpCode::Call,
+            OpCode::TailCall, OpCode::Return, OpCode::Throw, OpCode::EnterTry,
+            OpCode::ExitTry, OpCode::For, OpCode::MethodCall, OpCode::Match,
+        ];
+        for op in ctrl_ops {
+            let val = op.to_u8();
+            assert!(val >= 0x30 && val <= 0x3F, "{:?} should be in control range", op);
+        }
+    }
+
+    #[test]
+    fn test_all_opcodes_count() {
+        assert_eq!(ALL_OPCODES.len(), 58);
+    }
+
+    #[test]
+    fn test_opcode_unique_values() {
+        use std::collections::HashSet;
+        let mut values = HashSet::new();
+        for op in ALL_OPCODES {
+            let val = op.to_u8();
+            assert!(values.insert(val), "Duplicate opcode value 0x{:02X}", val);
+        }
+    }
 }
