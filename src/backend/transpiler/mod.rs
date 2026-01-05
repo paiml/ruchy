@@ -66,6 +66,7 @@ mod system_builtins; // EXTREME TDD Round 61: env/fs/path functions
 mod network_builtins; // EXTREME TDD Round 62: json/http functions
 mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
 mod print_helpers; // EXTREME TDD Round 64: print/println/dbg/panic macros
+mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collection methods
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
