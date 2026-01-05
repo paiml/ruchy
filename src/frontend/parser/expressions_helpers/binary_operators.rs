@@ -571,6 +571,204 @@ mod tests {
         );
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    // ===== Parenthesized expressions =====
+
+    #[test]
+    fn test_parenthesized_add() {
+        let result = parse("(1 + 2)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parenthesized_override_precedence() {
+        let result = parse("(1 + 2) * 3");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_nested_parentheses() {
+        let result = parse("((1 + 2) * (3 + 4))");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_deeply_nested_parentheses() {
+        let result = parse("(((a + b)))");
+        assert!(result.is_ok());
+    }
+
+    // ===== Chained operations =====
+
+    #[test]
+    fn test_chained_add() {
+        let result = parse("1 + 2 + 3 + 4 + 5");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_chained_multiply() {
+        let result = parse("1 * 2 * 3 * 4 * 5");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_chained_and() {
+        let result = parse("a && b && c && d");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_chained_or() {
+        let result = parse("a || b || c || d");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_chained_bitwise() {
+        let result = parse("a & b & c & d");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex mixed expressions =====
+
+    #[test]
+    fn test_arithmetic_in_comparison() {
+        let result = parse("a + b > c - d");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_comparison_in_logical() {
+        let result = parse("a > 0 && b < 10");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_all_arithmetic_ops() {
+        let result = parse("a + b - c * d / e % f ** g");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_all_comparison_ops() {
+        let result = parse("(a == b) && (c != d) && (e < f) && (g > h)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_all_logical_ops() {
+        let result = parse("(a && b) || (c ?? d)");
+        assert!(result.is_ok());
+    }
+
+    // ===== Variable operands =====
+
+    #[test]
+    fn test_single_char_variables() {
+        let result = parse("a + b");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_long_variable_names() {
+        let result = parse("very_long_name + another_long_name");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_variables_with_numbers() {
+        let result = parse("x1 + y2 * z3");
+        assert!(result.is_ok());
+    }
+
+    // ===== Literal operands =====
+
+    #[test]
+    fn test_integer_literals() {
+        let result = parse("42 + 100");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_float_literals() {
+        let result = parse("3.14 * 2.0");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mixed_literals() {
+        let result = parse("42 + 3.14");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_negative_literals() {
+        let result = parse("-5 + -3");
+        assert!(result.is_ok());
+    }
+
+    // ===== Expressions with function calls =====
+
+    #[test]
+    fn test_function_call_operand() {
+        let result = parse("foo() + bar()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_method_call_operand() {
+        let result = parse("a.len() + b.len()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_nested_function_calls() {
+        let result = parse("max(a, b) + min(c, d)");
+        assert!(result.is_ok());
+    }
+
+    // ===== Additional token mapping tests =====
+
+    #[test]
+    fn test_all_arithmetic_token_mapping() {
+        assert!(token_to_binary_op(&Token::Plus).is_some());
+        assert!(token_to_binary_op(&Token::Minus).is_some());
+        assert!(token_to_binary_op(&Token::Star).is_some());
+        assert!(token_to_binary_op(&Token::Slash).is_some());
+        assert!(token_to_binary_op(&Token::Percent).is_some());
+        assert!(token_to_binary_op(&Token::Power).is_some());
+    }
+
+    #[test]
+    fn test_all_comparison_token_mapping() {
+        assert!(token_to_binary_op(&Token::EqualEqual).is_some());
+        assert!(token_to_binary_op(&Token::NotEqual).is_some());
+        assert!(token_to_binary_op(&Token::Less).is_some());
+        assert!(token_to_binary_op(&Token::LessEqual).is_some());
+        assert!(token_to_binary_op(&Token::Greater).is_some());
+        assert!(token_to_binary_op(&Token::GreaterEqual).is_some());
+    }
+
+    #[test]
+    fn test_all_logical_token_mapping() {
+        assert!(token_to_binary_op(&Token::AndAnd).is_some());
+        assert!(token_to_binary_op(&Token::OrOr).is_some());
+        assert!(token_to_binary_op(&Token::NullCoalesce).is_some());
+    }
+
+    #[test]
+    fn test_all_bitwise_token_mapping() {
+        assert!(token_to_binary_op(&Token::Ampersand).is_some());
+        assert!(token_to_binary_op(&Token::Pipe).is_some());
+        assert!(token_to_binary_op(&Token::Caret).is_some());
+        assert!(token_to_binary_op(&Token::LeftShift).is_some());
+        assert!(token_to_binary_op(&Token::RightShift).is_some());
+    }
+
     // Property tests for binary operators
     #[cfg(test)]
     mod property_tests {

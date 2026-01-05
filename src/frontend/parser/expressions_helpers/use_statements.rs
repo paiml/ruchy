@@ -825,6 +825,187 @@ mod tests {
         assert!(result.is_ok(), "Use with struct should parse");
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    // ===== Module path captured =====
+
+    #[test]
+    fn test_use_module_captured() {
+        let expr = parse("use std::io").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Import { module, .. } = &exprs[0].kind {
+                assert_eq!(module, "std::io");
+            }
+        }
+    }
+
+    #[test]
+    fn test_use_wildcard_module_captured() {
+        let expr = parse("use std::*").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::ImportAll { module, .. } = &exprs[0].kind {
+                assert_eq!(module, "std");
+            }
+        }
+    }
+
+    #[test]
+    fn test_use_alias_captured() {
+        let expr = parse("use std::io as myio").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::ImportAll { alias, .. } = &exprs[0].kind {
+                assert_eq!(alias, "myio");
+            }
+        }
+    }
+
+    // ===== Single char names =====
+
+    #[test]
+    fn test_use_single_char_module() {
+        let result = parse("use a");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_use_single_char_item() {
+        let result = parse("use mod::x");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_use_single_char_path() {
+        let result = parse("use a::b::c");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex paths =====
+
+    #[test]
+    fn test_use_seven_segments() {
+        let result = parse("use a::b::c::d::e::f::g");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_use_eight_segments() {
+        let result = parse("use a::b::c::d::e::f::g::h");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_use_mixed_case_path() {
+        let result = parse("use MyMod::sub_mod::Item");
+        assert!(result.is_ok());
+    }
+
+    // ===== Group items verification =====
+
+    #[test]
+    fn test_use_group_items_captured() {
+        let expr = parse("use std::{io, fs}").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Import { items, .. } = &exprs[0].kind {
+                assert!(items.is_some());
+                let items = items.as_ref().unwrap();
+                assert_eq!(items.len(), 2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_use_group_three_items_captured() {
+        let expr = parse("use std::{a, b, c}").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Import { items, .. } = &exprs[0].kind {
+                let items = items.as_ref().unwrap();
+                assert_eq!(items.len(), 3);
+            }
+        }
+    }
+
+    // ===== Crate variations =====
+
+    #[test]
+    fn test_crate_wildcard() {
+        let result = parse("use crate::*");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_crate_group() {
+        let result = parse("use crate::{a, b}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_crate_deep_path() {
+        let result = parse("use crate::mod1::mod2::mod3::item");
+        assert!(result.is_ok());
+    }
+
+    // ===== Self variations =====
+
+    #[test]
+    fn test_self_wildcard() {
+        let result = parse("use self::*");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_self_group() {
+        let result = parse("use self::{a, b}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_self_deep_path() {
+        let result = parse("use self::sub::deeper::item");
+        assert!(result.is_ok());
+    }
+
+    // ===== Super variations =====
+
+    #[test]
+    fn test_super_wildcard() {
+        let result = parse("use super::*");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_super_group() {
+        let result = parse("use super::{a, b}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_super_three_levels() {
+        let result = parse("use super::super::super::item");
+        assert!(result.is_ok());
+    }
+
+    // ===== Alias edge cases =====
+
+    #[test]
+    fn test_alias_single_char() {
+        let result = parse("use mod::Item as I");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_alias_all_caps() {
+        let result = parse("use mod::Item as ITEM");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_alias_with_underscore() {
+        let result = parse("use mod::Item as my_item");
+        assert!(result.is_ok());
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
