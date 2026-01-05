@@ -60,6 +60,7 @@ mod imports; // EXTREME TDD Round 55: imports and exports
 mod math_builtins; // EXTREME TDD Round 56: math built-in functions
 mod input_builtins; // EXTREME TDD Round 57: input/readline functions
 mod type_conversions; // EXTREME TDD Round 58: str/int/float/bool conversions
+mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
