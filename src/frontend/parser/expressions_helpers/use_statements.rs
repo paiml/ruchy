@@ -573,6 +573,258 @@ mod tests {
         assert!(result.is_ok(), "Use at start should parse");
     }
 
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::{Expr, ExprKind};
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Import ExprKind verification
+    // ============================================================
+
+    #[test]
+    fn test_use_produces_import_exprkind() {
+        let expr = parse("use std::io").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Import { .. }),
+                "Should produce Import ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_use_wildcard_produces_import_all() {
+        let expr = parse("use std::*").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::ImportAll { .. }),
+                "Wildcard should produce ImportAll"
+            );
+        }
+    }
+
+    // ============================================================
+    // Path depth variations
+    // ============================================================
+
+    #[test]
+    fn test_use_one_segment() {
+        let result = parse("use foo");
+        assert!(result.is_ok(), "One segment should parse");
+    }
+
+    #[test]
+    fn test_use_two_segments() {
+        let result = parse("use foo::bar");
+        assert!(result.is_ok(), "Two segments should parse");
+    }
+
+    #[test]
+    fn test_use_three_segments() {
+        let result = parse("use foo::bar::baz");
+        assert!(result.is_ok(), "Three segments should parse");
+    }
+
+    #[test]
+    fn test_use_five_segments() {
+        let result = parse("use a::b::c::d::e");
+        assert!(result.is_ok(), "Five segments should parse");
+    }
+
+    #[test]
+    fn test_use_six_segments() {
+        let result = parse("use a::b::c::d::e::f");
+        assert!(result.is_ok(), "Six segments should parse");
+    }
+
+    // ============================================================
+    // Wildcard variations
+    // ============================================================
+
+    #[test]
+    fn test_wildcard_two_segments() {
+        let result = parse("use foo::*");
+        assert!(result.is_ok(), "Two segment wildcard should parse");
+    }
+
+    #[test]
+    fn test_wildcard_three_segments() {
+        let result = parse("use foo::bar::*");
+        assert!(result.is_ok(), "Three segment wildcard should parse");
+    }
+
+    #[test]
+    fn test_wildcard_std_collections() {
+        let result = parse("use std::collections::*");
+        assert!(result.is_ok(), "Std collections wildcard should parse");
+    }
+
+    // ============================================================
+    // Alias variations
+    // ============================================================
+
+    #[test]
+    fn test_alias_short() {
+        let result = parse("use std::collections::HashMap as M");
+        assert!(result.is_ok(), "Short alias should parse");
+    }
+
+    #[test]
+    fn test_alias_long() {
+        let result = parse("use std::collections::HashMap as MyHashMapType");
+        assert!(result.is_ok(), "Long alias should parse");
+    }
+
+    #[test]
+    fn test_alias_snake_case() {
+        let result = parse("use std::collections::HashMap as my_map");
+        assert!(result.is_ok(), "Snake case alias should parse");
+    }
+
+    #[test]
+    fn test_alias_with_numbers() {
+        let result = parse("use module::Item as Item2");
+        assert!(result.is_ok(), "Alias with numbers should parse");
+    }
+
+    // ============================================================
+    // Group variations
+    // ============================================================
+
+    #[test]
+    fn test_group_two_items() {
+        let result = parse("use std::{io, fs}");
+        assert!(result.is_ok(), "Two item group should parse");
+    }
+
+    #[test]
+    fn test_group_four_items() {
+        let result = parse("use std::{a, b, c, d}");
+        assert!(result.is_ok(), "Four item group should parse");
+    }
+
+    #[test]
+    fn test_group_five_items() {
+        let result = parse("use std::{a, b, c, d, e}");
+        assert!(result.is_ok(), "Five item group should parse");
+    }
+
+    #[test]
+    fn test_group_from_collections() {
+        let result = parse("use std::collections::{HashMap, BTreeMap, HashSet}");
+        assert!(result.is_ok(), "Collections group should parse");
+    }
+
+    #[test]
+    fn test_group_from_io() {
+        let result = parse("use std::io::{Read, Write, Seek}");
+        assert!(result.is_ok(), "IO group should parse");
+    }
+
+    // ============================================================
+    // Crate/self/super paths
+    // ============================================================
+
+    #[test]
+    fn test_crate_path() {
+        let result = parse("use crate::module");
+        assert!(result.is_ok(), "Crate path should parse");
+    }
+
+    #[test]
+    fn test_crate_nested() {
+        let result = parse("use crate::a::b::c");
+        assert!(result.is_ok(), "Crate nested should parse");
+    }
+
+    #[test]
+    fn test_self_path() {
+        let result = parse("use self::module");
+        assert!(result.is_ok(), "Self path should parse");
+    }
+
+    #[test]
+    fn test_super_path() {
+        let result = parse("use super::item");
+        assert!(result.is_ok(), "Super path should parse");
+    }
+
+    #[test]
+    fn test_super_super() {
+        let result = parse("use super::super::item");
+        assert!(result.is_ok(), "Super super should parse");
+    }
+
+    // ============================================================
+    // Identifier variations
+    // ============================================================
+
+    #[test]
+    fn test_use_underscore_prefix() {
+        let result = parse("use _internal::item");
+        assert!(result.is_ok(), "Underscore prefix should parse");
+    }
+
+    #[test]
+    fn test_use_underscore_suffix() {
+        let result = parse("use module_::item");
+        assert!(result.is_ok(), "Underscore suffix should parse");
+    }
+
+    #[test]
+    fn test_use_numbers_in_name() {
+        let result = parse("use v2::api::item");
+        assert!(result.is_ok(), "Numbers in name should parse");
+    }
+
+    #[test]
+    fn test_use_long_module_name() {
+        let result = parse("use very_long_module_name::item");
+        assert!(result.is_ok(), "Long module name should parse");
+    }
+
+    // ============================================================
+    // Multiple use statements
+    // ============================================================
+
+    #[test]
+    fn test_two_use_statements() {
+        let result = parse("use a\nuse b");
+        assert!(result.is_ok(), "Two use statements should parse");
+    }
+
+    #[test]
+    fn test_three_use_statements() {
+        let result = parse("use a\nuse b\nuse c");
+        assert!(result.is_ok(), "Three use statements should parse");
+    }
+
+    #[test]
+    fn test_use_with_function() {
+        let result = parse("use std::io\nfun main() { }");
+        assert!(result.is_ok(), "Use with function should parse");
+    }
+
+    #[test]
+    fn test_use_with_struct() {
+        let result = parse("use std::io\nstruct Foo { }");
+        assert!(result.is_ok(), "Use with struct should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
