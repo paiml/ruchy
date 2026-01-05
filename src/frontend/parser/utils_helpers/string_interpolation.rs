@@ -592,4 +592,126 @@ mod tests {
         let result = parse_interpolated_expr("@#$%^&invalid");
         assert!(matches!(result, StringPart::Text(_)));
     }
+
+    // ============================================================
+    // Additional EXTREME TDD tests
+    // ============================================================
+
+    #[test]
+    fn test_parse_interpolation_at_start() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{name} says hello");
+        assert!(parts.len() >= 2);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_interpolation_at_end() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Hello {name}");
+        assert!(parts.len() >= 2);
+    }
+
+    #[test]
+    fn test_parse_adjacent_interpolations() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{a}{b}");
+        assert_eq!(parts.len(), 2);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+        assert!(matches!(&parts[1], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_whitespace_only() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "   ");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "   "));
+    }
+
+    #[test]
+    fn test_parse_newlines_in_text() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "line1\nline2");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s.contains('\n')));
+    }
+
+    #[test]
+    fn test_parse_format_spec_width() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{x:10}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::ExprWithFormat { .. }));
+    }
+
+    #[test]
+    fn test_parse_format_spec_precision() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{pi:.2}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::ExprWithFormat { .. }));
+    }
+
+    #[test]
+    fn test_parse_complex_expr_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{1 + 2}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_function_call_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{foo(x)}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_parse_method_call_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{obj.method()}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
+    }
+
+    #[test]
+    fn test_double_escaped_open_brace() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{{");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "{"));
+    }
+
+    #[test]
+    fn test_double_escaped_close_brace() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "}}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Text(s) if s == "}"));
+    }
+
+    #[test]
+    fn test_mixed_escaped_and_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{{{x}}}");
+        // Should be: "{", expr, "}"
+        assert!(parts.len() >= 2);
+    }
+
+    #[test]
+    fn test_unicode_in_text() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "Hello 世界 {name}");
+        assert!(parts.len() >= 2);
+    }
+
+    #[test]
+    fn test_unicode_in_interpolation_text() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{greeting} 你好");
+        assert!(parts.len() >= 2);
+    }
 }
