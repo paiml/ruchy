@@ -235,6 +235,77 @@ mod tests {
             prop_assert_eq!(pid, process::id());
         });
     }
+
+    // === EXTREME TDD Round 15 tests ===
+
+    #[test]
+    fn test_pid_file_create() {
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
+        let pid_path = temp_dir.path().join("create_test.pid");
+
+        let _pid_file = PidFile::create(&pid_path).expect("operation should succeed in test");
+
+        assert!(pid_path.exists(), "PID file should be created via create()");
+        let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
+        assert_eq!(contents, process::id().to_string());
+    }
+
+    #[test]
+    fn test_pid_file_with_invalid_pid_content() {
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
+        let pid_path = temp_dir.path().join("invalid.pid");
+
+        // Write invalid PID content
+        fs::write(&pid_path, "not_a_number").expect("operation should succeed in test");
+
+        // Should handle gracefully and replace with valid PID
+        let _pid_file = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
+
+        let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
+        assert_eq!(
+            contents,
+            process::id().to_string(),
+            "Invalid PID should be replaced"
+        );
+    }
+
+    #[test]
+    fn test_pid_file_multiple_creates() {
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
+        let pid_path = temp_dir.path().join("multi.pid");
+
+        {
+            let _pid1 = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
+            assert!(pid_path.exists());
+        }
+
+        // After drop, should be able to create again
+        {
+            let _pid2 = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
+            assert!(pid_path.exists());
+        }
+
+        // After second drop
+        assert!(!pid_path.exists(), "PID file should be cleaned up");
+    }
+
+    #[test]
+    fn test_pid_file_empty_file() {
+        let temp_dir = tempfile::tempdir().expect("operation should succeed in test");
+        let pid_path = temp_dir.path().join("empty.pid");
+
+        // Create empty PID file
+        fs::write(&pid_path, "").expect("operation should succeed in test");
+
+        let _pid_file = PidFile::new(pid_path.clone()).expect("operation should succeed in test");
+
+        let contents = fs::read_to_string(&pid_path).expect("operation should succeed in test");
+        assert_eq!(
+            contents,
+            process::id().to_string(),
+            "Empty PID file should be replaced"
+        );
+    }
 }
 
 pub mod watcher;
