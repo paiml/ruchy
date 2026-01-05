@@ -347,3 +347,76 @@ fn test_to_immutable_object_match_arm() {
         panic!("Should return Object variant");
     }
 }
+
+// === EXTREME TDD Round 20 tests ===
+
+#[test]
+fn test_to_immutable_idempotent() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Integer(42));
+
+    let immutable1 = new_immutable_object(map);
+    let immutable2 = to_immutable(&immutable1);
+
+    // Converting already immutable object should return clone
+    assert!(!is_mutable_object(&immutable2));
+    assert_eq!(get_object_field(&immutable2, "key"), Some(Value::Integer(42)));
+}
+
+#[test]
+fn test_to_mutable_non_object() {
+    let int_val = Value::Integer(42);
+    let result = to_mutable(&int_val);
+
+    // Non-object values should be cloned as-is
+    assert_eq!(result, Value::Integer(42));
+}
+
+#[test]
+fn test_to_immutable_non_object() {
+    let float_val = Value::Float(3.14);
+    let result = to_immutable(&float_val);
+
+    // Non-object values should be cloned as-is
+    assert_eq!(result, Value::Float(3.14));
+}
+
+#[test]
+fn test_set_object_field_immutable_error_message() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Integer(42));
+    let immutable = new_immutable_object(map);
+
+    let err = set_object_field(&immutable, "field", Value::Integer(1)).unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("immutable"));
+    assert!(msg.contains("field"));
+}
+
+#[test]
+fn test_set_object_field_non_object_error_message() {
+    let int_val = Value::Integer(42);
+
+    let err = set_object_field(&int_val, "foo", Value::Integer(1)).unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("non-object"));
+    assert!(msg.contains("foo"));
+}
+
+#[test]
+fn test_empty_mutable_object() {
+    let mutable = new_mutable_object(HashMap::new());
+
+    assert!(is_mutable_object(&mutable));
+    assert!(is_object(&mutable));
+    assert_eq!(get_object_field(&mutable, "any"), None);
+}
+
+#[test]
+fn test_empty_immutable_object() {
+    let immutable = new_immutable_object(HashMap::new());
+
+    assert!(!is_mutable_object(&immutable));
+    assert!(is_object(&immutable));
+    assert_eq!(get_object_field(&immutable, "any"), None);
+}
