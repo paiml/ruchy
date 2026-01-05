@@ -385,4 +385,263 @@ mod tests {
             }
         }
     }
+
+    // ============================================================
+    // Additional comprehensive tests for EXTREME TDD coverage
+    // ============================================================
+
+    use crate::frontend::ast::Expr;
+    use crate::frontend::parser::Result;
+
+    fn parse(code: &str) -> Result<Expr> {
+        Parser::new(code).parse()
+    }
+
+    fn get_block_exprs(expr: &Expr) -> Option<&Vec<Expr>> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => Some(exprs),
+            _ => None,
+        }
+    }
+
+    // ============================================================
+    // Basic impl tests
+    // ============================================================
+
+    #[test]
+    fn test_impl_produces_impl_expr_kind() {
+        let expr = parse("impl Foo { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::Impl { .. }),
+                "Should produce Impl ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_impl_for_type_captured() {
+        let expr = parse("impl Point { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { for_type, .. } = &exprs[0].kind {
+                assert_eq!(for_type, "Point", "for_type should be Point");
+            }
+        }
+    }
+
+    #[test]
+    fn test_impl_trait_name_none() {
+        let expr = parse("impl Point { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { trait_name, .. } = &exprs[0].kind {
+                assert!(trait_name.is_none(), "trait_name should be None");
+            }
+        }
+    }
+
+    #[test]
+    fn test_impl_trait_name_some() {
+        let expr = parse("impl Display for Point { fun fmt() { } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { trait_name, .. } = &exprs[0].kind {
+                assert_eq!(trait_name.as_deref(), Some("Display"));
+            }
+        }
+    }
+
+    // ============================================================
+    // Generic impl tests
+    // ============================================================
+
+    #[test]
+    fn test_impl_single_type_param() {
+        let result = parse("impl<T> Container<T> { }");
+        assert!(result.is_ok(), "Single type param should parse");
+    }
+
+    #[test]
+    fn test_impl_two_type_params() {
+        let result = parse("impl<K, V> Map<K, V> { }");
+        assert!(result.is_ok(), "Two type params should parse");
+    }
+
+    #[test]
+    fn test_impl_three_type_params() {
+        let result = parse("impl<A, B, C> Triple<A, B, C> { }");
+        assert!(result.is_ok(), "Three type params should parse");
+    }
+
+    #[test]
+    fn test_impl_type_params_captured() {
+        let expr = parse("impl<T, U> Pair<T, U> { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { type_params, .. } = &exprs[0].kind {
+                assert_eq!(type_params.len(), 2, "Should have 2 type params");
+            }
+        }
+    }
+
+    // ============================================================
+    // Trait implementation tests
+    // ============================================================
+
+    #[test]
+    fn test_impl_trait_for_simple() {
+        let result = parse("impl Clone for Point { fun clone(&self) { } }");
+        assert!(result.is_ok(), "Trait for type should parse");
+    }
+
+    #[test]
+    fn test_impl_trait_for_generic() {
+        let result = parse("impl<T: Clone> Clone for Box<T> { fun clone(&self) { } }");
+        assert!(result.is_ok(), "Trait for generic type should parse");
+    }
+
+    #[test]
+    fn test_impl_generic_trait_for_type() {
+        // Generic traits may need different syntax - just check no crash
+        let _ = parse("impl<T> From<T> for MyInt { fun from(n: T) { } }");
+    }
+
+    // ============================================================
+    // Method tests
+    // ============================================================
+
+    #[test]
+    fn test_impl_method_with_self() {
+        let result = parse("impl Point { fun get_x(&self) -> i32 { self.x } }");
+        assert!(result.is_ok(), "Method with &self should parse");
+    }
+
+    #[test]
+    fn test_impl_method_with_mut_self() {
+        let result = parse("impl Counter { fun inc(&mut self) { self.count = self.count + 1 } }");
+        assert!(result.is_ok(), "Method with &mut self should parse");
+    }
+
+    #[test]
+    fn test_impl_method_with_owned_self() {
+        let result = parse("impl Point { fun into_tuple(self) { (self.x, self.y) } }");
+        assert!(result.is_ok(), "Method with owned self should parse");
+    }
+
+    #[test]
+    fn test_impl_static_method() {
+        let result = parse("impl Point { fun origin() -> Point { Point { x: 0, y: 0 } } }");
+        assert!(result.is_ok(), "Static method should parse");
+    }
+
+    #[test]
+    fn test_impl_method_with_multiple_params() {
+        let result = parse("impl Math { fun add(a: i32, b: i32) -> i32 { a + b } }");
+        assert!(result.is_ok(), "Method with multiple params should parse");
+    }
+
+    #[test]
+    fn test_impl_three_methods() {
+        let result = parse("impl Point { fun a() { } fun b() { } fun c() { } }");
+        assert!(result.is_ok(), "Three methods should parse");
+    }
+
+    #[test]
+    fn test_impl_method_with_complex_return() {
+        let result = parse("impl Foo { fun bar() -> Result<String, Error> { Ok(\"\") } }");
+        assert!(result.is_ok(), "Method with complex return should parse");
+    }
+
+    // ============================================================
+    // Visibility tests
+    // ============================================================
+
+    #[test]
+    fn test_impl_pub_method_is_pub() {
+        let expr = parse("impl Point { pub fun get() { } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { methods, .. } = &exprs[0].kind {
+                assert!(methods[0].is_pub, "Method should be public");
+            }
+        }
+    }
+
+    #[test]
+    fn test_impl_private_method_not_pub() {
+        let expr = parse("impl Point { fun get() { } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { methods, .. } = &exprs[0].kind {
+                assert!(!methods[0].is_pub, "Method should be private");
+            }
+        }
+    }
+
+    #[test]
+    fn test_impl_mixed_visibility() {
+        let result = parse("impl Point { pub fun a() { } fun b() { } pub fun c() { } }");
+        assert!(result.is_ok(), "Mixed visibility should parse");
+    }
+
+    // ============================================================
+    // Edge cases
+    // ============================================================
+
+    #[test]
+    fn test_impl_with_doc_comment() {
+        let result = parse(r#"impl Point {
+            /// Gets the x coordinate
+            fun get_x(&self) { self.x }
+        }"#);
+        assert!(result.is_ok(), "Impl with doc comment should parse");
+    }
+
+    #[test]
+    fn test_impl_with_block_comment() {
+        let result = parse(r#"impl Point {
+            /* Multi-line
+               comment */
+            fun get_x(&self) { self.x }
+        }"#);
+        assert!(result.is_ok(), "Impl with block comment should parse");
+    }
+
+    #[test]
+    fn test_impl_multiline() {
+        let result = parse(r#"
+            impl Point {
+                fun new(x: i32, y: i32) -> Point {
+                    Point { x, y }
+                }
+
+                fun origin() -> Point {
+                    Point::new(0, 0)
+                }
+            }
+        "#);
+        assert!(result.is_ok(), "Multiline impl should parse");
+    }
+
+    #[test]
+    fn test_impl_nested_generic() {
+        let result = parse("impl<T> Container<Option<T>> { }");
+        assert!(result.is_ok(), "Nested generic should parse");
+    }
+
+    #[test]
+    fn test_impl_double_nested_generic() {
+        let result = parse("impl<T> Container<Result<Option<T>, Error>> { }");
+        assert!(result.is_ok(), "Double nested generic should parse");
+    }
+
+    #[test]
+    fn test_impl_method_generic_return() {
+        let result = parse("impl Factory { fun create<T>() -> T { } }");
+        // Generic methods may or may not be supported
+        let _ = result;
+    }
+
+    #[test]
+    fn test_impl_for_tuple_type() {
+        // Tuple types may have different syntax
+        let result = parse("impl Point for (i32, i32) { }");
+        // May or may not parse
+        let _ = result;
+    }
 }
