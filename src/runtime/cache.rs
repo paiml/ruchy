@@ -524,3 +524,268 @@ mod mutation_tests {
         assert_eq!(cache.stats().size, 0, "Clear should empty expression cache");
     }
 }
+
+// === EXTREME TDD Round 29 - Coverage Push Tests ===
+
+#[cfg(test)]
+mod coverage_push_round29 {
+    use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span};
+
+    fn make_expr(value: i64) -> Rc<Expr> {
+        Rc::new(Expr {
+            kind: ExprKind::Literal(Literal::Integer(value, None)),
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+            leading_comments: vec![],
+            trailing_comment: None,
+        })
+    }
+
+    #[test]
+    fn test_cache_key_clone() {
+        let key1 = CacheKey::new("test".to_string());
+        let key2 = key1.clone();
+        assert_eq!(key1, key2);
+        assert_eq!(key1.hash, key2.hash);
+    }
+
+    #[test]
+    fn test_cache_key_different_content_different_hash() {
+        let key1 = CacheKey::new("abc".to_string());
+        let key2 = CacheKey::new("xyz".to_string());
+        // Different content should have different hashes (with high probability)
+        assert_ne!(key1.hash, key2.hash);
+    }
+
+    #[test]
+    fn test_cache_key_empty_string() {
+        let key = CacheKey::new("".to_string());
+        assert_eq!(key.source, "");
+    }
+
+    #[test]
+    fn test_cache_key_unicode() {
+        let key = CacheKey::new("日本語🎉".to_string());
+        assert_eq!(key.source, "日本語🎉");
+    }
+
+    #[test]
+    fn test_bytecode_cache_capacity_zero() {
+        let cache = BytecodeCache::with_capacity(0);
+        // Inserting into zero-capacity cache
+        cache.insert("test".to_string(), make_expr(1), None);
+        // Should still work but evict immediately
+        assert_eq!(cache.stats().capacity, 0);
+    }
+
+    #[test]
+    fn test_bytecode_cache_capacity_one() {
+        let cache = BytecodeCache::with_capacity(1);
+        cache.insert("expr1".to_string(), make_expr(1), None);
+        assert_eq!(cache.stats().size, 1);
+
+        cache.insert("expr2".to_string(), make_expr(2), None);
+        // First entry should be evicted
+        assert!(cache.get("expr1").is_none());
+        assert!(cache.get("expr2").is_some());
+    }
+
+    #[test]
+    fn test_bytecode_cache_get_updates_lru() {
+        let cache = BytecodeCache::with_capacity(2);
+        cache.insert("a".to_string(), make_expr(1), None);
+        cache.insert("b".to_string(), make_expr(2), None);
+
+        // Access "a" to make it more recent
+        let _ = cache.get("a");
+
+        // Insert "c" - should evict "b" (LRU)
+        cache.insert("c".to_string(), make_expr(3), None);
+
+        assert!(cache.get("a").is_some());
+        assert!(cache.get("b").is_none());
+        assert!(cache.get("c").is_some());
+    }
+
+    #[test]
+    fn test_bytecode_cache_multiple_misses() {
+        let cache = BytecodeCache::new();
+
+        for i in 0..10 {
+            assert!(cache.get(&format!("missing{i}")).is_none());
+        }
+
+        assert_eq!(cache.stats().misses, 10);
+        assert_eq!(cache.stats().hits, 0);
+        assert_eq!(cache.stats().hit_rate, 0.0);
+    }
+
+    #[test]
+    fn test_bytecode_cache_hit_rate_calculation() {
+        let cache = BytecodeCache::new();
+        cache.insert("test".to_string(), make_expr(1), None);
+
+        // 3 hits
+        let _ = cache.get("test");
+        let _ = cache.get("test");
+        let _ = cache.get("test");
+
+        // 1 miss
+        let _ = cache.get("missing");
+
+        let stats = cache.stats();
+        // 3 hits / 4 total = 75%
+        assert!((stats.hit_rate - 75.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_bytecode_cache_with_rust_code() {
+        let cache = BytecodeCache::new();
+        cache.insert(
+            "test".to_string(),
+            make_expr(1),
+            Some("let x = 1;".to_string()),
+        );
+
+        let result = cache.get("test").unwrap();
+        assert_eq!(result.rust_code, Some("let x = 1;".to_string()));
+    }
+
+    #[test]
+    fn test_bytecode_cache_clear_after_operations() {
+        let cache = BytecodeCache::new();
+
+        // Insert some entries
+        for i in 0..5 {
+            cache.insert(format!("expr{i}"), make_expr(i), None);
+        }
+
+        // Generate hits and misses
+        let _ = cache.get("expr0");
+        let _ = cache.get("expr1");
+        let _ = cache.get("missing");
+
+        // Clear
+        cache.clear();
+
+        // Verify everything is reset
+        assert_eq!(cache.stats().size, 0);
+        assert_eq!(cache.stats().hits, 0);
+        assert_eq!(cache.stats().misses, 0);
+        assert!(cache.get("expr0").is_none());
+    }
+
+    #[test]
+    fn test_expression_cache_stats() {
+        let cache = ExpressionCache::new();
+
+        cache.cache_parsed("a".to_string(), make_expr(1));
+        cache.cache_parsed("b".to_string(), make_expr(2));
+
+        let stats = cache.stats();
+        assert_eq!(stats.size, 2);
+    }
+
+    #[test]
+    fn test_expression_cache_get_parsed_miss() {
+        let cache = ExpressionCache::new();
+        assert!(cache.get_parsed("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_expression_cache_get_transpiled_miss() {
+        let cache = ExpressionCache::new();
+        assert!(cache.get_transpiled("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_expression_cache_overwrite() {
+        let cache = ExpressionCache::new();
+
+        cache.cache_parsed("test".to_string(), make_expr(1));
+        cache.cache_parsed("test".to_string(), make_expr(2));
+
+        // Size should be 1 (overwritten)
+        assert_eq!(cache.stats().size, 1);
+    }
+
+    #[test]
+    fn test_cache_stats_display_format() {
+        let cache = BytecodeCache::with_capacity(100);
+        cache.insert("test".to_string(), make_expr(1), None);
+        let _ = cache.get("test");
+        let _ = cache.get("missing");
+
+        let stats = cache.stats();
+        let display = format!("{stats}");
+
+        assert!(display.contains("1/100"));
+        assert!(display.contains("1 hits"));
+        assert!(display.contains("1 misses"));
+        assert!(display.contains("hit rate"));
+    }
+
+    #[test]
+    fn test_cached_result_timestamp() {
+        let result = CachedResult {
+            ast: make_expr(1),
+            rust_code: None,
+            timestamp: std::time::Instant::now(),
+        };
+
+        // Timestamp should be recent
+        let elapsed = result.timestamp.elapsed();
+        assert!(elapsed.as_secs() < 1);
+    }
+
+    #[test]
+    fn test_evict_older_than_keeps_recent() {
+        let cache = BytecodeCache::new();
+        cache.insert("test".to_string(), make_expr(1), None);
+
+        // Evict items older than 10 seconds - should keep the item
+        cache.evict_older_than(std::time::Duration::from_secs(10));
+        assert_eq!(cache.stats().size, 1);
+    }
+
+    #[test]
+    fn test_evict_older_than_empty_cache() {
+        let cache = BytecodeCache::new();
+        // Should not panic on empty cache
+        cache.evict_older_than(std::time::Duration::from_secs(1));
+        assert_eq!(cache.stats().size, 0);
+    }
+
+    #[test]
+    fn test_lru_eviction_on_full_cache() {
+        let cache = BytecodeCache::with_capacity(3);
+
+        cache.insert("a".to_string(), make_expr(1), None);
+        cache.insert("b".to_string(), make_expr(2), None);
+        cache.insert("c".to_string(), make_expr(3), None);
+
+        // Cache is now full (3/3)
+        assert_eq!(cache.stats().size, 3);
+
+        // Insert d - should evict "a" (oldest)
+        cache.insert("d".to_string(), make_expr(4), None);
+
+        assert!(cache.get("a").is_none()); // Evicted
+        assert!(cache.get("b").is_some());
+        assert!(cache.get("c").is_some());
+        assert!(cache.get("d").is_some());
+    }
+
+    #[test]
+    fn test_cache_key_hash_in_hashmap() {
+        use std::collections::HashMap;
+
+        let mut map: HashMap<CacheKey, i32> = HashMap::new();
+        let key1 = CacheKey::new("test".to_string());
+        let key2 = CacheKey::new("test".to_string());
+
+        map.insert(key1, 42);
+        assert_eq!(map.get(&key2), Some(&42));
+    }
+}
