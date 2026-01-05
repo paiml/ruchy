@@ -3,9 +3,10 @@
 //! Core type definitions for WASM code generation.
 
 /// WASM value types for type inference
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum WasmType {
     /// 32-bit integer
+    #[default]
     I32,
     /// 32-bit float
     F32,
@@ -42,12 +43,6 @@ impl WasmType {
             WasmType::I32 | WasmType::F32 => 4,
             WasmType::I64 | WasmType::F64 => 8,
         }
-    }
-}
-
-impl Default for WasmType {
-    fn default() -> Self {
-        WasmType::I32
     }
 }
 
