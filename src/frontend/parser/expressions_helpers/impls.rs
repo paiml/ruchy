@@ -644,4 +644,343 @@ mod tests {
         // May or may not parse
         let _ = result;
     }
+
+    // ============================================================
+    // Additional EXTREME TDD tests for impls
+    // ============================================================
+
+    // ===== Type name variations =====
+
+    #[test]
+    fn test_impl_single_char_type() {
+        let result = parse("impl A { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_long_type_name() {
+        let result = parse("impl VeryLongTypeNameHere { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_snake_case_type() {
+        let result = parse("impl my_type { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_type_with_numbers() {
+        let result = parse("impl Point2D { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_type_uppercase() {
+        let result = parse("impl CONSTANT { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Method name variations =====
+
+    #[test]
+    fn test_impl_method_single_char() {
+        let result = parse("impl Foo { fun a() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_long_name() {
+        let result = parse("impl Foo { fun very_long_method_name() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_with_underscore() {
+        let result = parse("impl Foo { fun get_value() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_new() {
+        let result = parse("impl Foo { fun new() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_get_default() {
+        let result = parse("impl Foo { fun get_default() { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Return type variations =====
+
+    #[test]
+    fn test_impl_return_i32() {
+        let result = parse("impl Foo { fun get() -> i32 { 42 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_i64() {
+        let result = parse("impl Foo { fun get() -> i64 { 42 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_f64() {
+        let result = parse("impl Foo { fun get() -> f64 { 3.14 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_bool() {
+        let result = parse("impl Foo { fun is_valid() -> bool { true } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_string() {
+        let result = parse("impl Foo { fun name() -> String { \"\" } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_option() {
+        let result = parse("impl Foo { fun find() -> Option<i32> { None } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_result() {
+        let result = parse("impl Foo { fun try_get() -> Result<i32, Error> { Ok(0) } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_vec() {
+        let result = parse("impl Foo { fun items() -> Vec<i32> { vec![] } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_return_self_type() {
+        let result = parse("impl Point { fun origin() -> Point { Point { x: 0, y: 0 } } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Parameter variations =====
+
+    #[test]
+    fn test_impl_no_params() {
+        let result = parse("impl Foo { fun bar() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_one_param() {
+        let result = parse("impl Foo { fun bar(x: i32) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_two_params() {
+        let result = parse("impl Foo { fun bar(x: i32, y: i32) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_three_params() {
+        let result = parse("impl Foo { fun bar(x: i32, y: i32, z: i32) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_many_params() {
+        let result = parse("impl Foo { fun bar(a: i32, b: i32, c: i32, d: i32, e: i32) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_mixed_param_types() {
+        let result = parse("impl Foo { fun bar(n: i32, s: String, b: bool) { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Trait implementations =====
+
+    #[test]
+    fn test_impl_trait_debug() {
+        let result = parse("impl Debug for Point { fun fmt(&self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_trait_eq() {
+        let result = parse("impl Eq for Point { fun eq(&self, other: &Point) -> bool { true } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_trait_ord() {
+        let result = parse("impl Ord for Point { fun cmp(&self, other: &Point) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_trait_hash() {
+        let result = parse("impl Hash for Point { fun hash(&self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_trait_defaultable() {
+        let result = parse("impl Defaultable for Point { fun make_default() -> Point { Point { x: 0, y: 0 } } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_trait_iterator() {
+        let result = parse("impl Iterator for MyIter { fun next(&mut self) -> Option<i32> { None } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Multiple impls =====
+
+    #[test]
+    fn test_two_impls() {
+        let result = parse("impl A { } impl B { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_three_impls() {
+        let result = parse("impl A { } impl B { } impl C { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_same_type_twice() {
+        let result = parse("impl Point { fun a() { } } impl Point { fun b() { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex generics =====
+
+    #[test]
+    fn test_impl_generic_maybe() {
+        let result = parse("impl<T> Maybe<T> { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_generic_outcome() {
+        let result = parse("impl<T, E> Outcome<T, E> { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_generic_vec() {
+        let result = parse("impl<T> Vec<T> { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_generic_hashmap() {
+        let result = parse("impl<K, V> HashMap<K, V> { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Method body variations =====
+
+    #[test]
+    fn test_impl_method_empty_body() {
+        let result = parse("impl Foo { fun bar() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_single_expr() {
+        let result = parse("impl Foo { fun bar() { 42 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_let_binding() {
+        let result = parse("impl Foo { fun bar() { let x = 1 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_if_expr() {
+        let result = parse("impl Foo { fun bar(&self) { if self.x > 0 { 1 } else { 0 } } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_match_expr() {
+        let result = parse("impl Foo { fun bar(&self) { match self.x { 0 => 0, _ => 1 } } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== fn keyword tests =====
+
+    #[test]
+    fn test_impl_all_fn_methods() {
+        let result = parse("impl Foo { fn a() { } fn b() { } fn c() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_mixed_fun_fn() {
+        let result = parse("impl Foo { fun a() { } fn b() { } fun c() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_pub_fn() {
+        let result = parse("impl Foo { pub fn bar() { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Self type variations =====
+
+    #[test]
+    fn test_impl_method_ref_self() {
+        let result = parse("impl Point { fun get(&self) { self.x } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_mut_ref_self() {
+        let result = parse("impl Counter { fun inc(&mut self) { self.n = self.n + 1 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_self_and_params() {
+        let result = parse("impl Point { fun add(&self, other: &Point) -> Point { Point { x: self.x + other.x, y: self.y + other.y } } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub variations =====
+
+    #[test]
+    fn test_impl_all_pub_methods() {
+        let result = parse("impl Foo { pub fun a() { } pub fun b() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_impl_method_count_with_pub() {
+        let expr = parse("impl Foo { pub fun a() { } fun b() { } pub fun c() { } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Impl { methods, .. } = &exprs[0].kind {
+                assert_eq!(methods.len(), 3);
+                assert!(methods[0].is_pub);
+                assert!(!methods[1].is_pub);
+                assert!(methods[2].is_pub);
+            }
+        }
+    }
 }

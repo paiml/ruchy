@@ -733,4 +733,375 @@ struct User {
         let result = parse("struct Foo { fn bar(&self) { } }");
         assert!(result.is_ok(), "'fn' should work like 'fun'");
     }
+
+    // ============================================================
+    // Additional EXTREME TDD tests for structs
+    // ============================================================
+
+    // ===== ExprKind verification =====
+
+    #[test]
+    fn test_struct_produces_struct_exprkind() {
+        let expr = parse("struct Foo { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Struct { .. }));
+        }
+    }
+
+    #[test]
+    fn test_tuple_struct_produces_tuple_struct_exprkind() {
+        let expr = parse("struct Pair(i32, i32)").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::TupleStruct { .. }));
+        }
+    }
+
+    // ===== Basic struct variations =====
+
+    #[test]
+    fn test_struct_single_char_name() {
+        let result = parse("struct A { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_long_name() {
+        let result = parse("struct VeryLongStructNameForTesting { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_name_with_underscore() {
+        let result = parse("struct my_data_struct { value: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_name_uppercase() {
+        let result = parse("struct CONSTANTS { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Field variations =====
+
+    #[test]
+    fn test_struct_many_fields() {
+        let result = parse("struct Big { a: i32, b: i32, c: i32, d: i32, e: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_with_underscore() {
+        let result = parse("struct Data { my_field: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_single_char() {
+        let result = parse("struct Data { x: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Type variations =====
+
+    #[test]
+    fn test_struct_field_i8() {
+        let result = parse("struct Byte { value: i8 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_i16() {
+        let result = parse("struct Short { value: i16 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_i64() {
+        let result = parse("struct Long { value: i64 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_f32() {
+        let result = parse("struct Float { value: f32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_f64() {
+        let result = parse("struct Double { value: f64 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_bool() {
+        let result = parse("struct Flag { enabled: bool }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_char() {
+        let result = parse("struct Letter { ch: char }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_string() {
+        let result = parse("struct Name { value: String }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_field_str_ref() {
+        let result = parse("struct StrView { data: &str }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Generic type variations =====
+
+    #[test]
+    fn test_struct_generic_one_param() {
+        let result = parse("struct Box<T> { value: T }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_generic_two_params() {
+        let result = parse("struct Map<K, V> { key: K, value: V }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_generic_three_params() {
+        let result = parse("struct Triple<A, B, C> { a: A, b: B, c: C }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_generic() {
+        let result = parse("struct Wrapper<T>(T)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_generic_two() {
+        let result = parse("struct Pair<A, B>(A, B)");
+        assert!(result.is_ok());
+    }
+
+    // ===== Tuple struct variations =====
+
+    #[test]
+    fn test_tuple_struct_single() {
+        let result = parse("struct Single(i32)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_two() {
+        let result = parse("struct Two(i32, String)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_three() {
+        let result = parse("struct Rgb(u8, u8, u8)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_many() {
+        let result = parse("struct Many(i32, i32, i32, i32, i32)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tuple_struct_mixed_types() {
+        let result = parse("struct Mixed(i32, String, bool, f64)");
+        assert!(result.is_ok());
+    }
+
+    // ===== Visibility variations =====
+
+    #[test]
+    fn test_struct_all_pub_fields() {
+        let result = parse("struct Public { pub a: i32, pub b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_all_private_fields() {
+        let result = parse("struct Secret { private a: i32, private b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_pub_crate_multiple() {
+        let result = parse("struct Internal { pub(crate) a: i32, pub(crate) b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_pub_super_multiple() {
+        let result = parse("struct Parent { pub(super) a: i32, pub(super) b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Mutability variations =====
+
+    #[test]
+    fn test_struct_all_mut_fields() {
+        let result = parse("struct Mutable { mut a: i32, mut b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_pub_mut_multiple() {
+        let result = parse("struct PubMut { pub mut a: i32, pub mut b: i32 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Default value variations =====
+
+    #[test]
+    fn test_struct_default_int() {
+        let result = parse("struct Config { value: i32 = 42 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_default_float() {
+        let result = parse("struct Math { pi: f64 = 3.14159 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_default_bool_true() {
+        let result = parse("struct Flags { enabled: bool = true }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_default_bool_false() {
+        let result = parse("struct Flags { disabled: bool = false }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_default_negative() {
+        let result = parse("struct Range { min: i32 = -100 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_mixed_defaults() {
+        let result = parse("struct Config { a: i32 = 1, b: i32, c: i32 = 3 }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Method variations =====
+
+    #[test]
+    fn test_struct_method_no_params() {
+        let result = parse("struct Foo { fun bar() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_method_with_return() {
+        let result = parse("struct Foo { fun get() -> i32 { 42 } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_method_owned_self() {
+        let result = parse("struct Foo { fun consume(self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_method_many_params() {
+        let result = parse("struct Math { fun add(a: i32, b: i32, c: i32) -> i32 { a + b + c } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_pub_fn_method() {
+        let result = parse("struct Foo { pub fn bar(&self) { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_multiple_pub_methods() {
+        let result = parse("struct Foo { pub fun a(&self) { } pub fun b(&self) { } }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Collection field types =====
+
+    #[test]
+    fn test_struct_vec_field() {
+        let result = parse("struct List { items: Vec<i32> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_option_field() {
+        let result = parse("struct Maybe { value: Option<String> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_hashmap_field() {
+        let result = parse("struct Cache { data: HashMap<String, i32> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_nested_vec() {
+        let result = parse("struct Matrix { rows: Vec<Vec<i32>> }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Multiple structs =====
+
+    #[test]
+    fn test_two_structs() {
+        let result = parse("struct A { } struct B { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_three_structs() {
+        let result = parse("struct A { } struct B { } struct C { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_referencing_another() {
+        let result = parse("struct Inner { value: i32 } struct Outer { inner: Inner }");
+        assert!(result.is_ok());
+    }
+
+    // ===== Complex scenarios =====
+
+    #[test]
+    fn test_struct_with_all_features() {
+        let code = "struct Complex<T> { pub value: T, pub mut count: i32 = 0, fun new(v: T) -> Complex<T> { Complex { value: v, count: 0 } } }";
+        let result = parse(code);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_with_self_type_field() {
+        let result = parse("struct Node { value: i32, next: Option<Node> }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_struct_deeply_nested_generic() {
+        let result = parse("struct Deep { data: Option<Vec<HashMap<String, i32>>> }");
+        assert!(result.is_ok());
+    }
 }

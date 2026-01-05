@@ -871,6 +871,454 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // ============================================================
+    // Additional EXTREME TDD tests for visibility modifiers
+    // ============================================================
+
+    // ===== pub visibility variations =====
+
+    #[test]
+    fn test_pub_fn_keyword() {
+        let result = parse("pub fn test() { }");
+        assert!(result.is_ok(), "pub fn should parse");
+    }
+
+    #[test]
+    fn test_pub_fun_keyword() {
+        let result = parse("pub fun test() { }");
+        assert!(result.is_ok(), "pub fun should parse");
+    }
+
+    #[test]
+    fn test_pub_fn_with_params() {
+        let result = parse("pub fn add(a: i32, b: i32) -> i32 { a + b }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_fn_with_generics() {
+        let result = parse("pub fn swap<T>(a: T, b: T) -> (T, T) { (b, a) }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_fn_long_name() {
+        let result = parse("pub fn very_long_function_name_here() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_fn_single_char() {
+        let result = parse("pub fn f() { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub(crate) variations =====
+
+    #[test]
+    fn test_pub_crate_fn() {
+        let result = parse("pub(crate) fn internal() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_fun() {
+        let result = parse("pub(crate) fun internal() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_struct_with_fields() {
+        let result = parse("pub(crate) struct Data { x: i32, y: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_trait_with_methods() {
+        let result = parse("pub(crate) trait Internal { fn method(&self); }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_class() {
+        let result = parse("pub(crate) class Helper { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub(super) variations =====
+
+    #[test]
+    fn test_pub_super_fn() {
+        let result = parse("pub(super) fn parent_visible() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_super_fun() {
+        let result = parse("pub(super) fun parent_visible() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_super_struct() {
+        let result = parse("pub(super) struct ParentData { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_super_class() {
+        let result = parse("pub(super) class ParentHelper { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub(in path) variations =====
+
+    #[test]
+    fn test_pub_in_crate_path() {
+        let result = parse("pub(in crate::module::submodule) fn restricted() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_in_super_nested_path() {
+        let result = parse("pub(in super::sibling::child) fn restricted() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_in_self_path() {
+        let result = parse("pub(in self::child) fn restricted() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_in_absolute_path() {
+        let result = parse("pub(in ::root::module) fn restricted() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_in_identifier_path() {
+        let result = parse("pub(in mymodule::inner) fn restricted() { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== const variations =====
+
+    #[test]
+    fn test_const_fn_with_return_type() {
+        let result = parse("const fn value() -> i32 { 42 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_fun_keyword() {
+        let result = parse("const fun test() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_var_float() {
+        let result = parse("const PI: f64 = 3.14159");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_var_bool() {
+        let result = parse("const DEBUG = true");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_var_tuple() {
+        let result = parse("const ORIGIN = (0, 0)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_var_negative() {
+        let result = parse("const MIN = -100");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_const_var_binary_op() {
+        let result = parse("const SIZE = 1024 * 1024");
+        assert!(result.is_ok());
+    }
+
+    // ===== unsafe variations =====
+
+    #[test]
+    fn test_unsafe_fn_with_params() {
+        let result = parse("unsafe fn process(data: i32) { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_unsafe_fn_with_return() {
+        let result = parse("unsafe fn dangerous() -> i32 { 42 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_unsafe_fun_with_body() {
+        let result = parse("unsafe fun work() { let x = 1 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_unsafe_fn_order() {
+        let result = parse("pub unsafe fn exposed_danger() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_unsafe() {
+        let result = parse("pub(crate) unsafe fn internal_danger() { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== sealed variations =====
+
+    #[test]
+    fn test_sealed_class_empty() {
+        let result = parse("sealed class Empty { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sealed_class_with_constructor() {
+        let result = parse("sealed class Data { fun new() { } }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sealed_class_multiple_fields() {
+        let result = parse("sealed class Point { x: i32, y: i32, z: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sealed_class_generic() {
+        let result = parse("sealed class Box<T> { value: T }");
+        assert!(result.is_ok());
+    }
+
+    // ===== final variations =====
+
+    #[test]
+    fn test_final_class_empty() {
+        let result = parse("final class Singleton { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_final_class_with_fields() {
+        let result = parse("final class Config { port: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_final_fn_with_params() {
+        let result = parse("final fn compute(x: i32) -> i32 { x * 2 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_final_fun_keyword() {
+        let result = parse("final fun locked() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_final_identifier_in_call() {
+        let result = parse("foo(final)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_final_identifier_assignment() {
+        let result = parse("let x = final");
+        assert!(result.is_ok());
+    }
+
+    // ===== abstract variations =====
+
+    #[test]
+    fn test_abstract_class_empty() {
+        let result = parse("abstract class Base { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_abstract_class_with_field() {
+        let result = parse("abstract class Entity { id: i32 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_abstract_fn_with_params() {
+        let result = parse("abstract fn compute(x: i32) -> i32 { 0 }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_abstract_fun_keyword() {
+        let result = parse("abstract fun process() { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_abstract_class_generic() {
+        let result = parse("abstract class Container<T> { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub + module variations =====
+
+    #[test]
+    fn test_pub_mod_inline() {
+        let result = parse("pub mod utils { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_mod_external() {
+        let result = parse("pub mod utils;");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_mod() {
+        let result = parse("pub(crate) mod internal { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_super_mod() {
+        let result = parse("pub(super) mod sibling { }");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_module_keyword() {
+        let result = parse("pub module helpers { }");
+        assert!(result.is_ok());
+    }
+
+    // ===== pub + use variations =====
+
+    #[test]
+    fn test_pub_use_simple() {
+        let result = parse("pub use std::io");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_use_nested() {
+        let result = parse("pub use std::collections::HashMap");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_crate_use() {
+        let result = parse("pub(crate) use internal::Helper");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pub_super_use() {
+        let result = parse("pub(super) use sibling::Shared");
+        assert!(result.is_ok());
+    }
+
+    // ===== ExprKind verification =====
+
+    #[test]
+    fn test_pub_produces_function_exprkind() {
+        let expr = parse("pub fn test() { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { is_pub: true, .. }));
+        }
+    }
+
+    #[test]
+    fn test_sealed_produces_class_exprkind() {
+        let expr = parse("sealed class Test { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Class { is_sealed: true, .. }));
+        }
+    }
+
+    #[test]
+    fn test_abstract_produces_class_exprkind() {
+        let expr = parse("abstract class Test { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Class { is_abstract: true, .. }));
+        }
+    }
+
+    #[test]
+    fn test_const_var_produces_let_exprkind() {
+        let expr = parse("const X = 42").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Let { is_mutable: false, .. }));
+        }
+    }
+
+    #[test]
+    fn test_final_identifier_produces_identifier_exprkind() {
+        let expr = parse("final").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Identifier(name) if name == "final"));
+        }
+    }
+
+    // ===== Error cases =====
+
+    #[test]
+    fn test_const_without_value() {
+        let result = parse("const X");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_pub_invalid_scope() {
+        let result = parse("pub(invalid) fn test() { }");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sealed_with_fn() {
+        let result = parse("sealed fn invalid() { }");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_abstract_with_struct() {
+        let result = parse("abstract struct Invalid { }");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_unsafe_with_struct() {
+        let result = parse("unsafe struct Invalid { }");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_pub_incomplete() {
+        let result = parse("pub(");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_pub_in_incomplete() {
+        let result = parse("pub(in ) fn test() { }");
+        assert!(result.is_err());
+    }
+
     // ===== PROPERTY TESTS (EXTREME TDD) =====
 
     #[cfg(test)]
