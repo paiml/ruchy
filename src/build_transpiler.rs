@@ -183,6 +183,198 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    fn test_find_ruchy_files_with_single_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "fun main() {}").expect("Failed to write file");
+
+        let pattern = temp_dir.path().join("*.ruchy");
+        let files = find_ruchy_files(pattern.to_str().unwrap()).expect("Should succeed");
+        assert_eq!(files.len(), 1);
+    }
+
+    #[test]
+    fn test_find_ruchy_files_nested() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let nested = temp_dir.path().join("nested");
+        fs::create_dir(&nested).expect("Failed to create dir");
+        fs::write(nested.join("test.ruchy"), "42").expect("Failed to write file");
+
+        let pattern = temp_dir.path().join("**/*.ruchy");
+        let files = find_ruchy_files(pattern.to_str().unwrap()).expect("Should succeed");
+        assert_eq!(files.len(), 1);
+    }
+
+    #[test]
+    fn test_transpile_all_empty_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let result = transpile_all(
+            temp_dir.path().to_str().unwrap(),
+            "**/*.ruchy",
+            temp_dir.path().to_str().unwrap(),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_single_file_creates_rs() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "fun main() { println!(\"Hello\"); }").expect("write failed");
+
+        transpile_single_file(&ruchy_file, temp_dir.path(), temp_dir.path())
+            .expect("transpile should succeed");
+
+        let rs_file = temp_dir.path().join("test.rs");
+        assert!(rs_file.exists(), ".rs file should be created");
+    }
+
+    #[test]
+    fn test_transpile_single_file_creates_nested_dirs() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let src_dir = temp_dir.path().join("src");
+        let nested = src_dir.join("a").join("b");
+        fs::create_dir_all(&nested).expect("Failed to create nested dirs");
+        let ruchy_file = nested.join("deep.ruchy");
+        fs::write(&ruchy_file, "42").expect("write failed");
+
+        let out_dir = temp_dir.path().join("out");
+        transpile_single_file(&ruchy_file, &src_dir, &out_dir).expect("transpile should succeed");
+
+        let rs_file = out_dir.join("a").join("b").join("deep.rs");
+        assert!(rs_file.exists(), ".rs file should be created in nested dir");
+    }
+
+    #[test]
+    fn test_should_skip_transpilation_ruchy_newer() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let rs_file = temp_dir.path().join("test.rs");
+        fs::write(&rs_file, "fn main() {}").expect("write failed");
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "fun main() {}").expect("write failed");
+
+        let should_skip = should_skip_transpilation(&ruchy_file, &rs_file).expect("should succeed");
+        assert!(!should_skip, "Should NOT skip when .ruchy is newer");
+    }
+
+    #[test]
+    fn test_transpile_all_with_single_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("hello.ruchy");
+        fs::write(&ruchy_file, "42").expect("write failed");
+
+        let result = transpile_all(
+            temp_dir.path().to_str().unwrap(),
+            "*.ruchy",
+            temp_dir.path().to_str().unwrap(),
+        );
+        assert!(result.is_ok());
+        assert!(temp_dir.path().join("hello.rs").exists());
+    }
+
+    #[test]
+    fn test_find_ruchy_files_multiple() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        fs::write(temp_dir.path().join("a.ruchy"), "1").expect("write failed");
+        fs::write(temp_dir.path().join("b.ruchy"), "2").expect("write failed");
+        fs::write(temp_dir.path().join("c.ruchy"), "3").expect("write failed");
+
+        let pattern = temp_dir.path().join("*.ruchy");
+        let files = find_ruchy_files(pattern.to_str().unwrap()).expect("Should succeed");
+        assert_eq!(files.len(), 3);
+    }
+
+    #[test]
+    fn test_transpile_single_file_simple_expression() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("expr.ruchy");
+        fs::write(&ruchy_file, "1 + 2 * 3").expect("write failed");
+
+        transpile_single_file(&ruchy_file, temp_dir.path(), temp_dir.path())
+            .expect("transpile should succeed");
+
+        let rs_file = temp_dir.path().join("expr.rs");
+        assert!(rs_file.exists());
+        let content = fs::read_to_string(&rs_file).expect("read failed");
+        assert!(!content.is_empty());
+    }
+
+    #[test]
+    fn test_find_ruchy_files_ignores_other_extensions() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        fs::write(temp_dir.path().join("test.ruchy"), "1").expect("write failed");
+        fs::write(temp_dir.path().join("test.rs"), "fn main() {}").expect("write failed");
+        fs::write(temp_dir.path().join("test.txt"), "text").expect("write failed");
+
+        let pattern = temp_dir.path().join("*.ruchy");
+        let files = find_ruchy_files(pattern.to_str().unwrap()).expect("Should succeed");
+        assert_eq!(files.len(), 1);
+    }
+
+    #[test]
+    fn test_transpile_all_multiple_files() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        fs::write(temp_dir.path().join("a.ruchy"), "1").expect("write failed");
+        fs::write(temp_dir.path().join("b.ruchy"), "2").expect("write failed");
+
+        let result = transpile_all(
+            temp_dir.path().to_str().unwrap(),
+            "*.ruchy",
+            temp_dir.path().to_str().unwrap(),
+        );
+        assert!(result.is_ok());
+        assert!(temp_dir.path().join("a.rs").exists());
+        assert!(temp_dir.path().join("b.rs").exists());
+    }
+
+    #[test]
+    fn test_transpile_single_file_overwrites_existing() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        let rs_file = temp_dir.path().join("test.rs");
+
+        // Create initial .rs file
+        fs::write(&rs_file, "old content").expect("write failed");
+        // Create .ruchy file (newer)
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        fs::write(&ruchy_file, "42").expect("write failed");
+
+        transpile_single_file(&ruchy_file, temp_dir.path(), temp_dir.path())
+            .expect("transpile should succeed");
+
+        let content = fs::read_to_string(&rs_file).expect("read failed");
+        assert_ne!(content, "old content");
+    }
+
+    #[test]
+    fn test_transpile_single_file_with_function() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("func.ruchy");
+        fs::write(&ruchy_file, "fun add(a: i32, b: i32) -> i32 { a + b }").expect("write failed");
+
+        transpile_single_file(&ruchy_file, temp_dir.path(), temp_dir.path())
+            .expect("transpile should succeed");
+
+        let rs_file = temp_dir.path().join("func.rs");
+        assert!(rs_file.exists());
+    }
+
+    #[test]
+    fn test_transpile_single_file_with_struct() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let ruchy_file = temp_dir.path().join("point.ruchy");
+        fs::write(&ruchy_file, "struct Point { x: i32, y: i32 }").expect("write failed");
+
+        transpile_single_file(&ruchy_file, temp_dir.path(), temp_dir.path())
+            .expect("transpile should succeed");
+
+        assert!(temp_dir.path().join("point.rs").exists());
+    }
+
+    #[test]
     fn test_find_ruchy_files_empty() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let pattern = temp_dir.path().join("**/*.ruchy");
