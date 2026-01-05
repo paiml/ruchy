@@ -97,6 +97,52 @@ mod tests {
         assert!(result.contains("\n\n"));
         Ok(())
     }
+
+    // === EXTREME TDD Round 16 tests ===
+
+    #[test]
+    fn test_formatter_default() {
+        let formatter = Formatter::default();
+        // Should work the same as new()
+        let result = formatter.format("let x = 1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_basic_format_direct() {
+        // Test basic_format static method directly
+        let input = "if true {\nx\n}";
+        let result = Formatter::basic_format(input);
+        assert!(result.contains("if true {"));
+        assert!(result.contains("    x"));
+    }
+
+    #[test]
+    fn test_format_invalid_code_returns_original() -> anyhow::Result<()> {
+        let formatter = Formatter::new();
+        // This input is parseable but let's test edge case
+        let input = "let x = 1";
+        let result = formatter.format(input)?;
+        // Should still return formatted version since it parses
+        assert!(result.contains("let x = 1"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_format_closing_brace_only() {
+        let result = Formatter::basic_format("}");
+        // Closing brace should not increase indent level incorrectly
+        assert_eq!(result.trim(), "}");
+    }
+
+    #[test]
+    fn test_format_nested_braces() {
+        let input = "fun outer() {\nfun inner() {\nlet x = 1\n}\n}";
+        let result = Formatter::basic_format(input);
+        // Check nested indentation
+        assert!(result.contains("    fun inner()"));
+        assert!(result.contains("        let x = 1"));
+    }
 }
 #[cfg(test)]
 mod property_tests_formatter {

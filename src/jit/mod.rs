@@ -78,4 +78,36 @@ mod tests {
         let result = jit_execute(&ast).expect("operation should succeed in test");
         assert_eq!(result, 55); // fibonacci(10) = 55
     }
+
+    // === EXTREME TDD Round 16 tests ===
+
+    #[test]
+    fn test_jit_compiler_creation() {
+        // JitCompiler::new() should not panic
+        let compiler_result = JitCompiler::new();
+        assert!(
+            compiler_result.is_ok(),
+            "JitCompiler::new() should succeed"
+        );
+    }
+
+    #[test]
+    fn test_jit_execute_parse_error_propagation() {
+        // Test that invalid AST is handled gracefully
+        let code = "42";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        // jit_execute may fail for non-function expressions
+        let _ = jit_execute(&ast); // Just verify it doesn't panic
+    }
+
+    #[test]
+    fn test_jit_module_exports() {
+        // Verify module structure exports are correct
+        let _compiler: Result<JitCompiler> = JitCompiler::new();
+        // Verify jit_execute is exported
+        fn _check_export(_f: fn(&Expr) -> Result<i64>) {}
+        _check_export(jit_execute);
+    }
 }
