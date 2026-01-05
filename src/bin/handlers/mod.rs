@@ -14,6 +14,7 @@ pub mod parse_handler;
 pub mod repl_handler;
 pub mod run_handler;
 pub mod transpile_handler;
+pub mod wasm_handler;
 
 // Re-export from extracted modules
 pub use bench_handler::handle_bench_command;
@@ -28,6 +29,7 @@ pub use run_handler::{
     compile_rust_code, handle_run_command, prepare_compilation, transpile_for_execution, VmMode,
 };
 pub use transpile_handler::handle_transpile_command;
+pub use wasm_handler::{compile_ruchy_to_wasm, handle_wasm_command};
 
 // Import for internal use
 use transpile_handler::parse_source;
@@ -2924,197 +2926,8 @@ pub fn handle_replay_to_tests_command(
     generate_summary_report(&all_tests, processed_files);
     Ok(())
 }
-/// Handle wasm command - compile Ruchy source to WebAssembly
-///
-/// # Arguments
-/// * `file` - Path to the Ruchy source file
-/// * `output` - Optional output file path
-/// * `target` - WASM target (browser/node/cloudflare/universal)
-/// * `wit` - Optional WIT file for component model
-/// * `deploy` - Deploy to specified platform
-/// * `deploy_target` - Deployment target path
-/// * `portability` - Portability settings
-/// * `opt_level` - Optimization level
-/// * `debug` - Include debug info
-/// * `simd` - Enable SIMD instructions
-/// * `threads` - Enable threading
-/// * `component_model` - Enable component model
-/// * `name` - Module name
-/// * `version` - Module version
-/// * `verbose` - Enable verbose output
-///
-/// Print verbose compilation status and configuration
-fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: bool) {
-    use colored::Colorize;
-    if verbose {
-        println!(
-            "{} Compiling {} to WebAssembly",
-            "→".bright_cyan(),
-            file.display()
-        );
-        println!("  Target: {}", target);
-        if wit {
-            println!("  WIT: enabled");
-        }
-    }
-}
-/// Parse Ruchy source file into AST
-///
-/// # Errors
-/// Returns error if file reading or parsing fails
-fn parse_ruchy_source(file: &Path) -> Result<ruchy::frontend::ast::Expr> {
-    let source = read_file_with_context(file)?;
-    let mut parser = RuchyParser::new(&source);
-    parser
-        .parse()
-        .with_context(|| format!("Failed to parse {}", file.display()))
-}
-/// Generate and validate WASM bytecode with enterprise-grade analysis
-///
-/// # Errors
-/// Returns error if WASM generation or validation fails
-fn generate_and_validate_wasm(ast: &ruchy::frontend::ast::Expr, verbose: bool) -> Result<Vec<u8>> {
-    use colored::Colorize;
-    let emitter = WasmEmitter::new();
-    let wasm_bytes = emitter
-        .emit(ast)
-        .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
-    if verbose {
-        println!("{} Validating WASM module...", "→".bright_cyan());
-    }
-    match wasmparser::validate(&wasm_bytes) {
-        Ok(_) => {
-            if verbose {
-                println!("{} WASM validation successful", "✓".green());
-                println!("{} Security scan: memory bounds verified", "✓".green());
-                println!("{} Formal verification: type safety confirmed", "✓".green());
-            }
-        }
-        Err(e) => {
-            eprintln!("{} WASM validation failed: {}", "✗".red(), e);
-            if !verbose {
-                eprintln!("Run with --verbose for more details");
-            }
-            return Err(anyhow::anyhow!("WASM validation failed: {}", e));
-        }
-    }
-    Ok(wasm_bytes)
-}
-/// Determine output path for WASM file
-fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
-    if let Some(out) = output {
-        out.to_path_buf()
-    } else {
-        let mut path = file.to_path_buf();
-        path.set_extension("wasm");
-        path
-    }
-}
-/// Write WASM file and display success information
-///
-/// # Errors
-/// Returns error if file writing fails  
-fn write_wasm_output(
-    wasm_bytes: &[u8],
-    output_path: &Path,
-    target: &str,
-    verbose: bool,
-) -> Result<()> {
-    use colored::Colorize;
-    write_file_with_context(output_path, wasm_bytes)?;
-    println!(
-        "{} Successfully compiled to {}",
-        "✓".green(),
-        output_path.display()
-    );
-    if verbose {
-        println!("  Size: {} bytes", wasm_bytes.len());
-        println!("  Target: {}", target);
-        println!("  Security: Buffer overflow protection enabled");
-        println!("  Performance: Instruction mix optimized");
-    }
-    Ok(())
-}
-/// Handle post-compilation optimization and deployment
-fn handle_optimization_and_deployment(
-    opt_level: &str,
-    deploy: bool,
-    deploy_target: Option<&str>,
-    verbose: bool,
-) {
-    use colored::Colorize;
-    if opt_level != "0" && verbose {
-        println!(
-            "{} Optimization level {} requested (enterprise streaming analysis)",
-            "ℹ".bright_blue(),
-            opt_level
-        );
-    }
-    if deploy {
-        let platform = deploy_target.unwrap_or("default");
-        if verbose {
-            println!(
-                "{} Deployment to {} with formal verification",
-                "ℹ".bright_blue(),
-                platform
-            );
-        }
-    }
-}
 
-/// Compile a single .ruchy file to WASM for hot reload
-///
-/// # Arguments
-/// * `file` - Path to .ruchy source file
-/// * `verbose` - Enable verbose logging
-///
-/// # Returns
-/// Path to generated .wasm file on success
-///
-/// # Errors
-/// Returns error if parsing or compilation fails
-fn compile_ruchy_to_wasm(file: &Path, verbose: bool) -> Result<PathBuf> {
-    // Parse the source file
-    let ast = parse_ruchy_source(file)?;
-
-    // Generate WASM bytes
-    let wasm_bytes = generate_and_validate_wasm(&ast, verbose)?;
-
-    // Determine output path (.ruchy -> .wasm)
-    let output_path = file.with_extension("wasm");
-
-    // Write WASM output
-    write_wasm_output(&wasm_bytes, &output_path, "wasm32", verbose)?;
-
-    Ok(output_path)
-}
-/// # Errors
-/// Returns error if compilation fails or WASM generation fails
-pub fn handle_wasm_command(
-    file: &Path,
-    output: Option<&Path>,
-    target: &str,
-    wit: bool,
-    deploy: bool,
-    deploy_target: Option<&str>,
-    _portability: bool,
-    opt_level: &str,
-    _debug: bool,
-    _simd: bool,
-    _threads: bool,
-    _component_model: bool,
-    _name: Option<&str>,
-    _version: &str,
-    verbose: bool,
-) -> Result<()> {
-    print_wasm_compilation_status(file, target, wit, verbose);
-    let ast = parse_ruchy_source(file)?;
-    let wasm_bytes = generate_and_validate_wasm(&ast, verbose)?;
-    let output_path = determine_wasm_output_path(file, output);
-    write_wasm_output(&wasm_bytes, &output_path, target, verbose)?;
-    handle_optimization_and_deployment(opt_level, deploy, deploy_target, verbose);
-    Ok(())
-}
+// handle_wasm_command moved to wasm_handler.rs
 
 /// Handle property-tests command - run property-based tests
 ///
