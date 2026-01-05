@@ -630,4 +630,177 @@ mod tests {
         let err: &dyn std::error::Error = &InterpreterError::DivisionByZero;
         assert!(err.to_string().contains("Division"));
     }
+
+    // === EXTREME TDD Round 26 - Coverage Push Tests ===
+
+    #[test]
+    fn test_display_enum_variant_multiple_data() {
+        let val = Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![Value::Integer(1), Value::Integer(2)]),
+        };
+        assert_eq!(val.to_string(), "Ok(1, 2)");
+    }
+
+    #[test]
+    fn test_display_float_negative() {
+        let val = Value::Float(-2.5);
+        assert_eq!(val.to_string(), "-2.5");
+    }
+
+    #[test]
+    fn test_display_float_very_small() {
+        let val = Value::Float(0.001);
+        assert_eq!(val.to_string(), "0.001");
+    }
+
+    #[test]
+    fn test_display_array_nested_tuples() {
+        let tuple1 = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let tuple2 = Value::Tuple(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+        let arr = Value::Array(Arc::from(vec![tuple1, tuple2]));
+        let display = arr.to_string();
+        assert!(display.starts_with("["));
+        assert!(display.ends_with("]"));
+    }
+
+    #[test]
+    fn test_display_string_empty() {
+        let val = Value::from_string("".to_string());
+        assert_eq!(val.to_string(), "\"\"");
+    }
+
+    #[test]
+    fn test_display_string_special_chars() {
+        let val = Value::from_string("hello\nworld".to_string());
+        let display = val.to_string();
+        assert!(display.starts_with("\""));
+        assert!(display.ends_with("\""));
+    }
+
+    #[test]
+    fn test_display_struct_empty() {
+        let fields: HashMap<String, Value> = HashMap::new();
+        let val = Value::Struct {
+            name: "Empty".to_string(),
+            fields: Arc::new(fields),
+        };
+        assert_eq!(val.to_string(), "Empty {}");
+    }
+
+    #[test]
+    fn test_display_class_empty() {
+        let fields: HashMap<String, Value> = HashMap::new();
+        let val = Value::Class {
+            class_name: "EmptyClass".to_string(),
+            fields: Arc::new(RwLock::new(fields)),
+            methods: Arc::new(HashMap::new()),
+        };
+        assert_eq!(val.to_string(), "EmptyClass {}");
+    }
+
+    #[test]
+    fn test_display_dataframe_empty() {
+        let columns = vec![];
+        let val = Value::DataFrame { columns };
+        let display = val.to_string();
+        assert!(display.contains("DataFrame with 0 columns"));
+    }
+
+    #[test]
+    fn test_display_range_negative_values() {
+        let val = Value::Range {
+            start: Box::new(Value::Integer(-5)),
+            end: Box::new(Value::Integer(-1)),
+            inclusive: true,
+        };
+        assert_eq!(val.to_string(), "-5..=-1");
+    }
+
+    #[test]
+    fn test_display_byte_zero() {
+        let val = Value::Byte(0);
+        assert_eq!(val.to_string(), "0");
+    }
+
+    #[test]
+    fn test_display_integer_zero() {
+        let val = Value::Integer(0);
+        assert_eq!(val.to_string(), "0");
+    }
+
+    #[test]
+    fn test_display_float_zero() {
+        let val = Value::Float(0.0);
+        assert_eq!(val.to_string(), "0.0");
+    }
+
+    #[test]
+    fn test_format_object_deterministic() {
+        let mut obj = HashMap::new();
+        obj.insert("z".to_string(), Value::Integer(3));
+        obj.insert("a".to_string(), Value::Integer(1));
+        obj.insert("m".to_string(), Value::Integer(2));
+        let val = Value::Object(Arc::new(obj));
+
+        // Run multiple times to verify determinism
+        let display1 = val.to_string();
+        let display2 = val.to_string();
+        assert_eq!(display1, display2);
+        // Keys should be sorted: a, m, z
+        assert!(display1.find("a:").unwrap() < display1.find("m:").unwrap());
+        assert!(display1.find("m:").unwrap() < display1.find("z:").unwrap());
+    }
+
+    #[test]
+    fn test_display_object_nested() {
+        let mut inner = HashMap::new();
+        inner.insert("x".to_string(), Value::Integer(1));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
+        let val = Value::Object(Arc::new(outer));
+        let display = val.to_string();
+        assert!(display.contains("{x: 1}"));
+    }
+
+    #[test]
+    fn test_display_array_single_element() {
+        let val = Value::Array(Arc::from(vec![Value::Integer(42)]));
+        assert_eq!(val.to_string(), "[42]");
+    }
+
+    #[test]
+    fn test_display_tuple_single_element() {
+        let val = Value::Tuple(Arc::from(vec![Value::Bool(true)]));
+        assert_eq!(val.to_string(), "(true)");
+    }
+
+    #[test]
+    fn test_display_builtin_function_empty_name() {
+        let val = Value::BuiltinFunction("".to_string());
+        assert_eq!(val.to_string(), "<builtin function: >");
+    }
+
+    #[test]
+    fn test_display_atom_with_underscores() {
+        let val = Value::Atom("some_status".to_string());
+        assert_eq!(val.to_string(), ":some_status");
+    }
+
+    #[test]
+    fn test_format_struct_deterministic() {
+        let mut fields = HashMap::new();
+        fields.insert("z".to_string(), Value::Integer(3));
+        fields.insert("a".to_string(), Value::Integer(1));
+        let val = Value::Struct {
+            name: "Test".to_string(),
+            fields: Arc::new(fields),
+        };
+        let display1 = val.to_string();
+        let display2 = val.to_string();
+        assert_eq!(display1, display2);
+        // Keys should be sorted
+        assert!(display1.find("a:").unwrap() < display1.find("z:").unwrap());
+    }
 }
