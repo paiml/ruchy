@@ -174,4 +174,58 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("notebook"));
     }
+
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_wasm_benchmark_invalid_path() {
+        let result = benchmark_wasm(
+            &PathBuf::from("/nonexistent/path/module.wasm"),
+            "add",
+            &[1, 2],
+            10,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Failed to load"));
+    }
+
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_wasm_benchmark_zero_iterations() {
+        let module_path = PathBuf::from("tests/fixtures/test.wasm");
+        if !module_path.exists() {
+            return; // Skip if no fixture
+        }
+        let results = benchmark_wasm(&module_path, "add", &[1, 2], 0).unwrap();
+        assert_eq!(results.total_requests, 0);
+    }
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_wasm_benchmark_disabled_error_message() {
+        let result = benchmark_wasm(&PathBuf::from("any.wasm"), "func", &[], 1);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("wasmtime"));
+    }
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_wasm_benchmark_disabled_with_args() {
+        let result = benchmark_wasm(&PathBuf::from("test.wasm"), "multiply", &[5, 10], 100);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_wasm_benchmark_disabled_empty_args() {
+        let result = benchmark_wasm(&PathBuf::from("test.wasm"), "noop", &[], 50);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_wasm_benchmark_disabled_many_iterations() {
+        let result = benchmark_wasm(&PathBuf::from("test.wasm"), "sum", &[1, 2, 3], 10000);
+        assert!(result.is_err());
+    }
 }
