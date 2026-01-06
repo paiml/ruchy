@@ -51,7 +51,7 @@ impl Transpiler {
     }
     /// Generate parameter tokens with proper type inference
     /// EXTREME TDD Round 78: Delegates to function_param_inference module
-    fn generate_param_tokens(
+    pub(crate) fn generate_param_tokens(
         &self,
         params: &[Param],
         body: &Expr,
@@ -61,7 +61,7 @@ impl Transpiler {
     }
     /// Generate return type tokens based on function analysis
     /// EXTREME TDD Round 78: Delegates to function_signature module
-    fn generate_return_type_tokens(
+    pub(crate) fn generate_return_type_tokens(
         &self,
         name: &str,
         return_type: Option<&Type>,
@@ -78,18 +78,18 @@ impl Transpiler {
 
     /// Generate body tokens with async support
     /// EXTREME TDD Round 79: Delegates to body_generation module
-    fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
+    pub(crate) fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
         self.generate_body_tokens_impl(body, is_async)
     }
     /// Generate type parameter tokens with trait bound support
     /// DEFECT-021 FIX: Properly handle trait bounds like "T: Clone + Debug"
     /// EXTREME TDD Round 76: Delegates to function_signature module
-    fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
+    pub(crate) fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
         self.generate_type_param_tokens_impl(type_params)
     }
     /// Generate complete function signature
     /// EXTREME TDD Round 79: Delegates to function_signature module
-    fn generate_function_signature(
+    pub(crate) fn generate_function_signature(
         &self,
         is_pub: bool,
         is_async: bool,
@@ -178,7 +178,7 @@ impl Transpiler {
 
     /// DEFECT-012: Generate body tokens with .`to_string()` wrapper on last expression
     /// EXTREME TDD Round 77: Delegates to string_body_conversion module
-    fn generate_body_tokens_with_string_conversion(
+    pub(crate) fn generate_body_tokens_with_string_conversion(
         &self,
         body: &Expr,
         is_async: bool,
@@ -188,7 +188,7 @@ impl Transpiler {
 
     /// Generate param tokens with lifetime annotations
     /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
-    fn generate_param_tokens_with_lifetime(
+    pub(crate) fn generate_param_tokens_with_lifetime(
         &self,
         params: &[Param],
         body: &Expr,
@@ -205,7 +205,7 @@ impl Transpiler {
 
     /// Generate return type tokens with lifetime annotation
     /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
-    fn generate_return_type_tokens_with_lifetime(
+    pub(crate) fn generate_return_type_tokens_with_lifetime(
         &self,
         name: &str,
         return_type: Option<&Type>,
@@ -214,13 +214,8 @@ impl Transpiler {
         self.generate_return_type_tokens_with_lifetime_impl(name, return_type, body)
     }
 
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// let mut transpiler = Transpiler::new();
-    /// // transpile_function is called internally by transpile
-    /// ```
+    /// Transpile function definition
+    /// EXTREME TDD Round 81: Delegates to function_transpiler module
     pub fn transpile_function(
         &self,
         name: &str,
@@ -232,86 +227,14 @@ impl Transpiler {
         is_pub: bool,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
-        let fn_name = format_ident!("{}", name);
-
-        // Check if we need to add lifetime parameter
-        let needs_lifetime = super::type_analysis::needs_lifetime_parameter(params, return_type);
-
-        // If lifetime needed, add 'a to type params and modify param/return types
-        // DEFECT-028 FIX: Check if type_params already contains a lifetime to avoid duplicates
-        let has_existing_lifetime = type_params.iter().any(|p| p.starts_with('\''));
-        let mut modified_type_params = type_params.to_vec();
-        if needs_lifetime && !has_existing_lifetime {
-            modified_type_params.insert(0, "'a".to_string());
-        }
-
-        // TRANSPILER-004 FIX: Track String-typed parameters for proper concat transpilation
-        // Before processing function body, register all String parameters in string_vars
-        // This enables is_definitely_string() to detect them for `a + b` → `format!()` or `a + &b`
-        for param in params {
-            if let TypeKind::Named(type_name) = &param.ty.kind {
-                if type_name == "String" {
-                    self.string_vars.borrow_mut().insert(param.name().clone());
-                }
-            }
-        }
-
-        // DEFECT-024 FIX: Track Option/Result-typed parameters for proper .map() transpilation
-        // This enables is_option_or_result_with_context() to detect Option/Result variables
-        for param in params {
-            let type_str = Transpiler::type_to_string(&param.ty);
-            if type_str.starts_with("Option") || type_str.starts_with("Result") {
-                self.register_variable_type(&param.name(), &type_str);
-            }
-        }
-
-        let param_tokens = if needs_lifetime {
-            self.generate_param_tokens_with_lifetime(params, body, name)?
-        } else {
-            self.generate_param_tokens(params, body, name)?
-        };
-
-        // Check for #[test] attribute and override return type if found
-        let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
-        let effective_return_type = if has_test_attribute {
-            None // Test functions should have unit return type
-        } else {
-            return_type
-        };
-
-        // TRANSPILER-007: Set current function return type for empty vec type inference
-        self.current_function_return_type
-            .replace(effective_return_type.cloned());
-
-        // DEFECT-012 FIX: Generate body tokens with special handling for String return type
-        let body_tokens = if let Some(ret_type) = effective_return_type {
-            if super::type_analysis::is_string_type(ret_type) && super::type_analysis::body_needs_string_conversion(body) {
-                self.generate_body_tokens_with_string_conversion(body, is_async)?
-            } else {
-                self.generate_body_tokens(body, is_async)?
-            }
-        } else {
-            self.generate_body_tokens(body, is_async)?
-        };
-
-        // TRANSPILER-007: Clear current function return type after body transpilation
-        self.current_function_return_type.replace(None);
-
-        let return_type_tokens = if needs_lifetime {
-            self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?
-        } else {
-            self.generate_return_type_tokens(name, effective_return_type, body, params)?
-        };
-
-        let type_param_tokens = self.generate_type_param_tokens(&modified_type_params)?;
-        self.generate_function_signature(
-            is_pub,
+        self.transpile_function_impl(
+            name,
+            type_params,
+            params,
+            body,
             is_async,
-            &fn_name,
-            &type_param_tokens,
-            &param_tokens,
-            &return_type_tokens,
-            &body_tokens,
+            return_type,
+            is_pub,
             attributes,
         )
     }
