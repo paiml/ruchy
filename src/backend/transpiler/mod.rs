@@ -79,6 +79,7 @@ mod block_transpiler; // EXTREME TDD Round 71: Block and pipeline transpilation
 mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilation
 mod string_body_conversion; // EXTREME TDD Round 73: String body conversion helpers
 mod lifetime_helpers; // EXTREME TDD Round 74: Lifetime parameter helpers
+mod type_transpilers; // EXTREME TDD Round 75: Type transpilation helpers
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
