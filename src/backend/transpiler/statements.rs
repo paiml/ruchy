@@ -117,81 +117,9 @@ impl Transpiler {
 
     /// Helper to detect nested array access (2D arrays)
     /// Detects patterns like: param[i][j], param[row][col], param[0][i]
-    /// Complexity: 10
+    /// Delegates to function_param_inference module (EXTREME TDD Round 70)
     fn is_nested_array_param(&self, param_name: &str, expr: &Expr) -> bool {
-        Self::find_nested_array_access(param_name, expr, &mut std::collections::HashSet::new())
-    }
-
-    /// Internal helper with visited tracking to prevent infinite recursion
-    /// Complexity: 9
-    fn find_nested_array_access(
-        param_name: &str,
-        expr: &Expr,
-        visited: &mut std::collections::HashSet<usize>,
-    ) -> bool {
-        use crate::frontend::ast::ExprKind;
-
-        // Prevent infinite recursion by tracking visited nodes
-        let expr_addr = std::ptr::from_ref(expr) as usize;
-        if visited.contains(&expr_addr) {
-            return false;
-        }
-        visited.insert(expr_addr);
-
-        match &expr.kind {
-            // Direct nested indexing: param[i][j]
-            ExprKind::IndexAccess { object, .. } => {
-                // Check if the object being indexed is itself an index access on our param
-                if let ExprKind::IndexAccess { object: inner, .. } = &object.kind {
-                    if let ExprKind::Identifier(name) = &inner.kind {
-                        if name == param_name {
-                            return true;
-                        }
-                    }
-                }
-                // Recurse into object
-                Self::find_nested_array_access(param_name, object, visited)
-            }
-            // Recurse into block expressions
-            ExprKind::Block(exprs) => exprs
-                .iter()
-                .any(|e| Self::find_nested_array_access(param_name, e, visited)),
-            // Let bindings
-            ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
-                Self::find_nested_array_access(param_name, value, visited)
-                    || Self::find_nested_array_access(param_name, body, visited)
-            }
-            // Binary operations
-            ExprKind::Binary { left, right, .. } => {
-                Self::find_nested_array_access(param_name, left, visited)
-                    || Self::find_nested_array_access(param_name, right, visited)
-            }
-            // While loops
-            ExprKind::While {
-                condition, body, ..
-            } => {
-                Self::find_nested_array_access(param_name, condition, visited)
-                    || Self::find_nested_array_access(param_name, body, visited)
-            }
-            // If expressions
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                Self::find_nested_array_access(param_name, condition, visited)
-                    || Self::find_nested_array_access(param_name, then_branch, visited)
-                    || else_branch
-                        .as_ref()
-                        .is_some_and(|e| Self::find_nested_array_access(param_name, e, visited))
-            }
-            // Assignments
-            ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
-                Self::find_nested_array_access(param_name, target, visited)
-                    || Self::find_nested_array_access(param_name, value, visited)
-            }
-            _ => false,
-        }
+        self.is_nested_array_param_impl(param_name, expr)
     }
     /// Generate parameter tokens with proper type inference
     fn generate_param_tokens(
@@ -310,46 +238,9 @@ impl Transpiler {
         }
     }
     /// Check if an expression references any global variables (TRANSPILER-SCOPE)
+    /// Delegates to function_signature module (EXTREME TDD Round 70)
     fn references_globals(&self, expr: &Expr) -> bool {
-        let globals = self
-            .global_vars
-            .read()
-            .expect("RwLock poisoned: global_vars lock is corrupted");
-        if globals.is_empty() {
-            return false;
-        }
-        Self::expr_references_any(expr, &globals)
-    }
-
-    /// Recursively check if expression references any of the given names
-    fn expr_references_any(expr: &Expr, names: &std::collections::HashSet<String>) -> bool {
-        match &expr.kind {
-            ExprKind::Identifier(name) => names.contains(name),
-            ExprKind::Assign { target, value } => {
-                Self::expr_references_any(target, names) || Self::expr_references_any(value, names)
-            }
-            ExprKind::Binary { left, right, .. } => {
-                Self::expr_references_any(left, names) || Self::expr_references_any(right, names)
-            }
-            ExprKind::Block(exprs) => exprs.iter().any(|e| Self::expr_references_any(e, names)),
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                Self::expr_references_any(condition, names)
-                    || Self::expr_references_any(then_branch, names)
-                    || else_branch
-                        .as_ref()
-                        .is_some_and(|e| Self::expr_references_any(e, names))
-            }
-            ExprKind::Call { func, args } => {
-                Self::expr_references_any(func, names)
-                    || args.iter().any(|a| Self::expr_references_any(a, names))
-            }
-            ExprKind::Set(elements) => elements.iter().any(|e| Self::expr_references_any(e, names)),
-            _ => false,
-        }
+        self.references_globals_impl(expr)
     }
 
     /// Generate body tokens with async support
@@ -449,34 +340,9 @@ impl Transpiler {
     }
     /// Generate type parameter tokens with trait bound support
     /// DEFECT-021 FIX: Properly handle trait bounds like "T: Clone + Debug"
+    /// EXTREME TDD Round 76: Delegates to function_signature module
     fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
-        use proc_macro2::Span;
-        use syn::Lifetime;
-        Ok(type_params
-            .iter()
-            .map(|p| {
-                if p.starts_with('\'') {
-                    // Lifetime parameter - use Lifetime token
-                    let lifetime = Lifetime::new(p, Span::call_site());
-                    quote! { #lifetime }
-                } else if p.contains(':') {
-                    // DEFECT-021: Parse as TypeParam for proper trait bounds
-                    syn::parse_str::<syn::TypeParam>(p).map_or_else(
-                        |_| {
-                            // Fallback: just use the name part
-                            let name = p.split(':').next().unwrap_or(p).trim();
-                            let ident = format_ident!("{}", name);
-                            quote! { #ident }
-                        },
-                        |tp| quote! { #tp },
-                    )
-                } else {
-                    // Simple type parameter
-                    let ident = format_ident!("{}", p);
-                    quote! { #ident }
-                }
-            })
-            .collect())
+        self.generate_type_param_tokens_impl(type_params)
     }
     /// Generate complete function signature
     /// Generate function signature
@@ -531,80 +397,12 @@ impl Transpiler {
     }
 
     /// Process attributes into regular attributes and modifiers
-    /// Complexity: 4 (within Toyota Way limits)
+    /// EXTREME TDD Round 76: Delegates to function_signature module
     fn process_attributes(
         &self,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> (Vec<TokenStream>, TokenStream) {
-        let mut regular_attrs = Vec::new();
-        let mut modifiers = Vec::new();
-
-        for attr in attributes {
-            match attr.name.as_str() {
-                "unsafe" => modifiers.push(quote! { unsafe }),
-                "const" => modifiers.push(quote! { const }),
-                _ => {
-                    regular_attrs.push(self.format_regular_attribute(attr));
-                }
-            }
-        }
-
-        let modifiers_tokens = quote! { #(#modifiers)* };
-        (regular_attrs, modifiers_tokens)
-    }
-
-    /// Format a regular attribute
-    /// Complexity: 5 (within Toyota Way limits)
-    ///
-    /// Special handling for Rust attributes:
-    /// - `#[test]` takes no arguments - strips any description provided
-    ///
-    /// PARSER-077 FIX: Manually construct `TokenStream` with `Spacing::Joint`
-    /// The quote! macro generates Punct { '#', spacing: Alone } which adds unwanted space
-    /// We need Punct { '#', spacing: Joint } for correct #[...] syntax
-    fn format_regular_attribute(&self, attr: &crate::frontend::ast::Attribute) -> TokenStream {
-        use proc_macro2::{Delimiter, Group, Punct, Spacing, TokenTree};
-
-        let attr_name = format_ident!("{}", attr.name);
-
-        // Rust's #[test] attribute takes no arguments, unlike Ruchy's @test("desc").
-        // Strip descriptions to match Rust's syntax: @test("desc") → #[test]
-        if attr.name == "test" {
-            // Manual TokenStream construction with Spacing::Joint ensures no space after #.
-            // This produces #[test] instead of # [test], which is a syntax error.
-            let pound = Punct::new('#', Spacing::Joint);
-            let attr_tokens = quote! { #attr_name };
-            let group = Group::new(Delimiter::Bracket, attr_tokens);
-
-            return vec![TokenTree::Punct(pound), TokenTree::Group(group)]
-                .into_iter()
-                .collect();
-        }
-
-        // For other attributes without args, use same manual construction
-        if attr.args.is_empty() {
-            let pound = Punct::new('#', Spacing::Joint);
-            let attr_tokens = quote! { #attr_name };
-            let group = Group::new(Delimiter::Bracket, attr_tokens);
-
-            vec![TokenTree::Punct(pound), TokenTree::Group(group)]
-                .into_iter()
-                .collect()
-        } else {
-            // Attributes with args: #[attr_name(args)]
-            let pound = Punct::new('#', Spacing::Joint);
-            let args: Vec<TokenStream> = attr
-                .args
-                .iter()
-                .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
-                .collect();
-            let attr_tokens = quote! { #attr_name(#(#args),*) };
-            let group = Group::new(Delimiter::Bracket, attr_tokens);
-
-            vec![TokenTree::Punct(pound), TokenTree::Group(group)]
-                .into_iter()
-                .collect()
-        }
+        self.process_attributes_impl(attributes)
     }
 
     /// Generate function declaration based on async/generic flags
