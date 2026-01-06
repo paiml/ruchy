@@ -39,7 +39,7 @@ impl Transpiler {
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
-    fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
+    pub(crate) fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
         use super::type_inference::{
             infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_bool,
             is_param_used_as_function, is_param_used_as_index, is_param_used_in_print_macro,
