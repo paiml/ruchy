@@ -37,82 +37,10 @@ impl Transpiler {
     }
 
     /// Transpiles function definitions
-    #[allow(clippy::too_many_arguments)]
     /// Infer parameter type based on usage in function body
+    /// EXTREME TDD Round 79: Delegates to function_param_inference module
     pub(crate) fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
-        use super::type_inference::{
-            infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_bool,
-            is_param_used_as_function, is_param_used_as_index, is_param_used_in_print_macro,
-            is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
-        };
-
-        // Check for function parameters first (higher-order functions)
-        if is_param_used_as_function(&param.name(), body) {
-            return quote! { impl Fn(i32) -> i32 };
-        }
-
-        // ISSUE-114 FIX: Check if parameter is used as boolean condition
-        // Must come before numeric checks since `if flag` is not numeric
-        if is_param_used_as_bool(&param.name(), body) {
-            return quote! { bool };
-        }
-
-        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an array (indexed)
-        // This must come before builtin usage check because len() works on both arrays and strings
-        if is_param_used_as_array(&param.name(), body) {
-            // Detect 2D array access (nested indexing like param[i][j])
-            if self.is_nested_array_param(&param.name(), body) {
-                return quote! { &Vec<Vec<i32>> };
-            }
-            // 1D array access
-            return quote! { &Vec<i32> };
-        }
-
-        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used with len()
-        // Since len() works on both arrays and strings, default to array type
-        if is_param_used_with_len(&param.name(), body) {
-            // Check if it's len() on nested array access (like len(param[0]))
-            if self.is_nested_array_param(&param.name(), body) {
-                return quote! { &Vec<Vec<i32>> };
-            }
-            return quote! { &Vec<i32> };
-        }
-
-        // TRANSPILER-PARAM-INFERENCE: Check if parameter is used as an index
-        if is_param_used_as_index(&param.name(), body) {
-            // Parameter used as index should be integer type
-            return quote! { i32 };
-        }
-
-        // Check if used numerically
-        if is_param_used_numerically(&param.name(), body)
-            || super::function_analysis::looks_like_numeric_function(func_name)
-        {
-            return quote! { i32 };
-        }
-
-        // Check built-in function signatures for string-specific operations
-        // This comes AFTER array/index checks to avoid false positives with len(), etc.
-        if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
-            if type_hint == "&str" {
-                return quote! { &str };
-            }
-            // Future: Add more types as needed (String, Vec<String>, etc.)
-        }
-
-        // Check if parameter is used in string concatenation (e.g., "Hello " + name)
-        if is_param_used_in_string_concat(&param.name(), body) {
-            return quote! { &str };
-        }
-
-        // Check if parameter is used in print/format macros (e.g., println!("{}", msg))
-        if is_param_used_in_print_macro(&param.name(), body) {
-            return quote! { &str };
-        }
-
-        // ISSUE-114 FIX: Default to i32 for unused/untyped parameters
-        // This matches Ruchy's convention where numeric types are the default
-        quote! { i32 }
+        self.infer_param_type_impl(param, body, func_name)
     }
 
     /// Helper to detect nested array access (2D arrays)
@@ -149,99 +77,9 @@ impl Transpiler {
     }
 
     /// Generate body tokens with async support
+    /// EXTREME TDD Round 79: Delegates to body_generation module
     fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
-        // Issue #132: No unsafe wrapping needed with LazyLock<Mutex<T>>
-        // Access is thread-safe via .lock().expect("operation should succeed in test")
-
-        let body_tokens = if is_async {
-            let mut async_transpiler = Transpiler::new();
-            async_transpiler.in_async_context = true;
-            async_transpiler.transpile_expr(body)?
-        } else {
-            // Check if body is already a block to avoid double-wrapping
-            match &body.kind {
-                // EMERGENCY FIX: Treat Set as Block for function bodies
-                // This fixes the v3.51.0 transpiler regression where function bodies
-                // like { a + b } are incorrectly parsed as Set([a + b]) instead of Block([a + b])
-                ExprKind::Set(elements) => {
-                    // EMERGENCY FIX: Function bodies that are incorrectly parsed as sets, treat them as blocks
-                    if elements.len() == 1 {
-                        // Single expression set - transpile the expression directly (like a single-expr block)
-                        // BYPASS the normal Set transpiler to avoid HashSet generation
-                        self.transpile_expr(&elements[0])?
-                    } else {
-                        // Multiple expressions - treat as block statements
-                        let mut statements = Vec::new();
-                        for (i, expr) in elements.iter().enumerate() {
-                            let expr_tokens = self.transpile_expr(expr)?;
-                            if i < elements.len() - 1 {
-                                statements.push(quote! { #expr_tokens; });
-                            } else {
-                                statements.push(expr_tokens);
-                            }
-                        }
-                        quote! { { #(#statements)* } }
-                    }
-                }
-                ExprKind::Block(exprs) => {
-                    // For function bodies that are blocks, transpile the contents directly
-                    if exprs.len() == 1 {
-                        // Single expression block - transpile the expression directly
-                        self.transpile_expr(&exprs[0])?
-                    } else {
-                        // Multiple expressions - need proper semicolons between statements
-                        let mut statements = Vec::new();
-                        for (i, expr) in exprs.iter().enumerate() {
-                            let expr_tokens = self.transpile_expr(expr)?;
-                            // Check if this is a Let/LetPattern expression (already has semicolon)
-                            let is_let = matches!(
-                                &expr.kind,
-                                ExprKind::Let { .. } | ExprKind::LetPattern { .. }
-                            );
-
-                            // Add semicolons to all statements except the last one
-                            // (unless it's a void expression that needs a semicolon)
-                            if i < exprs.len() - 1 {
-                                // Not the last statement
-                                if is_let {
-                                    // Let expressions already have semicolons
-                                    statements.push(expr_tokens);
-                                } else {
-                                    // Other statements need semicolons
-                                    statements.push(quote! { #expr_tokens; });
-                                }
-                            } else {
-                                // Last statement - check if it's void
-                                if super::function_analysis::is_void_expression(expr) {
-                                    // Void expressions should have semicolons
-                                    if is_let {
-                                        // Let already has semicolon
-                                        statements.push(expr_tokens);
-                                    } else {
-                                        statements.push(quote! { #expr_tokens; });
-                                    }
-                                } else {
-                                    // Non-void last expression - no semicolon (it's the return value)
-                                    statements.push(expr_tokens);
-                                }
-                            }
-                        }
-                        if statements.is_empty() {
-                            quote! {}
-                        } else {
-                            quote! { #(#statements)* }
-                        }
-                    }
-                }
-                _ => {
-                    // Not a block - transpile normally
-                    self.transpile_expr(body)?
-                }
-            }
-        };
-
-        // Issue #132: No unsafe wrapping needed - LazyLock<Mutex<T>> is thread-safe
-        Ok(body_tokens)
+        self.generate_body_tokens_impl(body, is_async)
     }
     /// Generate type parameter tokens with trait bound support
     /// DEFECT-021 FIX: Properly handle trait bounds like "T: Clone + Debug"
@@ -250,8 +88,7 @@ impl Transpiler {
         self.generate_type_param_tokens_impl(type_params)
     }
     /// Generate complete function signature
-    /// Generate function signature
-    /// Complexity: 2 (within Toyota Way limits)
+    /// EXTREME TDD Round 79: Delegates to function_signature module
     fn generate_function_signature(
         &self,
         is_pub: bool,
@@ -263,20 +100,15 @@ impl Transpiler {
         body_tokens: &TokenStream,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
-        let final_return_type = self.compute_final_return_type(fn_name, return_type_tokens);
-        let visibility = self.generate_visibility_token(is_pub);
-        let (regular_attrs, modifiers_tokens) = self.process_attributes(attributes);
-
-        self.generate_function_declaration(
+        self.generate_function_signature_impl(
+            is_pub,
             is_async,
-            type_param_tokens,
-            &regular_attrs,
-            &visibility,
-            &modifiers_tokens,
             fn_name,
+            type_param_tokens,
             param_tokens,
-            &final_return_type,
+            return_type_tokens,
             body_tokens,
+            attributes,
         )
     }
 
@@ -485,260 +317,28 @@ impl Transpiler {
     }
     /// Transpiles lambda expressions
     /// # Examples
-    ///
-    /// ```ignore
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// let mut transpiler = Transpiler::new();
-    /// // transpile_lambda is called internally
-    /// ```
+    /// Transpile lambda/closure expressions
+    /// EXTREME TDD Round 79: Delegates to lambda_transpiler module
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        let body_tokens = self.transpile_expr(body)?;
-        // DEFECT-CLOSURE-RETURN FIX: Use 'move' for closures to capture variables by value
-        // This is necessary when closures are returned from functions and capture outer variables
-
-        // SPEC-001-A: Generate parameters with type annotations for rustc compilation
-        // Rust closures need explicit types when type inference is insufficient
-        if params.is_empty() {
-            Ok(quote! { move || #body_tokens })
-        } else {
-            // Build parameter list with type annotations: |x: i32, y: i32|
-            let param_strs: Vec<String> = params
-                .iter()
-                .map(|p| {
-                    let name = p.name();
-                    let ty_str = self
-                        .transpile_type(&p.ty)
-                        .map_or_else(|_| "_".to_string(), |t| t.to_string());
-                    if ty_str == "_" {
-                        // No type annotation (inferred)
-                        name
-                    } else {
-                        // Explicit type annotation
-                        format!("{name}: {ty_str}")
-                    }
-                })
-                .collect();
-            let param_list = param_strs.join(", ");
-            let closure_str = format!("move |{param_list}| {body_tokens}");
-            closure_str
-                .parse()
-                .map_err(|e| anyhow::anyhow!("Failed to parse closure: {e}"))
-        }
+        self.transpile_lambda_impl(params, body)
     }
     /// Transpiles function calls
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("println !"));
-    /// assert!(result.contains("Hello, {}"));
-    /// ```
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new(r#"println("Simple message")"#);
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("println !"));
-    /// assert!(result.contains("Simple message"));
-    /// ```
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new("some_function(\"test\")");
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("some_function"));
-    /// assert!(result.contains("test"));
-    /// ```
+    /// EXTREME TDD Round 79: Delegates to call_transpilation module
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
-        // DEFECT-COMPILE-MAIN-CALL: Rename calls to main() to __ruchy_main()
-        // This prevents infinite recursion when main function exists alongside module-level statements
-        let func_tokens = if let ExprKind::Identifier(name) = &func.kind {
-            if name == "main" {
-                // Rename main() calls to __ruchy_main() to avoid collision with Rust entry point
-                let renamed_ident = format_ident!("__ruchy_main");
-                quote! { #renamed_ident }
-            } else {
-                self.transpile_expr(func)?
-            }
-        } else {
-            self.transpile_expr(func)?
-        };
-
-        // STDLIB-003: Check for std::time::now_millis() path-based calls
-        if let ExprKind::FieldAccess { object, field } = &func.kind {
-            if let ExprKind::FieldAccess {
-                object: std_obj,
-                field: module_name,
-            } = &object.kind
-            {
-                if let ExprKind::Identifier(std_name) = &std_obj.kind {
-                    if std_name == "std" && module_name == "time" && field == "now_millis" {
-                        // std::time::now_millis() - generate SystemTime code
-                        if !args.is_empty() {
-                            bail!("std::time::now_millis() expects no arguments");
-                        }
-                        return Ok(quote! {
-                            {
-                                std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .expect("System time before Unix epoch")
-                                    .as_millis() as i64
-                            }
-                        });
-                    }
-                }
-            }
-        }
-
-        // Check if this is a built-in function with special handling
-        if let ExprKind::Identifier(name) = &func.kind {
-            let base_name = if name.ends_with('!') {
-                name.strip_suffix('!').unwrap_or(name)
-            } else {
-                name
-            };
-            // Try specialized handlers in order of precedence
-            if let Some(result) = self.try_transpile_print_macro(&func_tokens, base_name, args)? {
-                return Ok(result);
-            }
-            // TRANSPILER-003: Convert len(x) → x.len() for compile mode
-            if base_name == "len" && args.len() == 1 {
-                let arg_tokens = self.transpile_expr(&args[0])?;
-                return Ok(quote! { #arg_tokens.len() });
-            }
-            // TRANSPILER-006: time_micros() builtin (GitHub Issue #139)
-            // Transpile to: SystemTime::now().duration_since(UNIX_EPOCH).expect("operation should succeed in test").as_micros() as u64
-            if base_name == "time_micros" {
-                if !args.is_empty() {
-                    bail!("time_micros() expects no arguments");
-                }
-                return Ok(quote! {
-                    {
-                        std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .expect("System time before Unix epoch")
-                            .as_micros() as u64
-                    }
-                });
-            }
-            if let Some(result) = self.try_transpile_math_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_input_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) =
-                self.try_transpile_assert_function(&func_tokens, base_name, args)?
-            {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_type_conversion(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_math_functions(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_time_functions(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_range_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_dataframe_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_environment_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_fs_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_path_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_json_function(base_name, args)? {
-                return Ok(result);
-            }
-            if let Some(result) = self.try_transpile_http_function(base_name, args)? {
-                return Ok(result);
-            }
-            // TRUENO-001: Handle Trueno SIMD-accelerated numeric functions
-            if let Some(result) = self.try_transpile_trueno_function(base_name, args)? {
-                return Ok(result);
-            }
-            // DEFECT-STRING-RESULT FIX: Handle Ok/Err/Some when parsed as Call (not dedicated ExprKind)
-            if let Some(result) = self.try_transpile_result_call(base_name, args)? {
-                return Ok(result);
-            }
-        }
-        // Default: regular function call with string conversion
-        self.transpile_regular_function_call(&func_tokens, args)
+        self.transpile_call_impl(func, args)
     }
 
     // EXTREME TDD Round 64: transpile_print_with_interpolation moved to print_helpers.rs
 
     /// Transpiles method calls
-    #[allow(clippy::cognitive_complexity)]
+    /// EXTREME TDD Round 79: Delegates to call_transpilation module
     pub fn transpile_method_call(
         &self,
         object: &Expr,
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
-        // DEFECT-TRANSPILER-DF-002 FIX: Check if this is part of a DataFrame builder pattern
-        if method == "column" || method == "build" {
-            // Build the full method call expression to check for builder pattern
-            let method_call_expr = Expr {
-                kind: ExprKind::MethodCall {
-                    receiver: Box::new(object.clone()),
-                    method: method.to_string(),
-                    args: args.to_vec(),
-                },
-                span: object.span,
-                attributes: vec![],
-                leading_comments: Vec::new(),
-                trailing_comment: None,
-            };
-
-            // Try DataFrame builder pattern transpilation (inline implementation)
-            if let Some(builder_tokens) =
-                self.try_transpile_dataframe_builder_inline(&method_call_expr)?
-            {
-                return Ok(builder_tokens);
-            }
-        }
-
-        // DEFECT-011 FIX: For contains() method, wrap field access/identifier args with &
-        // This handles String arguments that need to be coerced to &str for Pattern trait
-        if method == "contains" && !args.is_empty() {
-            match &args[0].kind {
-                ExprKind::FieldAccess { .. } | ExprKind::Identifier(_) => {
-                    let obj_tokens = self.transpile_expr(object)?;
-                    let arg_tokens = self.transpile_expr(&args[0])?;
-                    let method_ident = format_ident!("{}", method);
-                    return Ok(quote! { #obj_tokens.#method_ident(&#arg_tokens) });
-                }
-                _ => {} // Fall through for literals and other expressions
-            }
-        }
-
-        // Use the old implementation for other cases
-        self.transpile_method_call_old(object, method, args)
+        self.transpile_method_call_impl(object, method, args)
     }
 
     /// DEFECT-TRANSPILER-DF-002: Inline `DataFrame` builder pattern transpilation
@@ -851,215 +451,21 @@ impl Transpiler {
             _ => None,
         }
     }
-    #[allow(dead_code)]
-    fn transpile_method_call_old(
-        &self,
-        object: &Expr,
-        method: &str,
-        args: &[Expr],
-    ) -> Result<TokenStream> {
-        // ISSUE-103: Check if this is a module function call (e.g., helper.get_message())
-        if let ExprKind::Identifier(name) = &object.kind {
-            if self.module_names.contains(name) {
-                // Module function call - use :: syntax
-                let module_ident = format_ident!("{}", name);
-                let method_ident = format_ident!("{}", method);
-                let arg_tokens: Result<Vec<_>> =
-                    args.iter().map(|a| self.transpile_expr(a)).collect();
-                let arg_tokens = arg_tokens?;
-                return Ok(quote! { #module_ident::#method_ident(#(#arg_tokens),*) });
-            }
-        }
-
-        let obj_tokens = self.transpile_expr(object)?;
-        let method_ident = format_ident!("{}", method);
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-        let arg_tokens = arg_tokens?;
-        // Check DataFrame methods FIRST before generic collection methods
-        if Transpiler::is_dataframe_expr(object)
-            && matches!(
-                method,
-                "get"
-                    | "rows"
-                    | "columns"
-                    | "select"
-                    | "filter"
-                    | "sort"
-                    | "head"
-                    | "tail"
-                    | "mean"
-                    | "std"
-                    | "min"
-                    | "max"
-                    | "sum"
-                    | "count"
-            )
-        {
-            return self.transpile_dataframe_method(object, method, args);
-        }
-        // Dispatch to specialized handlers based on method category
-        match method {
-            // Iterator operations (map, filter, reduce)
-            // DEFECT-024 FIX: Option/Result have their own .map()/.filter() - don't add .iter().collect()
-            "map" | "filter" | "reduce" => {
-                if self.is_option_or_result_with_context(object) {
-                    // Option/Result .map()/.filter() - use as-is without iterator pattern
-                    Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-                } else {
-                    self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
-                }
-            }
-            // HashMap/HashSet methods (contains_key, items, etc.)
-            // TRANSPILER-002 FIX: Removed "get" from this list - it was adding .cloned() to ALL get() methods
-            // including struct methods that return primitives (causing "i32 has no method cloned()" errors)
-            // Generic get() methods will now use default transpilation without .cloned()
-            // For HashMap.get() that needs .cloned(), users should explicitly call it or we need type inference
-            // TRANSPILER-007 FIX: Removed "add" from this list - it was renaming ALL add() to insert()
-            // including user-defined methods (causing "no method named insert found" errors)
-            // User-defined add() methods will now use default transpilation without renaming
-            // For HashSet.add() that needs insert(), we need proper type inference
-            "contains_key" | "keys" | "values" | "entry" | "items" | "update" => {
-                self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
-            }
-            // Set operations (union, intersection, difference, symmetric_difference)
-            "union" | "intersection" | "difference" | "symmetric_difference" => {
-                self.transpile_set_operations(&obj_tokens, method, &arg_tokens)
-            }
-            // Common collection methods (insert, remove, clear, len, is_empty, iter)
-            "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
-            // DataFrame operations - use special handling for correct Polars API
-            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "min" | "max"
-            | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
-            | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
-                // Check if this is a DataFrame operation
-                if Transpiler::is_dataframe_expr(object) {
-                    self.transpile_dataframe_method(object, method, args)
-                } else {
-                    Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-                }
-            }
-            // String methods (Python-style and Rust-style)
-            "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | "length"
-            | "substring" | "strip" | "lstrip" | "rstrip" | "startswith" | "endswith" | "split"
-            | "replace" => self.transpile_string_methods(&obj_tokens, method, &arg_tokens),
-            // List/Vec methods (Python-style)
-            "append" => {
-                // Python's append() -> Rust's push()
-                Ok(quote! { #obj_tokens.push(#(#arg_tokens),*) })
-            }
-            "extend" => {
-                // Python's extend() -> Rust's extend()
-                Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) })
-            }
-            // Collection methods that work as-is (not already handled above)
-            "push" | "pop" | "contains" => {
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
-            // Advanced collection methods (slice, concat, flatten, unique, join)
-            "slice" | "concat" | "flatten" | "unique" | "join" => {
-                self.transpile_advanced_collection_methods(&obj_tokens, method, &arg_tokens)
-            }
-            // DEFECT-023 FIX: Handle .collect() - skip if receiver already has .collect()
-            "collect" => {
-                let obj_str = obj_tokens.to_string();
-                if obj_str.contains(". collect ::") || obj_str.contains(".collect::<") {
-                    // Already has .collect(), don't add another one
-                    Ok(obj_tokens)
-                } else {
-                    // Add .collect()
-                    Ok(quote! { #obj_tokens.collect::<Vec<_>>() })
-                }
-            }
-            _ => {
-                // Regular method call
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
-        }
-    }
-
     // EXTREME TDD Round 65: Method transpilers moved to method_transpilers.rs
+    // EXTREME TDD Round 79: transpile_method_call_old removed - consolidated with call_transpilation.rs
     // (transpile_iterator_methods, transpile_map_set_methods, transpile_set_operations,
     //  transpile_string_methods, transpile_advanced_collection_methods)
 
     /// Transpiles blocks
-    ///
-    /// Issue #141 (TRANSPILER-016): Smart brace handling
-    /// - Nested single-expression blocks are flattened to avoid `{ { expr } }`
-    /// - Blocks with let bindings or multiple statements keep proper structure
+    /// EXTREME TDD Round 79: Delegates to block_transpiler module
     pub fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
-        if exprs.is_empty() {
-            return Ok(quote! { {} });
-        }
-
-        // Issue #141: Flatten nested single-expression blocks
-        // If we have a block containing only a single Block expression, flatten it
-        if exprs.len() == 1 {
-            if let ExprKind::Block(inner_exprs) = &exprs[0].kind {
-                // Recursively transpile the inner block (flattening nested blocks)
-                return self.transpile_block(inner_exprs);
-            }
-        }
-
-        let mut statements = Vec::new();
-        for (i, expr) in exprs.iter().enumerate() {
-            let expr_tokens = self.transpile_expr(expr)?;
-            // Check if this is a Let or LetPattern expression (they include their own semicolons)
-            let is_let = matches!(
-                &expr.kind,
-                ExprKind::Let { .. } | ExprKind::LetPattern { .. }
-            );
-
-            // HOTFIX: Never add semicolon to the last expression in a block (it should be the return value)
-            if i < exprs.len() - 1 {
-                // Not the last statement - add semicolon unless it's a Let (which has its own)
-                if is_let {
-                    statements.push(expr_tokens);
-                } else {
-                    statements.push(quote! { #expr_tokens; });
-                }
-            } else {
-                statements.push(expr_tokens);
-            }
-        }
-        Ok(quote! {
-            {
-                #(#statements)*
-            }
-        })
+        self.transpile_block_impl(exprs)
     }
+
     /// Transpiles pipeline expressions
+    /// EXTREME TDD Round 79: Delegates to block_transpiler module
     pub fn transpile_pipeline(&self, expr: &Expr, stages: &[PipelineStage]) -> Result<TokenStream> {
-        let mut result = self.transpile_expr(expr)?;
-        for stage in stages {
-            // Each stage contains an expression to apply
-            let stage_expr = &stage.op;
-            // Apply the stage - check what kind of expression it is
-            match &stage_expr.kind {
-                ExprKind::Call { func, args } => {
-                    let func_tokens = self.transpile_expr(func)?;
-                    let arg_tokens: Result<Vec<_>> =
-                        args.iter().map(|a| self.transpile_expr(a)).collect();
-                    let arg_tokens = arg_tokens?;
-                    // Pipeline passes the previous result as the first argument
-                    result = quote! { #func_tokens(#result #(, #arg_tokens)*) };
-                }
-                ExprKind::MethodCall { method, args, .. } => {
-                    let method_ident = format_ident!("{}", method);
-                    let arg_tokens: Result<Vec<_>> =
-                        args.iter().map(|a| self.transpile_expr(a)).collect();
-                    let arg_tokens = arg_tokens?;
-                    result = quote! { #result.#method_ident(#(#arg_tokens),*) };
-                }
-                _ => {
-                    // For other expressions, apply them directly
-                    let stage_tokens = self.transpile_expr(stage_expr)?;
-                    result = quote! { #stage_tokens(#result) };
-                }
-            }
-        }
-        Ok(result)
+        self.transpile_pipeline_impl(expr, stages)
     }
     // EXTREME TDD Round 53: Control flow methods moved to control_flow.rs
     // (transpile_for, transpile_while, transpile_if_let, transpile_while_let,
