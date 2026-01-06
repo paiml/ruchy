@@ -122,54 +122,17 @@ impl Transpiler {
         self.is_nested_array_param_impl(param_name, expr)
     }
     /// Generate parameter tokens with proper type inference
+    /// EXTREME TDD Round 78: Delegates to function_param_inference module
     fn generate_param_tokens(
         &self,
         params: &[Param],
         body: &Expr,
         func_name: &str,
     ) -> Result<Vec<TokenStream>> {
-        params
-            .iter()
-            .map(|p| {
-                let param_name = format_ident!("{}", p.name());
-
-                // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
-                // Method receivers in Rust have special syntax that differs from normal parameters
-                if p.name() == "self" {
-                    // Check if it's a reference type
-                    if let TypeKind::Reference { is_mut, .. } = &p.ty.kind {
-                        if *is_mut {
-                            // &mut self - mutable reference receiver
-                            return Ok(quote! { &mut self });
-                        }
-                        // &self - immutable reference receiver
-                        return Ok(quote! { &self });
-                    }
-                    // self - owned/consuming receiver
-                    return Ok(quote! { self });
-                }
-
-                // Regular parameter handling (not a receiver)
-                let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
-                    let token_str = tokens.to_string();
-                    if token_str == "_" {
-                        self.infer_param_type(p, body, func_name)
-                    } else {
-                        tokens
-                    }
-                } else {
-                    self.infer_param_type(p, body, func_name)
-                };
-                // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
-                if p.is_mutable {
-                    Ok(quote! { mut #param_name: #type_tokens })
-                } else {
-                    Ok(quote! { #param_name: #type_tokens })
-                }
-            })
-            .collect()
+        self.generate_param_tokens_impl(params, body, func_name)
     }
     /// Generate return type tokens based on function analysis
+    /// EXTREME TDD Round 78: Delegates to function_signature module
     fn generate_return_type_tokens(
         &self,
         name: &str,
@@ -177,65 +140,7 @@ impl Transpiler {
         body: &Expr,
         params: &[Param],
     ) -> Result<TokenStream> {
-        use super::type_inference::infer_return_type_from_builtin_call;
-
-        // ISSUE-103: Removed incorrect name-based test check
-        // Test functions are already handled by attribute check in transpile_function (line 1273)
-        // Name-based check caused false positives for regular functions starting with "test_"
-        if let Some(ty) = return_type {
-            let ty_tokens = self.transpile_type(ty)?;
-            Ok(quote! { -> #ty_tokens })
-        } else if name == "main" {
-            Ok(quote! {})
-        } else if super::function_analysis::returns_closure(body) {
-            // Functions returning closures need `impl Fn` return type annotation.
-            // Without this, Rust cannot infer the closure signature.
-            Ok(quote! { -> impl Fn(i32) -> i32 })
-        // Infer return type from built-in function calls to provide accurate type hints.
-        // Built-in stdlib functions have well-defined return types.
-        } else if let Some(return_ty) = infer_return_type_from_builtin_call(body) {
-            match return_ty {
-                "String" => {
-                    let string_ident = format_ident!("String");
-                    Ok(quote! { -> #string_ident })
-                }
-                "Vec<String>" => {
-                    let vec_ident = format_ident!("Vec");
-                    let string_ident = format_ident!("String");
-                    Ok(quote! { -> #vec_ident<#string_ident> })
-                }
-                "bool" => Ok(quote! { -> bool }),
-                "()" => Ok(quote! {}),
-                _ => Ok(quote! { -> i32 }), // Fallback for unknown types
-            }
-        // ISSUE-113 FIX: Check for boolean return type BEFORE numeric fallback
-        } else if returns_boolean(body) {
-            Ok(quote! { -> bool })
-        // ISSUE-113 FIX: Check for Vec return type BEFORE numeric fallback
-        } else if returns_vec(body) {
-            Ok(quote! { -> Vec<i32> })
-        // ISSUE-114 FIX: Check for owned String return BEFORE string literal check
-        // String concatenation, mutations, and string variables return owned String
-        } else if returns_string(body) {
-            Ok(quote! { -> String })
-        } else if super::function_analysis::looks_like_numeric_function(name) {
-            Ok(quote! { -> i32 })
-        } else if returns_string_literal(body) {
-            // ISSUE-103: String literals have 'static lifetime
-            Ok(quote! { -> &'static str })
-        // TRANSPILER-013 FIX: Check for object literal BEFORE numeric fallback
-        // Object literals transpile to BTreeMap, not i32
-        } else if returns_object_literal(body) {
-            Ok(quote! { -> std::collections::BTreeMap<String, String> })
-        // TRANSPILER-TYPE-INFER-PARAMS: Infer return type from parameter types
-        // Functions returning parameter values should use parameter's type, not default to i32
-        } else if let Some(return_ty) = self.infer_return_type_from_params(body, params)? {
-            Ok(return_ty)
-        } else if super::function_analysis::has_non_unit_expression(body) {
-            Ok(quote! { -> i32 })
-        } else {
-            Ok(quote! {})
-        }
+        self.generate_return_type_tokens_impl(name, return_type, body, params)
     }
     /// Check if an expression references any global variables (TRANSPILER-SCOPE)
     /// Delegates to function_signature module (EXTREME TDD Round 70)
@@ -378,22 +283,19 @@ impl Transpiler {
     /// Compute final return type (test functions have unit type)
     /// Complexity: 1 (within Toyota Way limits)
     /// ISSUE-103: Removed test_ prefix check - already handled by #[test] attribute check
+    /// EXTREME TDD Round 78: Delegates to function_signature module
     fn compute_final_return_type(
         &self,
-        _fn_name: &proc_macro2::Ident,
+        fn_name: &proc_macro2::Ident,
         return_type_tokens: &TokenStream,
     ) -> TokenStream {
-        return_type_tokens.clone()
+        self.compute_final_return_type_impl(fn_name, return_type_tokens)
     }
 
     /// Generate visibility token
-    /// Complexity: 1 (within Toyota Way limits)
+    /// EXTREME TDD Round 78: Delegates to function_signature module
     fn generate_visibility_token(&self, is_pub: bool) -> TokenStream {
-        if is_pub {
-            quote! { pub }
-        } else {
-            quote! {}
-        }
+        self.generate_visibility_token_impl(is_pub)
     }
 
     /// Process attributes into regular attributes and modifiers
