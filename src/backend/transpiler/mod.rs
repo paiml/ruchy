@@ -84,6 +84,8 @@ mod dataframe_transpilers; // EXTREME TDD Round 80: DataFrame transpilation
 mod function_transpiler; // EXTREME TDD Round 81: Function transpilation
 #[cfg(test)]
 mod statements_tests; // EXTREME TDD Round 83: Statement tests extracted
+#[cfg(test)]
+mod types_tests; // EXTREME TDD Round 84: Type tests extracted
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
