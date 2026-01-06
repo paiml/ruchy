@@ -406,7 +406,7 @@ impl Transpiler {
     }
 
     /// Generate function declaration based on async/generic flags
-    /// Complexity: 1 (within Toyota Way limits)
+    /// EXTREME TDD Round 77: Delegates to function_signature module
     fn generate_function_declaration(
         &self,
         is_async: bool,
@@ -419,323 +419,65 @@ impl Transpiler {
         final_return_type: &TokenStream,
         body_tokens: &TokenStream,
     ) -> Result<TokenStream> {
-        let async_keyword = if is_async {
-            quote! { async }
-        } else {
-            quote! {}
-        };
-
-        let type_params = if type_param_tokens.is_empty() {
-            quote! {}
-        } else {
-            quote! { <#(#type_param_tokens),*> }
-        };
-
-        Ok(quote! {
-            #(#regular_attrs)*
-            #visibility #modifiers_tokens #async_keyword fn #fn_name #type_params(#(#param_tokens),*) #final_return_type {
-                #body_tokens
-            }
-        })
+        self.generate_function_declaration_impl(
+            is_async,
+            type_param_tokens,
+            regular_attrs,
+            visibility,
+            modifiers_tokens,
+            fn_name,
+            param_tokens,
+            final_return_type,
+            body_tokens,
+        )
     }
 
     /// Helper: Transpile match expression with string literal arm conversion
-    /// Reduces cognitive complexity by extracting duplicated match arm handling
+    /// EXTREME TDD Round 77: Delegates to string_body_conversion module
     fn transpile_match_with_string_arms(
         &self,
         expr: &Expr,
         arms: &[crate::frontend::ast::MatchArm],
     ) -> Result<TokenStream> {
-        let expr_tokens = self.transpile_expr(expr)?;
-        let mut arm_tokens = Vec::new();
-
-        for arm in arms {
-            let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
-
-            // Check if arm body is a string literal - if so, add .to_string()
-            let body_tokens = match &arm.body.kind {
-                ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
-                    quote! { #s.to_string() }
-                }
-                _ => self.transpile_expr(&arm.body)?,
-            };
-
-            // Handle pattern guards if present
-            if let Some(guard_expr) = &arm.guard {
-                let guard_tokens = self.transpile_expr(guard_expr)?;
-                arm_tokens.push(quote! {
-                    #pattern_tokens if #guard_tokens => #body_tokens
-                });
-            } else {
-                arm_tokens.push(quote! {
-                    #pattern_tokens => #body_tokens
-                });
-            }
-        }
-
-        Ok(quote! {
-            match #expr_tokens {
-                #(#arm_tokens,)*
-            }
-        })
+        self.transpile_match_with_string_arms_impl(expr, arms)
     }
 
     /// DEFECT-012: Generate body tokens with .`to_string()` wrapper on last expression
+    /// EXTREME TDD Round 77: Delegates to string_body_conversion module
     fn generate_body_tokens_with_string_conversion(
         &self,
         body: &Expr,
         is_async: bool,
     ) -> Result<TokenStream> {
-        if is_async {
-            let mut async_transpiler = Transpiler::new();
-            async_transpiler.in_async_context = true;
-            let body_tokens = async_transpiler.transpile_expr(body)?;
-            return Ok(quote! { (#body_tokens).to_string() });
-        }
-
-        // Handle different body types
-        match &body.kind {
-            ExprKind::Block(exprs) if exprs.len() > 1 => {
-                // Multiple expressions - wrap only the LAST one with .to_string()
-                let mut statements = Vec::new();
-                for (i, expr) in exprs.iter().enumerate() {
-                    let expr_tokens = self.transpile_expr(expr)?;
-                    let is_let = matches!(
-                        &expr.kind,
-                        ExprKind::Let { .. } | ExprKind::LetPattern { .. }
-                    );
-
-                    if i < exprs.len() - 1 {
-                        // Not the last expression
-                        if is_let {
-                            statements.push(expr_tokens);
-                        } else {
-                            statements.push(quote! { #expr_tokens; });
-                        }
-                    } else {
-                        // Last expression - wrap with .to_string()
-                        statements.push(quote! { (#expr_tokens).to_string() });
-                    }
-                }
-                Ok(quote! { { #(#statements)* } })
-            }
-            ExprKind::Block(exprs) if exprs.len() == 1 => {
-                // Single expression block - check if it's a Let
-                match &exprs[0].kind {
-                    ExprKind::Let {
-                        name,
-                        type_annotation,
-                        value,
-                        body: let_body,
-                        is_mutable,
-                        ..
-                    } => {
-                        // Transpile let statement parts
-                        let name_ident = format_ident!("{}", name);
-
-                        // DEFECT-015 FIX: Check if this is a mutable variable for string literal detection
-                        let is_mutable_var = *is_mutable
-                            || self.mutable_vars.contains(name.as_str())
-                            || super::mutation_detection::is_variable_mutated(name, let_body);
-
-                        // DEFECT-015 FIX: Auto-convert string literals to String for mutable variables
-                        let value_tokens = match (&value.kind, type_annotation) {
-                            (
-                                crate::frontend::ast::ExprKind::Literal(
-                                    crate::frontend::ast::Literal::String(s),
-                                ),
-                                Some(type_ann),
-                            ) if matches!(&type_ann.kind, crate::frontend::ast::TypeKind::Named(name) if name == "String") =>
-                            {
-                                // String literal with String type annotation - add .to_string()
-                                // DEFECT-016 FIX: Track this as a string variable
-                                self.string_vars.borrow_mut().insert(name.clone());
-                                quote! { #s.to_string() }
-                            }
-                            (
-                                crate::frontend::ast::ExprKind::Literal(
-                                    crate::frontend::ast::Literal::String(s),
-                                ),
-                                None,
-                            ) if is_mutable_var => {
-                                // Mutable variable with string literal (no type annotation) - use String::from()
-                                // DEFECT-016 FIX: Track this as a string variable
-                                self.string_vars.borrow_mut().insert(name.clone());
-                                quote! { String::from(#s) }
-                            }
-                            // DEFECT-017 FIX: Auto-convert array literals to Vec when type annotation is List
-                            (crate::frontend::ast::ExprKind::List(_), Some(type_ann))
-                                if matches!(
-                                    &type_ann.kind,
-                                    crate::frontend::ast::TypeKind::List(_)
-                                ) =>
-                            {
-                                // Array literal with Vec type annotation - add .to_vec()
-                                // Ruchy: let processes: [Process] = [current]; (parsed as TypeKind::List)
-                                // Transpiled: let processes: Vec<Process> = [current].to_vec();
-                                let list_tokens = self.transpile_expr(value)?;
-                                quote! { #list_tokens.to_vec() }
-                            }
-                            // DEFECT-016-B FIX: Track function call results that might return String
-                            (crate::frontend::ast::ExprKind::Call { .. }, _) => {
-                                // Function call - optimistically track in string_vars for auto-borrowing
-                                self.string_vars.borrow_mut().insert(name.clone());
-                                self.transpile_expr(value)?
-                            }
-                            _ => self.transpile_expr(value)?,
-                        };
-
-                        let let_body_tokens = self.transpile_expr(let_body)?;
-
-                        let mutability = if is_mutable_var {
-                            quote! { mut }
-                        } else {
-                            quote! {}
-                        };
-
-                        let type_annotation_tokens = if let Some(ty) = type_annotation {
-                            let ty_tokens = self.transpile_type(ty)?;
-                            quote! { : #ty_tokens }
-                        } else {
-                            quote! {}
-                        };
-
-                        // Wrap the let body (the final expression) with .to_string()
-                        Ok(quote! {
-                            {
-                                let #mutability #name_ident #type_annotation_tokens = #value_tokens;
-                                (#let_body_tokens).to_string()
-                            }
-                        })
-                    }
-                    // DEFECT-016-C: Handle Match expression in single-expression block
-                    ExprKind::Match { expr, arms } => {
-                        self.transpile_match_with_string_arms(expr, arms)
-                    }
-                    _ => {
-                        // Not a Let - wrap entire expression
-                        let expr_tokens = self.transpile_expr(&exprs[0])?;
-                        Ok(quote! { (#expr_tokens).to_string() })
-                    }
-                }
-            }
-            // DEFECT-016-C FIX: Match expressions returning String need .to_string() on string literal arms
-            ExprKind::Match { expr, arms } => self.transpile_match_with_string_arms(expr, arms),
-            _ => {
-                // Single expression or simple body - wrap entire body
-                let body_tokens = self.transpile_expr(body)?;
-                Ok(quote! { (#body_tokens).to_string() })
-            }
-        }
+        self.generate_body_tokens_with_string_conversion_impl(body, is_async)
     }
 
     /// Generate param tokens with lifetime annotations
+    /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
     fn generate_param_tokens_with_lifetime(
         &self,
         params: &[Param],
         body: &Expr,
         func_name: &str,
     ) -> Result<Vec<TokenStream>> {
-        params
-            .iter()
-            .map(|p| {
-                let param_name = format_ident!("{}", p.name());
-
-                // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
-                // Method receivers in Rust have special syntax that differs from normal parameters
-                if p.name() == "self" {
-                    // Check if it's a reference type
-                    if let TypeKind::Reference { is_mut, .. } = &p.ty.kind {
-                        if *is_mut {
-                            // &mut self - mutable reference receiver
-                            return Ok(quote! { &mut self });
-                        }
-                        // &self - immutable reference receiver (with lifetime if needed)
-                        return Ok(quote! { &self });
-                    }
-                    // self - owned/consuming receiver
-                    return Ok(quote! { self });
-                }
-
-                // Regular parameter handling (not a receiver)
-                let type_tokens = if let Ok(tokens) = self.transpile_type_with_lifetime(&p.ty) {
-                    let token_str = tokens.to_string();
-                    if token_str == "_" {
-                        self.infer_param_type(p, body, func_name)
-                    } else {
-                        tokens
-                    }
-                } else {
-                    self.infer_param_type(p, body, func_name)
-                };
-                // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
-                if p.is_mutable {
-                    Ok(quote! { mut #param_name: #type_tokens })
-                } else {
-                    Ok(quote! { #param_name: #type_tokens })
-                }
-            })
-            .collect()
+        self.generate_param_tokens_with_lifetime_impl(params, body, func_name)
     }
 
     /// Transpile type with lifetime annotation (&T becomes &'a T)
+    /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
     fn transpile_type_with_lifetime(&self, ty: &Type) -> Result<TokenStream> {
-        use crate::frontend::ast::TypeKind;
-        match &ty.kind {
-            TypeKind::Reference {
-                is_mut,
-                inner,
-                lifetime: _,
-            } => {
-                // DEFECT-028 FIX: Special case &str to avoid double reference
-                // transpile_type("str") returns "&str", so we must emit "str" directly here
-                let inner_tokens = if let TypeKind::Named(name) = &inner.kind {
-                    if name == "str" {
-                        quote! { str }
-                    } else {
-                        self.transpile_type(inner)?
-                    }
-                } else {
-                    self.transpile_type(inner)?
-                };
-                let mut_token = if *is_mut {
-                    quote! { mut }
-                } else {
-                    quote! {}
-                };
-                Ok(quote! { &'a #mut_token #inner_tokens })
-            }
-            _ => self.transpile_type(ty),
-        }
+        self.transpile_type_with_lifetime_impl(ty)
     }
 
     /// Generate return type tokens with lifetime annotation
+    /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
     fn generate_return_type_tokens_with_lifetime(
         &self,
         name: &str,
         return_type: Option<&Type>,
         body: &Expr,
     ) -> Result<TokenStream> {
-        // ISSUE-103: Removed test_ prefix check - already handled by #[test] attribute check
-        if let Some(ty) = return_type {
-            let ty_tokens = self.transpile_type_with_lifetime(ty)?;
-            Ok(quote! { -> #ty_tokens })
-        } else if name == "main" {
-            Ok(quote! {})
-        } else if super::function_analysis::returns_closure(body) {
-            // DEFECT-CLOSURE-RETURN FIX: Infer closure return type
-            // Functions returning closures should have `impl Fn` return type
-            Ok(quote! { -> impl Fn(i32) -> i32 })
-        } else if super::function_analysis::looks_like_numeric_function(name) {
-            Ok(quote! { -> i32 })
-        } else if returns_string_literal(body) {
-            // ISSUE-103: Detect string literal returns (with lifetime)
-            Ok(quote! { -> &'a str })
-        } else if super::function_analysis::has_non_unit_expression(body) {
-            Ok(quote! { -> i32 })
-        } else {
-            Ok(quote! {})
-        }
+        self.generate_return_type_tokens_with_lifetime_impl(name, return_type, body)
     }
 
     /// # Examples
