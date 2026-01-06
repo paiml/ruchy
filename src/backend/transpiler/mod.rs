@@ -76,6 +76,7 @@ mod function_signature; // EXTREME TDD Round 70: Function signature generation
 mod body_generation; // EXTREME TDD Round 70: Function body token generation
 mod lambda_transpiler; // EXTREME TDD Round 71: Lambda/closure transpilation
 mod block_transpiler; // EXTREME TDD Round 71: Block and pipeline transpilation
+mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilation
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
