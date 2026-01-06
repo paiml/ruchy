@@ -1,19 +1,12 @@
 //! Statement and control flow transpilation
+//! EXTREME TDD Round 82: Cleaned up unused imports
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
 use super::*;
-use crate::frontend::ast::{
-    CatchClause, Expr, Literal, Param, Pattern, PipelineStage, TypeKind, UnaryOp,
-};
-use anyhow::{bail, Result};
+use crate::frontend::ast::{Expr, Param, PipelineStage};
+use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
-
-use super::return_type_helpers::{
-    expr_is_string, returns_boolean, returns_object_literal, returns_string, returns_string_literal,
-    returns_vec,
-};
 
 impl Transpiler {
     // EXTREME TDD Round 53: transpile_if moved to control_flow.rs
@@ -351,7 +344,11 @@ impl Transpiler {
 #[allow(clippy::single_char_pattern)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{Literal, Pattern};
     use crate::Parser;
+    use super::return_type_helpers::{
+        returns_boolean, returns_string, returns_string_literal, returns_vec,
+    };
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
     }
@@ -1835,8 +1832,13 @@ mod tests {
 #[cfg(test)]
 mod property_tests_statements {
     use super::*;
+    use crate::frontend::ast::{Literal, Pattern, TypeKind, UnaryOp};
     use crate::frontend::parser::Parser;
     use crate::BinaryOp;
+    use super::return_type_helpers::{
+        expr_is_string, returns_boolean, returns_object_literal, returns_string,
+        returns_string_literal, returns_vec,
+    };
 
     #[test]
     fn test_transpile_if_comprehensive() {
