@@ -427,6 +427,61 @@ impl Transpiler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span};
+
+    // ========================================================================
+    // Helper functions
+    // ========================================================================
+
+    fn make_expr(kind: ExprKind) -> Expr {
+        Expr {
+            kind,
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    fn int_expr(n: i64) -> Expr {
+        make_expr(ExprKind::Literal(Literal::Integer(n, None)))
+    }
+
+    fn ident_expr(name: &str) -> Expr {
+        make_expr(ExprKind::Identifier(name.to_string()))
+    }
+
+    fn list_expr(items: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::List(items))
+    }
+
+    fn range_expr(start: i64, end: i64) -> Expr {
+        make_expr(ExprKind::Range {
+            start: Box::new(int_expr(start)),
+            end: Box::new(int_expr(end)),
+            inclusive: false,
+        })
+    }
+
+    fn binary_expr(left: Expr, op: crate::frontend::ast::BinaryOp, right: Expr) -> Expr {
+        make_expr(ExprKind::Binary {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        })
+    }
+
+    fn make_clause(var: &str, iterable: Expr, condition: Option<Expr>) -> ComprehensionClause {
+        ComprehensionClause {
+            variable: var.to_string(),
+            iterable: Box::new(iterable),
+            condition: condition.map(Box::new),
+        }
+    }
+
+    // ========================================================================
+    // is_complex_pattern tests
+    // ========================================================================
 
     #[test]
     fn test_is_complex_pattern_simple() {
@@ -451,6 +506,15 @@ mod tests {
     }
 
     #[test]
+    fn test_is_complex_pattern_nested() {
+        assert!(Transpiler::is_complex_pattern("((a, b), c)"));
+    }
+
+    // ========================================================================
+    // parse_var_pattern tests
+    // ========================================================================
+
+    #[test]
     fn test_parse_var_pattern_simple() {
         let result = Transpiler::parse_var_pattern("x");
         assert!(result.is_ok());
@@ -465,6 +529,24 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_var_pattern_wildcard() {
+        let result = Transpiler::parse_var_pattern("_");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_var_pattern_underscore_name() {
+        let result = Transpiler::parse_var_pattern("_unused");
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("_unused"));
+    }
+
+    // ========================================================================
+    // parse_tuple_or_simple_pattern tests
+    // ========================================================================
+
+    #[test]
     fn test_parse_tuple_or_simple_pattern_simple() {
         let result = Transpiler::parse_tuple_or_simple_pattern("item");
         assert!(result.is_ok());
@@ -474,5 +556,477 @@ mod tests {
     fn test_parse_tuple_or_simple_pattern_tuple() {
         let result = Transpiler::parse_tuple_or_simple_pattern("(k, v)");
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_tuple_or_simple_pattern_triple() {
+        let result = Transpiler::parse_tuple_or_simple_pattern("(a, b, c)");
+        assert!(result.is_ok());
+    }
+
+    // ========================================================================
+    // transpile_list_comprehension_new tests
+    // ========================================================================
+
+    #[test]
+    fn test_list_comprehension_new_single_clause() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let clauses = vec![make_clause("x", range_expr(0, 10), None)];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("collect"));
+        assert!(code.contains("Vec"));
+    }
+
+    #[test]
+    fn test_list_comprehension_new_with_condition() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let condition = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(5),
+        );
+        let clauses = vec![make_clause("x", range_expr(0, 10), Some(condition))];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_list_comprehension_new_nested_clauses() {
+        let transpiler = Transpiler::new();
+        let element = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Multiply,
+            ident_expr("y"),
+        );
+        let clauses = vec![
+            make_clause("x", range_expr(0, 3), None),
+            make_clause("y", range_expr(0, 3), None),
+        ];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("flat_map"));
+    }
+
+    #[test]
+    fn test_list_comprehension_new_empty_clauses_error() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let clauses: Vec<ComprehensionClause> = vec![];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("at least one"));
+    }
+
+    #[test]
+    fn test_list_comprehension_new_tuple_pattern() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("a");
+        let clauses = vec![make_clause(
+            "(a, b)",
+            list_expr(vec![int_expr(1), int_expr(2)]),
+            None,
+        )];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+    }
+
+    // ========================================================================
+    // transpile_list_comprehension (old API) tests
+    // ========================================================================
+
+    #[test]
+    fn test_list_comprehension_simple() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = range_expr(1, 10);
+
+        let result = transpiler.transpile_list_comprehension(&expr, "x", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("map"));
+        assert!(code.contains("collect"));
+    }
+
+    #[test]
+    fn test_list_comprehension_with_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = range_expr(1, 10);
+        let filter = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(5),
+        );
+
+        let result = transpiler.transpile_list_comprehension(&expr, "x", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_list_comprehension_simple_var() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("item");
+        let iter = list_expr(vec![int_expr(1), int_expr(2)]);
+
+        let result = transpiler.transpile_list_comprehension(&expr, "item", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("map"));
+    }
+
+    // ========================================================================
+    // transpile_set_comprehension_new tests
+    // ========================================================================
+
+    #[test]
+    fn test_set_comprehension_new_single_clause() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let clauses = vec![make_clause("x", range_expr(0, 10), None)];
+
+        let result = transpiler.transpile_set_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashSet"));
+    }
+
+    #[test]
+    fn test_set_comprehension_new_with_condition() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let condition = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Less,
+            int_expr(5),
+        );
+        let clauses = vec![make_clause("x", range_expr(0, 10), Some(condition))];
+
+        let result = transpiler.transpile_set_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_set_comprehension_new_empty_clauses_error() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("x");
+        let clauses: Vec<ComprehensionClause> = vec![];
+
+        let result = transpiler.transpile_set_comprehension_new(&element, &clauses);
+        assert!(result.is_err());
+    }
+
+    // ========================================================================
+    // transpile_set_comprehension (old API) tests
+    // ========================================================================
+
+    #[test]
+    fn test_set_comprehension_simple() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = range_expr(1, 10);
+
+        let result = transpiler.transpile_set_comprehension(&expr, "x", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashSet"));
+    }
+
+    #[test]
+    fn test_set_comprehension_with_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = range_expr(1, 10);
+        let filter = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::NotEqual,
+            int_expr(5),
+        );
+
+        let result = transpiler.transpile_set_comprehension(&expr, "x", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    // ========================================================================
+    // transpile_dict_comprehension_new tests
+    // ========================================================================
+
+    #[test]
+    fn test_dict_comprehension_new_single_clause() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("k");
+        let value = ident_expr("v");
+        let clauses = vec![make_clause("(k, v)", list_expr(vec![]), None)];
+
+        let result = transpiler.transpile_dict_comprehension_new(&key, &value, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"));
+    }
+
+    #[test]
+    fn test_dict_comprehension_new_with_condition() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("k");
+        let value = ident_expr("v");
+        let condition = binary_expr(
+            ident_expr("v"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(0),
+        );
+        let clauses = vec![make_clause("(k, v)", list_expr(vec![]), Some(condition))];
+
+        let result = transpiler.transpile_dict_comprehension_new(&key, &value, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_dict_comprehension_new_empty_clauses_error() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("k");
+        let value = ident_expr("v");
+        let clauses: Vec<ComprehensionClause> = vec![];
+
+        let result = transpiler.transpile_dict_comprehension_new(&key, &value, &clauses);
+        assert!(result.is_err());
+    }
+
+    // ========================================================================
+    // transpile_dict_comprehension (old API) tests
+    // ========================================================================
+
+    #[test]
+    fn test_dict_comprehension_simple() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("x");
+        let value = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Multiply,
+            int_expr(2),
+        );
+        let iter = range_expr(1, 5);
+
+        let result = transpiler.transpile_dict_comprehension(&key, &value, "x", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"));
+    }
+
+    #[test]
+    fn test_dict_comprehension_with_filter() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("x");
+        let value = ident_expr("x");
+        let iter = range_expr(1, 10);
+        let filter = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Modulo,
+            int_expr(2),
+        );
+
+        let result = transpiler.transpile_dict_comprehension(&key, &value, "x", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_dict_comprehension_tuple_pattern() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("k");
+        let value = ident_expr("v");
+        let iter = list_expr(vec![]);
+
+        let result = transpiler.transpile_dict_comprehension(&key, &value, "(k, v)", &iter, None);
+        assert!(result.is_ok());
+    }
+
+    // ========================================================================
+    // build_first_clause tests
+    // ========================================================================
+
+    #[test]
+    fn test_build_first_clause_no_condition() {
+        let transpiler = Transpiler::new();
+        let iter_tokens = quote! { (0..10) };
+        let var_pattern = quote! { x };
+
+        let result = Transpiler::build_first_clause(&iter_tokens, &var_pattern, None, &transpiler);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("into_iter"));
+    }
+
+    #[test]
+    fn test_build_first_clause_with_condition() {
+        let transpiler = Transpiler::new();
+        let iter_tokens = quote! { (0..10) };
+        let var_pattern = quote! { x };
+        let condition = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(5),
+        );
+
+        let result =
+            Transpiler::build_first_clause(&iter_tokens, &var_pattern, Some(&condition), &transpiler);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    // ========================================================================
+    // build_nested_clause tests
+    // ========================================================================
+
+    #[test]
+    fn test_build_nested_clause_no_condition() {
+        let transpiler = Transpiler::new();
+        let prev_chain = quote! { (0..3).into_iter() };
+        let outer_pattern = quote! { x };
+        let iter_tokens = quote! { (0..3) };
+        let var_pattern = quote! { y };
+
+        let result = Transpiler::build_nested_clause(
+            &prev_chain,
+            &outer_pattern,
+            &iter_tokens,
+            &var_pattern,
+            None,
+            &transpiler,
+        );
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("flat_map"));
+    }
+
+    #[test]
+    fn test_build_nested_clause_with_condition() {
+        let transpiler = Transpiler::new();
+        let prev_chain = quote! { (0..3).into_iter() };
+        let outer_pattern = quote! { x };
+        let iter_tokens = quote! { (0..3) };
+        let var_pattern = quote! { y };
+        let condition = binary_expr(
+            ident_expr("y"),
+            crate::frontend::ast::BinaryOp::Less,
+            ident_expr("x"),
+        );
+
+        let result = Transpiler::build_nested_clause(
+            &prev_chain,
+            &outer_pattern,
+            &iter_tokens,
+            &var_pattern,
+            Some(&condition),
+            &transpiler,
+        );
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter"));
+    }
+
+    // ========================================================================
+    // Pattern comprehension edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_pattern_comprehension_no_parens() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = list_expr(vec![int_expr(1), int_expr(2)]);
+        // Variable without parentheses - should use as-is
+        let result = transpiler.transpile_list_comprehension(&expr, "simple_var", &iter, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_set_comprehension_nested_clauses() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("y");
+        let clauses = vec![
+            make_clause("x", range_expr(0, 3), None),
+            make_clause("y", range_expr(0, 3), None),
+        ];
+
+        let result = transpiler.transpile_set_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("flat_map"));
+    }
+
+    #[test]
+    fn test_dict_comprehension_nested_clauses() {
+        let transpiler = Transpiler::new();
+        let key = ident_expr("x");
+        let value = ident_expr("y");
+        let clauses = vec![
+            make_clause("x", range_expr(0, 3), None),
+            make_clause("y", range_expr(0, 3), None),
+        ];
+
+        let result = transpiler.transpile_dict_comprehension_new(&key, &value, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("flat_map"));
+    }
+
+    // ========================================================================
+    // Edge cases and error handling
+    // ========================================================================
+
+    #[test]
+    fn test_comprehension_with_complex_element_expression() {
+        let transpiler = Transpiler::new();
+        // x * x + 1
+        let element = binary_expr(
+            binary_expr(
+                ident_expr("x"),
+                crate::frontend::ast::BinaryOp::Multiply,
+                ident_expr("x"),
+            ),
+            crate::frontend::ast::BinaryOp::Add,
+            int_expr(1),
+        );
+        let clauses = vec![make_clause("x", range_expr(1, 10), None)];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_comprehension_triple_nested() {
+        let transpiler = Transpiler::new();
+        let element = ident_expr("z");
+        let clauses = vec![
+            make_clause("x", range_expr(0, 2), None),
+            make_clause("y", range_expr(0, 2), None),
+            make_clause("z", range_expr(0, 2), None),
+        ];
+
+        let result = transpiler.transpile_list_comprehension_new(&element, &clauses);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        // Should have nested flat_maps
+        assert!(code.matches("flat_map").count() >= 2);
     }
 }

@@ -70,6 +70,10 @@ mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collect
 mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
 mod block_categorization; // EXTREME TDD Round 67: Block categorization, statement detection
 mod program_transpiler; // EXTREME TDD Round 68: Program-level transpilation
+mod expr_dispatcher; // EXTREME TDD Round 69: Expression dispatcher and utilities
+mod function_param_inference; // EXTREME TDD Round 70: Function parameter inference
+mod function_signature; // EXTREME TDD Round 70: Function signature generation
+mod body_generation; // EXTREME TDD Round 70: Function body token generation
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;
@@ -84,11 +88,9 @@ mod tests_compound_assignment;
 mod type_conversion_refactored;
 mod type_inference;
 mod types;
-use crate::backend::module_resolver::ModuleResolver;
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
 // Module exports are handled by the impl blocks in each module
 /// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`, imports, globals)
 /// TRANSPILER-SCOPE: Added globals vector for static mut declarations
@@ -335,151 +337,8 @@ impl Transpiler {
     pub fn transpile(&mut self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_to_program(expr)
     }
-    /// Check if a name is a Rust reserved keyword
-    pub(crate) fn is_rust_reserved_keyword(name: &str) -> bool {
-        // List of Rust reserved keywords that would conflict
-        matches!(
-            name,
-            "as" | "break"
-                | "const"
-                | "continue"
-                | "crate"
-                | "else"
-                | "enum"
-                | "extern"
-                | "false"
-                | "fn"
-                | "for"
-                | "if"
-                | "impl"
-                | "in"
-                | "let"
-                | "loop"
-                | "match"
-                | "mod"
-                | "move"
-                | "mut"
-                | "pub"
-                | "ref"
-                | "return"
-                | "self"
-                | "Self"
-                | "static"
-                | "struct"
-                | "super"
-                | "trait"
-                | "true"
-                | "type"
-                | "unsafe"
-                | "use"
-                | "where"
-                | "while"
-                | "async"
-                | "await"
-                | "dyn"
-                | "final"
-                | "try"
-                | "abstract"
-                | "become"
-                | "box"
-                | "do"
-                | "macro"
-                | "override"
-                | "priv"
-                | "typeof"
-                | "unsized"
-                | "virtual"
-                | "yield"
-        )
-    }
-    /// Main expression transpilation dispatcher
-    ///
-    /// # Panics
-    ///
-    /// Panics if label names cannot be parsed as valid Rust tokens
-    pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
-        use ExprKind::{
-            Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
-            Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
-            DictComprehension, Effect, Err, FieldAccess, For, Function, Handle, Identifier, If,
-            IfLet, IndexAccess, Lambda, List, ListComprehension, Literal, Loop, Macro, Match,
-            MethodCall, None, ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement,
-            PreIncrement, QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
-            StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct,
-            TypeCast, Unary, While, WhileLet,
-        };
-        // Dispatch to specialized handlers to keep complexity below 10
-        match &expr.kind {
-            // Basic expressions
-            Literal(_)
-            | Identifier(_)
-            | QualifiedName { .. }
-            | StringInterpolation { .. }
-            | TypeCast { .. } => self.transpile_basic_expr(expr),
-            // Operators and control flow
-            Binary { .. }
-            | Unary { .. }
-            | Assign { .. }
-            | CompoundAssign { .. }
-            | PreIncrement { .. }
-            | PostIncrement { .. }
-            | PreDecrement { .. }
-            | PostDecrement { .. }
-            | Await { .. }
-            | Spawn { .. }
-            | AsyncBlock { .. }
-            | AsyncLambda { .. }
-            | If { .. }
-            | IfLet { .. }
-            | Match { .. }
-            | For { .. }
-            | While { .. }
-            | WhileLet { .. }
-            | Loop { .. }
-            | TryCatch { .. } => self.transpile_operator_control_expr(expr),
-            // Functions
-            Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {
-                self.transpile_function_expr(expr)
-            }
-            // Structures
-            Struct { .. }
-            | TupleStruct { .. }
-            | Class { .. }
-            | StructLiteral { .. }
-            | ObjectLiteral { .. }
-            | FieldAccess { .. }
-            | IndexAccess { .. }
-            | Slice { .. } => self.transpile_struct_expr(expr),
-            // Data and error handling
-            DataFrame { .. }
-            | DataFrameOperation { .. }
-            | List(_)
-            | Set(_)
-            | ArrayInit { .. }
-            | Tuple(_)
-            | ListComprehension { .. }
-            | SetComprehension { .. }
-            | DictComprehension { .. }
-            | Range { .. }
-            | Throw { .. }
-            | Ok { .. }
-            | Err { .. }
-            | Some { .. }
-            | None
-            | Try { .. } => self.transpile_data_error_expr(expr),
-            // Actor system and process execution
-            Actor { .. }
-            | Effect { .. }
-            | Handle { .. }
-            | Send { .. }
-            | Ask { .. }
-            | ActorSend { .. }
-            | ActorQuery { .. }
-            | Command { .. } => self.transpile_actor_expr(expr),
-            // Everything else
-            _ => self.transpile_misc_expr(expr),
-        }
-    }
+    // EXTREME TDD Round 69: is_rust_reserved_keyword and transpile_expr
+    // moved to expr_dispatcher.rs
 }
 #[cfg(test)]
 mod tests {
