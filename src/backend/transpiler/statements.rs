@@ -1302,7 +1302,7 @@ impl Transpiler {
     /// DEFECT-TRANSPILER-DF-002: Inline `DataFrame` builder pattern transpilation
     /// Transforms: `DataFrame::new().column("a`", [1,2]).`build()`
     /// Into: `DataFrame::new(vec`![`Series::new("a`", &[1,2])])
-    fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
+    pub(crate) fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
         // Check if this is a builder pattern ending in .build()
         let (columns, _base) = match &expr.kind {
             ExprKind::MethodCall {
