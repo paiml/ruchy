@@ -342,115 +342,15 @@ impl Transpiler {
     }
 
     /// DEFECT-TRANSPILER-DF-002: Inline `DataFrame` builder pattern transpilation
-    /// Transforms: `DataFrame::new().column("a`", [1,2]).`build()`
-    /// Into: `DataFrame::new(vec`![`Series::new("a`", &[1,2])])
-    pub(crate) fn try_transpile_dataframe_builder_inline(&self, expr: &Expr) -> Result<Option<TokenStream>> {
-        // Check if this is a builder pattern ending in .build()
-        let (columns, _base) = match &expr.kind {
-            ExprKind::MethodCall {
-                receiver, method, ..
-            } if method == "build" => {
-                if let Some(result) = Self::extract_dataframe_columns(receiver) {
-                    result
-                } else {
-                    return Ok(None);
-                }
-            }
-            ExprKind::MethodCall {
-                receiver,
-                method,
-                args,
-            } if method == "column" && args.len() == 2 => {
-                // Builder without .build() - still valid
-                let mut cols = vec![(args[0].clone(), args[1].clone())];
-                if let Some((mut prev_cols, base)) = Self::extract_dataframe_columns(receiver) {
-                    prev_cols.append(&mut cols);
-                    (prev_cols, base)
-                } else {
-                    return Ok(None);
-                }
-            }
-            _ => return Ok(None),
-        };
-
-        // Generate Series for each column
-        let mut series_tokens = Vec::new();
-        for (name, data) in columns {
-            let name_tokens = self.transpile_expr(&name)?;
-            let data_tokens = self.transpile_expr(&data)?;
-            series_tokens.push(quote! {
-                polars::prelude::Series::new(#name_tokens, &#data_tokens)
-            });
-        }
-
-        // Generate DataFrame constructor
-        if series_tokens.is_empty() {
-            Ok(Some(quote! { polars::prelude::DataFrame::empty() }))
-        } else {
-            Ok(Some(quote! {
-                polars::prelude::DataFrame::new(vec![#(#series_tokens),*])
-                    .expect("Failed to create DataFrame")
-            }))
-        }
+    /// EXTREME TDD Round 80: Delegates to dataframe_transpilers module
+    pub(crate) fn try_transpile_dataframe_builder_inline(
+        &self,
+        expr: &Expr,
+    ) -> Result<Option<TokenStream>> {
+        self.try_transpile_dataframe_builder_inline_impl(expr)
     }
 
-    /// Extract `DataFrame` column chain recursively
-    fn extract_dataframe_columns(expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
-        match &expr.kind {
-            ExprKind::MethodCall {
-                receiver,
-                method,
-                args,
-            } if method == "column" && args.len() == 2 => {
-                if let Some((mut cols, base)) = Self::extract_dataframe_columns(receiver) {
-                    cols.push((args[0].clone(), args[1].clone()));
-                    Some((cols, base))
-                } else {
-                    // Check if receiver is DataFrame::new()
-                    if let ExprKind::Call {
-                        func,
-                        args: call_args,
-                    } = &receiver.kind
-                    {
-                        // Handle both Identifier("DataFrame::new") and QualifiedName
-                        let is_dataframe_new = match &func.kind {
-                            ExprKind::Identifier(name) if name == "DataFrame::new" => true,
-                            ExprKind::QualifiedName { module, name }
-                                if module == "DataFrame" && name == "new" =>
-                            {
-                                true
-                            }
-                            _ => false,
-                        };
-                        if is_dataframe_new && call_args.is_empty() {
-                            return Some((
-                                vec![(args[0].clone(), args[1].clone())],
-                                receiver.as_ref().clone(),
-                            ));
-                        }
-                    }
-                    None
-                }
-            }
-            ExprKind::Call { func, args } if args.is_empty() => {
-                // Handle both Identifier("DataFrame::new") and QualifiedName
-                let is_dataframe_new = match &func.kind {
-                    ExprKind::Identifier(name) if name == "DataFrame::new" => true,
-                    ExprKind::QualifiedName { module, name }
-                        if module == "DataFrame" && name == "new" =>
-                    {
-                        true
-                    }
-                    _ => false,
-                };
-                if is_dataframe_new {
-                    return Some((Vec::new(), expr.clone()));
-                }
-                None
-            }
-            _ => None,
-        }
-    }
+    // EXTREME TDD Round 80: extract_dataframe_columns moved to dataframe_transpilers.rs
     // EXTREME TDD Round 65: Method transpilers moved to method_transpilers.rs
     // EXTREME TDD Round 79: transpile_method_call_old removed - consolidated with call_transpilation.rs
     // (transpile_iterator_methods, transpile_map_set_methods, transpile_set_operations,
@@ -501,51 +401,13 @@ impl Transpiler {
     //  try_transpile_collection_constructor, try_transpile_range_function)
 
     /// Handle `DataFrame` functions (col)
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::{Transpiler, Parser};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let mut parser = Parser::new(r#"col("name")"#);
-    /// let ast = parser.parse().expect("Failed to parse");
-    /// let result = transpiler.transpile(&ast).expect("transpile should succeed in test").to_string();
-    /// assert!(result.contains("polars"));
-    /// ```
+    /// EXTREME TDD Round 80: Delegates to dataframe_transpilers module
     fn try_transpile_dataframe_function(
         &self,
         base_name: &str,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
-        // Handle DataFrame static methods
-        if base_name.starts_with("DataFrame::") {
-            let method = base_name
-                .strip_prefix("DataFrame::")
-                .expect("Already checked starts_with");
-            match method {
-                "new" if args.is_empty() => {
-                    return Ok(Some(quote! { polars::prelude::DataFrame::empty() }));
-                }
-                "from_csv" if args.len() == 1 => {
-                    let path_tokens = self.transpile_expr(&args[0])?;
-                    return Ok(Some(quote! {
-                        polars::prelude::CsvReader::from_path(#path_tokens)
-                            .expect("Failed to open CSV file")
-                            .finish()
-                            .expect("Failed to read CSV file")
-                    }));
-                }
-                _ => {}
-            }
-        }
-        // Handle col() function for column references
-        if base_name == "col" && args.len() == 1 {
-            if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
-                return Ok(Some(quote! { polars::prelude::col(#col_name) }));
-            }
-        }
-        Ok(None)
+        self.try_transpile_dataframe_function_impl(base_name, args)
     }
 
     // EXTREME TDD Round 61: System built-ins moved to system_builtins.rs

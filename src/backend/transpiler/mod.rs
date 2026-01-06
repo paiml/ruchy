@@ -80,6 +80,7 @@ mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilat
 mod string_body_conversion; // EXTREME TDD Round 73: String body conversion helpers
 mod lifetime_helpers; // EXTREME TDD Round 74: Lifetime parameter helpers
 mod type_transpilers; // EXTREME TDD Round 75: Type transpilation helpers
+mod dataframe_transpilers; // EXTREME TDD Round 80: DataFrame transpilation
 pub mod builtin_type_inference;
 pub mod mutation_detection;
 pub mod pattern_bindings;

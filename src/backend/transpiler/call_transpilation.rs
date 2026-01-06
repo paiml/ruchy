@@ -146,7 +146,7 @@ impl Transpiler {
     }
 
     /// Try to transpile DataFrame function calls
-    fn try_transpile_dataframe_function_impl(
+    pub(crate) fn try_transpile_dataframe_function_impl(
         &self,
         base_name: &str,
         args: &[Expr],
