@@ -128,6 +128,11 @@ pub mod formatter_config;
 pub mod gates;
 pub mod instrumentation;
 pub mod linter;
+
+#[cfg(test)]
+mod linter_tests;
+#[cfg(test)]
+mod formatter_tests;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ruchy_coverage;
 pub mod scoring;

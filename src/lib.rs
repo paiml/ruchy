@@ -1070,6 +1070,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "repl")]
     fn test_repl_commands() {
         use crate::runtime::repl::Repl;
         use std::path::PathBuf;

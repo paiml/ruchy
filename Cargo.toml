@@ -541,3 +541,19 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[package.metadata.cargo-machete]
+ignored = [
+    "arrow-array",      # Feature-gated: dataframe
+    "arrow-buffer",     # Feature-gated: dataframe
+    "cranelift-frontend", # Feature-gated: jit
+    "target-lexicon",   # Feature-gated: jit
+    "insta",            # Dev dependency for snapshot testing
+    "quickcheck",       # Dev dependency for property testing
+    "quickcheck_macros", # Dev dependency for property testing
+    "arbitrary",        # Dev dependency for fuzzing
+    "tracing-subscriber", # Dev dependency for debugging
+    "wasm-bindgen-test", # Dev dependency for WASM testing
+    "web-sys",          # Dev dependency for WASM testing
+    "getrandom",        # Required for rand in WASM
+]

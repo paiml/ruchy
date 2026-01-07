@@ -1171,6 +1171,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "notebook")]
     fn test_run_test_command() {
         let path = PathBuf::from("test.ipynb");
         let config = crate::notebook::testing::types::TestConfig::default();
