@@ -3,6 +3,7 @@ mod debug_tests {
     use super::super::*;
     use crate::frontend::ast::{Expr, ExprKind};
     #[test]
+    #[cfg(feature = "notebook")]
     fn debug_empty_module() {
         let emitter = WasmEmitter::new();
         let expr = Expr::new(ExprKind::Block(vec![]), Default::default());

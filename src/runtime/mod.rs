@@ -67,8 +67,6 @@ pub mod bytecode; // OPT-001: Bytecode VM Foundation
 pub mod cache;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod completion;
-pub mod dataflow_debugger;
-pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
 pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
@@ -112,8 +110,6 @@ pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
 pub mod validation;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
-pub mod observatory;
-pub mod observatory_ui;
 pub mod pattern_matching;
 #[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub mod repl; // New EXTREME Quality REPL
@@ -154,11 +150,6 @@ pub use actor_concurrent::{
     ActorState as ConcurrentActorState, ConcurrentActor, ConcurrentActorSystem, Envelope,
     SupervisionStrategy, SystemMessage, CONCURRENT_ACTOR_SYSTEM,
 };
-// Export observatory components
-pub use observatory::{
-    ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageStatus,
-    MessageTrace, ObservatoryConfig, SystemMetrics,
-};
 // Export assessment components
 #[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
 pub use assessment::{
@@ -179,14 +170,6 @@ pub use transaction::{
 // pub use resource_eval::{
 //     CheckpointHandle, ResourceLimits, Sandbox,
 // };
-pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
-// Export dataflow debugger components
-pub use dataflow_debugger::{
-    Breakpoint, BreakpointAction, BreakpointCondition, DataflowConfig, DataflowDebugger,
-    ExecutionEvent, ExportFormat, MaterializedFrame, PipelineStage, StageDiff, StageMetrics,
-    StageStatus, StageType,
-};
-pub use dataflow_ui::{DataflowUI, UIConfig};
 // Export replay-to-test converter
 pub use replay_converter::{ConversionConfig, GeneratedTest, ReplayConverter, TestCategory};
 // Export audit logging (entrenar integration)
@@ -196,12 +179,19 @@ pub use audit::{
     StreamFormat,
 };
 
+// EXTREME TDD Round 86: Comprehensive tests extracted to separate files
 #[cfg(test)]
+mod interpreter_tests;
+#[cfg(test)]
+mod eval_builtin_tests;
+
+#[cfg(all(test, feature = "repl"))]
 mod tests {
     use super::*;
     use std::sync::Arc;
 
     // Sprint 4: Comprehensive runtime tests for coverage improvement
+    // Requires `repl` feature since all tests use Repl
 
     #[test]
     fn test_repl_creation_and_basic_eval() {

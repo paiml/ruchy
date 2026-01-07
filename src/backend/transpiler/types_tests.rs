@@ -872,3 +872,979 @@ fn create_transpiler() -> Transpiler {
         assert!(code.contains("10"));
     }
 
+    // ============================================================
+    // EXTREME TDD: Direct tests for pub(crate) type helper methods
+    // ============================================================
+
+    // Test 43: transpile_optional_type - direct call with int inner
+    #[test]
+    fn test_direct_transpile_optional_type_int() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("int".to_string()));
+        let result = transpiler
+            .transpile_optional_type(&inner)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains("i64"));
+    }
+
+    // Test 44: transpile_optional_type - direct call with String inner
+    #[test]
+    fn test_direct_transpile_optional_type_string() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("String".to_string()));
+        let result = transpiler
+            .transpile_optional_type(&inner)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains("String"));
+    }
+
+    // Test 45: transpile_optional_type - direct call with nested generic
+    #[test]
+    fn test_direct_transpile_optional_type_nested_generic() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Generic {
+            base: "Vec".to_string(),
+            params: vec![make_type(TypeKind::Named("bool".to_string()))],
+        });
+        let result = transpiler
+            .transpile_optional_type(&inner)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains("Vec"));
+        assert!(code.contains("bool"));
+    }
+
+    // Test 46: transpile_list_type - direct call with int element
+    #[test]
+    fn test_direct_transpile_list_type_int() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("int".to_string()));
+        let result = transpiler
+            .transpile_list_type(&elem)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains("i64"));
+    }
+
+    // Test 47: transpile_list_type - direct call with String element
+    #[test]
+    fn test_direct_transpile_list_type_string() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("String".to_string()));
+        let result = transpiler
+            .transpile_list_type(&elem)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains("String"));
+    }
+
+    // Test 48: transpile_list_type - direct call with custom type element
+    #[test]
+    fn test_direct_transpile_list_type_custom() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("MyStruct".to_string()));
+        let result = transpiler
+            .transpile_list_type(&elem)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains("MyStruct"));
+    }
+
+    // Test 49: transpile_array_type - direct call with int element and size 5
+    #[test]
+    fn test_direct_transpile_array_type_int_5() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("int".to_string()));
+        let result = transpiler
+            .transpile_array_type(&elem, 5)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('['));
+        assert!(code.contains("i64"));
+        assert!(code.contains('5'));
+    }
+
+    // Test 50: transpile_array_type - direct call with float element and size 100
+    #[test]
+    fn test_direct_transpile_array_type_float_100() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("float".to_string()));
+        let result = transpiler
+            .transpile_array_type(&elem, 100)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('['));
+        assert!(code.contains("f64"));
+        assert!(code.contains("100"));
+    }
+
+    // Test 51: transpile_array_type - direct call with zero size
+    #[test]
+    fn test_direct_transpile_array_type_zero_size() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("bool".to_string()));
+        let result = transpiler
+            .transpile_array_type(&elem, 0)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('['));
+        assert!(code.contains("bool"));
+        assert!(code.contains('0'));
+    }
+
+    // Test 52: transpile_tuple_type - direct call with two elements
+    #[test]
+    fn test_direct_transpile_tuple_type_two() {
+        let transpiler = Transpiler::new();
+        let types = vec![
+            make_type(TypeKind::Named("int".to_string())),
+            make_type(TypeKind::Named("String".to_string())),
+        ];
+        let result = transpiler
+            .transpile_tuple_type(&types)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('('));
+        assert!(code.contains(')'));
+        assert!(code.contains("i64"));
+        assert!(code.contains("String"));
+    }
+
+    // Test 53: transpile_tuple_type - direct call with three elements
+    #[test]
+    fn test_direct_transpile_tuple_type_three() {
+        let transpiler = Transpiler::new();
+        let types = vec![
+            make_type(TypeKind::Named("int".to_string())),
+            make_type(TypeKind::Named("bool".to_string())),
+            make_type(TypeKind::Named("char".to_string())),
+        ];
+        let result = transpiler
+            .transpile_tuple_type(&types)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('('));
+        assert!(code.contains("i64"));
+        assert!(code.contains("bool"));
+        assert!(code.contains("char"));
+    }
+
+    // Test 54: transpile_tuple_type - direct call with empty (unit type)
+    #[test]
+    fn test_direct_transpile_tuple_type_empty() {
+        let transpiler = Transpiler::new();
+        let result = transpiler
+            .transpile_tuple_type(&[])
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('('));
+        assert!(code.contains(')'));
+    }
+
+    // Test 55: transpile_function_type - direct call with single param
+    #[test]
+    fn test_direct_transpile_function_type_single_param() {
+        let transpiler = Transpiler::new();
+        let params = vec![make_type(TypeKind::Named("int".to_string()))];
+        let ret = make_type(TypeKind::Named("bool".to_string()));
+        let result = transpiler
+            .transpile_function_type(&params, &ret)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("fn"));
+        assert!(code.contains("i64"));
+        assert!(code.contains("bool"));
+    }
+
+    // Test 56: transpile_function_type - direct call with no params
+    #[test]
+    fn test_direct_transpile_function_type_no_params() {
+        let transpiler = Transpiler::new();
+        let ret = make_type(TypeKind::Named("String".to_string()));
+        let result = transpiler
+            .transpile_function_type(&[], &ret)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("fn"));
+        assert!(code.contains("String"));
+        assert!(code.contains("()"));
+    }
+
+    // Test 57: transpile_function_type - direct call with multiple params
+    #[test]
+    fn test_direct_transpile_function_type_multiple_params() {
+        let transpiler = Transpiler::new();
+        let params = vec![
+            make_type(TypeKind::Named("int".to_string())),
+            make_type(TypeKind::Named("String".to_string())),
+            make_type(TypeKind::Named("bool".to_string())),
+        ];
+        let ret = make_type(TypeKind::Named("float".to_string()));
+        let result = transpiler
+            .transpile_function_type(&params, &ret)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("fn"));
+        assert!(code.contains("i64"));
+        assert!(code.contains("String"));
+        assert!(code.contains("bool"));
+        assert!(code.contains("f64"));
+    }
+
+    // Test 58: parse_type_param_to_tokens - simple type param
+    #[test]
+    fn test_direct_parse_type_param_simple() {
+        let result = Transpiler::parse_type_param_to_tokens("T");
+        let code = result.to_string();
+        assert!(code.contains('T'));
+    }
+
+    // Test 59: parse_type_param_to_tokens - lifetime param
+    #[test]
+    fn test_direct_parse_type_param_lifetime() {
+        let result = Transpiler::parse_type_param_to_tokens("'a");
+        let code = result.to_string();
+        assert!(code.contains("'a"));
+    }
+
+    // Test 60: parse_type_param_to_tokens - type param with single bound
+    #[test]
+    fn test_direct_parse_type_param_with_bound() {
+        let result = Transpiler::parse_type_param_to_tokens("T: Clone");
+        let code = result.to_string();
+        assert!(code.contains('T'));
+        assert!(code.contains("Clone"));
+    }
+
+    // Test 61: parse_type_param_to_tokens - type param with multiple bounds
+    #[test]
+    fn test_direct_parse_type_param_multiple_bounds() {
+        let result = Transpiler::parse_type_param_to_tokens("T: Clone + Debug");
+        let code = result.to_string();
+        assert!(code.contains('T'));
+        // The result should contain some bounds info
+    }
+
+    // Test 62: parse_type_param_to_tokens - complex lifetime param
+    #[test]
+    fn test_direct_parse_type_param_complex_lifetime() {
+        let result = Transpiler::parse_type_param_to_tokens("'static");
+        let code = result.to_string();
+        assert!(code.contains("'static"));
+    }
+
+    // Test 63: transpile_optional_type - with reference inner
+    #[test]
+    fn test_direct_transpile_optional_type_reference() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Reference {
+            is_mut: false,
+            lifetime: None,
+            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+        });
+        let result = transpiler
+            .transpile_optional_type(&inner)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains('&'));
+        assert!(code.contains("str"));
+    }
+
+    // Test 64: transpile_list_type - with tuple element
+    #[test]
+    fn test_direct_transpile_list_type_tuple() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Tuple(vec![
+            make_type(TypeKind::Named("int".to_string())),
+            make_type(TypeKind::Named("String".to_string())),
+        ]));
+        let result = transpiler
+            .transpile_list_type(&elem)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains('('));
+        assert!(code.contains("i64"));
+        assert!(code.contains("String"));
+    }
+
+    // Test 65: transpile_array_type - with large size
+    #[test]
+    fn test_direct_transpile_array_type_large() {
+        let transpiler = Transpiler::new();
+        let elem = make_type(TypeKind::Named("u8".to_string()));
+        let result = transpiler
+            .transpile_array_type(&elem, 1024)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains('['));
+        assert!(code.contains("u8"));
+        assert!(code.contains("1024"));
+    }
+
+    // Test 66: transpile_tuple_type - with nested tuple
+    #[test]
+    fn test_direct_transpile_tuple_type_nested() {
+        let transpiler = Transpiler::new();
+        let inner_tuple = make_type(TypeKind::Tuple(vec![
+            make_type(TypeKind::Named("int".to_string())),
+            make_type(TypeKind::Named("int".to_string())),
+        ]));
+        let types = vec![
+            make_type(TypeKind::Named("String".to_string())),
+            inner_tuple,
+        ];
+        let result = transpiler
+            .transpile_tuple_type(&types)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("String"));
+        assert!(code.contains("i64"));
+    }
+
+    // Test 67: transpile_function_type - with function return type
+    #[test]
+    fn test_direct_transpile_function_type_returning_function() {
+        let transpiler = Transpiler::new();
+        let params = vec![make_type(TypeKind::Named("int".to_string()))];
+        let inner_ret = make_type(TypeKind::Named("bool".to_string()));
+        let ret = make_type(TypeKind::Function {
+            params: vec![make_type(TypeKind::Named("String".to_string()))],
+            ret: Box::new(inner_ret),
+        });
+        let result = transpiler
+            .transpile_function_type(&params, &ret)
+            .expect("operation should succeed in test");
+        let code = result.to_string();
+        assert!(code.contains("fn"));
+        assert!(code.contains("i64"));
+    }
+
+    // Test 68: parse_type_param_to_tokens - with where-style bound
+    #[test]
+    fn test_direct_parse_type_param_complex_bound() {
+        let result = Transpiler::parse_type_param_to_tokens("T: Iterator<Item = u8>");
+        let code = result.to_string();
+        assert!(code.contains('T'));
+        // Complex bounds should still produce a valid identifier
+    }
+
+    // ============================================================
+    // EXTREME TDD: More direct tests for enum, trait, impl methods
+    // ============================================================
+
+    // Helper: Create EnumVariant
+    fn make_enum_variant(name: &str, kind: crate::frontend::ast::EnumVariantKind) -> crate::frontend::ast::EnumVariant {
+        crate::frontend::ast::EnumVariant {
+            name: name.to_string(),
+            kind,
+            discriminant: None,
+        }
+    }
+
+    // Test 69: transpile_enum - unit variants
+    #[test]
+    fn test_transpile_enum_unit_variants() {
+        let transpiler = Transpiler::new();
+        use crate::frontend::ast::EnumVariantKind;
+        let variants = vec![
+            make_enum_variant("Red", EnumVariantKind::Unit),
+            make_enum_variant("Green", EnumVariantKind::Unit),
+            make_enum_variant("Blue", EnumVariantKind::Unit),
+        ];
+        let result = transpiler.transpile_enum("Color", &[], &variants, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("enum"));
+        assert!(code.contains("Color"));
+        assert!(code.contains("Red"));
+        assert!(code.contains("Green"));
+        assert!(code.contains("Blue"));
+        assert!(code.contains("derive"));
+    }
+
+    // Test 70: transpile_enum - tuple variants
+    #[test]
+    fn test_transpile_enum_tuple_variants() {
+        let transpiler = Transpiler::new();
+        use crate::frontend::ast::EnumVariantKind;
+        let variants = vec![
+            make_enum_variant("Point", EnumVariantKind::Tuple(vec![
+                make_type(TypeKind::Named("i32".to_string())),
+                make_type(TypeKind::Named("i32".to_string())),
+            ])),
+        ];
+        let result = transpiler.transpile_enum("Shape", &[], &variants, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("Point"));
+        assert!(code.contains("i32"));
+    }
+
+    // Test 71: transpile_enum - struct variants
+    #[test]
+    fn test_transpile_enum_struct_variants() {
+        let transpiler = Transpiler::new();
+        use crate::frontend::ast::{EnumVariantKind, Visibility};
+        let fields = vec![
+            StructField {
+                name: "x".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::Public,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+            StructField {
+                name: "y".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::Public,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+        ];
+        let variants = vec![
+            make_enum_variant("Move", EnumVariantKind::Struct(fields)),
+        ];
+        let result = transpiler.transpile_enum("Command", &[], &variants, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("Move"));
+        assert!(code.contains('x'));
+        assert!(code.contains('y'));
+    }
+
+    // Test 72: transpile_enum - with type params
+    #[test]
+    fn test_transpile_enum_with_type_params() {
+        let transpiler = Transpiler::new();
+        use crate::frontend::ast::EnumVariantKind;
+        let variants = vec![
+            make_enum_variant("Some", EnumVariantKind::Tuple(vec![
+                make_type(TypeKind::Named("T".to_string())),
+            ])),
+            make_enum_variant("None", EnumVariantKind::Unit),
+        ];
+        let result = transpiler.transpile_enum("Option", &["T".to_string()], &variants, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains('<'));
+        assert!(code.contains('>'));
+        assert!(code.contains('T'));
+    }
+
+    // Test 73: transpile_enum - with discriminants
+    #[test]
+    fn test_transpile_enum_with_discriminants() {
+        let transpiler = Transpiler::new();
+        use crate::frontend::ast::EnumVariantKind;
+        let mut v1 = make_enum_variant("A", EnumVariantKind::Unit);
+        v1.discriminant = Some(10);
+        let mut v2 = make_enum_variant("B", EnumVariantKind::Unit);
+        v2.discriminant = Some(20);
+        let variants = vec![v1, v2];
+        let result = transpiler.transpile_enum("Values", &[], &variants, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("repr"));
+        assert!(code.contains("10"));
+        assert!(code.contains("20"));
+    }
+
+    // Helper: Create TraitMethod
+    fn make_trait_method(name: &str, has_body: bool) -> crate::frontend::ast::TraitMethod {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        crate::frontend::ast::TraitMethod {
+            name: name.to_string(),
+            params: vec![],
+            return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+            body: if has_body {
+                Some(Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Integer(42, None)),
+                    span: Span::new(0, 0),
+                    attributes: vec![],
+                    leading_comments: vec![],
+                    trailing_comment: None,
+                }))
+            } else {
+                None
+            },
+            is_pub: true,
+        }
+    }
+
+    // Test 74: transpile_trait - simple trait with methods
+    #[test]
+    fn test_transpile_trait_simple() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_trait_method("calculate", false)];
+        let result = transpiler.transpile_trait("Calculator", &[], &[], &methods, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("trait"));
+        assert!(code.contains("Calculator"));
+        assert!(code.contains("calculate"));
+        assert!(code.contains("pub"));
+    }
+
+    // Test 75: transpile_trait - with default implementation
+    #[test]
+    fn test_transpile_trait_with_default_impl() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_trait_method("get_value", true)];
+        let result = transpiler.transpile_trait("Getter", &[], &[], &methods, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("trait"));
+        assert!(code.contains("Getter"));
+        assert!(code.contains("get_value"));
+        assert!(code.contains("42")); // Default implementation body
+    }
+
+    // Test 76: transpile_trait - with type params
+    #[test]
+    fn test_transpile_trait_with_type_params() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_trait_method("process", false)];
+        let result = transpiler.transpile_trait("Processor", &["T".to_string()], &[], &methods, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("trait"));
+        assert!(code.contains("Processor"));
+        assert!(code.contains('<'));
+        assert!(code.contains('T'));
+        assert!(code.contains('>'));
+    }
+
+    // Test 77: transpile_trait - with associated types
+    #[test]
+    fn test_transpile_trait_with_associated_types() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_trait_method("next", false)];
+        let associated = vec!["Item".to_string()];
+        let result = transpiler.transpile_trait("Iterator", &[], &associated, &methods, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("type Item"));
+    }
+
+    // Helper: Create ImplMethod
+    fn make_impl_method(name: &str, is_pub: bool) -> crate::frontend::ast::ImplMethod {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+        crate::frontend::ast::ImplMethod {
+            name: name.to_string(),
+            params: vec![],
+            return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+            body: Box::new(Expr {
+                kind: ExprKind::Literal(Literal::Integer(100, None)),
+                span: Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }),
+            is_pub,
+        }
+    }
+
+    // Test 78: transpile_impl - inherent impl
+    #[test]
+    fn test_transpile_impl_inherent() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_impl_method("compute", true)];
+        let result = transpiler.transpile_impl("MyStruct", &[], None, &methods, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("MyStruct"));
+        assert!(code.contains("compute"));
+        assert!(code.contains("100"));
+    }
+
+    // Test 79: transpile_impl - trait impl
+    #[test]
+    fn test_transpile_impl_trait() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_impl_method("get", true)];
+        let result = transpiler.transpile_impl("MyStruct", &[], Some("Getter"), &methods, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("Getter"));
+        assert!(code.contains("for"));
+        assert!(code.contains("MyStruct"));
+    }
+
+    // Test 80: transpile_impl - with type params
+    #[test]
+    fn test_transpile_impl_with_type_params() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_impl_method("inner", true)];
+        let result = transpiler.transpile_impl("Wrapper", &["T".to_string()], None, &methods, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains('<'));
+        assert!(code.contains('T'));
+        assert!(code.contains('>'));
+        assert!(code.contains("Wrapper"));
+    }
+
+    // Test 81: transpile_impl - trait impl with type params
+    #[test]
+    fn test_transpile_impl_trait_with_type_params() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_impl_method("convert", true)];
+        let result = transpiler.transpile_impl("Container", &["T".to_string()], Some("Converter"), &methods, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("Converter"));
+        assert!(code.contains("for"));
+        assert!(code.contains("Container"));
+    }
+
+    // Test 82: transpile_extend - extension trait
+    #[test]
+    fn test_transpile_extend() {
+        let transpiler = Transpiler::new();
+        let methods = vec![make_impl_method("is_empty", true)];
+        let result = transpiler.transpile_extend("String", &methods);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("trait"));
+        assert!(code.contains("StringExt"));
+        assert!(code.contains("impl"));
+        assert!(code.contains("for"));
+        assert!(code.contains("String"));
+        assert!(code.contains("is_empty"));
+    }
+
+    // Test 83: transpile_params - with self parameter (immutable reference)
+    #[test]
+    fn test_transpile_params_self_ref() {
+        let transpiler = Transpiler::new();
+        let params = vec![Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("self".to_string()),
+            ty: make_type(TypeKind::Reference {
+                is_mut: false,
+                lifetime: None,
+                inner: Box::new(make_type(TypeKind::Named("Self".to_string()))),
+            }),
+            span: Span::new(0, 0),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        let code = result[0].to_string();
+        assert!(code.contains('&'));
+        assert!(code.contains("self"));
+        assert!(!code.contains("mut"));
+    }
+
+    // Test 84: transpile_params - with self parameter (mutable reference)
+    #[test]
+    fn test_transpile_params_self_mut_ref() {
+        let transpiler = Transpiler::new();
+        let params = vec![Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("self".to_string()),
+            ty: make_type(TypeKind::Reference {
+                is_mut: true,
+                lifetime: None,
+                inner: Box::new(make_type(TypeKind::Named("Self".to_string()))),
+            }),
+            span: Span::new(0, 0),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        let code = result[0].to_string();
+        assert!(code.contains('&'));
+        assert!(code.contains("mut"));
+        assert!(code.contains("self"));
+    }
+
+    // Test 85: transpile_params - with self parameter (owned)
+    #[test]
+    fn test_transpile_params_self_owned() {
+        let transpiler = Transpiler::new();
+        let params = vec![Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("self".to_string()),
+            ty: make_type(TypeKind::Named("Self".to_string())),
+            span: Span::new(0, 0),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        let code = result[0].to_string();
+        assert!(code.contains("self"));
+        assert!(!code.contains('&'));
+    }
+
+    // Test 86: transpile_params - with mutable owned self
+    #[test]
+    fn test_transpile_params_self_mut_owned() {
+        let transpiler = Transpiler::new();
+        let params = vec![Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("self".to_string()),
+            ty: make_type(TypeKind::Named("Self".to_string())),
+            span: Span::new(0, 0),
+            is_mutable: true,
+            default_value: None,
+        }];
+        let result = transpiler.transpile_params(&params).unwrap();
+        let code = result[0].to_string();
+        assert!(code.contains("mut"));
+        assert!(code.contains("self"));
+    }
+
+    // Test 87: transpile_struct_with_methods - struct with methods
+    #[test]
+    fn test_transpile_struct_with_methods() {
+        use crate::frontend::ast::{ClassMethod, Expr, ExprKind, Literal, SelfType, Visibility};
+        let transpiler = Transpiler::new();
+        let fields = vec![StructField {
+            name: "value".to_string(),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            visibility: Visibility::Public,
+            is_mut: false,
+            default_value: None,
+            decorators: vec![],
+        }];
+        let methods = vec![ClassMethod {
+            name: "get_value".to_string(),
+            params: vec![],
+            return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+            body: Box::new(Expr {
+                kind: ExprKind::Literal(Literal::Integer(42, None)),
+                span: Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }),
+            is_pub: true,
+            is_async: false,
+            is_static: false,
+            is_override: false,
+            is_final: false,
+            is_abstract: false,
+            self_type: SelfType::None,
+        }];
+        let result = transpiler.transpile_struct_with_methods(
+            "Counter",
+            &[],
+            &fields,
+            &methods,
+            &["Debug".to_string()],
+            true,
+        );
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("struct"));
+        assert!(code.contains("Counter"));
+        assert!(code.contains("value"));
+        assert!(code.contains("impl"));
+        assert!(code.contains("get_value"));
+    }
+
+    // Test 88: transpile_struct - with visibility variants
+    #[test]
+    fn test_transpile_struct_field_visibility() {
+        use crate::frontend::ast::Visibility;
+        let transpiler = Transpiler::new();
+        let fields = vec![
+            StructField {
+                name: "public_field".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::Public,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+            StructField {
+                name: "crate_field".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::PubCrate,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+            StructField {
+                name: "super_field".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::PubSuper,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+            StructField {
+                name: "private_field".to_string(),
+                ty: make_type(TypeKind::Named("i32".to_string())),
+                visibility: Visibility::Private,
+                is_mut: false,
+                default_value: None,
+                decorators: vec![],
+            },
+        ];
+        let result = transpiler.transpile_struct("VisibleStruct", &[], &fields, &[], true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("pub public_field"));
+        assert!(code.contains("pub (crate) crate_field"));
+        assert!(code.contains("pub (super) super_field"));
+        // private_field should NOT have pub prefix
+    }
+
+    // Test 89: transpile_class - full class with everything
+    #[test]
+    fn test_transpile_class_full() {
+        use crate::frontend::ast::{ClassConstant, ClassMethod, Expr, ExprKind, Literal, SelfType, Visibility};
+        let transpiler = Transpiler::new();
+        let fields = vec![StructField {
+            name: "count".to_string(),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            visibility: Visibility::Private,
+            is_mut: false,
+            default_value: None,
+            decorators: vec![],
+        }];
+        let constructors = vec![Constructor {
+            name: None,
+            params: vec![],
+            body: Box::new(Expr {
+                kind: ExprKind::Literal(Literal::Integer(0, None)),
+                span: Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }),
+            return_type: None,
+            is_pub: true,
+        }];
+        let methods = vec![ClassMethod {
+            name: "increment".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(Expr {
+                kind: ExprKind::Literal(Literal::Integer(1, None)),
+                span: Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }),
+            is_pub: true,
+            is_async: false,
+            is_static: false,
+            is_override: false,
+            is_final: false,
+            is_abstract: false,
+            self_type: SelfType::None,
+        }];
+        let constants = vec![ClassConstant {
+            name: "MAX".to_string(),
+            ty: make_type(TypeKind::Named("i32".to_string())),
+            value: Expr {
+                kind: ExprKind::Literal(Literal::Integer(100, None)),
+                span: Span::new(0, 0),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            },
+            is_pub: true,
+        }];
+        let result = transpiler.transpile_class(
+            "Counter",
+            &[],
+            &[],
+            &fields,
+            &constructors,
+            &methods,
+            &constants,
+            &["Debug".to_string()],
+            true,
+        );
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("struct"));
+        assert!(code.contains("Counter"));
+        assert!(code.contains("impl"));
+        assert!(code.contains("new"));
+        assert!(code.contains("increment"));
+        assert!(code.contains("MAX"));
+        assert!(code.contains("100"));
+    }
+
+    // Test 90: transpile_named_type - special type mappings
+    #[test]
+    fn test_transpile_named_type_special_mappings() {
+        let transpiler = Transpiler::new();
+
+        // Test unit type
+        let result = transpiler.transpile_named_type("()").unwrap();
+        assert_eq!(result.to_string(), "()");
+
+        // Test Any type
+        let result = transpiler.transpile_named_type("Any").unwrap();
+        assert_eq!(result.to_string(), "_");
+
+        // Test underscore
+        let result = transpiler.transpile_named_type("_").unwrap();
+        assert_eq!(result.to_string(), "_");
+
+        // Test Object type
+        let result = transpiler.transpile_named_type("Object").unwrap();
+        assert!(result.to_string().contains("BTreeMap"));
+    }
+
+    // Test 91: transpile_generic_type - direct call
+    #[test]
+    fn test_direct_transpile_generic_type() {
+        let transpiler = Transpiler::new();
+        let params = vec![
+            make_type(TypeKind::Named("String".to_string())),
+            make_type(TypeKind::Named("i32".to_string())),
+        ];
+        let result = transpiler.transpile_generic_type("HashMap", &params).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("HashMap"));
+        assert!(code.contains("String"));
+        assert!(code.contains("i32"));
+        assert!(code.contains('<'));
+        assert!(code.contains('>'));
+    }
+
+    // Test 92: transpile_reference_type - direct call with str
+    #[test]
+    fn test_direct_transpile_reference_type_str() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("str".to_string()));
+        let result = transpiler.transpile_reference_type(false, None, &inner).unwrap();
+        let code = result.to_string();
+        assert!(code.contains('&'));
+        assert!(code.contains("str"));
+        // Should not be &&str
+        assert!(!code.contains("& & str"));
+    }
+
+    // Test 93: transpile_reference_type - mutable str
+    #[test]
+    fn test_direct_transpile_reference_type_mut_str() {
+        let transpiler = Transpiler::new();
+        let inner = make_type(TypeKind::Named("str".to_string()));
+        let result = transpiler.transpile_reference_type(true, None, &inner).unwrap();
+        let code = result.to_string();
+        assert!(code.contains('&'));
+        assert!(code.contains("mut"));
+        assert!(code.contains("str"));
+    }
+

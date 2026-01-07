@@ -4,6 +4,9 @@ pub mod infer;
 pub mod mir;
 pub mod types;
 pub mod unify;
+
+#[cfg(test)]
+mod infer_tests;
 // Re-export commonly used types
 pub use environment::TypeEnv;
 pub use infer::InferenceContext;

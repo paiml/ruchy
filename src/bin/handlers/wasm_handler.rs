@@ -45,25 +45,36 @@ pub(crate) fn generate_and_validate_wasm(ast: &Expr, verbose: bool) -> Result<Ve
     let wasm_bytes = emitter
         .emit(ast)
         .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
+
+    // Validate WASM if wasmparser is available (notebook feature)
+    #[cfg(feature = "notebook")]
+    {
+        if verbose {
+            println!("{} Validating WASM module...", "→".bright_cyan());
+        }
+        match wasmparser::validate(&wasm_bytes) {
+            Ok(_) => {
+                if verbose {
+                    println!("{} WASM validation successful", "✓".green());
+                    println!("{} Security scan: memory bounds verified", "✓".green());
+                    println!("{} Formal verification: type safety confirmed", "✓".green());
+                }
+            }
+            Err(e) => {
+                eprintln!("{} WASM validation failed: {}", "✗".red(), e);
+                if !verbose {
+                    eprintln!("Run with --verbose for more details");
+                }
+                return Err(anyhow::anyhow!("WASM validation failed: {}", e));
+            }
+        }
+    }
+
+    #[cfg(not(feature = "notebook"))]
     if verbose {
-        println!("{} Validating WASM module...", "→".bright_cyan());
+        println!("{} WASM module generated (validation requires notebook feature)", "→".bright_cyan());
     }
-    match wasmparser::validate(&wasm_bytes) {
-        Ok(_) => {
-            if verbose {
-                println!("{} WASM validation successful", "✓".green());
-                println!("{} Security scan: memory bounds verified", "✓".green());
-                println!("{} Formal verification: type safety confirmed", "✓".green());
-            }
-        }
-        Err(e) => {
-            eprintln!("{} WASM validation failed: {}", "✗".red(), e);
-            if !verbose {
-                eprintln!("Run with --verbose for more details");
-            }
-            return Err(anyhow::anyhow!("WASM validation failed: {}", e));
-        }
-    }
+
     Ok(wasm_bytes)
 }
 

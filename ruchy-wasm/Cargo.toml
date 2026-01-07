@@ -35,3 +35,11 @@ strip = true     # Remove debug symbols
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false  # Disable wasm-opt optimization (causes bulk memory errors)
+
+[package.metadata.cargo-machete]
+ignored = [
+    "js-sys",              # WASM interop
+    "serde",               # Serialization for WASM bindings
+    "serde-wasm-bindgen",  # WASM serialization bridge
+    "wasm-bindgen-futures", # Async WASM support
+]

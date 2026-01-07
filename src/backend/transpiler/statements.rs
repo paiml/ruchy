@@ -19,7 +19,7 @@ impl Transpiler {
 
     /// Infer return type from parameter types
     /// Delegates to return_type_helpers module
-    fn infer_return_type_from_params(
+    pub(crate) fn infer_return_type_from_params(
         &self,
         body: &Expr,
         params: &[Param],
@@ -39,7 +39,7 @@ impl Transpiler {
     /// Helper to detect nested array access (2D arrays)
     /// Detects patterns like: param[i][j], param[row][col], param[0][i]
     /// Delegates to function_param_inference module (EXTREME TDD Round 70)
-    fn is_nested_array_param(&self, param_name: &str, expr: &Expr) -> bool {
+    pub(crate) fn is_nested_array_param(&self, param_name: &str, expr: &Expr) -> bool {
         self.is_nested_array_param_impl(param_name, expr)
     }
     /// Generate parameter tokens with proper type inference
@@ -65,7 +65,7 @@ impl Transpiler {
     }
     /// Check if an expression references any global variables (TRANSPILER-SCOPE)
     /// Delegates to function_signature module (EXTREME TDD Round 70)
-    fn references_globals(&self, expr: &Expr) -> bool {
+    pub(crate) fn references_globals(&self, expr: &Expr) -> bool {
         self.references_globals_impl(expr)
     }
 
@@ -109,7 +109,7 @@ impl Transpiler {
     /// Complexity: 1 (within Toyota Way limits)
     /// ISSUE-103: Removed test_ prefix check - already handled by #[test] attribute check
     /// EXTREME TDD Round 78: Delegates to function_signature module
-    fn compute_final_return_type(
+    pub(crate) fn compute_final_return_type(
         &self,
         fn_name: &proc_macro2::Ident,
         return_type_tokens: &TokenStream,
@@ -119,13 +119,13 @@ impl Transpiler {
 
     /// Generate visibility token
     /// EXTREME TDD Round 78: Delegates to function_signature module
-    fn generate_visibility_token(&self, is_pub: bool) -> TokenStream {
+    pub(crate) fn generate_visibility_token(&self, is_pub: bool) -> TokenStream {
         self.generate_visibility_token_impl(is_pub)
     }
 
     /// Process attributes into regular attributes and modifiers
     /// EXTREME TDD Round 76: Delegates to function_signature module
-    fn process_attributes(
+    pub(crate) fn process_attributes(
         &self,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> (Vec<TokenStream>, TokenStream) {
@@ -134,7 +134,7 @@ impl Transpiler {
 
     /// Generate function declaration based on async/generic flags
     /// EXTREME TDD Round 77: Delegates to function_signature module
-    fn generate_function_declaration(
+    pub(crate) fn generate_function_declaration(
         &self,
         is_async: bool,
         type_param_tokens: &[TokenStream],
@@ -161,7 +161,7 @@ impl Transpiler {
 
     /// Helper: Transpile match expression with string literal arm conversion
     /// EXTREME TDD Round 77: Delegates to string_body_conversion module
-    fn transpile_match_with_string_arms(
+    pub(crate) fn transpile_match_with_string_arms(
         &self,
         expr: &Expr,
         arms: &[crate::frontend::ast::MatchArm],
@@ -192,7 +192,7 @@ impl Transpiler {
 
     /// Transpile type with lifetime annotation (&T becomes &'a T)
     /// EXTREME TDD Round 77: Delegates to lifetime_helpers module
-    fn transpile_type_with_lifetime(&self, ty: &Type) -> Result<TokenStream> {
+    pub(crate) fn transpile_type_with_lifetime(&self, ty: &Type) -> Result<TokenStream> {
         self.transpile_type_with_lifetime_impl(ty)
     }
 
@@ -318,7 +318,7 @@ impl Transpiler {
 
     /// Handle `DataFrame` functions (col)
     /// EXTREME TDD Round 80: Delegates to dataframe_transpilers module
-    fn try_transpile_dataframe_function(
+    pub(crate) fn try_transpile_dataframe_function(
         &self,
         base_name: &str,
         args: &[Expr],

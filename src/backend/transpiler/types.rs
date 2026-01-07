@@ -116,29 +116,29 @@ impl Transpiler {
         Ok(quote! { #base_ident<#(#param_tokens),*> })
     }
     /// Transpile optional types to Option<T>
-    fn transpile_optional_type(&self, inner: &Type) -> Result<TokenStream> {
+    pub(crate) fn transpile_optional_type(&self, inner: &Type) -> Result<TokenStream> {
         let inner_tokens = self.transpile_type(inner)?;
         Ok(quote! { Option<#inner_tokens> })
     }
     /// Transpile list types to Vec<T>
-    fn transpile_list_type(&self, elem_type: &Type) -> Result<TokenStream> {
+    pub(crate) fn transpile_list_type(&self, elem_type: &Type) -> Result<TokenStream> {
         let elem_tokens = self.transpile_type(elem_type)?;
         Ok(quote! { Vec<#elem_tokens> })
     }
     /// Transpile array types with fixed size
-    fn transpile_array_type(&self, elem_type: &Type, size: usize) -> Result<TokenStream> {
+    pub(crate) fn transpile_array_type(&self, elem_type: &Type, size: usize) -> Result<TokenStream> {
         let elem_tokens = self.transpile_type(elem_type)?;
         let size_lit = proc_macro2::Literal::usize_unsuffixed(size);
         Ok(quote! { [#elem_tokens; #size_lit] })
     }
     /// Transpile tuple types
-    fn transpile_tuple_type(&self, types: &[Type]) -> Result<TokenStream> {
+    pub(crate) fn transpile_tuple_type(&self, types: &[Type]) -> Result<TokenStream> {
         let type_tokens: Result<Vec<_>> = types.iter().map(|t| self.transpile_type(t)).collect();
         let type_tokens = type_tokens?;
         Ok(quote! { (#(#type_tokens),*) })
     }
     /// Transpile function types
-    fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
+    pub(crate) fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
         let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
         let ret_tokens = self.transpile_type(ret)?;
@@ -247,7 +247,7 @@ impl Transpiler {
 
     /// DEFECT-021 FIX: Parse type parameter string to `TokenStream`
     /// Handles both simple params ("T") and params with bounds ("T: Clone + Debug")
-    fn parse_type_param_to_tokens(p: &str) -> TokenStream {
+    pub(crate) fn parse_type_param_to_tokens(p: &str) -> TokenStream {
         if p.starts_with('\'') {
             // Lifetime parameter
             let lifetime = Lifetime::new(p, proc_macro2::Span::call_site());

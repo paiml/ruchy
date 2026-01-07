@@ -96,11 +96,13 @@ pub mod expression_analysis;
 pub mod std_imports;
 pub mod param_usage_analysis;
 #[cfg(test)]
+mod param_usage_analysis_tests; // EXTREME TDD Round 85: Parameter usage analysis tests
+#[cfg(test)]
 mod tests_compound_assignment;
 mod type_conversion_refactored;
 mod type_inference;
 mod types;
-use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
+use crate::frontend::ast::{Attribute, Expr, ExprKind, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 // Module exports are handled by the impl blocks in each module
