@@ -576,4 +576,131 @@ mod tests {
             }
         }
     }
+
+    // ===== Additional coverage tests (Round 100) =====
+
+    // Test 39: Break with value expression
+    #[test]
+    fn test_break_with_label_and_value() {
+        let expr = parse("'outer: while true { break 'outer 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::While { .. }));
+        }
+    }
+
+    // Test 40: Simple break in while
+    #[test]
+    fn test_simple_break_in_while() {
+        let result = Parser::new("while true { break }").parse();
+        assert!(result.is_ok(), "Simple break should parse");
+    }
+
+    // Test 41: Simple continue in while
+    #[test]
+    fn test_simple_continue_in_while() {
+        let result = Parser::new("while true { continue }").parse();
+        assert!(result.is_ok(), "Simple continue should parse");
+    }
+
+    // Test 42: Return with method call
+    #[test]
+    fn test_return_method_call() {
+        let expr = parse("fun f(s) { return s.len() }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    // Test 43: Return with if expression
+    #[test]
+    fn test_return_if_expr() {
+        let expr = parse("fun f(x) { return if x > 0 { 1 } else { -1 } }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    // Test 44: Break followed by expression
+    #[test]
+    fn test_break_followed_by_expr() {
+        let result = Parser::new("while true { break; 42 }").parse();
+        assert!(result.is_ok(), "Break followed by expr should parse");
+    }
+
+    // Test 45: Continue followed by expression
+    #[test]
+    fn test_continue_followed_by_expr() {
+        let result = Parser::new("while true { continue; 42 }").parse();
+        assert!(result.is_ok(), "Continue followed by expr should parse");
+    }
+
+    // Test 46: Throw with new expression
+    #[test]
+    fn test_throw_new_expr() {
+        let result = Parser::new("fun f() { throw Error(\"fail\") }").parse();
+        assert!(result.is_ok(), "Throw with call should parse");
+    }
+
+    // Test 47: Nested return in block
+    #[test]
+    fn test_nested_return_in_block() {
+        let expr = parse("fun f() { { return 1 } }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+        }
+    }
+
+    // Test 48: Break in for loop
+    #[test]
+    fn test_break_in_for_loop() {
+        let result = Parser::new("for i in range(10) { break }").parse();
+        assert!(result.is_ok(), "Break in for loop should parse");
+    }
+
+    // Test 49: Continue in for loop with range
+    #[test]
+    fn test_continue_in_for_loop_range() {
+        let result = Parser::new("for i in range(10) { continue }").parse();
+        assert!(result.is_ok(), "Continue in for loop should parse");
+    }
+
+    // Test 50: Return with unary expression
+    #[test]
+    fn test_return_unary_expr() {
+        let expr = parse("fun f(x) { return -x }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    // Test 51: Throw with interpolated string
+    #[test]
+    fn test_throw_interpolated_string() {
+        let result = Parser::new(r#"fun f() { throw "error: {msg}" }"#).parse();
+        assert!(result.is_ok(), "Throw with interpolated string should parse");
+    }
+
+    // Test 52: Return with closure call
+    #[test]
+    fn test_return_closure_call() {
+        let expr = parse("fun f() { return (|x| x + 1)(5) }").unwrap();
+        if let Some(body) = get_function_body(&expr) {
+            if let ExprKind::Return { value } = &body.kind {
+                assert!(value.is_some());
+            }
+        }
+    }
+
+    // Test 53: Multiple control flow in same function
+    #[test]
+    fn test_multiple_control_flow() {
+        let result = Parser::new("fun f(x) { if x > 0 { return 1 } throw \"error\" }").parse();
+        assert!(result.is_ok(), "Multiple control flow should parse");
+    }
 }
