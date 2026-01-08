@@ -897,6 +897,85 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // ===== Additional coverage tests (Round 105) =====
+
+    // Test 78: Enum with many variants
+    #[test]
+    fn test_enum_many_variants() {
+        let result = parse("enum Days { Mon, Tue, Wed, Thu, Fri, Sat, Sun }");
+        assert!(result.is_ok(), "Enum with many variants should parse");
+    }
+
+    // Test 79: Enum with tuple multiple fields
+    #[test]
+    fn test_enum_tuple_multiple_fields() {
+        let result = parse("enum Point { TwoD(i32, i32), ThreeD(i32, i32, i32) }");
+        assert!(result.is_ok(), "Tuple with multiple fields should parse");
+    }
+
+    // Test 81: Enum with struct multiple fields
+    #[test]
+    fn test_enum_struct_multiple_fields() {
+        let result = parse("enum Shape { Circle { x: i32, y: i32, r: i32 } }");
+        assert!(result.is_ok(), "Struct with multiple fields should parse");
+    }
+
+    // Test 82: Enum used in match
+    #[test]
+    fn test_enum_in_match() {
+        let result = parse("enum E { A, B } match e { E::A => 1, E::B => 2 }");
+        assert!(result.is_ok(), "Enum in match should parse");
+    }
+
+    // Test 83: Enum used in function return
+    #[test]
+    fn test_enum_function_return() {
+        let result = parse("enum Result { Ok, Err } fun get() -> Result { Result::Ok }");
+        assert!(result.is_ok(), "Enum as function return should parse");
+    }
+
+    // Test 84: Enum with generic bounds
+    #[test]
+    fn test_enum_generic_bounds() {
+        let result = parse("enum Container<T: Clone> { Some(T), None }");
+        assert!(result.is_ok(), "Enum with generic bounds should parse");
+    }
+
+    // Test 85: Enum variant access
+    #[test]
+    fn test_enum_variant_access() {
+        let result = parse("let x = Status::Active");
+        assert!(result.is_ok(), "Enum variant access should parse");
+    }
+
+    // Test 86: Enum variant with call
+    #[test]
+    fn test_enum_variant_call() {
+        let result = parse("let x = Option::Some(42)");
+        assert!(result.is_ok(), "Enum variant call should parse");
+    }
+
+    // Test 87: Enum with trailing comma
+    #[test]
+    fn test_enum_trailing_comma() {
+        let result = parse("enum E { A, B, C, }");
+        assert!(result.is_ok(), "Enum with trailing comma should parse");
+    }
+
+    // Test 88: Nested enum variant struct
+    #[test]
+    fn test_enum_nested_type() {
+        let result = parse("enum Tree { Leaf, Node { left: Box<Tree>, right: Box<Tree> } }");
+        assert!(result.is_ok(), "Nested type in enum should parse");
+    }
+
+    // Test 88: Basic color enum
+    #[test]
+    fn test_enum_color() {
+        let result = parse("enum Color { Red, Green, Blue }");
+        assert!(result.is_ok(), "Basic color enum should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
