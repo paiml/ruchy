@@ -1159,4 +1159,212 @@ mod tests {
         );
         assert_eq!(result.expect("operation should succeed in test"), 28); // (15) * 2 - 2 = 30 - 2 = 28
     }
+
+    // Test 5: Subtraction
+    #[test]
+    fn test_jit_subtraction() {
+        let code = "10 - 3";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile subtraction");
+        assert_eq!(result.expect("operation should succeed in test"), 7);
+    }
+
+    // Test 6: Multiplication
+    #[test]
+    fn test_jit_multiplication() {
+        let code = "6 * 7";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile multiplication");
+        assert_eq!(result.expect("operation should succeed in test"), 42);
+    }
+
+    // Test 7: Division
+    #[test]
+    fn test_jit_division() {
+        let code = "100 / 4";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile division");
+        assert_eq!(result.expect("operation should succeed in test"), 25);
+    }
+
+    // Test 8: Modulo
+    #[test]
+    fn test_jit_modulo() {
+        let code = "17 % 5";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile modulo: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 2);
+    }
+
+    // Test 9: Negative literal
+    #[test]
+    fn test_jit_negative_literal() {
+        let code = "-42";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile negative: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), -42);
+    }
+
+    // Test 10: Comparison equal (true = 1)
+    #[test]
+    fn test_jit_comparison_equal_true() {
+        let code = "5 == 5";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile equal: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 1); // true = 1
+    }
+
+    // Test 11: Comparison equal (false = 0)
+    #[test]
+    fn test_jit_comparison_equal_false() {
+        let code = "5 == 6";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile equal: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 0); // false = 0
+    }
+
+    // Test 12: Comparison less than
+    #[test]
+    fn test_jit_comparison_less_than() {
+        let code = "3 < 5";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile less than: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 1); // true = 1
+    }
+
+    // Test 13: Comparison greater than
+    #[test]
+    fn test_jit_comparison_greater_than() {
+        let code = "10 > 3";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile greater: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 1); // true = 1
+    }
+
+    // Test 14: Boolean literal true
+    #[test]
+    fn test_jit_bool_true() {
+        let code = "true";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile true: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 1);
+    }
+
+    // Test 15: Boolean literal false
+    #[test]
+    fn test_jit_bool_false() {
+        let code = "false";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile false: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 0);
+    }
+
+    // Test 16: Simple if-else (true branch)
+    #[test]
+    fn test_jit_if_else_true() {
+        let code = "if true { 42 } else { 0 }";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile if-else: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 42);
+    }
+
+    // Test 17: Simple if-else (false branch)
+    #[test]
+    fn test_jit_if_else_false() {
+        let code = "if false { 42 } else { 99 }";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile if-else: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 99);
+    }
+
+    // Test 18: Let binding
+    #[test]
+    fn test_jit_let_binding() {
+        let code = "let x = 10 in x * 2";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile let: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 20);
+    }
+
+    // Test 19: Nested let bindings
+    #[test]
+    fn test_jit_nested_let() {
+        let code = "let x = 5 in let y = 3 in x + y";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile nested let: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 8);
+    }
+
+    // Test 20: Block expression
+    #[test]
+    fn test_jit_block() {
+        let code = "{ 1; 2; 3 }";
+        let ast = Parser::new(code)
+            .parse()
+            .expect("operation should succeed in test");
+        let mut compiler = JitCompiler::new().expect("operation should succeed in test");
+        let result = compiler.compile_and_execute(&ast);
+        assert!(result.is_ok(), "JIT should compile block: {result:?}");
+        assert_eq!(result.expect("operation should succeed in test"), 3);
+    }
 }
