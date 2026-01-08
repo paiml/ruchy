@@ -303,6 +303,8 @@ pub const GRAMMAR_PRODUCTIONS: &[(&str, &str)] = &[
 mod tests {
     use super::*;
     use crate::frontend::ast::{ExprKind, Literal, Span};
+    use crate::BinaryOp;
+    use crate::UnaryOp;
     use std::time::Duration;
 
     // Sprint 14: Grammar coverage tests
@@ -498,5 +500,271 @@ mod tests {
         let first = super::GRAMMAR_PRODUCTIONS[0];
         assert!(!first.0.is_empty());
         assert!(!first.1.is_empty());
+    }
+
+    // Test 13: is_complete returns true when coverage is sufficient
+    #[test]
+    fn test_is_complete_true() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("prod1", "input1", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record("prod2", "input2", Ok(expr), Duration::from_millis(1));
+
+        assert!(matrix.is_complete(2));
+        assert!(!matrix.is_complete(3)); // Not enough productions
+    }
+
+    // Test 14: is_complete returns false when there are uncovered productions
+    #[test]
+    fn test_is_complete_false_uncovered() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        matrix.uncovered.push("uncovered_prod");
+
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 1 },
+        );
+        matrix.record("prod1", "input1", Ok(expr), Duration::from_millis(1));
+
+        assert!(!matrix.is_complete(1));
+    }
+
+    // Test 15: get_coverage_percentage with empty matrix
+    #[test]
+    fn test_get_coverage_percentage_empty() {
+        let matrix = GrammarCoverageMatrix::new();
+        assert!((matrix.get_coverage_percentage() - 0.0).abs() < f64::EPSILON);
+    }
+
+    // Test 16: get_coverage_percentage with 100% coverage
+    #[test]
+    fn test_get_coverage_percentage_full() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("prod1", "input1", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record("prod2", "input2", Ok(expr), Duration::from_millis(1));
+
+        assert!((matrix.get_coverage_percentage() - 100.0).abs() < 0.01);
+    }
+
+    // Test 17: get_coverage_percentage with partial coverage
+    #[test]
+    fn test_get_coverage_percentage_partial() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("prod1", "input1", Ok(expr), Duration::from_millis(1));
+        matrix.uncovered.push("uncovered1");
+        matrix.uncovered.push("uncovered2");
+
+        // 1 covered, 2 uncovered = 33.33%
+        let pct = matrix.get_coverage_percentage();
+        assert!(pct > 30.0 && pct < 40.0);
+    }
+
+    // Test 18: record_ast_variants Binary
+    #[test]
+    fn test_ast_variant_binary() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let binary_expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span { start: 0, end: 1 },
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span { start: 2, end: 3 },
+                )),
+            },
+            Span { start: 0, end: 3 },
+        );
+
+        matrix.record("binary", "1 + 2", Ok(binary_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Binary"));
+    }
+
+    // Test 19: record_ast_variants Unary
+    #[test]
+    fn test_ast_variant_unary() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let unary_expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span { start: 1, end: 3 },
+                )),
+            },
+            Span { start: 0, end: 3 },
+        );
+
+        matrix.record("unary", "-42", Ok(unary_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Unary"));
+    }
+
+    // Test 20: record_ast_variants If
+    #[test]
+    fn test_ast_variant_if() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span { start: 0, end: 4 },
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span { start: 7, end: 8 },
+                )),
+                else_branch: None,
+            },
+            Span { start: 0, end: 10 },
+        );
+
+        matrix.record("if", "if true { 1 }", Ok(if_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("If"));
+    }
+
+    // Test 21: record_ast_variants Block
+    #[test]
+    fn test_ast_variant_block() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let block_expr = Expr::new(
+            ExprKind::Block(vec![Expr::new(
+                ExprKind::Literal(Literal::Integer(42, None)),
+                Span { start: 1, end: 3 },
+            )]),
+            Span { start: 0, end: 4 },
+        );
+
+        matrix.record("block", "{ 42 }", Ok(block_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Block"));
+    }
+
+    // Test 22: record_ast_variants Let
+    #[test]
+    fn test_ast_variant_let() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span { start: 8, end: 10 },
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span { start: 14, end: 15 },
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span { start: 0, end: 15 },
+        );
+
+        matrix.record("let", "let x = 42 in x", Ok(let_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Let"));
+    }
+
+    // Test 23: record_ast_variants Call
+    #[test]
+    fn test_ast_variant_call() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("foo".to_string()),
+                    Span { start: 0, end: 3 },
+                )),
+                args: vec![],
+            },
+            Span { start: 0, end: 5 },
+        );
+
+        matrix.record("call", "foo()", Ok(call_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Call"));
+    }
+
+    // Test 24: record_ast_variants List
+    #[test]
+    fn test_ast_variant_list() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let list_expr = Expr::new(
+            ExprKind::List(vec![Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span { start: 1, end: 2 },
+            )]),
+            Span { start: 0, end: 3 },
+        );
+
+        matrix.record("list", "[1]", Ok(list_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("List"));
+    }
+
+    // Test 25: report includes all expected sections
+    #[test]
+    fn test_report_comprehensive() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span { start: 0, end: 1 },
+        );
+
+        // Add some successes and failures
+        matrix.record("literal", "42", Ok(expr.clone()), Duration::from_millis(10));
+        matrix.record("literal", "43", Ok(expr), Duration::from_millis(20));
+        matrix.record(
+            "other",
+            "bad",
+            Err(anyhow::anyhow!("error")),
+            Duration::from_millis(5),
+        );
+
+        let report = matrix.report();
+
+        assert!(report.contains("Grammar Coverage Report"));
+        assert!(report.contains("Coverage:"));
+        assert!(report.contains("Productions covered:"));
+        assert!(report.contains("AST variants seen:"));
+        assert!(report.contains("Total attempts:"));
+        assert!(report.contains("Success rate:"));
+        assert!(report.contains("Slowest productions:"));
+    }
+
+    // Test 26: GrammarCoverageMatrix default
+    #[test]
+    fn test_grammar_coverage_matrix_default() {
+        let matrix = GrammarCoverageMatrix::default();
+        assert!(matrix.productions.is_empty());
+        assert!(matrix.ast_variants.is_empty());
+        assert!(matrix.uncovered.is_empty());
     }
 }
