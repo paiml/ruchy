@@ -143,6 +143,127 @@ mod tests {
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Qualified constructor should parse");
     }
+
+    // Test 8: Some variant (may need call syntax)
+    #[test]
+    fn test_some_variant() {
+        // Some by itself needs call syntax or might be identifier
+        let code = "let x = Some(1)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Some variant should parse");
+    }
+
+    // Test 9: None variant
+    #[test]
+    fn test_none_variant() {
+        let code = "None";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "None variant should parse");
+    }
+
+    // Test 10: Result::Ok qualified
+    #[test]
+    fn test_result_ok_qualified() {
+        let code = "Result::Ok";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Result::Ok should parse");
+    }
+
+    // Test 11: Result::Err qualified
+    #[test]
+    fn test_result_err_qualified() {
+        let code = "Result::Err";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Result::Err should parse");
+    }
+
+    // Test 12: Option::None qualified
+    #[test]
+    fn test_option_none_qualified() {
+        let code = "Option::None";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Option::None should parse");
+    }
+
+    // Test 13: Pre-increment with array access
+    #[test]
+    fn test_pre_increment_array() {
+        let code = "++arr[0]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Pre-increment array should parse");
+    }
+
+    // Test 14: Pre-decrement with array access
+    #[test]
+    fn test_pre_decrement_array() {
+        let code = "--arr[0]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Pre-decrement array should parse");
+    }
+
+    // Test 15: Pre-increment in expression
+    #[test]
+    fn test_pre_increment_in_expr() {
+        let code = "let x = ++y";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Pre-increment in let should parse");
+    }
+
+    // Test 16: Pre-decrement in expression
+    #[test]
+    fn test_pre_decrement_in_expr() {
+        let code = "let x = --y";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Pre-decrement in let should parse");
+    }
+
+    // Test 17: Some with call syntax
+    #[test]
+    fn test_some_call() {
+        let code = "Some(42)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Some(42) should parse");
+    }
+
+    // Test 18: None in expression
+    #[test]
+    fn test_none_in_expr() {
+        let code = "let x = None";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "None in let should parse");
+    }
+
+    // Test 19: Ok with call syntax
+    #[test]
+    fn test_ok_call() {
+        let code = "Ok(value)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Ok(value) should parse");
+    }
+
+    // Test 20: Err with call syntax
+    #[test]
+    fn test_err_call() {
+        let code = "Err(message)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Err(message) should parse");
+    }
+
+    // Test 21: Option::Some with call syntax
+    #[test]
+    fn test_option_some_call() {
+        let code = "Option::Some(42)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Option::Some(42) should parse");
+    }
+
+    // Test 22: Multiple increments in block
+    #[test]
+    fn test_multiple_increments() {
+        let code = "{ ++x; ++y }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Multiple increments should parse");
+    }
 }
 
 #[cfg(test)]
