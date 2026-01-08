@@ -560,3 +560,340 @@ mod mutation_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod extended_tests {
+    use super::*;
+
+    // Test 12: Float to_int conversion
+    #[test]
+    fn test_float_to_int() {
+        assert_eq!(
+            eval_float_method(3.7, "to_int", true).expect("operation should succeed in test"),
+            Value::Integer(3)
+        );
+        assert_eq!(
+            eval_float_method(-2.9, "to_int", true).expect("operation should succeed in test"),
+            Value::Integer(-2)
+        );
+        assert_eq!(
+            eval_float_method(0.0, "to_int", true).expect("operation should succeed in test"),
+            Value::Integer(0)
+        );
+    }
+
+    // Test 13: Float to_integer alias
+    #[test]
+    fn test_float_to_integer_alias() {
+        assert_eq!(
+            eval_float_method(5.5, "to_integer", true).expect("operation should succeed in test"),
+            Value::Integer(5)
+        );
+    }
+
+    // Test 14: Float to_string
+    #[test]
+    fn test_float_to_string() {
+        let result =
+            eval_float_method(3.14, "to_string", true).expect("operation should succeed in test");
+        match result {
+            Value::String(s) => assert!(s.contains("3.14")),
+            _ => panic!("Expected string value"),
+        }
+    }
+
+    // Test 15: Float powf error
+    #[test]
+    fn test_float_powf_error() {
+        let result = eval_float_method(2.0, "powf", true);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match err {
+            InterpreterError::RuntimeError(msg) => {
+                assert!(msg.contains("Use ** operator"));
+            }
+            _ => panic!("Expected RuntimeError"),
+        }
+    }
+
+    // Test 16: Float unknown method
+    #[test]
+    fn test_float_unknown_method() {
+        let result = eval_float_method(2.0, "unknown_method", true);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            InterpreterError::RuntimeError(msg) => {
+                assert!(msg.contains("Unknown float method"));
+            }
+            _ => panic!("Expected RuntimeError"),
+        }
+    }
+
+    // Test 17: Integer unknown method
+    #[test]
+    fn test_integer_unknown_method() {
+        let result = eval_integer_method(42, "unknown_method", &[]);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            InterpreterError::RuntimeError(msg) => {
+                assert!(msg.contains("Unknown integer method"));
+            }
+            _ => panic!("Expected RuntimeError"),
+        }
+    }
+
+    // Test 18: Array slice method
+    #[test]
+    fn test_array_slice() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+        ]);
+
+        let result = eval_array_method_simple(
+            &arr,
+            "slice",
+            &[Value::Integer(1), Value::Integer(4)],
+        )
+        .expect("operation should succeed in test");
+
+        match result {
+            Value::Array(sliced) => {
+                assert_eq!(sliced.len(), 3);
+                assert_eq!(sliced[0], Value::Integer(2));
+                assert_eq!(sliced[1], Value::Integer(3));
+                assert_eq!(sliced[2], Value::Integer(4));
+            }
+            _ => panic!("Expected array"),
+        }
+    }
+
+    // Test 19: Array slice edge cases
+    #[test]
+    fn test_array_slice_edge_cases() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+
+        // Start beyond end
+        let result = eval_array_method_simple(
+            &arr,
+            "slice",
+            &[Value::Integer(5), Value::Integer(10)],
+        )
+        .expect("operation should succeed in test");
+        match result {
+            Value::Array(sliced) => assert!(sliced.is_empty()),
+            _ => panic!("Expected empty array"),
+        }
+
+        // Negative indices clamped to 0
+        let result = eval_array_method_simple(
+            &arr,
+            "slice",
+            &[Value::Integer(-1), Value::Integer(1)],
+        )
+        .expect("operation should succeed in test");
+        match result {
+            Value::Array(sliced) => assert_eq!(sliced.len(), 1),
+            _ => panic!("Expected array with one element"),
+        }
+    }
+
+    // Test 20: Array slice wrong arg types
+    #[test]
+    fn test_array_slice_wrong_types() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_method_simple(
+            &arr,
+            "slice",
+            &[Value::String("a".into()), Value::Integer(1)],
+        );
+        assert!(result.is_err());
+    }
+
+    // Test 21: Array join method
+    #[test]
+    fn test_array_join() {
+        let arr = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+            Value::from_string("c".to_string()),
+        ]);
+
+        let result = eval_array_method_simple(
+            &arr,
+            "join",
+            &[Value::from_string(", ".to_string())],
+        )
+        .expect("operation should succeed in test");
+
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "a, b, c"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    // Test 22: Array join with integers
+    #[test]
+    fn test_array_join_integers() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+
+        let result = eval_array_method_simple(
+            &arr,
+            "join",
+            &[Value::from_string("-".to_string())],
+        )
+        .expect("operation should succeed in test");
+
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "1-2-3"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    // Test 23: Array join wrong arg type
+    #[test]
+    fn test_array_join_wrong_type() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_method_simple(&arr, "join", &[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    // Test 24: Array unique method
+    #[test]
+    fn test_array_unique() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(1),
+            Value::Integer(3),
+            Value::Integer(2),
+        ]);
+
+        let result =
+            eval_array_method_simple(&arr, "unique", &[]).expect("operation should succeed in test");
+
+        match result {
+            Value::Array(unique) => {
+                assert_eq!(unique.len(), 3);
+                assert_eq!(unique[0], Value::Integer(1));
+                assert_eq!(unique[1], Value::Integer(2));
+                assert_eq!(unique[2], Value::Integer(3));
+            }
+            _ => panic!("Expected array"),
+        }
+    }
+
+    // Test 25: Array unknown method
+    #[test]
+    fn test_array_unknown_method() {
+        let arr = Arc::from(vec![Value::Integer(1)]);
+        let result = eval_array_method_simple(&arr, "unknown_method", &[]);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            InterpreterError::RuntimeError(msg) => {
+                assert!(msg.contains("requires interpreter context"));
+            }
+            _ => panic!("Expected RuntimeError"),
+        }
+    }
+
+    // Test 26: DataFrame shape method
+    #[test]
+    fn test_dataframe_shape() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "col2".to_string(),
+                values: vec![Value::Integer(4), Value::Integer(5), Value::Integer(6)],
+            },
+        ];
+
+        let result = eval_dataframe_method_simple(&columns, "shape", &[])
+            .expect("operation should succeed in test");
+
+        match result {
+            Value::Tuple(tuple) => {
+                assert_eq!(tuple.len(), 2);
+                assert_eq!(tuple[0], Value::Integer(3)); // 3 rows
+                assert_eq!(tuple[1], Value::Integer(2)); // 2 columns
+            }
+            _ => panic!("Expected tuple"),
+        }
+    }
+
+    // Test 27: DataFrame shape with empty columns
+    #[test]
+    fn test_dataframe_shape_empty() {
+        let columns: Vec<DataFrameColumn> = vec![];
+
+        let result = eval_dataframe_method_simple(&columns, "shape", &[])
+            .expect("operation should succeed in test");
+
+        match result {
+            Value::Tuple(tuple) => {
+                assert_eq!(tuple.len(), 2);
+                assert_eq!(tuple[0], Value::Integer(0)); // 0 rows
+                assert_eq!(tuple[1], Value::Integer(0)); // 0 columns
+            }
+            _ => panic!("Expected tuple"),
+        }
+    }
+
+    // Test 28: DataFrame shape rejects arguments
+    #[test]
+    fn test_dataframe_shape_rejects_args() {
+        let columns = vec![DataFrameColumn {
+            name: "col1".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+
+        let result = eval_dataframe_method_simple(&columns, "shape", &[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    // Test 29: dispatch_method_call for String
+    #[test]
+    fn test_dispatch_string() {
+        let s = Value::from_string("hello".to_string());
+        let result = dispatch_method_call(&s, "len", &[], true);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(5)
+        );
+    }
+
+    // Test 30: dispatch_method_call for Integer
+    #[test]
+    fn test_dispatch_integer() {
+        let i = Value::Integer(-42);
+        let result = dispatch_method_call(&i, "abs", &[], true);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(42)
+        );
+    }
+
+    // Test 31: dispatch_method_call generic fallback
+    #[test]
+    fn test_dispatch_generic_fallback() {
+        let nil = Value::Nil;
+        let result = dispatch_method_call(&nil, "to_string", &[], true);
+        assert!(result.is_ok());
+        match result.expect("operation should succeed in test") {
+            Value::String(s) => assert_eq!(s.as_ref(), "nil"),
+            _ => panic!("Expected string"),
+        }
+    }
+}
