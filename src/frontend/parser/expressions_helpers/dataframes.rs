@@ -105,6 +105,110 @@ mod tests {
         assert!(result.is_ok(), "DataFrame with integers should parse");
     }
 
+    // Test 8: DataFrame with floats
+    #[test]
+    fn test_dataframe_literal_with_floats() {
+        let code = "df![x => [1.0, 2.5, 3.14]]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame with floats should parse");
+    }
+
+    // Test 9: DataFrame with mixed types
+    #[test]
+    fn test_dataframe_literal_mixed_types() {
+        let code = r#"df![name => ["Alice"], age => [30], score => [95.5]]"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame with mixed types should parse");
+    }
+
+    // Test 10: DataFrame method chain
+    #[test]
+    fn test_dataframe_method_chain() {
+        let code = r#"df.filter("x > 0").select("y")"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame method chain should parse");
+    }
+
+    // Test 11: DataFrame in let binding with literal
+    #[test]
+    fn test_dataframe_let_binding_literal() {
+        let code = "let data = df![x => [1, 2, 3]]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame let binding with literal should parse");
+    }
+
+    // Test 12: DataFrame in function parameter
+    #[test]
+    fn test_dataframe_function_parameter() {
+        let code = "fun process(df) { df }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame as function parameter should parse");
+    }
+
+    // Test 13: DataFrame with boolean values
+    #[test]
+    fn test_dataframe_literal_with_booleans() {
+        let code = "df![active => [true, false, true]]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame with booleans should parse");
+    }
+
+    // Test 14: DataFrame empty column names
+    #[test]
+    fn test_dataframe_method_filter() {
+        let code = r#"df.filter("age > 21")"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame filter should parse");
+    }
+
+    // Test 15: DataFrame join operation
+    #[test]
+    fn test_dataframe_method_join() {
+        let code = r#"df.join(other_df, "id")"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame join should parse");
+    }
+
+    // Test 16: DataFrame groupby operation
+    #[test]
+    fn test_dataframe_method_groupby() {
+        let code = r#"df.groupby("category")"#;
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame groupby should parse");
+    }
+
+    // Test 17: DataFrame in if condition
+    #[test]
+    fn test_dataframe_in_if() {
+        let code = "if df.len() > 0 { df } else { empty_df }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame in if should parse");
+    }
+
+    // Test 18: DataFrame return from function
+    #[test]
+    fn test_dataframe_function_return() {
+        let code = "fun create_df() { df![x => [1, 2, 3]] }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame function return should parse");
+    }
+
+    // Test 19: DataFrame with underscore column names
+    #[test]
+    fn test_dataframe_underscore_columns() {
+        let code = "df![first_name => [\"A\"], last_name => [\"B\"]]";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame with underscore columns should parse");
+    }
+
+    // Test 20: DataFrame head method
+    #[test]
+    fn test_dataframe_method_head() {
+        let code = "df.head(5)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "DataFrame head should parse");
+    }
+
     // Property tests for DataFrames
     #[cfg(test)]
     mod property_tests {
