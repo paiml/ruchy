@@ -1100,4 +1100,273 @@ mod tests {
         assert!(!entries[3].trace.path.success);
         assert!(entries[4].trace.path.success);
     }
+
+    // ==========================================================================
+    // EXTREME TDD Round 89 - Additional Coverage Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_eval_type_all_variants() {
+        let types = vec![
+            EvalType::Expression,
+            EvalType::Statement,
+            EvalType::Binding,
+            EvalType::FunctionDef,
+            EvalType::TypeDef,
+            EvalType::Import,
+            EvalType::ControlFlow,
+            EvalType::MagicCommand,
+        ];
+        assert_eq!(types.len(), 8);
+        // Verify each can be used
+        for eval_type in types {
+            let path = ReplPath::success(
+                "test".to_string(),
+                ReplInputMode::Interactive,
+                eval_type,
+                "result".to_string(),
+            );
+            assert!(path.success);
+        }
+    }
+
+    #[test]
+    fn test_repl_input_mode_all_variants() {
+        let modes = vec![
+            ReplInputMode::Interactive,
+            ReplInputMode::Paste,
+            ReplInputMode::File,
+            ReplInputMode::Script,
+            ReplInputMode::Notebook,
+        ];
+        assert_eq!(modes.len(), 5);
+        for mode in modes {
+            let path = ReplPath::success(
+                "test".to_string(),
+                mode,
+                EvalType::Expression,
+                "result".to_string(),
+            );
+            assert_eq!(path.input_mode, mode);
+        }
+    }
+
+    #[test]
+    fn test_repl_path_explain_failure() {
+        let path = ReplPath::failure(
+            "undefined_var".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "Variable 'undefined_var' not found".to_string(),
+        );
+
+        let explanation = path.explain();
+        assert!(explanation.contains("REPL Command"));
+        assert!(explanation.contains("Expression"));
+        assert!(explanation.contains("undefined_var"));
+        assert!(explanation.contains("Error"));
+    }
+
+    #[test]
+    fn test_repl_path_confidence_scores() {
+        let success_path = ReplPath::success(
+            "1 + 1".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "2".to_string(),
+        );
+        assert_eq!(success_path.confidence(), 1.0);
+
+        let failure_path = ReplPath::failure(
+            "bad".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "error".to_string(),
+        );
+        assert_eq!(failure_path.confidence(), 0.0);
+    }
+
+    #[test]
+    fn test_infer_eval_type_edge_cases() {
+        // Test 'fn' keyword for function definitions
+        assert_eq!(ReplPath::infer_eval_type("fn foo() {}"), EvalType::FunctionDef);
+        // Test 'match' for control flow
+        assert_eq!(ReplPath::infer_eval_type("match x { }"), EvalType::ControlFlow);
+        // Test 'while' for control flow
+        assert_eq!(ReplPath::infer_eval_type("while true {}"), EvalType::ControlFlow);
+        // Test 'for' for control flow
+        assert_eq!(ReplPath::infer_eval_type("for i in range {}"), EvalType::ControlFlow);
+        // Test 'struct' for type def
+        assert_eq!(ReplPath::infer_eval_type("struct Foo {}"), EvalType::TypeDef);
+        // Test 'enum' for type def
+        assert_eq!(ReplPath::infer_eval_type("enum Color {}"), EvalType::TypeDef);
+        // Test 'type' alias for type def
+        assert_eq!(ReplPath::infer_eval_type("type MyInt = i32"), EvalType::TypeDef);
+    }
+
+    #[test]
+    fn test_repl_path_with_empty_bindings() {
+        let path = ReplPath::success(
+            "1 + 1".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "2".to_string(),
+        )
+        .with_bindings(vec![]);
+
+        assert!(path.bindings_changed.is_empty());
+    }
+
+    #[test]
+    fn test_repl_path_with_multiple_bindings() {
+        let path = ReplPath::success(
+            "let (a, b, c) = (1, 2, 3)".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Binding,
+            "(1, 2, 3)".to_string(),
+        )
+        .with_bindings(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+
+        assert_eq!(path.bindings_changed.len(), 3);
+        assert!(path.bindings_changed.contains(&"a".to_string()));
+        assert!(path.bindings_changed.contains(&"b".to_string()));
+        assert!(path.bindings_changed.contains(&"c".to_string()));
+    }
+
+    #[test]
+    fn test_repl_path_with_zero_values() {
+        let path = ReplPath::success(
+            "test".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "result".to_string(),
+        )
+        .with_memory(0)
+        .with_execution_time(0)
+        .with_ast_depth(0);
+
+        assert_eq!(path.memory_bytes, 0);
+        assert_eq!(path.execution_ns, 0);
+        assert_eq!(path.ast_depth, 0);
+    }
+
+    #[test]
+    fn test_repl_path_with_large_values() {
+        let path = ReplPath::success(
+            "test".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "result".to_string(),
+        )
+        .with_memory(1_000_000_000) // 1GB
+        .with_execution_time(60_000_000_000) // 60 seconds
+        .with_ast_depth(100);
+
+        assert_eq!(path.memory_bytes, 1_000_000_000);
+        assert_eq!(path.execution_ns, 60_000_000_000);
+        assert_eq!(path.ast_depth, 100);
+    }
+
+    #[test]
+    fn test_hash_chain_verification_with_single_entry() {
+        let mut collector = hash_chain_collector();
+
+        collector.record_event(
+            "42",
+            InputMode::Interactive,
+            &EvalResult::Success {
+                value: "42".to_string(),
+            },
+        );
+
+        let verification = collector.collector().verify_chain();
+        assert!(verification.valid);
+        assert_eq!(verification.entries_verified, 1);
+    }
+
+    #[test]
+    fn test_ring_collector_overflow() {
+        let mut collector: RingAuditCollector<4> = ring_collector();
+
+        // Add more entries than capacity
+        for i in 0..10 {
+            let path = ReplPath::success(
+                format!("let x{i} = {i}"),
+                ReplInputMode::Interactive,
+                EvalType::Binding,
+                i.to_string(),
+            );
+            collector.record_path(path);
+        }
+
+        // Ring buffer should have at most 4 entries
+        assert!(collector.len() <= 4);
+    }
+
+    #[test]
+    fn test_audit_collector_record_with_notebook_mode() {
+        let mut collector = hash_chain_collector();
+
+        let path = ReplPath::success(
+            "# Cell 1".to_string(),
+            ReplInputMode::Notebook,
+            EvalType::Expression,
+            "result".to_string(),
+        );
+        collector.record_path(path);
+
+        assert_eq!(collector.len(), 1);
+        let entry = collector.collector().get(0).expect("Should have entry");
+        assert_eq!(entry.trace.path.input_mode, ReplInputMode::Notebook);
+    }
+
+    #[test]
+    fn test_repl_path_success_with_binding() {
+        let path = ReplPath::success(
+            "let x = 42".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Binding,
+            "42".to_string(),
+        );
+
+        assert!(path.success);
+        assert_eq!(path.output, "42");
+        assert!(path.error.is_none());
+        assert_eq!(path.eval_type, EvalType::Binding);
+    }
+
+    #[test]
+    fn test_repl_path_failure_with_error() {
+        let path = ReplPath::failure(
+            "bad syntax".to_string(),
+            ReplInputMode::Interactive,
+            EvalType::Expression,
+            "Syntax error".to_string(),
+        );
+
+        assert!(!path.success);
+        assert!(path.error.is_some());
+        assert_eq!(path.error.unwrap(), "Syntax error");
+    }
+
+    #[test]
+    fn test_fnv_hash_long_input() {
+        let long_input = "x".repeat(10000);
+        let hash = fnv1a_hash(long_input.as_bytes());
+        assert_ne!(hash, 0);
+
+        // Same input should produce same hash
+        let hash2 = fnv1a_hash(long_input.as_bytes());
+        assert_eq!(hash, hash2);
+    }
+
+    #[test]
+    fn test_fnv_hash_special_characters() {
+        let hash1 = fnv1a_hash("let x = \"hello\\nworld\"".as_bytes());
+        let hash2 = fnv1a_hash("let x = \"hello\\nworld\"".as_bytes());
+        assert_eq!(hash1, hash2);
+
+        let hash3 = fnv1a_hash("let x = \"hello\\tworld\"".as_bytes());
+        assert_ne!(hash1, hash3);
+    }
 }

@@ -857,5 +857,340 @@ mod tests {
             assert_eq!(session.environment.seed, deserialized.environment.seed);
             assert_eq!(session.version, deserialized.version);
         }
+        // Test 17: ReplayValidator Creation
+        #[test]
+        fn test_replay_validator_creation() {
+            let validator = ReplayValidator::new(true);
+            assert!(validator.strict_mode);
+
+            let loose_validator = ReplayValidator::new(false);
+            assert!(!loose_validator.strict_mode);
+        }
+
+        // Test 18: Event Types - Input
+        #[test]
+        fn test_event_input_creation() {
+            let event = Event::Input {
+                text: "let x = 42".to_string(),
+                mode: InputMode::Interactive,
+            };
+
+            match event {
+                Event::Input { text, mode } => {
+                    assert_eq!(text, "let x = 42");
+                    assert_eq!(mode, InputMode::Interactive);
+                }
+                _ => panic!("Expected Input event"),
+            }
+        }
+
+        // Test 19: Event Types - Output
+        #[test]
+        fn test_event_output_creation() {
+            let event = Event::Output {
+                result: EvalResult::Success {
+                    value: "42".to_string(),
+                },
+                stdout: vec![b'h', b'e', b'l', b'l', b'o'],
+                stderr: vec![],
+            };
+
+            match event {
+                Event::Output {
+                    result,
+                    stdout,
+                    stderr,
+                } => {
+                    match result {
+                        EvalResult::Success { value } => assert_eq!(value, "42"),
+                        _ => panic!("Expected success"),
+                    }
+                    assert_eq!(stdout, vec![b'h', b'e', b'l', b'l', b'o']);
+                    assert!(stderr.is_empty());
+                }
+                _ => panic!("Expected Output event"),
+            }
+        }
+
+        // Test 20: Event Types - StateChange
+        #[test]
+        fn test_event_state_change() {
+            let mut bindings_delta = HashMap::new();
+            bindings_delta.insert("x".to_string(), "42".to_string());
+
+            let event = Event::StateChange {
+                bindings_delta: bindings_delta.clone(),
+                state_hash: "abc123".to_string(),
+            };
+
+            match event {
+                Event::StateChange {
+                    bindings_delta: delta,
+                    state_hash,
+                } => {
+                    assert_eq!(delta.get("x"), Some(&"42".to_string()));
+                    assert_eq!(state_hash, "abc123");
+                }
+                _ => panic!("Expected StateChange event"),
+            }
+        }
+
+        // Test 21: Event Types - ResourceUsage
+        #[test]
+        fn test_event_resource_usage() {
+            let event = Event::ResourceUsage {
+                heap_bytes: 1024,
+                stack_depth: 10,
+                cpu_ns: 1_000_000,
+            };
+
+            match event {
+                Event::ResourceUsage {
+                    heap_bytes,
+                    stack_depth,
+                    cpu_ns,
+                } => {
+                    assert_eq!(heap_bytes, 1024);
+                    assert_eq!(stack_depth, 10);
+                    assert_eq!(cpu_ns, 1_000_000);
+                }
+                _ => panic!("Expected ResourceUsage event"),
+            }
+        }
+
+        // Test 22: InputMode All Variants
+        #[test]
+        fn test_input_mode_variants() {
+            let modes = [
+                InputMode::Interactive,
+                InputMode::Paste,
+                InputMode::File,
+                InputMode::Script,
+            ];
+
+            // All should be distinct
+            for i in 0..modes.len() {
+                for j in (i + 1)..modes.len() {
+                    assert_ne!(modes[i], modes[j]);
+                }
+            }
+
+            // Test serialization for each mode
+            for mode in &modes {
+                let json = serde_json::to_string(mode).expect("operation should succeed in test");
+                let deserialized: InputMode =
+                    serde_json::from_str(&json).expect("operation should succeed in test");
+                assert_eq!(*mode, deserialized);
+            }
+        }
+
+        // Test 23: Divergence Output
+        #[test]
+        fn test_divergence_output() {
+            let divergence = Divergence::Output {
+                expected: "42".to_string(),
+                actual: "43".to_string(),
+            };
+
+            match divergence {
+                Divergence::Output { expected, actual } => {
+                    assert_eq!(expected, "42");
+                    assert_eq!(actual, "43");
+                }
+                _ => panic!("Expected Output divergence"),
+            }
+        }
+
+        // Test 24: Divergence State
+        #[test]
+        fn test_divergence_state() {
+            let divergence = Divergence::State {
+                expected_hash: "abc123".to_string(),
+                actual_hash: "def456".to_string(),
+            };
+
+            match divergence {
+                Divergence::State {
+                    expected_hash,
+                    actual_hash,
+                } => {
+                    assert_eq!(expected_hash, "abc123");
+                    assert_eq!(actual_hash, "def456");
+                }
+                _ => panic!("Expected State divergence"),
+            }
+        }
+
+        // Test 25: Divergence Resources
+        #[test]
+        fn test_divergence_resources() {
+            let expected = ResourceUsage {
+                heap_bytes: 1024,
+                stack_depth: 5,
+                cpu_ns: 1_000_000,
+            };
+            let actual = ResourceUsage {
+                heap_bytes: 2048,
+                stack_depth: 10,
+                cpu_ns: 2_000_000,
+            };
+
+            let divergence = Divergence::Resources {
+                expected: expected.clone(),
+                actual: actual.clone(),
+            };
+
+            match divergence {
+                Divergence::Resources {
+                    expected: exp,
+                    actual: act,
+                } => {
+                    assert_eq!(exp.heap_bytes, 1024);
+                    assert_eq!(act.heap_bytes, 2048);
+                }
+                _ => panic!("Expected Resources divergence"),
+            }
+        }
+
+        // Test 26: TimestampedEvent Creation
+        #[test]
+        fn test_timestamped_event() {
+            let event = TimestampedEvent {
+                id: EventId(1),
+                timestamp_ns: 1_000_000_000,
+                event: Event::Input {
+                    text: "test".to_string(),
+                    mode: InputMode::Interactive,
+                },
+                causality: vec![],
+            };
+
+            assert_eq!(event.id, EventId(1));
+            assert_eq!(event.timestamp_ns, 1_000_000_000);
+            assert!(event.causality.is_empty());
+        }
+
+        // Test 27: TimestampedEvent with Causality
+        #[test]
+        fn test_timestamped_event_with_causality() {
+            let event = TimestampedEvent {
+                id: EventId(3),
+                timestamp_ns: 3_000_000_000,
+                event: Event::Output {
+                    result: EvalResult::Unit,
+                    stdout: vec![],
+                    stderr: vec![],
+                },
+                causality: vec![EventId(1), EventId(2)],
+            };
+
+            assert_eq!(event.id, EventId(3));
+            assert_eq!(event.causality.len(), 2);
+            assert!(event.causality.contains(&EventId(1)));
+            assert!(event.causality.contains(&EventId(2)));
+        }
+
+        // Test 28: ReplSession Default State
+        #[test]
+        fn test_repl_session_structure() {
+            let session = ReplSession {
+                version: SemVer::new(1, 0, 0),
+                metadata: create_test_metadata(),
+                environment: create_test_environment(),
+                timeline: vec![],
+                checkpoints: BTreeMap::new(),
+            };
+
+            assert_eq!(session.version, SemVer::new(1, 0, 0));
+            assert_eq!(session.metadata.session_id, "test-001");
+            assert_eq!(session.environment.seed, 12345);
+            assert!(session.timeline.is_empty());
+            assert!(session.checkpoints.is_empty());
+        }
+
+        // Test 29: ValidationReport Passed State
+        #[test]
+        fn test_validation_report_passed() {
+            let mut report = ValidationReport::new();
+            report.total_events = 10;
+            report.successful_events = 10;
+            report.passed = true;
+
+            assert!(report.passed);
+            assert_eq!(report.total_events, 10);
+            assert_eq!(report.successful_events, 10);
+            assert!(report.divergences.is_empty());
+        }
+
+        // Test 30: Session Recorder Timestamps Increment
+        #[test]
+        fn test_session_recorder_timestamps() {
+            let metadata = create_test_metadata();
+            let mut recorder = SessionRecorder::new(metadata);
+
+            recorder.record_input("first".to_string(), InputMode::Interactive);
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            recorder.record_input("second".to_string(), InputMode::Interactive);
+
+            let session = recorder.get_session();
+            assert_eq!(session.timeline.len(), 2);
+
+            let ts1 = session.timeline[0].timestamp_ns;
+            let ts2 = session.timeline[1].timestamp_ns;
+            assert!(ts2 > ts1, "Second timestamp should be greater than first");
+        }
+
+        // Test 31: Session Recorder Unique Seeds
+        #[test]
+        fn test_session_recorder_unique_seeds() {
+            let metadata1 = SessionMetadata {
+                session_id: "session-1".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            };
+
+            let metadata2 = SessionMetadata {
+                session_id: "session-2".to_string(),
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                student_id: None,
+                assignment_id: None,
+                tags: vec![],
+            };
+
+            let recorder1 = SessionRecorder::new(metadata1);
+            let recorder2 = SessionRecorder::new(metadata2);
+
+            // Different session IDs should produce different seeds
+            assert_ne!(
+                recorder1.get_session().environment.seed,
+                recorder2.get_session().environment.seed
+            );
+        }
+
+        // Test 32: Resource Limits Configuration
+        #[test]
+        fn test_resource_limits() {
+            let limits = ResourceLimits {
+                heap_mb: 512,
+                stack_kb: 4096,
+                cpu_ms: 10000,
+            };
+
+            assert_eq!(limits.heap_mb, 512);
+            assert_eq!(limits.stack_kb, 4096);
+            assert_eq!(limits.cpu_ms, 10000);
+
+            // Test serialization
+            let json = serde_json::to_string(&limits).expect("operation should succeed in test");
+            let deserialized: ResourceLimits =
+                serde_json::from_str(&json).expect("operation should succeed in test");
+            assert_eq!(limits.heap_mb, deserialized.heap_mb);
+            assert_eq!(limits.stack_kb, deserialized.stack_kb);
+            assert_eq!(limits.cpu_ms, deserialized.cpu_ms);
+        }
     } // End enabled_tests module
 }
