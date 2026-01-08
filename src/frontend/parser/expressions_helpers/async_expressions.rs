@@ -743,6 +743,78 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // ===== Additional coverage tests (Round 106) =====
+
+    // Test 72: Async block with await
+    #[test]
+    fn test_async_block_await() {
+        let result = parse("async { await fetch(url) }");
+        assert!(result.is_ok(), "Async block with await should parse");
+    }
+
+    // Test 73: Async function with await call
+    #[test]
+    fn test_async_fun_await_call() {
+        let result = parse("async fun get_data() { await http.get(url) }");
+        assert!(result.is_ok(), "Async fun with await should parse");
+    }
+
+    // Test 74: Chained await
+    #[test]
+    fn test_await_chain() {
+        let result = parse("async { await (await get_client()).fetch() }");
+        assert!(result.is_ok(), "Chained await should parse");
+    }
+
+    // Test 75: Async block with match
+    #[test]
+    fn test_async_block_match() {
+        let result = parse("async { match x { 1 => a, _ => b } }");
+        assert!(result.is_ok(), "Async block with match should parse");
+    }
+
+    // Test 76: Multiple async functions
+    #[test]
+    fn test_multiple_async_funs() {
+        let result = parse("async fun f1() { } async fun f2() { }");
+        assert!(result.is_ok(), "Multiple async functions should parse");
+    }
+
+    // Test 78: Async function calling another
+    #[test]
+    fn test_async_fun_call_async() {
+        let result = parse("async fun outer() { await inner() }");
+        assert!(result.is_ok(), "Async calling async should parse");
+    }
+
+    // Test 79: Async with try-catch
+    #[test]
+    fn test_async_try_catch() {
+        let result = parse("async { try { await risky() } catch (e) { default } }");
+        assert!(result.is_ok(), "Async with try-catch should parse");
+    }
+
+    // Test 80: Async function with multiple params
+    #[test]
+    fn test_async_fun_multi_params() {
+        let result = parse("async fun process(a: i32, b: str, c: bool) { }");
+        assert!(result.is_ok(), "Async fun multi params should parse");
+    }
+
+    // Test 81: Async block assignment
+    #[test]
+    fn test_async_block_assignment() {
+        let result = parse("let future = async { compute() }");
+        assert!(result.is_ok(), "Async block assignment should parse");
+    }
+
+    // Test 82: Async in if condition
+    #[test]
+    fn test_async_in_if() {
+        let result = parse("async { if ready { await go() } else { wait() } }");
+        assert!(result.is_ok(), "Async with if should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
