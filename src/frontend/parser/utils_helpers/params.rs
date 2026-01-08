@@ -208,3 +208,218 @@ fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
         Ok(false)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_state(source: &str) -> ParserState<'_> {
+        ParserState::new(source)
+    }
+
+    // Test 1: Parse empty params
+    #[test]
+    fn test_parse_params_empty() {
+        let mut state = create_state("()");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    // Test 2: Parse single identifier param
+    #[test]
+    fn test_parse_params_single_identifier() {
+        let mut state = create_state("(x)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].pattern, Pattern::Identifier(n) if n == "x"));
+    }
+
+    // Test 3: Parse typed param
+    #[test]
+    fn test_parse_params_with_type() {
+        let mut state = create_state("(x: i32)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].ty.kind, TypeKind::Named(n) if n == "i32"));
+    }
+
+    // Test 4: Parse multiple params
+    #[test]
+    fn test_parse_params_multiple() {
+        let mut state = create_state("(x, y, z)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 3);
+    }
+
+    // Test 5: Parse mutable param
+    #[test]
+    fn test_parse_params_mutable() {
+        let mut state = create_state("(mut x)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(params[0].is_mutable);
+    }
+
+    // Test 6: Parse self param
+    #[test]
+    fn test_parse_params_self() {
+        let mut state = create_state("(self)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].pattern, Pattern::Identifier(n) if n == "self"));
+    }
+
+    // Test 7: Parse &self param
+    #[test]
+    fn test_parse_params_ref_self() {
+        let mut state = create_state("(&self)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].ty.kind, TypeKind::Reference { is_mut: false, .. }));
+    }
+
+    // Test 8: Parse &mut self param
+    #[test]
+    fn test_parse_params_ref_mut_self() {
+        let mut state = create_state("(&mut self)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].ty.kind, TypeKind::Reference { is_mut: true, .. }));
+    }
+
+    // Test 9: Parse df param (DataFrame keyword)
+    #[test]
+    fn test_parse_params_df_identifier() {
+        let mut state = create_state("(df)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].pattern, Pattern::Identifier(n) if n == "df"));
+    }
+
+    // Test 10: Parse default as identifier
+    #[test]
+    fn test_parse_params_default_identifier() {
+        let mut state = create_state("(default)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].pattern, Pattern::Identifier(n) if n == "default"));
+    }
+
+    // Test 11: Parse param with default value
+    #[test]
+    fn test_parse_params_with_default_value() {
+        let mut state = create_state("(x = 42)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(params[0].default_value.is_some());
+    }
+
+    // Test 12: Parse typed param with default value
+    #[test]
+    fn test_parse_params_typed_with_default() {
+        let mut state = create_state("(x: i32 = 0)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].ty.kind, TypeKind::Named(n) if n == "i32"));
+        assert!(params[0].default_value.is_some());
+    }
+
+    // Test 13: Parse mixed params
+    #[test]
+    fn test_parse_params_mixed() {
+        let mut state = create_state("(x: i32, mut y, z = 5)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 3);
+        assert!(!params[0].is_mutable);
+        assert!(params[1].is_mutable);
+        assert!(params[2].default_value.is_some());
+    }
+
+    // Test 14: Error on from keyword
+    #[test]
+    fn test_parse_params_from_keyword_error() {
+        let mut state = create_state("(from)");
+        let result = parse_params(&mut state);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("reserved keyword"));
+    }
+
+    // Test 15: Error on invalid & pattern (not self)
+    #[test]
+    fn test_parse_params_ref_non_self_error() {
+        let mut state = create_state("(&x)");
+        let result = parse_params(&mut state);
+        assert!(result.is_err());
+    }
+
+    // Test 16: Parse reference type param (not &self)
+    #[test]
+    fn test_parse_params_reference_type() {
+        let mut state = create_state("(x: &str)");
+        let result = parse_params(&mut state);
+        assert!(result.is_ok());
+        let params = result.unwrap();
+        assert_eq!(params.len(), 1);
+        assert!(matches!(&params[0].ty.kind, TypeKind::Reference { .. }));
+    }
+
+    // Test 17: check_and_consume_mut with mut
+    #[test]
+    fn test_check_and_consume_mut_true() {
+        let mut state = create_state("mut x");
+        let is_mut = check_and_consume_mut(&mut state);
+        assert!(is_mut);
+    }
+
+    // Test 18: check_and_consume_mut without mut
+    #[test]
+    fn test_check_and_consume_mut_false() {
+        let mut state = create_state("x");
+        let is_mut = check_and_consume_mut(&mut state);
+        assert!(!is_mut);
+    }
+
+    // Test 19: should_continue_param_list with comma
+    #[test]
+    fn test_should_continue_with_comma() {
+        let mut state = create_state(", y");
+        let result = should_continue_param_list(&mut state);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    // Test 20: should_continue_param_list without comma
+    #[test]
+    fn test_should_continue_without_comma() {
+        let mut state = create_state(")");
+        let result = should_continue_param_list(&mut state);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+}
