@@ -577,6 +577,78 @@ mod tests {
         assert!(result.is_ok(), "Lambda with single char params should parse");
     }
 
+    // ===== Additional coverage tests (Round 107) =====
+
+    // Test 54: Lambda with if expression body
+    #[test]
+    fn test_lambda_if_body() {
+        let result = parse("|x| if x > 0 { x } else { -x }");
+        assert!(result.is_ok(), "Lambda with if expression should parse");
+    }
+
+    // Test 55: Lambda with match expression body
+    #[test]
+    fn test_lambda_match_body() {
+        let result = parse("|x| match x { 0 => \"zero\", _ => \"other\" }");
+        assert!(result.is_ok(), "Lambda with match should parse");
+    }
+
+    // Test 56: Lambda in assignment
+    #[test]
+    fn test_lambda_in_assignment() {
+        let result = parse("let double = |x| x * 2");
+        assert!(result.is_ok(), "Lambda in assignment should parse");
+    }
+
+    // Test 57: Lambda returning tuple
+    #[test]
+    fn test_lambda_return_tuple() {
+        let result = parse("|x, y| (x + y, x - y)");
+        assert!(result.is_ok(), "Lambda returning tuple should parse");
+    }
+
+    // Test 58: Lambda returning array
+    #[test]
+    fn test_lambda_return_array() {
+        let result = parse("|x| [x, x * 2, x * 3]");
+        assert!(result.is_ok(), "Lambda returning array should parse");
+    }
+
+    // Test 59: Lambda with chained method calls
+    #[test]
+    fn test_lambda_chained_methods() {
+        let result = parse("|s| s.trim().to_uppercase()");
+        assert!(result.is_ok(), "Lambda with chained methods should parse");
+    }
+
+    // Test 60: Lambda with binary expression
+    #[test]
+    fn test_lambda_binary_expr() {
+        let result = parse("|a, b| a * b + a / b");
+        assert!(result.is_ok(), "Lambda with binary expr should parse");
+    }
+
+    // Test 61: Lambda with comparison
+    #[test]
+    fn test_lambda_comparison() {
+        let result = parse("|x, y| x >= y && x <= 100");
+        assert!(result.is_ok(), "Lambda with comparison should parse");
+    }
+
+    // Test 62: Lambda with string concat
+    #[test]
+    fn test_lambda_string_concat() {
+        let result = parse("|a, b| a + \" \" + b");
+        assert!(result.is_ok(), "Lambda with string concat should parse");
+    }
+
+    // Test 63: Lambda as method argument chained
+    #[test]
+    fn test_lambda_chained_higher_order() {
+        let result = parse("items.filter(|x| x > 0).map(|x| x * 2)");
+        assert!(result.is_ok(), "Chained higher-order functions should parse");
+    }
+
     // Property tests for lambdas
     #[cfg(test)]
     mod property_tests {
