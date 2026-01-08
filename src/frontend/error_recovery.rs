@@ -922,4 +922,165 @@ mod tests {
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
+
+    // Round 97: Additional error recovery tests
+
+    // Test 23: Recovery from missing semicolons
+    #[test]
+    fn test_recovery_missing_semicolons() {
+        let mut parser = RecoveryParser::new("let x = 1 let y = 2");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+    }
+
+    // Test 24: Recovery from extra tokens
+    #[test]
+    fn test_recovery_extra_tokens() {
+        let mut parser = RecoveryParser::new("1 + 2 3 4");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+    }
+
+    // Test 25: Recovery from invalid identifiers
+    #[test]
+    fn test_recovery_invalid_identifier() {
+        let mut parser = RecoveryParser::new("let 123 = 456");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 26: Recovery from unclosed parens
+    #[test]
+    fn test_recovery_unclosed_paren() {
+        let mut parser = RecoveryParser::new("(1 + 2");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 27: Recovery from unclosed brackets
+    #[test]
+    fn test_recovery_unclosed_bracket() {
+        let mut parser = RecoveryParser::new("[1, 2, 3");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 28: Recovery from unclosed braces
+    #[test]
+    fn test_recovery_unclosed_brace() {
+        let mut parser = RecoveryParser::new("{ let x = 1");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 29: Recovery from extra closing parens
+    #[test]
+    fn test_recovery_extra_closing_paren() {
+        let mut parser = RecoveryParser::new("(1 + 2))");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+    }
+
+    // Test 30: Recovery from incomplete if with brace
+    #[test]
+    fn test_recovery_incomplete_if_with_brace() {
+        let mut parser = RecoveryParser::new("if true {");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 31: Recovery from incomplete else
+    #[test]
+    fn test_recovery_incomplete_else() {
+        let mut parser = RecoveryParser::new("if true { 1 } else");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 32: Recovery from incomplete for loop
+    #[test]
+    fn test_recovery_incomplete_for() {
+        let mut parser = RecoveryParser::new("for x in");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 33: Recovery from incomplete while loop
+    #[test]
+    fn test_recovery_incomplete_while() {
+        let mut parser = RecoveryParser::new("while true");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 34: Recovery from incomplete function
+    #[test]
+    fn test_recovery_incomplete_function() {
+        let mut parser = RecoveryParser::new("fun foo(x:");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(!result.errors.is_empty());
+    }
+
+    // Test 35: Empty input
+    #[test]
+    fn test_recovery_empty_input() {
+        let mut parser = RecoveryParser::new("");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        // Empty input may or may not produce errors depending on implementation
+    }
+
+    // Test 36: Whitespace only
+    #[test]
+    fn test_recovery_whitespace_only() {
+        let mut parser = RecoveryParser::new("   \n\t  ");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        // Whitespace-only input may or may not produce errors
+    }
+
+    // Test 37: Comments only
+    #[test]
+    fn test_recovery_comments_only() {
+        let mut parser = RecoveryParser::new("// This is a comment");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+    }
+
+    // Test 38: Valid simple expression
+    #[test]
+    fn test_recovery_valid_simple() {
+        let mut parser = RecoveryParser::new("42");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(result.errors.is_empty());
+        assert!(!result.partial_ast);
+    }
+
+    // Test 39: Valid let binding
+    #[test]
+    fn test_recovery_valid_let() {
+        let mut parser = RecoveryParser::new("let x = 42");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(result.errors.is_empty());
+    }
+
+    // Test 40: Mixed valid and invalid - use clearly invalid syntax
+    #[test]
+    fn test_recovery_mixed_valid_invalid() {
+        let mut parser = RecoveryParser::new("let x = 1; let = ");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        // Recovery parser should recover from invalid syntax
+    }
 }
