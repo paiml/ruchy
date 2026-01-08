@@ -1339,4 +1339,419 @@ mod tests {
 
         assert!(result_reg < 10, "Result register should be valid");
     }
+
+    // Test 10: BytecodeChunk creation and basic operations
+    #[test]
+    fn test_bytecode_chunk_new() {
+        let chunk = BytecodeChunk::new("test_func".to_string());
+        assert_eq!(chunk.name, "test_func");
+        assert!(chunk.instructions.is_empty());
+        assert!(chunk.constants.is_empty());
+        assert_eq!(chunk.register_count, 0);
+        assert_eq!(chunk.parameter_count, 0);
+    }
+
+    // Test 11: BytecodeChunk emit instruction
+    #[test]
+    fn test_bytecode_chunk_emit() {
+        let mut chunk = BytecodeChunk::new("test".to_string());
+        let instr = Instruction::abc(OpCode::Add, 0, 1, 2);
+        let index = chunk.emit(instr, 10);
+
+        assert_eq!(index, 0);
+        assert_eq!(chunk.instructions.len(), 1);
+        assert_eq!(chunk.line_numbers.len(), 1);
+        assert_eq!(chunk.line_numbers[0], 10);
+    }
+
+    // Test 12: BytecodeChunk add_constant deduplication
+    #[test]
+    fn test_bytecode_chunk_constant_dedup() {
+        let mut chunk = BytecodeChunk::new("test".to_string());
+
+        let idx1 = chunk.add_constant(Value::Integer(42));
+        let idx2 = chunk.add_constant(Value::Integer(42));
+        let idx3 = chunk.add_constant(Value::Integer(100));
+
+        assert_eq!(idx1, 0);
+        assert_eq!(idx2, 0, "Duplicate constant should return same index");
+        assert_eq!(idx3, 1, "New constant should get new index");
+        assert_eq!(chunk.constants.len(), 2);
+    }
+
+    // Test 13: RegisterAllocator multiple allocations
+    #[test]
+    fn test_register_allocator_multiple() {
+        let mut allocator = RegisterAllocator::new();
+
+        let r0 = allocator.allocate();
+        let r1 = allocator.allocate();
+        let r2 = allocator.allocate();
+
+        assert_eq!(r0, 0);
+        assert_eq!(r1, 1);
+        assert_eq!(r2, 2);
+        assert_eq!(allocator.max_count(), 3);
+    }
+
+    // Test 14: RegisterAllocator free and reuse multiple
+    #[test]
+    fn test_register_allocator_free_multiple() {
+        let mut allocator = RegisterAllocator::new();
+
+        let r0 = allocator.allocate();
+        let r1 = allocator.allocate();
+        let r2 = allocator.allocate();
+
+        allocator.free(r1);
+        allocator.free(r0);
+
+        // Should reuse in LIFO order
+        let r3 = allocator.allocate();
+        let r4 = allocator.allocate();
+
+        assert_eq!(r3, r0, "Should reuse r0 first (LIFO)");
+        assert_eq!(r4, r1, "Should reuse r1 second");
+        assert_eq!(allocator.max_count(), 3, "Max should remain 3");
+    }
+
+    // Test 15: Compile unary negation
+    #[test]
+    fn test_compile_unary_negate() {
+        let mut compiler = Compiler::new("test".to_string());
+        let operand = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(operand),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Should have: CONST(5), NEG, RETURN
+        assert!(chunk.instructions.len() >= 2);
+
+        // Verify NEG instruction exists
+        let neg_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Neg.to_u8());
+        assert!(neg_found, "Should have Neg instruction");
+
+        assert!(result_reg < 10);
+    }
+
+    // Test 16: Compile unary not
+    #[test]
+    fn test_compile_unary_not() {
+        let mut compiler = Compiler::new("test".to_string());
+        let operand = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(operand),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Should have: CONST(true), NOT, RETURN
+        assert!(chunk.instructions.len() >= 2);
+
+        // Verify NOT instruction exists
+        let not_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Not.to_u8());
+        assert!(not_found, "Should have Not instruction");
+
+        assert!(result_reg < 10);
+    }
+
+    // Test 17: Compile float literal
+    #[test]
+    fn test_compile_float_literal() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(3.14)),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert_eq!(chunk.constants.len(), 1);
+        match &chunk.constants[0] {
+            Value::Float(f) => assert!((*f - 3.14).abs() < 0.001),
+            _ => panic!("Expected float constant"),
+        }
+        assert!(result_reg < 10);
+    }
+
+    // Test 18: Compile string literal
+    #[test]
+    fn test_compile_string_literal() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert_eq!(chunk.constants.len(), 1);
+        match &chunk.constants[0] {
+            Value::String(s) => assert_eq!(s.as_ref(), "hello"),
+            _ => panic!("Expected string constant"),
+        }
+        assert!(result_reg < 10);
+    }
+
+    // Test 19: Compile boolean literal
+    #[test]
+    fn test_compile_bool_literal() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert_eq!(chunk.constants.len(), 1);
+        match &chunk.constants[0] {
+            Value::Bool(b) => assert!(*b),
+            _ => panic!("Expected bool constant"),
+        }
+        assert!(result_reg < 10);
+    }
+
+    // Test 20: Compile subtraction
+    #[test]
+    fn test_compile_binary_subtraction() {
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(50, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(8, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Subtract,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Verify SUB instruction exists
+        let sub_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Sub.to_u8());
+        assert!(sub_found, "Should have Sub instruction");
+        assert!(result_reg < 10);
+    }
+
+    // Test 21: Compile multiplication
+    #[test]
+    fn test_compile_binary_multiplication() {
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(7, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(6, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Multiply,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Verify MUL instruction exists
+        let mul_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Mul.to_u8());
+        assert!(mul_found, "Should have Mul instruction");
+        assert!(result_reg < 10);
+    }
+
+    // Test 22: Compile comparison equal
+    #[test]
+    fn test_compile_binary_equal() {
+        let mut compiler = Compiler::new("test".to_string());
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Equal,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Verify EQUAL instruction exists
+        let equal_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Equal.to_u8());
+        assert!(equal_found, "Should have Equal instruction");
+        assert!(result_reg < 10);
+    }
+
+    // Test 23: Compile list with literals (optimization path)
+    #[test]
+    fn test_compile_list_literals() {
+        let mut compiler = Compiler::new("test".to_string());
+        let elements = vec![
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                crate::frontend::ast::Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                crate::frontend::ast::Span::default(),
+            ),
+        ];
+        let expr = Expr::new(
+            ExprKind::List(elements),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Literal list optimization: array is created at compile-time in constant pool
+        // Uses CONST instruction instead of NewArray
+        assert!(chunk.constants.len() >= 1, "Should have array constant");
+        assert!(result_reg < 10);
+    }
+
+    // Test 23b: Compile list with non-literals (NewArray path)
+    #[test]
+    fn test_compile_list_non_literals() {
+        let mut compiler = Compiler::new("test".to_string());
+
+        // Use identifier elements so it takes the NewArray path
+        let elements = vec![
+            Expr::new(
+                ExprKind::Identifier("x".to_string()),
+                crate::frontend::ast::Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Identifier("y".to_string()),
+                crate::frontend::ast::Span::default(),
+            ),
+        ];
+        let expr = Expr::new(
+            ExprKind::List(elements),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Should have NewArray instruction for non-literal elements
+        let new_array_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::NewArray.to_u8());
+        assert!(new_array_found, "Should have NewArray instruction");
+        assert!(result_reg < 10);
+    }
+
+    // Test 24: Compile empty block
+    #[test]
+    fn test_compile_empty_block() {
+        let mut compiler = Compiler::new("test".to_string());
+        let block = Expr::new(
+            ExprKind::Block(vec![]),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&block).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Empty block should produce nil
+        assert_eq!(chunk.constants.len(), 1);
+        assert!(result_reg < 10);
+    }
+
+    // Test 25: Compile while loop
+    #[test]
+    fn test_compile_while() {
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            crate::frontend::ast::Span::default(),
+        );
+        let body = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            crate::frontend::ast::Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::While {
+                label: None,
+                condition: Box::new(condition),
+                body: Box::new(body),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        // Should have JumpIfFalse and Jump instructions
+        let jump_if_false_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::JumpIfFalse.to_u8());
+        let jump_found = chunk
+            .instructions
+            .iter()
+            .any(|i| i.opcode() == OpCode::Jump.to_u8());
+
+        assert!(jump_if_false_found, "Should have JumpIfFalse instruction");
+        assert!(jump_found, "Should have Jump instruction");
+        assert!(result_reg < 10);
+    }
 }
