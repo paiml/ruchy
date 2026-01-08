@@ -460,6 +460,112 @@ mod tests {
         assert!(result.is_ok(), "For loop with underscore prefix should parse");
     }
 
+    // ===== Additional coverage tests (Round 102) =====
+
+    // Test 30: For loop with enumerate
+    #[test]
+    fn test_for_loop_enumerate() {
+        let code = "for i, item in items.enumerate() { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop with enumerate should parse");
+    }
+
+    // Test 31: While loop with complex condition
+    #[test]
+    fn test_while_complex_condition() {
+        let code = "while x > 0 && y < 100 { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "While with complex condition should parse");
+    }
+
+    // Test 32: Loop with return
+    #[test]
+    fn test_loop_with_return() {
+        let code = "fun f() { loop { return 42 } }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Loop with return should parse");
+    }
+
+    // Test 33: For loop with filter chain
+    #[test]
+    fn test_for_loop_filter_chain() {
+        let code = "for x in items.filter(|x| x > 0) { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop with filter should parse");
+    }
+
+    // Test 34: While let with tuple pattern
+    #[test]
+    fn test_while_let_tuple() {
+        let code = "while let (a, b) = get_pair() { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "While let with tuple should parse");
+    }
+
+    // Test 35: For loop in function body
+    #[test]
+    fn test_for_in_function() {
+        let code = "fun process(items) { for x in items { print(x) } }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop in function should parse");
+    }
+
+    // Test 36: While with method call condition
+    #[test]
+    fn test_while_method_condition() {
+        let code = "while queue.is_not_empty() { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "While with method condition should parse");
+    }
+
+    // Test 37: Nested while loops
+    #[test]
+    fn test_nested_while_loops() {
+        let code = "while a { while b { } }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Nested while loops should parse");
+    }
+
+    // Test 38: For loop with map chain
+    #[test]
+    fn test_for_loop_map_chain() {
+        let code = "for x in items.map(|x| x * 2) { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop with map should parse");
+    }
+
+    // Test 39: Loop with labeled break
+    #[test]
+    fn test_loop_labeled_break() {
+        let code = "'outer: loop { loop { break 'outer } }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Loop with labeled break should parse");
+    }
+
+    // Test 40: For loop over array literal
+    #[test]
+    fn test_for_loop_array_literal() {
+        let code = "for x in [1, 2, 3] { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop over array literal should parse");
+    }
+
+    // Test 41: While with assignment in block
+    #[test]
+    fn test_while_assignment_block() {
+        let code = "while true { let x = 1 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "While with assignment should parse");
+    }
+
+    // Test 42: For loop with index pattern
+    #[test]
+    fn test_for_loop_indexed() {
+        let code = "for (i, v) in items.enumerate() { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "For loop with tuple pattern should parse");
+    }
+
     // Property tests for loops
     #[cfg(test)]
     mod property_tests {
