@@ -1576,4 +1576,76 @@ mod tests {
         let result = parse("class Foo { x: i32, new(x: i32) { self.x = x } fun get(&self) -> i32 { self.x } static fun zero() { } }");
         assert!(result.is_ok(), "All elements should parse");
     }
+
+    // ===== Additional coverage tests (Round 104) =====
+
+    // Test 82: Class with async method
+    #[test]
+    fn test_class_async_method() {
+        let result = parse("class Client { async fun fetch(&self) { } }");
+        assert!(result.is_ok(), "Async method should parse");
+    }
+
+    // Test 83: Class with generic constraint
+    #[test]
+    fn test_class_generic_constraint() {
+        let result = parse("class Container<T: Clone> { value: T }");
+        assert!(result.is_ok(), "Generic constraint should parse");
+    }
+
+    // Test 84: Class with multiple fields same type
+    #[test]
+    fn test_class_multiple_same_type_fields() {
+        let result = parse("class Vec3 { x: f64, y: f64, z: f64 }");
+        assert!(result.is_ok(), "Multiple same type fields should parse");
+    }
+
+    // Test 85: Class with method returning self type
+    #[test]
+    fn test_class_method_returns_self() {
+        let result = parse("class Builder { fun with_value(&mut self, v: i32) -> Self { self } }");
+        assert!(result.is_ok(), "Method returning Self should parse");
+    }
+
+    // Test 86: Class with impl block style method
+    #[test]
+    fn test_class_impl_style_method() {
+        let result = parse("class Foo { fun compute(&self, x: i32, y: i32) -> i32 { x + y } }");
+        assert!(result.is_ok(), "Impl style method should parse");
+    }
+
+    // Test 87: Class with default field values
+    #[test]
+    fn test_class_default_field() {
+        let result = parse("class Config { debug: bool = false }");
+        assert!(result.is_ok(), "Default field value should parse");
+    }
+
+    // Test 90: Class method with multiple return types
+    #[test]
+    fn test_class_method_optional_return() {
+        let result = parse("class Cache { fun get(&self, key: str) -> Option<T> { None } }");
+        assert!(result.is_ok(), "Optional return type should parse");
+    }
+
+    // Test 91: Class with private method
+    #[test]
+    fn test_class_private_method() {
+        let result = parse("class Service { fun internal(&self) { } }");
+        assert!(result.is_ok(), "Private method should parse");
+    }
+
+    // Test 92: Empty class variations
+    #[test]
+    fn test_empty_class_with_whitespace() {
+        let result = parse("class Empty {\n\n}");
+        assert!(result.is_ok(), "Empty class with whitespace should parse");
+    }
+
+    // Test 90: Class with constructor and init
+    #[test]
+    fn test_class_both_constructors() {
+        let result = parse("class Dual { new() { } init() { } }");
+        assert!(result.is_ok(), "Both constructors should parse");
+    }
 }
