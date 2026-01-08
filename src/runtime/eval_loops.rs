@@ -549,4 +549,326 @@ mod tests {
         // NaN is falsy
         assert!(!is_truthy(&Value::Float(f64::NAN)));
     }
+
+    // New tests for Round 93
+
+    // Test 19: for loop with continue
+    #[test]
+    fn test_for_loop_continue() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+
+        let body = make_literal_expr(10);
+        let count = std::cell::RefCell::new(0);
+        let sum = std::cell::RefCell::new(0);
+
+        let result = eval_for_loop(
+            "x",
+            None,
+            arr,
+            &body,
+            |_name, val| {
+                *count.borrow_mut() += 1;
+                if let Value::Integer(i) = val {
+                    *sum.borrow_mut() += i;
+                }
+            },
+            |_expr| {
+                if *count.borrow() == 2 {
+                    Err(InterpreterError::Continue(Default::default()))
+                } else {
+                    Ok(Value::Integer(10))
+                }
+            },
+        )
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Integer(10));
+        assert_eq!(*count.borrow(), 3); // All iterations run
+    }
+
+    // Test 20: while loop with break
+    #[test]
+    fn test_while_loop_break() {
+        let condition = make_literal_expr(1);
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+
+        let result = eval_while_loop(&condition, &body, |expr| {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
+                Ok(Value::Bool(true))
+            } else {
+                *iterations.borrow_mut() += 1;
+                if *iterations.borrow() >= 3 {
+                    Err(InterpreterError::Break(None, Value::Integer(99)))
+                } else {
+                    Ok(Value::Integer(42))
+                }
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Integer(42)); // Last successful body result
+        assert_eq!(*iterations.borrow(), 3);
+    }
+
+    // Test 21: while loop with continue
+    #[test]
+    fn test_while_loop_continue() {
+        let condition = make_literal_expr(1);
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+        let condition_checks = std::cell::RefCell::new(0);
+
+        let result = eval_while_loop(&condition, &body, |expr| {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
+                *condition_checks.borrow_mut() += 1;
+                if *condition_checks.borrow() > 5 {
+                    Ok(Value::Bool(false))
+                } else {
+                    Ok(Value::Bool(true))
+                }
+            } else {
+                *iterations.borrow_mut() += 1;
+                if *iterations.borrow() % 2 == 0 {
+                    Err(InterpreterError::Continue(Default::default()))
+                } else {
+                    Ok(Value::Integer(42))
+                }
+            }
+        })
+        .expect("operation should succeed in test");
+
+        // Last successful body result was 42, continue returns Nil but doesn't override last_value
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // Test 22: infinite loop with continue
+    #[test]
+    fn test_loop_continue() {
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+
+        let result = eval_loop(&body, |_expr| {
+            *iterations.borrow_mut() += 1;
+            let i = *iterations.borrow();
+            if i < 3 {
+                Err(InterpreterError::Continue(Default::default()))
+            } else if i == 3 {
+                Err(InterpreterError::Break(None, Value::Integer(99)))
+            } else {
+                Ok(Value::Integer(42))
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Integer(99));
+        assert_eq!(*iterations.borrow(), 3);
+    }
+
+    // Test 23: range iterator exclusive
+    #[test]
+    fn test_create_range_iterator_exclusive() {
+        let iter = create_range_iterator(0, 5, false);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, vec![0, 1, 2, 3, 4]);
+    }
+
+    // Test 24: range iterator inclusive
+    #[test]
+    fn test_create_range_iterator_inclusive() {
+        let iter = create_range_iterator(0, 5, true);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, vec![0, 1, 2, 3, 4, 5]);
+    }
+
+    // Test 25: range iterator empty
+    #[test]
+    fn test_create_range_iterator_empty() {
+        let iter = create_range_iterator(5, 5, false);
+        let values: Vec<i64> = iter.collect();
+        assert!(values.is_empty());
+    }
+
+    // Test 26: range iterator single element
+    #[test]
+    fn test_create_range_iterator_single() {
+        let iter = create_range_iterator(5, 5, true);
+        let values: Vec<i64> = iter.collect();
+        assert_eq!(values, vec![5]);
+    }
+
+    // Test 27: is_truthy with negative float
+    #[test]
+    fn test_is_truthy_negative_float() {
+        assert!(is_truthy(&Value::Float(-1.0)));
+        assert!(!is_truthy(&Value::Float(-0.0)));
+    }
+
+    // Test 28: is_truthy with negative integer
+    #[test]
+    fn test_is_truthy_negative_integer() {
+        assert!(is_truthy(&Value::Integer(-1)));
+        assert!(is_truthy(&Value::Integer(-100)));
+    }
+
+    // Test 29: for loop error propagation
+    #[test]
+    fn test_for_loop_error_propagation() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
+            Err(InterpreterError::RuntimeError("custom error".to_string()))
+        });
+
+        assert!(result.is_err());
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert_eq!(msg, "custom error");
+        } else {
+            panic!("Expected RuntimeError");
+        }
+    }
+
+    // Test 30: while loop error propagation
+    #[test]
+    fn test_while_loop_error_propagation() {
+        let condition = make_literal_expr(1);
+        let body = make_literal_expr(42);
+
+        let result = eval_while_loop(&condition, &body, |expr| {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
+                Ok(Value::Bool(true))
+            } else {
+                Err(InterpreterError::RuntimeError("body error".to_string()))
+            }
+        });
+
+        assert!(result.is_err());
+    }
+
+    // Test 31: infinite loop error propagation
+    #[test]
+    fn test_loop_error_propagation() {
+        let body = make_literal_expr(42);
+
+        let result = eval_loop(&body, |_expr| {
+            Err(InterpreterError::RuntimeError("infinite loop error".to_string()))
+        });
+
+        assert!(result.is_err());
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert_eq!(msg, "infinite loop error");
+        } else {
+            panic!("Expected RuntimeError");
+        }
+    }
+
+    // Test 32: for loop with Break enum variant
+    #[test]
+    fn test_for_loop_break_enum() {
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let body = make_literal_expr(10);
+        let count = std::cell::RefCell::new(0);
+
+        let result = eval_for_loop(
+            "x",
+            None,
+            arr,
+            &body,
+            |_name, _val| {
+                *count.borrow_mut() += 1;
+            },
+            |_expr| {
+                if *count.borrow() == 1 {
+                    Err(InterpreterError::Break(None, Value::Nil))
+                } else {
+                    Ok(Value::Integer(10))
+                }
+            },
+        )
+        .expect("operation should succeed in test");
+
+        assert_eq!(*count.borrow(), 1);
+        // Break on first iteration means last_value is still Nil
+        assert_eq!(result, Value::Nil);
+    }
+
+    // Test 33: for loop with Return handling
+    #[test]
+    fn test_for_loop_return() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let body = make_literal_expr(10);
+
+        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
+            Err(InterpreterError::Return(Value::Integer(42)))
+        });
+
+        // Return is handled by re-evaluating body
+        assert!(result.is_err());
+    }
+
+    // Test 34: while loop condition error
+    #[test]
+    fn test_while_loop_condition_error() {
+        let condition = make_literal_expr(1);
+        let body = make_literal_expr(42);
+
+        let result = eval_while_loop(&condition, &body, |expr| {
+            if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
+                Err(InterpreterError::RuntimeError("condition error".to_string()))
+            } else {
+                Ok(Value::Integer(42))
+            }
+        });
+
+        assert!(result.is_err());
+    }
+
+    // Test 35: infinite loop with runtime "break" string
+    #[test]
+    fn test_loop_runtime_break_string() {
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+
+        let result = eval_loop(&body, |_expr| {
+            *iterations.borrow_mut() += 1;
+            if *iterations.borrow() >= 2 {
+                Err(InterpreterError::RuntimeError("break".to_string()))
+            } else {
+                Ok(Value::Integer(42))
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Nil); // RuntimeError "break" returns Nil
+    }
+
+    // Test 36: infinite loop with runtime "continue" string
+    #[test]
+    fn test_loop_runtime_continue_string() {
+        let body = make_literal_expr(42);
+        let iterations = std::cell::RefCell::new(0);
+
+        let result = eval_loop(&body, |_expr| {
+            *iterations.borrow_mut() += 1;
+            let i = *iterations.borrow();
+            if i == 1 {
+                Err(InterpreterError::RuntimeError("continue".to_string()))
+            } else if i >= 2 {
+                Err(InterpreterError::Break(None, Value::Integer(77)))
+            } else {
+                Ok(Value::Integer(42))
+            }
+        })
+        .expect("operation should succeed in test");
+
+        assert_eq!(result, Value::Integer(77));
+    }
 }
