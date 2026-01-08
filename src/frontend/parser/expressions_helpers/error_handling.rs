@@ -432,6 +432,78 @@ mod tests {
         assert!(result.is_err(), "Finally alone should fail");
     }
 
+    // ===== Additional coverage tests (Round 103) =====
+
+    // Test 32: Try-catch with method call in try
+    #[test]
+    fn test_try_with_method_call() {
+        let result = parse("try { obj.method() } catch (e) { }");
+        assert!(result.is_ok(), "Try with method call should parse");
+    }
+
+    // Test 33: Try-catch returning value
+    #[test]
+    fn test_try_catch_returning_value() {
+        let result = parse("let x = try { get_value() } catch (e) { default }");
+        assert!(result.is_ok(), "Try-catch returning value should parse");
+    }
+
+    // Test 34: Try with await
+    #[test]
+    fn test_try_with_await() {
+        let result = parse("try { await fetch(url) } catch (e) { }");
+        assert!(result.is_ok(), "Try with await should parse");
+    }
+
+    // Test 35: Try-catch in function
+    #[test]
+    fn test_try_catch_in_function() {
+        let result = parse("fun safe_op() { try { risky() } catch (e) { None } }");
+        assert!(result.is_ok(), "Try-catch in function should parse");
+    }
+
+    // Test 36: Try-catch-finally chain
+    #[test]
+    fn test_try_catch_finally_chain() {
+        let result = parse("try { a() } catch (e1) { b() } catch (e2) { c() } finally { d() }");
+        assert!(result.is_ok(), "Try-catch-catch-finally should parse");
+    }
+
+    // Test 37: Try with if expression
+    #[test]
+    fn test_try_with_if() {
+        let result = parse("try { if x { risky() } } catch (e) { }");
+        assert!(result.is_ok(), "Try with if should parse");
+    }
+
+    // Test 38: Deeply nested try
+    #[test]
+    fn test_deeply_nested_try() {
+        let result = parse("try { try { try { x } catch (e3) { } } catch (e2) { } } catch (e1) { }");
+        assert!(result.is_ok(), "Deeply nested try should parse");
+    }
+
+    // Test 40: Try with match expression inside
+    #[test]
+    fn test_try_with_match_inside() {
+        let result = parse("try { match x { 1 => a(), _ => b() } } catch (e) { }");
+        assert!(result.is_ok(), "Try with match should parse");
+    }
+
+    // Test 41: Finally with return
+    #[test]
+    fn test_finally_with_return() {
+        let result = parse("fun f() { try { x } catch (e) { } finally { return 0 } }");
+        assert!(result.is_ok(), "Finally with return should parse");
+    }
+
+    // Test 42: Try-catch in lambda
+    #[test]
+    fn test_try_in_lambda() {
+        let result = parse("|x| try { process(x) } catch (e) { default }");
+        assert!(result.is_ok(), "Try in lambda should parse");
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
