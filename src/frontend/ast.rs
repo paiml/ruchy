@@ -3242,4 +3242,254 @@ mod tests {
             assert!(expr.span.start <= expr.span.end);
         }
     }
+
+    // Round 96: Additional AST tests
+
+    // Test 46: TypeKind variants
+    #[test]
+    fn test_typekind_named() {
+        let ty = TypeKind::Named("String".to_string());
+        match ty {
+            TypeKind::Named(name) => assert_eq!(name, "String"),
+            _ => panic!("Expected Named"),
+        }
+    }
+
+    // Test 47: TypeKind Array (struct variant)
+    #[test]
+    fn test_typekind_array() {
+        let inner = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let ty = TypeKind::Array {
+            elem_type: Box::new(inner),
+            size: 10,
+        };
+        match ty {
+            TypeKind::Array { elem_type, size } => {
+                assert!(matches!(elem_type.kind, TypeKind::Named(_)));
+                assert_eq!(size, 10);
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    // Test 48: TypeKind Tuple
+    #[test]
+    fn test_typekind_tuple() {
+        let t1 = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let t2 = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Span::default(),
+        };
+        let ty = TypeKind::Tuple(vec![t1, t2]);
+        match ty {
+            TypeKind::Tuple(types) => assert_eq!(types.len(), 2),
+            _ => panic!("Expected Tuple"),
+        }
+    }
+
+    // Test 49: TypeKind Function (struct variant)
+    #[test]
+    fn test_typekind_function() {
+        let param = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let ret = Type {
+            kind: TypeKind::Named("String".to_string()),
+            span: Span::default(),
+        };
+        let ty = TypeKind::Function {
+            params: vec![param],
+            ret: Box::new(ret),
+        };
+        match ty {
+            TypeKind::Function { params, .. } => assert_eq!(params.len(), 1),
+            _ => panic!("Expected Function"),
+        }
+    }
+
+    // Test 50: TypeKind Optional
+    #[test]
+    fn test_typekind_optional() {
+        let inner = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let ty = TypeKind::Optional(Box::new(inner));
+        assert!(matches!(ty, TypeKind::Optional(_)));
+    }
+
+    // Test 51: TypeKind List
+    #[test]
+    fn test_typekind_list() {
+        let inner = Type {
+            kind: TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let ty = TypeKind::List(Box::new(inner));
+        assert!(matches!(ty, TypeKind::List(_)));
+    }
+
+    // Test 52: Pattern variants
+    #[test]
+    fn test_pattern_identifier() {
+        let pat = Pattern::Identifier("x".to_string());
+        match pat {
+            Pattern::Identifier(name) => assert_eq!(name, "x"),
+            _ => panic!("Expected Identifier"),
+        }
+    }
+
+    // Test 53: Pattern Tuple
+    #[test]
+    fn test_pattern_tuple() {
+        let pat = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        match pat {
+            Pattern::Tuple(pats) => assert_eq!(pats.len(), 2),
+            _ => panic!("Expected Tuple"),
+        }
+    }
+
+    // Test 54: Pattern Wildcard
+    #[test]
+    fn test_pattern_wildcard() {
+        let pat = Pattern::Wildcard;
+        assert!(matches!(pat, Pattern::Wildcard));
+    }
+
+    // Test 55: BinaryOp arithmetic
+    #[test]
+    fn test_binary_op_arithmetic() {
+        let ops = vec![
+            BinaryOp::Add,
+            BinaryOp::Subtract,
+            BinaryOp::Multiply,
+            BinaryOp::Divide,
+            BinaryOp::Modulo,
+        ];
+        assert_eq!(ops.len(), 5);
+    }
+
+    // Test 56: BinaryOp comparison
+    #[test]
+    fn test_binary_op_comparison() {
+        let ops = vec![
+            BinaryOp::Equal,
+            BinaryOp::NotEqual,
+            BinaryOp::Less,
+            BinaryOp::Greater,
+            BinaryOp::LessEqual,
+            BinaryOp::GreaterEqual,
+        ];
+        assert_eq!(ops.len(), 6);
+    }
+
+    // Test 57: BinaryOp logical
+    #[test]
+    fn test_binary_op_logical() {
+        let ops = vec![BinaryOp::And, BinaryOp::Or];
+        assert_eq!(ops.len(), 2);
+    }
+
+    // Test 58: UnaryOp variants
+    #[test]
+    fn test_unary_op_variants() {
+        let ops = vec![UnaryOp::Negate, UnaryOp::Not, UnaryOp::BitwiseNot];
+        assert_eq!(ops.len(), 3);
+    }
+
+    // Test 59: Literal integer with suffix
+    #[test]
+    fn test_literal_integer_with_suffix() {
+        let lit = Literal::Integer(42, Some("i64".to_string()));
+        match lit {
+            Literal::Integer(val, suffix) => {
+                assert_eq!(val, 42);
+                assert_eq!(suffix, Some("i64".to_string()));
+            }
+            _ => panic!("Expected Integer"),
+        }
+    }
+
+    // Test 60: Literal float
+    #[test]
+    fn test_literal_float() {
+        let lit = Literal::Float(3.14);
+        match lit {
+            Literal::Float(val) => assert!((val - 3.14).abs() < 0.001),
+            _ => panic!("Expected Float"),
+        }
+    }
+
+    // Test 61: Literal string
+    #[test]
+    fn test_literal_string() {
+        let lit = Literal::String("hello".to_string());
+        match lit {
+            Literal::String(s) => assert_eq!(s, "hello"),
+            _ => panic!("Expected String"),
+        }
+    }
+
+    // Test 62: Literal bool
+    #[test]
+    fn test_literal_bool() {
+        let true_lit = Literal::Bool(true);
+        let false_lit = Literal::Bool(false);
+        assert!(matches!(true_lit, Literal::Bool(true)));
+        assert!(matches!(false_lit, Literal::Bool(false)));
+    }
+
+    // Test 63: Literal null
+    #[test]
+    fn test_literal_null() {
+        let lit = Literal::Null;
+        assert!(matches!(lit, Literal::Null));
+    }
+
+    // Test 64: Literal Unit
+    #[test]
+    fn test_literal_unit() {
+        let lit = Literal::Unit;
+        assert!(matches!(lit, Literal::Unit));
+    }
+
+    // Test 65: Literal Char
+    #[test]
+    fn test_literal_char() {
+        let lit = Literal::Char('a');
+        match lit {
+            Literal::Char(c) => assert_eq!(c, 'a'),
+            _ => panic!("Expected Char"),
+        }
+    }
+
+    // Test 66: Literal Byte
+    #[test]
+    fn test_literal_byte() {
+        let lit = Literal::Byte(255);
+        match lit {
+            Literal::Byte(b) => assert_eq!(b, 255),
+            _ => panic!("Expected Byte"),
+        }
+    }
+
+    // Test 67: Literal Atom
+    #[test]
+    fn test_literal_atom() {
+        let lit = Literal::Atom("ok".to_string());
+        match lit {
+            Literal::Atom(s) => assert_eq!(s, "ok"),
+            _ => panic!("Expected Atom"),
+        }
+    }
 }
