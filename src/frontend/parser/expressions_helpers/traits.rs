@@ -35,6 +35,7 @@
 
 use crate::frontend::ast::{Expr, ExprKind, Span, TraitMethod};
 use crate::frontend::lexer::Token;
+use crate::frontend::parser::utils::{parse_params, parse_type};
 use crate::frontend::parser::{bail, ParserState, Result};
 
 /// Parse trait definition: trait Name { methods }
@@ -50,14 +51,12 @@ pub(in crate::frontend::parser) fn parse_trait_definition(state: &mut ParserStat
     let (associated_types, methods) = parse_trait_body_items(state)?;
     state.tokens.expect(&Token::RightBrace)?;
 
-    let trait_methods = convert_to_trait_methods(methods);
-
     Ok(Expr::new(
         ExprKind::Trait {
             name,
             type_params,
             associated_types,
-            methods: trait_methods,
+            methods,
             is_pub: false,
         },
         start_span,
@@ -97,7 +96,8 @@ fn parse_optional_trait_generics(state: &mut ParserState) -> Result<Vec<String>>
 }
 
 /// Parse trait body items (associated types and methods)
-fn parse_trait_body_items(state: &mut ParserState) -> Result<(Vec<String>, Vec<String>)> {
+/// TRANSPILER-TRAIT-001 FIX: Now returns Vec<TraitMethod> with full signatures
+fn parse_trait_body_items(state: &mut ParserState) -> Result<(Vec<String>, Vec<TraitMethod>)> {
     let mut associated_types = Vec::new();
     let mut methods = Vec::new();
 
@@ -117,8 +117,9 @@ fn parse_trait_body_items(state: &mut ParserState) -> Result<(Vec<String>, Vec<S
 }
 
 /// Parse single trait method signature (with optional default implementation)
+/// TRANSPILER-TRAIT-001 FIX: Now returns TraitMethod with full signature
 /// Complexity: 8 (Toyota Way: <10 ✓)
-fn parse_trait_method(state: &mut ParserState) -> Result<String> {
+fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     // Expect 'fun' or 'fn' keyword
     match state.tokens.peek() {
         Some((Token::Fun | Token::Fn, _)) => {
@@ -141,31 +142,38 @@ fn parse_trait_method(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected method name in trait"),
     };
 
-    // Skip method signature (params and return type) and optional body
-    let mut depth = 0;
-    while state.tokens.peek().is_some() {
-        match state.tokens.peek() {
-            Some((Token::LeftBrace, _)) => {
-                depth += 1;
-                state.tokens.advance();
-            }
-            Some((Token::RightBrace, _)) if depth > 0 => {
-                depth -= 1;
-                state.tokens.advance();
-                if depth == 0 {
-                    break; // End of method body
-                }
-            }
-            Some((Token::Type | Token::Fun | Token::Fn | Token::RightBrace, _)) if depth == 0 => {
-                break; // Next trait item or end of trait
-            }
-            _ => {
-                state.tokens.advance();
-            }
-        }
-    }
+    // TRANSPILER-TRAIT-001 FIX: Parse parameters properly
+    let params = parse_params(state)?;
 
-    Ok(method_name)
+    // Parse return type
+    let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+        state.tokens.advance();
+        Some(parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Check for default implementation body
+    let body = if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        Some(Box::new(crate::frontend::parser::collections::parse_block(
+            state,
+        )?))
+    } else {
+        // TRANSPILER-TRAIT-001 FIX: Consume optional semicolon after method signature
+        // Trait method signatures can end with ; when there's no body
+        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            state.tokens.advance();
+        }
+        None
+    };
+
+    Ok(TraitMethod {
+        name: method_name,
+        params,
+        return_type,
+        body,
+        is_pub: false, // Trait methods are implicitly public
+    })
 }
 
 /// Parse trait associated type: type Item
@@ -203,20 +211,6 @@ fn parse_trait_associated_type(state: &mut ParserState) -> Result<String> {
     }
 
     Ok(type_name)
-}
-
-/// Convert method names to `TraitMethod` structs
-fn convert_to_trait_methods(methods: Vec<String>) -> Vec<TraitMethod> {
-    methods
-        .into_iter()
-        .map(|name| TraitMethod {
-            name,
-            params: vec![],
-            return_type: None,
-            body: None,
-            is_pub: true,
-        })
-        .collect()
 }
 
 #[cfg(test)]

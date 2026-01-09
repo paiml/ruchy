@@ -1506,3 +1506,99 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: PDCA Cycle - Scan for RED defects'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Scan for RED defects'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T09:34:01.484613+00:00
+  updated: 2026-01-09T09:38:17.158778+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Find transpiler edge case defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Find transpiler edge case defect'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T09:46:00.153994+00:00
+  updated: 2026-01-09T09:46:00.153994+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - TRANSPILER-ITERATOR-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - TRANSPILER-ITERATOR-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T09:53:40.247049+00:00
+  updated: 2026-01-09T09:53:40.247049+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - TRANSPILER-STRING-CONCAT-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - TRANSPILER-STRING-CONCAT-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T10:05:45.027429+00:00
+  updated: 2026-01-09T10:05:45.027429+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - TRANSPILER-METHOD-SELF-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - TRANSPILER-METHOD-SELF-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T10:12:52.484380+00:00
+  updated: 2026-01-09T10:12:52.484380+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - TRANSPILER-TRAIT-001'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - TRANSPILER-TRAIT-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T10:30:01.678131+00:00
+  updated: 2026-01-09T10:30:01.678131+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

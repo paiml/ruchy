@@ -880,6 +880,12 @@ impl Transpiler {
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
+                // TRANSPILER-TRAIT-001 FIX: Determine if self is mutated for &mut self inference
+                // For traits with default implementations, check the body for mutations
+                let self_is_mutated = method
+                    .body
+                    .as_ref()
+                    .is_some_and(|body| crate::backend::transpiler::mutation_detection::is_variable_mutated("self", body));
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -887,11 +893,26 @@ impl Transpiler {
                     .enumerate()
                     .map(|(i, param)| {
                         if i == 0 && (param.name() == "self" || param.name() == "&self") {
-                            // Handle self parameter - check if it's &self or self
-                            if param.name().starts_with('&') {
+                            // TRANSPILER-TRAIT-001 FIX: Handle self parameter consistently
+                            // Check the TYPE for reference/mutable reference
+                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
+                                if *is_mut {
+                                    quote! { &mut self }
+                                } else {
+                                    quote! { &self }
+                                }
+                            } else if param.name().starts_with('&') {
+                                // Legacy: name-based detection (e.g., "&self" as name)
                                 quote! { &self }
                             } else {
-                                quote! { self }
+                                // TRANSPILER-TRAIT-001 FIX: Default to &self or &mut self based on mutation
+                                // In Ruchy, `self` without explicit type defaults to reference
+                                // This matches Python's implicit self and Rust's common patterns
+                                if self_is_mutated {
+                                    quote! { &mut self }
+                                } else {
+                                    quote! { &self }
+                                }
                             }
                         } else {
                             let param_name = format_ident!("{}", param.name());
@@ -909,23 +930,20 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-                // Process method visibility
-                let visibility = if method.is_pub {
-                    quote! { pub }
-                } else {
-                    quote! {}
-                };
+                // TRANSPILER-TRAIT-001 FIX: Trait methods cannot have visibility modifiers
+                // In Rust, trait method declarations are implicitly public.
+                // Adding `pub` causes prettyplease to fail with "not implemented: TraitItem::Verbatim"
                 // Process method body (if default implementation)
                 if let Some(ref body) = method.body {
                     let body_tokens = self.transpile_expr(body)?;
                     Ok(quote! {
-                        #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                        fn #method_name(#(#param_tokens),*) #return_type_tokens {
                             #body_tokens
                         }
                     })
                 } else {
                     Ok(quote! {
-                        #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens;
+                        fn #method_name(#(#param_tokens),*) #return_type_tokens;
                     })
                 }
             })
