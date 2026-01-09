@@ -1,10 +1,12 @@
 //! Expression Dispatcher and Utilities
 //!
 //! This module handles the main expression transpilation dispatcher:
-//! - Routes expressions to specialized handlers based on ExprKind
+//! - Routes expressions to specialized handlers based on `ExprKind`
 //! - Rust keyword detection utility
 //!
 //! **EXTREME TDD Round 69**: Extracted from mod.rs for modularization.
+
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind};

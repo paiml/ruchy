@@ -1,8 +1,8 @@
 //! Input Built-in Function Transpilation
 //!
 //! This module handles transpilation of input/readline functions:
-//! - input() - read line from stdin with optional prompt
-//! - readline() - read line from stdin
+//! - `input()` - read line from stdin with optional prompt
+//! - `readline()` - read line from stdin
 //!
 //! **EXTREME TDD Round 57**: Extracted from statements.rs for modularization.
 

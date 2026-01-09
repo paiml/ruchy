@@ -391,3 +391,240 @@ mod property_tests_resource_eval {
         }
     }
 }
+
+// === EXTREME TDD Round 162 - ResourceLimits Unit Tests (no REPL required) ===
+
+#[cfg(test)]
+mod resource_limits_tests {
+    use super::*;
+
+    #[test]
+    fn test_resource_limits_default_r162() {
+        let limits = ResourceLimits::default();
+        assert_eq!(limits.max_memory, 100 * 1024 * 1024);
+        assert_eq!(limits.max_time, Duration::from_secs(5));
+        assert_eq!(limits.max_depth, 1000);
+        assert_eq!(limits.max_allocations, 1_000_000);
+    }
+
+    #[test]
+    fn test_resource_limits_untrusted_r162() {
+        let limits = ResourceLimits::untrusted();
+        assert_eq!(limits.max_memory, 10 * 1024 * 1024);
+        assert_eq!(limits.max_time, Duration::from_secs(1));
+        assert_eq!(limits.max_depth, 100);
+        assert_eq!(limits.max_allocations, 10_000);
+    }
+
+    #[test]
+    fn test_resource_limits_testing_r162() {
+        let limits = ResourceLimits::testing();
+        assert_eq!(limits.max_memory, 1024 * 1024);
+        assert_eq!(limits.max_time, Duration::from_millis(100));
+        assert_eq!(limits.max_depth, 50);
+        assert_eq!(limits.max_allocations, 1_000);
+    }
+
+    #[test]
+    fn test_resource_limits_clone_r162() {
+        let limits = ResourceLimits::default();
+        let cloned = limits.clone();
+        assert_eq!(limits.max_memory, cloned.max_memory);
+        assert_eq!(limits.max_time, cloned.max_time);
+        assert_eq!(limits.max_depth, cloned.max_depth);
+        assert_eq!(limits.max_allocations, cloned.max_allocations);
+    }
+
+    #[test]
+    fn test_resource_limits_debug_r162() {
+        let limits = ResourceLimits::default();
+        let debug_str = format!("{:?}", limits);
+        assert!(debug_str.contains("ResourceLimits"));
+        assert!(debug_str.contains("max_memory"));
+        assert!(debug_str.contains("max_time"));
+        assert!(debug_str.contains("max_depth"));
+        assert!(debug_str.contains("max_allocations"));
+    }
+
+    #[test]
+    fn test_resource_limits_untrusted_more_restrictive_than_default_r162() {
+        let default = ResourceLimits::default();
+        let untrusted = ResourceLimits::untrusted();
+
+        assert!(untrusted.max_memory < default.max_memory);
+        assert!(untrusted.max_time < default.max_time);
+        assert!(untrusted.max_depth < default.max_depth);
+        assert!(untrusted.max_allocations < default.max_allocations);
+    }
+
+    #[test]
+    fn test_resource_limits_testing_most_restrictive_r162() {
+        let untrusted = ResourceLimits::untrusted();
+        let testing = ResourceLimits::testing();
+
+        assert!(testing.max_memory < untrusted.max_memory);
+        assert!(testing.max_time < untrusted.max_time);
+        assert!(testing.max_depth < untrusted.max_depth);
+        assert!(testing.max_allocations < untrusted.max_allocations);
+    }
+
+    #[test]
+    fn test_resource_limits_custom_values_r162() {
+        let limits = ResourceLimits {
+            max_memory: 512,
+            max_time: Duration::from_millis(50),
+            max_depth: 10,
+            max_allocations: 100,
+        };
+
+        assert_eq!(limits.max_memory, 512);
+        assert_eq!(limits.max_time, Duration::from_millis(50));
+        assert_eq!(limits.max_depth, 10);
+        assert_eq!(limits.max_allocations, 100);
+    }
+
+    #[test]
+    fn test_resource_limits_zero_values_r162() {
+        let limits = ResourceLimits {
+            max_memory: 0,
+            max_time: Duration::ZERO,
+            max_depth: 0,
+            max_allocations: 0,
+        };
+
+        assert_eq!(limits.max_memory, 0);
+        assert_eq!(limits.max_time, Duration::ZERO);
+        assert_eq!(limits.max_depth, 0);
+        assert_eq!(limits.max_allocations, 0);
+    }
+
+    #[test]
+    fn test_resource_limits_max_values_r162() {
+        let limits = ResourceLimits {
+            max_memory: usize::MAX,
+            max_time: Duration::MAX,
+            max_depth: usize::MAX,
+            max_allocations: usize::MAX,
+        };
+
+        assert_eq!(limits.max_memory, usize::MAX);
+        assert_eq!(limits.max_time, Duration::MAX);
+        assert_eq!(limits.max_depth, usize::MAX);
+        assert_eq!(limits.max_allocations, usize::MAX);
+    }
+
+    #[test]
+    fn test_resource_limits_memory_1mb_r162() {
+        let limits = ResourceLimits {
+            max_memory: 1024 * 1024,
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_memory, 1024 * 1024);
+        // Other fields should use defaults
+        assert_eq!(limits.max_time, Duration::from_secs(5));
+    }
+
+    #[test]
+    fn test_resource_limits_time_1s_r162() {
+        let limits = ResourceLimits {
+            max_time: Duration::from_secs(1),
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_time, Duration::from_secs(1));
+        // Other fields should use defaults
+        assert_eq!(limits.max_memory, 100 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_resource_limits_depth_50_r162() {
+        let limits = ResourceLimits {
+            max_depth: 50,
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_depth, 50);
+        assert_eq!(limits.max_allocations, 1_000_000);
+    }
+
+    #[test]
+    fn test_resource_limits_allocations_1000_r162() {
+        let limits = ResourceLimits {
+            max_allocations: 1000,
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_allocations, 1000);
+        assert_eq!(limits.max_depth, 1000);
+    }
+
+    #[test]
+    fn test_resource_limits_time_subsecond_r162() {
+        let limits = ResourceLimits {
+            max_time: Duration::from_millis(250),
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_time.as_millis(), 250);
+    }
+
+    #[test]
+    fn test_resource_limits_time_microseconds_r162() {
+        let limits = ResourceLimits {
+            max_time: Duration::from_micros(500),
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_time.as_micros(), 500);
+    }
+
+    #[test]
+    fn test_resource_limits_time_nanoseconds_r162() {
+        let limits = ResourceLimits {
+            max_time: Duration::from_nanos(1000),
+            ..ResourceLimits::default()
+        };
+        assert_eq!(limits.max_time.as_nanos(), 1000);
+    }
+
+    #[test]
+    fn test_resource_limits_untrusted_is_10mb_r162() {
+        let limits = ResourceLimits::untrusted();
+        assert_eq!(limits.max_memory, 10 * 1024 * 1024);
+        // Verify it's exactly 10MB
+        assert_eq!(limits.max_memory, 10_485_760);
+    }
+
+    #[test]
+    fn test_resource_limits_testing_is_1mb_r162() {
+        let limits = ResourceLimits::testing();
+        assert_eq!(limits.max_memory, 1024 * 1024);
+        // Verify it's exactly 1MB
+        assert_eq!(limits.max_memory, 1_048_576);
+    }
+
+    #[test]
+    fn test_resource_limits_default_is_100mb_r162() {
+        let limits = ResourceLimits::default();
+        assert_eq!(limits.max_memory, 100 * 1024 * 1024);
+        // Verify it's exactly 100MB
+        assert_eq!(limits.max_memory, 104_857_600);
+    }
+
+    #[test]
+    fn test_resource_limits_multiple_clones_r162() {
+        let original = ResourceLimits::testing();
+        let clone1 = original.clone();
+        let clone2 = clone1.clone();
+        let clone3 = clone2.clone();
+
+        assert_eq!(original.max_memory, clone3.max_memory);
+        assert_eq!(original.max_time, clone3.max_time);
+        assert_eq!(original.max_depth, clone3.max_depth);
+        assert_eq!(original.max_allocations, clone3.max_allocations);
+    }
+
+    #[test]
+    fn test_resource_limits_struct_size_r162() {
+        // ResourceLimits should be reasonably sized
+        let size = std::mem::size_of::<ResourceLimits>();
+        // Duration is 16 bytes, usize is 8 bytes on 64-bit
+        // So total should be around 16 + 8 + 8 + 8 = 40 bytes
+        assert!(size <= 64, "ResourceLimits size is {size} bytes");
+    }
+}

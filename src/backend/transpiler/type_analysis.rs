@@ -28,7 +28,7 @@ pub fn needs_lifetime_parameter(params: &[Param], return_type: Option<&Type>) ->
     let ref_param_count = params.iter().filter(|p| is_reference_type(&p.ty)).count();
 
     // Check if return type is a reference
-    let returns_reference = return_type.is_some_and(|rt| is_reference_type(rt));
+    let returns_reference = return_type.is_some_and(is_reference_type);
 
     // Need lifetime if 2+ ref params and ref return
     ref_param_count >= 2 && returns_reference

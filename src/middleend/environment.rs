@@ -371,6 +371,136 @@ mod tests {
             _ => panic!("Expected function type for print"),
         }
     }
+
+    // ===== EXTREME TDD Round 156 - Additional Environment Tests =====
+
+    #[test]
+    fn test_standard_env_eq_function() {
+        let env = TypeEnv::standard();
+        let eq_scheme = env.lookup("eq").unwrap();
+        match &eq_scheme.ty {
+            MonoType::Function(arg1, rest) => {
+                assert!(matches!(**arg1, MonoType::Int));
+                match rest.as_ref() {
+                    MonoType::Function(arg2, ret_type) => {
+                        assert!(matches!(**arg2, MonoType::Int));
+                        assert!(matches!(**ret_type, MonoType::Bool));
+                    }
+                    _ => panic!("Expected curried function type"),
+                }
+            }
+            _ => panic!("Expected function type for eq"),
+        }
+    }
+
+    #[test]
+    fn test_standard_env_println_function() {
+        let env = TypeEnv::standard();
+        let println_scheme = env.lookup("println").unwrap();
+        match &println_scheme.ty {
+            MonoType::Function(arg, ret) => {
+                assert!(matches!(**arg, MonoType::String));
+                assert!(matches!(**ret, MonoType::Unit));
+            }
+            _ => panic!("Expected function type for println"),
+        }
+    }
+
+    #[test]
+    fn test_extend_preserves_original() {
+        let mut env1 = TypeEnv::new();
+        env1.bind("a", TypeScheme::mono(MonoType::Int));
+        let env2 = env1.extend("b", TypeScheme::mono(MonoType::Bool));
+        // Original still has only "a"
+        assert!(env1.lookup("a").is_some());
+        assert!(env1.lookup("b").is_none());
+        // Extended has both
+        assert!(env2.lookup("a").is_some());
+        assert!(env2.lookup("b").is_some());
+    }
+
+    #[test]
+    fn test_extend_chain() {
+        let env = TypeEnv::new()
+            .extend("x", TypeScheme::mono(MonoType::Int))
+            .extend("y", TypeScheme::mono(MonoType::Bool))
+            .extend("z", TypeScheme::mono(MonoType::String));
+        assert!(env.lookup("x").is_some());
+        assert!(env.lookup("y").is_some());
+        assert!(env.lookup("z").is_some());
+    }
+
+    #[test]
+    fn test_generalize_no_free_vars() {
+        let env = TypeEnv::new();
+        let ty = MonoType::Int;
+        let scheme = env.generalize(ty);
+        assert!(scheme.vars.is_empty());
+    }
+
+    #[test]
+    fn test_free_vars_multiple_bindings() {
+        let mut env = TypeEnv::new();
+        let var1 = TyVar(100);
+        let var2 = TyVar(101);
+        let var3 = TyVar(102);
+        // Binding with free var1
+        env.bind("a", TypeScheme {
+            vars: vec![],
+            ty: MonoType::Var(var1.clone()),
+        });
+        // Binding with free var2 and bound var3
+        env.bind("b", TypeScheme {
+            vars: vec![var3.clone()],
+            ty: MonoType::Function(
+                Box::new(MonoType::Var(var2.clone())),
+                Box::new(MonoType::Var(var3)),
+            ),
+        });
+        let free = env.free_vars();
+        assert!(free.contains(&var1));
+        assert!(free.contains(&var2));
+        assert!(!free.contains(&TyVar(102))); // var3 is bound
+    }
+
+    #[test]
+    fn test_instantiate_mono_scheme() {
+        let env = TypeEnv::new();
+        let mut gen = TyVarGenerator::new();
+        let scheme = TypeScheme::mono(MonoType::Int);
+        let instance = env.instantiate(&scheme, &mut gen);
+        assert!(matches!(instance, MonoType::Int));
+    }
+
+    #[test]
+    fn test_env_debug_format() {
+        let mut env = TypeEnv::new();
+        env.bind("test", TypeScheme::mono(MonoType::Int));
+        let debug = format!("{:?}", env);
+        assert!(debug.contains("TypeEnv"));
+        assert!(debug.contains("test"));
+    }
+
+    #[test]
+    fn test_generalize_with_partially_bound_env() {
+        let mut env = TypeEnv::new();
+        let var1 = TyVar(200);
+        let var2 = TyVar(201);
+        // env has var1 free
+        env.bind("x", TypeScheme {
+            vars: vec![],
+            ty: MonoType::Var(var1.clone()),
+        });
+        // Generalize a type with var1 and var2
+        let ty = MonoType::Function(
+            Box::new(MonoType::Var(var1)),
+            Box::new(MonoType::Var(var2.clone())),
+        );
+        let scheme = env.generalize(ty);
+        // Only var2 should be generalized (var1 is in env)
+        assert_eq!(scheme.vars.len(), 1);
+        assert!(scheme.vars.contains(&var2));
+    }
 }
 #[cfg(test)]
 mod property_tests_environment {

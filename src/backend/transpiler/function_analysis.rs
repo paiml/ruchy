@@ -91,7 +91,7 @@ pub fn is_void_expression(expr: &Expr) -> bool {
         // Let bindings - check the body expression
         ExprKind::Let { body, .. } => is_void_expression(body),
         // Block - check last expression
-        ExprKind::Block(exprs) => exprs.last().is_none_or(|e| is_void_expression(e)),
+        ExprKind::Block(exprs) => exprs.last().is_none_or(is_void_expression),
         // If expression - both branches must be void
         ExprKind::If {
             then_branch,

@@ -579,4 +579,186 @@ mod tests {
             }
         }
     }
+
+    // ===== EXTREME TDD Round 154 - WASM Compiler Tests =====
+
+    #[test]
+    fn test_compile_bool_false() {
+        let compiler = WasmCompiler::new();
+        let ast = make_bool(false);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_string_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Literal(Literal::String("hello".to_string())),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_char_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Literal(Literal::Char('x')),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_unit_literal() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Literal(Literal::Unit),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_negative_integer() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(-42);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_large_integer() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(i32::MAX as i64);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_small_integer() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(i32::MIN as i64);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_negative_float() {
+        let compiler = WasmCompiler::new();
+        let ast = make_float(-3.14);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_zero_float() {
+        let compiler = WasmCompiler::new();
+        let ast = make_float(0.0);
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_block_empty() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Block(vec![]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_block_single_expr() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Block(vec![make_int(42)]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_identifier() {
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Identifier("x".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_module_has_export_empty_name() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        assert!(!module.has_export(""));
+    }
+
+    #[test]
+    fn test_set_optimization_level_all_valid() {
+        for level in 0..=3 {
+            let mut compiler = WasmCompiler::new();
+            compiler.set_optimization_level(level);
+            assert_eq!(compiler.optimization_level, level);
+        }
+    }
+
+    #[test]
+    fn test_compile_binary_default_op() {
+        let compiler = WasmCompiler::new();
+        // Use an operator that falls through to default
+        let ast = make_binary(make_int(2), BinaryOp::Less, make_int(3));
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_deeply_nested_binary() {
+        let compiler = WasmCompiler::new();
+        // ((1 + 2) - 3) * 4 / 5
+        let add = make_binary(make_int(1), BinaryOp::Add, make_int(2));
+        let sub = make_binary(add, BinaryOp::Subtract, make_int(3));
+        let mul = make_binary(sub, BinaryOp::Multiply, make_int(4));
+        let div = make_binary(mul, BinaryOp::Divide, make_int(5));
+        let result = compiler.compile(&div);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_module_bytecode_length() {
+        let compiler = WasmCompiler::new();
+        let ast = make_int(42);
+        let module = compiler.compile(&ast).expect("Should compile");
+        let bytes = module.bytes();
+        // WASM module should have reasonable minimum size
+        assert!(bytes.len() >= 8, "WASM module should have header + section");
+    }
 }

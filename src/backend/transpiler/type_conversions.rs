@@ -1,10 +1,10 @@
 //! Type Conversion Built-in Function Transpilation
 //!
 //! This module handles transpilation of type conversion functions:
-//! - str() - convert to string
-//! - int() - convert to integer
-//! - float() - convert to float
-//! - bool() - convert to boolean
+//! - `str()` - convert to string
+//! - `int()` - convert to integer
+//! - `float()` - convert to float
+//! - `bool()` - convert to boolean
 //!
 //! **EXTREME TDD Round 58**: Extracted from statements.rs for modularization.
 

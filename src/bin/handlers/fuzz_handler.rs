@@ -300,11 +300,162 @@ fn handle_fuzz_single_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_run_fuzz_iterations_result_type() {
         // Just verify the result type is correct
         let result: Result<(usize, usize, usize, Vec<String>)> = Ok((10, 0, 0, vec![]));
         assert!(result.is_ok());
+    }
+
+    // ===== EXTREME TDD Round 144 - Fuzz Handler Tests =====
+
+    #[test]
+    fn test_write_fuzz_json_success() {
+        let result = write_fuzz_json(None, "test_target", 100, true, "output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_fuzz_json_failure() {
+        let result = write_fuzz_json(None, "test_target", 100, false, "crash info");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_fuzz_json_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_fuzz_json(Some(temp.path()), "target", 50, true, "data");
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("target"));
+        assert!(content.contains("50"));
+    }
+
+    #[test]
+    fn test_write_fuzz_text_basic() {
+        let result = write_fuzz_text(None, "test_target", 100, "output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_fuzz_text_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_fuzz_text(Some(temp.path()), "target", 50, "data");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_fuzz_summary_json() {
+        let result = write_fuzz_summary("json", None, "target", 100, true, "out");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_fuzz_summary_text() {
+        let result = write_fuzz_summary("text", None, "target", 100, true, "out");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_fuzz_report_all_success() {
+        let path = Path::new("/test/file.ruchy");
+        let result = write_json_fuzz_report(
+            path, None, 100, 100, 0, 0, 100.0, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_fuzz_report_with_crashes() {
+        let path = Path::new("/test/file.ruchy");
+        let crashes = vec!["Crash at iteration 5".to_string()];
+        let result = write_json_fuzz_report(
+            path, None, 100, 95, 5, 0, 95.0, &crashes,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_fuzz_report_to_file() {
+        let path = Path::new("/test/file.ruchy");
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_json_fuzz_report(
+            path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[],
+        );
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("passed"));
+    }
+
+    #[test]
+    fn test_write_text_fuzz_report_all_success() {
+        let path = Path::new("/test/file.ruchy");
+        let result = write_text_fuzz_report(
+            path, None, 100, 100, 0, 0, 100.0, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_text_fuzz_report_with_failures() {
+        let path = Path::new("/test/file.ruchy");
+        let failures = vec![
+            "Crash at iteration 1".to_string(),
+            "Timeout at iteration 50".to_string(),
+        ];
+        let result = write_text_fuzz_report(
+            path, None, 100, 90, 5, 5, 90.0, &failures,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_text_fuzz_report_to_file() {
+        let path = Path::new("/test/file.ruchy");
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_text_fuzz_report(
+            path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_fuzz_result_tuple_structure() {
+        // Test the expected result tuple structure
+        let (successes, crashes, timeouts, details): (usize, usize, usize, Vec<String>) =
+            (100, 0, 0, vec![]);
+        assert_eq!(successes, 100);
+        assert_eq!(crashes, 0);
+        assert_eq!(timeouts, 0);
+        assert!(details.is_empty());
+    }
+
+    #[test]
+    fn test_fuzz_result_with_failures() {
+        let (successes, crashes, timeouts, details): (usize, usize, usize, Vec<String>) =
+            (90, 5, 5, vec!["crash1".to_string(), "timeout1".to_string()]);
+        assert_eq!(successes, 90);
+        assert_eq!(crashes, 5);
+        assert_eq!(timeouts, 5);
+        assert_eq!(details.len(), 2);
+    }
+
+    #[test]
+    fn test_write_fuzz_json_with_all_params() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_fuzz_json(
+            Some(temp.path()),
+            "parser_fuzz",
+            1000,
+            true,
+            "Fuzz completed successfully",
+        );
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("parser_fuzz"));
+        assert!(content.contains("1000"));
+        assert!(content.contains("passed"));
     }
 }

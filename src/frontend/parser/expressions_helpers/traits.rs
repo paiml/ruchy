@@ -117,7 +117,7 @@ fn parse_trait_body_items(state: &mut ParserState) -> Result<(Vec<String>, Vec<T
 }
 
 /// Parse single trait method signature (with optional default implementation)
-/// TRANSPILER-TRAIT-001 FIX: Now returns TraitMethod with full signature
+/// TRANSPILER-TRAIT-001 FIX: Now returns `TraitMethod` with full signature
 /// Complexity: 8 (Toyota Way: <10 ✓)
 fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     // Expect 'fun' or 'fn' keyword

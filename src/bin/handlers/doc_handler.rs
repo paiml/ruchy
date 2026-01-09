@@ -341,4 +341,150 @@ mod tests {
         assert!(result.contains("<code>baz()</code>"));
         assert!(result.contains("Test function"));
     }
+
+    // ===== EXTREME TDD Round 152 - Doc Handler Tests =====
+
+    #[test]
+    fn test_generate_markdown_no_doc_comment() {
+        let docs = vec![DocItem {
+            kind: DocItemKind::Function,
+            name: "undocumented".to_string(),
+            params: vec!["x".to_string()],
+            doc_comment: None,
+        }];
+        let result = generate_markdown_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("*No documentation available*"));
+    }
+
+    #[test]
+    fn test_generate_html_no_doc_comment() {
+        let docs = vec![DocItem {
+            kind: DocItemKind::Function,
+            name: "undocumented".to_string(),
+            params: vec![],
+            doc_comment: None,
+        }];
+        let result = generate_html_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("<em>No documentation available</em>"));
+    }
+
+    #[test]
+    fn test_generate_json_with_doc_comment() {
+        let docs = vec![DocItem {
+            kind: DocItemKind::Function,
+            name: "documented".to_string(),
+            params: vec!["a".to_string(), "b".to_string()],
+            doc_comment: Some("/// Does something important".to_string()),
+        }];
+        let result = generate_json_docs(&docs, Path::new("test.ruchy")).unwrap();
+        assert!(result.contains("doc_comment"));
+        assert!(result.contains("Does something important"));
+    }
+
+    #[test]
+    fn test_doc_item_debug() {
+        let doc = DocItem {
+            kind: DocItemKind::Function,
+            name: "test".to_string(),
+            params: vec![],
+            doc_comment: None,
+        };
+        let debug_str = format!("{:?}", doc);
+        assert!(debug_str.contains("Function"));
+        assert!(debug_str.contains("test"));
+    }
+
+    #[test]
+    fn test_generate_markdown_multiple_params() {
+        let docs = vec![DocItem {
+            kind: DocItemKind::Function,
+            name: "multi".to_string(),
+            params: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+            doc_comment: None,
+        }];
+        let result = generate_markdown_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("`multi(a, b, c)`"));
+    }
+
+    #[test]
+    fn test_generate_html_css_styles() {
+        let docs: Vec<DocItem> = vec![];
+        let result = generate_html_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("<style>"));
+        assert!(result.contains("font-family"));
+        assert!(result.contains("</style>"));
+    }
+
+    #[test]
+    fn test_doc_item_kind_function() {
+        let kind = DocItemKind::Function;
+        let debug_str = format!("{:?}", kind);
+        assert_eq!(debug_str, "Function");
+    }
+
+    #[test]
+    fn test_generate_json_source_path() {
+        let docs: Vec<DocItem> = vec![];
+        let result = generate_json_docs(&docs, Path::new("/path/to/test.ruchy")).unwrap();
+        assert!(result.contains("/path/to/test.ruchy"));
+    }
+
+    #[test]
+    fn test_generate_markdown_multiline_doc() {
+        let docs = vec![DocItem {
+            kind: DocItemKind::Function,
+            name: "multiline".to_string(),
+            params: vec![],
+            doc_comment: Some("/// Line 1\n/// Line 2\n/// Line 3".to_string()),
+        }];
+        let result = generate_markdown_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("Line 1"));
+        assert!(result.contains("Line 2"));
+        assert!(result.contains("Line 3"));
+    }
+
+    #[test]
+    fn test_handle_doc_command_invalid_format() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let source_file = temp_dir.path().join("test.ruchy");
+        std::fs::write(&source_file, "fun test() { 42 }").unwrap();
+
+        let result = handle_doc_command(
+            &source_file,
+            temp_dir.path(),
+            "invalid_format",
+            false,
+            false,
+            false,
+            false,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid format"));
+    }
+
+    #[test]
+    fn test_handle_doc_command_nonexistent_file() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let result = handle_doc_command(
+            Path::new("/nonexistent/file.ruchy"),
+            temp_dir.path(),
+            "markdown",
+            false,
+            false,
+            false,
+            false,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn test_generate_html_head_section() {
+        let docs: Vec<DocItem> = vec![];
+        let result = generate_html_docs(&docs, Path::new("test.ruchy"));
+        assert!(result.contains("<!DOCTYPE html>"));
+        assert!(result.contains("<head>"));
+        assert!(result.contains("<title>"));
+        assert!(result.contains("</head>"));
+    }
 }

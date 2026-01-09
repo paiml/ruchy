@@ -77,7 +77,7 @@ fn setup_conversion_config(
 }
 
 /// Determine output path, using default if none provided (complexity: 3)
-fn determine_output_path(output: Option<&Path>) -> &Path {
+pub(crate) fn determine_output_path(output: Option<&Path>) -> &Path {
     let default_output = Path::new("tests/generated_from_replays.rs");
     output.unwrap_or(default_output)
 }
@@ -292,5 +292,119 @@ mod tests {
     fn test_validate_replay_file_invalid() {
         let path = Path::new("test.txt");
         assert!(validate_replay_file(path).is_err());
+    }
+
+    // ===== EXTREME TDD Round 152 - Replay Handler Tests =====
+
+    #[test]
+    fn test_setup_conversion_config_all_true() {
+        let config = setup_conversion_config(true, true, 10000);
+        assert!(config.include_property_tests);
+        assert!(config.include_benchmarks);
+        assert_eq!(config.timeout_ms, 10000);
+    }
+
+    #[test]
+    fn test_setup_conversion_config_all_false() {
+        let config = setup_conversion_config(false, false, 1000);
+        assert!(!config.include_property_tests);
+        assert!(!config.include_benchmarks);
+        assert_eq!(config.timeout_ms, 1000);
+    }
+
+    #[test]
+    fn test_determine_output_path_various_customs() {
+        let paths = [
+            Path::new("custom/path.rs"),
+            Path::new("./relative.rs"),
+            Path::new("/absolute/path.rs"),
+        ];
+        for custom in &paths {
+            let result = determine_output_path(Some(custom));
+            assert_eq!(result, *custom);
+        }
+    }
+
+    #[test]
+    fn test_validate_replay_file_various_extensions() {
+        let valid = ["test.replay", "a.b.replay", "/path/to/file.replay"];
+        let invalid = ["test.rs", "test.txt", "test", "test.replay.bak"];
+
+        for path in &valid {
+            assert!(validate_replay_file(Path::new(path)).is_ok());
+        }
+        for path in &invalid {
+            assert!(validate_replay_file(Path::new(path)).is_err());
+        }
+    }
+
+    #[test]
+    fn test_handle_replay_to_tests_nonexistent() {
+        let result = handle_replay_to_tests_command(
+            Path::new("/nonexistent/file.replay"),
+            None,
+            true,
+            false,
+            5000,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_replay_to_tests_invalid_extension() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let invalid_file = temp_dir.path().join("test.txt");
+        std::fs::write(&invalid_file, "content").unwrap();
+
+        let result = handle_replay_to_tests_command(
+            &invalid_file,
+            None,
+            false,
+            false,
+            5000,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_setup_conversion_config_various_timeouts() {
+        let timeouts = [100, 1000, 5000, 30000, 60000];
+        for timeout in &timeouts {
+            let config = setup_conversion_config(false, false, *timeout);
+            assert_eq!(config.timeout_ms, *timeout);
+        }
+    }
+
+    #[test]
+    fn test_config_module_prefix() {
+        let config = setup_conversion_config(true, true, 5000);
+        assert_eq!(config.test_module_prefix, "replay_generated");
+    }
+
+    #[test]
+    fn test_handle_replay_directory_nonexistent() {
+        let result = handle_replay_to_tests_command(
+            Path::new("/nonexistent/directory/"),
+            None,
+            false,
+            false,
+            5000,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_replay_empty_directory() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+
+        let result = handle_replay_to_tests_command(
+            temp_dir.path(),
+            None,
+            false,
+            false,
+            5000,
+        );
+        // Should succeed with "No tests generated" message
+        assert!(result.is_ok());
     }
 }

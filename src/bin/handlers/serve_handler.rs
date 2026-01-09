@@ -406,9 +406,267 @@ pub fn handle_serve_command(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
     #[test]
     fn test_serve_handler_stub() {
         // Serve handler tests require the notebook feature
         // This is a placeholder
+    }
+
+    // ===== EXTREME TDD Round 145 - Serve Handler Tests =====
+
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_handle_serve_command_nonexistent_dir() {
+        let result = handle_serve_command(
+            Path::new("/nonexistent/dir"),
+            8080,
+            "127.0.0.1",
+            false,
+            false,
+            500,
+            None,
+            false,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_handle_serve_command_file_not_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        std::fs::write(&file_path, "test").unwrap();
+        let result = handle_serve_command(
+            &file_path,
+            8080,
+            "127.0.0.1",
+            false,
+            false,
+            500,
+            None,
+            false,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not a directory"));
+    }
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_handle_serve_command_no_notebook_feature() {
+        let result = handle_serve_command(
+            Path::new("."),
+            8080,
+            "127.0.0.1",
+            false,
+            false,
+            500,
+            None,
+            false,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("notebook feature"));
+    }
+
+    #[test]
+    fn test_serve_command_requires_valid_path() {
+        // Test that both feature and non-feature paths work
+        let _ = handle_serve_command(
+            Path::new("/invalid"),
+            8080,
+            "localhost",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_default_parameters() {
+        // Verify function signature accepts expected parameters
+        let _ = handle_serve_command(
+            Path::new("."),
+            3000,
+            "0.0.0.0",
+            true,
+            true,
+            1000,
+            Some(Path::new("/tmp/pid")),
+            true,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_with_verbose() {
+        let temp_dir = TempDir::new().unwrap();
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8081,
+            "127.0.0.1",
+            true, // verbose
+            false,
+            500,
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_various_hosts() {
+        let temp_dir = TempDir::new().unwrap();
+        // Test localhost
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8082,
+            "localhost",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+        // Test 0.0.0.0
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8083,
+            "0.0.0.0",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_various_ports() {
+        let temp_dir = TempDir::new().unwrap();
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            80,
+            "127.0.0.1",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            443,
+            "127.0.0.1",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            65535,
+            "127.0.0.1",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_debounce_values() {
+        let temp_dir = TempDir::new().unwrap();
+        // Minimum debounce
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8084,
+            "127.0.0.1",
+            false,
+            false,
+            1, // 1ms
+            None,
+            false,
+        );
+        // Large debounce
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8085,
+            "127.0.0.1",
+            false,
+            false,
+            10000, // 10s
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_with_wasm_watch() {
+        let temp_dir = TempDir::new().unwrap();
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8086,
+            "127.0.0.1",
+            false,
+            true, // watch
+            500,
+            None,
+            true, // watch_wasm
+        );
+    }
+
+    // ===== EXTREME TDD Round 153 - Serve Handler Tests =====
+
+    #[test]
+    fn test_serve_command_all_flags() {
+        let temp_dir = TempDir::new().unwrap();
+        let pid_path = temp_dir.path().join("server.pid");
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8087,
+            "127.0.0.1",
+            true,  // verbose
+            true,  // watch
+            250,   // debounce
+            Some(&pid_path),
+            true,  // watch_wasm
+        );
+    }
+
+    #[test]
+    fn test_serve_command_zero_debounce() {
+        let temp_dir = TempDir::new().unwrap();
+        let _ = handle_serve_command(
+            temp_dir.path(),
+            8088,
+            "127.0.0.1",
+            false,
+            false,
+            0, // zero debounce
+            None,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_serve_command_nested_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let nested = temp_dir.path().join("a").join("b").join("c");
+        std::fs::create_dir_all(&nested).unwrap();
+        let _ = handle_serve_command(
+            &nested,
+            8089,
+            "127.0.0.1",
+            false,
+            false,
+            100,
+            None,
+            false,
+        );
     }
 }

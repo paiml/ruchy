@@ -1,6 +1,6 @@
 //! Index Operations for Interpreter - Extracted for 100% Coverage
 //!
-//! Handles array, string, tuple, object, and DataFrame indexing with
+//! Handles array, string, tuple, object, and `DataFrame` indexing with
 //! Python/Ruby-style negative indexing support.
 
 use crate::runtime::{DataFrameColumn, InterpreterError, Value};
@@ -694,5 +694,412 @@ mod tests {
         } else {
             panic!("Expected Object");
         }
+    }
+
+    // === EXTREME TDD Round 135 - Push to 65+ Tests ===
+
+    #[test]
+    fn test_index_array_large_negative() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        // -100 is way out of bounds
+        let result = index_array(&arr, -100);
+        assert!(result.is_err());
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert!(msg.contains("out of bounds"));
+        }
+    }
+
+    #[test]
+    fn test_index_array_large_positive() {
+        let arr = vec![Value::Integer(1)];
+        let result = index_array(&arr, 1000);
+        assert!(result.is_err());
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert!(msg.contains("out of bounds"));
+        }
+    }
+
+    #[test]
+    fn test_index_string_middle() {
+        let result = index_string("abcdefg", 3).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "d");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_string_negative_middle() {
+        let result = index_string("abcdefg", -4).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "d");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_first_half() {
+        let result = slice_string("abcdef", &Value::Integer(0), &Value::Integer(3), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "abc");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_second_half() {
+        let result = slice_string("abcdef", &Value::Integer(3), &Value::Nil, false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "def");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_tuple_with_nil() {
+        let tuple = vec![Value::Nil, Value::Integer(1), Value::Nil];
+        assert_eq!(index_tuple(&tuple, 0).unwrap(), Value::Nil);
+        assert_eq!(index_tuple(&tuple, 2).unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_index_tuple_boundary_negative() {
+        let tuple = vec![Value::Integer(1), Value::Integer(2)];
+        // -2 is first element
+        assert_eq!(index_tuple(&tuple, -2).unwrap(), Value::Integer(1));
+        // -3 is out of bounds
+        assert!(index_tuple(&tuple, -3).is_err());
+    }
+
+    #[test]
+    fn test_index_object_empty_string_key() {
+        let mut obj = HashMap::new();
+        obj.insert(String::new(), Value::Integer(42));
+        assert_eq!(index_object(&obj, "").unwrap(), Value::Integer(42));
+    }
+
+    #[test]
+    fn test_index_object_mut_multiple_keys() {
+        let mut obj = HashMap::new();
+        obj.insert("a".to_string(), Value::Integer(1));
+        obj.insert("b".to_string(), Value::Integer(2));
+        let cell = Arc::new(std::sync::Mutex::new(obj));
+        assert_eq!(index_object_mut(&cell, "a").unwrap(), Value::Integer(1));
+        assert_eq!(index_object_mut(&cell, "b").unwrap(), Value::Integer(2));
+    }
+
+    #[test]
+    fn test_index_dataframe_column_empty_values() {
+        let columns = vec![DataFrameColumn {
+            name: "empty".to_string(),
+            values: vec![],
+        }];
+        let col = index_dataframe_column(&columns, "empty").unwrap();
+        if let Value::Array(arr) = col {
+            assert_eq!(arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_with_spaces() {
+        let result = slice_string("hello world", &Value::Integer(0), &Value::Integer(5), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "hello");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_with_special_chars() {
+        let result = slice_string("a!@#$b", &Value::Integer(1), &Value::Integer(5), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "!@#$");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_array_with_nil_values() {
+        let arr = vec![Value::Nil, Value::Nil, Value::Nil];
+        assert_eq!(index_array(&arr, 0).unwrap(), Value::Nil);
+        assert_eq!(index_array(&arr, -1).unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_index_array_with_bool_values() {
+        let arr = vec![Value::Bool(true), Value::Bool(false)];
+        assert_eq!(index_array(&arr, 0).unwrap(), Value::Bool(true));
+        assert_eq!(index_array(&arr, 1).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_slice_string_at_boundary() {
+        // Slice exactly at the end
+        let result = slice_string("abc", &Value::Integer(2), &Value::Integer(3), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "c");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_dataframe_row_first() {
+        let columns = vec![DataFrameColumn {
+            name: "col".to_string(),
+            values: vec![Value::Integer(100), Value::Integer(200)],
+        }];
+        let row = index_dataframe_row(&columns, 0).unwrap();
+        if let Value::Object(obj) = row {
+            assert_eq!(obj.get("col"), Some(&Value::Integer(100)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_index_tuple_with_mixed_types() {
+        let tuple = vec![
+            Value::Integer(1),
+            Value::Float(2.5),
+            Value::Bool(true),
+            Value::from_string("test".to_string()),
+            Value::Nil,
+        ];
+        assert_eq!(index_tuple(&tuple, 0).unwrap(), Value::Integer(1));
+        assert_eq!(index_tuple(&tuple, 1).unwrap(), Value::Float(2.5));
+        assert_eq!(index_tuple(&tuple, 2).unwrap(), Value::Bool(true));
+        assert_eq!(index_tuple(&tuple, 4).unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_slice_string_long_string() {
+        let long_str = "a".repeat(100);
+        let result = slice_string(&long_str, &Value::Integer(50), &Value::Integer(60), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.len(), 10);
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    // === EXTREME TDD Round 159 - Coverage Push Tests ===
+
+    #[test]
+    fn test_index_array_first_element_r159() {
+        let arr = vec![Value::from_string("first".to_string()), Value::from_string("second".to_string())];
+        let result = index_array(&arr, 0).unwrap();
+        assert_eq!(result.to_string(), "\"first\"");
+    }
+
+    #[test]
+    fn test_index_array_last_element_r159() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = index_array(&arr, 2).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_index_array_negative_last_r159() {
+        let arr = vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)];
+        let result = index_array(&arr, -1).unwrap();
+        assert_eq!(result, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_index_string_first_char_r159() {
+        let result = index_string("abc", 0).unwrap();
+        assert_eq!(result.to_string(), "\"a\"");
+    }
+
+    #[test]
+    fn test_index_string_last_char_r159() {
+        let result = index_string("xyz", 2).unwrap();
+        assert_eq!(result.to_string(), "\"z\"");
+    }
+
+    #[test]
+    fn test_index_string_negative_last_r159() {
+        let result = index_string("test", -1).unwrap();
+        assert_eq!(result.to_string(), "\"t\"");
+    }
+
+    #[test]
+    fn test_index_string_negative_first_r159() {
+        let result = index_string("test", -4).unwrap();
+        assert_eq!(result.to_string(), "\"t\"");
+    }
+
+    #[test]
+    fn test_slice_string_middle_r159() {
+        let result = slice_string("abcdefgh", &Value::Integer(2), &Value::Integer(6), false).unwrap();
+        assert_eq!(result.to_string(), "\"cdef\"");
+    }
+
+    #[test]
+    fn test_slice_string_single_char_r159() {
+        let result = slice_string("hello", &Value::Integer(2), &Value::Integer(3), false).unwrap();
+        assert_eq!(result.to_string(), "\"l\"");
+    }
+
+    #[test]
+    fn test_index_tuple_first_r159() {
+        let tuple = vec![Value::Bool(true), Value::Bool(false)];
+        let result = index_tuple(&tuple, 0).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_index_tuple_negative_last_r159() {
+        let tuple = vec![Value::Integer(1), Value::Integer(2)];
+        let result = index_tuple(&tuple, -1).unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_index_tuple_negative_first_r159() {
+        let tuple = vec![Value::Integer(1), Value::Integer(2)];
+        let result = index_tuple(&tuple, -2).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_index_object_nested_value_r159() {
+        let mut inner = HashMap::new();
+        inner.insert("inner".to_string(), Value::Integer(42));
+        let mut obj = HashMap::new();
+        obj.insert("outer".to_string(), Value::Object(Arc::new(inner)));
+        let result = index_object(&obj, "outer").unwrap();
+        if let Value::Object(o) = result {
+            assert_eq!(o.get("inner"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_index_dataframe_row_last_r159() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "col".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+        ];
+        let row = index_dataframe_row(&columns, 2).unwrap();
+        if let Value::Object(obj) = row {
+            assert_eq!(obj.get("col"), Some(&Value::Integer(3)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_index_dataframe_column_multiple_r159() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+        ];
+        let col_a = index_dataframe_column(&columns, "a").unwrap();
+        let col_b = index_dataframe_column(&columns, "b").unwrap();
+        if let (Value::Array(a), Value::Array(b)) = (col_a, col_b) {
+            assert_eq!(a[0], Value::Integer(1));
+            assert_eq!(b[0], Value::Integer(2));
+        } else {
+            panic!("Expected Arrays");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_unicode_r159() {
+        let result = slice_string("こんにちは", &Value::Integer(1), &Value::Integer(4), false).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.len(), 9); // 3 characters * 3 bytes each
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_index_array_various_types_r159() {
+        let arr = vec![
+            Value::Integer(1),
+            Value::Float(2.5),
+            Value::Bool(true),
+            Value::Nil,
+        ];
+        assert_eq!(index_array(&arr, 0).unwrap(), Value::Integer(1));
+        assert_eq!(index_array(&arr, 1).unwrap(), Value::Float(2.5));
+        assert_eq!(index_array(&arr, 2).unwrap(), Value::Bool(true));
+        assert_eq!(index_array(&arr, 3).unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_index_object_empty_key_r159() {
+        let mut obj = HashMap::new();
+        obj.insert("".to_string(), Value::Integer(42));
+        let result = index_object(&obj, "").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_index_dataframe_row_multiple_columns_r159() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![Value::from_string("Alice".to_string()), Value::from_string("Bob".to_string())],
+            },
+            DataFrameColumn {
+                name: "active".to_string(),
+                values: vec![Value::Bool(true), Value::Bool(false)],
+            },
+        ];
+        let row = index_dataframe_row(&columns, 1).unwrap();
+        if let Value::Object(obj) = row {
+            assert_eq!(obj.get("id"), Some(&Value::Integer(2)));
+            assert_eq!(obj.get("active"), Some(&Value::Bool(false)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_all_r159() {
+        let result = slice_string("test", &Value::Integer(0), &Value::Integer(4), false).unwrap();
+        assert_eq!(result.to_string(), "\"test\"");
+    }
+
+    #[test]
+    fn test_index_tuple_empty_error_r159() {
+        let tuple: Vec<Value> = vec![];
+        let result = index_tuple(&tuple, 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_object_mut_multiple_keys_r159() {
+        let mut obj = HashMap::new();
+        obj.insert("a".to_string(), Value::Integer(1));
+        obj.insert("b".to_string(), Value::Integer(2));
+        let cell = Arc::new(std::sync::Mutex::new(obj));
+        assert_eq!(index_object_mut(&cell, "a").unwrap(), Value::Integer(1));
+        assert_eq!(index_object_mut(&cell, "b").unwrap(), Value::Integer(2));
     }
 }

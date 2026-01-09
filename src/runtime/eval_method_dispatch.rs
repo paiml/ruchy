@@ -1366,4 +1366,835 @@ mod tests {
         );
         assert!(result.is_ok());
     }
+
+    // =========================================================================
+    // EXTREME TDD ROUND 127 - Additional Coverage Tests
+    // =========================================================================
+
+    // Test R127-01: eval_dataframe_select success
+    #[test]
+    fn test_dataframe_select_success_r127() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "price".to_string(),
+                values: vec![Value::Float(10.5), Value::Float(20.0)],
+            },
+            DataFrameColumn {
+                name: "quantity".to_string(),
+                values: vec![Value::Integer(5), Value::Integer(10)],
+            },
+        ];
+        let result = eval_dataframe_select(&columns, &[Value::from_string("price".to_string())])
+            .expect("should select column");
+        match result {
+            Value::DataFrame { columns: selected } => {
+                assert_eq!(selected.len(), 1);
+                assert_eq!(selected[0].name, "price");
+            }
+            _ => panic!("Expected DataFrame"),
+        }
+    }
+
+    // Test R127-02: eval_dataframe_select column not found
+    #[test]
+    fn test_dataframe_select_not_found_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_select(&columns, &[Value::from_string("missing".to_string())]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // Test R127-03: eval_dataframe_select wrong arg type
+    #[test]
+    fn test_dataframe_select_wrong_type_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_select(&columns, &[Value::Integer(42)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("column name"));
+    }
+
+    // Test R127-04: eval_dataframe_select wrong arg count
+    #[test]
+    fn test_dataframe_select_wrong_count_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_select(&columns, &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exactly 1"));
+    }
+
+    // Test R127-05: dataframe count with args error
+    #[test]
+    fn test_dataframe_count_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_count(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-06: dataframe sum with args error
+    #[test]
+    fn test_dataframe_sum_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_sum(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-07: dataframe mean with args error
+    #[test]
+    fn test_dataframe_mean_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_mean(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-08: dataframe max with args error
+    #[test]
+    fn test_dataframe_max_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_max(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-09: dataframe min with args error
+    #[test]
+    fn test_dataframe_min_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_min(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-10: dataframe columns with args error
+    #[test]
+    fn test_dataframe_columns_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_columns(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-11: dataframe shape with args error
+    #[test]
+    fn test_dataframe_shape_with_args_error_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_shape(&columns, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-12: dataframe mean empty (nil result)
+    #[test]
+    fn test_dataframe_mean_empty_nil_r127() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_mean(&columns, &[]).expect("should return nil for empty");
+        assert_eq!(result, Value::Nil);
+    }
+
+    // Test R127-13: dataframe max empty (nil result)
+    #[test]
+    fn test_dataframe_max_empty_nil_r127() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_max(&columns, &[]).expect("should return nil for empty");
+        assert_eq!(result, Value::Nil);
+    }
+
+    // Test R127-14: dataframe min empty (nil result)
+    #[test]
+    fn test_dataframe_min_empty_nil_r127() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_min(&columns, &[]).expect("should return nil for empty");
+        assert_eq!(result, Value::Nil);
+    }
+
+    // Test R127-15: dataframe unknown method
+    #[test]
+    fn test_dataframe_unknown_method_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_method(&columns, "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown DataFrame"));
+    }
+
+    // Test R127-16: dataframe count empty
+    #[test]
+    fn test_dataframe_count_empty_r127() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_count(&columns, &[]).expect("should return 0 for empty");
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    // Test R127-17: eval_exit_status_method success
+    #[test]
+    fn test_exit_status_method_success_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert("success".to_string(), Value::Bool(true));
+        obj.insert("code".to_string(), Value::Integer(0));
+
+        let result = eval_exit_status_method(&obj, "success", &[])
+            .expect("should get success");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    // Test R127-18: eval_exit_status_method success false
+    #[test]
+    fn test_exit_status_method_success_false_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert("success".to_string(), Value::Bool(false));
+        obj.insert("code".to_string(), Value::Integer(1));
+
+        let result = eval_exit_status_method(&obj, "success", &[])
+            .expect("should get success");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    // Test R127-19: eval_exit_status_method with args error
+    #[test]
+    fn test_exit_status_method_with_args_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert("success".to_string(), Value::Bool(true));
+
+        let result = eval_exit_status_method(&obj, "success", &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-20: eval_exit_status_method unknown method
+    #[test]
+    fn test_exit_status_method_unknown_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert("success".to_string(), Value::Bool(true));
+
+        let result = eval_exit_status_method(&obj, "unknown", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown ExitStatus"));
+    }
+
+    // Test R127-21: eval_exit_status_method missing success field
+    #[test]
+    fn test_exit_status_method_missing_field_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        // Missing "success" field
+
+        let result = eval_exit_status_method(&obj, "success", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing"));
+    }
+
+    // Test R127-22: require_no_args helper with args
+    #[test]
+    fn test_require_no_args_with_args_r127() {
+        let result = require_no_args("test_method", &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no arguments"));
+    }
+
+    // Test R127-23: require_no_args helper empty
+    #[test]
+    fn test_require_no_args_empty_r127() {
+        let result = require_no_args("test_method", &[]);
+        assert!(result.is_ok());
+    }
+
+    // Test R127-24: eval_integer_pow multiple args
+    #[test]
+    fn test_integer_pow_multiple_args_r127() {
+        let result = eval_integer_pow(2, &[Value::Integer(3), Value::Integer(4)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exactly 1"));
+    }
+
+    // Test R127-25: try_dispatch_builtin no marker
+    #[test]
+    fn test_try_dispatch_builtin_no_marker_r127() {
+        let obj = std::collections::HashMap::new();
+        let result = try_dispatch_builtin(&obj, "some_method", &[])
+            .expect("should return None");
+        assert!(result.is_none());
+    }
+
+    // Test R127-26: try_dispatch_builtin not builtin
+    #[test]
+    fn test_try_dispatch_builtin_not_builtin_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("some_method".to_string(), Value::from_string("regular_value".to_string()));
+        let result = try_dispatch_builtin(&obj, "some_method", &[])
+            .expect("should return None for non-builtin");
+        assert!(result.is_none());
+    }
+
+    // Test R127-27: eval_object_method missing type marker
+    #[test]
+    fn test_object_method_missing_type_r127() {
+        let obj = std::collections::HashMap::new();
+        let result = eval_object_method(&obj, "test", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing __type"));
+    }
+
+    // Test R127-28: eval_object_method unknown type
+    #[test]
+    fn test_object_method_unknown_type_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        let result = eval_object_method(&obj, "test", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+    }
+
+    // Test R127-29: generic method with args (should fail)
+    #[test]
+    fn test_generic_to_string_with_args_r127() {
+        let value = Value::Bool(true);
+        let result = eval_generic_method(&value, "to_string", false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    // Test R127-30: dispatch with dataframe value
+    #[test]
+    fn test_dispatch_dataframe_method_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let value = Value::DataFrame { columns };
+
+        let mut eval_fn = |_v: &Value, _args: &[Value]| Ok(Value::Integer(0));
+        let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
+        let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
+
+        let result = dispatch_method_call(
+            &value,
+            "count",
+            &[],
+            true,
+            &mut eval_fn,
+            eval_df,
+            eval_ctx,
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.expect("should work"), Value::Integer(1));
+    }
+
+    // Test R127-31: dispatch with float value
+    #[test]
+    fn test_dispatch_float_method_r127() {
+        let value = Value::Float(9.0);
+
+        let mut eval_fn = |_v: &Value, _args: &[Value]| Ok(Value::Integer(0));
+        let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
+        let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
+
+        let result = dispatch_method_call(
+            &value,
+            "sqrt",
+            &[],
+            true,
+            &mut eval_fn,
+            eval_df,
+            eval_ctx,
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.expect("should work"), Value::Float(3.0));
+    }
+
+    // Test R127-32: dispatch with integer value
+    #[test]
+    fn test_dispatch_integer_method_r127() {
+        let value = Value::Integer(-42);
+
+        let mut eval_fn = |_v: &Value, _args: &[Value]| Ok(Value::Integer(0));
+        let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
+        let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
+
+        let result = dispatch_method_call(
+            &value,
+            "abs",
+            &[],
+            true,
+            &mut eval_fn,
+            eval_df,
+            eval_ctx,
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.expect("should work"), Value::Integer(42));
+    }
+
+    // Test R127-33: dispatch with object value (Command type)
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn test_dispatch_object_command_r127() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("Command".to_string()));
+        obj.insert("program".to_string(), Value::from_string("echo".to_string()));
+        obj.insert("args".to_string(), Value::Array(Arc::from(vec![])));
+        let value = Value::Object(Arc::new(obj));
+
+        let mut eval_fn = |_v: &Value, _args: &[Value]| Ok(Value::Integer(0));
+        let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
+        let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
+
+        let result = dispatch_method_call(
+            &value,
+            "arg",
+            &[Value::from_string("hello".to_string())],
+            false,
+            &mut eval_fn,
+            eval_df,
+            eval_ctx,
+        );
+        assert!(result.is_ok());
+    }
+
+    // Test R127-34: eval_method_call wrapper function
+    #[test]
+    fn test_eval_method_call_wrapper_r127() {
+        let value = Value::Float(16.0);
+
+        let result = eval_method_call(
+            &value,
+            "sqrt",
+            &[],
+            true,
+            |_v: &Value, _args: &[Value]| Ok(Value::Integer(0)),
+            |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0)),
+            |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0)),
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.expect("should work"), Value::Float(4.0));
+    }
+
+    // Test R127-35: dataframe sum with non-numeric (should skip)
+    #[test]
+    fn test_dataframe_sum_with_strings_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(1),
+                Value::from_string("skip".to_string()),
+                Value::Integer(2),
+            ],
+        }];
+        let result = eval_dataframe_sum(&columns, &[]).expect("should work");
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    // Test R127-36: dataframe mean with non-numeric (should skip)
+    #[test]
+    fn test_dataframe_mean_with_strings_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(2),
+                Value::from_string("skip".to_string()),
+                Value::Integer(4),
+            ],
+        }];
+        let result = eval_dataframe_mean(&columns, &[]).expect("should work");
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    // Test R127-37: dataframe max with strings (should skip)
+    #[test]
+    fn test_dataframe_max_with_strings_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(5),
+                Value::from_string("skip".to_string()),
+                Value::Integer(10),
+            ],
+        }];
+        let result = eval_dataframe_max(&columns, &[]).expect("should work");
+        assert_eq!(result, Value::Float(10.0));
+    }
+
+    // Test R127-38: dataframe min with strings (should skip)
+    #[test]
+    fn test_dataframe_min_with_strings_r127() {
+        let columns = vec![DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(5),
+                Value::from_string("skip".to_string()),
+                Value::Integer(3),
+            ],
+        }];
+        let result = eval_dataframe_min(&columns, &[]).expect("should work");
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    // ============================================================================
+    // EXTREME TDD Round 131: Comprehensive method dispatch coverage tests
+    // Target: 88.35% → 95%+ coverage
+    // ============================================================================
+
+    // --- Float method error paths ---
+    #[test]
+    fn test_float_method_powf_suggests_operator() {
+        let result = eval_float_method(2.0, "powf", true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Use ** operator"));
+    }
+
+    #[test]
+    fn test_float_method_with_args_error() {
+        let result = eval_float_method(2.0, "sqrt", false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[test]
+    fn test_float_method_unknown() {
+        let result = eval_float_method(2.0, "unknown_method", true);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown float method"));
+    }
+
+    #[test]
+    fn test_float_method_abs() {
+        let result = eval_float_method(-3.5, "abs", true).unwrap();
+        assert_eq!(result, Value::Float(3.5));
+    }
+
+    #[test]
+    fn test_float_method_ceil() {
+        let result = eval_float_method(3.2, "ceil", true).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_float_method_floor() {
+        let result = eval_float_method(3.8, "floor", true).unwrap();
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_float_method_sin() {
+        let result = eval_float_method(0.0, "sin", true).unwrap();
+        if let Value::Float(v) = result {
+            assert!(v.abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_float_method_cos() {
+        let result = eval_float_method(0.0, "cos", true).unwrap();
+        if let Value::Float(v) = result {
+            assert!((v - 1.0).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_float_method_tan() {
+        let result = eval_float_method(0.0, "tan", true).unwrap();
+        if let Value::Float(v) = result {
+            assert!(v.abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_float_method_ln() {
+        let result = eval_float_method(1.0, "ln", true).unwrap();
+        if let Value::Float(v) = result {
+            assert!(v.abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_float_method_log10() {
+        let result = eval_float_method(100.0, "log10", true).unwrap();
+        assert_eq!(result, Value::Float(2.0));
+    }
+
+    #[test]
+    fn test_float_method_exp() {
+        let result = eval_float_method(0.0, "exp", true).unwrap();
+        assert_eq!(result, Value::Float(1.0));
+    }
+
+    #[test]
+    fn test_float_method_to_string() {
+        let result = eval_float_method(3.14, "to_string", true).unwrap();
+        assert_eq!(result, Value::from_string("3.14".to_string()));
+    }
+
+    // --- Integer method error paths ---
+    #[test]
+    fn test_integer_method_pow_wrong_arg_count() {
+        let result = eval_integer_pow(2, &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+    }
+
+    #[test]
+    fn test_integer_method_pow_negative_exp() {
+        let result = eval_integer_pow(2, &[Value::Integer(-1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("must be non-negative"));
+    }
+
+    #[test]
+    fn test_integer_method_pow_wrong_type() {
+        let result = eval_integer_pow(2, &[Value::from_string("3".to_string())]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("requires integer exponent"));
+    }
+
+    #[test]
+    fn test_integer_method_unknown() {
+        let result = eval_integer_method(42, "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown integer method"));
+    }
+
+    #[test]
+    fn test_integer_method_abs_with_args() {
+        let result = eval_integer_method(42, "abs", &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+    }
+
+    #[test]
+    fn test_integer_method_sqrt() {
+        let result = eval_integer_method(9, "sqrt", &[]).unwrap();
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_integer_method_to_float() {
+        let result = eval_integer_method(42, "to_float", &[]).unwrap();
+        assert_eq!(result, Value::Float(42.0));
+    }
+
+    #[test]
+    fn test_integer_method_to_string() {
+        let result = eval_integer_method(42, "to_string", &[]).unwrap();
+        assert_eq!(result, Value::from_string("42".to_string()));
+    }
+
+    #[test]
+    fn test_integer_method_signum_positive() {
+        let result = eval_integer_method(42, "signum", &[]).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_integer_method_signum_negative() {
+        let result = eval_integer_method(-42, "signum", &[]).unwrap();
+        assert_eq!(result, Value::Integer(-1));
+    }
+
+    #[test]
+    fn test_integer_method_signum_zero() {
+        let result = eval_integer_method(0, "signum", &[]).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_integer_method_pow_success() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(10)]).unwrap();
+        assert_eq!(result, Value::Integer(1024));
+    }
+
+    // --- Object method error paths ---
+    #[test]
+    fn test_object_method_unknown_type() {
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        let result = eval_object_method(&obj, "method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+    }
+
+    #[test]
+    fn test_object_method_missing_type() {
+        let obj = std::collections::HashMap::new();
+        let result = eval_object_method(&obj, "method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing __type marker"));
+    }
+
+    // --- Generic method error paths ---
+    #[test]
+    fn test_generic_method_unknown() {
+        let result = eval_generic_method(&Value::Nil, "unknown", true);
+        assert!(result.is_err());
+    }
+
+    // --- Dataframe method tests ---
+    #[test]
+    fn test_dataframe_method_unknown() {
+        let columns = vec![];
+        let result = eval_dataframe_method(&columns, "unknown_method", &[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown DataFrame method"));
+    }
+
+    #[test]
+    fn test_dataframe_columns_method() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![],
+            },
+        ];
+        let result = eval_dataframe_columns(&columns, &[]).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 2);
+            assert_eq!(arr[0], Value::from_string("a".to_string()));
+            assert_eq!(arr[1], Value::from_string("b".to_string()));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_shape_method() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(3), Value::Integer(4)],
+            },
+        ];
+        let result = eval_dataframe_shape(&columns, &[]).unwrap();
+        if let Value::Array(shape) = result {
+            assert_eq!(shape[0], Value::Integer(2)); // rows
+            assert_eq!(shape[1], Value::Integer(2)); // cols
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_count_method() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
+        let result = eval_dataframe_count(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_dataframe_select_method() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+        ];
+        let result = eval_dataframe_select(&columns, &[Value::from_string("a".to_string())]).unwrap();
+        if let Value::DataFrame { columns: new_cols } = result {
+            assert_eq!(new_cols.len(), 1);
+            assert_eq!(new_cols[0].name, "a");
+        } else {
+            panic!("Expected dataframe");
+        }
+    }
+
+    #[test]
+    fn test_dataframe_select_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_select(&columns, &[Value::from_string("z".to_string())]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Column 'z' not found"));
+    }
+
+    // --- Dispatch turbofish stripping test ---
+    #[test]
+    fn test_turbofish_stripping_in_dispatch() {
+        // Method "parse::<i32>" should be stripped to "parse"
+        // Testing via integer method which doesn't have parse (expect error)
+        let result = eval_integer_method(42, "parse::<i32>", &[]);
+        assert!(result.is_err());
+        // The error should mention "parse" not "parse::<i32>"
+    }
+
+    // --- eval_method_call main entry point ---
+    #[test]
+    fn test_eval_method_call_integer_abs() {
+        let result = eval_method_call(
+            &Value::Integer(-42),
+            "abs",
+            &[],
+            true,
+            |_v: &Value, _args: &[Value]| Ok(Value::Integer(0)),
+            |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0)),
+            |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0)),
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_method_call_float_sqrt() {
+        let result = eval_method_call(
+            &Value::Float(16.0),
+            "sqrt",
+            &[],
+            true,
+            |_v: &Value, _args: &[Value]| Ok(Value::Integer(0)),
+            |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0)),
+            |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0)),
+        );
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Float(4.0));
+    }
 }

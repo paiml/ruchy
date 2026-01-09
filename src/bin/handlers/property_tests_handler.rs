@@ -353,11 +353,178 @@ fn handle_property_tests_single_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_handle_property_tests_nonexistent() {
         let path = Path::new("/nonexistent/file.ruchy");
         let result = handle_property_tests_command(path, 10, "text", None, None, false);
+        assert!(result.is_err());
+    }
+
+    // ===== EXTREME TDD Round 144 - Property Tests Handler =====
+
+    #[test]
+    fn test_handle_property_tests_nonexistent_verbose() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_property_tests_command(path, 10, "text", None, None, true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_property_tests_json_format() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_property_tests_command(path, 10, "json", None, None, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_property_test_json_basic() {
+        let result = write_property_test_json(None, 100, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_property_test_json_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_property_test_json(Some(temp.path()), 50, "data");
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("50"));
+        assert!(content.contains("passed"));
+    }
+
+    #[test]
+    fn test_write_property_test_text_basic() {
+        let result = write_property_test_text(None, 100, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_property_test_text_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_property_test_text(Some(temp.path()), 50, "data");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_property_test_summary_json() {
+        let result = write_property_test_summary("json", None, 100, "out");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_property_test_summary_text() {
+        let result = write_property_test_summary("text", None, 100, "out");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_property_report_success() {
+        let path = Path::new("/test/file.ruchy");
+        let result = write_json_property_report(
+            path, None, true, 10, 10, 0, 100, true, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_property_report_failure() {
+        let path = Path::new("/test/file.ruchy");
+        let failures = vec!["Test failed".to_string()];
+        let result = write_json_property_report(
+            path, None, false, 10, 8, 2, 100, false, &failures,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_property_report_to_file() {
+        let path = Path::new("/test/file.ruchy");
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_json_property_report(
+            path, Some(temp.path()), true, 5, 5, 0, 50, true, &[],
+        );
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("passed"));
+    }
+
+    #[test]
+    fn test_write_text_property_report_success() {
+        let path = Path::new("/test/file.ruchy");
+        let result = write_text_property_report(
+            path, None, true, 10, 10, 0, 100, true, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_text_property_report_failure() {
+        let path = Path::new("/test/file.ruchy");
+        let failures = vec![
+            "Panic at iteration 5".to_string(),
+            "Determinism failed".to_string(),
+        ];
+        let result = write_text_property_report(
+            path, None, false, 10, 8, 2, 100, false, &failures,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_text_property_report_to_file() {
+        let path = Path::new("/test/file.ruchy");
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_text_property_report(
+            path, Some(temp.path()), true, 5, 5, 0, 50, true, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_generate_property_test_report_json() {
+        let path = Path::new("/test/file.ruchy");
+        let result = generate_property_test_report(
+            path, "json", None, 100, 100, 0, true, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_generate_property_test_report_text() {
+        let path = Path::new("/test/file.ruchy");
+        let result = generate_property_test_report(
+            path, "text", None, 100, 100, 0, true, &[],
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_generate_property_test_report_with_failures() {
+        let path = Path::new("/test/file.ruchy");
+        let failures = vec!["Failure 1".to_string()];
+        let result = generate_property_test_report(
+            path, "text", None, 100, 95, 5, false, &failures,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_property_tests_with_seed() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_property_tests_command(path, 10, "text", None, Some(12345), false);
+        assert!(result.is_err()); // File doesn't exist
+    }
+
+    #[test]
+    fn test_property_tests_with_different_cases() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        // Test with 1 case
+        let result = handle_property_tests_command(path, 1, "text", None, None, false);
+        assert!(result.is_err());
+        // Test with many cases
+        let result = handle_property_tests_command(path, 1000, "text", None, None, false);
         assert!(result.is_err());
     }
 }

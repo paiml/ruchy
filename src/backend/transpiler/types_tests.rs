@@ -1848,3 +1848,101 @@ fn create_transpiler() -> Transpiler {
         assert!(code.contains("str"));
     }
 
+    // === EXTREME TDD Round 124 tests ===
+
+    // Test 94: transpile_named_type - bool type
+    #[test]
+    fn test_transpile_named_type_bool_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("bool").unwrap();
+        assert_eq!(result.to_string(), "bool");
+    }
+
+    // Test 95: transpile_named_type - char type
+    #[test]
+    fn test_transpile_named_type_char_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("char").unwrap();
+        assert_eq!(result.to_string(), "char");
+    }
+
+    // Test 96: transpile_named_type - usize type
+    #[test]
+    fn test_transpile_named_type_usize_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("usize").unwrap();
+        assert_eq!(result.to_string(), "usize");
+    }
+
+    // Test 97: transpile_named_type - isize type
+    #[test]
+    fn test_transpile_named_type_isize_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("isize").unwrap();
+        assert_eq!(result.to_string(), "isize");
+    }
+
+    // Test 98: transpile_named_type - i8 type
+    #[test]
+    fn test_transpile_named_type_i8_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("i8").unwrap();
+        assert_eq!(result.to_string(), "i8");
+    }
+
+    // Test 99: transpile_named_type - u8 type
+    #[test]
+    fn test_transpile_named_type_u8_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("u8").unwrap();
+        assert_eq!(result.to_string(), "u8");
+    }
+
+    // Test 100: transpile_named_type - i16 type
+    #[test]
+    fn test_transpile_named_type_i16_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("i16").unwrap();
+        assert_eq!(result.to_string(), "i16");
+    }
+
+    // Test 101: transpile_named_type - u16 type
+    #[test]
+    fn test_transpile_named_type_u16_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("u16").unwrap();
+        assert_eq!(result.to_string(), "u16");
+    }
+
+    // Test 102: transpile_named_type - i64 type
+    #[test]
+    fn test_transpile_named_type_i64_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("i64").unwrap();
+        assert_eq!(result.to_string(), "i64");
+    }
+
+    // Test 103: transpile_named_type - u64 type
+    #[test]
+    fn test_transpile_named_type_u64_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("u64").unwrap();
+        assert_eq!(result.to_string(), "u64");
+    }
+
+    // Test 104: transpile_named_type - f32 type
+    #[test]
+    fn test_transpile_named_type_f32_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("f32").unwrap();
+        assert_eq!(result.to_string(), "f32");
+    }
+
+    // Test 105: transpile_named_type - custom type
+    #[test]
+    fn test_transpile_named_type_custom_r124() {
+        let transpiler = Transpiler::new();
+        let result = transpiler.transpile_named_type("MyCustomType").unwrap();
+        assert_eq!(result.to_string(), "MyCustomType");
+    }
+

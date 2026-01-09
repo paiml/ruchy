@@ -447,4 +447,57 @@ mod tests {
         let result = format_string_with_values("{}", &[Value::Float(0.001)]);
         assert_eq!(result, "0.001");
     }
+
+    // ===== EXTREME TDD Round 156 - Additional Value Format Tests =====
+
+    #[test]
+    fn test_format_string_with_newlines() {
+        let result = format_string_with_values("{}", &[Value::from_string("line1\nline2".to_string())]);
+        assert!(result.contains('\n'));
+    }
+
+    #[test]
+    fn test_format_value_display_tuple() {
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = format_value_display(&tuple);
+        assert!(result.contains('1'));
+        assert!(result.contains('2'));
+    }
+
+    #[test]
+    fn test_spec_float_zero() {
+        let result = format_value_with_spec(&Value::Float(0.0), ":.2");
+        assert_eq!(result, "0.00");
+    }
+
+    #[test]
+    fn test_spec_very_large_precision() {
+        let result = format_value_with_spec(&Value::Float(1.0 / 3.0), ":.15");
+        assert!(result.len() > 10);
+    }
+
+    #[test]
+    fn test_format_debug_tuple() {
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
+        let result = format_value_debug(&tuple);
+        assert!(result.contains("Tuple"));
+    }
+
+    #[test]
+    fn test_format_with_unicode() {
+        let result = format_string_with_values("Hello {}", &[Value::from_string("世界".to_string())]);
+        assert_eq!(result, "Hello 世界");
+    }
+
+    #[test]
+    fn test_format_multiple_debug_values() {
+        let result = format_string_with_values("{:?} {:?} {:?}", &[
+            Value::Integer(1),
+            Value::Float(2.0),
+            Value::Bool(true),
+        ]);
+        assert!(result.contains("Integer"));
+        assert!(result.contains("Float"));
+        assert!(result.contains("Bool"));
+    }
 }

@@ -312,3 +312,490 @@ mod coverage_push_tests {
         assert_eq!(unit, null);
     }
 }
+
+// ============================================================================
+// EXTREME TDD Round 133: Additional comprehensive tests
+// Target: 32 → 50+ tests
+// ============================================================================
+#[cfg(test)]
+mod round_133_tests {
+    use super::*;
+
+    // --- Integer edge cases ---
+    #[test]
+    fn test_integer_one() {
+        let lit = Literal::Integer(1, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(1));
+    }
+
+    #[test]
+    fn test_integer_minus_one() {
+        let lit = Literal::Integer(-1, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(-1));
+    }
+
+    #[test]
+    fn test_integer_large_positive() {
+        let lit = Literal::Integer(999_999_999_999, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(999_999_999_999));
+    }
+
+    #[test]
+    fn test_integer_large_negative() {
+        let lit = Literal::Integer(-999_999_999_999, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(-999_999_999_999));
+    }
+
+    #[test]
+    fn test_integer_with_i64_suffix() {
+        let lit = Literal::Integer(42, Some("i64".to_string()));
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(42));
+    }
+
+    // --- Float edge cases ---
+    #[test]
+    fn test_float_one() {
+        let lit = Literal::Float(1.0);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(1.0));
+    }
+
+    #[test]
+    fn test_float_minus_one() {
+        let lit = Literal::Float(-1.0);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(-1.0));
+    }
+
+    #[test]
+    fn test_float_positive_infinity() {
+        let lit = Literal::Float(f64::INFINITY);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(f64::INFINITY));
+    }
+
+    #[test]
+    fn test_float_negative_infinity() {
+        let lit = Literal::Float(f64::NEG_INFINITY);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(f64::NEG_INFINITY));
+    }
+
+    #[test]
+    fn test_float_scientific_notation_large() {
+        let lit = Literal::Float(1.5e10);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(1.5e10));
+    }
+
+    #[test]
+    fn test_float_scientific_notation_small() {
+        let lit = Literal::Float(1.5e-10);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(1.5e-10));
+    }
+
+    // --- String edge cases ---
+    #[test]
+    fn test_string_single_char() {
+        let lit = Literal::String("x".into());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("x".to_string()));
+    }
+
+    #[test]
+    fn test_string_very_long() {
+        let long_str = "a".repeat(10000);
+        let lit = Literal::String(long_str.clone());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string(long_str));
+    }
+
+    #[test]
+    fn test_string_special_chars() {
+        let lit = Literal::String("!@#$%^&*()".into());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("!@#$%^&*()".to_string()));
+    }
+
+    #[test]
+    fn test_string_escape_sequences() {
+        let lit = Literal::String("line1\\nline2\\ttab".into());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("line1\\nline2\\ttab".to_string()));
+    }
+
+    // --- Char edge cases ---
+    #[test]
+    fn test_char_space() {
+        let lit = Literal::Char(' ');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string(" ".to_string()));
+    }
+
+    #[test]
+    fn test_char_tab() {
+        let lit = Literal::Char('\t');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("\t".to_string()));
+    }
+
+    #[test]
+    fn test_char_carriage_return() {
+        let lit = Literal::Char('\r');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("\r".to_string()));
+    }
+
+    #[test]
+    fn test_char_emoji() {
+        let lit = Literal::Char('🎉');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("🎉".to_string()));
+    }
+
+    #[test]
+    fn test_char_zero() {
+        let lit = Literal::Char('0');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("0".to_string()));
+    }
+
+    // --- Byte edge cases ---
+    #[test]
+    fn test_byte_one() {
+        let lit = Literal::Byte(1);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(1));
+    }
+
+    #[test]
+    fn test_byte_middle() {
+        let lit = Literal::Byte(127);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(127));
+    }
+
+    #[test]
+    fn test_byte_ascii_digit() {
+        let lit = Literal::Byte(b'5');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(53));
+    }
+
+    #[test]
+    fn test_byte_ascii_lowercase() {
+        let lit = Literal::Byte(b'z');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(122));
+    }
+
+    // --- Atom edge cases ---
+    #[test]
+    fn test_atom_uppercase() {
+        let lit = Literal::Atom("OK".into());
+        let value = eval_literal(&lit);
+        match value {
+            Value::Atom(s) => assert_eq!(s, "OK"),
+            _ => panic!("Expected Atom"),
+        }
+    }
+
+    #[test]
+    fn test_atom_mixed_case() {
+        let lit = Literal::Atom("MyAtom".into());
+        let value = eval_literal(&lit);
+        match value {
+            Value::Atom(s) => assert_eq!(s, "MyAtom"),
+            _ => panic!("Expected Atom"),
+        }
+    }
+
+    #[test]
+    fn test_atom_with_numbers() {
+        let lit = Literal::Atom("status_123".into());
+        let value = eval_literal(&lit);
+        match value {
+            Value::Atom(s) => assert_eq!(s, "status_123"),
+            _ => panic!("Expected Atom"),
+        }
+    }
+
+    // === EXTREME TDD Round 138 tests ===
+
+    #[test]
+    fn test_integer_min_value() {
+        let lit = Literal::Integer(i64::MIN, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(i64::MIN));
+    }
+
+    #[test]
+    fn test_integer_max_value() {
+        let lit = Literal::Integer(i64::MAX, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_i64(i64::MAX));
+    }
+
+    #[test]
+    fn test_float_negative() {
+        let lit = Literal::Float(-2.718);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(-2.718));
+    }
+
+    #[test]
+    fn test_float_zero() {
+        let lit = Literal::Float(0.0);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(0.0));
+    }
+
+    #[test]
+    fn test_float_very_small() {
+        let lit = Literal::Float(1e-10);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_f64(1e-10));
+    }
+
+    #[test]
+    fn test_string_empty() {
+        let lit = Literal::String(String::new());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string(String::new()));
+    }
+
+    #[test]
+    fn test_string_unicode() {
+        let lit = Literal::String("日本語".into());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("日本語".to_string()));
+    }
+
+    #[test]
+    fn test_string_with_newline() {
+        let lit = Literal::String("line1\nline2".into());
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("line1\nline2".to_string()));
+    }
+
+    #[test]
+    fn test_bool_false() {
+        let lit = Literal::Bool(false);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_bool(false));
+    }
+
+    #[test]
+    fn test_char_unicode() {
+        let lit = Literal::Char('漢');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("漢".to_string()));
+    }
+
+    #[test]
+    fn test_char_newline() {
+        let lit = Literal::Char('\n');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("\n".to_string()));
+    }
+
+    #[test]
+    fn test_byte_zero() {
+        let lit = Literal::Byte(0);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(0));
+    }
+
+    #[test]
+    fn test_byte_max() {
+        let lit = Literal::Byte(255);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(255));
+    }
+
+    #[test]
+    fn test_atom_empty() {
+        let lit = Literal::Atom(String::new());
+        let value = eval_literal(&lit);
+        match value {
+            Value::Atom(s) => assert!(s.is_empty()),
+            _ => panic!("Expected Atom"),
+        }
+    }
+
+    // === EXTREME TDD Round 160 - Coverage Push Tests ===
+
+    #[test]
+    fn test_integer_zero_r160() {
+        let lit = Literal::Integer(0, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_integer_negative_r160() {
+        let lit = Literal::Integer(-42, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Integer(-42));
+    }
+
+    #[test]
+    fn test_integer_max_r160() {
+        let lit = Literal::Integer(i64::MAX, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Integer(i64::MAX));
+    }
+
+    #[test]
+    fn test_integer_min_r160() {
+        let lit = Literal::Integer(i64::MIN, None);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Integer(i64::MIN));
+    }
+
+    #[test]
+    fn test_float_zero_r160() {
+        let lit = Literal::Float(0.0);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Float(0.0));
+    }
+
+    #[test]
+    fn test_float_negative_r160() {
+        let lit = Literal::Float(-3.14);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Float(-3.14));
+    }
+
+    #[test]
+    fn test_float_very_small_r160() {
+        let lit = Literal::Float(0.000001);
+        let value = eval_literal(&lit);
+        if let Value::Float(f) = value {
+            assert!(f < 0.0001);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_float_very_large_r160() {
+        let lit = Literal::Float(1e100);
+        let value = eval_literal(&lit);
+        if let Value::Float(f) = value {
+            assert!(f > 1e99);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_string_empty_r160() {
+        let lit = Literal::String(String::new());
+        let value = eval_literal(&lit);
+        if let Value::String(s) = value {
+            assert!(s.is_empty());
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_string_with_spaces_r160() {
+        let lit = Literal::String("  spaces  ".to_string());
+        let value = eval_literal(&lit);
+        if let Value::String(s) = value {
+            assert_eq!(s.as_ref(), "  spaces  ");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_string_unicode_emoji_r160() {
+        let lit = Literal::String("hello 🌍".to_string());
+        let value = eval_literal(&lit);
+        if let Value::String(s) = value {
+            assert!(s.contains("🌍"));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_bool_true_r160() {
+        let lit = Literal::Bool(true);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_bool_false_r160() {
+        let lit = Literal::Bool(false);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_char_space_r160() {
+        let lit = Literal::Char(' ');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string(" ".to_string()));
+    }
+
+    #[test]
+    fn test_char_tab_r160() {
+        let lit = Literal::Char('\t');
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::from_string("\t".to_string()));
+    }
+
+    #[test]
+    fn test_byte_mid_range_r160() {
+        let lit = Literal::Byte(128);
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Byte(128));
+    }
+
+    #[test]
+    fn test_unit_r160() {
+        let lit = Literal::Unit;
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Nil);
+    }
+
+    #[test]
+    fn test_null_r160() {
+        let lit = Literal::Null;
+        let value = eval_literal(&lit);
+        assert_eq!(value, Value::Nil);
+    }
+
+    #[test]
+    fn test_atom_with_special_chars_r160() {
+        let lit = Literal::Atom("ok_value".to_string());
+        let value = eval_literal(&lit);
+        if let Value::Atom(s) = value {
+            assert_eq!(s, "ok_value");
+        } else {
+            panic!("Expected Atom");
+        }
+    }
+
+    #[test]
+    fn test_atom_unicode_r160() {
+        let lit = Literal::Atom("日本語".to_string());
+        let value = eval_literal(&lit);
+        if let Value::Atom(s) = value {
+            assert_eq!(s, "日本語");
+        } else {
+            panic!("Expected Atom");
+        }
+    }
+}

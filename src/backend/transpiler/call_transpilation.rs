@@ -5,6 +5,8 @@
 //!
 //! **EXTREME TDD Round 72**: Extracted from statements.rs for modularization.
 
+#![allow(clippy::doc_markdown)]
+
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::{bail, Result};
@@ -210,7 +212,7 @@ impl Transpiler {
         self.transpile_method_call_standard(object, method, args)
     }
 
-    /// Try to transpile DataFrame builder pattern
+    /// Try to transpile `DataFrame` builder pattern
     fn try_transpile_builder_pattern(
         &self,
         object: &Expr,
@@ -232,7 +234,7 @@ impl Transpiler {
         self.try_transpile_dataframe_builder_inline(&method_call_expr)
     }
 
-    /// Try to transpile contains() call with proper borrowing
+    /// Try to transpile `contains()` call with proper borrowing
     fn try_transpile_contains_call(
         &self,
         object: &Expr,
@@ -284,7 +286,7 @@ impl Transpiler {
         self.dispatch_method_by_category(&obj_tokens, method, &method_ident, &arg_tokens, object)
     }
 
-    /// Check if a method is a DataFrame method
+    /// Check if a method is a `DataFrame` method
     fn is_dataframe_method(method: &str) -> bool {
         matches!(
             method,

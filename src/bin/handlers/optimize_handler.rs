@@ -321,6 +321,9 @@ fn generate_optimize_html(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tempfile::{NamedTempFile, TempDir};
+
     #[test]
     fn test_format_validation() {
         // Test that invalid formats are rejected
@@ -332,5 +335,323 @@ mod tests {
     fn test_hardware_validation() {
         assert!(matches!("detect", "detect" | "intel" | "amd" | "arm"));
         assert!(!matches!("nvidia", "detect" | "intel" | "amd" | "arm"));
+    }
+
+    // ===== EXTREME TDD Round 148 - Optimize Handler Tests =====
+
+    #[test]
+    fn test_handle_optimize_command_nonexistent_file() {
+        let result = handle_optimize_command(
+            Path::new("/nonexistent/file.ruchy"),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn test_handle_optimize_command_invalid_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "invalid",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid format"));
+    }
+
+    #[test]
+    fn test_handle_optimize_command_invalid_hardware() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "nvidia",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid hardware"));
+    }
+
+    #[test]
+    fn test_handle_optimize_command_invalid_depth() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "invalid",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid depth"));
+    }
+
+    #[test]
+    fn test_handle_optimize_command_text_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_json_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "json",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_html_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "html",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_with_output() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output_path = temp_dir.path().join("output.txt");
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            Some(&output_path),
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+        assert!(output_path.exists());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_verbose() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            false,
+            "text",
+            None,
+            true,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_various_hardware() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let profiles = ["detect", "intel", "amd", "arm"];
+        for hw in &profiles {
+            let result = handle_optimize_command(
+                temp.path(),
+                hw,
+                "standard",
+                true,
+                true,
+                true,
+                true,
+                false,
+                "text",
+                None,
+                false,
+                0.8,
+            );
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn test_handle_optimize_command_various_depths() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let depths = ["quick", "standard", "deep"];
+        for depth in &depths {
+            let result = handle_optimize_command(
+                temp.path(),
+                "detect",
+                depth,
+                true,
+                true,
+                true,
+                true,
+                false,
+                "text",
+                None,
+                false,
+                0.8,
+            );
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn test_handle_optimize_command_no_analyses() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            false, // no cache
+            false, // no branches
+            false, // no vectorization
+            false, // no abstractions
+            false, // no benchmark
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_with_benchmark() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_optimize_command(
+            temp.path(),
+            "detect",
+            "standard",
+            true,
+            true,
+            true,
+            true,
+            true, // benchmark
+            "text",
+            None,
+            false,
+            0.8,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_optimize_command_various_thresholds() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let thresholds = [0.0, 0.5, 0.8, 1.0];
+        for threshold in &thresholds {
+            let result = handle_optimize_command(
+                temp.path(),
+                "detect",
+                "standard",
+                true,
+                true,
+                true,
+                true,
+                false,
+                "text",
+                None,
+                false,
+                *threshold,
+            );
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn test_depth_validation() {
+        assert!(matches!("quick", "quick" | "standard" | "deep"));
+        assert!(matches!("standard", "quick" | "standard" | "deep"));
+        assert!(matches!("deep", "quick" | "standard" | "deep"));
+        assert!(!matches!("extreme", "quick" | "standard" | "deep"));
     }
 }

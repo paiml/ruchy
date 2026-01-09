@@ -330,4 +330,122 @@ mod tests {
             assert_eq!(parsed, millis);
         }
     }
+
+    // ===== EXTREME TDD Round 156 - Additional Time Tests =====
+
+    #[test]
+    fn test_now_increases() {
+        let t1 = now().expect("operation should succeed in test");
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let t2 = now().expect("operation should succeed in test");
+        assert!(t2 >= t1);
+    }
+
+    #[test]
+    fn test_elapsed_millis_zero() {
+        let start = now().expect("operation should succeed in test");
+        let elapsed = elapsed_millis(start).expect("operation should succeed in test");
+        // Should be zero or very small
+        assert!(elapsed < 100);
+    }
+
+    #[test]
+    fn test_elapsed_millis_future() {
+        // Start time in the "future" (larger than current time)
+        let current = now().expect("operation should succeed in test");
+        let elapsed = elapsed_millis(current + 1_000_000).expect("operation should succeed in test");
+        // Should saturate to 0
+        assert_eq!(elapsed, 0);
+    }
+
+    #[test]
+    fn test_sleep_millis_zero() {
+        // Zero sleep should succeed immediately
+        assert!(sleep_millis(0).is_ok());
+    }
+
+    #[test]
+    fn test_duration_secs_zero() {
+        assert_eq!(
+            duration_secs(0).expect("operation should succeed in test"),
+            0.0
+        );
+    }
+
+    #[test]
+    fn test_duration_secs_large() {
+        let secs = duration_secs(86_400_000).expect("operation should succeed in test");
+        assert!((secs - 86_400.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_format_duration_complex() {
+        // 1 day, 2 hours, 30 minutes, 45 seconds
+        let millis = 86_400_000 + 2 * 3_600_000 + 30 * 60_000 + 45 * 1_000;
+        let formatted = format_duration(millis).expect("operation should succeed in test");
+        assert!(formatted.contains("1d"));
+        assert!(formatted.contains("2h"));
+        assert!(formatted.contains("30m"));
+        assert!(formatted.contains("45s"));
+    }
+
+    #[test]
+    fn test_format_duration_only_days() {
+        let formatted = format_duration(172_800_000).expect("operation should succeed in test");
+        assert_eq!(formatted, "2d");
+    }
+
+    #[test]
+    fn test_format_duration_999ms() {
+        let formatted = format_duration(999).expect("operation should succeed in test");
+        assert_eq!(formatted, "999ms");
+    }
+
+    #[test]
+    fn test_parse_duration_with_spaces() {
+        let parsed = parse_duration("1h  30m").expect("operation should succeed in test");
+        // Multiple spaces between components
+        assert_eq!(parsed, 5_400_000);
+    }
+
+    #[test]
+    fn test_parse_duration_only_days() {
+        assert_eq!(
+            parse_duration("2d").expect("operation should succeed in test"),
+            172_800_000
+        );
+    }
+
+    #[test]
+    fn test_parse_duration_large_values() {
+        let parsed = parse_duration("365d").expect("operation should succeed in test");
+        assert_eq!(parsed, 365 * 86_400_000);
+    }
+
+    #[test]
+    fn test_parse_duration_all_components() {
+        let parsed = parse_duration("1d 2h 3m 4s 5ms").expect("operation should succeed in test");
+        let expected = 86_400_000 + 2 * 3_600_000 + 3 * 60_000 + 4 * 1_000 + 5;
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_parse_duration_invalid_number() {
+        assert!(parse_duration("xyzs").is_err());
+        assert!(parse_duration("-1s").is_err()); // Negative values
+    }
+
+    #[test]
+    fn test_parse_duration_missing_unit() {
+        assert!(parse_duration("100").is_err());
+    }
+
+    #[test]
+    fn test_elapsed_millis_accuracy() {
+        let start = now().expect("operation should succeed in test");
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let elapsed = elapsed_millis(start).expect("operation should succeed in test");
+        // Should be at least 50ms (allowing some variance)
+        assert!(elapsed >= 45); // Allow 5ms variance for system scheduling
+    }
 }

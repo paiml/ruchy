@@ -37,7 +37,7 @@ pub fn get_timestamp() -> f64 {
     }
 }
 
-/// JsValue stub for non-WASM builds
+/// `JsValue` stub for non-WASM builds
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, Clone)]
 pub struct JsValue;

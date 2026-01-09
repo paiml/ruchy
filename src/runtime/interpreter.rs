@@ -7,7 +7,7 @@
 //! Uses safe Rust enum approach instead of tagged pointers to respect `unsafe_code = "forbid"`.
 //!
 //! **EXTREME TDD Round 52**: Value enum extracted to runtime/value.rs
-//! **EXTREME TDD Round 52**: Types extracted to runtime/interpreter_types.rs
+//! **EXTREME TDD Round 52**: Types extracted to `runtime/interpreter_types.rs`
 
 #![allow(clippy::unused_self)] // Methods will use self in future phases
 #![allow(clippy::only_used_in_recursion)] // Recursive print_value is intentional

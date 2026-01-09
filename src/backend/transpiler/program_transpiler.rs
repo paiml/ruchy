@@ -1,13 +1,15 @@
 //! Program-Level Transpilation
 //!
 //! This module handles transpilation of complete Ruchy programs:
-//! - Entry point transpilation (transpile_to_program)
+//! - Entry point transpilation (`transpile_to_program`)
 //! - Module and import resolution
 //! - Main function generation and wrapping
 //! - Use statement generation
 //! - Program structure handling
 //!
 //! **EXTREME TDD Round 68**: Extracted from mod.rs for modularization.
+
+#![allow(clippy::doc_markdown)]
 
 use super::{codegen_minimal, constant_folder, inline_expander, Transpiler};
 use crate::frontend::ast::{Expr, ExprKind, Param};
@@ -314,11 +316,11 @@ impl Transpiler {
         imports: &[TokenStream],
         globals: &[TokenStream],
     ) -> Result<TokenStream> {
-        if statements.is_empty() && main_expr.is_some() {
+        if let (true, Some(main)) = (statements.is_empty(), main_expr) {
             self.transpile_functions_only_mode(
                 functions,
                 modules,
-                main_expr.expect("main_expr should exist"),
+                main,
                 needs_polars,
                 needs_hashmap,
                 imports,

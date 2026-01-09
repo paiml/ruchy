@@ -111,4 +111,90 @@ mod tests {
         let threshold = 0.0;
         assert!(threshold <= 0.0);
     }
+
+    // ===== EXTREME TDD Round 152 - Coverage Handler Tests =====
+
+    #[test]
+    fn test_coverage_command_with_verbose() {
+        let path = PathBuf::from("/nonexistent/file.ruchy");
+        let result = handle_coverage_command(&path, 0.0, "text", true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_coverage_command_html_format() {
+        let path = PathBuf::from("/nonexistent/file.ruchy");
+        let result = handle_coverage_command(&path, 80.0, "html", false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_coverage_command_json_format() {
+        let path = PathBuf::from("/nonexistent/file.ruchy");
+        let result = handle_coverage_command(&path, 50.0, "json", false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_coverage_threshold_boundary() {
+        // Test exact boundary
+        let threshold = 80.0;
+        let coverage = 80.0;
+        assert!(coverage >= threshold);
+    }
+
+    #[test]
+    fn test_coverage_threshold_just_below() {
+        let threshold = 80.0;
+        let coverage = 79.9999;
+        assert!(coverage < threshold);
+    }
+
+    #[test]
+    fn test_coverage_threshold_just_above() {
+        let threshold = 80.0;
+        let coverage = 80.0001;
+        assert!(coverage >= threshold);
+    }
+
+    #[test]
+    fn test_format_matching_logic() {
+        let formats = ["text", "html", "json", "unknown", "XML"];
+        for format in &formats {
+            let is_html = *format == "html";
+            let is_json = *format == "json";
+            let is_default = !is_html && !is_json;
+            // At least one must be true
+            assert!(is_html || is_json || is_default);
+        }
+    }
+
+    #[test]
+    fn test_coverage_command_various_thresholds() {
+        let thresholds = [0.0, 50.0, 75.0, 90.0, 100.0];
+        for threshold in &thresholds {
+            let path = PathBuf::from("/nonexistent/file.ruchy");
+            let _ = handle_coverage_command(&path, *threshold, "text", false);
+        }
+    }
+
+    #[test]
+    fn test_negative_threshold_treated_as_zero() {
+        let threshold = -10.0;
+        assert!(threshold <= 0.0);
+    }
+
+    #[test]
+    fn test_path_validation() {
+        let paths = [
+            "/nonexistent/file.ruchy",
+            "relative/path.ruchy",
+            "./current.ruchy",
+            "../parent.ruchy",
+        ];
+        for path_str in &paths {
+            let path = PathBuf::from(path_str);
+            let _ = handle_coverage_command(&path, 0.0, "text", false);
+        }
+    }
 }

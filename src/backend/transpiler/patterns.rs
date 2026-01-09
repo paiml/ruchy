@@ -679,4 +679,373 @@ mod tests {
             .expect("operation should succeed in test");
         assert_eq!(result.to_string(), "_");
     }
+
+    // ===== EXTREME TDD Round 156 - Pattern Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_at_binding_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::AtBinding {
+            name: "x".to_string(),
+            pattern: Box::new(Pattern::Literal(Literal::Integer(42, None))),
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('x'));
+        assert!(output.contains('@'));
+    }
+
+    #[test]
+    fn test_transpile_some_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Some"));
+        assert!(output.contains('x'));
+    }
+
+    #[test]
+    fn test_transpile_none_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::None;
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        assert!(result.to_string().contains("None"));
+    }
+
+    #[test]
+    fn test_transpile_ok_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Ok(Box::new(Pattern::Identifier("val".to_string())));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains("val"));
+    }
+
+    #[test]
+    fn test_transpile_err_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Err"));
+        assert!(output.contains('e'));
+    }
+
+    #[test]
+    fn test_transpile_mut_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Mut(Box::new(Pattern::Identifier("x".to_string())));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("mut"));
+        assert!(output.contains('x'));
+    }
+
+    #[test]
+    fn test_transpile_tuple_variant_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Message".to_string(), "Text".to_string()],
+            patterns: vec![Pattern::Identifier("s".to_string())],
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Message"));
+        assert!(output.contains("Text"));
+        assert!(output.contains('s'));
+    }
+
+    #[test]
+    fn test_transpile_literal_float_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Float(3.14));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("3.14") || output.contains("3"));
+    }
+
+    #[test]
+    fn test_transpile_literal_string_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::String("hello".to_string()));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("hello"));
+    }
+
+    #[test]
+    fn test_transpile_literal_bool_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Bool(true));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("true"));
+    }
+
+    #[test]
+    fn test_transpile_literal_char_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Char('x'));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('x'));
+    }
+
+    #[test]
+    fn test_transpile_literal_byte_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Byte(0x42));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("66")); // 0x42 = 66 in decimal
+    }
+
+    #[test]
+    fn test_transpile_literal_unit_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Unit);
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('(') && output.contains(')'));
+    }
+
+    #[test]
+    fn test_transpile_literal_null_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Literal(Literal::Null);
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("None"));
+    }
+
+    #[test]
+    fn test_transpile_match_multiple_arms() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
+        let arms = vec![
+            MatchArm {
+                pattern: Pattern::Literal(Literal::Integer(1, None)),
+                guard: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("one".to_string())),
+                    Span::new(0, 0),
+                )),
+                span: Span::new(0, 0),
+            },
+            MatchArm {
+                pattern: Pattern::Literal(Literal::Integer(2, None)),
+                guard: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("two".to_string())),
+                    Span::new(0, 0),
+                )),
+                span: Span::new(0, 0),
+            },
+            MatchArm {
+                pattern: Pattern::Wildcard,
+                guard: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("other".to_string())),
+                    Span::new(0, 0),
+                )),
+                span: Span::new(0, 0),
+            },
+        ];
+        let result = transpiler
+            .transpile_match(&expr, &arms)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("match"));
+        assert!(output.contains('1'));
+        assert!(output.contains('2'));
+        assert!(output.contains('_'));
+    }
+
+    #[test]
+    fn test_transpile_struct_pattern_qualified_name() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Struct {
+            name: "Variant::A".to_string(),
+            fields: vec![StructPatternField {
+                name: "value".to_string(),
+                pattern: None,
+            }],
+            has_rest: false,
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Variant"));
+        assert!(output.contains("::"));
+        assert!(output.contains('A'));
+    }
+
+    #[test]
+    fn test_transpile_nested_tuple_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Tuple(vec![
+            Pattern::Tuple(vec![
+                Pattern::Identifier("a".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ]),
+            Pattern::Identifier("c".to_string()),
+        ]);
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+        assert!(output.contains('c'));
+    }
+
+    #[test]
+    fn test_transpile_list_pattern_with_literals() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::List(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('['));
+        assert!(output.contains(']'));
+    }
+
+    #[test]
+    fn test_transpile_or_pattern_two_alternatives() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(0, None)),
+            Pattern::Literal(Literal::Integer(1, None)),
+        ]);
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('0'));
+        assert!(output.contains('1'));
+        assert!(output.contains('|'));
+    }
+
+    #[test]
+    fn test_transpile_with_default_nested_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::WithDefault {
+            pattern: Box::new(Pattern::Tuple(vec![
+                Pattern::Identifier("a".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ])),
+            default: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::new(0, 0),
+            )),
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+    }
+
+    #[test]
+    fn test_transpile_complex_range_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Char('a'))),
+            end: Box::new(Pattern::Literal(Literal::Char('z'))),
+            inclusive: true,
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("..="));
+    }
+
+    #[test]
+    fn test_transpile_tuple_variant_multiple_patterns() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::TupleVariant {
+            path: vec!["Color".to_string(), "RGB".to_string()],
+            patterns: vec![
+                Pattern::Identifier("r".to_string()),
+                Pattern::Identifier("g".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ],
+        };
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Color"));
+        assert!(output.contains("RGB"));
+        assert!(output.contains('r'));
+        assert!(output.contains('g'));
+        assert!(output.contains('b'));
+    }
+
+    #[test]
+    fn test_transpile_deeply_nested_some_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Some(Box::new(Pattern::Some(Box::new(Pattern::Identifier(
+            "inner".to_string(),
+        )))));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.matches("Some").count() >= 2);
+        assert!(output.contains("inner"));
+    }
+
+    #[test]
+    fn test_transpile_ok_with_tuple_pattern() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Ok(Box::new(Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ])));
+        let result = transpiler
+            .transpile_pattern(&pattern)
+            .expect("operation should succeed in test");
+        let output = result.to_string();
+        assert!(output.contains("Ok"));
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+    }
 }

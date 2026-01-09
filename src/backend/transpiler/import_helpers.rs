@@ -1,12 +1,12 @@
 //! Import helpers for transpiler
 //!
-//! This module provides functions for generating Rust code for std:: imports,
+//! This module provides functions for generating Rust code for `std::` imports,
 //! particularly file operations, process management, and system information.
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-/// Generate read_file function for std::fs imports
+/// Generate `read_file` function for `std::fs` imports
 #[must_use]
 pub fn generate_read_file_function() -> TokenStream {
     quote! {
@@ -16,7 +16,7 @@ pub fn generate_read_file_function() -> TokenStream {
     }
 }
 
-/// Generate write_file function for std::fs imports
+/// Generate `write_file` function for `std::fs` imports
 #[must_use]
 pub fn generate_write_file_function() -> TokenStream {
     quote! {
@@ -79,7 +79,7 @@ pub fn generate_system_module() -> TokenStream {
     }
 }
 
-/// Generate function stub for unknown std:: function
+/// Generate function stub for unknown `std::` function
 #[must_use]
 pub fn generate_unknown_function_stub(name: &str) -> TokenStream {
     let func_name = format_ident!("{}", name);
@@ -120,25 +120,25 @@ pub fn generate_aliased_unknown_stub(name: &str, alias: &str) -> TokenStream {
     }
 }
 
-/// Validate that module path is for a known std:: module
+/// Validate that module path is for a known `std::` module
 #[must_use]
 pub fn is_std_fs_path(path: &str) -> bool {
     path == "std::fs" || path.starts_with("std::fs::")
 }
 
-/// Validate that module path is for std::process
+/// Validate that module path is for `std::process`
 #[must_use]
 pub fn is_std_process_path(path: &str) -> bool {
     path == "std::process" || path.starts_with("std::process::")
 }
 
-/// Validate that module path is for std::system
+/// Validate that module path is for `std::system`
 #[must_use]
 pub fn is_std_system_path(path: &str) -> bool {
     path == "std::system" || path.starts_with("std::system::")
 }
 
-/// Extract function name from std::fs:: path
+/// Extract function name from `std::fs::` path
 #[must_use]
 pub fn extract_function_from_path(path: &str) -> Option<&str> {
     path.strip_prefix("std::fs::")

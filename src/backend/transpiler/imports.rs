@@ -7,6 +7,7 @@
 //! - module declarations
 //!
 //! **EXTREME TDD Round 55**: Extracted from statements.rs for modularization.
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use crate::frontend::ast::Expr;

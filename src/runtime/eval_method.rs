@@ -897,3 +897,421 @@ mod extended_tests {
         }
     }
 }
+
+// ============================================================================
+// EXTREME TDD Round 133: Additional comprehensive tests
+// Target: 31 → 50+ tests
+// ============================================================================
+#[cfg(test)]
+mod round_133_tests {
+    use super::*;
+
+    // --- Float method edge cases ---
+    #[test]
+    fn test_float_sqrt_zero() {
+        assert_eq!(
+            eval_float_method(0.0, "sqrt", true).unwrap(),
+            Value::Float(0.0)
+        );
+    }
+
+    #[test]
+    fn test_float_sqrt_one() {
+        assert_eq!(
+            eval_float_method(1.0, "sqrt", true).unwrap(),
+            Value::Float(1.0)
+        );
+    }
+
+    #[test]
+    fn test_float_abs_zero() {
+        assert_eq!(
+            eval_float_method(0.0, "abs", true).unwrap(),
+            Value::Float(0.0)
+        );
+    }
+
+    #[test]
+    fn test_float_abs_positive() {
+        assert_eq!(
+            eval_float_method(5.5, "abs", true).unwrap(),
+            Value::Float(5.5)
+        );
+    }
+
+    #[test]
+    fn test_float_round_half() {
+        // Rust rounds 0.5 to nearest even (banker's rounding)
+        let result = eval_float_method(2.5, "round", true).unwrap();
+        assert!(matches!(result, Value::Float(_)));
+    }
+
+    #[test]
+    fn test_float_floor_positive() {
+        assert_eq!(
+            eval_float_method(3.9, "floor", true).unwrap(),
+            Value::Float(3.0)
+        );
+    }
+
+    #[test]
+    fn test_float_floor_negative() {
+        assert_eq!(
+            eval_float_method(-3.1, "floor", true).unwrap(),
+            Value::Float(-4.0)
+        );
+    }
+
+    #[test]
+    fn test_float_ceil_positive() {
+        assert_eq!(
+            eval_float_method(3.1, "ceil", true).unwrap(),
+            Value::Float(4.0)
+        );
+    }
+
+    #[test]
+    fn test_float_ceil_negative() {
+        assert_eq!(
+            eval_float_method(-3.9, "ceil", true).unwrap(),
+            Value::Float(-3.0)
+        );
+    }
+
+    #[test]
+    fn test_float_to_int_large() {
+        let result = eval_float_method(1_000_000.5, "to_int", true).unwrap();
+        assert_eq!(result, Value::Integer(1_000_000));
+    }
+
+    // --- Integer method edge cases ---
+    #[test]
+    fn test_integer_abs_zero() {
+        assert_eq!(
+            eval_integer_method(0, "abs", &[]).unwrap(),
+            Value::Integer(0)
+        );
+    }
+
+    #[test]
+    fn test_integer_abs_max() {
+        assert_eq!(
+            eval_integer_method(i64::MAX, "abs", &[]).unwrap(),
+            Value::Integer(i64::MAX)
+        );
+    }
+
+    #[test]
+    fn test_integer_pow_zero_exp() {
+        assert_eq!(
+            eval_integer_method(100, "pow", &[Value::Integer(0)]).unwrap(),
+            Value::Integer(1)
+        );
+    }
+
+    #[test]
+    fn test_integer_pow_one_exp() {
+        assert_eq!(
+            eval_integer_method(42, "pow", &[Value::Integer(1)]).unwrap(),
+            Value::Integer(42)
+        );
+    }
+
+    #[test]
+    fn test_integer_pow_large_exp() {
+        assert_eq!(
+            eval_integer_method(2, "pow", &[Value::Integer(10)]).unwrap(),
+            Value::Integer(1024)
+        );
+    }
+
+    #[test]
+    fn test_integer_to_string_zero() {
+        let result = eval_integer_method(0, "to_string", &[]).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "0"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_integer_to_string_negative() {
+        let result = eval_integer_method(-123, "to_string", &[]).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "-123"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    // --- Array method edge cases ---
+    #[test]
+    fn test_array_len_empty() {
+        let arr = Arc::from(vec![]);
+        assert_eq!(
+            eval_array_method_simple(&arr, "len", &[]).unwrap(),
+            Value::Integer(0)
+        );
+    }
+
+    #[test]
+    fn test_array_slice_same_indices() {
+        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let result = eval_array_method_simple(
+            &arr,
+            "slice",
+            &[Value::Integer(1), Value::Integer(1)],
+        ).unwrap();
+        match result {
+            Value::Array(sliced) => assert!(sliced.is_empty()),
+            _ => panic!("Expected empty array"),
+        }
+    }
+
+    #[test]
+    fn test_array_join_empty() {
+        let arr = Arc::from(vec![]);
+        let result = eval_array_method_simple(
+            &arr,
+            "join",
+            &[Value::from_string(",".to_string())],
+        ).unwrap();
+        match result {
+            Value::String(s) => assert!(s.is_empty()),
+            _ => panic!("Expected empty string"),
+        }
+    }
+
+    #[test]
+    fn test_array_join_single() {
+        let arr = Arc::from(vec![Value::from_string("only".to_string())]);
+        let result = eval_array_method_simple(
+            &arr,
+            "join",
+            &[Value::from_string(",".to_string())],
+        ).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "only"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_array_unique_all_same() {
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(1),
+            Value::Integer(1),
+        ]);
+        let result = eval_array_method_simple(&arr, "unique", &[]).unwrap();
+        match result {
+            Value::Array(unique) => assert_eq!(unique.len(), 1),
+            _ => panic!("Expected array"),
+        }
+    }
+
+    #[test]
+    fn test_array_unique_empty() {
+        let arr = Arc::from(vec![]);
+        let result = eval_array_method_simple(&arr, "unique", &[]).unwrap();
+        match result {
+            Value::Array(unique) => assert!(unique.is_empty()),
+            _ => panic!("Expected empty array"),
+        }
+    }
+
+    // --- Generic method edge cases ---
+    #[test]
+    fn test_generic_to_string_bool_true() {
+        let val = Value::Bool(true);
+        let result = eval_generic_method(&val, "to_string", true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "true"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_generic_to_string_bool_false() {
+        let val = Value::Bool(false);
+        let result = eval_generic_method(&val, "to_string", true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "false"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_generic_method_with_args_error() {
+        let val = Value::Nil;
+        let result = eval_generic_method(&val, "to_string", false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_generic_unknown_method() {
+        let val = Value::Tuple(Arc::from(vec![Value::Integer(1)].as_slice()));
+        let result = eval_generic_method(&val, "some_method", true);
+        assert!(result.is_err());
+    }
+
+    // --- DataFrame method edge cases ---
+    #[test]
+    fn test_dataframe_columns_empty() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_method_simple(&columns, "columns", &[]).unwrap();
+        match result {
+            Value::Array(arr) => assert!(arr.is_empty()),
+            _ => panic!("Expected empty array"),
+        }
+    }
+
+    #[test]
+    fn test_dataframe_columns_single() {
+        let columns = vec![DataFrameColumn {
+            name: "only_col".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_method_simple(&columns, "columns", &[]).unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 1);
+                assert_eq!(arr[0], Value::from_string("only_col".to_string()));
+            }
+            _ => panic!("Expected array"),
+        }
+    }
+
+    // --- dispatch_method_call edge cases ---
+    #[test]
+    fn test_dispatch_bool_to_string() {
+        let b = Value::Bool(true);
+        let result = dispatch_method_call(&b, "to_string", &[], true).unwrap();
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "true"),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_dispatch_tuple_to_string() {
+        let t = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)].as_slice()));
+        let result = dispatch_method_call(&t, "to_string", &[], true).unwrap();
+        match result {
+            Value::String(s) => assert!(s.contains("1") && s.contains("2")),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_dispatch_nil_unknown_method() {
+        let nil = Value::Nil;
+        let result = dispatch_method_call(&nil, "unknown", &[], true);
+        assert!(result.is_err());
+    }
+
+    // === EXTREME TDD Round 138 tests ===
+
+    #[test]
+    fn test_dispatch_string_len_method() {
+        let s = Value::from_string("hello".to_string());
+        let result = dispatch_method_call(&s, "len", &[], true).unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_dispatch_string_is_empty_false() {
+        let s = Value::from_string("hello".to_string());
+        let result = dispatch_method_call(&s, "is_empty", &[], true).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_dispatch_string_is_empty_true() {
+        let s = Value::from_string(String::new());
+        let result = dispatch_method_call(&s, "is_empty", &[], true).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_dispatch_array_len_method() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let result = dispatch_method_call(&arr, "len", &[], true).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_dispatch_array_is_empty_false() {
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let result = dispatch_method_call(&arr, "is_empty", &[], true).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_dispatch_array_is_empty_true() {
+        let arr = Value::Array(Arc::from(vec![]));
+        let result = dispatch_method_call(&arr, "is_empty", &[], true).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_dispatch_float_floor_method() {
+        let f = Value::Float(3.7);
+        let result = dispatch_method_call(&f, "floor", &[], true).unwrap();
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_dispatch_float_ceil_method() {
+        let f = Value::Float(3.2);
+        let result = dispatch_method_call(&f, "ceil", &[], true).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_dispatch_float_round_method() {
+        let f = Value::Float(3.5);
+        let result = dispatch_method_call(&f, "round", &[], true).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_dispatch_float_abs_method() {
+        let f = Value::Float(-3.5);
+        let result = dispatch_method_call(&f, "abs", &[], true).unwrap();
+        assert_eq!(result, Value::Float(3.5));
+    }
+
+    #[test]
+    fn test_dispatch_integer_abs_method() {
+        let n = Value::Integer(-42);
+        let result = dispatch_method_call(&n, "abs", &[], true).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_dispatch_integer_to_string_method() {
+        let n = Value::Integer(123);
+        let result = dispatch_method_call(&n, "to_string", &[], true).unwrap();
+        match result {
+            Value::String(s) => assert!(s.contains("123")),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_dispatch_float_powf_error() {
+        let f = Value::Float(2.0);
+        let result = dispatch_method_call(&f, "powf", &[], true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_dispatch_bool_true_to_string() {
+        let b = Value::Bool(true);
+        let result = dispatch_method_call(&b, "to_string", &[], true).unwrap();
+        match result {
+            Value::String(s) => assert!(s.contains("true")),
+            _ => panic!("Expected string"),
+        }
+    }
+}

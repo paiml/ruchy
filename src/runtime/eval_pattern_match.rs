@@ -1065,8 +1065,11 @@ mod coverage_tests {
             Literal::Float(f) => Value::Float(*f),
             Literal::String(s) => Value::from_string(s.clone()),
             Literal::Bool(b) => Value::Bool(*b),
+            Literal::Char(c) => Value::from_string(c.to_string()),
+            Literal::Byte(b) => Value::Byte(*b),
             Literal::Unit => Value::Nil,
-            _ => Value::Nil,
+            Literal::Null => Value::Nil,
+            Literal::Atom(s) => Value::from_string(s.clone()),
         }
     }
 
@@ -1506,5 +1509,500 @@ mod coverage_tests {
         let result = try_pattern_match(&pattern, &value, &test_eval_literal)
             .expect("try_pattern_match should succeed");
         assert!(result.is_some());
+    }
+
+    // ============================================================================
+    // EXTREME TDD Round 131: Comprehensive pattern matching coverage tests
+    // Target: 89.11% → 95%+ coverage
+    // ============================================================================
+
+    // --- Wildcard pattern tests ---
+    #[test]
+    fn test_wildcard_pattern_matches_integer() {
+        let pattern = Pattern::Wildcard;
+        let value = Value::Integer(42);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        assert!(result.unwrap().is_empty()); // No bindings
+    }
+
+    #[test]
+    fn test_wildcard_pattern_matches_string() {
+        let pattern = Pattern::Wildcard;
+        let value = Value::from_string("hello".to_string());
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_wildcard_pattern_matches_nil() {
+        let pattern = Pattern::Wildcard;
+        let value = Value::Nil;
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    // --- Identifier pattern tests ---
+    #[test]
+    fn test_identifier_pattern_binds_value() {
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = Value::Integer(42);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+        assert_eq!(bindings[0].1, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_identifier_pattern_binds_array() {
+        let pattern = Pattern::Identifier("arr".to_string());
+        let value = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0].0, "arr");
+    }
+
+    // --- Tuple pattern tests ---
+    #[test]
+    fn test_tuple_pattern_empty() {
+        let pattern = Pattern::Tuple(vec![]);
+        let value = Value::Tuple(Arc::from(vec![]));
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_tuple_pattern_single_element() {
+        let pattern = Pattern::Tuple(vec![Pattern::Identifier("x".to_string())]);
+        let value = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0], ("x".to_string(), Value::Integer(1)));
+    }
+
+    #[test]
+    fn test_tuple_pattern_length_mismatch() {
+        let pattern = Pattern::Tuple(vec![Pattern::Wildcard, Pattern::Wildcard]);
+        let value = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_tuple_pattern_wrong_type() {
+        let pattern = Pattern::Tuple(vec![Pattern::Wildcard]);
+        let value = Value::Integer(42);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- List pattern tests ---
+    #[test]
+    fn test_list_pattern_empty() {
+        let pattern = Pattern::List(vec![]);
+        let value = Value::from_array(vec![]);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_list_pattern_single() {
+        let pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
+        let value = Value::from_array(vec![Value::Integer(42)]);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_list_pattern_length_mismatch() {
+        let pattern = Pattern::List(vec![Pattern::Wildcard, Pattern::Wildcard]);
+        let value = Value::from_array(vec![Value::Integer(1)]);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_list_pattern_wrong_type() {
+        let pattern = Pattern::List(vec![Pattern::Wildcard]);
+        let value = Value::Integer(42);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Or pattern tests ---
+    #[test]
+    fn test_or_pattern_first_matches() {
+        let pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let value = Value::Integer(1);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_or_pattern_second_matches() {
+        let pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let value = Value::Integer(2);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_or_pattern_none_match() {
+        let pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let value = Value::Integer(3);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_or_pattern_empty() {
+        let pattern = Pattern::Or(vec![]);
+        let value = Value::Integer(1);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Range pattern tests ---
+    #[test]
+    fn test_range_pattern_exclusive_in_range() {
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
+            inclusive: false,
+        };
+        let value = Value::Integer(3);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_range_pattern_exclusive_at_end_fails() {
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
+            inclusive: false,
+        };
+        let value = Value::Integer(5);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_range_pattern_inclusive_at_end_succeeds() {
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
+            inclusive: true,
+        };
+        let value = Value::Integer(5);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_range_pattern_below_start() {
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
+            inclusive: true,
+        };
+        let value = Value::Integer(0);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_range_pattern_wrong_type() {
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(5, None))),
+            inclusive: true,
+        };
+        let value = Value::from_string("hello".to_string());
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- AtBinding pattern tests ---
+    #[test]
+    fn test_at_binding_literal_matches() {
+        let pattern = Pattern::AtBinding {
+            pattern: Box::new(Pattern::Literal(Literal::Integer(42, None))),
+            name: "x".to_string(),
+        };
+        let value = Value::Integer(42);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_at_binding_literal_no_match() {
+        let pattern = Pattern::AtBinding {
+            pattern: Box::new(Pattern::Literal(Literal::Integer(42, None))),
+            name: "x".to_string(),
+        };
+        let value = Value::Integer(43);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Some/None pattern tests ---
+    #[test]
+    fn test_some_pattern_matches_some() {
+        let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_some_pattern_not_matches_none() {
+        let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_none_pattern_matches_none() {
+        let pattern = Pattern::None;
+        let value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_none_pattern_not_matches_some() {
+        let pattern = Pattern::None;
+        let value = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(1)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Ok/Err pattern tests ---
+    #[test]
+    fn test_ok_pattern_matches_ok() {
+        let pattern = Pattern::Ok(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_ok_pattern_not_matches_err() {
+        let pattern = Pattern::Ok(Box::new(Pattern::Identifier("x".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            data: Some(vec![Value::from_string("error".to_string())]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_err_pattern_matches_err() {
+        let pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            data: Some(vec![Value::from_string("error".to_string())]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+        let bindings = result.unwrap();
+        assert_eq!(bindings[0], ("e".to_string(), Value::from_string("error".to_string())));
+    }
+
+    #[test]
+    fn test_err_pattern_not_matches_ok() {
+        let pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        let value = Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Char literal pattern test ---
+    #[test]
+    fn test_char_literal_pattern() {
+        let pattern = Pattern::Literal(Literal::Char('a'));
+        let value = Value::from_string("a".to_string());
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_char_literal_pattern_no_match() {
+        let pattern = Pattern::Literal(Literal::Char('a'));
+        let value = Value::from_string("b".to_string());
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Byte literal pattern test ---
+    #[test]
+    fn test_byte_literal_pattern() {
+        let pattern = Pattern::Literal(Literal::Byte(255));
+        let value = Value::Byte(255);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_byte_literal_pattern_no_match() {
+        let pattern = Pattern::Literal(Literal::Byte(255));
+        let value = Value::Byte(254);
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_none());
+    }
+
+    // --- Null pattern test ---
+    #[test]
+    fn test_null_literal_pattern() {
+        let pattern = Pattern::Literal(Literal::Null);
+        let value = Value::Nil;
+
+        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result.is_some());
+    }
+
+    // --- pattern_matches helper test ---
+    #[test]
+    fn test_pattern_matches_helper_true() {
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(42);
+
+        let result = pattern_matches(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(result);
+    }
+
+    #[test]
+    fn test_pattern_matches_helper_false() {
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(43);
+
+        let result = pattern_matches(&pattern, &value, &test_eval_literal)
+            .expect("should succeed");
+        assert!(!result);
     }
 }

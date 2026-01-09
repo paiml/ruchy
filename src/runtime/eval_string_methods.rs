@@ -777,3 +777,723 @@ mod mutation_tests {
         assert_eq!(result, Value::from_string("el".to_string()));
     }
 }
+
+#[cfg(test)]
+mod round_130_tests {
+    use super::*;
+
+    // EXTREME TDD Round 130: eval_string_methods.rs coverage boost
+    // Target: 74.44% -> 90%+
+
+    #[test]
+    fn test_contains_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::Integer(42);
+        let result = eval_string_contains(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_starts_with_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::Integer(42);
+        let result = eval_string_starts_with(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ends_with_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::Integer(42);
+        let result = eval_string_ends_with(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ends_with_true_r130() {
+        let s = Arc::from("hello world");
+        let arg = Value::from_string("world".to_string());
+        let result = eval_string_ends_with(&s, &arg).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_ends_with_false_r130() {
+        let s = Arc::from("hello world");
+        let arg = Value::from_string("hello".to_string());
+        let result = eval_string_ends_with(&s, &arg).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_replace_wrong_types_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::Integer(1);
+        let arg2 = Value::from_string("x".to_string());
+        let result = eval_string_replace(&s, &arg1, &arg2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_split_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::Integer(42);
+        let result = eval_string_split(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_split_success_r130() {
+        let s = Arc::from("a,b,c");
+        let arg = Value::from_string(",".to_string());
+        let result = eval_string_split(&s, &arg).unwrap();
+        match result {
+            Value::Array(arr) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_repeat_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::from_string("3".to_string());
+        let result = eval_string_repeat(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_repeat_negative_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::Integer(-1);
+        let result = eval_string_repeat(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_repeat_success_r130() {
+        let s = Arc::from("ab");
+        let arg = Value::Integer(3);
+        let result = eval_string_repeat(&s, &arg).unwrap();
+        assert_eq!(result, Value::from_string("ababab".to_string()));
+    }
+
+    #[test]
+    fn test_char_at_wrong_type_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::from_string("1".to_string());
+        let result = eval_string_char_at(&s, &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_char_at_out_of_bounds_r130() {
+        let s = Arc::from("abc");
+        let arg = Value::Integer(10);
+        let result = eval_string_char_at(&s, &arg).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_substring_wrong_types_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::from_string("1".to_string());
+        let arg2 = Value::Integer(3);
+        let result = eval_string_substring(&s, &arg1, &arg2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_substring_negative_start_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::Integer(-1);
+        let arg2 = Value::Integer(3);
+        let result = eval_string_substring(&s, &arg1, &arg2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_substring_end_less_than_start_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::Integer(3);
+        let arg2 = Value::Integer(1);
+        let result = eval_string_substring(&s, &arg1, &arg2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_zero_arg_is_empty_true_r130() {
+        let s = Arc::from("");
+        let result = eval_zero_arg_string_method(&s, "is_empty").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_zero_arg_is_empty_false_r130() {
+        let s = Arc::from("a");
+        let result = eval_zero_arg_string_method(&s, "is_empty").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_zero_arg_is_numeric_true_r130() {
+        let s = Arc::from("12345");
+        let result = eval_zero_arg_string_method(&s, "is_numeric").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_zero_arg_is_numeric_false_r130() {
+        let s = Arc::from("12abc");
+        let result = eval_zero_arg_string_method(&s, "is_numeric").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_zero_arg_is_alphabetic_true_r130() {
+        let s = Arc::from("abcXYZ");
+        let result = eval_zero_arg_string_method(&s, "is_alphabetic").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_zero_arg_is_alphabetic_false_r130() {
+        let s = Arc::from("abc123");
+        let result = eval_zero_arg_string_method(&s, "is_alphabetic").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_zero_arg_is_alphanumeric_true_r130() {
+        let s = Arc::from("abc123");
+        let result = eval_zero_arg_string_method(&s, "is_alphanumeric").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_zero_arg_is_alphanumeric_false_r130() {
+        let s = Arc::from("abc-123");
+        let result = eval_zero_arg_string_method(&s, "is_alphanumeric").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_zero_arg_lines_r130() {
+        let s = Arc::from("line1\nline2\nline3");
+        let result = eval_zero_arg_string_method(&s, "lines").unwrap();
+        match result {
+            Value::Array(arr) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_zero_arg_unknown_method_r130() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "unknown_method");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_single_arg_unknown_method_r130() {
+        let s = Arc::from("hello");
+        let arg = Value::from_string("x".to_string());
+        let result = eval_single_arg_string_method(&s, "unknown_method", &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_two_arg_unknown_method_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::from_string("x".to_string());
+        let arg2 = Value::from_string("y".to_string());
+        let result = eval_two_arg_string_method(&s, "unknown_method", &arg1, &arg2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_two_arg_slice_alias_r130() {
+        let s = Arc::from("hello");
+        let arg1 = Value::Integer(1);
+        let arg2 = Value::Integer(4);
+        let result = eval_two_arg_string_method(&s, "slice", &arg1, &arg2).unwrap();
+        assert_eq!(result, Value::from_string("ell".to_string()));
+    }
+
+    #[test]
+    fn test_string_method_too_many_args_r130() {
+        let s = Arc::from("hello");
+        let args = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = eval_string_method(&s, "unknown", &args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_to_upper_r130() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "to_upper").unwrap();
+        assert_eq!(result, Value::from_string("HELLO".to_string()));
+    }
+
+    #[test]
+    fn test_to_lowercase_r130() {
+        let s = Arc::from("HELLO");
+        let result = eval_zero_arg_string_method(&s, "to_lowercase").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_upper_alias_r130() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "upper").unwrap();
+        assert_eq!(result, Value::from_string("HELLO".to_string()));
+    }
+
+    #[test]
+    fn test_lower_alias_r130() {
+        let s = Arc::from("HELLO");
+        let result = eval_zero_arg_string_method(&s, "lower").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_len_alias_r130() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "len").unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_length_alias_r130() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "length").unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_parse_valid_int_r130() {
+        let s = Arc::from("42");
+        let result = eval_zero_arg_string_method(&s, "parse").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_to_int_alias_r130() {
+        let s = Arc::from("100");
+        let result = eval_zero_arg_string_method(&s, "to_int").unwrap();
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_to_integer_alias_r130() {
+        let s = Arc::from("-50");
+        let result = eval_zero_arg_string_method(&s, "to_integer").unwrap();
+        assert_eq!(result, Value::Integer(-50));
+    }
+
+    #[test]
+    fn test_as_bytes_r130() {
+        let s = Arc::from("abc");
+        let result = eval_zero_arg_string_method(&s, "as_bytes").unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert_eq!(arr[0], Value::Integer(97)); // 'a'
+                assert_eq!(arr[1], Value::Integer(98)); // 'b'
+                assert_eq!(arr[2], Value::Integer(99)); // 'c'
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_to_rfc3339_r130() {
+        let s = Arc::from("2024-01-01T00:00:00Z");
+        let result = eval_zero_arg_string_method(&s, "to_rfc3339").unwrap();
+        assert_eq!(result, Value::from_string("2024-01-01T00:00:00Z".to_string()));
+    }
+
+    // === EXTREME TDD Round 159 - Coverage Push Tests ===
+
+    #[test]
+    fn test_string_is_empty_true_r159() {
+        let s = Arc::from("");
+        let result = eval_zero_arg_string_method(&s, "is_empty").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_is_empty_false_r159() {
+        let s = Arc::from("x");
+        let result = eval_zero_arg_string_method(&s, "is_empty").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_is_numeric_true_r159() {
+        let s = Arc::from("12345");
+        let result = eval_zero_arg_string_method(&s, "is_numeric").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_is_numeric_false_r159() {
+        let s = Arc::from("12a45");
+        let result = eval_zero_arg_string_method(&s, "is_numeric").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_is_alphabetic_true_r159() {
+        let s = Arc::from("abcXYZ");
+        let result = eval_zero_arg_string_method(&s, "is_alphabetic").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_is_alphabetic_false_r159() {
+        let s = Arc::from("abc123");
+        let result = eval_zero_arg_string_method(&s, "is_alphabetic").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_is_alphanumeric_true_r159() {
+        let s = Arc::from("abc123");
+        let result = eval_zero_arg_string_method(&s, "is_alphanumeric").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_is_alphanumeric_false_r159() {
+        let s = Arc::from("abc-123");
+        let result = eval_zero_arg_string_method(&s, "is_alphanumeric").unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_lines_r159() {
+        let s = Arc::from("line1\nline2\nline3");
+        let result = eval_zero_arg_string_method(&s, "lines").unwrap();
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert_eq!(arr[0], Value::from_string("line1".to_string()));
+                assert_eq!(arr[1], Value::from_string("line2".to_string()));
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_string_lines_empty_r159() {
+        let s = Arc::from("");
+        let result = eval_zero_arg_string_method(&s, "lines").unwrap();
+        match result {
+            Value::Array(arr) => assert_eq!(arr.len(), 0),
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    #[test]
+    fn test_string_ends_with_true_r159() {
+        let s = Arc::from("hello world");
+        let arg = Value::from_string("world".to_string());
+        let result = eval_single_arg_string_method(&s, "ends_with", &arg).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_ends_with_false_r159() {
+        let s = Arc::from("hello world");
+        let arg = Value::from_string("hello".to_string());
+        let result = eval_single_arg_string_method(&s, "ends_with", &arg).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_contains_false_r159() {
+        let s = Arc::from("hello");
+        let arg = Value::from_string("xyz".to_string());
+        let result = eval_single_arg_string_method(&s, "contains", &arg).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_starts_with_false_r159() {
+        let s = Arc::from("hello");
+        let arg = Value::from_string("world".to_string());
+        let result = eval_single_arg_string_method(&s, "starts_with", &arg).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_repeat_zero_r159() {
+        let s = Arc::from("test");
+        let count = Value::Integer(0);
+        let result = eval_single_arg_string_method(&s, "repeat", &count).unwrap();
+        assert_eq!(result, Value::from_string("".to_string()));
+    }
+
+    #[test]
+    fn test_string_repeat_negative_error_r159() {
+        let s = Arc::from("test");
+        let count = Value::Integer(-1);
+        let result = eval_single_arg_string_method(&s, "repeat", &count);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_char_at_out_of_bounds_r159() {
+        let s = Arc::from("abc");
+        let index = Value::Integer(10);
+        let result = eval_single_arg_string_method(&s, "char_at", &index).unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_string_substring_clamp_r159() {
+        let s = Arc::from("hello");
+        let start = Value::Integer(0);
+        let end = Value::Integer(100); // Beyond string length
+        let result = eval_two_arg_string_method(&s, "substring", &start, &end).unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_string_slice_alias_r159() {
+        let s = Arc::from("hello");
+        let start = Value::Integer(1);
+        let end = Value::Integer(4);
+        let result = eval_two_arg_string_method(&s, "slice", &start, &end).unwrap();
+        assert_eq!(result, Value::from_string("ell".to_string()));
+    }
+
+    #[test]
+    fn test_float_to_int_r159() {
+        let result = eval_float_method(7.9, "to_int", true).unwrap();
+        assert_eq!(result, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_float_to_integer_alias_r159() {
+        let result = eval_float_method(3.14, "to_integer", true).unwrap();
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_float_powf_error_r159() {
+        let result = eval_float_method(2.0, "powf", true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_float_with_args_error_r159() {
+        let result = eval_float_method(2.0, "sqrt", false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_float_unknown_method_r159() {
+        let result = eval_float_method(2.0, "unknown_method", true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_pow_r159() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(10)]).unwrap();
+        assert_eq!(result, Value::Integer(1024));
+    }
+
+    #[test]
+    fn test_integer_pow_negative_error_r159() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(-1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_pow_wrong_type_error_r159() {
+        let result = eval_integer_method(2, "pow", &[Value::Float(2.0)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_pow_wrong_arg_count_r159() {
+        let result = eval_integer_method(2, "pow", &[Value::Integer(2), Value::Integer(3)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_abs_with_args_error_r159() {
+        let result = eval_integer_method(-5, "abs", &[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_to_string_with_args_error_r159() {
+        let result = eval_integer_method(5, "to_string", &[Value::Integer(1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_integer_unknown_method_r159() {
+        let result = eval_integer_method(5, "unknown_method", &[]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_generic_method_unknown_r159() {
+        let value = Value::Nil;
+        let result = eval_generic_method(&value, "unknown", true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_generic_to_string_with_args_error_r159() {
+        let value = Value::Nil;
+        let result = eval_generic_method(&value, "to_string", false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_parse_invalid_r159() {
+        let s = Arc::from("not_a_number");
+        let result = eval_zero_arg_string_method(&s, "parse");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_timestamp_invalid_r159() {
+        let s = Arc::from("not_a_timestamp");
+        let result = eval_zero_arg_string_method(&s, "timestamp");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_unknown_zero_arg_r159() {
+        let s = Arc::from("test");
+        let result = eval_zero_arg_string_method(&s, "unknown_method");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_unknown_single_arg_r159() {
+        let s = Arc::from("test");
+        let arg = Value::Integer(1);
+        let result = eval_single_arg_string_method(&s, "unknown_method", &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_unknown_two_arg_r159() {
+        let s = Arc::from("test");
+        let result = eval_two_arg_string_method(&s, "unknown_method", &Value::Integer(1), &Value::Integer(2));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_method_wrong_arg_count_r159() {
+        let s = Arc::from("test");
+        let result = eval_string_method(&s, "len", &[Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_contains_wrong_type_r159() {
+        let s = Arc::from("test");
+        let arg = Value::Integer(1);
+        let result = eval_single_arg_string_method(&s, "contains", &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_split_wrong_type_r159() {
+        let s = Arc::from("test");
+        let arg = Value::Integer(1);
+        let result = eval_single_arg_string_method(&s, "split", &arg);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_replace_wrong_types_r159() {
+        let s = Arc::from("test");
+        let result = eval_two_arg_string_method(&s, "replace", &Value::Integer(1), &Value::Integer(2));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_substring_wrong_types_r159() {
+        let s = Arc::from("test");
+        let result = eval_two_arg_string_method(&s, "substring", &Value::Bool(true), &Value::Bool(false));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_substring_negative_start_r159() {
+        let s = Arc::from("test");
+        let result = eval_two_arg_string_method(&s, "substring", &Value::Integer(-1), &Value::Integer(2));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_string_char_at_wrong_type_r159() {
+        let s = Arc::from("test");
+        let result = eval_single_arg_string_method(&s, "char_at", &Value::Bool(true));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_primitive_method_integer_dispatch_r159() {
+        let value = Value::Integer(-42);
+        let result = eval_primitive_method(&value, "abs", &[], true).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_length_alias_r159() {
+        let s = Arc::from("test");
+        let result = eval_zero_arg_string_method(&s, "length").unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_to_uppercase_alias_r159() {
+        let s = Arc::from("hello");
+        let result = eval_zero_arg_string_method(&s, "to_uppercase").unwrap();
+        assert_eq!(result, Value::from_string("HELLO".to_string()));
+    }
+
+    #[test]
+    fn test_to_lowercase_alias_r159() {
+        let s = Arc::from("HELLO");
+        let result = eval_zero_arg_string_method(&s, "to_lowercase").unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_upper_alias_r159() {
+        let s = Arc::from("hi");
+        let result = eval_zero_arg_string_method(&s, "upper").unwrap();
+        assert_eq!(result, Value::from_string("HI".to_string()));
+    }
+
+    #[test]
+    fn test_lower_alias_r159() {
+        let s = Arc::from("HI");
+        let result = eval_zero_arg_string_method(&s, "lower").unwrap();
+        assert_eq!(result, Value::from_string("hi".to_string()));
+    }
+
+    #[test]
+    fn test_string_format_with_integer_r159() {
+        let s = Arc::from("Value: {}");
+        let result = eval_string_method(&s, "format", &[Value::Integer(42)]).unwrap();
+        assert_eq!(result, Value::from_string("Value: 42".to_string()));
+    }
+
+    #[test]
+    fn test_string_format_with_bool_r159() {
+        let s = Arc::from("Is valid: {}");
+        let result = eval_string_method(&s, "format", &[Value::Bool(true)]).unwrap();
+        assert_eq!(result, Value::from_string("Is valid: true".to_string()));
+    }
+}

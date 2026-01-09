@@ -850,4 +850,182 @@ mod tests {
         let result = eval_string_substring(&s, &Value::Integer(0), &Value::Integer(2)).unwrap();
         assert_eq!(result, Value::from_string("日本".to_string()));
     }
+
+    // === EXTREME TDD Round 136 - Push to 70+ Tests ===
+
+    #[test]
+    fn test_string_len_unicode() {
+        let s = Arc::from("日本語");
+        // len returns byte length, not char count
+        let result = eval_string_len(&s).unwrap();
+        // Each Japanese char is 3 bytes in UTF-8
+        assert_eq!(result, Value::Integer(9));
+    }
+
+    #[test]
+    fn test_string_chars_empty() {
+        let s = Arc::from("");
+        let result = eval_string_chars(&s).unwrap();
+        if let Value::Array(chars) = result {
+            assert_eq!(chars.len(), 0);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_string_split_no_match() {
+        let s = Arc::from("hello");
+        let sep = Value::from_string("x".to_string());
+        let result = eval_string_split(&s, &sep).unwrap();
+        if let Value::Array(parts) = result {
+            assert_eq!(parts.len(), 1);
+            assert_eq!(parts[0], Value::from_string("hello".to_string()));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_string_split_multiple_separators() {
+        let s = Arc::from("a::b::c::d");
+        let sep = Value::from_string("::".to_string());
+        let result = eval_string_split(&s, &sep).unwrap();
+        if let Value::Array(parts) = result {
+            assert_eq!(parts.len(), 4);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_string_starts_with_empty() {
+        let s = Arc::from("hello");
+        let prefix = Value::from_string("".to_string());
+        let result = eval_string_starts_with(&s, &prefix).unwrap();
+        // Empty prefix always matches
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_ends_with_empty() {
+        let s = Arc::from("hello");
+        let suffix = Value::from_string("".to_string());
+        let result = eval_string_ends_with(&s, &suffix).unwrap();
+        // Empty suffix always matches
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_ends_with_false() {
+        let s = Arc::from("hello");
+        let suffix = Value::from_string("xyz".to_string());
+        let result = eval_string_ends_with(&s, &suffix).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_string_contains_empty() {
+        let s = Arc::from("hello");
+        let needle = Value::from_string("".to_string());
+        let result = eval_string_contains(&s, &needle).unwrap();
+        // Empty needle always found
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_string_replace_empty_from() {
+        let s = Arc::from("hello");
+        let from = Value::from_string("".to_string());
+        let to = Value::from_string("X".to_string());
+        let result = eval_string_replace(&s, &from, &to).unwrap();
+        // Empty string replacement inserts between each char
+        if let Value::String(result_str) = result {
+            assert!(result_str.contains("X"));
+        }
+    }
+
+    #[test]
+    fn test_string_replace_to_empty() {
+        let s = Arc::from("hello");
+        let from = Value::from_string("l".to_string());
+        let to = Value::from_string("".to_string());
+        let result = eval_string_replace(&s, &from, &to).unwrap();
+        assert_eq!(result, Value::from_string("heo".to_string()));
+    }
+
+    #[test]
+    fn test_string_substring_start_equals_end() {
+        let s = Arc::from("hello");
+        let result = eval_string_substring(&s, &Value::Integer(2), &Value::Integer(2)).unwrap();
+        assert_eq!(result, Value::from_string("".to_string()));
+    }
+
+    #[test]
+    fn test_string_repeat_one() {
+        let s = Arc::from("hello");
+        let result = eval_string_repeat(&s, &Value::Integer(1)).unwrap();
+        assert_eq!(result, Value::from_string("hello".to_string()));
+    }
+
+    #[test]
+    fn test_string_char_at_first() {
+        let s = Arc::from("hello");
+        let result = eval_string_char_at(&s, &Value::Integer(0)).unwrap();
+        assert_eq!(result, Value::from_string("h".to_string()));
+    }
+
+    #[test]
+    fn test_string_char_at_last() {
+        let s = Arc::from("hello");
+        let result = eval_string_char_at(&s, &Value::Integer(4)).unwrap();
+        assert_eq!(result, Value::from_string("o".to_string()));
+    }
+
+    #[test]
+    fn test_string_trim_only_whitespace() {
+        let s = Arc::from("   ");
+        let result = eval_string_trim(&s).unwrap();
+        assert_eq!(result, Value::from_string("".to_string()));
+    }
+
+    #[test]
+    fn test_string_trim_start_only_whitespace() {
+        let s = Arc::from("   ");
+        let result = eval_string_trim_start(&s).unwrap();
+        assert_eq!(result, Value::from_string("".to_string()));
+    }
+
+    #[test]
+    fn test_string_trim_end_only_whitespace() {
+        let s = Arc::from("   ");
+        let result = eval_string_trim_end(&s).unwrap();
+        assert_eq!(result, Value::from_string("".to_string()));
+    }
+
+    #[test]
+    fn test_string_lines_trailing_newline() {
+        let s = Arc::from("line1\nline2\n");
+        let result = eval_string_lines(&s).unwrap();
+        if let Value::Array(lines) = result {
+            // Trailing newline creates empty string at end
+            assert_eq!(lines.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_string_to_upper_mixed() {
+        let s = Arc::from("HeLLo WoRLd");
+        let result = eval_string_to_upper(&s).unwrap();
+        assert_eq!(result, Value::from_string("HELLO WORLD".to_string()));
+    }
+
+    #[test]
+    fn test_string_to_lower_mixed() {
+        let s = Arc::from("HeLLo WoRLd");
+        let result = eval_string_to_lower(&s).unwrap();
+        assert_eq!(result, Value::from_string("hello world".to_string()));
+    }
 }

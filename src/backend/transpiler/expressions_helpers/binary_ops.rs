@@ -509,4 +509,237 @@ mod tests {
         let result = Transpiler::transpile_binary_op(left, BinaryOp::GreaterEqual, right);
         assert_eq!(result.to_string(), "a >= b");
     }
+
+    // ===== EXTREME TDD Round 142 - Additional Coverage Tests =====
+
+    // Test 31: is_len_call with method call
+    #[test]
+    fn test_is_len_call_method() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let receiver = Expr {
+            kind: ExprKind::Identifier("vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "len".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_len_call(&expr));
+    }
+
+    // Test 32: is_len_call with function call
+    #[test]
+    fn test_is_len_call_function() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let func = Expr {
+            kind: ExprKind::Identifier("len".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let arg = Expr {
+            kind: ExprKind::Identifier("vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let expr = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(func),
+                args: vec![arg],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_len_call(&expr));
+    }
+
+    // Test 33: is_len_call with non-len method
+    #[test]
+    fn test_is_len_call_not_len() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let receiver = Expr {
+            kind: ExprKind::Identifier("vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let expr = Expr {
+            kind: ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "push".to_string(),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_len_call(&expr));
+    }
+
+    // Test 34: is_comparison_op - GreaterEqual
+    #[test]
+    fn test_is_comparison_op_greater_equal() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::GreaterEqual));
+    }
+
+    // Test 35: is_comparison_op - LessEqual
+    #[test]
+    fn test_is_comparison_op_less_equal() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::LessEqual));
+    }
+
+    // Test 36: is_comparison_op - NotEqual
+    #[test]
+    fn test_is_comparison_op_not_equal() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::NotEqual));
+    }
+
+    // Test 37: is_comparison_op - Greater
+    #[test]
+    fn test_is_comparison_op_greater() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::Greater));
+    }
+
+    // Test 38: is_comparison_op - Multiply NOT comparison
+    #[test]
+    fn test_is_comparison_op_multiply() {
+        assert!(!Transpiler::is_comparison_op(BinaryOp::Multiply));
+    }
+
+    // Test 39: is_vec_array_concat with list right
+    #[test]
+    fn test_is_vec_array_concat_with_list() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let left = Expr {
+            kind: ExprKind::Identifier("vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let right = Expr {
+            kind: ExprKind::List(vec![Expr {
+                kind: ExprKind::Literal(Literal::Integer(1, None)),
+                span: Span::default(),
+                attributes: vec![],
+                leading_comments: vec![],
+                trailing_comment: None,
+            }]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(Transpiler::is_vec_array_concat(&left, &right));
+    }
+
+    // Test 40: is_vec_array_concat with non-list right
+    #[test]
+    fn test_is_vec_array_concat_not_list() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let left = Expr {
+            kind: ExprKind::Identifier("vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let right = Expr {
+            kind: ExprKind::Identifier("other".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        assert!(!Transpiler::is_vec_array_concat(&left, &right));
+    }
+
+    // Test 41: get_operator_precedence - Modulo
+    #[test]
+    fn test_get_operator_precedence_modulo() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Modulo), 60);
+    }
+
+    // Test 42: get_operator_precedence - Send
+    #[test]
+    fn test_get_operator_precedence_send() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::Send), 15);
+    }
+
+    // Test 43: get_operator_precedence - In
+    #[test]
+    fn test_get_operator_precedence_in() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::In), 40);
+    }
+
+    // Test 44: get_operator_precedence - NotEqual
+    #[test]
+    fn test_get_operator_precedence_not_equal() {
+        assert_eq!(Transpiler::get_operator_precedence(BinaryOp::NotEqual), 30);
+    }
+
+    // Test 45: transpile_binary_op - In operator
+    #[test]
+    fn test_transpile_binary_op_in() {
+        let left = quote! { item };
+        let right = quote! { collection };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::In, right);
+        assert_eq!(result.to_string(), "collection . contains (& item)");
+    }
+
+    // Test 46: transpile_binary_op - BitwiseXor
+    #[test]
+    fn test_transpile_binary_op_bitwise_xor() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::BitwiseXor, right);
+        assert_eq!(result.to_string(), "a ^ b");
+    }
+
+    // Test 47: transpile_binary_op - LessEqual
+    #[test]
+    fn test_transpile_binary_op_less_equal() {
+        let left = quote! { x };
+        let right = quote! { y };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::LessEqual, right);
+        assert_eq!(result.to_string(), "x <= y");
+    }
+
+    // Test 48: is_right_associative - Multiply is NOT right-associative
+    #[test]
+    fn test_is_right_associative_multiply() {
+        assert!(!Transpiler::is_right_associative(BinaryOp::Multiply));
+    }
+
+    // Test 49: is_right_associative - Or is NOT right-associative
+    #[test]
+    fn test_is_right_associative_or() {
+        assert!(!Transpiler::is_right_associative(BinaryOp::Or));
+    }
+
+    // Test 50: transpile_binary_op - Gt alias
+    #[test]
+    fn test_transpile_binary_op_gt() {
+        let left = quote! { a };
+        let right = quote! { b };
+        let result = Transpiler::transpile_binary_op(left, BinaryOp::Gt, right);
+        assert_eq!(result.to_string(), "a > b");
+    }
 }

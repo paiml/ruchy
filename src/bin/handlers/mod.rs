@@ -93,14 +93,12 @@ pub use replay_handler::handle_replay_to_tests_command;
 pub use serve_handler::handle_serve_command;
 
 // Delegation handlers
-pub use prove_handler::{handle_prove_command, verify_proofs_from_ast};
-pub use test_handler::{
-    handle_run_enhanced_tests, handle_test_command, handle_watch_and_test, run_ruchy_test_file,
-};
+pub use prove_handler::handle_prove_command;
+pub use test_handler::handle_test_command;
 
 // Helper utilities (for use by other handlers)
 pub use helpers::{
-    create_repl, log_command_output, read_file_with_context, should_print_result,
+    create_repl, log_command_output, read_file_with_context,
     write_file_with_context,
 };
 

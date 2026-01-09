@@ -1,6 +1,11 @@
 use super::*;
 use std::fs;
+use std::path::{Path, PathBuf};
 use tempfile::TempDir;
+// Note: Some functions below are from specific submodules
+use super::wasm_handler::{parse_ruchy_source, determine_wasm_output_path};
+use super::transpile_handler::read_source_file;
+use super::replay_handler::determine_output_path;
 
 #[test]
 fn test_handle_eval_command_basic() {

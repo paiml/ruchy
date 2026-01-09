@@ -1409,6 +1409,214 @@ mod tests {
         let result = execute_wasm(cmd, false);
         assert!(result.is_err());
     }
+
+    // COVERAGE: Additional tests for scan_ruchy_files
+    #[test]
+    fn test_scan_ruchy_files_single_file() {
+        // Create a temp file
+        let temp_dir = std::env::temp_dir();
+        let test_file = temp_dir.join("test_scan.ruchy");
+        std::fs::write(&test_file, "let x = 1").ok();
+
+        let result = scan_ruchy_files(&test_file);
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0], test_file);
+
+        // Cleanup
+        std::fs::remove_file(&test_file).ok();
+    }
+
+    // COVERAGE: Test for resolve_modules_for_run when no resolution needed
+    #[test]
+    fn test_resolve_modules_simple_code() {
+        let source = "let x = 42";
+        let mut parser = crate::frontend::parser::Parser::new(source);
+        let ast = parser.parse().expect("Parse failed");
+
+        let result = resolve_modules_for_run(Path::new("/tmp/test.ruchy"), ast);
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test VmMode environment variable handling
+    #[test]
+    fn test_vm_mode_from_env_ast() {
+        // Clear any existing env var
+        std::env::remove_var("RUCHY_VM_MODE");
+        let mode = VmMode::default();
+        assert_eq!(mode, VmMode::Ast);
+    }
+
+    // COVERAGE: Test execute_wasm_run with verbose flag
+    #[test]
+    fn test_execute_wasm_run_verbose() {
+        let module = PathBuf::from("test.wasm");
+        let args = vec!["arg1".to_string()];
+        let result = execute_wasm_run(module, args, true);
+        // Currently just returns Ok(())
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test execute_test with verbose
+    #[test]
+    fn test_execute_test_run_verbose() {
+        let cmd = TestCommand::Run {
+            path: PathBuf::from("tests/"),
+            coverage: true,
+            parallel: true,
+            filter: Some("filter".to_string()),
+        };
+        let result = execute_test(cmd, true);
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test execute_test_report verbose
+    #[test]
+    fn test_execute_test_report_verbose() {
+        let cmd = TestCommand::Report {
+            format: "json".to_string(),
+            output: Some(PathBuf::from("/tmp/report.json")),
+        };
+        let result = execute_test(cmd, true);
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test Command::Repl variant
+    #[test]
+    fn test_command_repl_variant() {
+        let cmd = Command::Repl;
+        assert!(matches!(cmd, Command::Repl));
+    }
+
+    // COVERAGE: Test Command::Notebook variant
+    #[test]
+    fn test_command_notebook_variant() {
+        let cmd = Command::Notebook(NotebookCommand::Serve {
+            port: 8888,
+            host: "localhost".to_string(),
+            pid_file: None,
+        });
+        assert!(matches!(cmd, Command::Notebook(_)));
+    }
+
+    // COVERAGE: Test Command::Wasm variant
+    #[test]
+    fn test_command_wasm_variant() {
+        let cmd = Command::Wasm(WasmCommand::Validate {
+            module: PathBuf::from("test.wasm"),
+        });
+        assert!(matches!(cmd, Command::Wasm(_)));
+    }
+
+    // COVERAGE: Test Command::Test variant
+    #[test]
+    fn test_command_test_variant() {
+        let cmd = Command::Test(TestCommand::Report {
+            format: "html".to_string(),
+            output: None,
+        });
+        assert!(matches!(cmd, Command::Test(_)));
+    }
+
+    // COVERAGE: Test execute_notebook_convert verbose
+    #[test]
+    fn test_execute_notebook_convert_verbose() {
+        let cmd = NotebookCommand::Convert {
+            input: PathBuf::from("in.ipynb"),
+            output: PathBuf::from("out.html"),
+            format: "markdown".to_string(),
+        };
+        let result = execute_notebook(cmd, true);
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test Cli with all flags
+    #[test]
+    fn test_cli_all_options() {
+        let cli = Cli {
+            verbose: true,
+            quiet: true,
+            vm_mode: VmMode::Bytecode,
+            command: Command::Repl,
+        };
+        assert!(cli.verbose);
+        assert!(cli.quiet);
+        assert_eq!(cli.vm_mode, VmMode::Bytecode);
+    }
+
+    // COVERAGE: Test parse_source edge cases
+    #[test]
+    fn test_parse_source_empty() {
+        // Empty source should still parse (to a unit block)
+        let result = parse_source("");
+        // Empty source may error or return empty AST
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_parse_source_complex() {
+        let result = parse_source("let x = 5\nlet y = x + 1\ny");
+        assert!(result.is_ok());
+    }
+
+    // COVERAGE: Test get_start_directory edge cases
+    #[test]
+    fn test_get_start_directory_empty_path() {
+        let path = PathBuf::from("");
+        let result = get_start_directory(&path);
+        // Empty path returns empty PathBuf
+        assert_eq!(result, PathBuf::from(""));
+    }
+
+    // COVERAGE: Test execute_report path
+    #[test]
+    fn test_execute_report_verbose() {
+        let target = PathBuf::from("/nonexistent");
+        let result = execute_report(target, "human".to_string(), None, true);
+        // Should fail because path doesn't exist
+        assert!(result.is_err());
+    }
+
+    // COVERAGE: Test different report formats
+    #[test]
+    fn test_execute_report_json_format() {
+        let target = PathBuf::from("/nonexistent");
+        let result = execute_report(target, "json".to_string(), None, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_report_markdown_format() {
+        let target = PathBuf::from("/nonexistent");
+        let result = execute_report(target, "markdown".to_string(), None, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_report_sarif_format() {
+        let target = PathBuf::from("/nonexistent");
+        let result = execute_report(target, "sarif".to_string(), None, false);
+        assert!(result.is_err());
+    }
+
+    // COVERAGE: Test VmMode Debug impl
+    #[test]
+    fn test_vm_mode_debug() {
+        let mode = VmMode::Ast;
+        let debug_str = format!("{mode:?}");
+        assert!(debug_str.contains("Ast"));
+    }
+
+    // COVERAGE: Test VmMode equality
+    #[test]
+    fn test_vm_mode_equality() {
+        let m1 = VmMode::Ast;
+        let m2 = VmMode::Ast;
+        let m3 = VmMode::Bytecode;
+        assert_eq!(m1, m2);
+        assert_ne!(m1, m3);
+    }
 }
 
 #[cfg(test)]

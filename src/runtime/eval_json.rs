@@ -528,4 +528,520 @@ mod tests {
         let result = json_parse("{'a': 1}");
         assert!(result.is_err());
     }
+
+    // === EXTREME TDD Round 135 - Push to 65+ Tests ===
+
+    #[test]
+    fn test_json_parse_zero_integer() {
+        let result = json_parse("0").unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_json_parse_zero_float() {
+        let result = json_parse("0.0").unwrap();
+        assert_eq!(result, Value::Float(0.0));
+    }
+
+    #[test]
+    fn test_json_parse_negative_zero() {
+        let result = json_parse("-0").unwrap();
+        // JSON negative zero becomes integer 0
+        assert!(matches!(result, Value::Integer(0) | Value::Float(_)));
+    }
+
+    #[test]
+    fn test_json_parse_very_small_float() {
+        let result = json_parse("0.000001").unwrap();
+        if let Value::Float(f) = result {
+            assert!((f - 0.000001).abs() < 1e-10);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_whitespace_around_values() {
+        let result = json_parse("  {  \"key\"  :  42  }  ").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("key"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_array_with_newlines() {
+        let result = json_parse("[\n1,\n2,\n3\n]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_object_with_multiple_keys() {
+        let result = json_parse("{\"a\": 1, \"b\": 2, \"c\": 3, \"d\": 4, \"e\": 5}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.len(), 5);
+            assert_eq!(obj.get("a"), Some(&Value::Integer(1)));
+            assert_eq!(obj.get("e"), Some(&Value::Integer(5)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_array_of_objects() {
+        let result = json_parse("[{\"x\": 1}, {\"x\": 2}, {\"x\": 3}]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+            for item in arr.iter() {
+                assert!(matches!(item, Value::Object(_)));
+            }
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_string_with_quotes() {
+        let result = json_parse("\"hello \\\"world\\\"\"").unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('"'));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_string_with_backslash() {
+        let result = json_parse("\"path\\\\to\\\\file\"").unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('\\'));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_range_unsupported() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        let result = json_stringify(&range);
+        assert!(result.is_err());
+        if let Err(InterpreterError::RuntimeError(msg)) = result {
+            assert!(msg.contains("Cannot convert"));
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_byte_unsupported() {
+        let byte = Value::Byte(255);
+        let result = json_stringify(&byte);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_stringify_very_large_integer() {
+        let result = json_stringify(&Value::Integer(i64::MAX)).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains(&i64::MAX.to_string()));
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_very_small_integer() {
+        let result = json_stringify(&Value::Integer(i64::MIN)).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains(&i64::MIN.to_string()));
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_zero_float() {
+        let result = json_stringify(&Value::Float(0.0)).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains("0"));
+        }
+    }
+
+    #[test]
+    fn test_value_to_serde_false() {
+        let result = value_to_serde(&Value::Bool(false)).unwrap();
+        assert_eq!(result, serde_json::Value::Bool(false));
+    }
+
+    #[test]
+    fn test_value_to_serde_float() {
+        let result = value_to_serde(&Value::Float(2.718)).unwrap();
+        if let serde_json::Value::Number(n) = result {
+            assert!((n.as_f64().unwrap() - 2.718).abs() < 0.001);
+        } else {
+            panic!("Expected Number");
+        }
+    }
+
+    #[test]
+    fn test_serde_to_value_i64_min() {
+        let json = serde_json::Value::Number(i64::MIN.into());
+        let result = serde_to_value(&json).unwrap();
+        assert_eq!(result, Value::Integer(i64::MIN));
+    }
+
+    #[test]
+    fn test_serde_to_value_bool_false() {
+        let json = serde_json::Value::Bool(false);
+        let result = serde_to_value(&json).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_serde_to_value_empty_string() {
+        let json = serde_json::Value::String(String::new());
+        let result = serde_to_value(&json).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.is_empty());
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_round_trip_empty_string() {
+        let original = Value::from_string(String::new());
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            if let Value::String(back_s) = back {
+                assert!(back_s.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn test_round_trip_nested_object() {
+        let mut inner = HashMap::new();
+        inner.insert("nested".to_string(), Value::Integer(123));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
+        let original = Value::Object(Arc::new(outer));
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            if let Value::Object(back_obj) = back {
+                assert!(back_obj.contains_key("inner"));
+            }
+        }
+    }
+
+    #[test]
+    fn test_round_trip_mixed_array() {
+        let original = Value::Array(Arc::from(
+            vec![
+                Value::Integer(1),
+                Value::Bool(true),
+                Value::Nil,
+                Value::from_string("test".to_string()),
+            ]
+            .into_boxed_slice(),
+        ));
+        let json = json_stringify(&original).unwrap();
+        if let Value::String(s) = json {
+            let back = json_parse(&s).unwrap();
+            if let Value::Array(arr) = back {
+                assert_eq!(arr.len(), 4);
+            }
+        }
+    }
+
+    #[test]
+    fn test_json_parse_large_array() {
+        let arr_str: String = format!("[{}]", (0..100).map(|i| i.to_string()).collect::<Vec<_>>().join(","));
+        let result = json_parse(&arr_str).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 100);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_tab_character() {
+        let result = json_parse("\"tab\\there\"").unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('\t'));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_carriage_return() {
+        let result = json_parse("\"line\\r\\n\"").unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains('\r'));
+            assert!(s.contains('\n'));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_string_with_newline() {
+        let val = Value::from_string("line1\nline2".to_string());
+        let result = json_stringify(&val).unwrap();
+        if let Value::String(s) = result {
+            // JSON should escape the newline
+            assert!(s.contains("\\n"));
+        }
+    }
+
+    #[test]
+    fn test_json_parse_exponent_negative() {
+        let result = json_parse("1e-10").unwrap();
+        if let Value::Float(f) = result {
+            assert!(f < 0.0001);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_boolean_in_array() {
+        let result = json_parse("[true, false, true]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr[0], Value::Bool(true));
+            assert_eq!(arr[1], Value::Bool(false));
+            assert_eq!(arr[2], Value::Bool(true));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    // === EXTREME TDD Round 160 - Coverage Push Tests ===
+
+    #[test]
+    fn test_json_parse_empty_object_r160() {
+        let result = json_parse("{}").unwrap();
+        if let Value::Object(obj) = result {
+            assert!(obj.is_empty());
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_empty_array_r160() {
+        let result = json_parse("[]").unwrap();
+        if let Value::Array(arr) = result {
+            assert!(arr.is_empty());
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_nested_object_r160() {
+        let result = json_parse(r#"{"outer": {"inner": 42}}"#).unwrap();
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(inner)) = obj.get("outer") {
+                // JSON integers are parsed as Integer
+                assert_eq!(inner.get("inner"), Some(&Value::Integer(42)));
+            } else {
+                panic!("Expected nested object");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_nested_array_r160() {
+        let result = json_parse("[[1, 2], [3, 4]]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_null_r160() {
+        let result = json_parse("null").unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_json_parse_negative_number_r160() {
+        let result = json_parse("-42").unwrap();
+        // JSON integers are parsed as Integer, not Float
+        assert_eq!(result, Value::Integer(-42));
+    }
+
+    #[test]
+    fn test_json_parse_scientific_notation_r160() {
+        let result = json_parse("1.5e10").unwrap();
+        if let Value::Float(f) = result {
+            assert!(f > 1e9);
+        } else {
+            panic!("Expected Float");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_unicode_string_r160() {
+        let result = json_parse(r#""日本語""#).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "日本語");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_escaped_quotes_r160() {
+        let result = json_parse(r#""he said \"hello\"""#).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains("\""));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_parse_invalid_syntax_r160() {
+        let result = json_parse("{invalid}");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_parse_trailing_comma_r160() {
+        // JSON doesn't allow trailing commas
+        let result = json_parse("[1, 2, 3,]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_stringify_nil_r160() {
+        let result = json_stringify(&Value::Nil).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "null");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_bool_true_r160() {
+        let result = json_stringify(&Value::Bool(true)).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "true");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_bool_false_r160() {
+        let result = json_stringify(&Value::Bool(false)).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "false");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_integer_r160() {
+        let result = json_stringify(&Value::Integer(42)).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "42");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_float_r160() {
+        let result = json_stringify(&Value::Float(3.14)).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains("3.14"));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_empty_array_r160() {
+        use std::sync::Arc;
+        let result = json_stringify(&Value::Array(Arc::from(vec![]))).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "[]");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_array_with_values_r160() {
+        use std::sync::Arc;
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = json_stringify(&arr).unwrap();
+        if let Value::String(s) = result {
+            assert!(s.contains("1"));
+            assert!(s.contains("2"));
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_stringify_empty_object_r160() {
+        use std::sync::Arc;
+        use std::collections::HashMap;
+        let obj = Value::Object(Arc::new(HashMap::new()));
+        let result = json_stringify(&obj).unwrap();
+        if let Value::String(s) = result {
+            assert_eq!(s.as_ref(), "{}");
+        } else {
+            panic!("Expected String");
+        }
+    }
+
+    #[test]
+    fn test_json_roundtrip_object_r160() {
+        use std::sync::Arc;
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), Value::Integer(42));
+        let obj = Value::Object(Arc::new(map));
+
+        let json = json_stringify(&obj).unwrap();
+        if let Value::String(s) = json {
+            let parsed = json_parse(&s).unwrap();
+            if let Value::Object(obj) = parsed {
+                // JSON parses numbers as floats
+                assert!(obj.get("key").is_some());
+            } else {
+                panic!("Expected Object after roundtrip");
+            }
+        }
+    }
+
+    #[test]
+    fn test_json_parse_mixed_array_r160() {
+        let result = json_parse(r#"[1, "two", true, null]"#).unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 4);
+            assert_eq!(arr[2], Value::Bool(true));
+            assert_eq!(arr[3], Value::Nil);
+        } else {
+            panic!("Expected Array");
+        }
+    }
 }

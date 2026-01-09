@@ -5,6 +5,8 @@
 //!
 //! **EXTREME TDD Round 70**: Extracted from statements.rs for modularization.
 
+#![allow(clippy::doc_markdown)]
+
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Param, TypeKind};
 use anyhow::Result;

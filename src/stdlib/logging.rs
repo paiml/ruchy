@@ -286,4 +286,84 @@ mod tests {
         let level = get_level().unwrap();
         assert!(["warn", "error", "off", "info", "debug", "trace"].contains(&level.as_str()));
     }
+
+    // ===== EXTREME TDD Round 156 - Additional Logging Tests =====
+
+    #[test]
+    fn test_init_logger_with_whitespace() {
+        // Test with leading/trailing whitespace
+        assert!(init_logger(" info ").is_err()); // Should fail with whitespace
+        assert!(init_logger("info").is_ok()); // Without whitespace
+    }
+
+    #[test]
+    fn test_is_level_enabled_case_variations() {
+        let _ = init_logger("info");
+        assert!(is_level_enabled("INFO").is_ok());
+        assert!(is_level_enabled("Info").is_ok());
+    }
+
+    #[test]
+    fn test_log_info_unicode() {
+        let _ = init_logger("info");
+        assert!(log_info("Tëst wîth ünïcödé").is_ok());
+        assert!(log_info("日本語テスト").is_ok());
+        assert!(log_info("🚀 Rocket launch").is_ok());
+    }
+
+    #[test]
+    fn test_log_warn_unicode() {
+        let _ = init_logger("warn");
+        assert!(log_warn("警告：このメッセージ").is_ok());
+    }
+
+    #[test]
+    fn test_log_error_unicode() {
+        let _ = init_logger("error");
+        assert!(log_error("Ошибка: русский текст").is_ok());
+    }
+
+    #[test]
+    fn test_log_debug_unicode() {
+        let _ = init_logger("debug");
+        assert!(log_debug("调试：中文消息").is_ok());
+    }
+
+    #[test]
+    fn test_log_trace_unicode() {
+        let _ = init_logger("trace");
+        assert!(log_trace("Traçando: português").is_ok());
+    }
+
+    #[test]
+    fn test_log_multiline_messages() {
+        let _ = init_logger("info");
+        let multiline = "Line 1\nLine 2\nLine 3\n\nLine 5";
+        assert!(log_info(multiline).is_ok());
+    }
+
+    #[test]
+    fn test_log_with_format_specifiers() {
+        let _ = init_logger("info");
+        assert!(log_info("Test %s %d {name} {{escaped}}").is_ok());
+    }
+
+    #[test]
+    fn test_get_level_returns_lowercase() {
+        let _ = init_logger("INFO");
+        let level = get_level().unwrap();
+        // Level should always be lowercase
+        assert_eq!(level, level.to_lowercase());
+    }
+
+    #[test]
+    fn test_is_level_enabled_all_levels() {
+        let _ = init_logger("trace");
+        // All levels should return Ok (either true or false)
+        assert!(is_level_enabled("trace").is_ok());
+        assert!(is_level_enabled("debug").is_ok());
+        assert!(is_level_enabled("info").is_ok());
+        assert!(is_level_enabled("warn").is_ok());
+        assert!(is_level_enabled("error").is_ok());
+    }
 }

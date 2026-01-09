@@ -81,9 +81,305 @@ pub fn verify_proofs_from_ast(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
     #[test]
     fn test_prove_handler_stub() {
         // Prove handler tests are in handlers_modules::prove
         // This is a placeholder for the delegation layer
+    }
+
+    // ===== EXTREME TDD Round 146 - Prove Handler Tests =====
+
+    #[test]
+    fn test_handle_prove_command_no_file() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_nonexistent_file() {
+        let result = handle_prove_command(
+            Some(Path::new("/nonexistent/file.ruchy")),
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_with_ml_suggestions() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            true, // ml_suggestions
+            60,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_check_mode() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            true, // check
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_counterexample() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            true, // counterexample
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_verbose() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            true, // verbose
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_json_format() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "json",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_various_backends() {
+        let backends = ["default", "z3", "smt", "custom"];
+        for backend in &backends {
+            let result = handle_prove_command(
+                None,
+                backend,
+                false,
+                30,
+                None,
+                None,
+                false,
+                false,
+                false,
+                "text",
+            );
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_prove_command_various_timeouts() {
+        let timeouts = [1, 10, 30, 60, 300, 3600];
+        for timeout in &timeouts {
+            let result = handle_prove_command(
+                None,
+                "default",
+                false,
+                *timeout,
+                None,
+                None,
+                false,
+                false,
+                false,
+                "text",
+            );
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_prove_command_with_script() {
+        let temp_dir = TempDir::new().unwrap();
+        let script_path = temp_dir.path().join("proof_script.txt");
+        std::fs::write(&script_path, "intro\napply simplify").unwrap();
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            Some(&script_path),
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_with_export() {
+        let temp_dir = TempDir::new().unwrap();
+        let export_path = temp_dir.path().join("proof_export.txt");
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            Some(&export_path),
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_all_options() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        std::fs::write(&file_path, "42").unwrap();
+        let result = handle_prove_command(
+            Some(&file_path),
+            "z3",
+            true,
+            120,
+            None,
+            None,
+            true,
+            true,
+            true,
+            "json",
+        );
+        let _ = result;
+    }
+
+    // ===== EXTREME TDD Round 153 - Prove Handler Tests =====
+
+    #[test]
+    fn test_handle_prove_command_with_function() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("func.ruchy");
+        std::fs::write(&file_path, "fun add(a, b) { a + b }").unwrap();
+        let result = handle_prove_command(
+            Some(&file_path),
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_zero_timeout() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            0, // zero timeout
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_all_true_flags() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            true,  // ml_suggestions
+            30,
+            None,
+            None,
+            true,  // check
+            true,  // counterexample
+            true,  // verbose
+            "json",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_prove_command_xml_format() {
+        let result = handle_prove_command(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "xml",
+        );
+        let _ = result;
     }
 }

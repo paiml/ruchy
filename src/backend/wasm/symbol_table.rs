@@ -338,4 +338,230 @@ mod tests {
             }
         }
     }
+
+    // ============================================================================
+    // EXTREME TDD Round 157: Additional symbol table tests
+    // Target: 26 → 50+ tests
+    // ============================================================================
+    mod round_157_tests {
+        use super::super::*;
+
+        #[test]
+        fn test_insert_all_wasm_types() {
+            let mut table = SymbolTable::new();
+            table.insert("a".to_string(), WasmType::I32);
+            table.insert("b".to_string(), WasmType::I64);
+            table.insert("c".to_string(), WasmType::F32);
+            table.insert("d".to_string(), WasmType::F64);
+
+            assert_eq!(table.lookup_type("a"), Some(WasmType::I32));
+            assert_eq!(table.lookup_type("b"), Some(WasmType::I64));
+            assert_eq!(table.lookup_type("c"), Some(WasmType::F32));
+            assert_eq!(table.lookup_type("d"), Some(WasmType::F64));
+        }
+
+        #[test]
+        fn test_deep_scope_nesting() {
+            let mut table = SymbolTable::new();
+            for i in 0..10 {
+                table.push_scope();
+                table.insert(format!("var_{i}"), WasmType::I32);
+            }
+            assert_eq!(table.scope_depth(), 11);
+
+            // All variables should be accessible
+            for i in 0..10 {
+                assert!(table.lookup(&format!("var_{i}")).is_some());
+            }
+
+            // Pop all scopes
+            for _ in 0..10 {
+                table.pop_scope();
+            }
+            assert_eq!(table.scope_depth(), 1);
+        }
+
+        #[test]
+        fn test_same_name_different_scopes() {
+            let mut table = SymbolTable::new();
+            table.insert("x".to_string(), WasmType::I32);
+            assert_eq!(table.lookup_index("x"), Some(0));
+
+            table.push_scope();
+            table.insert("x".to_string(), WasmType::F32);
+            assert_eq!(table.lookup_index("x"), Some(1));
+            assert_eq!(table.lookup_type("x"), Some(WasmType::F32));
+
+            table.push_scope();
+            table.insert("x".to_string(), WasmType::I64);
+            assert_eq!(table.lookup_index("x"), Some(2));
+            assert_eq!(table.lookup_type("x"), Some(WasmType::I64));
+
+            table.pop_scope();
+            assert_eq!(table.lookup_type("x"), Some(WasmType::F32));
+
+            table.pop_scope();
+            assert_eq!(table.lookup_type("x"), Some(WasmType::I32));
+        }
+
+        #[test]
+        fn test_lookup_nonexistent() {
+            let table = SymbolTable::new();
+            assert!(table.lookup("nonexistent").is_none());
+            assert!(table.lookup_type("nonexistent").is_none());
+            assert!(table.lookup_index("nonexistent").is_none());
+        }
+
+        #[test]
+        fn test_exists_in_current_scope_multiple_scopes() {
+            let mut table = SymbolTable::new();
+            table.insert("outer".to_string(), WasmType::I32);
+            assert!(table.exists_in_current_scope("outer"));
+
+            table.push_scope();
+            assert!(!table.exists_in_current_scope("outer"));
+            table.insert("inner".to_string(), WasmType::F32);
+            assert!(table.exists_in_current_scope("inner"));
+            assert!(!table.exists_in_current_scope("outer"));
+        }
+
+        #[test]
+        fn test_all_locals_preserves_indices() {
+            let mut table = SymbolTable::new();
+            table.insert("a".to_string(), WasmType::I32);
+            table.insert("b".to_string(), WasmType::F64);
+            table.push_scope();
+            table.insert("c".to_string(), WasmType::F32);
+
+            let locals = table.all_locals();
+            // Check all indices are present
+            let indices: Vec<u32> = locals.iter().map(|(_, i)| *i).collect();
+            assert!(indices.contains(&0));
+            assert!(indices.contains(&1));
+            assert!(indices.contains(&2));
+        }
+
+        #[test]
+        fn test_local_count_increments_correctly() {
+            let mut table = SymbolTable::new();
+            assert_eq!(table.local_count(), 0);
+
+            for i in 0..10 {
+                table.insert(format!("v{i}"), WasmType::I32);
+                assert_eq!(table.local_count(), (i + 1) as u32);
+            }
+        }
+
+        #[test]
+        fn test_clear_then_reuse() {
+            let mut table = SymbolTable::new();
+            table.insert("old".to_string(), WasmType::I32);
+            table.push_scope();
+            table.clear();
+
+            // Should be fresh state
+            assert_eq!(table.scope_depth(), 1);
+            assert_eq!(table.local_count(), 0);
+            assert!(table.lookup("old").is_none());
+
+            // Can reuse
+            table.insert("new".to_string(), WasmType::F64);
+            assert_eq!(table.lookup_type("new"), Some(WasmType::F64));
+            assert_eq!(table.lookup_index("new"), Some(0));
+        }
+
+        #[test]
+        fn test_pop_scope_on_empty() {
+            let mut table = SymbolTable::new();
+            // Pop on single scope should do nothing
+            table.pop_scope();
+            assert_eq!(table.scope_depth(), 1);
+            // Multiple pops should be safe
+            for _ in 0..10 {
+                table.pop_scope();
+            }
+            assert_eq!(table.scope_depth(), 1);
+        }
+
+        #[test]
+        fn test_unicode_variable_names() {
+            let mut table = SymbolTable::new();
+            table.insert("变量".to_string(), WasmType::I32);
+            table.insert("переменная".to_string(), WasmType::F32);
+            table.insert("αβγ".to_string(), WasmType::I64);
+
+            assert!(table.lookup("变量").is_some());
+            assert!(table.lookup("переменная").is_some());
+            assert!(table.lookup("αβγ").is_some());
+        }
+
+        #[test]
+        fn test_empty_variable_name() {
+            let mut table = SymbolTable::new();
+            table.insert(String::new(), WasmType::I32);
+            assert_eq!(table.lookup_type(""), Some(WasmType::I32));
+        }
+
+        #[test]
+        fn test_long_variable_name() {
+            let mut table = SymbolTable::new();
+            let long_name = "x".repeat(10000);
+            table.insert(long_name.clone(), WasmType::F64);
+            assert_eq!(table.lookup_type(&long_name), Some(WasmType::F64));
+        }
+
+        #[test]
+        fn test_scope_depth_after_operations() {
+            let mut table = SymbolTable::new();
+            assert_eq!(table.scope_depth(), 1);
+
+            table.push_scope();
+            table.insert("a".to_string(), WasmType::I32);
+            assert_eq!(table.scope_depth(), 2);
+
+            table.push_scope();
+            table.push_scope();
+            assert_eq!(table.scope_depth(), 4);
+
+            table.pop_scope();
+            assert_eq!(table.scope_depth(), 3);
+
+            table.clear();
+            assert_eq!(table.scope_depth(), 1);
+        }
+
+        #[test]
+        fn test_insert_same_name_same_scope() {
+            let mut table = SymbolTable::new();
+            table.insert("x".to_string(), WasmType::I32);
+            table.insert("x".to_string(), WasmType::F64);
+
+            // Second insert overwrites in current scope but allocates new index
+            assert_eq!(table.lookup_type("x"), Some(WasmType::F64));
+            assert_eq!(table.lookup_index("x"), Some(1));
+            assert_eq!(table.local_count(), 2);
+        }
+
+        #[test]
+        fn test_all_locals_with_nested_scopes() {
+            let mut table = SymbolTable::new();
+            table.insert("global".to_string(), WasmType::I32);
+            table.push_scope();
+            table.insert("local1".to_string(), WasmType::F32);
+            table.push_scope();
+            table.insert("local2".to_string(), WasmType::I64);
+
+            let locals = table.all_locals();
+            assert_eq!(locals.len(), 3);
+        }
+
+        #[test]
+        fn test_debug_format() {
+            let mut table = SymbolTable::new();
+            table.insert("test".to_string(), WasmType::I32);
+            let debug_str = format!("{:?}", table);
+            assert!(debug_str.contains("SymbolTable"));
+            assert!(debug_str.contains("scopes"));
+        }
+    }
 }
