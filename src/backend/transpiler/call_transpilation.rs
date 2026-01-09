@@ -334,9 +334,35 @@ impl Transpiler {
             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
-            // DataFrame operations
-            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "min" | "max"
-            | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
+            // Aggregation methods that work on both DataFrame and collections
+            "sum" => {
+                if Transpiler::is_dataframe_expr(object) {
+                    self.transpile_dataframe_method(object, method, &[])
+                } else {
+                    // TRANSPILER-ITERATOR-001 FIX: For collections, use .iter().sum::<i32>()
+                    // Default to i32 for sum since collect::<Vec<_>>() loses type info
+                    Ok(quote! { #obj_tokens.iter().sum::<i32>() })
+                }
+            }
+            "min" | "max" => {
+                if Transpiler::is_dataframe_expr(object) {
+                    self.transpile_dataframe_method(object, method, &[])
+                } else {
+                    // min/max return Option, use .copied() for ownership
+                    Ok(quote! { #obj_tokens.iter().copied().#method_ident() })
+                }
+            }
+            "count" => {
+                if Transpiler::is_dataframe_expr(object) {
+                    self.transpile_dataframe_method(object, method, &[])
+                } else {
+                    // count returns usize
+                    Ok(quote! { #obj_tokens.iter().count() })
+                }
+            }
+            // DataFrame-only operations
+            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std"
+            | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
             | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
                 if Transpiler::is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, &[])
@@ -622,5 +648,158 @@ mod tests {
         let result_str = result.to_string();
         assert!(result_str.contains("obj"));
         assert!(result_str.contains("custom_method"));
+    }
+
+    // ===== EXTREME TDD Round 119 - Additional Tests =====
+
+    #[test]
+    fn test_dispatch_pop_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { vec };
+        let method_ident = format_ident!("pop");
+        let object = ident_expr("vec");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "pop",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dispatch_len_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { vec };
+        let method_ident = format_ident!("len");
+        let object = ident_expr("vec");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "len",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("len"));
+    }
+
+    #[test]
+    fn test_dispatch_is_empty_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { vec };
+        let method_ident = format_ident!("is_empty");
+        let object = ident_expr("vec");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "is_empty",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dispatch_clear_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { vec };
+        let method_ident = format_ident!("clear");
+        let object = ident_expr("vec");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "clear",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dispatch_clone_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { obj };
+        let method_ident = format_ident!("clone");
+        let object = ident_expr("obj");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "clone",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("clone"));
+    }
+
+    #[test]
+    fn test_dispatch_to_string_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { val };
+        let method_ident = format_ident!("to_string");
+        let object = ident_expr("val");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "to_string",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("to_string"));
+    }
+
+    #[test]
+    fn test_dispatch_iter_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { vec };
+        let method_ident = format_ident!("iter");
+        let object = ident_expr("vec");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "iter",
+            &method_ident,
+            &[],
+            &object,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dispatch_map_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { iter };
+        let arg_tokens = vec![quote! { |x| x * 2 }];
+        let method_ident = format_ident!("map");
+        let object = ident_expr("iter");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "map",
+            &method_ident,
+            &arg_tokens,
+            &object,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("map"));
+    }
+
+    #[test]
+    fn test_dispatch_filter_method() {
+        let transpiler = make_transpiler();
+        let obj_tokens = quote! { iter };
+        let arg_tokens = vec![quote! { |x| x > 0 }];
+        let method_ident = format_ident!("filter");
+        let object = ident_expr("iter");
+        let result = transpiler.dispatch_method_by_category(
+            &obj_tokens,
+            "filter",
+            &method_ident,
+            &arg_tokens,
+            &object,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("filter"));
     }
 }
