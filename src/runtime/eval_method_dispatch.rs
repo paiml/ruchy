@@ -246,6 +246,10 @@ fn eval_object_method(
         return match &**type_name {
             "Command" => eval_command_method(obj, method, arg_values),
             "ExitStatus" => eval_exit_status_method(obj, method, arg_values),
+            // Module calls are handled in interpreter.rs eval_method_call
+            "Module" => Err(InterpreterError::RuntimeError(format!(
+                "Module method dispatch should be handled in interpreter"
+            ))),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unknown object type: {type_name}"
             ))),
